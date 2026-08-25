@@ -18,17 +18,12 @@ review, and production risk controls exist.
 Order intents and audit events are persisted in SQLite (BIAP_AUDIT_DB). A
 separate risk policy is evaluated before an intent is created.
 
-Real TSETMC codes now resolve against the existing BIAP mobile backend's
-live watchlist (https://biap.dadashi.no/api/stock/watchlist -- step 1/2 of
-the priority order agreed in Discussion #1), price identity only. CODAL
-fundamentals and extended market data (52-week range, P/E, volume) are
-still not connected -- see PROJECT_STATUS.md, "Open blockers". A
-recommendation built from live data says so explicitly via `dataSource`
-and `dataAvailability` rather than pretending to have data it doesn't.
-
-Run locally:
-    pip install -r requirements.txt
-    uvicorn api_server:app --reload --port 8088
+Real TSETMC codes resolve against the existing BIAP mobile backend's live
+watchlist. Live companies are also enriched with verified CODAL company
+metadata + financial-year history from search.codal.ir when available.
+Report-derived CODAL fundamentals and extended market data (52-week range,
+P/E, volume) are still not connected; the API distinguishes metadata from
+fundamental availability rather than pretending metadata is analysis data.
 """
 
 from datetime import datetime, timezone
@@ -39,6 +34,7 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from audit_store import AuditStore
+from codal_data import base_url as codal_base_url
 from company_builder import availability, build_company_from_quote
 from data_sample import SAMPLE_COMPANY
 from execution import ExecutionPolicyError, build_order_intent, submit_order_intent
@@ -48,8 +44,6 @@ from risk import evaluate_order_risk, policy_snapshot
 
 app = FastAPI(title="BIAP Kiasha recommendation service")
 
-# Keyed by ticker. Fictitious data for local testing -- real codes fall
-# through to the live watchlist lookup below.
 MOCK_COMPANIES = {SAMPLE_COMPANY["ticker"]: SAMPLE_COMPANY}
 AUDIT = AuditStore()
 
@@ -75,8 +69,12 @@ def health():
         "liveMarketData": {
             "base": market_base_url(),
             "fields": ["lastPrice", "closingPrice", "yesterdayPrice", "change", "changePercent"],
-            "codalConnected": False,
             "extendedMarketDataConnected": False,
+        },
+        "codal": {
+            "base": codal_base_url(),
+            "metadataConnected": True,
+            "fundamentalsConnected": False,
         },
         "execution": {
             "paper": True,
@@ -90,12 +88,6 @@ def health():
 
 
 def _company_or_404(code: str) -> tuple[dict, str]:
-    """Resolve a stock code to a company record.
-
-    Checks the local mock table first (unchanged fictitious demo data),
-    then falls back to a live lookup against the existing BIAP backend.
-    Returns (company, dataSource) where dataSource is "mock" or "live".
-    """
     mock = MOCK_COMPANIES.get(code.upper())
     if mock is not None:
         return mock, "mock"
@@ -132,6 +124,7 @@ def recommendation(code: str):
         "generatedAt": datetime.now(timezone.utc).isoformat(),
         "dataSource": source,
         "dataAvailability": availability(company),
+        "codalMetadata": company.get("codal_metadata") if source == "live" else None,
         "livePrice": {
             "lastPrice": market.get("last_price"),
             "closingPrice": market.get("closing_price"),
@@ -176,10 +169,7 @@ def preview_order(req: OrderPreviewRequest):
                 "quantity": req.quantity,
                 "limitPrice": req.limitPrice,
                 "mode": req.mode,
-                "recommendation": {
-                    "call": decision.call,
-                    "score": decision.weighted_score,
-                },
+                "recommendation": {"call": decision.call, "score": decision.weighted_score},
                 "referencePrice": reference_price,
                 "risk": risk.to_dict(),
             },
@@ -226,10 +216,7 @@ def preview_order(req: OrderPreviewRequest):
 
     return {
         "intent": intent,
-        "recommendation": {
-            "call": decision.call,
-            "score": decision.weighted_score,
-        },
+        "recommendation": {"call": decision.call, "score": decision.weighted_score},
         "risk": risk.to_dict(),
         "liveExecution": False,
     }
