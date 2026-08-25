@@ -1,15 +1,22 @@
 """
-Minimal HTTP wrapper around the Kiasha decision and guarded execution layers.
+HTTP wrapper around the Kiasha decision and guarded execution layers.
 
 Additive endpoints intended to sit alongside the existing BIAP backend:
 
   GET  /stock/recommendation/{code}
   POST /orders/preview
   POST /orders/submit
+  GET  /orders/{intent_id}
+  GET  /audit/orders
+  GET  /audit/events
+  GET  /risk/status
 
 Execution is intentionally limited to PAPER and APPROVAL flows. AUTO/LIVE
 execution is blocked until a real broker adapter, credentials, compliance
 review, and production risk controls exist.
+
+Order intents and audit events are persisted in SQLite (BIAP_AUDIT_DB). A
+separate risk policy is evaluated before an intent is created.
 
 Currently backed by MOCK_COMPANIES only (see data_sample.py) — CODAL/TSETMC
 ingestion is not wired in yet (see PROJECT_STATUS.md, "Open blockers").
@@ -21,23 +28,23 @@ Run locally:
 
 from datetime import datetime, timezone
 from typing import Literal, Optional
+import uuid
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from audit_store import AuditStore
 from data_sample import SAMPLE_COMPANY
 from execution import ExecutionPolicyError, build_order_intent, submit_order_intent
 from kiasha import decide
+from risk import evaluate_order_risk, policy_snapshot
 
 app = FastAPI(title="BIAP Kiasha recommendation service")
 
 # Keyed by ticker. Only one mock entry until real CODAL/TSETMC ingestion
 # replaces this with a live lookup.
 MOCK_COMPANIES = {SAMPLE_COMPANY["ticker"]: SAMPLE_COMPANY}
-
-# Ephemeral in-memory intents for the prototype only. Production must use a
-# persistent audit store with authenticated user/account ownership.
-ORDER_INTENTS: dict[str, dict] = {}
+AUDIT = AuditStore()
 
 
 class OrderPreviewRequest(BaseModel):
@@ -63,6 +70,8 @@ def health():
             "approval": True,
             "auto": False,
             "brokerConnected": False,
+            "persistentAudit": True,
+            "riskPolicy": True,
         },
     }
 
@@ -72,6 +81,15 @@ def _company_or_404(code: str):
     if company is None:
         raise HTTPException(status_code=404, detail=f"no data for {code}")
     return company
+
+
+def _reference_price(company: dict) -> Optional[float]:
+    raw = company.get("market", {}).get("price")
+    try:
+        price = float(raw)
+    except (TypeError, ValueError):
+        return None
+    return price if price > 0 else None
 
 
 @app.get("/stock/recommendation/{code}")
@@ -87,10 +105,53 @@ def recommendation(code: str):
     }
 
 
+@app.get("/risk/status")
+def risk_status():
+    return {
+        "policy": policy_snapshot(),
+        "dailyNotionalUsed": AUDIT.submitted_notional_today(),
+        "autoExecutionEnabled": False,
+    }
+
+
 @app.post("/orders/preview")
 def preview_order(req: OrderPreviewRequest):
     company = _company_or_404(req.code)
     decision = decide(company)
+    reference_price = _reference_price(company)
+
+    risk = evaluate_order_risk(
+        side=req.side,
+        quantity=req.quantity,
+        limit_price=req.limitPrice,
+        reference_price=reference_price,
+        recommendation_score=decision.weighted_score,
+        daily_notional_used=AUDIT.submitted_notional_today(),
+    )
+
+    if not risk.allowed:
+        AUDIT.record_event(
+            event_id=str(uuid.uuid4()),
+            event_type="RISK_REJECTED",
+            payload={
+                "code": company["ticker"],
+                "side": req.side,
+                "quantity": req.quantity,
+                "limitPrice": req.limitPrice,
+                "mode": req.mode,
+                "recommendation": {
+                    "call": decision.call,
+                    "score": decision.weighted_score,
+                },
+                "referencePrice": reference_price,
+                "risk": risk.to_dict(),
+            },
+        )
+        raise HTTPException(
+            status_code=400,
+            detail={"message": "order rejected by risk policy", "risk": risk.to_dict()},
+        )
+
     try:
         intent = build_order_intent(
             code=company["ticker"],
@@ -102,28 +163,81 @@ def preview_order(req: OrderPreviewRequest):
             recommendation_score=decision.weighted_score,
         )
     except ExecutionPolicyError as exc:
+        AUDIT.record_event(
+            event_id=str(uuid.uuid4()),
+            event_type="EXECUTION_POLICY_REJECTED",
+            payload={
+                "code": company["ticker"],
+                "side": req.side,
+                "quantity": req.quantity,
+                "limitPrice": req.limitPrice,
+                "mode": req.mode,
+                "error": str(exc),
+            },
+        )
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    ORDER_INTENTS[intent["id"]] = intent
+    intent["risk"] = risk.to_dict()
+    intent["referencePrice"] = reference_price
+    AUDIT.save_intent(intent)
+    AUDIT.record_event(
+        event_id=str(uuid.uuid4()),
+        intent_id=intent["id"],
+        event_type="INTENT_CREATED",
+        payload={"intent": intent},
+    )
+
     return {
         "intent": intent,
         "recommendation": {
             "call": decision.call,
             "score": decision.weighted_score,
         },
+        "risk": risk.to_dict(),
         "liveExecution": False,
     }
 
 
 @app.post("/orders/submit")
 def submit_order(req: OrderSubmitRequest):
-    intent = ORDER_INTENTS.get(req.intentId)
+    intent = AUDIT.get_intent(req.intentId)
     if intent is None:
         raise HTTPException(status_code=404, detail="unknown intentId")
+
     try:
         receipt = submit_order_intent(intent)
     except ExecutionPolicyError as exc:
+        AUDIT.record_event(
+            event_id=str(uuid.uuid4()),
+            intent_id=req.intentId,
+            event_type="SUBMIT_REJECTED",
+            payload={"error": str(exc), "intent": intent},
+        )
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    ORDER_INTENTS[req.intentId] = receipt
+    AUDIT.save_intent(receipt)
+    AUDIT.record_event(
+        event_id=str(uuid.uuid4()),
+        intent_id=req.intentId,
+        event_type="ORDER_SUBMITTED",
+        payload={"receipt": receipt},
+    )
     return receipt
+
+
+@app.get("/orders/{intent_id}")
+def get_order(intent_id: str):
+    intent = AUDIT.get_intent(intent_id)
+    if intent is None:
+        raise HTTPException(status_code=404, detail="unknown intentId")
+    return intent
+
+
+@app.get("/audit/orders")
+def audit_orders(limit: int = Query(default=100, ge=1, le=500)):
+    return {"items": AUDIT.list_intents(limit=limit)}
+
+
+@app.get("/audit/events")
+def audit_events(limit: int = Query(default=200, ge=1, le=1000)):
+    return {"items": AUDIT.list_events(limit=limit)}
