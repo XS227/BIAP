@@ -1,0 +1,185 @@
+"""Persistent audit storage for BIAP execution intents.
+
+Uses Python's built-in sqlite3 so the prototype gains durable state without
+adding a dependency. The database path is configurable with BIAP_AUDIT_DB.
+
+This store is intentionally broker-agnostic. It records intent snapshots and
+append-only audit events so Paper/Approval actions survive process restarts and
+can later be correlated with a real broker adapter.
+"""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import json
+import os
+import sqlite3
+from typing import Any, Optional
+
+
+DEFAULT_DB_PATH = os.environ.get(
+    "BIAP_AUDIT_DB",
+    os.path.join(os.path.dirname(__file__), "biap_audit.sqlite3"),
+)
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+class AuditStore:
+    def __init__(self, db_path: str = DEFAULT_DB_PATH):
+        self.db_path = db_path
+        self._init_db()
+
+    def _connect(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA foreign_keys=ON")
+        return conn
+
+    def _init_db(self) -> None:
+        with self._connect() as conn:
+            conn.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS order_intents (
+                    id TEXT PRIMARY KEY,
+                    code TEXT NOT NULL,
+                    side TEXT NOT NULL,
+                    quantity INTEGER NOT NULL,
+                    limit_price REAL,
+                    mode TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    recommendation_call TEXT NOT NULL,
+                    recommendation_score REAL NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    payload_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS audit_events (
+                    seq INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event_id TEXT NOT NULL UNIQUE,
+                    intent_id TEXT,
+                    event_type TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    payload_json TEXT NOT NULL,
+                    FOREIGN KEY(intent_id) REFERENCES order_intents(id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_audit_events_intent
+                    ON audit_events(intent_id, seq);
+                CREATE INDEX IF NOT EXISTS idx_order_intents_created
+                    ON order_intents(created_at);
+                """
+            )
+
+    def save_intent(self, intent: dict[str, Any]) -> None:
+        now = _now_iso()
+        payload = json.dumps(intent, ensure_ascii=False, sort_keys=True)
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO order_intents (
+                    id, code, side, quantity, limit_price, mode, status,
+                    recommendation_call, recommendation_score, created_at,
+                    updated_at, payload_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    status=excluded.status,
+                    updated_at=excluded.updated_at,
+                    payload_json=excluded.payload_json
+                """,
+                (
+                    intent["id"], intent["code"], intent["side"], intent["quantity"],
+                    intent.get("limit_price"), intent["mode"], intent["status"],
+                    intent["recommendation_call"], intent["recommendation_score"],
+                    intent["created_at"], now, payload,
+                ),
+            )
+
+    def get_intent(self, intent_id: str) -> Optional[dict[str, Any]]:
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT payload_json FROM order_intents WHERE id = ?",
+                (intent_id,),
+            ).fetchone()
+        return json.loads(row["payload_json"]) if row else None
+
+    def list_intents(self, limit: int = 100) -> list[dict[str, Any]]:
+        limit = max(1, min(limit, 500))
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT payload_json FROM order_intents ORDER BY created_at DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [json.loads(row["payload_json"]) for row in rows]
+
+    def record_event(
+        self,
+        *,
+        event_id: str,
+        event_type: str,
+        payload: dict[str, Any],
+        intent_id: Optional[str] = None,
+    ) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO audit_events
+                    (event_id, intent_id, event_type, created_at, payload_json)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    event_id,
+                    intent_id,
+                    event_type,
+                    _now_iso(),
+                    json.dumps(payload, ensure_ascii=False, sort_keys=True),
+                ),
+            )
+
+    def list_events(self, limit: int = 200) -> list[dict[str, Any]]:
+        limit = max(1, min(limit, 1000))
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT seq, event_id, intent_id, event_type, created_at, payload_json
+                FROM audit_events
+                ORDER BY seq DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+        return [
+            {
+                "seq": row["seq"],
+                "eventId": row["event_id"],
+                "intentId": row["intent_id"],
+                "eventType": row["event_type"],
+                "createdAt": row["created_at"],
+                "payload": json.loads(row["payload_json"]),
+            }
+            for row in rows
+        ]
+
+    def submitted_notional_today(self) -> float:
+        """Return PAPER_FILLED + PENDING_APPROVAL notional for current UTC day.
+
+        Only intents with a limit_price can contribute to notional until a live
+        quote source is wired into the execution service.
+        """
+        today_prefix = datetime.now(timezone.utc).date().isoformat() + "%"
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT quantity, limit_price, status
+                FROM order_intents
+                WHERE created_at LIKE ?
+                  AND status IN ('PAPER_FILLED', 'PENDING_APPROVAL')
+                  AND limit_price IS NOT NULL
+                """,
+                (today_prefix,),
+            ).fetchall()
+        return float(sum(row["quantity"] * row["limit_price"] for row in rows))
