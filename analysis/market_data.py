@@ -223,8 +223,11 @@ def fetch_extended_market_data(
     """Fetch verified current trading metrics and ~400 daily TSETMC rows.
 
     The first 260 trading rows are used as an approximate one-trading-year
-    window for the 52-week high/low. The first 30 rows are used for average
-    traded volume. P/E, EPS and market cap are deliberately not inferred here.
+    window. The 52-week range is based on each session's actual intraday
+    ``priceMax``/``priceMin`` rather than closing prices, so a current last
+    price cannot legitimately appear above the computed 52-week high merely
+    because it exceeds today's closing price. The first 30 rows are used for
+    average traded volume. P/E, EPS and market cap are deliberately not inferred.
     """
     now = time.monotonic()
     cached = _extended_cache.get(code)
@@ -242,24 +245,46 @@ def fetch_extended_market_data(
     if not isinstance(row, dict) or not isinstance(rows, list) or not rows:
         return None
 
-    prices = [
-        _num(x, "pClosing") for x in rows[:260]
-        if isinstance(x, dict) and _num(x, "pClosing") not in (None, 0)
-    ]
+    highs: list[float] = []
+    lows: list[float] = []
+    for item in rows[:260]:
+        if not isinstance(item, dict):
+            continue
+        high = _num(item, "priceMax")
+        low = _num(item, "priceMin")
+        close = _num(item, "pClosing")
+        if high in (None, 0):
+            high = close
+        if low in (None, 0):
+            low = close
+        if high not in (None, 0):
+            highs.append(high)
+        if low not in (None, 0):
+            lows.append(low)
+
+    # Ensure the current session's verified intraday extrema are represented
+    # even if the daily-history endpoint lags the live endpoint slightly.
+    current_high = _num(row, "priceMax")
+    current_low = _num(row, "priceMin")
+    if current_high not in (None, 0):
+        highs.append(current_high)
+    if current_low not in (None, 0):
+        lows.append(current_low)
+
     volumes = [
         _num(x, "qTotTran5J") for x in rows[:30]
         if isinstance(x, dict) and _num(x, "qTotTran5J") is not None
     ]
 
     result = ExtendedMarketData(
-        day_low=_num(row, "priceMin"),
-        day_high=_num(row, "priceMax"),
+        day_low=current_low,
+        day_high=current_high,
         volume_today=_num(row, "qTotTran5J"),
         trade_value_today=_num(row, "qTotCap"),
         trade_count_today=_num(row, "zTotTran"),
         avg_volume_30d=(sum(volumes) / len(volumes)) if volumes else None,
-        price_52w_high=max(prices) if prices else None,
-        price_52w_low=min(prices) if prices else None,
+        price_52w_high=max(highs) if highs else None,
+        price_52w_low=min(lows) if lows else None,
     )
     _extended_cache[code] = (now, result)
     return result
