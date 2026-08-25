@@ -32,22 +32,71 @@ TSETMC (price/volume/P-E) ───┘
   blends the votes into a call + explanation.
 - **`analysis/data_sample.py`** — mock CODAL + TSETMC data for one
   fictitious company. Real ingestion is not built (see blockers below).
-- **`analysis/api_server.py`** — minimal FastAPI wrapper exposing:
+- **`analysis/api_server.py`** — minimal FastAPI wrapper exposing recommendation
+  plus the first guarded execution endpoints.
+- **`analysis/execution.py`** — execution-policy boundary. Separates analysis
+  from order handling and explicitly prevents live/AUTO trading.
 
-  ```
-  GET /stock/recommendation/{code}
-  {
-    "code": "SAMPLE1",
-    "call": "BUY" | "HOLD" | "SELL",
-    "score": 0.45,
-    "generatedAt": "...",
-    "breakdown": [ { agent, vote, confidence, trust_score, maturity,
-                     weight_normalized, reasoning }, ... ]
-  }
-  ```
+## Implemented API prototype
 
-  Verified locally (`uvicorn api_server:app`): `/health`, a real
-  `SAMPLE1` recommendation, and a 404 for an unknown code all work.
+### Recommendation
+
+```
+GET /stock/recommendation/{code}
+{
+  "code": "SAMPLE1",
+  "call": "BUY" | "HOLD" | "SELL",
+  "score": 0.45,
+  "generatedAt": "...",
+  "breakdown": [
+    { agent, vote, confidence, trust_score, maturity,
+      weight_normalized, reasoning }
+  ]
+}
+```
+
+### Execution scaffold — first build started 2026-08-25
+
+The execution architecture from Discussion #1 has now moved from design into
+code, but remains deliberately non-live.
+
+```
+Recommendation
+     ↓
+Execution Policy
+     ↓
+Paper / Approval
+     ↓
+Future Broker Adapter
+     ↓
+Future Broker API
+```
+
+Implemented now:
+
+- `POST /orders/preview`
+  - accepts stock code, BUY/SELL, quantity, optional limit price and mode;
+  - recalculates the current Kiasha recommendation;
+  - rejects contradictory BUY-vs-SELL requests;
+  - creates an auditable order intent;
+  - `paper` produces a simulation intent;
+  - `approval` produces `PENDING_APPROVAL`;
+  - `auto` is explicitly blocked.
+- `POST /orders/submit`
+  - accepts an existing prototype intent;
+  - `paper` returns a simulated `PAPER_FILLED` receipt;
+  - `approval` stays `PENDING_APPROVAL`;
+  - never sends anything to a broker.
+- `/health` now advertises execution capabilities:
+  - paper: enabled
+  - approval: enabled
+  - auto: disabled
+  - brokerConnected: false
+
+Important: prototype order intents are currently stored **in memory only**.
+Production requires authentication, persistent audit storage, account ownership,
+idempotency, risk limits and a real broker adapter before any external order
+submission can ever be enabled.
 
 ## How this is meant to plug into `-biap-mobile`
 
@@ -61,6 +110,16 @@ endpoint the stock detail screen (`src/app/stock/[code].tsx`) could call
 alongside `fetchWatchlist()` to show a Kiasha call/explanation. No changes
 needed to the existing watchlist contract or screens that don't want it.
 
+The future mobile execution UX should also remain additive:
+
+1. Show FIN recommendation.
+2. User opens an order preview.
+3. BIAP calls `/orders/preview`.
+4. In paper mode, simulate only.
+5. In approval mode, require explicit user approval before any future broker
+   adapter is allowed to proceed.
+6. AUTO remains disabled until separately approved and production-hardened.
+
 ## Open blockers (real, not yet solved)
 
 1. **CODAL/TSETMC ingestion is unresolved.** Neither `codal.ir` nor
@@ -71,20 +130,22 @@ needed to the existing watchlist contract or screens that don't want it.
    whatever the mobile app's own `89.42.199.20` backend already uses to
    get its live TSETMC prices — that backend clearly *can* reach TSETMC
    today, so its ingestion path is the fastest lead).
-2. **No trading/order API confirmed.** This only ever produces a
-   recommendation — it does not and should not place trades. Whether any
-   Iranian broker exposes an API for that is a separate, unanswered
-   question (raised, not resolved).
+2. **No trading/order API confirmed.** Broker research in Discussion #1 is
+   still preliminary. No Iranian broker API access is confirmed, and no
+   credentials or broker connection exist in this repo.
 3. **`TRACK_RECORDS` in `kiasha.py` are hardcoded placeholders**, not real
    per-agent history. A live backend would need to log each
    recommendation + its eventual outcome and compute
    accuracy/stability/lifetime-calls from that, the same way Arena's
    Kiasha computes trust_score from real trade history.
-4. **Stack/hosting unknown on my side** — I don't have access to
-   `89.42.199.20`. This FastAPI service is a reference implementation of
-   the contract, not necessarily what should run in production; feel free
-   to reimplement the same `/stock/recommendation/{code}` shape in
-   whatever stack the existing backend already uses.
+4. **Stack/hosting unknown on my side** — this FastAPI service is a reference
+   implementation of the contract, not necessarily what should run in
+   production. The existing BIAP backend at `89.42.199.20` still needs to be
+   located/connected for live integration.
+5. **Execution hardening not built yet.** Before any real broker integration:
+   authentication, persistent audit log, per-user account binding, position
+   checks, price bands, daily limits, idempotency, approval signatures and
+   kill-switch behavior must be implemented.
 
 ## Running it locally
 
@@ -95,8 +156,34 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 curl localhost:8088/stock/recommendation/SAMPLE1
 ```
 
-Or run the pipeline standalone without HTTP:
+Example paper preview:
+
+```bash
+curl -X POST localhost:8088/orders/preview \
+  -H 'content-type: application/json' \
+  -d '{"code":"SAMPLE1","side":"BUY","quantity":100,"mode":"paper"}'
+```
+
+Then submit the returned `intent.id`:
+
+```bash
+curl -X POST localhost:8088/orders/submit \
+  -H 'content-type: application/json' \
+  -d '{"intentId":"<intent-id>"}'
+```
+
+Or run the recommendation pipeline standalone without HTTP:
 
 ```bash
 cd analysis && python3 main.py
 ```
+
+## Next build steps
+
+1. Add persistent SQLite/Postgres audit storage for recommendations and order intents.
+2. Add a formal risk-policy module (position size, price deviation, daily loss, kill switch).
+3. Add authentication/user ownership to order endpoints.
+4. Build a broker-adapter interface with a `PaperBroker` first; keep all real brokers disabled.
+5. Locate the existing BIAP backend ingestion path and replace mock data with real TSETMC data.
+6. Add CODAL normalization/fundamental ingestion.
+7. Wire the mobile stock detail page to the recommendation endpoint.
