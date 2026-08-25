@@ -6,18 +6,15 @@ Two sources feed this shape:
     and `market` fully populated -- fictitious data for local testing);
   - a live market_data.LiveQuote from the existing BIAP backend.
 
-Live companies are now also enriched with read-only CODAL metadata when the
-symbol can be resolved on search.codal.ir. This is intentionally separate
-from CODAL fundamentals: company identity + financial-year history being
-available does NOT mean revenue/margin/audit metrics have been parsed yet.
-Agents therefore continue to treat CODAL fundamentals as unavailable until
-real report values are normalized.
+Live companies are enriched with read-only CODAL metadata and, when available,
+verified TSETMC extended market metrics. Missing fundamentals/valuation metrics
+remain unavailable rather than being inferred.
 """
 
 from __future__ import annotations
 
 from codal_data import CodalDataUnavailable, metadata_for_symbol
-from market_data import LiveQuote
+from market_data import LiveQuote, fetch_extended_market_data
 
 FULL_AVAILABILITY = {
     "codal": True,
@@ -40,19 +37,25 @@ def build_company_from_quote(quote: LiveQuote) -> dict:
         if meta is not None:
             codal_metadata = meta.to_dict()
     except CodalDataUnavailable:
-        # CODAL enrichment is best-effort and must never break live market data.
         codal_metadata = None
+
+    extended = fetch_extended_market_data(quote.code)
 
     data_available = dict(PRICE_ONLY_AVAILABILITY)
     data_available["codal_metadata"] = codal_metadata is not None
+    data_available["market_extended"] = (
+        extended is not None
+        and extended.price_52w_high is not None
+        and extended.price_52w_low is not None
+        and extended.avg_volume_30d is not None
+        and extended.volume_today is not None
+    )
 
     return {
         "ticker": quote.code,
         "name_fa": quote.name,
         "name_en": None,
         "data_available": data_available,
-        # Reserved for normalized report-derived fundamentals. Do not populate
-        # this from metadata alone.
         "codal": None,
         "codal_metadata": codal_metadata,
         "market": {
@@ -62,14 +65,18 @@ def build_company_from_quote(quote: LiveQuote) -> dict:
             "yesterday_price": quote.yesterday_price,
             "change": quote.change,
             "change_percent": quote.change_percent,
-            # not available from the live watchlist yet -- see PROJECT_STATUS.md
-            "price_52w_high": None,
-            "price_52w_low": None,
+            "price_52w_high": extended.price_52w_high if extended else None,
+            "price_52w_low": extended.price_52w_low if extended else None,
+            "day_high": extended.day_high if extended else None,
+            "day_low": extended.day_low if extended else None,
+            "volume_today": extended.volume_today if extended else None,
+            "trade_value_today": extended.trade_value_today if extended else None,
+            "trade_count_today": extended.trade_count_today if extended else None,
+            "avg_volume_30d": extended.avg_volume_30d if extended else None,
+            # Valuation inputs are still unavailable until verified sources are connected.
             "pe": None,
             "sector_avg_pe": None,
             "market_cap_bn": None,
-            "avg_volume_30d": None,
-            "volume_today": None,
         },
     }
 
