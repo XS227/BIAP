@@ -18,8 +18,13 @@ review, and production risk controls exist.
 Order intents and audit events are persisted in SQLite (BIAP_AUDIT_DB). A
 separate risk policy is evaluated before an intent is created.
 
-Currently backed by MOCK_COMPANIES only (see data_sample.py) — CODAL/TSETMC
-ingestion is not wired in yet (see PROJECT_STATUS.md, "Open blockers").
+Real TSETMC codes now resolve against the existing BIAP mobile backend's
+live watchlist (https://biap.dadashi.no/api/stock/watchlist -- step 1/2 of
+the priority order agreed in Discussion #1), price identity only. CODAL
+fundamentals and extended market data (52-week range, P/E, volume) are
+still not connected -- see PROJECT_STATUS.md, "Open blockers". A
+recommendation built from live data says so explicitly via `dataSource`
+and `dataAvailability` rather than pretending to have data it doesn't.
 
 Run locally:
     pip install -r requirements.txt
@@ -34,15 +39,17 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from audit_store import AuditStore
+from company_builder import availability, build_company_from_quote
 from data_sample import SAMPLE_COMPANY
 from execution import ExecutionPolicyError, build_order_intent, submit_order_intent
 from kiasha import decide
+from market_data import MarketDataUnavailable, base_url as market_base_url, find_quote
 from risk import evaluate_order_risk, policy_snapshot
 
 app = FastAPI(title="BIAP Kiasha recommendation service")
 
-# Keyed by ticker. Only one mock entry until real CODAL/TSETMC ingestion
-# replaces this with a live lookup.
+# Keyed by ticker. Fictitious data for local testing -- real codes fall
+# through to the live watchlist lookup below.
 MOCK_COMPANIES = {SAMPLE_COMPANY["ticker"]: SAMPLE_COMPANY}
 AUDIT = AuditStore()
 
@@ -63,8 +70,14 @@ class OrderSubmitRequest(BaseModel):
 def health():
     return {
         "status": "ok",
-        "mode": "mock",
-        "companies": list(MOCK_COMPANIES),
+        "mode": "mock+live",
+        "mockCompanies": list(MOCK_COMPANIES),
+        "liveMarketData": {
+            "base": market_base_url(),
+            "fields": ["lastPrice", "closingPrice", "yesterdayPrice", "change", "changePercent"],
+            "codalConnected": False,
+            "extendedMarketDataConnected": False,
+        },
         "execution": {
             "paper": True,
             "approval": True,
@@ -76,11 +89,25 @@ def health():
     }
 
 
-def _company_or_404(code: str):
-    company = MOCK_COMPANIES.get(code.upper())
-    if company is None:
-        raise HTTPException(status_code=404, detail=f"no data for {code}")
-    return company
+def _company_or_404(code: str) -> tuple[dict, str]:
+    """Resolve a stock code to a company record.
+
+    Checks the local mock table first (unchanged fictitious demo data),
+    then falls back to a live lookup against the existing BIAP backend.
+    Returns (company, dataSource) where dataSource is "mock" or "live".
+    """
+    mock = MOCK_COMPANIES.get(code.upper())
+    if mock is not None:
+        return mock, "mock"
+
+    try:
+        quote = find_quote(code)
+    except MarketDataUnavailable:
+        quote = None
+    if quote is not None:
+        return build_company_from_quote(quote), "live"
+
+    raise HTTPException(status_code=404, detail=f"no data for {code}")
 
 
 def _reference_price(company: dict) -> Optional[float]:
@@ -94,13 +121,23 @@ def _reference_price(company: dict) -> Optional[float]:
 
 @app.get("/stock/recommendation/{code}")
 def recommendation(code: str):
-    company = _company_or_404(code)
+    company, source = _company_or_404(code)
     decision = decide(company)
+    market = company.get("market") or {}
     return {
         "code": company["ticker"],
+        "name": company.get("name_fa"),
         "call": decision.call,
         "score": decision.weighted_score,
         "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "dataSource": source,
+        "dataAvailability": availability(company),
+        "livePrice": {
+            "lastPrice": market.get("last_price"),
+            "closingPrice": market.get("closing_price"),
+            "yesterdayPrice": market.get("yesterday_price"),
+            "changePercent": market.get("change_percent"),
+        } if source == "live" else None,
         "breakdown": decision.breakdown,
     }
 
@@ -116,7 +153,7 @@ def risk_status():
 
 @app.post("/orders/preview")
 def preview_order(req: OrderPreviewRequest):
-    company = _company_or_404(req.code)
+    company, _source = _company_or_404(req.code)
     decision = decide(company)
     reference_price = _reference_price(company)
 
