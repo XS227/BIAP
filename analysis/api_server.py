@@ -3,6 +3,7 @@ HTTP wrapper around the Kiasha decision and guarded execution layers.
 
 Additive endpoints intended to sit alongside the existing BIAP backend:
 
+  GET  /stock/symbols
   GET  /stock/recommendation/{code}
   POST /orders/preview
   POST /orders/submit
@@ -19,8 +20,11 @@ Order intents and audit events are persisted in SQLite (BIAP_AUDIT_DB). A
 separate risk policy is evaluated before an intent is created.
 
 Real TSETMC codes resolve against the existing BIAP mobile backend's live
-watchlist. Live companies are also enriched with verified CODAL company
-metadata + financial-year history from search.codal.ir when available.
+watchlist. The complete symbol universe is fetched separately from TSETMC so
+BIAP is not limited to the three-symbol mobile watchlist. Live companies are
+also enriched with verified CODAL company metadata + financial-year history
+from search.codal.ir when available.
+
 Report-derived CODAL fundamentals and extended market data (52-week range,
 P/E, volume) are still not connected; the API distinguishes metadata from
 fundamental availability rather than pretending metadata is analysis data.
@@ -41,6 +45,7 @@ from execution import ExecutionPolicyError, build_order_intent, submit_order_int
 from kiasha import decide
 from market_data import MarketDataUnavailable, base_url as market_base_url, find_quote
 from risk import evaluate_order_risk, policy_snapshot
+from symbol_universe import SymbolUniverseUnavailable, query_symbols
 
 app = FastAPI(title="BIAP Kiasha recommendation service")
 
@@ -70,6 +75,11 @@ def health():
             "base": market_base_url(),
             "fields": ["lastPrice", "closingPrice", "yesterdayPrice", "change", "changePercent"],
             "extendedMarketDataConnected": False,
+        },
+        "symbolUniverse": {
+            "source": "tsetmc",
+            "markets": ["TSE", "IFB", "IFB_BASE"],
+            "watchlistIndependent": True,
         },
         "codal": {
             "base": codal_base_url(),
@@ -109,6 +119,26 @@ def _reference_price(company: dict) -> Optional[float]:
     except (TypeError, ValueError):
         return None
     return price if price > 0 else None
+
+
+@app.get("/stock/symbols")
+def symbols(
+    market: Optional[str] = Query(default=None, description="TSE, IFB or IFB_BASE"),
+    q: Optional[str] = Query(default=None, max_length=64),
+    limit: int = Query(default=5000, ge=1, le=10000),
+):
+    if market and market.upper() not in {"TSE", "IFB", "IFB_BASE"}:
+        raise HTTPException(status_code=400, detail="market must be TSE, IFB or IFB_BASE")
+    try:
+        items = query_symbols(market=market, q=q, limit=limit)
+    except SymbolUniverseUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {
+        "count": len(items),
+        "source": "tsetmc",
+        "markets": ["TSE", "IFB", "IFB_BASE"],
+        "items": [item.to_dict() for item in items],
+    }
 
 
 @app.get("/stock/recommendation/{code}")
