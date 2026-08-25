@@ -107,15 +107,29 @@ def risk_agent(company: dict) -> AgentVote:
         codal = company["codal"]
         confidence = 0.45
         guidance_note = codal.get("guidance_note") or ""
+        audit_opinion = codal.get("audit_opinion")
+        related_party_flags = codal.get("related_party_flags")
+
         if "cost pressure" in guidance_note:
             vote -= 0.3
             reasons.append("management flagged cost pressure")
-        related_party_flags = codal.get("related_party_flags")
+
+        if audit_opinion is not None:
+            confidence = max(confidence, 0.55)
+            if audit_opinion == "unqualified":
+                reasons.append("audit opinion unqualified")
+            else:
+                vote -= 0.4
+                reasons.append(f"audit opinion: {audit_opinion}")
+
         if related_party_flags is not None and related_party_flags > 0:
             vote -= 0.3 * related_party_flags
             reasons.append(f"{related_party_flags} related-party flag(s)")
-        if related_party_flags is None and not guidance_note:
-            reasons.append("CODAL financials connected; audit/related-party parser not yet connected")
+        elif related_party_flags is None:
+            reasons.append("related-party parser not yet connected")
+
+        if audit_opinion is None and not guidance_note and related_party_flags is None:
+            reasons.append("CODAL financials connected; audit opinion unavailable")
     else:
         reasons.append("no CODAL fundamentals connected yet")
 
