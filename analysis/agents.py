@@ -49,14 +49,25 @@ def fundamental_agent(company: dict) -> AgentVote:
     if net_margin is not None and net_margin_prev is not None:
         quantitative_signals += 1
         margin_delta = net_margin - net_margin_prev
-        if margin_delta > 0:
-            vote += 0.3
-            reasons.append(f"margin improving ({margin_delta:+.1f}pp)")
-        elif margin_delta < 0:
-            vote -= 0.2
-            reasons.append(f"margin declining ({margin_delta:+.1f}pp)")
+
+        if net_margin < 0:
+            vote -= 0.4
+            reasons.append(f"net margin negative ({net_margin:.1f}%)")
+            if margin_delta > 0:
+                vote += 0.1
+                reasons.append(f"loss margin improving ({margin_delta:+.1f}pp)")
+            elif margin_delta < 0:
+                vote -= 0.2
+                reasons.append(f"loss margin worsening ({margin_delta:+.1f}pp)")
         else:
-            reasons.append("net margin unchanged")
+            if margin_delta > 0:
+                vote += 0.3
+                reasons.append(f"margin improving ({margin_delta:+.1f}pp)")
+            elif margin_delta < 0:
+                vote -= 0.2
+                reasons.append(f"margin declining ({margin_delta:+.1f}pp)")
+            else:
+                reasons.append("net margin unchanged")
 
     if audit_opinion is not None and audit_opinion != "unqualified":
         vote -= 0.5
