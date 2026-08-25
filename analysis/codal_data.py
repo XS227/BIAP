@@ -6,10 +6,11 @@ Verified sources on the BIAP production VPS:
 - GET /api/search/v1/financialYears?Symbol=<symbol>
 - GET /api/search/v2/q?... for filing discovery
 
-CODAL's v2 search endpoint was live-verified for فولاد with Length=12. In
-practice smaller Length values can return an empty result even when filings
-exist, so discovery always requests the verified 12-row page and slices the
-result locally to the caller's requested limit.
+CODAL's v2 search endpoint was live-verified across multiple industries
+(steel, petrochemical, auto, detergent, cement, food) with Length=12.
+Financial-statement discovery is filtered with LetterType=6 and Childs=false
+so BIAP selects the issuer's own financial reports instead of assembly notices
+or subsidiary filings.
 
 This adapter never fabricates fundamentals. It exposes verified metadata and
 raw filing-discovery metadata only. `codal` fundamentals remain unavailable
@@ -34,6 +35,7 @@ _COMPANIES_TTL = 6 * 60 * 60
 _YEARS_TTL = 60 * 60
 _FILINGS_TTL = 5 * 60
 _CODAL_PAGE_LENGTH = 12
+_FINANCIAL_LETTER_TYPE = 6
 
 
 class CodalDataUnavailable(RuntimeError):
@@ -63,6 +65,7 @@ class CodalMetadata:
     company_id: Optional[str]
     financial_years: list[str]
     latest_filings: list[dict]
+    latest_financial_filings: list[dict]
     source: str = "search.codal.ir"
 
     def to_dict(self) -> dict:
@@ -72,6 +75,7 @@ class CodalMetadata:
 _companies_cache: tuple[float, list[dict[str, Any]]] | None = None
 _years_cache: dict[str, tuple[float, list[str]]] = {}
 _filings_cache: dict[str, tuple[float, list[CodalFiling]]] = {}
+_financial_filings_cache: dict[str, tuple[float, list[CodalFiling]]] = {}
 
 
 def base_url() -> str:
@@ -176,12 +180,7 @@ def _search_payload(symbol: str, params: dict[str, Any]) -> list[CodalFiling]:
 
 
 def latest_filings(symbol: str, limit: int = 5) -> list[CodalFiling]:
-    """Return recent CODAL filings using the live-verified query shape.
-
-    CODAL filing discovery always requests Length=12, the exact page size
-    verified on production. Results are then sliced locally to `limit`.
-    Empty results are valid and are never converted into synthetic data.
-    """
+    """Return recent CODAL filings using the live-verified query shape."""
     wanted = symbol.strip()
     if not wanted:
         return []
@@ -233,16 +232,75 @@ def latest_filings(symbol: str, limit: int = 5) -> list[CodalFiling]:
     return filings[:limit]
 
 
+def latest_financial_filings(symbol: str, limit: int = 3) -> list[CodalFiling]:
+    """Return the issuer's own financial-statement filings.
+
+    Live-verified across multiple Tehran-market industries. LetterType=6
+    selects financial statements, while Childs=false excludes subsidiaries.
+    We intentionally return raw CODAL filing metadata only; parsing numbers is
+    a separate step so missing or inaccessible report payloads cannot become
+    fabricated fundamentals.
+    """
+    wanted = symbol.strip()
+    if not wanted:
+        return []
+    limit = max(1, min(int(limit), _CODAL_PAGE_LENGTH))
+
+    now = time.time()
+    cached = _financial_filings_cache.get(wanted)
+    if cached and now - cached[0] < _FILINGS_TTL:
+        return cached[1][:limit]
+
+    attempts = [
+        {
+            "LetterType": _FINANCIAL_LETTER_TYPE,
+            "PageNumber": 1,
+            "Length": _CODAL_PAGE_LENGTH,
+            "CompanyState": 0,
+            "CompanyType": -1,
+            "Mains": "true",
+            "Childs": "false",
+            "Publisher": "false",
+            "search": "true",
+        },
+        {
+            "LetterType": _FINANCIAL_LETTER_TYPE,
+            "PageNumber": 1,
+            "Length": _CODAL_PAGE_LENGTH,
+            "CompanyState": -1,
+            "CompanyType": -1,
+            "Mains": "true",
+            "Childs": "false",
+            "Publisher": "false",
+            "search": "true",
+        },
+    ]
+
+    filings: list[CodalFiling] = []
+    for params in attempts:
+        try:
+            filings = _search_payload(wanted, params)
+        except CodalDataUnavailable:
+            continue
+        if filings:
+            break
+
+    _financial_filings_cache[wanted] = (now, filings)
+    return filings[:limit]
+
+
 def metadata_for_symbol(symbol: str) -> Optional[CodalMetadata]:
     company = find_company(symbol)
     if company is None:
         return None
     years = financial_years(symbol)
     filings = latest_filings(symbol, limit=5)
+    financial_filings = latest_financial_filings(symbol, limit=3)
     return CodalMetadata(
         symbol=symbol,
         company_name=(str(company.get("n")).strip() if company.get("n") else None),
         company_id=(str(company.get("i")).strip() if company.get("i") else None),
         financial_years=years,
         latest_filings=[item.to_dict() for item in filings],
+        latest_financial_filings=[item.to_dict() for item in financial_filings],
     )
