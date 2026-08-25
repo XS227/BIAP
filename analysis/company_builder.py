@@ -4,32 +4,57 @@ Builds a normalized company record for the Kiasha agent team.
 Two sources feed this shape:
   - the legacy full mock schema in data_sample.py (unchanged, both `codal`
     and `market` fully populated -- fictitious data for local testing);
-  - a live market_data.LiveQuote from the existing BIAP backend, which only
-    carries price identity.
+  - a live market_data.LiveQuote from the existing BIAP backend.
 
-Real fundamentals (CODAL) and extended market data (52-week range, P/E,
-volume) are not connected yet -- step 3 of the agreed priority order in
-GitHub Discussion #1. A record built from a live quote marks that
-explicitly via `data_available` rather than inventing numbers. See
-agents.py for how each agent responds to missing data.
+Live companies are now also enriched with read-only CODAL metadata when the
+symbol can be resolved on search.codal.ir. This is intentionally separate
+from CODAL fundamentals: company identity + financial-year history being
+available does NOT mean revenue/margin/audit metrics have been parsed yet.
+Agents therefore continue to treat CODAL fundamentals as unavailable until
+real report values are normalized.
 """
 
 from __future__ import annotations
 
+from codal_data import CodalDataUnavailable, metadata_for_symbol
 from market_data import LiveQuote
 
-FULL_AVAILABILITY = {"codal": True, "market_extended": True}
-PRICE_ONLY_AVAILABILITY = {"codal": False, "market_extended": False}
+FULL_AVAILABILITY = {
+    "codal": True,
+    "codal_metadata": True,
+    "market_extended": True,
+}
+PRICE_ONLY_AVAILABILITY = {
+    "codal": False,
+    "codal_metadata": False,
+    "market_extended": False,
+}
 
 
 def build_company_from_quote(quote: LiveQuote) -> dict:
     price = quote.last_price if quote.last_price is not None else quote.closing_price
+
+    codal_metadata = None
+    try:
+        meta = metadata_for_symbol(quote.name)
+        if meta is not None:
+            codal_metadata = meta.to_dict()
+    except CodalDataUnavailable:
+        # CODAL enrichment is best-effort and must never break live market data.
+        codal_metadata = None
+
+    data_available = dict(PRICE_ONLY_AVAILABILITY)
+    data_available["codal_metadata"] = codal_metadata is not None
+
     return {
         "ticker": quote.code,
         "name_fa": quote.name,
         "name_en": None,
-        "data_available": dict(PRICE_ONLY_AVAILABILITY),
+        "data_available": data_available,
+        # Reserved for normalized report-derived fundamentals. Do not populate
+        # this from metadata alone.
         "codal": None,
+        "codal_metadata": codal_metadata,
         "market": {
             "price": price,
             "last_price": quote.last_price,
