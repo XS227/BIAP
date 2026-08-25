@@ -10,9 +10,9 @@ The full TSETMC symbol universe is used only to resolve the real Persian symbol
 and company name for the direct-price fallback. This is important because CODAL
 enrichment is keyed by symbol, not by numeric TSETMC code.
 
-Only verified price identity is exposed here. Extended market data (52-week
-range, P/E, volume) and CODAL fundamentals remain separate and unavailable
-until their own verified adapters provide them. No values are fabricated.
+Extended market metrics are fetched separately from verified TSETMC current and
+daily-history endpoints. Missing values remain unavailable; no values are
+fabricated.
 """
 
 from __future__ import annotations
@@ -29,7 +29,9 @@ from symbol_universe import SymbolUniverseUnavailable, fetch_symbol_universe
 
 DEFAULT_BASE_URL = "https://biap.dadashi.no/api"
 TSETMC_CLOSING_PRICE_BASE = "https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceInfo"
+TSETMC_DAILY_HISTORY_BASE = "https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList"
 CACHE_TTL_SECONDS = 30.0
+EXTENDED_CACHE_TTL_SECONDS = 300.0
 
 
 class MarketDataUnavailable(RuntimeError):
@@ -45,6 +47,30 @@ class LiveQuote:
     yesterday_price: Optional[float]
     change: Optional[float]
     change_percent: Optional[float]
+
+
+@dataclass(frozen=True)
+class ExtendedMarketData:
+    day_low: Optional[float]
+    day_high: Optional[float]
+    volume_today: Optional[float]
+    trade_value_today: Optional[float]
+    trade_count_today: Optional[float]
+    avg_volume_30d: Optional[float]
+    price_52w_high: Optional[float]
+    price_52w_low: Optional[float]
+
+    def to_dict(self) -> dict:
+        return {
+            "day_low": self.day_low,
+            "day_high": self.day_high,
+            "volume_today": self.volume_today,
+            "trade_value_today": self.trade_value_today,
+            "trade_count_today": self.trade_count_today,
+            "avg_volume_30d": self.avg_volume_30d,
+            "price_52w_high": self.price_52w_high,
+            "price_52w_low": self.price_52w_low,
+        }
 
 
 def base_url() -> str:
@@ -83,6 +109,7 @@ def _parse_quote(raw: dict) -> LiveQuote:
 
 _cache: dict[str, tuple[float, "list[LiveQuote]"]] = {}
 _symbol_name_cache: dict[str, tuple[float, str]] = {}
+_extended_cache: dict[str, tuple[float, ExtendedMarketData]] = {}
 
 
 def fetch_watchlist(*, timeout: float = 8.0, use_cache: bool = True) -> "list[LiveQuote]":
@@ -120,12 +147,7 @@ def fetch_watchlist(*, timeout: float = 8.0, use_cache: bool = True) -> "list[Li
 
 
 def _resolve_symbol_name(code: str, *, timeout: float) -> str:
-    """Resolve the Persian market symbol for a TSETMC instrument code.
-
-    Falling back to the numeric code is safe for price display, but would make
-    CODAL lookup impossible. We therefore resolve against the verified symbol
-    universe whenever possible and cache the result briefly.
-    """
+    """Resolve the Persian market symbol for a TSETMC instrument code."""
     now = time.monotonic()
     cached = _symbol_name_cache.get(code)
     if cached and now - cached[0] < 300.0:
@@ -138,24 +160,27 @@ def _resolve_symbol_name(code: str, *, timeout: float) -> str:
 
     for item in universe:
         if item.code == code:
-            # CODAL searches by ticker symbol (e.g. خودرو), not long company name.
             name = item.symbol or item.name or code
             _symbol_name_cache[code] = (now, name)
             return name
     return code
 
 
-def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuote]:
-    """Fetch one instrument directly from TSETMC by instrument code."""
-    url = f"{TSETMC_CLOSING_PRICE_BASE}/{code}"
+def _read_json(url: str, *, timeout: float) -> dict:
     req = urllib.request.Request(
         url,
         headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"},
     )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        payload = json.loads(resp.read().decode("utf-8"))
+    return payload if isinstance(payload, dict) else {}
 
+
+def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuote]:
+    """Fetch one instrument directly from TSETMC by instrument code."""
+    url = f"{TSETMC_CLOSING_PRICE_BASE}/{code}"
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            payload = json.loads(resp.read().decode("utf-8"))
+        payload = _read_json(url, timeout=timeout)
     except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
         return None
 
@@ -187,6 +212,57 @@ def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuot
         change=change,
         change_percent=change_percent,
     )
+
+
+def fetch_extended_market_data(
+    code: str,
+    *,
+    timeout: float = 12.0,
+    use_cache: bool = True,
+) -> Optional[ExtendedMarketData]:
+    """Fetch verified current trading metrics and ~400 daily TSETMC rows.
+
+    The first 260 trading rows are used as an approximate one-trading-year
+    window for the 52-week high/low. The first 30 rows are used for average
+    traded volume. P/E, EPS and market cap are deliberately not inferred here.
+    """
+    now = time.monotonic()
+    cached = _extended_cache.get(code)
+    if use_cache and cached and now - cached[0] < EXTENDED_CACHE_TTL_SECONDS:
+        return cached[1]
+
+    try:
+        current = _read_json(f"{TSETMC_CLOSING_PRICE_BASE}/{code}", timeout=timeout)
+        history = _read_json(f"{TSETMC_DAILY_HISTORY_BASE}/{code}/400", timeout=timeout)
+    except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
+        return None
+
+    row = current.get("closingPriceInfo")
+    rows = history.get("closingPriceDaily")
+    if not isinstance(row, dict) or not isinstance(rows, list) or not rows:
+        return None
+
+    prices = [
+        _num(x, "pClosing") for x in rows[:260]
+        if isinstance(x, dict) and _num(x, "pClosing") not in (None, 0)
+    ]
+    volumes = [
+        _num(x, "qTotTran5J") for x in rows[:30]
+        if isinstance(x, dict) and _num(x, "qTotTran5J") is not None
+    ]
+
+    result = ExtendedMarketData(
+        day_low=_num(row, "priceMin"),
+        day_high=_num(row, "priceMax"),
+        volume_today=_num(row, "qTotTran5J"),
+        trade_value_today=_num(row, "qTotCap"),
+        trade_count_today=_num(row, "zTotTran"),
+        avg_volume_30d=(sum(volumes) / len(volumes)) if volumes else None,
+        price_52w_high=max(prices) if prices else None,
+        price_52w_low=min(prices) if prices else None,
+    )
+    _extended_cache[code] = (now, result)
+    return result
 
 
 def find_quote(code: str, *, timeout: float = 8.0, use_cache: bool = True) -> Optional[LiveQuote]:
