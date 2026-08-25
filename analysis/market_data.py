@@ -6,13 +6,10 @@ requested instrument is not present there, BIAP falls back to TSETMC's direct
 ClosingPrice endpoint by instrument code so recommendations are not limited to
 the three-symbol mobile watchlist.
 
-The full TSETMC symbol universe is used only to resolve the real Persian symbol
-and company name for the direct-price fallback. This is important because CODAL
-enrichment is keyed by symbol, not by numeric TSETMC code.
-
-Extended market metrics are fetched separately from verified TSETMC current and
-daily-history endpoints. Missing values remain unavailable; no values are
-fabricated.
+The full TSETMC symbol universe is used to resolve the real Persian symbol for
+the direct-price fallback. Extended market metrics and instrument/valuation
+metadata are fetched from verified TSETMC endpoints. Missing values remain
+unavailable; no values are fabricated.
 """
 
 from __future__ import annotations
@@ -30,6 +27,7 @@ from symbol_universe import SymbolUniverseUnavailable, fetch_symbol_universe
 DEFAULT_BASE_URL = "https://biap.dadashi.no/api"
 TSETMC_CLOSING_PRICE_BASE = "https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceInfo"
 TSETMC_DAILY_HISTORY_BASE = "https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList"
+TSETMC_INSTRUMENT_INFO_BASE = "https://cdn.tsetmc.com/api/Instrument/GetInstrumentInfo"
 CACHE_TTL_SECONDS = 30.0
 EXTENDED_CACHE_TTL_SECONDS = 300.0
 
@@ -59,6 +57,17 @@ class ExtendedMarketData:
     avg_volume_30d: Optional[float]
     price_52w_high: Optional[float]
     price_52w_low: Optional[float]
+    estimated_eps: Optional[float]
+    eps_value: Optional[float]
+    pe: Optional[float]
+    sector_pe: Optional[float]
+    shares_outstanding: Optional[float]
+    market_cap: Optional[float]
+    base_volume: Optional[float]
+    sector_code: Optional[str]
+    sector_name: Optional[str]
+    market_flow: Optional[int]
+    market_title: Optional[str]
 
     def to_dict(self) -> dict:
         return {
@@ -70,6 +79,17 @@ class ExtendedMarketData:
             "avg_volume_30d": self.avg_volume_30d,
             "price_52w_high": self.price_52w_high,
             "price_52w_low": self.price_52w_low,
+            "estimated_eps": self.estimated_eps,
+            "eps_value": self.eps_value,
+            "pe": self.pe,
+            "sector_pe": self.sector_pe,
+            "shares_outstanding": self.shares_outstanding,
+            "market_cap": self.market_cap,
+            "base_volume": self.base_volume,
+            "sector_code": self.sector_code,
+            "sector_name": self.sector_name,
+            "market_flow": self.market_flow,
+            "market_title": self.market_title,
         }
 
 
@@ -95,6 +115,15 @@ def _num(raw: dict, key: str) -> Optional[float]:
         return None
 
 
+def _as_float(value) -> Optional[float]:
+    if value in (None, ""):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _parse_quote(raw: dict) -> LiveQuote:
     return LiveQuote(
         code=str(raw.get("code", "")),
@@ -113,10 +142,8 @@ _extended_cache: dict[str, tuple[float, ExtendedMarketData]] = {}
 
 
 def fetch_watchlist(*, timeout: float = 8.0, use_cache: bool = True) -> "list[LiveQuote]":
-    """Fetch the existing live BIAP watchlist."""
     base = base_url()
     now = time.monotonic()
-
     if use_cache:
         cached = _cache.get(base)
         if cached and now - cached[0] < CACHE_TTL_SECONDS:
@@ -125,9 +152,6 @@ def fetch_watchlist(*, timeout: float = 8.0, use_cache: bool = True) -> "list[Li
     req = urllib.request.Request(f"{base}/stock/watchlist", headers=_auth_headers())
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            status = getattr(resp, "status", 200)
-            if status != 200:
-                raise MarketDataUnavailable(f"HTTP {status} from {base}/stock/watchlist")
             body = resp.read()
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         raise MarketDataUnavailable(f"could not reach {base}: {exc}") from exc
@@ -140,24 +164,20 @@ def fetch_watchlist(*, timeout: float = 8.0, use_cache: bool = True) -> "list[Li
     symbols = payload.get("symbols")
     if not isinstance(symbols, list):
         raise MarketDataUnavailable(f"unexpected response shape from {base}: no 'symbols' list")
-
     quotes = [_parse_quote(s) for s in symbols if isinstance(s, dict)]
     _cache[base] = (now, quotes)
     return quotes
 
 
 def _resolve_symbol_name(code: str, *, timeout: float) -> str:
-    """Resolve the Persian market symbol for a TSETMC instrument code."""
     now = time.monotonic()
     cached = _symbol_name_cache.get(code)
     if cached and now - cached[0] < 300.0:
         return cached[1]
-
     try:
         universe = fetch_symbol_universe(timeout=max(timeout, 12.0))
     except SymbolUniverseUnavailable:
         return code
-
     for item in universe:
         if item.code == code:
             name = item.symbol or item.name or code
@@ -167,42 +187,32 @@ def _resolve_symbol_name(code: str, *, timeout: float) -> str:
 
 
 def _read_json(url: str, *, timeout: float) -> dict:
-    req = urllib.request.Request(
-        url,
-        headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"},
-    )
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         payload = json.loads(resp.read().decode("utf-8"))
     return payload if isinstance(payload, dict) else {}
 
 
 def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuote]:
-    """Fetch one instrument directly from TSETMC by instrument code."""
-    url = f"{TSETMC_CLOSING_PRICE_BASE}/{code}"
     try:
-        payload = _read_json(url, timeout=timeout)
+        payload = _read_json(f"{TSETMC_CLOSING_PRICE_BASE}/{code}", timeout=timeout)
     except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
         return None
-
-    row = payload.get("closingPriceInfo") if isinstance(payload, dict) else None
+    row = payload.get("closingPriceInfo")
     if not isinstance(row, dict):
         return None
-
     last_price = _num(row, "pDrCotVal")
     closing_price = _num(row, "pClosing")
     yesterday_price = _num(row, "priceYesterday")
-
     if last_price is None and closing_price is None:
         return None
     if last_price is None:
         last_price = closing_price
-
     change = None
     change_percent = None
     if last_price is not None and yesterday_price not in (None, 0):
         change = last_price - yesterday_price
         change_percent = (change / yesterday_price) * 100.0
-
     return LiveQuote(
         code=str(code),
         name=_resolve_symbol_name(str(code), timeout=timeout),
@@ -214,21 +224,7 @@ def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuot
     )
 
 
-def fetch_extended_market_data(
-    code: str,
-    *,
-    timeout: float = 12.0,
-    use_cache: bool = True,
-) -> Optional[ExtendedMarketData]:
-    """Fetch verified current trading metrics and ~400 daily TSETMC rows.
-
-    The first 260 trading rows are used as an approximate one-trading-year
-    window. The 52-week range is based on each session's actual intraday
-    ``priceMax``/``priceMin`` rather than closing prices, so a current last
-    price cannot legitimately appear above the computed 52-week high merely
-    because it exceeds today's closing price. The first 30 rows are used for
-    average traded volume. P/E, EPS and market cap are deliberately not inferred.
-    """
+def fetch_extended_market_data(code: str, *, timeout: float = 12.0, use_cache: bool = True) -> Optional[ExtendedMarketData]:
     now = time.monotonic()
     cached = _extended_cache.get(code)
     if use_cache and cached and now - cached[0] < EXTENDED_CACHE_TTL_SECONDS:
@@ -237,33 +233,30 @@ def fetch_extended_market_data(
     try:
         current = _read_json(f"{TSETMC_CLOSING_PRICE_BASE}/{code}", timeout=timeout)
         history = _read_json(f"{TSETMC_DAILY_HISTORY_BASE}/{code}/400", timeout=timeout)
+        instrument_payload = _read_json(f"{TSETMC_INSTRUMENT_INFO_BASE}/{code}", timeout=timeout)
     except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
         return None
 
     row = current.get("closingPriceInfo")
     rows = history.get("closingPriceDaily")
+    instrument = instrument_payload.get("instrumentInfo")
     if not isinstance(row, dict) or not isinstance(rows, list) or not rows:
         return None
+    if not isinstance(instrument, dict):
+        instrument = {}
 
     highs: list[float] = []
     lows: list[float] = []
     for item in rows[:260]:
         if not isinstance(item, dict):
             continue
-        high = _num(item, "priceMax")
-        low = _num(item, "priceMin")
-        close = _num(item, "pClosing")
-        if high in (None, 0):
-            high = close
-        if low in (None, 0):
-            low = close
+        high = _num(item, "priceMax") or _num(item, "pClosing")
+        low = _num(item, "priceMin") or _num(item, "pClosing")
         if high not in (None, 0):
             highs.append(high)
         if low not in (None, 0):
             lows.append(low)
 
-    # Ensure the current session's verified intraday extrema are represented
-    # even if the daily-history endpoint lags the live endpoint slightly.
     current_high = _num(row, "priceMax")
     current_low = _num(row, "priceMin")
     if current_high not in (None, 0):
@@ -271,10 +264,30 @@ def fetch_extended_market_data(
     if current_low not in (None, 0):
         lows.append(current_low)
 
-    volumes = [
-        _num(x, "qTotTran5J") for x in rows[:30]
-        if isinstance(x, dict) and _num(x, "qTotTran5J") is not None
-    ]
+    volumes = [_num(x, "qTotTran5J") for x in rows[:30] if isinstance(x, dict) and _num(x, "qTotTran5J") is not None]
+
+    eps_info = instrument.get("eps") if isinstance(instrument.get("eps"), dict) else {}
+    sector = instrument.get("sector") if isinstance(instrument.get("sector"), dict) else {}
+    estimated_eps = _as_float(eps_info.get("estimatedEPS"))
+    eps_value = _as_float(eps_info.get("epsValue"))
+    sector_pe_raw = _as_float(eps_info.get("sectorPE"))
+    sector_pe = sector_pe_raw if sector_pe_raw is not None and sector_pe_raw > 0 else None
+    shares_outstanding = _as_float(instrument.get("zTitad"))
+    base_volume = _as_float(instrument.get("baseVol"))
+    closing_price = _num(row, "pClosing")
+    preferred_eps = eps_value if eps_value is not None else estimated_eps
+    pe = None
+    if preferred_eps is not None and preferred_eps > 0 and closing_price not in (None, 0):
+        pe = closing_price / preferred_eps
+    market_cap = None
+    if shares_outstanding not in (None, 0) and closing_price not in (None, 0):
+        market_cap = closing_price * shares_outstanding
+
+    direct_year_high = _as_float(instrument.get("maxYear"))
+    direct_year_low = _as_float(instrument.get("minYear"))
+    high_52 = direct_year_high if direct_year_high not in (None, 0) else (max(highs) if highs else None)
+    low_52 = direct_year_low if direct_year_low not in (None, 0) else (min(lows) if lows else None)
+    tsetmc_avg_volume = _as_float(instrument.get("qTotTran5JAvg"))
 
     result = ExtendedMarketData(
         day_low=current_low,
@@ -282,16 +295,26 @@ def fetch_extended_market_data(
         volume_today=_num(row, "qTotTran5J"),
         trade_value_today=_num(row, "qTotCap"),
         trade_count_today=_num(row, "zTotTran"),
-        avg_volume_30d=(sum(volumes) / len(volumes)) if volumes else None,
-        price_52w_high=max(highs) if highs else None,
-        price_52w_low=min(lows) if lows else None,
+        avg_volume_30d=tsetmc_avg_volume if tsetmc_avg_volume is not None else ((sum(volumes) / len(volumes)) if volumes else None),
+        price_52w_high=high_52,
+        price_52w_low=low_52,
+        estimated_eps=estimated_eps,
+        eps_value=eps_value,
+        pe=pe,
+        sector_pe=sector_pe,
+        shares_outstanding=shares_outstanding,
+        market_cap=market_cap,
+        base_volume=base_volume,
+        sector_code=str(sector.get("cSecVal", "")).strip() or None,
+        sector_name=str(sector.get("lSecVal", "")).strip() or None,
+        market_flow=int(instrument.get("flow")) if instrument.get("flow") is not None else None,
+        market_title=str(instrument.get("flowTitle", "")).strip() or None,
     )
     _extended_cache[code] = (now, result)
     return result
 
 
 def find_quote(code: str, *, timeout: float = 8.0, use_cache: bool = True) -> Optional[LiveQuote]:
-    """Resolve a quote from BIAP watchlist first, then direct TSETMC fallback."""
     try:
         quotes = fetch_watchlist(timeout=timeout, use_cache=use_cache)
         for q in quotes:
@@ -299,5 +322,4 @@ def find_quote(code: str, *, timeout: float = 8.0, use_cache: bool = True) -> Op
                 return q
     except MarketDataUnavailable:
         pass
-
     return _fetch_tsetmc_quote(code, timeout=timeout)
