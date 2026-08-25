@@ -5,27 +5,25 @@ Verified sources on the BIAP production VPS:
 - GET /api/search/v1/companies
 - GET /api/search/v1/financialYears?Symbol=<symbol>
 - GET /api/search/v2/q?... for filing discovery
+- CODAL's Excel export URL, which currently returns HTML tables for financial statements
 
-CODAL's v2 search endpoint was live-verified across multiple industries
-(steel, petrochemical, auto, detergent, cement, food) with Length=12.
-Financial-statement discovery is filtered with LetterType=6 and Childs=false
-so BIAP selects the issuer's own financial reports instead of assembly notices
-or subsidiary filings.
-
-This adapter never fabricates fundamentals. It exposes verified metadata and
-raw filing-discovery metadata only. `codal` fundamentals remain unavailable
-until report payloads are parsed into explicit revenue/margin/audit fields.
+The adapter never fabricates fundamentals. Report-derived values are exposed only
+when explicit financial-statement rows can be parsed from the issuer's own CODAL
+filing. Missing or ambiguous fields stay unavailable.
 """
 
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from html import unescape
+from html.parser import HTMLParser
 import json
 import os
+import re
 import time
 from typing import Any, Optional
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urljoin
 from urllib.request import Request, urlopen
 
 
@@ -72,10 +70,35 @@ class CodalMetadata:
         return asdict(self)
 
 
+@dataclass(frozen=True)
+class CodalFundamentals:
+    symbol: str
+    revenue_current: float
+    revenue_prev: float
+    net_profit_current: float
+    net_profit_prev: float
+    revenue_yoy_pct: float
+    net_margin_pct: float
+    net_margin_prev_pct: float
+    gross_profit_current: Optional[float] = None
+    gross_profit_prev: Optional[float] = None
+    audit_opinion: Optional[str] = None
+    related_party_flags: Optional[int] = None
+    guidance_note: Optional[str] = None
+    tracing_no: Optional[str] = None
+    report_title: Optional[str] = None
+    report_url: Optional[str] = None
+    source: str = "codal_financial_statement_html"
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
 _companies_cache: tuple[float, list[dict[str, Any]]] | None = None
 _years_cache: dict[str, tuple[float, list[str]]] = {}
 _filings_cache: dict[str, tuple[float, list[CodalFiling]]] = {}
 _financial_filings_cache: dict[str, tuple[float, list[CodalFiling]]] = {}
+_fundamentals_cache: dict[str, tuple[float, Optional[CodalFundamentals]]] = {}
 
 
 def base_url() -> str:
@@ -233,14 +256,7 @@ def latest_filings(symbol: str, limit: int = 5) -> list[CodalFiling]:
 
 
 def latest_financial_filings(symbol: str, limit: int = 3) -> list[CodalFiling]:
-    """Return the issuer's own financial-statement filings.
-
-    Live-verified across multiple Tehran-market industries. LetterType=6
-    selects financial statements, while Childs=false excludes subsidiaries.
-    We intentionally return raw CODAL filing metadata only; parsing numbers is
-    a separate step so missing or inaccessible report payloads cannot become
-    fabricated fundamentals.
-    """
+    """Return the issuer's own financial-statement filings."""
     wanted = symbol.strip()
     if not wanted:
         return []
@@ -287,6 +303,185 @@ def latest_financial_filings(symbol: str, limit: int = 3) -> list[CodalFiling]:
 
     _financial_filings_cache[wanted] = (now, filings)
     return filings[:limit]
+
+
+class _TableRows(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.in_row = False
+        self.in_cell = False
+        self._cell_parts: list[str] = []
+        self._row: list[str] = []
+        self.rows: list[list[str]] = []
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        if tag == "tr":
+            self.in_row = True
+            self._row = []
+        elif tag in ("td", "th") and self.in_row:
+            self.in_cell = True
+            self._cell_parts = []
+
+    def handle_data(self, data: str) -> None:
+        if self.in_cell:
+            self._cell_parts.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in ("td", "th") and self.in_cell:
+            text = " ".join("".join(self._cell_parts).split())
+            self._row.append(unescape(text))
+            self.in_cell = False
+        elif tag == "tr" and self.in_row:
+            if any(cell.strip() for cell in self._row):
+                self.rows.append(self._row)
+            self.in_row = False
+
+
+_PERSIAN_DIGITS = str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789")
+
+
+def _normalize_text(value: str) -> str:
+    return (
+        value.translate(str.maketrans({"ي": "ی", "ك": "ک", "\u200c": " ", "\u200f": " ", "\u200e": " "}))
+        .replace("( ", "(")
+        .replace(" )", ")")
+        .strip()
+    )
+
+
+def _parse_number(value: str) -> Optional[float]:
+    text = _normalize_text(value).translate(_PERSIAN_DIGITS)
+    text = text.replace("٬", "").replace(",", "").replace("٫", ".")
+    text = text.replace("−", "-").replace("–", "-").replace("—", "-")
+    negative = text.startswith("(") and text.endswith(")")
+    if negative:
+        text = text[1:-1]
+    text = re.sub(r"[^0-9.+-]", "", text)
+    if not text or text in {"+", "-", ".", "+.", "-."}:
+        return None
+    try:
+        number = float(text)
+    except ValueError:
+        return None
+    return -number if negative else number
+
+
+def _fetch_filing_html(filing: CodalFiling) -> str:
+    if not filing.excel_url:
+        raise CodalDataUnavailable("CODAL filing has no report payload URL")
+    url = filing.excel_url
+    if not url.lower().startswith(("http://", "https://")):
+        url = urljoin("https://www.codal.ir", url)
+    req = Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 BIAP/1.0",
+            "Accept": "text/html,application/xhtml+xml,application/ms-excel,*/*",
+        },
+        method="GET",
+    )
+    try:
+        with urlopen(req, timeout=max(_TIMEOUT, 20)) as resp:
+            raw = resp.read()
+    except (HTTPError, URLError, TimeoutError, OSError) as exc:
+        raise CodalDataUnavailable(f"CODAL report request failed: {exc}") from exc
+    text = raw.decode("utf-8", errors="ignore")
+    if "<html" not in text.lower() and "<table" not in text.lower():
+        raise CodalDataUnavailable("CODAL report payload is not parseable HTML")
+    return text
+
+
+def _row_values(rows: list[list[str]], aliases: tuple[str, ...]) -> Optional[tuple[float, float]]:
+    wanted = tuple(_normalize_text(alias) for alias in aliases)
+    for row in rows:
+        normalized = [_normalize_text(cell) for cell in row]
+        label_idx = next(
+            (idx for idx, cell in enumerate(normalized) if any(alias in cell for alias in wanted)),
+            None,
+        )
+        if label_idx is None:
+            continue
+        numbers = [_parse_number(cell) for cell in row[label_idx + 1 :]]
+        values = [value for value in numbers if value is not None]
+        if len(values) >= 2:
+            return values[0], values[1]
+    return None
+
+
+def _parse_fundamentals(symbol: str, filing: CodalFiling, report_html: str) -> Optional[CodalFundamentals]:
+    parser = _TableRows()
+    parser.feed(report_html)
+
+    revenue = _row_values(
+        parser.rows,
+        ("درآمدهای عملیاتی", "درآمد عملیاتی", "جمع درآمدهای عملیاتی"),
+    )
+    net_profit = _row_values(
+        parser.rows,
+        ("سود (زیان) خالص", "سود خالص", "زیان خالص"),
+    )
+    gross_profit = _row_values(
+        parser.rows,
+        ("سود (زیان) ناخالص", "سود ناخالص", "زیان ناخالص"),
+    )
+
+    if revenue is None or net_profit is None:
+        return None
+    revenue_current, revenue_prev = revenue
+    net_profit_current, net_profit_prev = net_profit
+    if revenue_current == 0 or revenue_prev == 0:
+        return None
+
+    revenue_yoy_pct = (revenue_current - revenue_prev) / abs(revenue_prev) * 100
+    net_margin_pct = net_profit_current / revenue_current * 100
+    net_margin_prev_pct = net_profit_prev / revenue_prev * 100
+
+    return CodalFundamentals(
+        symbol=symbol,
+        revenue_current=revenue_current,
+        revenue_prev=revenue_prev,
+        net_profit_current=net_profit_current,
+        net_profit_prev=net_profit_prev,
+        gross_profit_current=gross_profit[0] if gross_profit else None,
+        gross_profit_prev=gross_profit[1] if gross_profit else None,
+        revenue_yoy_pct=revenue_yoy_pct,
+        net_margin_pct=net_margin_pct,
+        net_margin_prev_pct=net_margin_prev_pct,
+        tracing_no=filing.tracing_no,
+        report_title=filing.title,
+        report_url=filing.excel_url,
+    )
+
+
+def fundamentals_for_symbol(symbol: str) -> Optional[CodalFundamentals]:
+    """Parse conservative, report-derived fundamentals from CODAL.
+
+    Only revenue and net-profit rows that are explicitly present in the issuer's
+    financial-statement table are used. Audit opinion, related-party flags and
+    guidance remain None until dedicated verified parsers exist.
+    """
+    wanted = symbol.strip()
+    if not wanted:
+        return None
+    now = time.time()
+    cached = _fundamentals_cache.get(wanted)
+    if cached and now - cached[0] < _FILINGS_TTL:
+        return cached[1]
+
+    result: Optional[CodalFundamentals] = None
+    for filing in latest_financial_filings(wanted, limit=3):
+        if not filing.excel_url:
+            continue
+        try:
+            report_html = _fetch_filing_html(filing)
+            result = _parse_fundamentals(wanted, filing, report_html)
+        except CodalDataUnavailable:
+            continue
+        if result is not None:
+            break
+
+    _fundamentals_cache[wanted] = (now, result)
+    return result
 
 
 def metadata_for_symbol(symbol: str) -> Optional[CodalMetadata]:
