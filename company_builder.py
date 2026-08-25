@@ -1,14 +1,14 @@
 """
 Builds a normalized company record for the Kiasha agent team.
 
-Live companies are enriched with read-only CODAL metadata, conservative
-report-derived CODAL fundamentals, and verified TSETMC extended market metrics.
-Missing fields stay unavailable rather than being inferred.
+Live companies are enriched with read-only CODAL metadata and verified TSETMC
+extended market/instrument metrics. Missing fundamentals/valuation metrics stay
+unavailable rather than being inferred.
 """
 
 from __future__ import annotations
 
-from codal_data import CodalDataUnavailable, fundamentals_for_symbol, metadata_for_symbol
+from codal_data import CodalDataUnavailable, metadata_for_symbol
 from market_data import LiveQuote, fetch_extended_market_data
 
 FULL_AVAILABILITY = {
@@ -27,7 +27,6 @@ def build_company_from_quote(quote: LiveQuote) -> dict:
     price = quote.last_price if quote.last_price is not None else quote.closing_price
 
     codal_metadata = None
-    codal_fundamentals = None
     try:
         meta = metadata_for_symbol(quote.name)
         if meta is not None:
@@ -35,17 +34,9 @@ def build_company_from_quote(quote: LiveQuote) -> dict:
     except CodalDataUnavailable:
         codal_metadata = None
 
-    try:
-        fundamentals = fundamentals_for_symbol(quote.name)
-        if fundamentals is not None:
-            codal_fundamentals = fundamentals.to_dict()
-    except CodalDataUnavailable:
-        codal_fundamentals = None
-
     extended = fetch_extended_market_data(quote.code)
 
     data_available = dict(PRICE_ONLY_AVAILABILITY)
-    data_available["codal"] = codal_fundamentals is not None
     data_available["codal_metadata"] = codal_metadata is not None
     data_available["market_extended"] = (
         extended is not None
@@ -60,7 +51,7 @@ def build_company_from_quote(quote: LiveQuote) -> dict:
         "name_fa": quote.name,
         "name_en": None,
         "data_available": data_available,
-        "codal": codal_fundamentals,
+        "codal": None,
         "codal_metadata": codal_metadata,
         "market": {
             "price": price,

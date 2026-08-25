@@ -25,75 +25,24 @@ def fundamental_agent(company: dict) -> AgentVote:
         return AgentVote("fundamental", 0.0, 0.0, "no CODAL fundamentals connected yet")
 
     codal = company["codal"]
-    revenue_yoy = codal.get("revenue_yoy_pct")
-    net_margin = codal.get("net_margin_pct")
-    net_margin_prev = codal.get("net_margin_prev_pct")
-    audit_opinion = codal.get("audit_opinion")
-    related_party_flags = codal.get("related_party_flags")
-
+    margin_delta = codal["net_margin_pct"] - codal["net_margin_prev_pct"]
     vote = 0.0
     reasons = []
-    quantitative_signals = 0
-
-    if revenue_yoy is not None:
-        quantitative_signals += 1
-        if revenue_yoy > 10:
-            vote += 0.4
-            reasons.append(f"revenue +{revenue_yoy:.1f}% YoY")
-        elif revenue_yoy < 0:
-            vote -= 0.3
-            reasons.append(f"revenue {revenue_yoy:.1f}% YoY")
-        else:
-            reasons.append(f"revenue +{revenue_yoy:.1f}% YoY")
-
-    if net_margin is not None and net_margin_prev is not None:
-        quantitative_signals += 1
-        margin_delta = net_margin - net_margin_prev
-
-        if net_margin < 0:
-            vote -= 0.4
-            reasons.append(f"net margin negative ({net_margin:.1f}%)")
-            if margin_delta > 0:
-                vote += 0.1
-                reasons.append(f"loss margin improving ({margin_delta:+.1f}pp)")
-            elif margin_delta < 0:
-                vote -= 0.2
-                reasons.append(f"loss margin worsening ({margin_delta:+.1f}pp)")
-        else:
-            if margin_delta > 0:
-                vote += 0.3
-                reasons.append(f"margin improving ({margin_delta:+.1f}pp)")
-            elif margin_delta < 0:
-                vote -= 0.2
-                reasons.append(f"margin declining ({margin_delta:+.1f}pp)")
-            else:
-                reasons.append("net margin unchanged")
-
-    if audit_opinion is not None and audit_opinion != "unqualified":
-        vote -= 0.5
-        reasons.append(f"audit opinion: {audit_opinion}")
-
-    if related_party_flags is not None and related_party_flags > 0:
-        vote -= min(0.6, 0.3 * related_party_flags)
-        reasons.append(f"{related_party_flags} related-party flag(s)")
-
-    vote = max(-1.0, min(1.0, vote))
-    if quantitative_signals >= 2:
-        confidence = 0.65
-    elif quantitative_signals == 1:
-        confidence = 0.45
+    if codal["revenue_yoy_pct"] > 10:
+        vote += 0.4
+        reasons.append(f"revenue +{codal['revenue_yoy_pct']}% YoY")
+    if margin_delta > 0:
+        vote += 0.3
+        reasons.append(f"margin improving ({margin_delta:+.1f}pp)")
     else:
-        confidence = 0.0
-
-    if audit_opinion is not None or related_party_flags is not None:
-        confidence = min(0.8, confidence + 0.1)
-
-    return AgentVote(
-        "fundamental",
-        vote,
-        confidence,
-        "; ".join(reasons) or "CODAL fundamentals available; no directional signal",
-    )
+        vote -= 0.2
+        reasons.append(f"margin declining ({margin_delta:+.1f}pp)")
+    if codal["audit_opinion"] != "unqualified":
+        vote -= 0.5
+        reasons.append(f"audit opinion: {codal['audit_opinion']}")
+    vote = max(-1.0, min(1.0, vote))
+    confidence = 0.7 if codal["related_party_flags"] == 0 else 0.4
+    return AgentVote("fundamental", vote, confidence, "; ".join(reasons))
 
 
 def risk_agent(company: dict) -> AgentVote:
@@ -105,17 +54,13 @@ def risk_agent(company: dict) -> AgentVote:
 
     if avail["codal"]:
         codal = company["codal"]
-        confidence = 0.45
-        guidance_note = codal.get("guidance_note") or ""
-        if "cost pressure" in guidance_note:
+        confidence = 0.6
+        if "cost pressure" in codal.get("guidance_note", ""):
             vote -= 0.3
             reasons.append("management flagged cost pressure")
-        related_party_flags = codal.get("related_party_flags")
-        if related_party_flags is not None and related_party_flags > 0:
-            vote -= 0.3 * related_party_flags
-            reasons.append(f"{related_party_flags} related-party flag(s)")
-        if related_party_flags is None and not guidance_note:
-            reasons.append("CODAL financials connected; audit/related-party parser not yet connected")
+        if codal["related_party_flags"] > 0:
+            vote -= 0.3 * codal["related_party_flags"]
+            reasons.append(f"{codal['related_party_flags']} related-party flag(s)")
     else:
         reasons.append("no CODAL fundamentals connected yet")
 
