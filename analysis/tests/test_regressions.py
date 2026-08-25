@@ -33,3 +33,30 @@ def test_negative_margin_is_penalized_even_if_improving():
     assert result.vote == 0.1
     assert "net margin negative" in result.reasoning
     assert "loss margin improving" in result.reasoning
+
+
+def test_audit_opinion_unqualified_phrase():
+    from codal_data import _classify_audit_opinion
+
+    text = """
+    به نظر این سازمان، صورتهای مالی یادشده، وضعیت مالی گروه و شرکت
+    را از تمام جنبه های با اهمیت، طبق استانداردهای حسابداری،
+    به نحو منصفانه نشان می دهد.
+    """
+
+    assert _classify_audit_opinion(text) == "unqualified"
+
+
+def test_audit_opinion_ignores_unrelated_exception_text():
+    from codal_data import _classify_audit_opinion
+
+    text = """
+    مبنای اظهارنظر، کافی و مناسب است.
+    به نظر این سازمان، صورتهای مالی یادشده، وضعیت مالی گروه و شرکت را
+    از تمام جنبه های با اهمیت، طبق استانداردهای حسابداری،
+    به نحو منصفانه نشان میدهد.
+    تاکید بر مطالب خاص.
+    موجودی مواد و کالا به استثنای موجودی کالای در راه بررسی شده است.
+    """
+
+    assert _classify_audit_opinion(text) == "unqualified"
