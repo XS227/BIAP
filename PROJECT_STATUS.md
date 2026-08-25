@@ -23,6 +23,52 @@ GET https://biap.dadashi.no/api/stock/recommendation/46348559193224090
 
 This resolves فولاد against live BIAP/TSETMC-derived market data.
 
+## Infrastructure / servers
+
+### Current BIAP production VPS
+
+```text
+Host: 89.42.199.20
+Role: current BIAP production host
+FIN service: biap-fin.service
+FIN listener: 127.0.0.1:8088
+Existing BIAP backend: 127.0.0.1:4000
+```
+
+### New external data server
+
+A new external VPS is available for moving/hosting BIAP data workloads:
+
+```text
+Host: 5.249.252.88
+SSH user: ubuntu
+Role: new external BIAP data/infrastructure server
+Status: available; migration/deployment work still needs to be completed and verified
+```
+
+**Security:** passwords, tokens, API keys and other credentials must never be
+committed to this repository or written into `PROJECT_STATUS.md`. Operators/agents
+must obtain credentials from the authorized secret channel and store runtime
+secrets in environment variables or an appropriate secret store.
+
+### Intended migration direction
+
+The new server should be used to separate data-heavy/external-source workloads
+from the current public BIAP application host where practical. The migration must
+be incremental and reversible:
+
+1. inventory the data collectors, caches, databases and source adapters currently
+   running on `89.42.199.20`;
+2. deploy the required runtime on `5.249.252.88` without disabling production;
+3. move or replicate data ingestion/storage first;
+4. verify TSETMC/CODAL connectivity and data freshness on the new host;
+5. expose only the minimum private/internal API required by BIAP;
+6. switch BIAP to the new data service only after health checks and comparison tests pass;
+7. keep rollback to the current production path available until the new path is stable.
+
+Do not move authentication, public routing or production state blindly. Record
+exactly what was migrated and what still remains on the original VPS.
+
 ## Current data pipeline
 
 ```text
@@ -49,6 +95,25 @@ It provides live price identity only: last price, closing price, yesterday
 price, change and change percent. It intentionally does **not** invent P/E,
 volume or 52-week values that are absent from the existing endpoint.
 
+A TSETMC symbol-universe path has also been added so BIAP can work with a much
+broader set of Tehran Stock Exchange and Iran Fara Bourse instruments rather
+than only the small mobile watchlist. Current verified universe counts from the
+server were:
+
+```text
+TSE:      770
+IFB:      909
+IFB_BASE: 150
+```
+
+These counts are operational observations, not a permanent contract; upstream
+TSETMC contents can change.
+
+Direct TSETMC quote lookup by instrument code is being used as the fallback for
+symbols that are not present in the original BIAP watchlist. This is required so
+recommendations can be built for companies outside the original three-symbol
+watchlist.
+
 ### CODAL
 
 `analysis/codal_data.py` is a read-only adapter for `search.codal.ir`.
@@ -59,6 +124,12 @@ Verified from the production BIAP VPS:
 - `/api/search/v1/financialYears?Symbol=...` — reachable and verified for فولاد
 - `/api/search/v2/q` — filing discovery is implemented as best-effort with
   conservative fallback queries because CODAL is sensitive to filter combinations
+
+CODAL filing discovery has been tested across multiple industries/symbols, not
+only steel. Examples used during validation include automotive, refining,
+petrochemical, food and other listed companies. The system must remain
+market/industry agnostic and use the actual symbol universe rather than a
+hard-coded list of sectors.
 
 For فولاد, live recommendation output has already verified:
 
@@ -106,6 +177,21 @@ Live responses include:
 - `codalMetadata`
 - `livePrice`
 - per-agent `breakdown`
+
+## Symbol universe API
+
+The FIN service includes a symbol-universe endpoint intended for discovery across
+TSE/IFB markets:
+
+```text
+GET /stock/symbols
+GET /stock/symbols?market=TSE
+GET /stock/symbols?market=IFB
+GET /stock/symbols?market=IFB_BASE
+```
+
+Agents must use this universe for broad-market coverage instead of assuming the
+original `/stock/watchlist` contains all companies.
 
 ## Guarded execution
 
@@ -156,24 +242,49 @@ Smoke tests:
 curl http://127.0.0.1:8088/health
 curl https://biap.dadashi.no/api/stock/recommendation/46348559193224090
 curl https://biap.dadashi.no/api/stock/watchlist
+curl 'http://127.0.0.1:8088/stock/symbols?limit=10'
 ```
+
+## Agent handoff / self-update protocol
+
+This file is the operational handoff for the next engineering agent. Before
+making changes, the agent should read `PROJECT_STATUS.md` and inspect the current
+repository state instead of relying on an old conversation transcript.
+
+After every meaningful implementation/deployment step, the active agent should:
+
+1. pull/read the latest `main` branch;
+2. make the smallest safe code change and test it locally/on the appropriate host;
+3. record verified behavior, failures and next work in this file;
+4. commit and push both code and `PROJECT_STATUS.md` together when possible;
+5. on `89.42.199.20`, pull and restart `biap-fin` only when production deployment is intended;
+6. for work on `5.249.252.88`, document services, ports, paths and health checks here after they are actually created;
+7. never put passwords/API keys in Git, terminal screenshots, logs or status documentation.
+
+If an observed result differs from this document, the live verified result takes
+precedence and this file must be corrected in the same change.
 
 ## Open work / next build order
 
-1. **CODAL fundamentals:** discover the latest usable financial filings and parse
+1. **New external data server:** inventory the current data workload and prepare
+   `5.249.252.88` as the new BIAP data host; document deployment paths/services
+   and migrate incrementally with rollback.
+2. **Broad-market quote coverage:** finish and verify direct TSETMC quote lookup
+   for symbols from TSE/IFB that are absent from the original BIAP watchlist.
+3. **CODAL fundamentals:** discover the latest usable financial filings and parse
    verified report values into an agent-ready schema such as revenue growth,
    margins, audit opinion and explicit risk/disclosure flags. Never infer missing
    accounting values.
-2. **Extended market data:** add reliable P/E, sector P/E, volume and 52-week
+4. **Extended market data:** add reliable P/E, sector P/E, volume and 52-week
    range sources.
-3. **Authentication + ownership:** bind order/audit endpoints to authenticated users/accounts.
-4. **Idempotency + approval state:** add idempotency keys and explicit signed/owned approval transitions.
-5. **PaperBroker:** move simulated fills behind a broker-adapter interface.
-6. **Risk hardening:** position/exposure checks, realized daily-loss limit,
+5. **Authentication + ownership:** bind order/audit endpoints to authenticated users/accounts.
+6. **Idempotency + approval state:** add idempotency keys and explicit signed/owned approval transitions.
+7. **PaperBroker:** move simulated fills behind a broker-adapter interface.
+8. **Risk hardening:** position/exposure checks, realized daily-loss limit,
    stale-quote and market-session rules.
-7. **Mobile integration:** display recommendation/CODAL availability and paper
+9. **Mobile integration:** display recommendation/CODAL availability and paper
    order preview in the mobile stock-detail experience after UI branch review.
-8. **Real broker research/integration:** only after API access, compliance and
+10. **Real broker research/integration:** only after API access, compliance and
    account authorization are confirmed. AUTO stays disabled until a separate,
    explicit production decision.
 
