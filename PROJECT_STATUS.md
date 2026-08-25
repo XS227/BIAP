@@ -85,7 +85,7 @@ CODAL search/reference APIs ─────> codal_data.py ─┘
 
 ### Live market data
 
-`analysis/market_data.py` reuses the already-running BIAP endpoint:
+`analysis/market_data.py` first reuses the already-running BIAP endpoint:
 
 ```text
 GET https://biap.dadashi.no/api/stock/watchlist
@@ -109,10 +109,24 @@ IFB_BASE: 150
 These counts are operational observations, not a permanent contract; upstream
 TSETMC contents can change.
 
-Direct TSETMC quote lookup by instrument code is being used as the fallback for
-symbols that are not present in the original BIAP watchlist. This is required so
-recommendations can be built for companies outside the original three-symbol
-watchlist.
+Direct TSETMC quote lookup by instrument code is the fallback for symbols that
+are not present in the original BIAP watchlist. The fallback now resolves the
+instrument code through `symbol_universe.py` so `LiveQuote.name` is the Persian
+ticker symbol instead of the numeric TSETMC code. This is important because
+CODAL lookup is symbol-based.
+
+Verified production examples for direct TSETMC quote fallback include:
+
+```text
+خودرو   65883838195688438   last=702     closing=696     yesterday=682
+شپنا    7745894403636165    last=11850   closing=11850   yesterday=11510
+فارس    25244329144808274   last=10450   closing=10430   yesterday=10150
+زاگرس   13235547361447092   last=142500  closing=142900  yesterday=144400
+سفارس   15521712617204216   last=29050   closing=28630   yesterday=28210
+```
+
+This verifies that broad-market live-price coverage is no longer limited to the
+original mobile watchlist.
 
 ### CODAL
 
@@ -131,7 +145,7 @@ petrochemical, food and other listed companies. The system must remain
 market/industry agnostic and use the actual symbol universe rather than a
 hard-coded list of sectors.
 
-For فولاد, live recommendation output has already verified:
+For فولاد, live recommendation output has verified:
 
 ```json
 "dataAvailability": {
@@ -141,9 +155,18 @@ For فولاد, live recommendation output has already verified:
 }
 ```
 
-`codalMetadata` includes real symbol/company identity and financial-year history.
-The adapter now also attempts to attach normalized metadata for the latest CODAL
-filings when the v2 search endpoint returns rows.
+After deploying symbol resolution for direct-TSETMC fallback, خودرو was also
+verified in production with:
+
+```text
+NAME: خودرو
+AVAILABILITY: {'codal': False, 'codal_metadata': True, 'market_extended': False}
+CODAL META: True
+```
+
+So the code-to-symbol-to-CODAL metadata path works beyond the original watchlist.
+`codalMetadata` is real reference/report metadata; it is not yet normalized
+fundamental accounting data.
 
 **Important:** CODAL metadata/report discovery is not the same as normalized
 fundamentals. `codal` remains `false` until actual report values are parsed into
@@ -158,9 +181,9 @@ The four analysis agents are designed to degrade safely:
 - forecast agent: neutral / 0 confidence while volume and 52-week range are missing
 - comparison agent: neutral / 0 confidence while P/E/sector P/E are missing
 
-Therefore a price-only live company can correctly return `HOLD` with score `0.0`.
-This is expected, not an error. The risk layer has also been verified to reject a
-BUY attempt when the recommendation score is below its configured threshold.
+Therefore a price-only or metadata-only company can correctly return `HOLD` with
+score `0.0`. This is expected, not an error. The risk layer has also been verified
+to reject a BUY attempt when the recommendation score is below its configured threshold.
 
 ## Recommendation API
 
@@ -241,6 +264,7 @@ Smoke tests:
 ```bash
 curl http://127.0.0.1:8088/health
 curl https://biap.dadashi.no/api/stock/recommendation/46348559193224090
+curl https://biap.dadashi.no/api/stock/recommendation/65883838195688438
 curl https://biap.dadashi.no/api/stock/watchlist
 curl 'http://127.0.0.1:8088/stock/symbols?limit=10'
 ```
@@ -269,14 +293,14 @@ precedence and this file must be corrected in the same change.
 1. **New external data server:** inventory the current data workload and prepare
    `5.249.252.88` as the new BIAP data host; document deployment paths/services
    and migrate incrementally with rollback.
-2. **Broad-market quote coverage:** finish and verify direct TSETMC quote lookup
-   for symbols from TSE/IFB that are absent from the original BIAP watchlist.
-3. **CODAL fundamentals:** discover the latest usable financial filings and parse
-   verified report values into an agent-ready schema such as revenue growth,
-   margins, audit opinion and explicit risk/disclosure flags. Never infer missing
-   accounting values.
-4. **Extended market data:** add reliable P/E, sector P/E, volume and 52-week
+2. **CODAL fundamentals:** parse verified financial-report values into an
+   agent-ready schema such as revenue growth, margins, audit opinion and explicit
+   risk/disclosure flags. Never infer missing accounting values.
+3. **Extended market data:** add reliable P/E, sector P/E, volume and 52-week
    range sources.
+4. **Broad-market regression tests:** continuously verify representative TSE,
+   IFB and IFB_BASE symbols so future changes do not break direct quote or symbol
+   resolution behavior.
 5. **Authentication + ownership:** bind order/audit endpoints to authenticated users/accounts.
 6. **Idempotency + approval state:** add idempotency keys and explicit signed/owned approval transitions.
 7. **PaperBroker:** move simulated fills behind a broker-adapter interface.
