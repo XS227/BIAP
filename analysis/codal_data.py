@@ -392,11 +392,20 @@ def _fetch_filing_html(filing: CodalFiling) -> str:
 
 
 def _row_values(rows: list[list[str]], aliases: tuple[str, ...]) -> Optional[tuple[float, float]]:
-    wanted = tuple(_normalize_text(alias) for alias in aliases)
+    def canonical_label(value: str) -> str:
+        return re.sub(r"\s+", "", _normalize_text(value))
+
+    wanted = {canonical_label(alias) for alias in aliases}
     for row in rows:
+        if not row:
+            continue
         normalized = [_normalize_text(cell) for cell in row]
         label_idx = next(
-            (idx for idx, cell in enumerate(normalized) if any(alias in cell for alias in wanted)),
+            (
+                idx
+                for idx, cell in enumerate(normalized)
+                if canonical_label(cell) in wanted
+            ),
             None,
         )
         if label_idx is None:
