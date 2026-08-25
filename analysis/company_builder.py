@@ -2,9 +2,9 @@
 Builds a normalized company record for the Kiasha agent team.
 
 Live companies are enriched with read-only CODAL metadata, conservative
-report-derived CODAL fundamentals, verified audit opinions when available,
-and verified TSETMC extended market metrics. Missing fields stay unavailable
-rather than being inferred.
+report-derived CODAL fundamentals, verified audit opinions and related-party
+risk flags when available, and verified TSETMC extended market metrics. Missing
+fields stay unavailable rather than being inferred.
 """
 
 from __future__ import annotations
@@ -19,6 +19,7 @@ from codal_data import (
     metadata_for_symbol,
 )
 from market_data import LiveQuote, fetch_extended_market_data
+from related_party import related_party_flags_from_pdf
 
 FULL_AVAILABILITY = {
     "codal": True,
@@ -32,9 +33,11 @@ PRICE_ONLY_AVAILABILITY = {
 }
 
 
-def _enrich_audit_opinion(symbol: str, fundamentals):
-    """Attach a verified audit opinion without fabricating unavailable data."""
-    if fundamentals is None or fundamentals.audit_opinion is not None:
+def _enrich_codal_risk_fields(symbol: str, fundamentals):
+    """Attach verified audit and related-party fields without fabricating data."""
+    if fundamentals is None:
+        return None
+    if fundamentals.audit_opinion is not None and fundamentals.related_party_flags is not None:
         return fundamentals
 
     try:
@@ -42,16 +45,31 @@ def _enrich_audit_opinion(symbol: str, fundamentals):
     except CodalDataUnavailable:
         return fundamentals
 
+    result = fundamentals
     for filing in filings:
         title = filing.title or ""
         if "حسابرسی شده" not in title or "حسابرسی نشده" in title:
             continue
 
-        opinion = _audit_opinion_from_pdf(filing)
-        if opinion is not None:
-            return replace(fundamentals, audit_opinion=opinion)
+        audit_opinion = result.audit_opinion
+        related_party_flags = result.related_party_flags
 
-    return fundamentals
+        if audit_opinion is None:
+            audit_opinion = _audit_opinion_from_pdf(filing)
+        if related_party_flags is None:
+            related_party_flags = related_party_flags_from_pdf(filing)
+
+        if audit_opinion is not None or related_party_flags is not None:
+            result = replace(
+                result,
+                audit_opinion=audit_opinion,
+                related_party_flags=related_party_flags,
+            )
+
+        if result.audit_opinion is not None and result.related_party_flags is not None:
+            break
+
+    return result
 
 
 def build_company_from_quote(quote: LiveQuote) -> dict:
@@ -68,7 +86,7 @@ def build_company_from_quote(quote: LiveQuote) -> dict:
 
     try:
         fundamentals = fundamentals_for_symbol(quote.name)
-        fundamentals = _enrich_audit_opinion(quote.name, fundamentals)
+        fundamentals = _enrich_codal_risk_fields(quote.name, fundamentals)
         if fundamentals is not None:
             codal_fundamentals = fundamentals.to_dict()
     except CodalDataUnavailable:
