@@ -1,5 +1,6 @@
 from agents import fundamental_agent
 from codal_data import _row_values
+from related_party import _related_party_flags_from_text
 
 
 def test_exact_net_profit_row_matching():
@@ -60,3 +61,27 @@ def test_audit_opinion_ignores_unrelated_exception_text():
     """
 
     assert _classify_audit_opinion(text) == "unqualified"
+
+
+def test_related_party_parser_returns_none_without_context():
+    text = "صورتهای مالی طبق استانداردهای حسابداری تهیه شده است."
+
+    assert _related_party_flags_from_text(text) is None
+
+
+def test_related_party_routine_disclosure_is_not_a_flag():
+    text = """
+    معاملات با اشخاص وابسته در یادداشت های توضیحی صورتهای مالی افشا شده است.
+    مانده حسابهای اشخاص وابسته نیز در صورتهای مالی ارائه شده است.
+    """
+
+    assert _related_party_flags_from_text(text) == 0
+
+
+def test_related_party_explicit_noncompliance_is_flagged():
+    text = """
+    در بررسی معاملات با اشخاص وابسته مشخص شد ماده 129 قانون تجارت رعایت نشده
+    و بخشی از معاملات اشخاص وابسته افشا نشده است.
+    """
+
+    assert _related_party_flags_from_text(text) == 2
