@@ -4,9 +4,10 @@ Verified sources on the BIAP production VPS:
 
 - GET /api/search/v1/companies
 - GET /api/search/v1/financialYears?Symbol=<symbol>
-- GET /api/search/v2/q?... for filing discovery (best-effort; CODAL is
-  sensitive to filter combinations and can legitimately return zero rows)
+- GET /api/search/v2/q?... for filing discovery
 
+CODAL's v2 search endpoint accepts at most 12 rows per request. The query
+shape below was verified live from the BIAP VPS against the فولاد symbol.
 This adapter never fabricates fundamentals. It exposes verified metadata and
 raw filing-discovery metadata only. `codal` fundamentals remain unavailable
 until report payloads are parsed into explicit revenue/margin/audit fields.
@@ -29,6 +30,7 @@ _TIMEOUT = 8
 _COMPANIES_TTL = 6 * 60 * 60
 _YEARS_TTL = 60 * 60
 _FILINGS_TTL = 5 * 60
+_CODAL_MAX_LENGTH = 12
 
 
 class CodalDataUnavailable(RuntimeError):
@@ -45,6 +47,7 @@ class CodalFiling:
     url: Optional[str]
     pdf_url: Optional[str]
     excel_url: Optional[str]
+    attachment_url: Optional[str]
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -155,6 +158,7 @@ def _normalize_filing(row: dict[str, Any]) -> CodalFiling:
         url=_pick(row, "Url", "URL"),
         pdf_url=_pick(row, "PdfUrl", "PDFUrl"),
         excel_url=_pick(row, "ExcelUrl", "ExcelURL"),
+        attachment_url=_pick(row, "AttachmentUrl", "AttachmentURL"),
     )
 
 
@@ -169,17 +173,17 @@ def _search_payload(symbol: str, params: dict[str, Any]) -> list[CodalFiling]:
 
 
 def latest_filings(symbol: str, limit: int = 5) -> list[CodalFiling]:
-    """Best-effort filing discovery with conservative fallback queries.
+    """Return recent CODAL filings using the live-verified query shape.
 
-    CODAL's v2 search is unusually sensitive to filter combinations. We first
-    use the minimal documented query and then two browser-like variants. The
-    first non-empty result wins. Empty results are valid and never converted
-    into synthetic report/fundamental data.
+    `Length` is capped at 12 because CODAL rejects larger values. A broad date
+    range is used first; conservative fallbacks remain so metadata enrichment
+    survives changes in CODAL filtering behavior. Empty results are valid and
+    are never converted into synthetic report/fundamental data.
     """
     wanted = symbol.strip()
     if not wanted:
         return []
-    limit = max(1, min(int(limit), 20))
+    limit = max(1, min(int(limit), _CODAL_MAX_LENGTH))
 
     now = time.time()
     cached = _filings_cache.get(wanted)
@@ -187,15 +191,13 @@ def latest_filings(symbol: str, limit: int = 5) -> list[CodalFiling]:
         return cached[1][:limit]
 
     attempts = [
-        {"PageNumber": 1, "Length": limit},
         {
             "PageNumber": 1,
             "Length": limit,
             "CompanyState": 0,
             "CompanyType": -1,
-            "Category": -1,
-            "LetterType": -1,
-            "AuditorRef": -1,
+            "FromDate": "1404/01/01",
+            "ToDate": "1405/12/29",
             "Mains": "true",
             "Childs": "true",
             "Publisher": "false",
@@ -204,19 +206,16 @@ def latest_filings(symbol: str, limit: int = 5) -> list[CodalFiling]:
         {
             "PageNumber": 1,
             "Length": limit,
-            "CompanyState": 0,
+            "CompanyState": -1,
             "CompanyType": -1,
-            "Category": 1,
-            "LetterType": -1,
-            "Audited": "true",
-            "NotAudited": "true",
-            "Consolidatable": "true",
-            "NotConsolidatable": "true",
+            "FromDate": "1404/01/01",
+            "ToDate": "1405/12/29",
             "Mains": "true",
-            "Childs": "false",
+            "Childs": "true",
             "Publisher": "false",
             "search": "true",
         },
+        {"PageNumber": 1, "Length": limit},
     ]
 
     filings: list[CodalFiling] = []
@@ -224,8 +223,6 @@ def latest_filings(symbol: str, limit: int = 5) -> list[CodalFiling]:
         try:
             filings = _search_payload(wanted, params)
         except CodalDataUnavailable:
-            # Try the next conservative query. If all fail, metadata enrichment
-            # still works and company_builder keeps fundamentals unavailable.
             continue
         if filings:
             break
