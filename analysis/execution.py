@@ -1,0 +1,138 @@
+"""Guarded execution layer for BIAP.
+
+This module intentionally separates analysis from order execution.
+It supports PAPER and APPROVAL flows only. AUTO/LIVE execution is explicitly
+blocked until a real broker adapter, credentials, compliance review, and risk
+controls are implemented and enabled deliberately.
+"""
+
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Optional
+import uuid
+
+
+class ExecutionMode(str, Enum):
+    PAPER = "paper"
+    APPROVAL = "approval"
+    AUTO = "auto"
+
+
+class OrderSide(str, Enum):
+    BUY = "BUY"
+    SELL = "SELL"
+
+
+@dataclass
+class OrderIntent:
+    id: str
+    code: str
+    side: str
+    quantity: int
+    limit_price: Optional[float]
+    mode: str
+    status: str
+    recommendation_call: str
+    recommendation_score: float
+    created_at: str
+    note: str
+
+
+class ExecutionPolicyError(ValueError):
+    pass
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def validate_intent(*, code: str, side: str, quantity: int, mode: str,
+                    recommendation_call: str, recommendation_score: float) -> None:
+    if not code.strip():
+        raise ExecutionPolicyError("stock code is required")
+    if side not in {OrderSide.BUY.value, OrderSide.SELL.value}:
+        raise ExecutionPolicyError("side must be BUY or SELL")
+    if quantity <= 0:
+        raise ExecutionPolicyError("quantity must be greater than zero")
+    if mode not in {m.value for m in ExecutionMode}:
+        raise ExecutionPolicyError("unsupported execution mode")
+    if mode == ExecutionMode.AUTO.value:
+        raise ExecutionPolicyError("AUTO execution is disabled")
+
+    # Analysis and execution stay independent, but obvious contradictions are
+    # rejected at the policy boundary.
+    if side == OrderSide.BUY.value and recommendation_call == "SELL":
+        raise ExecutionPolicyError("BUY conflicts with current SELL recommendation")
+    if side == OrderSide.SELL.value and recommendation_call == "BUY":
+        raise ExecutionPolicyError("SELL conflicts with current BUY recommendation")
+
+    if not -1.0 <= recommendation_score <= 1.0:
+        raise ExecutionPolicyError("recommendation score must be between -1 and 1")
+
+
+def build_order_intent(*, code: str, side: str, quantity: int,
+                       limit_price: Optional[float], mode: str,
+                       recommendation_call: str,
+                       recommendation_score: float) -> dict:
+    validate_intent(
+        code=code,
+        side=side,
+        quantity=quantity,
+        mode=mode,
+        recommendation_call=recommendation_call,
+        recommendation_score=recommendation_score,
+    )
+
+    if limit_price is not None and limit_price <= 0:
+        raise ExecutionPolicyError("limit_price must be positive when provided")
+
+    status = "SIMULATED" if mode == ExecutionMode.PAPER.value else "PENDING_APPROVAL"
+    note = (
+        "Paper-only simulation; no broker request was sent."
+        if mode == ExecutionMode.PAPER.value
+        else "Approval required; no broker request was sent."
+    )
+
+    intent = OrderIntent(
+        id=str(uuid.uuid4()),
+        code=code.upper(),
+        side=side,
+        quantity=quantity,
+        limit_price=limit_price,
+        mode=mode,
+        status=status,
+        recommendation_call=recommendation_call,
+        recommendation_score=round(recommendation_score, 4),
+        created_at=_now_iso(),
+        note=note,
+    )
+    return asdict(intent)
+
+
+def submit_order_intent(intent: dict) -> dict:
+    """Submit an already-built intent.
+
+    PAPER returns a simulated receipt. APPROVAL remains pending. AUTO is never
+    accepted. No broker integration exists in this prototype.
+    """
+    mode = intent.get("mode")
+    if mode == ExecutionMode.AUTO.value:
+        raise ExecutionPolicyError("AUTO execution is disabled")
+    if mode == ExecutionMode.APPROVAL.value:
+        return {
+            **intent,
+            "status": "PENDING_APPROVAL",
+            "submittedAt": _now_iso(),
+            "broker": None,
+            "brokerOrderId": None,
+        }
+    if mode == ExecutionMode.PAPER.value:
+        return {
+            **intent,
+            "status": "PAPER_FILLED",
+            "submittedAt": _now_iso(),
+            "broker": "paper",
+            "brokerOrderId": f"paper-{intent['id']}",
+        }
+    raise ExecutionPolicyError("unsupported execution mode")
