@@ -6,8 +6,11 @@ Verified sources on the BIAP production VPS:
 - GET /api/search/v1/financialYears?Symbol=<symbol>
 - GET /api/search/v2/q?... for filing discovery
 
-CODAL's v2 search endpoint accepts at most 12 rows per request. The query
-shape below was verified live from the BIAP VPS against the فولاد symbol.
+CODAL's v2 search endpoint was live-verified for فولاد with Length=12. In
+practice smaller Length values can return an empty result even when filings
+exist, so discovery always requests the verified 12-row page and slices the
+result locally to the caller's requested limit.
+
 This adapter never fabricates fundamentals. It exposes verified metadata and
 raw filing-discovery metadata only. `codal` fundamentals remain unavailable
 until report payloads are parsed into explicit revenue/margin/audit fields.
@@ -30,7 +33,7 @@ _TIMEOUT = 8
 _COMPANIES_TTL = 6 * 60 * 60
 _YEARS_TTL = 60 * 60
 _FILINGS_TTL = 5 * 60
-_CODAL_MAX_LENGTH = 12
+_CODAL_PAGE_LENGTH = 12
 
 
 class CodalDataUnavailable(RuntimeError):
@@ -175,15 +178,14 @@ def _search_payload(symbol: str, params: dict[str, Any]) -> list[CodalFiling]:
 def latest_filings(symbol: str, limit: int = 5) -> list[CodalFiling]:
     """Return recent CODAL filings using the live-verified query shape.
 
-    `Length` is capped at 12 because CODAL rejects larger values. A broad date
-    range is used first; conservative fallbacks remain so metadata enrichment
-    survives changes in CODAL filtering behavior. Empty results are valid and
-    are never converted into synthetic report/fundamental data.
+    CODAL filing discovery always requests Length=12, the exact page size
+    verified on production. Results are then sliced locally to `limit`.
+    Empty results are valid and are never converted into synthetic data.
     """
     wanted = symbol.strip()
     if not wanted:
         return []
-    limit = max(1, min(int(limit), _CODAL_MAX_LENGTH))
+    limit = max(1, min(int(limit), _CODAL_PAGE_LENGTH))
 
     now = time.time()
     cached = _filings_cache.get(wanted)
@@ -193,7 +195,7 @@ def latest_filings(symbol: str, limit: int = 5) -> list[CodalFiling]:
     attempts = [
         {
             "PageNumber": 1,
-            "Length": limit,
+            "Length": _CODAL_PAGE_LENGTH,
             "CompanyState": 0,
             "CompanyType": -1,
             "FromDate": "1404/01/01",
@@ -205,7 +207,7 @@ def latest_filings(symbol: str, limit: int = 5) -> list[CodalFiling]:
         },
         {
             "PageNumber": 1,
-            "Length": limit,
+            "Length": _CODAL_PAGE_LENGTH,
             "CompanyState": -1,
             "CompanyType": -1,
             "FromDate": "1404/01/01",
@@ -215,7 +217,7 @@ def latest_filings(symbol: str, limit: int = 5) -> list[CodalFiling]:
             "Publisher": "false",
             "search": "true",
         },
-        {"PageNumber": 1, "Length": limit},
+        {"PageNumber": 1, "Length": _CODAL_PAGE_LENGTH},
     ]
 
     filings: list[CodalFiling] = []
