@@ -1,14 +1,9 @@
 """
 Builds a normalized company record for the Kiasha agent team.
 
-Two sources feed this shape:
-  - the legacy full mock schema in data_sample.py (unchanged, both `codal`
-    and `market` fully populated -- fictitious data for local testing);
-  - a live market_data.LiveQuote from the existing BIAP backend.
-
-Live companies are enriched with read-only CODAL metadata and, when available,
-verified TSETMC extended market metrics. Missing fundamentals/valuation metrics
-remain unavailable rather than being inferred.
+Live companies are enriched with read-only CODAL metadata and verified TSETMC
+extended market/instrument metrics. Missing fundamentals/valuation metrics stay
+unavailable rather than being inferred.
 """
 
 from __future__ import annotations
@@ -73,15 +68,22 @@ def build_company_from_quote(quote: LiveQuote) -> dict:
             "trade_value_today": extended.trade_value_today if extended else None,
             "trade_count_today": extended.trade_count_today if extended else None,
             "avg_volume_30d": extended.avg_volume_30d if extended else None,
-            # Valuation inputs are still unavailable until verified sources are connected.
-            "pe": None,
-            "sector_avg_pe": None,
-            "market_cap_bn": None,
+            "estimated_eps": extended.estimated_eps if extended else None,
+            "eps_value": extended.eps_value if extended else None,
+            "pe": extended.pe if extended else None,
+            "sector_avg_pe": extended.sector_pe if extended else None,
+            "shares_outstanding": extended.shares_outstanding if extended else None,
+            "market_cap": extended.market_cap if extended else None,
+            "market_cap_bn": (extended.market_cap / 1_000_000_000) if extended and extended.market_cap is not None else None,
+            "base_volume": extended.base_volume if extended else None,
+            "sector_code": extended.sector_code if extended else None,
+            "sector_name": extended.sector_name if extended else None,
+            "market_flow": extended.market_flow if extended else None,
+            "market_title": extended.market_title if extended else None,
+            "valuation_source": "tsetmc_instrument_info" if extended else None,
         },
     }
 
 
 def availability(company: dict) -> dict:
-    """Existing mock companies (data_sample.py) have no `data_available` key
-    -- treat them as fully available so mock-mode behaviour is unchanged."""
     return company.get("data_available", FULL_AVAILABILITY)
