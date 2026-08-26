@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import os
 from urllib.error import HTTPError, URLError
-from urllib.parse import urljoin
 from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, HTTPException, Request as FastAPIRequest
@@ -23,11 +22,11 @@ from fastapi.responses import Response
 app = FastAPI(title="BIAP Data Relay", version="1.0")
 
 UPSTREAMS = {
-    "codal-search": "https://search.codal.ir/",
-    "codal-excel": "https://excel.codal.ir/",
-    "codal-www": "https://www.codal.ir/",
-    "tsetmc-cdn": "https://cdn.tsetmc.com/",
-    "tsetmc-old": "http://old.tsetmc.com/",
+    "codal-search": "https://search.codal.ir",
+    "codal-excel": "https://excel.codal.ir",
+    "codal-www": "https://www.codal.ir",
+    "tsetmc-cdn": "https://cdn.tsetmc.com",
+    "tsetmc-old": "http://old.tsetmc.com",
 }
 
 _TIMEOUT = float(os.getenv("BIAP_RELAY_TIMEOUT", "25"))
@@ -49,9 +48,12 @@ def _target_url(source: str, path: str, query: str) -> str:
     base = UPSTREAMS.get(source)
     if base is None:
         raise HTTPException(status_code=404, detail="unknown relay source")
-    # urljoin with a normalized relative path prevents the caller from replacing
-    # the fixed upstream host with an absolute URL.
-    target = urljoin(base, path.lstrip("/"))
+    clean_path = path.lstrip("/")
+    # The upstream host is fixed by the alias above. Reject URL-looking paths so
+    # this endpoint cannot be turned into an open proxy via an absolute URL.
+    if "://" in clean_path or clean_path.startswith("//"):
+        raise HTTPException(status_code=400, detail="invalid relay path")
+    target = f"{base}/{clean_path}"
     if query:
         target = f"{target}?{query}"
     return target
