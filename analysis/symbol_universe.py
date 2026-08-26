@@ -24,8 +24,8 @@ from typing import Optional
 
 from codal_data import CodalDataUnavailable, list_companies
 
-TSETMC_BASE = "https://cdn.tsetmc.com/api"
-TSETMC_LEGACY_URL = "http://old.tsetmc.com/tsev2/data/MarketWatchInit.aspx?h=0&r=0"
+DEFAULT_TSETMC_BASE = "https://cdn.tsetmc.com/api"
+DEFAULT_TSETMC_LEGACY_URL = "http://old.tsetmc.com/tsev2/data/MarketWatchInit.aspx?h=0&r=0"
 CACHE_TTL_SECONDS = 300.0
 SNAPSHOT_ENV = "BIAP_SYMBOL_SNAPSHOT"
 DEFAULT_SNAPSHOT_PATH = Path.home() / ".cache" / "biap" / "symbol_universe.json"
@@ -49,6 +49,14 @@ class MarketSymbol:
 
     def to_dict(self) -> dict:
         return asdict(self)
+
+
+def tsetmc_base() -> str:
+    return os.getenv("BIAP_TSETMC_API_BASE", DEFAULT_TSETMC_BASE).rstrip("/")
+
+
+def tsetmc_legacy_url() -> str:
+    return os.getenv("BIAP_TSETMC_LEGACY_URL", DEFAULT_TSETMC_LEGACY_URL)
 
 
 def _market_from_flow(flow: int) -> Optional[str]:
@@ -89,7 +97,7 @@ def _market_watch_url() -> str:
         ("hEven", "0"), ("RefID", "0"),
     ]
     params.extend((f"paperTypes[{i}]", str(i + 1)) for i in range(9))
-    return f"{TSETMC_BASE}/ClosingPrice/GetMarketWatch?{urllib.parse.urlencode(params)}"
+    return f"{tsetmc_base()}/ClosingPrice/GetMarketWatch?{urllib.parse.urlencode(params)}"
 
 
 def _read_url(url: str, *, timeout: float, accept: str = "*/*") -> bytes:
@@ -168,8 +176,6 @@ def _save_snapshot(items: list[MarketSymbol]) -> None:
         tmp.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
         tmp.replace(path)
     except OSError:
-        # Snapshot persistence is a resilience aid, never a reason to fail a
-        # successful live request.
         return
 
 
@@ -185,7 +191,7 @@ def _fetch_json_universe(*, timeout: float) -> list[MarketSymbol]:
 
 
 def _fetch_legacy_universe(*, timeout: float) -> list[MarketSymbol]:
-    text = _read_url(TSETMC_LEGACY_URL, timeout=timeout).decode("utf-8", errors="replace")
+    text = _read_url(tsetmc_legacy_url(), timeout=timeout).decode("utf-8", errors="replace")
     parts = text.split("@")
     if len(parts) < 3:
         return []
