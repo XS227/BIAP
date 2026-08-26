@@ -13,6 +13,7 @@ in this repository.
 from __future__ import annotations
 
 import os
+import urllib.parse
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -53,7 +54,13 @@ def _target_url(source: str, path: str, query: str) -> str:
     # this endpoint cannot be turned into an open proxy via an absolute URL.
     if "://" in clean_path or clean_path.startswith("//"):
         raise HTTPException(status_code=400, detail="invalid relay path")
-    target = f"{base}/{clean_path}"
+
+    # Starlette/FastAPI decodes percent-encoded route parameters before they
+    # reach this function. Re-encode the path as a valid ASCII URL before
+    # handing it to urllib; otherwise Persian search terms can trigger a
+    # UnicodeEncodeError inside http.client and the relay returns a 500.
+    encoded_path = urllib.parse.quote(clean_path, safe="/-._~")
+    target = f"{base}/{encoded_path}"
     if query:
         target = f"{target}?{query}"
     return target
@@ -123,5 +130,5 @@ def relay(source: str, path: str, request: FastAPIRequest) -> Response:
         )
     except HTTPException:
         raise
-    except (URLError, TimeoutError, OSError) as exc:
+    except (URLError, TimeoutError, OSError, UnicodeEncodeError) as exc:
         raise HTTPException(status_code=502, detail=f"upstream unavailable: {exc}") from exc
