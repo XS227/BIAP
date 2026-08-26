@@ -14,10 +14,10 @@ from dataclasses import replace
 from codal_data import (
     CodalDataUnavailable,
     _audit_opinion_from_pdf,
-    fundamentals_for_symbol,
     latest_financial_filings,
     metadata_for_symbol,
 )
+from financial_scope import report_scope_from_title, scoped_fundamentals_for_symbol
 from market_data import LiveQuote, fetch_extended_market_data
 from related_party import related_party_flags_from_pdf
 
@@ -33,8 +33,8 @@ PRICE_ONLY_AVAILABILITY = {
 }
 
 
-def _enrich_codal_risk_fields(symbol: str, fundamentals):
-    """Attach verified audit and related-party fields without fabricating data."""
+def _enrich_codal_risk_fields(symbol: str, fundamentals, report_scope: str | None):
+    """Attach verified risk fields only from the same statement scope."""
     if fundamentals is None:
         return None
     if fundamentals.audit_opinion is not None and fundamentals.related_party_flags is not None:
@@ -47,6 +47,9 @@ def _enrich_codal_risk_fields(symbol: str, fundamentals):
 
     result = fundamentals
     for filing in filings:
+        if report_scope_from_title(filing.title) != report_scope:
+            continue
+
         title = filing.title or ""
         if "حسابرسی شده" not in title or "حسابرسی نشده" in title:
             continue
@@ -85,10 +88,11 @@ def build_company_from_quote(quote: LiveQuote) -> dict:
         codal_metadata = None
 
     try:
-        fundamentals = fundamentals_for_symbol(quote.name)
-        fundamentals = _enrich_codal_risk_fields(quote.name, fundamentals)
+        fundamentals, report_scope = scoped_fundamentals_for_symbol(quote.name)
+        fundamentals = _enrich_codal_risk_fields(quote.name, fundamentals, report_scope)
         if fundamentals is not None:
             codal_fundamentals = fundamentals.to_dict()
+            codal_fundamentals["report_scope"] = report_scope
     except CodalDataUnavailable:
         codal_fundamentals = None
 
