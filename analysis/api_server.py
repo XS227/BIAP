@@ -1,34 +1,4 @@
-"""
-HTTP wrapper around the Kiasha decision and guarded execution layers.
-
-Additive endpoints intended to sit alongside the existing BIAP backend:
-
-  GET  /stock/symbols
-  GET  /stock/recommendation/{code}
-  POST /orders/preview
-  POST /orders/submit
-  GET  /orders/{intent_id}
-  GET  /audit/orders
-  GET  /audit/events
-  GET  /risk/status
-
-Execution is intentionally limited to PAPER and APPROVAL flows. AUTO/LIVE
-execution is blocked until a real broker adapter, credentials, compliance
-review, and production risk controls exist.
-
-Order intents and audit events are persisted in SQLite (BIAP_AUDIT_DB). A
-separate risk policy is evaluated before an intent is created.
-
-Real TSETMC codes resolve against the existing BIAP mobile backend's live
-watchlist. The complete symbol universe is fetched separately from TSETMC so
-BIAP is not limited to the three-symbol mobile watchlist. Live companies are
-also enriched with verified CODAL company metadata + financial-year history
-from search.codal.ir when available.
-
-Report-derived CODAL fundamentals and extended market data (52-week range,
-P/E, volume) are still not connected; the API distinguishes metadata from
-fundamental availability rather than pretending metadata is analysis data.
-"""
+"""HTTP wrapper around the Kiasha decision and guarded execution layers."""
 
 from datetime import datetime, timezone
 from typing import Literal, Optional
@@ -39,7 +9,7 @@ from pydantic import BaseModel, Field
 
 from audit_store import AuditStore
 from codal_data import base_url as codal_base_url
-from company_builder import availability, build_company_from_quote
+from company_builder import availability, build_company_from_quote, build_company_from_symbol
 from data_sample import SAMPLE_COMPANY
 from execution import ExecutionPolicyError, build_order_intent, submit_order_intent
 from kiasha import decide
@@ -77,14 +47,16 @@ def health():
             "extendedMarketDataConnected": False,
         },
         "symbolUniverse": {
-            "source": "tsetmc",
+            "preferredSource": "tsetmc",
+            "fallbackSource": "codal",
             "markets": ["TSE", "IFB", "IFB_BASE"],
             "watchlistIndependent": True,
+            "degradedModeSupported": True,
         },
         "codal": {
             "base": codal_base_url(),
             "metadataConnected": True,
-            "fundamentalsConnected": False,
+            "fundamentalsConnected": True,
         },
         "execution": {
             "paper": True,
@@ -108,6 +80,13 @@ def _company_or_404(code: str) -> tuple[dict, str]:
         quote = None
     if quote is not None:
         return build_company_from_quote(quote), "live"
+
+    # TSETMC can be unreachable from some VPS networks. In that case a Persian
+    # issuer symbol may still be resolved and analyzed from verified CODAL
+    # filings. No price/market values are synthesized in this degraded mode.
+    company = build_company_from_symbol(code)
+    if company is not None:
+        return company, "codal"
 
     raise HTTPException(status_code=404, detail=f"no data for {code}")
 
@@ -133,10 +112,14 @@ def symbols(
         items = query_symbols(market=market, q=q, limit=limit)
     except SymbolUniverseUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    sources = sorted({item.source for item in items})
     return {
         "count": len(items),
-        "source": "tsetmc",
+        "source": sources[0] if len(sources) == 1 else "mixed",
+        "sources": sources,
         "markets": ["TSE", "IFB", "IFB_BASE"],
+        "degraded": bool(items) and all(item.source == "codal" for item in items),
         "items": [item.to_dict() for item in items],
     }
 
@@ -154,7 +137,7 @@ def recommendation(code: str):
         "generatedAt": datetime.now(timezone.utc).isoformat(),
         "dataSource": source,
         "dataAvailability": availability(company),
-        "codalMetadata": company.get("codal_metadata") if source == "live" else None,
+        "codalMetadata": company.get("codal_metadata") if source in {"live", "codal"} else None,
         "livePrice": {
             "lastPrice": market.get("last_price"),
             "closingPrice": market.get("closing_price"),
@@ -222,6 +205,7 @@ def preview_order(req: OrderPreviewRequest):
     except ExecutionPolicyError as exc:
         AUDIT.record_event(
             event_id=str(uuid.uuid4()),
+            intent_id=None,
             event_type="EXECUTION_POLICY_REJECTED",
             payload={
                 "code": company["ticker"],
