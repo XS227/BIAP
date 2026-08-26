@@ -160,7 +160,10 @@ def _company_or_404(code: str) -> tuple[dict, str]:
     except MarketDataUnavailable:
         quote = None
     if quote is not None:
-        return build_company_from_quote(quote, codal_symbol=code), "live"
+        # `code` here is whatever matched find_quote's numeric TSETMC id -- CODAL
+        # indexes issuers by their Persian ticker, so enrichment must use
+        # quote.name, not the raw path code (see analysis/PROJECT_STATUS.md).
+        return build_company_from_quote(quote, codal_symbol=quote.name), "live"
 
     # TSETMC can be unreachable from some VPS networks. In that case a Persian
     # issuer symbol may still be resolved and analyzed from verified CODAL

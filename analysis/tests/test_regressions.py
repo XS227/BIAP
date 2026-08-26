@@ -1,4 +1,5 @@
 from agents import fundamental_agent, run_team
+import api_server
 from audit_parser import (
     _extract_audit_opinion_section,
     classify_audit_opinion_from_text,
@@ -450,3 +451,35 @@ def test_recommendation_pipeline_handles_a_representative_symbol_from_each_marke
 # Fixed with an explicit numeric-code guard (_is_tsetmc_instrument_code) in
 # market_data.py; see test_market_data_identifiers.py for that regression
 # coverage rather than duplicating it here.
+
+
+def test_numeric_code_lookup_passes_persian_ticker_to_codal_enrichment(monkeypatch):
+    # api_server._company_or_404 used to forward the raw numeric TSETMC code
+    # (the URL path segment, e.g. "46348559193224090") straight through as the
+    # CODAL search symbol instead of the resolved quote's Persian ticker name.
+    # CODAL only indexes issuers by their Persian symbol, so every
+    # numeric-code lookup -- the normal way /stock/recommendation/{code} is
+    # called -- silently got codal_metadata/codal_fundamentals back as None
+    # (dataAvailability.codal: false) even though live CODAL data existed.
+    # Fixed by passing quote.name explicitly; this locks that in so it can't
+    # silently regress back to passing the raw path code.
+    quote = LiveQuote(
+        code="46348559193224090", name="فولاد", last_price=2698.0,
+        closing_price=2697.0, yesterday_price=2620.0, change=0.0, change_percent=2.94,
+    )
+    monkeypatch.setattr(api_server, "find_quote", lambda code: quote)
+
+    captured = {}
+
+    def fake_build_company_from_quote(q, *, codal_symbol=None):
+        captured["codal_symbol"] = codal_symbol
+        return {"ticker": q.code, "name_fa": q.name}
+
+    monkeypatch.setattr(api_server, "build_company_from_quote", fake_build_company_from_quote)
+
+    company, source = api_server._company_or_404(quote.code)
+
+    assert source == "live"
+    assert company == {"ticker": quote.code, "name_fa": quote.name}
+    assert captured["codal_symbol"] == "فولاد"
+    assert captured["codal_symbol"] != quote.code
