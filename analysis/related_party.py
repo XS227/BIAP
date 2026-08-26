@@ -73,6 +73,19 @@ def _related_party_windows(text: str, radius: int = 700) -> list[str]:
     return windows
 
 
+_WARNING_PATTERNS = (
+    # Corporate-law / board-approval concerns.
+    r"(?:عدم\s+رعایت.{0,100}ماده\s*[۱۲1][۲2][۹9]|ماده\s*[۱۲1][۲2][۹9].{0,100}(?:عدم\s+رعایت|رعایت\s+نشده))",
+    r"(?:عدم|بدون)\s+(?:اخذ\s+)?مجوز.{0,100}(?:هیئت|هیات)\s*مدیره",
+    # Disclosure concerns.
+    r"(?:عدم\s+افشا|افشا\s+نشده|افشای\s+ناکافی|افشا\s+به\s+طور\s+کامل\s+انجام\s+نشده)",
+    # Explicitly abnormal/non-ordinary transaction terms.
+    r"(?:خارج\s+از\s+(?:روال|شرایط)\s+عادی|شرایط\s+غیرمتعارف|شرایط\s+غیر\s+متعارف)",
+    # Explicit non-compliance with the related-party disclosure standard.
+    r"(?:عدم\s+رعایت.{0,100}استاندارد\s+حسابداری.{0,40}(?:12|۱۲)|استاندارد\s+حسابداری.{0,40}(?:12|۱۲).{0,100}رعایت\s+نشده)",
+)
+
+
 def _related_party_flags_from_text(text: str) -> Optional[int]:
     """Return explicit related-party red-flag count, 0, or None.
 
@@ -85,42 +98,18 @@ def _related_party_flags_from_text(text: str) -> Optional[int]:
     if not windows:
         return None
 
-    related_text = " ".join(windows)
+    # Each pattern is checked against every window independently, never
+    # against the windows joined together. Two mentions of "اشخاص وابسته"
+    # can be a thousand+ characters apart in the source document; joining
+    # their windows with a bare space would let the tail of one window and
+    # the head of another read as a single sentence and trigger a proximity
+    # pattern (e.g. "...ماده 129" from one location right next to "رعایت
+    # نشده" from a wholly unrelated one) that never actually appears
+    # together in the real document.
     flags = 0
-
-    # Corporate-law / board-approval concerns.
-    if re.search(
-        r"(?:عدم\s+رعایت.{0,100}ماده\s*[۱۲1][۲2][۹9]|ماده\s*[۱۲1][۲2][۹9].{0,100}(?:عدم\s+رعایت|رعایت\s+نشده))",
-        related_text,
-    ):
-        flags += 1
-
-    if re.search(
-        r"(?:عدم|بدون)\s+(?:اخذ\s+)?مجوز.{0,100}(?:هیئت|هیات)\s*مدیره",
-        related_text,
-    ):
-        flags += 1
-
-    # Disclosure concerns.
-    if re.search(
-        r"(?:عدم\s+افشا|افشا\s+نشده|افشای\s+ناکافی|افشا\s+به\s+طور\s+کامل\s+انجام\s+نشده)",
-        related_text,
-    ):
-        flags += 1
-
-    # Explicitly abnormal/non-ordinary transaction terms.
-    if re.search(
-        r"(?:خارج\s+از\s+(?:روال|شرایط)\s+عادی|شرایط\s+غیرمتعارف|شرایط\s+غیر\s+متعارف)",
-        related_text,
-    ):
-        flags += 1
-
-    # Explicit non-compliance with the related-party disclosure standard.
-    if re.search(
-        r"(?:عدم\s+رعایت.{0,100}استاندارد\s+حسابداری.{0,40}(?:12|۱۲)|استاندارد\s+حسابداری.{0,40}(?:12|۱۲).{0,100}رعایت\s+نشده)",
-        related_text,
-    ):
-        flags += 1
+    for pattern in _WARNING_PATTERNS:
+        if any(re.search(pattern, window) for window in windows):
+            flags += 1
 
     return flags
 

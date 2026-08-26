@@ -252,7 +252,7 @@ continued to return a valid production response.
 
 ## Regression tests
 
-`analysis/tests/` (`test_regressions.py` plus `test_order_auth.py`) covers 22
+`analysis/tests/` (`test_regressions.py` plus `test_order_auth.py`) covers 23
 verified regression cases as of 2026-08-26, including:
 
 - exact net-profit row matching
@@ -261,7 +261,9 @@ verified regression cases as of 2026-08-26, including:
   disclaimer, table-of-contents-vs-real-section disambiguation, and
   "Basis for Opinion" heading exclusion (see "Audit-opinion parser
   hardening" below)
-- related-party parser conservative behavior
+- related-party parser conservative behavior, including rejecting a
+  cross-window false positive between two far-apart mentions (see
+  "Related-party parser hardening" below)
 - consolidated/standalone scope classification and selection behavior
 - order/audit ownership isolation and idempotency (see "Order/audit
   ownership + idempotency" above)
@@ -271,7 +273,7 @@ Latest local test result (on `5.249.252.88`, not yet re-verified on the
 this count there):
 
 ```text
-22 passed in 0.3s
+23 passed in 0.3s
 ```
 
 ## Recommendation API
@@ -441,6 +443,38 @@ against guessing unverified behavior. Testing against real filings with
 known opinion types (roadmap item 2's related-party validation has the same
 gap) is still open work.
 
+## Related-party parser hardening (2026-08-26)
+
+`related_party.py` builds a bounded "window" of text around each occurrence
+of a related-party anchor phrase (`اشخاص وابسته`, `ماده 129`, etc.) — the
+same bounding strategy as the audit-opinion parser, for the same reason
+(avoid scanning the whole document). The warning-pattern regexes were being
+run against `" ".join(windows)` — all windows concatenated with a single
+space — rather than against each window individually.
+
+That join is a real bug, verified directly (not guessed): two related-party
+mentions can be a thousand+ characters apart in a real filing, each getting
+its own independent window. Joining them with a bare space lets the *tail*
+of one window sit directly next to the *head* of another and read as a
+single sentence that never appears in the source document. Concretely: a
+window ending "...ماده 129 قانون تجارت" (from one mention, nothing else
+follows it in the original text) placed next to an unrelated window
+starting "رعایت نشده..." (from a *different* mention 900+ characters away,
+about something else entirely) reads as "...ماده 129 قانون تجارت رعایت
+نشده..." — a false non-compliance flag — even though neither window alone
+matches anything. Reproduced exactly this way before the fix (flags=1
+whole-document vs. flags=0 for every individual window); fixed by checking
+each warning pattern against every window independently
+(`any(re.search(p, w) for w in windows)`) instead of the joined string. New
+regression test: `test_related_party_parser_ignores_cross_window_false_adjacency`.
+
+Same limitation as the audit-opinion work above: no real CODAL filing corpus
+was available from this host to validate the warning phrasings themselves
+against real disclosed non-compliance, only this structural bug (verifiable
+from the code without needing real data). Roadmap item 2 stays open for
+that reason — it needs live CODAL access, i.e. the still-unresolved gateway
+ask in Discussion #1.
+
 ## Production operations
 
 Update the running FIN service after a reviewed GitHub change:
@@ -497,9 +531,13 @@ precedence and this file must be corrected in the same change.
    verifiable from the code itself — see "Audit-opinion parser hardening"
    above. Still open: validation against a real corpus of CODAL filings with
    known opinion types, since none was available here.
-2. **Related-party validation:** test representative issuers with known explicit
-   related-party warnings/non-compliance so positive flags are verified against
-   real CODAL filings.
+2. ~~**Related-party validation:**~~ partially done (2026-08-26) — a real,
+   verified bug was found and fixed (cross-window false positives, see
+   "Related-party parser hardening" above). Still fully open: testing
+   against representative issuers with known explicit warnings/non-compliance
+   in real CODAL filings — blocked on the same thing as item 1's remaining
+   gap, no live CODAL access from `5.249.252.88` yet (see the still-open
+   CODAL gateway ask in Discussion #1).
 3. **CODAL caching/gateway:** avoid unnecessary repeated PDF downloads and prepare
    a controlled CODAL collector/gateway path for the new server.
 4. **New external data server:** migrate data-heavy workloads incrementally to

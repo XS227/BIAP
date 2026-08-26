@@ -185,6 +185,22 @@ def test_related_party_explicit_noncompliance_is_flagged():
     assert _related_party_flags_from_text(text) == 2
 
 
+def test_related_party_parser_ignores_cross_window_false_adjacency():
+    # Two unrelated related-party mentions, ~900 characters apart. Neither
+    # fragment alone describes a real violation. Each mention gets its own
+    # bounded window; joining those windows with a bare space would let the
+    # tail of one ("...ماده 129 قانون تجارت") sit directly next to the head
+    # of the other ("رعایت نشده...") and read as one sentence that never
+    # actually appears in the source document.
+    pad_a = "س" * 5
+    pad_b = "ز" * 900
+    head = pad_a + "رعایت نشده است ماده ۱۲۹ بی ربط به موضوع دیگری دارد"
+    tail = "شرکت با اشخاص وابسته معامله کرده است و ماده 129 قانون تجارت"
+    text = head + pad_b + tail
+
+    assert _related_party_flags_from_text(text) == 0
+
+
 def _filing(title: str) -> CodalFiling:
     return CodalFiling(
         tracing_no=None,
