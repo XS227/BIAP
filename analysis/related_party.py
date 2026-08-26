@@ -20,6 +20,12 @@ from urllib.request import Request, urlopen
 from codal_data import CodalFiling
 
 _TIMEOUT = 8
+_DEFAULT_WWW_BASE = "https://www.codal.ir"
+
+
+def _codal_www_base() -> str:
+    """Return the CODAL document host or an explicitly configured gateway."""
+    return os.getenv("BIAP_CODAL_WWW_BASE", _DEFAULT_WWW_BASE).rstrip("/") + "/"
 
 
 def _normalize_pdf_text(text: str) -> str:
@@ -123,7 +129,7 @@ def _extract_pdf_text(filing: CodalFiling) -> Optional[str]:
     if not filing.pdf_url:
         return None
 
-    pdf_url = urljoin("https://www.codal.ir/", filing.pdf_url)
+    pdf_url = urljoin(_codal_www_base(), filing.pdf_url)
     req = Request(pdf_url, headers={"User-Agent": "Mozilla/5.0 BIAP/1.0"})
 
     try:
