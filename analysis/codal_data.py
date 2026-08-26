@@ -373,7 +373,12 @@ def _fetch_filing_html(filing: CodalFiling) -> str:
     if not filing.excel_url:
         raise CodalDataUnavailable("CODAL filing has no report payload URL")
     url = filing.excel_url
-    if not url.lower().startswith(("http://", "https://")):
+    excel_base = os.getenv("BIAP_CODAL_EXCEL_BASE", "").rstrip("/")
+    if excel_base and url.startswith("https://excel.codal.ir/"):
+        url = f"{excel_base}/{url[len('https://excel.codal.ir/'):]}"
+    elif excel_base and url.startswith("http://excel.codal.ir/"):
+        url = f"{excel_base}/{url[len('http://excel.codal.ir/'):]}"
+    elif not url.lower().startswith(("http://", "https://")):
         url = urljoin("https://www.codal.ir", url)
     req = Request(
         url,
