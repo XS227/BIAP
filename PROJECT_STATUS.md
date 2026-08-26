@@ -22,7 +22,8 @@ GET https://biap.dadashi.no/api/stock/recommendation/46348559193224090
 ```
 
 For فولاد, production now resolves live market data, parsed CODAL fundamentals,
-verified audit opinion and conservative related-party disclosure flags.
+verified audit opinion, conservative related-party disclosure flags and an
+explicit financial-statement scope.
 
 ## Infrastructure / servers
 
@@ -70,6 +71,8 @@ Direct TSETMC instrument data ──> extended market metrics ──────
                                                                 ├─> company_builder.py
 CODAL search/report APIs ────────> codal_data.py ────────────────┤
                                                                 │
+CODAL filing titles ─────────────> financial_scope.py ───────────┤
+                                                                │
 CODAL audited PDFs ──────────────> audit opinion parser ─────────┤
                                                                 │
 CODAL disclosures ───────────────> related_party.py ─────────────┘
@@ -114,6 +117,7 @@ The parser currently verifies and exposes:
 - filing/report identifiers and source URLs
 - audit opinion when a verified audited PDF is available
 - conservative related-party disclosure flags
+- explicit report scope (`consolidated` or `standalone`) when determinable
 
 The exact-row regression fix prevents rows such as
 `سود (زیان) خالص عملیات متوقف شده` from being mistaken for
@@ -128,6 +132,32 @@ Verified real fundamentals include فولاد، خودرو and شپنا. Example
 ```
 
 These are validation observations from live filings, not hard-coded values.
+
+## Financial statement scope policy
+
+`analysis/financial_scope.py` now makes statement scope explicit and prevents
+accidental mixing of consolidated and standalone evidence.
+
+Current policy:
+
+- prefer `consolidated` when a consolidated financial-statement filing exists;
+- otherwise fall back to `standalone`;
+- audit opinion and related-party flags must come from the same selected scope;
+- the selected scope is written into the normalized CODAL fundamentals as
+  `report_scope`;
+- if scope cannot be determined safely, the system must not fabricate one.
+
+Verified live result for فولاد:
+
+```text
+report_scope: consolidated
+audit_opinion: unqualified
+related_party_flags: 0
+report_title: صورت‌های مالی تلفیقی سال مالی منتهی به ۱۴۰۴/۱۲/۲۹ (حسابرسی شده)
+```
+
+This confirms that the financial metrics and risk fields are aligned to the same
+consolidated report family for the verified فولاد path.
 
 ## Audit opinion parser
 
@@ -216,11 +246,13 @@ reasoning: P/E 5.21 vs sector 11.09 (+53% discount)
 
 The exact live market values can change. The key production verification is that
 CODAL fundamentals, audit opinion, related-party flags and extended market data
-are all flowing through the public recommendation endpoint.
+are all flowing through the public recommendation endpoint. After the financial
+scope change, `biap-fin` was restarted and the public recommendation endpoint
+continued to return a valid production response.
 
 ## Regression tests
 
-`analysis/tests/test_regressions.py` currently covers seven verified regression
+`analysis/tests/test_regressions.py` currently covers ten verified regression
 cases, including:
 
 - exact net-profit row matching
@@ -228,11 +260,12 @@ cases, including:
 - clean audit opinion recognition
 - prevention of unrelated `به استثنای` false positives
 - related-party parser conservative behavior
+- consolidated/standalone scope classification and selection behavior
 
 Latest production-server test result:
 
 ```text
-7 passed in 0.06s
+10 passed in 0.07s
 ```
 
 ## Recommendation API
@@ -244,6 +277,10 @@ GET /stock/recommendation/{code}
 Live responses include recommendation score/call, data availability, CODAL
 metadata, live price and per-agent breakdown with confidence, maturity, trust and
 reasoning fields.
+
+`report_scope` is currently verified inside the normalized company/CODAL record;
+exposing it as a first-class public API field can be added separately if required
+by the mobile UI or external consumers.
 
 ## Symbol universe API
 
@@ -334,28 +371,26 @@ precedence and this file must be corrected in the same change.
 
 ## Open work / next build order
 
-1. **Standalone vs consolidated report policy:** explicitly choose and document
-   which CODAL statement scope Kiasha should use, and prevent accidental mixing of
-   standalone and consolidated reports.
-2. **Audit parser hardening:** isolate the actual audit-opinion paragraph instead
+1. **Audit parser hardening:** isolate the actual audit-opinion paragraph instead
    of relying on whole-document phrase scanning for all edge cases.
-3. **Related-party validation:** test representative issuers with known explicit
+2. **Related-party validation:** test representative issuers with known explicit
    related-party warnings/non-compliance so positive flags are verified against
    real CODAL filings.
-4. **CODAL caching/gateway:** avoid unnecessary repeated PDF downloads and prepare
+3. **CODAL caching/gateway:** avoid unnecessary repeated PDF downloads and prepare
    a controlled CODAL collector/gateway path for the new server.
-5. **New external data server:** migrate data-heavy workloads incrementally to
+4. **New external data server:** migrate data-heavy workloads incrementally to
    `5.249.252.88` with rollback and health checks.
-6. **Broad-market regression tests:** continuously verify representative TSE,
+5. **Broad-market regression tests:** continuously verify representative TSE,
    IFB and IFB_BASE symbols.
-7. **Authentication + ownership:** bind order/audit endpoints to authenticated users/accounts.
-8. **Idempotency + approval state:** add idempotency keys and explicit signed/owned approval transitions.
-9. **PaperBroker:** move simulated fills behind a broker-adapter interface.
-10. **Risk hardening:** position/exposure checks, realized daily-loss limit,
-    stale-quote and market-session rules.
-11. **Mobile integration:** display recommendation/CODAL availability and paper
-    order preview in the mobile stock-detail experience after UI branch review.
-12. **Real broker research/integration:** only after API access, compliance and
+6. **Authentication + ownership:** bind order/audit endpoints to authenticated users/accounts.
+7. **Idempotency + approval state:** add idempotency keys and explicit signed/owned approval transitions.
+8. **PaperBroker:** move simulated fills behind a broker-adapter interface.
+9. **Risk hardening:** position/exposure checks, realized daily-loss limit,
+   stale-quote and market-session rules.
+10. **Mobile integration:** display recommendation/CODAL availability, financial
+    statement scope and paper order preview in the mobile stock-detail experience
+    after UI branch review.
+11. **Real broker research/integration:** only after API access, compliance and
     account authorization are confirmed. AUTO stays disabled until a separate,
     explicit production decision.
 
