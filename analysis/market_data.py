@@ -19,6 +19,7 @@ import json
 import os
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import Optional
 
@@ -104,29 +105,67 @@ def _is_tsetmc_instrument_code(code: str) -> bool:
     return bool(value) and value.isascii() and value.isdigit()
 
 
+def _search_tsetmc_instrument_code(wanted: str, *, timeout: float) -> Optional[str]:
+    """Resolve an exact Persian ticker/name through TSETMC's search endpoint."""
+    encoded = urllib.parse.quote(wanted, safe="")
+    try:
+        payload = _read_json(
+            f"{tsetmc_api_base()}/Instrument/GetInstrumentSearch/{encoded}",
+            timeout=timeout,
+        )
+    except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
+        return None
+    rows = payload.get("instrumentSearch")
+    if not isinstance(rows, list):
+        return None
+
+    exact_symbol: list[str] = []
+    exact_name: list[str] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        ins_code = str(row.get("insCode") or "").strip()
+        if not _is_tsetmc_instrument_code(ins_code):
+            continue
+        symbol = str(row.get("lVal18AFC") or "").strip()
+        name = str(row.get("lVal30") or "").strip()
+        if symbol == wanted:
+            exact_symbol.append(ins_code)
+        elif name == wanted:
+            exact_name.append(ins_code)
+
+    # Never guess among ambiguous exact matches.
+    if len(exact_symbol) == 1:
+        return exact_symbol[0]
+    if not exact_symbol and len(exact_name) == 1:
+        return exact_name[0]
+    return None
+
+
 def _resolve_tsetmc_instrument_code(code: str, *, timeout: float) -> Optional[str]:
     """Resolve a Persian ticker/name to a verified numeric TSETMC insCode.
 
-    CODAL fallback rows use the Persian issuer symbol as ``code``. When TSETMC
-    is reachable through the relay, resolve that symbol against the preferred
-    TSETMC universe before calling instrument endpoints. If only CODAL fallback
-    data is available, return ``None`` rather than inventing an identifier.
+    Prefer the verified TSETMC universe. If that bulk endpoint is unavailable or
+    has degraded to CODAL, fall back to TSETMC's exact instrument-search API.
+    No identifier is fabricated and ambiguous search matches are rejected.
     """
     wanted = str(code).strip()
     if _is_tsetmc_instrument_code(wanted):
         return wanted
     if not wanted:
         return None
+
     try:
         universe = fetch_symbol_universe(timeout=max(timeout, 12.0), use_cache=False)
     except SymbolUniverseUnavailable:
-        return None
+        universe = []
     for item in universe:
         if item.source != "tsetmc" or not _is_tsetmc_instrument_code(item.code):
             continue
         if wanted in {item.symbol.strip(), item.name.strip()}:
             return item.code
-    return None
+
+    return _search_tsetmc_instrument_code(wanted, timeout=max(timeout, 12.0))
 
 
 def _auth_headers() -> dict:
