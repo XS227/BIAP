@@ -7,7 +7,9 @@ issuer symbol; market-only fields remain unavailable rather than fabricated.
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
+import time
 
 from audit_parser import audit_opinion_from_pdf
 from codal_data import (
@@ -29,6 +31,9 @@ PRICE_ONLY_AVAILABILITY = {
     "codal_metadata": False,
     "market_extended": False,
 }
+
+_CODAL_PARTS_TTL_SECONDS = 5 * 60
+_codal_parts_cache: dict[str, tuple[float, tuple[dict | None, dict | None]]] = {}
 
 
 def _enrich_codal_risk_fields(symbol: str, fundamentals, report_scope: str | None):
@@ -74,27 +79,38 @@ def _enrich_codal_risk_fields(symbol: str, fundamentals, report_scope: str | Non
 
 
 def _codal_parts(symbol: str):
+    wanted = symbol.strip()
+    if not wanted:
+        return None, None
+
+    now = time.monotonic()
+    cached = _codal_parts_cache.get(wanted)
+    if cached and now - cached[0] < _CODAL_PARTS_TTL_SECONDS:
+        return cached[1]
+
     codal_metadata = None
     codal_fundamentals = None
     report_scope = None
 
     try:
-        meta = metadata_for_symbol(symbol)
+        meta = metadata_for_symbol(wanted)
         if meta is not None:
             codal_metadata = meta.to_dict()
     except CodalDataUnavailable:
         codal_metadata = None
 
     try:
-        fundamentals, report_scope = scoped_fundamentals_for_symbol(symbol)
-        fundamentals = _enrich_codal_risk_fields(symbol, fundamentals, report_scope)
+        fundamentals, report_scope = scoped_fundamentals_for_symbol(wanted)
+        fundamentals = _enrich_codal_risk_fields(wanted, fundamentals, report_scope)
         if fundamentals is not None:
             codal_fundamentals = fundamentals.to_dict()
             codal_fundamentals["report_scope"] = report_scope
     except CodalDataUnavailable:
         codal_fundamentals = None
 
-    return codal_metadata, codal_fundamentals
+    result = (codal_metadata, codal_fundamentals)
+    _codal_parts_cache[wanted] = (now, result)
+    return result
 
 
 def build_company_from_symbol(symbol: str) -> dict | None:
@@ -157,8 +173,15 @@ def build_company_from_symbol(symbol: str) -> dict | None:
 def build_company_from_quote(quote: LiveQuote, *, codal_symbol: str | None = None) -> dict:
     price = quote.last_price if quote.last_price is not None else quote.closing_price
     symbol_for_codal = (codal_symbol or quote.name).strip()
-    codal_metadata, codal_fundamentals = _codal_parts(symbol_for_codal)
-    extended = fetch_extended_market_data(quote.code)
+
+    # CODAL enrichment (including audited-report parsing) is much slower than
+    # TSETMC extended data. Fetch them concurrently so the request latency is
+    # bounded by the slower branch rather than the sum of both branches.
+    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="biap-company") as pool:
+        codal_future = pool.submit(_codal_parts, symbol_for_codal)
+        extended_future = pool.submit(fetch_extended_market_data, quote.code)
+        codal_metadata, codal_fundamentals = codal_future.result()
+        extended = extended_future.result()
 
     data_available = dict(PRICE_ONLY_AVAILABILITY)
     data_available["codal"] = codal_fundamentals is not None
