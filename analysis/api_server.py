@@ -22,8 +22,11 @@ from risk import evaluate_order_risk, policy_snapshot
 from symbol_universe import SymbolUniverseUnavailable, query_symbols
 
 
+_WARMUP = {"ready": True, "running": False, "symbols": [], "error": None}
+
+
 def _configured_warm_symbols() -> list[str]:
-    """Return explicitly configured symbols to preload before serving traffic."""
+    """Return explicitly configured symbols to preload before serving recommendations."""
     raw = os.getenv("BIAP_WARM_SYMBOLS", "")
     seen: set[str] = set()
     result: list[str] = []
@@ -37,22 +40,45 @@ def _configured_warm_symbols() -> list[str]:
 
 def _warm_symbol(symbol: str) -> None:
     """Populate the same verified caches used by a real recommendation request."""
+    _company_or_404(symbol)
+
+
+async def _run_warmup(symbols: list[str]) -> None:
+    _WARMUP.update({"ready": False, "running": True, "symbols": symbols, "error": None})
     try:
-        _company_or_404(symbol)
-    except Exception:
-        # Warm-up must never prevent the API from starting. A normal request can
-        # still retry live sources and fall back to verified degraded modes.
-        return
+        results = await asyncio.gather(
+            *(asyncio.to_thread(_warm_symbol, symbol) for symbol in symbols),
+            return_exceptions=True,
+        )
+        failures = [str(result) for result in results if isinstance(result, Exception)]
+        if failures:
+            _WARMUP["error"] = "; ".join(failures[:3])
+    finally:
+        # Warm-up is best-effort: once it finishes, normal requests may proceed
+        # and can still use verified degraded fallbacks if a source was unavailable.
+        _WARMUP["running"] = False
+        _WARMUP["ready"] = True
 
 
 @asynccontextmanager
 async def _lifespan(_app: FastAPI):
     symbols = _configured_warm_symbols()
+    task = None
     if symbols:
-        # Move blocking CODAL/TSETMC work off the event loop. Startup completes
-        # only after warm-up, so the first user request benefits from hot caches.
-        await asyncio.gather(*(asyncio.to_thread(_warm_symbol, symbol) for symbol in symbols))
+        # Start serving health/readiness immediately while caches warm in the
+        # background. Recommendation endpoints reject with 503 until warm-up
+        # completes, so users never sit on a 30+ second cold request.
+        _WARMUP.update({"ready": False, "running": True, "symbols": symbols, "error": None})
+        task = asyncio.create_task(_run_warmup(symbols))
+    else:
+        _WARMUP.update({"ready": True, "running": False, "symbols": [], "error": None})
     yield
+    if task is not None and not task.done():
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(title="BIAP Kiasha recommendation service", lifespan=_lifespan)
@@ -73,10 +99,24 @@ class OrderSubmitRequest(BaseModel):
     intentId: str = Field(min_length=1)
 
 
+def _require_warm_ready() -> None:
+    if not _WARMUP["ready"]:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "message": "service warming caches",
+                "retryable": True,
+                "warmup": dict(_WARMUP),
+            },
+        )
+
+
 @app.get("/health")
 def health():
     return {
-        "status": "ok",
+        "status": "ok" if _WARMUP["ready"] else "warming",
+        "ready": bool(_WARMUP["ready"]),
+        "warmup": dict(_WARMUP),
         "mode": "mock+live",
         "mockCompanies": list(MOCK_COMPANIES),
         "liveMarketData": {
@@ -167,6 +207,7 @@ def symbols(
 
 @app.get("/stock/recommendation/{code}")
 def recommendation(code: str):
+    _require_warm_ready()
     company, source = _company_or_404(code)
     decision = decide(company)
     market = company.get("market") or {}
@@ -205,6 +246,7 @@ def preview_order(
     user_id: str = Depends(require_user_id),
     idempotency_key: Optional[str] = Header(default=None, alias="Idempotency-Key"),
 ):
+    _require_warm_ready()
     if idempotency_key:
         cached = AUDIT.get_idempotent_response(user_id=user_id, idempotency_key=idempotency_key)
         if cached is not None:
