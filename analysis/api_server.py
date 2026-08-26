@@ -83,7 +83,7 @@ def _company_or_404(code: str) -> tuple[dict, str]:
     except MarketDataUnavailable:
         quote = None
     if quote is not None:
-        return build_company_from_quote(quote), "live"
+        return build_company_from_quote(quote, codal_symbol=code), "live"
 
     # TSETMC can be unreachable from some VPS networks. In that case a Persian
     # issuer symbol may still be resolved and analyzed from verified CODAL
