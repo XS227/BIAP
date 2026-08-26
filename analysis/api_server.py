@@ -1,7 +1,10 @@
 """HTTP wrapper around the Kiasha decision and guarded execution layers."""
 
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Literal, Optional
+import asyncio
+import os
 import uuid
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
@@ -18,7 +21,41 @@ from market_data import MarketDataUnavailable, base_url as market_base_url, find
 from risk import evaluate_order_risk, policy_snapshot
 from symbol_universe import SymbolUniverseUnavailable, query_symbols
 
-app = FastAPI(title="BIAP Kiasha recommendation service")
+
+def _configured_warm_symbols() -> list[str]:
+    """Return explicitly configured symbols to preload before serving traffic."""
+    raw = os.getenv("BIAP_WARM_SYMBOLS", "")
+    seen: set[str] = set()
+    result: list[str] = []
+    for part in raw.split(","):
+        symbol = part.strip()
+        if symbol and symbol not in seen:
+            seen.add(symbol)
+            result.append(symbol)
+    return result
+
+
+def _warm_symbol(symbol: str) -> None:
+    """Populate the same verified caches used by a real recommendation request."""
+    try:
+        _company_or_404(symbol)
+    except Exception:
+        # Warm-up must never prevent the API from starting. A normal request can
+        # still retry live sources and fall back to verified degraded modes.
+        return
+
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    symbols = _configured_warm_symbols()
+    if symbols:
+        # Move blocking CODAL/TSETMC work off the event loop. Startup completes
+        # only after warm-up, so the first user request benefits from hot caches.
+        await asyncio.gather(*(asyncio.to_thread(_warm_symbol, symbol) for symbol in symbols))
+    yield
+
+
+app = FastAPI(title="BIAP Kiasha recommendation service", lifespan=_lifespan)
 
 MOCK_COMPANIES = {SAMPLE_COMPANY["ticker"]: SAMPLE_COMPANY}
 AUDIT = AuditStore()
