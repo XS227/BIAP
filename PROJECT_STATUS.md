@@ -1,10 +1,10 @@
 # BIAP — Project Status
 
-_Last updated: 2026-08-25_
+_Last updated: 2026-08-26_
 
 ## Production status
 
-The FIN service from this repository is now deployed on the existing BIAP VPS
+The FIN service from this repository is deployed on the current BIAP VPS
 (`89.42.199.20`) and is live behind the existing BIAP domain.
 
 - systemd service: `biap-fin.service`
@@ -21,7 +21,8 @@ Verified public recommendation example:
 GET https://biap.dadashi.no/api/stock/recommendation/46348559193224090
 ```
 
-This resolves فولاد against live BIAP/TSETMC-derived market data.
+For فولاد, production now resolves live market data, parsed CODAL fundamentals,
+verified audit opinion and conservative related-party disclosure flags.
 
 ## Infrastructure / servers
 
@@ -46,44 +47,41 @@ Role: new external BIAP data/infrastructure server
 Status: available; migration/deployment work still needs to be completed and verified
 ```
 
+Direct connectivity from the new server to CODAL has been unreliable, while the
+current production VPS can access CODAL successfully. The intended migration must
+therefore keep a reversible option where the current server acts as a CODAL
+collector/gateway until direct connectivity on the new host is proven.
+
+`analysis/codal_data.py` supports the `BIAP_CODAL_BASE` environment variable so
+CODAL access can later be redirected through an internal gateway without changing
+analysis logic.
+
 **Security:** passwords, tokens, API keys and other credentials must never be
 committed to this repository or written into `PROJECT_STATUS.md`. Operators/agents
 must obtain credentials from the authorized secret channel and store runtime
 secrets in environment variables or an appropriate secret store.
 
-### Intended migration direction
-
-The new server should be used to separate data-heavy/external-source workloads
-from the current public BIAP application host where practical. The migration must
-be incremental and reversible:
-
-1. inventory the data collectors, caches, databases and source adapters currently
-   running on `89.42.199.20`;
-2. deploy the required runtime on `5.249.252.88` without disabling production;
-3. move or replicate data ingestion/storage first;
-4. verify TSETMC/CODAL connectivity and data freshness on the new host;
-5. expose only the minimum private/internal API required by BIAP;
-6. switch BIAP to the new data service only after health checks and comparison tests pass;
-7. keep rollback to the current production path available until the new path is stable.
-
-Do not move authentication, public routing or production state blindly. Record
-exactly what was migrated and what still remains on the original VPS.
-
 ## Current data pipeline
 
 ```text
-Existing BIAP/TSETMC watchlist ──> market_data.py ─┐
-                                                   ├─> company_builder.py
-CODAL search/reference APIs ─────> codal_data.py ─┘
-                                                        ↓
-                                                  agent team
-                                                        ↓
-                                                     Kiasha
-                                                        ↓
-                                                BUY/HOLD/SELL
+Existing BIAP/TSETMC watchlist ──> market_data.py ───────────────┐
+                                                                │
+Direct TSETMC instrument data ──> extended market metrics ──────┤
+                                                                ├─> company_builder.py
+CODAL search/report APIs ────────> codal_data.py ────────────────┤
+                                                                │
+CODAL audited PDFs ──────────────> audit opinion parser ─────────┤
+                                                                │
+CODAL disclosures ───────────────> related_party.py ─────────────┘
+                                                                     ↓
+                                                               agent team
+                                                                     ↓
+                                                                  Kiasha
+                                                                     ↓
+                                                             BUY/HOLD/SELL
 ```
 
-### Live market data
+## Live market data
 
 `analysis/market_data.py` first reuses the already-running BIAP endpoint:
 
@@ -91,99 +89,151 @@ CODAL search/reference APIs ─────> codal_data.py ─┘
 GET https://biap.dadashi.no/api/stock/watchlist
 ```
 
-It provides live price identity only: last price, closing price, yesterday
-price, change and change percent. It intentionally does **not** invent P/E,
-volume or 52-week values that are absent from the existing endpoint.
+Direct TSETMC lookup is used as a fallback for symbols outside the original
+watchlist, and extended market data is now connected for recommendation analysis.
+Verified production output includes 52-week range, volume, P/E and sector P/E
+where the upstream source exposes them.
 
-A TSETMC symbol-universe path has also been added so BIAP can work with a much
-broader set of Tehran Stock Exchange and Iran Fara Bourse instruments rather
-than only the small mobile watchlist. Current verified universe counts from the
-server were:
+A broad symbol universe is available for TSE, IFB and IFB_BASE instruments. The
+system must remain market/industry agnostic and must not hard-code a small sector
+or symbol list.
 
-```text
-TSE:      770
-IFB:      909
-IFB_BASE: 150
-```
+## CODAL fundamentals
 
-These counts are operational observations, not a permanent contract; upstream
-TSETMC contents can change.
+`analysis/codal_data.py` is a read-only CODAL adapter. It parses only values that
+are explicitly present in issuer filings; missing or ambiguous values remain
+`None`.
 
-Direct TSETMC quote lookup by instrument code is the fallback for symbols that
-are not present in the original BIAP watchlist. The fallback now resolves the
-instrument code through `symbol_universe.py` so `LiveQuote.name` is the Persian
-ticker symbol instead of the numeric TSETMC code. This is important because
-CODAL lookup is symbol-based.
+The parser currently verifies and exposes:
 
-Verified production examples for direct TSETMC quote fallback include:
+- current and previous operating revenue
+- current and previous net profit/loss
+- current and previous gross profit/loss when available
+- revenue YoY growth
+- current and previous net margin
+- filing/report identifiers and source URLs
+- audit opinion when a verified audited PDF is available
+- conservative related-party disclosure flags
 
-```text
-خودرو   65883838195688438   last=702     closing=696     yesterday=682
-شپنا    7745894403636165    last=11850   closing=11850   yesterday=11510
-فارس    25244329144808274   last=10450   closing=10430   yesterday=10150
-زاگرس   13235547361447092   last=142500  closing=142900  yesterday=144400
-سفارس   15521712617204216   last=29050   closing=28630   yesterday=28210
-```
+The exact-row regression fix prevents rows such as
+`سود (زیان) خالص عملیات متوقف شده` from being mistaken for
+`سود (زیان) خالص`.
 
-This verifies that broad-market live-price coverage is no longer limited to the
-original mobile watchlist.
-
-### CODAL
-
-`analysis/codal_data.py` is a read-only adapter for `search.codal.ir`.
-
-Verified from the production BIAP VPS:
-
-- `/api/search/v1/companies` — reachable and returns real company reference data
-- `/api/search/v1/financialYears?Symbol=...` — reachable and verified for فولاد
-- `/api/search/v2/q` — filing discovery is implemented as best-effort with
-  conservative fallback queries because CODAL is sensitive to filter combinations
-
-CODAL filing discovery has been tested across multiple industries/symbols, not
-only steel. Examples used during validation include automotive, refining,
-petrochemical, food and other listed companies. The system must remain
-market/industry agnostic and use the actual symbol universe rather than a
-hard-coded list of sectors.
-
-For فولاد, live recommendation output has verified:
-
-```json
-"dataAvailability": {
-  "codal": false,
-  "codal_metadata": true,
-  "market_extended": false
-}
-```
-
-After deploying symbol resolution for direct-TSETMC fallback, خودرو was also
-verified in production with:
+Verified real fundamentals include فولاد، خودرو and شپنا. Example observations:
 
 ```text
-NAME: خودرو
-AVAILABILITY: {'codal': False, 'codal_metadata': True, 'market_extended': False}
-CODAL META: True
+فولاد: revenue YoY about +40.2%, net margin about 27.1%
+خودرو: revenue YoY about +56.8%, net margin about -0.9%
+شپنا:  revenue YoY about +51.8%, net margin about 10.5%
 ```
 
-So the code-to-symbol-to-CODAL metadata path works beyond the original watchlist.
-`codalMetadata` is real reference/report metadata; it is not yet normalized
-fundamental accounting data.
+These are validation observations from live filings, not hard-coded values.
 
-**Important:** CODAL metadata/report discovery is not the same as normalized
-fundamentals. `codal` remains `false` until actual report values are parsed into
-explicit metrics. Missing values must stay unavailable; no synthetic values.
+## Audit opinion parser
 
-## Agent behavior with missing data
+Audited CODAL PDFs are downloaded read-only and converted with `pdftotext` when
+available. Persian/Arabic Unicode presentation forms and direction-control
+characters are normalized before classification.
 
-The four analysis agents are designed to degrade safely:
+Current supported audit classes:
 
-- fundamental agent: neutral / 0 confidence until normalized CODAL fundamentals exist
-- risk agent: uses only verified inputs and states which inputs are absent
-- forecast agent: neutral / 0 confidence while volume and 52-week range are missing
-- comparison agent: neutral / 0 confidence while P/E/sector P/E are missing
+```text
+unqualified
+qualified
+adverse
+disclaimer
+```
 
-Therefore a price-only or metadata-only company can correctly return `HOLD` with
-score `0.0`. This is expected, not an error. The risk layer has also been verified
-to reject a BUY attempt when the recommendation score is below its configured threshold.
+For فولاد, the verified audited filing is classified as:
+
+```text
+audit_opinion: unqualified
+```
+
+The parser intentionally returns `None` when an opinion cannot be verified.
+
+## Related-party parser
+
+`analysis/related_party.py` implements a conservative related-party disclosure
+parser. It does not treat the mere existence of ordinary related-party
+transactions as a risk flag. It only counts explicit warning/non-compliance
+signals supported by the filing text, such as verified disclosure failures or
+explicit Article 129 issues.
+
+Verified live result for فولاد:
+
+```text
+related_party_flags: 0
+```
+
+This field is now wired into `company_builder.py`, the fundamental agent and the
+risk agent.
+
+## Agent behavior
+
+The four agents remain evidence-based and degrade safely when data is missing.
+
+### Fundamental agent
+
+Uses verified CODAL revenue growth and margin data. Negative margins are penalized
+even when the loss margin is improving. Verified audit/related-party information
+can raise confidence and can penalize risk when warranted.
+
+### Risk agent
+
+Uses verified audit opinion, related-party flags, management guidance when
+available and extended market drawdown/range data. It no longer reports the audit
+or related-party parser as disconnected when those fields are actually available.
+
+### Forecast agent
+
+Uses verified extended market data such as current volume versus 30-day average
+and position inside the 52-week range.
+
+### Comparison agent
+
+Uses verified P/E and sector P/E. It remains neutral when P/E is unavailable or
+when EPS makes P/E invalid.
+
+## Verified production recommendation
+
+After the 2026-08-26 deployment, production for فولاد returned agent output
+including:
+
+```text
+fundamental  vote=0.2  confidence=0.75
+reasoning: revenue +40.2% YoY; margin declining (-2.0pp)
+
+risk         vote=-0.2 confidence=0.6
+reasoning: audit opinion unqualified; 40% off 52w high
+
+forecast     vote=0.2  confidence=0.5
+reasoning: trading in lower 28% of 52w range
+
+comparison   vote=1.0  confidence=0.65
+reasoning: P/E 5.21 vs sector 11.09 (+53% discount)
+```
+
+The exact live market values can change. The key production verification is that
+CODAL fundamentals, audit opinion, related-party flags and extended market data
+are all flowing through the public recommendation endpoint.
+
+## Regression tests
+
+`analysis/tests/test_regressions.py` currently covers seven verified regression
+cases, including:
+
+- exact net-profit row matching
+- negative net-margin scoring
+- clean audit opinion recognition
+- prevention of unrelated `به استثنای` false positives
+- related-party parser conservative behavior
+
+Latest production-server test result:
+
+```text
+7 passed in 0.06s
+```
 
 ## Recommendation API
 
@@ -191,20 +241,11 @@ to reject a BUY attempt when the recommendation score is below its configured th
 GET /stock/recommendation/{code}
 ```
 
-Live responses include:
-
-- `code`, `name`
-- `call`, `score`, `generatedAt`
-- `dataSource`
-- `dataAvailability`
-- `codalMetadata`
-- `livePrice`
-- per-agent `breakdown`
+Live responses include recommendation score/call, data availability, CODAL
+metadata, live price and per-agent breakdown with confidence, maturity, trust and
+reasoning fields.
 
 ## Symbol universe API
-
-The FIN service includes a symbol-universe endpoint intended for discovery across
-TSE/IFB markets:
 
 ```text
 GET /stock/symbols
@@ -254,14 +295,17 @@ Update the running FIN service after a reviewed GitHub change:
 
 ```bash
 cd /root/BIAP
-git pull
+git pull --ff-only
 systemctl restart biap-fin
 systemctl status biap-fin --no-pager
 ```
 
-Smoke tests:
+Regression and smoke tests:
 
 ```bash
+cd /root/BIAP/analysis
+./.venv/bin/python -m pytest tests/test_regressions.py -q
+
 curl http://127.0.0.1:8088/health
 curl https://biap.dadashi.no/api/stock/recommendation/46348559193224090
 curl https://biap.dadashi.no/api/stock/recommendation/65883838195688438
@@ -290,27 +334,30 @@ precedence and this file must be corrected in the same change.
 
 ## Open work / next build order
 
-1. **New external data server:** inventory the current data workload and prepare
-   `5.249.252.88` as the new BIAP data host; document deployment paths/services
-   and migrate incrementally with rollback.
-2. **CODAL fundamentals:** parse verified financial-report values into an
-   agent-ready schema such as revenue growth, margins, audit opinion and explicit
-   risk/disclosure flags. Never infer missing accounting values.
-3. **Extended market data:** add reliable P/E, sector P/E, volume and 52-week
-   range sources.
-4. **Broad-market regression tests:** continuously verify representative TSE,
-   IFB and IFB_BASE symbols so future changes do not break direct quote or symbol
-   resolution behavior.
-5. **Authentication + ownership:** bind order/audit endpoints to authenticated users/accounts.
-6. **Idempotency + approval state:** add idempotency keys and explicit signed/owned approval transitions.
-7. **PaperBroker:** move simulated fills behind a broker-adapter interface.
-8. **Risk hardening:** position/exposure checks, realized daily-loss limit,
-   stale-quote and market-session rules.
-9. **Mobile integration:** display recommendation/CODAL availability and paper
-   order preview in the mobile stock-detail experience after UI branch review.
-10. **Real broker research/integration:** only after API access, compliance and
-   account authorization are confirmed. AUTO stays disabled until a separate,
-   explicit production decision.
+1. **Standalone vs consolidated report policy:** explicitly choose and document
+   which CODAL statement scope Kiasha should use, and prevent accidental mixing of
+   standalone and consolidated reports.
+2. **Audit parser hardening:** isolate the actual audit-opinion paragraph instead
+   of relying on whole-document phrase scanning for all edge cases.
+3. **Related-party validation:** test representative issuers with known explicit
+   related-party warnings/non-compliance so positive flags are verified against
+   real CODAL filings.
+4. **CODAL caching/gateway:** avoid unnecessary repeated PDF downloads and prepare
+   a controlled CODAL collector/gateway path for the new server.
+5. **New external data server:** migrate data-heavy workloads incrementally to
+   `5.249.252.88` with rollback and health checks.
+6. **Broad-market regression tests:** continuously verify representative TSE,
+   IFB and IFB_BASE symbols.
+7. **Authentication + ownership:** bind order/audit endpoints to authenticated users/accounts.
+8. **Idempotency + approval state:** add idempotency keys and explicit signed/owned approval transitions.
+9. **PaperBroker:** move simulated fills behind a broker-adapter interface.
+10. **Risk hardening:** position/exposure checks, realized daily-loss limit,
+    stale-quote and market-session rules.
+11. **Mobile integration:** display recommendation/CODAL availability and paper
+    order preview in the mobile stock-detail experience after UI branch review.
+12. **Real broker research/integration:** only after API access, compliance and
+    account authorization are confirmed. AUTO stays disabled until a separate,
+    explicit production decision.
 
 ## Key safety rule
 
