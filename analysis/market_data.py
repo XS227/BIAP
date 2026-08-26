@@ -100,16 +100,33 @@ def tsetmc_api_base() -> str:
 
 
 def _is_tsetmc_instrument_code(code: str) -> bool:
-    """TSETMC instrument endpoints accept numeric insCode identifiers only.
-
-    CODAL degraded-mode lookups use Persian issuer symbols as ``code`` values.
-    Sending those symbols to an instrument-code URL both has no semantic meaning
-    and, with urllib/http.client, can raise UnicodeEncodeError before a network
-    request is even made. Treat non-numeric codes as unavailable market data so
-    the caller can continue to the verified CODAL-only analysis path.
-    """
     value = str(code).strip()
     return bool(value) and value.isascii() and value.isdigit()
+
+
+def _resolve_tsetmc_instrument_code(code: str, *, timeout: float) -> Optional[str]:
+    """Resolve a Persian ticker/name to a verified numeric TSETMC insCode.
+
+    CODAL fallback rows use the Persian issuer symbol as ``code``. When TSETMC
+    is reachable through the relay, resolve that symbol against the preferred
+    TSETMC universe before calling instrument endpoints. If only CODAL fallback
+    data is available, return ``None`` rather than inventing an identifier.
+    """
+    wanted = str(code).strip()
+    if _is_tsetmc_instrument_code(wanted):
+        return wanted
+    if not wanted:
+        return None
+    try:
+        universe = fetch_symbol_universe(timeout=max(timeout, 12.0), use_cache=False)
+    except SymbolUniverseUnavailable:
+        return None
+    for item in universe:
+        if item.source != "tsetmc" or not _is_tsetmc_instrument_code(item.code):
+            continue
+        if wanted in {item.symbol.strip(), item.name.strip()}:
+            return item.code
+    return None
 
 
 def _auth_headers() -> dict:
@@ -209,10 +226,11 @@ def _read_json(url: str, *, timeout: float) -> dict:
 
 
 def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuote]:
-    if not _is_tsetmc_instrument_code(code):
+    instrument_code = _resolve_tsetmc_instrument_code(code, timeout=timeout)
+    if instrument_code is None:
         return None
     try:
-        payload = _read_json(f"{tsetmc_api_base()}/ClosingPrice/GetClosingPriceInfo/{code}", timeout=timeout)
+        payload = _read_json(f"{tsetmc_api_base()}/ClosingPrice/GetClosingPriceInfo/{instrument_code}", timeout=timeout)
     except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
         return None
     row = payload.get("closingPriceInfo")
@@ -231,8 +249,8 @@ def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuot
         change = last_price - yesterday_price
         change_percent = (change / yesterday_price) * 100.0
     return LiveQuote(
-        code=str(code),
-        name=_resolve_symbol_name(str(code), timeout=timeout),
+        code=str(instrument_code),
+        name=_resolve_symbol_name(str(instrument_code), timeout=timeout),
         last_price=last_price,
         closing_price=closing_price,
         yesterday_price=yesterday_price,
@@ -242,18 +260,19 @@ def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuot
 
 
 def fetch_extended_market_data(code: str, *, timeout: float = 12.0, use_cache: bool = True) -> Optional[ExtendedMarketData]:
-    if not _is_tsetmc_instrument_code(code):
+    instrument_code = _resolve_tsetmc_instrument_code(code, timeout=timeout)
+    if instrument_code is None:
         return None
     now = time.monotonic()
-    cached = _extended_cache.get(code)
+    cached = _extended_cache.get(instrument_code)
     if use_cache and cached and now - cached[0] < EXTENDED_CACHE_TTL_SECONDS:
         return cached[1]
 
     tsetmc = tsetmc_api_base()
     try:
-        current = _read_json(f"{tsetmc}/ClosingPrice/GetClosingPriceInfo/{code}", timeout=timeout)
-        history = _read_json(f"{tsetmc}/ClosingPrice/GetClosingPriceDailyList/{code}/400", timeout=timeout)
-        instrument_payload = _read_json(f"{tsetmc}/Instrument/GetInstrumentInfo/{code}", timeout=timeout)
+        current = _read_json(f"{tsetmc}/ClosingPrice/GetClosingPriceInfo/{instrument_code}", timeout=timeout)
+        history = _read_json(f"{tsetmc}/ClosingPrice/GetClosingPriceDailyList/{instrument_code}/400", timeout=timeout)
+        instrument_payload = _read_json(f"{tsetmc}/Instrument/GetInstrumentInfo/{instrument_code}", timeout=timeout)
     except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
         return None
 
@@ -330,7 +349,7 @@ def fetch_extended_market_data(code: str, *, timeout: float = 12.0, use_cache: b
         market_flow=int(instrument.get("flow")) if instrument.get("flow") is not None else None,
         market_title=str(instrument.get("flowTitle", "")).strip() or None,
     )
-    _extended_cache[code] = (now, result)
+    _extended_cache[instrument_code] = (now, result)
     return result
 
 
