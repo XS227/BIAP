@@ -11,6 +11,8 @@ from financial_scope import (
     select_scope_filings,
 )
 from related_party import _related_party_flags_from_text
+import symbol_universe as su
+from symbol_universe import MarketSymbol
 
 
 def test_exact_net_profit_row_matching():
@@ -174,3 +176,51 @@ def test_report_scope_falls_back_to_standalone():
 
     assert scope == STANDALONE
     assert filings == [standalone]
+
+
+def test_symbol_snapshot_roundtrip(tmp_path, monkeypatch):
+    path = tmp_path / "symbols.json"
+    monkeypatch.setenv("BIAP_SYMBOL_SNAPSHOT", str(path))
+    items = [
+        MarketSymbol(
+            code="123",
+            symbol="فولاد",
+            name="فولاد مبارکه اصفهان",
+            market="TSE",
+            flow=1,
+            industry_code="27",
+            paper_type="300",
+            source="tsetmc",
+        )
+    ]
+
+    su._save_snapshot(items)
+    loaded = su._load_snapshot()
+
+    assert loaded == items
+
+
+def test_symbol_universe_uses_verified_snapshot_when_upstreams_fail(tmp_path, monkeypatch):
+    path = tmp_path / "symbols.json"
+    monkeypatch.setenv("BIAP_SYMBOL_SNAPSHOT", str(path))
+    cached = [
+        MarketSymbol(
+            code="123",
+            symbol="فولاد",
+            name="فولاد مبارکه اصفهان",
+            market="TSE",
+            flow=1,
+            industry_code="27",
+            paper_type="300",
+            source="tsetmc",
+        )
+    ]
+    su._save_snapshot(cached)
+    su._cache = None
+    monkeypatch.setattr(su, "_fetch_json_universe", lambda **kwargs: [])
+    monkeypatch.setattr(su, "_fetch_legacy_universe", lambda **kwargs: [])
+    monkeypatch.setattr(su, "_fetch_codal_universe", lambda: [])
+
+    result = su.fetch_symbol_universe(use_cache=False)
+
+    assert result == cached
