@@ -12,6 +12,8 @@ from enum import Enum
 from typing import Optional
 import uuid
 
+from broker import PaperBroker
+
 
 class ExecutionMode(str, Enum):
     PAPER = "paper"
@@ -110,11 +112,15 @@ def build_order_intent(*, code: str, side: str, quantity: int,
     return asdict(intent)
 
 
+_PAPER_BROKER = PaperBroker()
+
+
 def submit_order_intent(intent: dict) -> dict:
     """Submit an already-built intent.
 
-    PAPER returns a simulated receipt. APPROVAL remains pending. AUTO is never
-    accepted. No broker integration exists in this prototype.
+    PAPER is handed to a Broker (see broker.py) to produce a fill receipt.
+    APPROVAL remains pending and never reaches a broker at all -- it waits on
+    a human, by design. AUTO is never accepted. No real broker is connected.
     """
     mode = intent.get("mode")
     if mode == ExecutionMode.AUTO.value:
@@ -128,11 +134,5 @@ def submit_order_intent(intent: dict) -> dict:
             "brokerOrderId": None,
         }
     if mode == ExecutionMode.PAPER.value:
-        return {
-            **intent,
-            "status": "PAPER_FILLED",
-            "submittedAt": _now_iso(),
-            "broker": "paper",
-            "brokerOrderId": f"paper-{intent['id']}",
-        }
+        return _PAPER_BROKER.submit(intent)
     raise ExecutionPolicyError("unsupported execution mode")

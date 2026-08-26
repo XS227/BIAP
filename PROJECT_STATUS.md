@@ -252,9 +252,9 @@ continued to return a valid production response.
 
 ## Regression tests
 
-`analysis/tests/` (`test_regressions.py`, `test_order_auth.py`, plus
-`test_market_data_identifiers.py`) covers 32 verified regression cases as of
-2026-08-26, including:
+`analysis/tests/` (`test_regressions.py`, `test_order_auth.py`,
+`test_market_data_identifiers.py`, plus `test_broker.py`) covers 34 verified
+regression cases as of 2026-08-26, including:
 
 - exact net-profit row matching
 - negative net-margin scoring
@@ -275,13 +275,15 @@ continued to return a valid production response.
   tests" below)
 - TSETMC quote lookup skips non-numeric codes instead of crashing (see
   "Live relay confirmed working" below)
+- PaperBroker adapter produces the same fill receipt as before the refactor
+  (see "PaperBroker adapter" below)
 
 Latest local test result (on `5.249.252.88`, not yet re-verified on the
 `89.42.199.20` production host after this change -- do that before trusting
 this count there):
 
 ```text
-32 passed in 0.6s
+34 passed in 0.4s
 ```
 
 ## Recommendation API
@@ -580,6 +582,28 @@ too) and across TSE/IFB/IFB_BASE, not just one TSE symbol.
 
 32/32 tests pass after these fixes (up from 28).
 
+## PaperBroker adapter (2026-08-26)
+
+Roadmap item 8. `execution.py`'s `submit_order_intent()` used to build the
+`PAPER_FILLED` receipt inline. Moved that into a new `analysis/broker.py`:
+a one-method `Broker` ABC (`submit(intent) -> receipt`) and a `PaperBroker`
+implementation that reproduces the exact same simulated-fill behavior as
+before, byte-for-byte (verified: all existing order/idempotency tests pass
+unchanged).
+
+The point isn't the abstraction for its own sake -- it's that when a real
+broker is eventually confirmed (roadmap item 11: Saman outreach sent
+2026-08-26, no response yet), it becomes a second `Broker` implementation
+plugged in at the same one call site in `submit_order_intent()`. Nothing in
+`execution.py`'s policy checks, `risk.py`, `audit_store.py`, or `api_server.py`
+needs to change for that -- they all only ever see the receipt shape, never
+which broker produced it. `approval` mode still never reaches a `Broker` at
+all (it waits on a human, by design, before this layer would even be
+consulted) and `AUTO` is still rejected in `execution.py` before either path
+is considered.
+
+New tests: `analysis/tests/test_broker.py`. 34/34 tests pass.
+
 ## Production operations
 
 Update the running FIN service after a reviewed GitHub change:
@@ -663,7 +687,7 @@ precedence and this file must be corrected in the same change.
    (currently anyone holding the bearer token that created a `PENDING_APPROVAL`
    intent could theoretically flip it, since there's no separate approver
    role yet).
-8. **PaperBroker:** move simulated fills behind a broker-adapter interface.
+8. ~~**PaperBroker:**~~ done (2026-08-26) — see "PaperBroker adapter" below.
 9. **Risk hardening:** position/exposure checks, realized daily-loss limit,
    stale-quote and market-session rules.
 10. **Mobile integration:** `codalFundamentals` (incl. `report_scope`) is now on
