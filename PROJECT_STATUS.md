@@ -252,8 +252,9 @@ continued to return a valid production response.
 
 ## Regression tests
 
-`analysis/tests/` (`test_regressions.py` plus `test_order_auth.py`) covers 30
-verified regression cases as of 2026-08-26, including:
+`analysis/tests/` (`test_regressions.py`, `test_order_auth.py`, plus
+`test_market_data_identifiers.py`) covers 32 verified regression cases as of
+2026-08-26, including:
 
 - exact net-profit row matching
 - negative net-margin scoring
@@ -272,7 +273,7 @@ verified regression cases as of 2026-08-26, including:
   market-filtered symbol queries, and one representative symbol per market
   through the full recommendation pipeline (see "Broad-market regression
   tests" below)
-- TSETMC quote lookup encodes non-ASCII codes instead of crashing (see
+- TSETMC quote lookup skips non-numeric codes instead of crashing (see
   "Live relay confirmed working" below)
 
 Latest local test result (on `5.249.252.88`, not yet re-verified on the
@@ -280,7 +281,7 @@ Latest local test result (on `5.249.252.88`, not yet re-verified on the
 this count there):
 
 ```text
-30 passed in 0.4s
+32 passed in 0.6s
 ```
 
 ## Recommendation API
@@ -562,9 +563,12 @@ This closed two real gaps immediately:
    TSETMC numeric-code endpoint first and interpolated the raw code
    straight into the URL path -- any non-ASCII code crashed the whole
    request with an unhandled `UnicodeEncodeError` instead of failing
-   gracefully into the CODAL fallback. Fixed by URL-encoding the code in
-   `_fetch_tsetmc_quote` and `fetch_extended_market_data`. New regression
-   test: `test_tsetmc_quote_lookup_encodes_non_ascii_code_instead_of_crashing`.
+   gracefully into the CODAL fallback. Found independently by two sessions
+   at nearly the same time (small overlap window during the live-relay
+   validation above); the merged fix keeps the cleaner of the two:
+   `_is_tsetmc_instrument_code()` rejects any non-numeric code before a
+   request is ever attempted, rather than encoding-and-sending it anyway.
+   Regression coverage: `analysis/tests/test_market_data_identifiers.py`.
 
 This means the "still open, needs live CODAL access" caveat on items 1, 2
 and 5 above is now partially closeable -- at least for `فولاد`, real
@@ -574,7 +578,7 @@ known qualified/adverse/disclaimer opinions or related-party flags, not just
 a clean one like فولاد, to prove the non-zero-flag paths against real data
 too) and across TSE/IFB/IFB_BASE, not just one TSE symbol.
 
-30/30 tests pass after these fixes (up from 28).
+32/32 tests pass after these fixes (up from 28).
 
 ## Production operations
 

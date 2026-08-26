@@ -12,7 +12,6 @@ from financial_scope import (
     select_scope_filings,
 )
 from kiasha import decide
-import market_data as md
 from market_data import ExtendedMarketData, LiveQuote
 from related_party import _related_party_flags_from_text
 import symbol_universe as su
@@ -443,23 +442,11 @@ def test_recommendation_pipeline_handles_a_representative_symbol_from_each_marke
         assert len(run_team(company)) == 4
 
 
-def test_tsetmc_quote_lookup_encodes_non_ascii_code_instead_of_crashing(monkeypatch):
-    # Found live: /stock/recommendation/{code} is also called with a Persian
-    # company symbol (the CODAL-only fallback path is designed for exactly
-    # that), and find_quote() always tries the TSETMC numeric-code endpoint
-    # first regardless. Interpolating that raw, non-ASCII code straight into
-    # the request path crashed with an unhandled UnicodeEncodeError deep in
-    # http.client instead of failing as a normal "not found" that the
-    # existing CODAL-fallback handling already covers.
-    seen_urls = []
-
-    def fake_read_json(url, *, timeout):
-        seen_urls.append(url)
-        return {}
-
-    monkeypatch.setattr(md, "_read_json", fake_read_json)
-
-    result = md._fetch_tsetmc_quote("فولاد", timeout=1.0)
-
-    assert result is None  # no closingPriceInfo in the fake empty payload
-    assert seen_urls and all(url.isascii() for url in seen_urls)
+# Found live on the same crash: /stock/recommendation/{code} is also called
+# with a Persian company symbol (the CODAL-only fallback path is designed for
+# exactly that), and find_quote() always tries the TSETMC numeric-code
+# endpoint first regardless, which used to crash with an unhandled
+# UnicodeEncodeError instead of failing gracefully into that fallback.
+# Fixed with an explicit numeric-code guard (_is_tsetmc_instrument_code) in
+# market_data.py; see test_market_data_identifiers.py for that regression
+# coverage rather than duplicating it here.

@@ -19,7 +19,6 @@ import json
 import os
 import time
 import urllib.error
-import urllib.parse
 import urllib.request
 from typing import Optional
 
@@ -98,6 +97,19 @@ def base_url() -> str:
 
 def tsetmc_api_base() -> str:
     return os.environ.get("BIAP_TSETMC_API_BASE", DEFAULT_TSETMC_API_BASE).rstrip("/")
+
+
+def _is_tsetmc_instrument_code(code: str) -> bool:
+    """TSETMC instrument endpoints accept numeric insCode identifiers only.
+
+    CODAL degraded-mode lookups use Persian issuer symbols as ``code`` values.
+    Sending those symbols to an instrument-code URL both has no semantic meaning
+    and, with urllib/http.client, can raise UnicodeEncodeError before a network
+    request is even made. Treat non-numeric codes as unavailable market data so
+    the caller can continue to the verified CODAL-only analysis path.
+    """
+    value = str(code).strip()
+    return bool(value) and value.isascii() and value.isdigit()
 
 
 def _auth_headers() -> dict:
@@ -197,14 +209,10 @@ def _read_json(url: str, *, timeout: float) -> dict:
 
 
 def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuote]:
-    # code is arbitrary caller input here (e.g. /stock/recommendation/{code}
-    # is also called with a Persian symbol, which TSETMC's numeric-code
-    # endpoints were never going to recognize -- but it must still fail as a
-    # normal "not found" so the caller falls back to CODAL-only data, not
-    # crash the request while building the URL).
-    encoded_code = urllib.parse.quote(str(code), safe="")
+    if not _is_tsetmc_instrument_code(code):
+        return None
     try:
-        payload = _read_json(f"{tsetmc_api_base()}/ClosingPrice/GetClosingPriceInfo/{encoded_code}", timeout=timeout)
+        payload = _read_json(f"{tsetmc_api_base()}/ClosingPrice/GetClosingPriceInfo/{code}", timeout=timeout)
     except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
         return None
     row = payload.get("closingPriceInfo")
@@ -234,17 +242,18 @@ def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuot
 
 
 def fetch_extended_market_data(code: str, *, timeout: float = 12.0, use_cache: bool = True) -> Optional[ExtendedMarketData]:
+    if not _is_tsetmc_instrument_code(code):
+        return None
     now = time.monotonic()
     cached = _extended_cache.get(code)
     if use_cache and cached and now - cached[0] < EXTENDED_CACHE_TTL_SECONDS:
         return cached[1]
 
     tsetmc = tsetmc_api_base()
-    encoded_code = urllib.parse.quote(str(code), safe="")
     try:
-        current = _read_json(f"{tsetmc}/ClosingPrice/GetClosingPriceInfo/{encoded_code}", timeout=timeout)
-        history = _read_json(f"{tsetmc}/ClosingPrice/GetClosingPriceDailyList/{encoded_code}/400", timeout=timeout)
-        instrument_payload = _read_json(f"{tsetmc}/Instrument/GetInstrumentInfo/{encoded_code}", timeout=timeout)
+        current = _read_json(f"{tsetmc}/ClosingPrice/GetClosingPriceInfo/{code}", timeout=timeout)
+        history = _read_json(f"{tsetmc}/ClosingPrice/GetClosingPriceDailyList/{code}/400", timeout=timeout)
+        instrument_payload = _read_json(f"{tsetmc}/Instrument/GetInstrumentInfo/{code}", timeout=timeout)
     except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
         return None
 
