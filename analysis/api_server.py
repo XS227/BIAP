@@ -138,6 +138,7 @@ def recommendation(code: str):
         "dataSource": source,
         "dataAvailability": availability(company),
         "codalMetadata": company.get("codal_metadata") if source in {"live", "codal"} else None,
+        "codalFundamentals": company.get("codal") if source in {"live", "codal"} else None,
         "livePrice": {
             "lastPrice": market.get("last_price"),
             "closingPrice": market.get("closing_price"),

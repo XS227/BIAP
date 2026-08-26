@@ -275,12 +275,20 @@ GET /stock/recommendation/{code}
 ```
 
 Live responses include recommendation score/call, data availability, CODAL
-metadata, live price and per-agent breakdown with confidence, maturity, trust and
-reasoning fields.
+metadata, structured CODAL fundamentals, live price and per-agent breakdown with
+confidence, maturity, trust and reasoning fields.
 
-`report_scope` is currently verified inside the normalized company/CODAL record;
-exposing it as a first-class public API field can be added separately if required
-by the mobile UI or external consumers.
+**2026-08-26:** added a `codalFundamentals` field to this response (mirrors the
+existing `codalMetadata` field's `source in {"live", "codal"}` gating). It exposes
+the already-computed `company["codal"]` dict — `revenue_current`/`revenue_prev`,
+`net_profit_current`/`net_profit_prev`, `revenue_yoy_pct`, `net_margin_pct`,
+`gross_profit_current`/`gross_profit_prev`, `audit_opinion`,
+`related_party_flags`, `report_scope`, `report_title`/`report_url`,
+`tracing_no` — as first-class structured fields instead of only being folded
+into agent `reasoning` text. No parsing/decision logic changed; 13/13 regression
+tests pass. This was previously the largest gap between what FIN computes and
+what the mobile app can render (mobile only consumed `score`/`call`/`breakdown`
+text before this).
 
 ## Symbol universe API
 
@@ -387,9 +395,13 @@ precedence and this file must be corrected in the same change.
 8. **PaperBroker:** move simulated fills behind a broker-adapter interface.
 9. **Risk hardening:** position/exposure checks, realized daily-loss limit,
    stale-quote and market-session rules.
-10. **Mobile integration:** display recommendation/CODAL availability, financial
-    statement scope and paper order preview in the mobile stock-detail experience
-    after UI branch review.
+10. **Mobile integration:** `codalFundamentals` (incl. `report_scope`) is now on
+    the wire (see Recommendation API section above); mobile still needs a
+    fundamentals section in `recommendation-card.tsx` to render it, plus
+    `/stock/symbols` search UI and server-backed `/orders/{id}`,
+    `/audit/orders`, `/risk/status` wiring (mobile repo currently has an
+    unrelated auth/guest-lock feature mid-flight, uncommitted, touching
+    `orders.tsx` and the tab nav — coordinate before touching those files).
 11. **Real broker research/integration:** only after API access, compliance and
     account authorization are confirmed. AUTO stays disabled until a separate,
     explicit production decision.

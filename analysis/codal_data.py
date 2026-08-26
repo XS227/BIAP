@@ -108,6 +108,10 @@ def base_url() -> str:
     return os.getenv("BIAP_CODAL_BASE", DEFAULT_BASE).rstrip("/")
 
 
+def www_base_url() -> str:
+    return os.getenv("BIAP_CODAL_WWW_BASE", "https://www.codal.ir").rstrip("/")
+
+
 def _get_json(path: str, params: Optional[dict[str, Any]] = None) -> Any:
     url = f"{base_url()}{path}"
     if params:
@@ -379,7 +383,7 @@ def _fetch_filing_html(filing: CodalFiling) -> str:
     elif excel_base and url.startswith("http://excel.codal.ir/"):
         url = f"{excel_base}/{url[len('http://excel.codal.ir/'):]}"
     elif not url.lower().startswith(("http://", "https://")):
-        url = urljoin("https://www.codal.ir", url)
+        url = urljoin(www_base_url() + "/", url)
     req = Request(
         url,
         headers={
@@ -551,7 +555,7 @@ def _audit_opinion_from_pdf(filing: CodalFiling) -> Optional[str]:
     if not filing.pdf_url:
         return None
 
-    pdf_url = urljoin("https://www.codal.ir/", filing.pdf_url)
+    pdf_url = urljoin(www_base_url() + "/", filing.pdf_url)
     req = Request(pdf_url, headers={"User-Agent": "Mozilla/5.0 BIAP/1.0"})
 
     try:
