@@ -7,59 +7,52 @@ quick reference alongside `PROJECT_STATUS.md`.
 
 ## P0 — blocking everything downstream
 
-1. **CODAL reverse-proxy gateway on `89.42.199.20`.** Asked 2026-08-26 11:34,
-   followed up 19:22 — no reply yet as of 2026-08-26 20:51. This is the single
-   thing blocking real-filing validation of the audit-opinion/related-party
-   parsers (roadmap items 1/2, currently only proven against فولاد via the
-   already-working relay) and broad-market regression against live symbols
-   (roadmap item 5).
+1. **Public route from `biap.dadashi.no/api` to the Kiasha service.**
+   The mobile source now lives in `XS227/BIAP/mobile/` and calls
+   `/stock/recommendation/{code}` plus guarded `/orders/*` through its API base.
+   The Kiasha FastAPI service exposes these routes in `analysis/api_server.py`,
+   but the production web/API gateway still needs to be verified to forward
+   those paths to the running Kiasha service. Until this is confirmed, the app
+   may render normally while recommendation calls return 404/502/null.
 
-   Needed on `89.42.199.20`:
-   - New nginx server block, plain HTTP, on a free internal port (suggested
-     8090 — any port is fine, just report which).
-   - Two proxy locations, **restricted to `5.249.252.88` only**:
-     - `/codal-search/` → `https://search.codal.ir/`
-     - `/codal-www/` → `https://www.codal.ir/`
-     (full nginx block is in the 2026-08-26 11:34 discussion comment, ready to paste)
-   - If ufw/iptables is active: allow inbound on that port from `5.249.252.88`
-     specifically, not `0.0.0.0/0`.
-   - `nginx -t`, reload, and confirm `biap-fin` + existing `biap.dadashi.no`
-     routes are still healthy afterward. Must not touch the existing
-     `biap-fin` proxy or port 4000 routes.
-   - Report back: port used, reload confirmed, `biap-fin` still healthy.
+   Needed on the server/gateway:
+   - Verify `https://biap.dadashi.no/api/stock/recommendation/<symbol>` reaches
+     the Kiasha FastAPI service rather than the older Express API.
+   - If not, add a narrow reverse-proxy/forwarding route for Kiasha endpoints;
+     do not disturb existing `/api/auth/*`, watchlist, or port-4000 routes.
+   - Verify 503 warmup responses pass through unchanged and a ready request
+     returns the real `dataAvailability`, `codalFundamentals`, and `breakdown`.
+   - Verify `/orders/preview` and `/orders/submit` keep bearer-token forwarding.
 
 ## P1
 
-2. **Mobile repo merge into `XS227/BIAP` (`mobile/` subfolder) — merged
-   (PR #4).** `-biap-mobile`'s committed history (main @ `204526a`) is now
-   subtree-merged into this repo's `mobile/` folder. Still needed from Nasrin
-   in `/home/nasrin/Biap/mobile`:
-   - Commit the changes currently sitting uncommitted in the working tree
-     (`src/app/_layout.tsx`, `src/app/index.tsx`, `src/app/more.tsx`,
-     `src/app/orders.tsx`, `src/components/app-tabs.tsx`,
-     `src/components/app-tabs.web.tsx`, `src/components/login-screen.tsx`,
-     `src/components/recommendation-card.tsx`, `src/lib/api.ts` modified, plus
-     new `src/app/search.tsx` and `src/lib/auth-context.tsx`) — these aren't in
-     the merge yet since they were never committed.
-   - Push local `main` (currently 8 commits ahead of `origin/main` on
-     `-biap-mobile`) to GitHub, so `-biap-mobile` itself stays a true record —
-     also closes out PR #1 below, which those commits already incorporate.
-   - Weigh in on whether mobile development moves to living under
-     `XS227/BIAP/mobile/` going forward or `-biap-mobile` stays the working
-     repo with periodic re-merges.
+2. **Mobile source consolidation — resolved.** PR #4 merged the mobile app into
+   `XS227/BIAP/mobile/`, and this folder is now the source of truth for mobile
+   development. The previously referenced `/home/nasrin/Biap/mobile` working
+   tree is no longer present on the old VPS, so those stale WIP notes are not a
+   blocker anymore. New mobile changes should be made directly under
+   `XS227/BIAP/mobile/`.
 
-3. **On-device review of `-biap-mobile` PR #1**
-   (https://github.com/nasrindadashi-cloud/-biap-mobile/pull/1) — blocking
-   merge to `main`. Note: local `main` in `/home/nasrin/Biap/mobile` already
-   has this branch's content merged in (commit `204526a`), just never pushed —
-   once item 2's push happens this PR is likely just closable rather than
-   needing a separate merge. Still worth an on-device check via the tunnel
-   above before closing:
+3. **Mobile Kiasha integration and build validation.** The mobile API layer now:
+   - supports `live`, `codal`, and `mock` recommendation sources;
+   - understands CODAL metadata/fundamentals returned by the backend;
+   - retries one transient 503 warmup response;
+   - supports `EXPO_PUBLIC_KIASHA_API_BASE` as an override while defaulting to
+     `https://biap.dadashi.no/api`;
+   - shows grounded agent votes/confidence/weights and CODAL facts in the card.
+
+   A `.github/workflows/mobile-check.yml` TypeScript check was added. GitHub
+   currently reports no Actions runs for the repo, so CI execution still needs
+   to be enabled/observed or the same check run on a dev machine with
+   `cd mobile && npm ci && npx tsc --noEmit`.
+
+4. **On-device review of the consolidated mobile app.** Once the public Kiasha
+   route is verified and a build/tunnel is running, check on a real device:
    - the 6-tab bar (خانه/بازار/سفارش‌ها/پرتفوی/کیاشا/بیشتر)
    - RTL layout overall
    - real BIAP logo rendering correctly
    - registration screen ("۵ تحلیل رایگان" card)
-   - the کیاشا screen
+   - the کیاشا screen and one real symbol recommendation
 
 ## P2
 
@@ -97,10 +90,9 @@ quick reference alongside `PROJECT_STATUS.md`.
   to that existing endpoint rather than build new TSETMC ingestion from
   scratch. Done (`analysis/market_data.py`).
 
-- ~~Dev box Expo tunnel health~~ (2026-08-26). Old tunnel had a broken
-  `node_modules` (missing `send`); `npm install` was already re-run since the
-  2026-08-25 investigation and the module issue is gone. The tmux `biap`
-  session itself had died (no server running) — restarted it with the
-  documented recovery command. New working tunnel:
-  `https://iu1rmmq-anonymous-8081.exp.direct` (Expo Go:
-  `exp://iu1rmmq-anonymous-8081.exp.direct`).
+- ~~CODAL reverse-proxy gateway on `89.42.199.20`~~. The restricted relay is
+  live and used by the data server for CODAL/TSETMC access; keep its allowlist
+  restricted to the data server and localhost.
+
+- ~~Mobile repo merge into `XS227/BIAP`~~. PR #4 merged successfully; mobile
+  development now lives under `mobile/` in this repository.
