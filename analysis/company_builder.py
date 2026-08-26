@@ -1,10 +1,8 @@
-"""
-Builds a normalized company record for the Kiasha agent team.
+"""Build normalized company records for the Kiasha agent team.
 
-Live companies are enriched with read-only CODAL metadata, conservative
-report-derived CODAL fundamentals, verified audit opinions and related-party
-risk flags when available, and verified TSETMC extended market metrics. Missing
-fields stay unavailable rather than being inferred.
+Live TSETMC quotes are enriched with CODAL fundamentals and risk fields. When
+TSETMC is unreachable, a CODAL-only company can still be built from a verified
+issuer symbol; market-only fields remain unavailable rather than fabricated.
 """
 
 from __future__ import annotations
@@ -75,27 +73,90 @@ def _enrich_codal_risk_fields(symbol: str, fundamentals, report_scope: str | Non
     return result
 
 
-def build_company_from_quote(quote: LiveQuote) -> dict:
-    price = quote.last_price if quote.last_price is not None else quote.closing_price
-
+def _codal_parts(symbol: str):
     codal_metadata = None
     codal_fundamentals = None
+    report_scope = None
+
     try:
-        meta = metadata_for_symbol(quote.name)
+        meta = metadata_for_symbol(symbol)
         if meta is not None:
             codal_metadata = meta.to_dict()
     except CodalDataUnavailable:
         codal_metadata = None
 
     try:
-        fundamentals, report_scope = scoped_fundamentals_for_symbol(quote.name)
-        fundamentals = _enrich_codal_risk_fields(quote.name, fundamentals, report_scope)
+        fundamentals, report_scope = scoped_fundamentals_for_symbol(symbol)
+        fundamentals = _enrich_codal_risk_fields(symbol, fundamentals, report_scope)
         if fundamentals is not None:
             codal_fundamentals = fundamentals.to_dict()
             codal_fundamentals["report_scope"] = report_scope
     except CodalDataUnavailable:
         codal_fundamentals = None
 
+    return codal_metadata, codal_fundamentals
+
+
+def build_company_from_symbol(symbol: str) -> dict | None:
+    """Build a verified CODAL-only company when no TSETMC quote is reachable."""
+    wanted = symbol.strip()
+    if not wanted:
+        return None
+
+    codal_metadata, codal_fundamentals = _codal_parts(wanted)
+    if codal_metadata is None and codal_fundamentals is None:
+        return None
+
+    company_name = None
+    if codal_metadata:
+        company_name = codal_metadata.get("company_name")
+
+    return {
+        "ticker": wanted,
+        "name_fa": company_name or wanted,
+        "name_en": None,
+        "data_available": {
+            "codal": codal_fundamentals is not None,
+            "codal_metadata": codal_metadata is not None,
+            "market_extended": False,
+        },
+        "codal": codal_fundamentals,
+        "codal_metadata": codal_metadata,
+        "market": {
+            "price": None,
+            "last_price": None,
+            "closing_price": None,
+            "yesterday_price": None,
+            "change": None,
+            "change_percent": None,
+            "price_52w_high": None,
+            "price_52w_low": None,
+            "day_high": None,
+            "day_low": None,
+            "volume_today": None,
+            "trade_value_today": None,
+            "trade_count_today": None,
+            "avg_volume_30d": None,
+            "estimated_eps": None,
+            "eps_value": None,
+            "pe": None,
+            "sector_avg_pe": None,
+            "shares_outstanding": None,
+            "market_cap": None,
+            "market_cap_bn": None,
+            "base_volume": None,
+            "sector_code": None,
+            "sector_name": None,
+            "market_flow": None,
+            "market_title": None,
+            "valuation_source": None,
+        },
+    }
+
+
+def build_company_from_quote(quote: LiveQuote) -> dict:
+    price = quote.last_price if quote.last_price is not None else quote.closing_price
+    codal_metadata, codal_fundamentals = _codal_parts(quote.name)
     extended = fetch_extended_market_data(quote.code)
 
     data_available = dict(PRICE_ONLY_AVAILABILITY)
