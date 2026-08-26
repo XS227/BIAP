@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const API_BASE = 'https://biap.dadashi.no/api';
+export const KIASHA_API_BASE = process.env.EXPO_PUBLIC_KIASHA_API_BASE || API_BASE;
 
 export type StockItem = {
   name: string;
@@ -49,9 +50,6 @@ export function parsePct(raw?: string | number): number {
 }
 
 // --- FIN recommendation (Kiasha agent-team, XS227/BIAP) -------------------
-// Additive: this endpoint may not exist on every deployment yet (backend
-// rollout is separate from this app). fetchRecommendation fails silently
-// (returns null) so the rest of the screen is unaffected until it's live.
 
 export type RecommendationCall = 'BUY' | 'HOLD' | 'SELL';
 
@@ -59,9 +57,9 @@ export type RecommendationBreakdownEntry = {
   agent: string;
   vote: number;
   confidence: number;
-  trust_score: number;
-  maturity: string;
-  weight_pre_norm: number;
+  trust_score?: number;
+  maturity?: string;
+  weight_pre_norm?: number;
   reasoning: string;
   weight_normalized: number;
 };
@@ -72,8 +70,23 @@ export type Recommendation = {
   call: RecommendationCall;
   score: number;
   generatedAt: string;
-  dataSource: 'mock' | 'live';
-  dataAvailability: { codal: boolean; market_extended: boolean };
+  dataSource: 'mock' | 'live' | 'codal';
+  dataAvailability: {
+    codal: boolean;
+    codal_metadata?: boolean;
+    market_extended: boolean;
+  };
+  codalMetadata?: Record<string, unknown> | null;
+  codalFundamentals?: {
+    symbol?: string;
+    revenue_yoy_pct?: number | null;
+    net_margin_pct?: number | null;
+    net_margin_prev_pct?: number | null;
+    audit_opinion?: string | null;
+    related_party_flags?: number | null;
+    report_title?: string | null;
+    report_scope?: string | null;
+  } | null;
   livePrice: {
     lastPrice?: number | null;
     closingPrice?: number | null;
@@ -83,22 +96,36 @@ export type Recommendation = {
   breakdown: RecommendationBreakdownEntry[];
 };
 
-export async function fetchRecommendation(code: string, timeoutMs = 10_000): Promise<Recommendation | null> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const headers = await getHeaders();
-    const res = await fetch(`${API_BASE}/stock/recommendation/${encodeURIComponent(code)}`, {
-      headers,
-      signal: controller.signal,
-    });
-    if (!res.ok) return null;
-    return (await res.json()) as Recommendation;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function fetchRecommendation(code: string, timeoutMs = 15_000): Promise<Recommendation | null> {
+  // The Kiasha service can briefly return 503 while its verified CODAL/TSETMC
+  // caches warm after a restart. Retry that state once rather than making the
+  // screen look permanently unavailable. All other failures stay best-effort.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const headers = await getHeaders();
+      const res = await fetch(`${KIASHA_API_BASE}/stock/recommendation/${encodeURIComponent(code)}`, {
+        headers,
+        signal: controller.signal,
+      });
+      if (res.status === 503 && attempt === 0) {
+        await sleep(1200);
+        continue;
+      }
+      if (!res.ok) return null;
+      return (await res.json()) as Recommendation;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
   }
+  return null;
 }
 
 // --- Paper-mode order simulation -------------------------------------------
@@ -139,7 +166,7 @@ export async function previewPaperOrder(params: {
 }): Promise<OrderPreviewResult> {
   try {
     const headers = await getHeaders();
-    const res = await fetch(`${API_BASE}/orders/preview`, {
+    const res = await fetch(`${KIASHA_API_BASE}/orders/preview`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ code: params.code, side: params.side, quantity: params.quantity, mode: 'paper' }),
@@ -167,7 +194,7 @@ export async function submitPaperOrder(
 ): Promise<{ ok: true; receipt: OrderIntent & { submittedAt: string; broker: string | null; brokerOrderId: string | null } } | { ok: false; message: string }> {
   try {
     const headers = await getHeaders();
-    const res = await fetch(`${API_BASE}/orders/submit`, {
+    const res = await fetch(`${KIASHA_API_BASE}/orders/submit`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ intentId }),
