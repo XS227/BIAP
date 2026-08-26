@@ -12,6 +12,7 @@ from financial_scope import (
     select_scope_filings,
 )
 from kiasha import decide
+import market_data as md
 from market_data import ExtendedMarketData, LiveQuote
 from related_party import _related_party_flags_from_text
 import symbol_universe as su
@@ -161,6 +162,31 @@ def test_bounded_audit_parser_does_not_mistake_basis_heading_for_opinion_heading
     section = _extract_audit_opinion_section(text)
     assert section is not None
     assert "شواهد حسابرسی کافی" not in section
+    assert classify_audit_opinion_from_text(text) == "unqualified"
+
+
+def test_bounded_audit_parser_prefers_canonical_sentence_over_a_corrupt_heading():
+    # Observed on a real, live CODAL filing (فولاد مبارکه اصفهان, fetched
+    # through the newly-connected relay): pdftotext's handling of a numbered
+    # paragraph in a bidi Persian PDF dropped "مبنای" from what should have
+    # been the "مبنای اظهارنظر" heading, leaving a bare "اظهار نظر" line
+    # that matches the heading pattern and sits *before* the real, reliable
+    # canonical opinion sentence. Anchoring on that corrupted heading instead
+    # of the canonical sentence produced a false None instead of the correct
+    # "unqualified" classification. The canonical sentence must win.
+    text = """
+    مسئولیت‌های حسابرس در بخش قبل شرح داده شده است.
+    اظهار نظر
+    .4 حسابرسی این سازمان طبق استانداردهای حسابرسی انجام شده است. این سازمان
+    اعتقاد دارد که شواهد حسابرسی کسب شده به عنوان مبنای اظهارنظر، کافی و
+    مناسب است.
+    به نظر این سازمان، صورتهای مالی یادشده وضعیت مالی شرکت را از تمام
+    جنبه های با اهمیت، طبق استانداردهای حسابداری، به نحو منصفانه نشان می دهد.
+    """
+
+    section = _extract_audit_opinion_section(text)
+    assert section is not None
+    assert section.startswith("به نظر این سازمان")
     assert classify_audit_opinion_from_text(text) == "unqualified"
 
 
@@ -415,3 +441,25 @@ def test_recommendation_pipeline_handles_a_representative_symbol_from_each_marke
         assert decision.call in {"BUY", "HOLD", "SELL"}
         assert -1.0 <= decision.weighted_score <= 1.0
         assert len(run_team(company)) == 4
+
+
+def test_tsetmc_quote_lookup_encodes_non_ascii_code_instead_of_crashing(monkeypatch):
+    # Found live: /stock/recommendation/{code} is also called with a Persian
+    # company symbol (the CODAL-only fallback path is designed for exactly
+    # that), and find_quote() always tries the TSETMC numeric-code endpoint
+    # first regardless. Interpolating that raw, non-ASCII code straight into
+    # the request path crashed with an unhandled UnicodeEncodeError deep in
+    # http.client instead of failing as a normal "not found" that the
+    # existing CODAL-fallback handling already covers.
+    seen_urls = []
+
+    def fake_read_json(url, *, timeout):
+        seen_urls.append(url)
+        return {}
+
+    monkeypatch.setattr(md, "_read_json", fake_read_json)
+
+    result = md._fetch_tsetmc_quote("فولاد", timeout=1.0)
+
+    assert result is None  # no closingPriceInfo in the fake empty payload
+    assert seen_urls and all(url.isascii() for url in seen_urls)

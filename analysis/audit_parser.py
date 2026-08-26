@@ -95,8 +95,22 @@ def _extract_audit_opinion_section(text: str) -> Optional[str]:
     """Return a bounded opinion section instead of scanning the whole report.
 
     Preference order:
-    1. explicit ``اظهارنظر`` / ``اظهار نظر`` heading line;
-    2. the canonical ``به نظر این سازمان`` opinion sentence.
+    1. the canonical ``به نظر این سازمان`` opinion sentence -- this exact
+       multi-word phrase is specific enough on its own to anchor on directly;
+    2. an explicit ``اظهارنظر`` / ``اظهار نظر`` heading line, only when no
+       canonical sentence exists at all (true for some disclaimer wording).
+
+    The canonical sentence is checked first, not the heading, because a real
+    CODAL filing showed the heading path is not reliable: pdftotext's
+    handling of bidi Persian text with numbered paragraphs can corrupt a
+    heading line -- observed in production, the actual heading "مبنای
+    اظهارنظر" ("Basis for Opinion") had "مبنای" silently dropped during
+    extraction, leaving a bare "اظهارنظر" fragment that then got matched as
+    if it were the real opinion heading and used to override a perfectly
+    good canonical-sentence match found later in the same document. The
+    canonical sentence has no equivalent failure mode observed so far, so it
+    takes priority whenever present; the heading search is a fallback for
+    when it's genuinely absent, not a preference over it.
 
     The section stops at common following audit-report headings and is also
     hard-capped. If no reliable anchor exists, None is returned rather than
@@ -109,22 +123,16 @@ def _extract_audit_opinion_section(text: str) -> Optional[str]:
     canonical_index = normalized.find("به نظر این سازمان")
 
     start: Optional[int] = None
-    if heading_offsets:
-        # Prefer the heading nearest before the canonical opinion sentence
-        # when present. Otherwise -- e.g. a disclaimer of opinion, which may
-        # never use that canonical fairness wording -- prefer the *last*
-        # heading line rather than the first: audit-report PDFs commonly
-        # repeat the section title in a table of contents before the real
-        # section, and the real content is always the later occurrence. This
-        # is only safe because heading_offsets are true standalone heading
-        # lines, never an in-sentence mention.
-        if canonical_index >= 0:
-            prior = [pos for pos in heading_offsets if pos <= canonical_index]
-            start = prior[-1] if prior else heading_offsets[0]
-        else:
-            start = heading_offsets[-1]
-    elif canonical_index >= 0:
+    if canonical_index >= 0:
         start = canonical_index
+    elif heading_offsets:
+        # No canonical fairness sentence at all -- true for some disclaimer
+        # wording. Prefer the *last* heading line rather than the first:
+        # audit-report PDFs commonly repeat the section title in a table of
+        # contents before the real section, and the real content is always
+        # the later occurrence. This is only safe because heading_offsets are
+        # true standalone heading lines, never an in-sentence mention.
+        start = heading_offsets[-1]
 
     if start is None:
         return None

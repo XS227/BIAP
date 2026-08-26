@@ -252,15 +252,16 @@ continued to return a valid production response.
 
 ## Regression tests
 
-`analysis/tests/` (`test_regressions.py` plus `test_order_auth.py`) covers 28
+`analysis/tests/` (`test_regressions.py` plus `test_order_auth.py`) covers 30
 verified regression cases as of 2026-08-26, including:
 
 - exact net-profit row matching
 - negative net-margin scoring
 - bounded audit-opinion extraction: unqualified, qualified, adverse and
-  disclaimer, table-of-contents-vs-real-section disambiguation, and
-  "Basis for Opinion" heading exclusion (see "Audit-opinion parser
-  hardening" below)
+  disclaimer, table-of-contents-vs-real-section disambiguation, "Basis for
+  Opinion" heading exclusion, and preferring the canonical opinion sentence
+  over a corrupted heading (see "Audit-opinion parser hardening" and "Live
+  relay confirmed working" below)
 - related-party parser conservative behavior, including rejecting a
   cross-window false positive between two far-apart mentions (see
   "Related-party parser hardening" below)
@@ -271,13 +272,15 @@ verified regression cases as of 2026-08-26, including:
   market-filtered symbol queries, and one representative symbol per market
   through the full recommendation pipeline (see "Broad-market regression
   tests" below)
+- TSETMC quote lookup encodes non-ASCII codes instead of crashing (see
+  "Live relay confirmed working" below)
 
 Latest local test result (on `5.249.252.88`, not yet re-verified on the
 `89.42.199.20` production host after this change -- do that before trusting
 this count there):
 
 ```text
-28 passed in 0.3s
+30 passed in 0.4s
 ```
 
 ## Recommendation API
@@ -508,6 +511,70 @@ data (constructed TSE/IFB/IFB_BASE rows), not real fetched TSETMC symbols,
 since direct TSETMC/CODAL access from `5.249.252.88` is still blocked.
 Verifying against the *actual* live symbol universe for all three markets is
 still open, same dependency as the CODAL gateway ask.
+
+## Live relay confirmed working -- first real-data validation (2026-08-26)
+
+Nasrin's relay (`relay_server.py` on `89.42.199.20`, nginx :8090 -> relay
+:8091) is live and reachable from `5.249.252.88`. Verified directly from this
+host, not assumed:
+
+```
+curl http://89.42.199.20:8090/health
+-> {"status":"ok","mode":"read-only-relay","sources":["codal-excel","codal-search","codal-www","tsetmc-cdn","tsetmc-old"]}
+```
+
+With `BIAP_CODAL_BASE`/`BIAP_CODAL_WWW_BASE`/`BIAP_CODAL_EXCEL_BASE`/
+`BIAP_TSETMC_API_BASE` pointed at it, ran the real pipeline against a real
+company for the first time from this host:
+
+- `codal_data.find_company('فولاد')` -> real CODAL company record (id `271018`).
+- `codal_data.latest_financial_filings('فولاد')` -> real, current filings
+  (an audited financial statement dated 1405/05/25, i.e. this week).
+- `GET /stock/recommendation/فولاد` -> **HTTP 200**, `call: HOLD`,
+  `score: 0.127`, `dataSource: codal`, real fundamental-agent reasoning
+  ("revenue +40.2% YoY; margin declining"), real `audit_opinion: unqualified`,
+  real `related_party_flags: 0` -- the first real recommendation this
+  pipeline has ever produced from live data, not a mock or synthetic fixture.
+
+This closed two real gaps immediately:
+
+1. **`poppler-utils` (`pdftotext`) was not installed on `5.249.252.88`.**
+   Every PDF-based check (audit opinion, related-party) was silently
+   returning `None` on this host for that reason alone -- not a parser bug.
+   Installed (`apt-get install poppler-utils`); this needs to happen on
+   whatever host actually runs `biap-fin` after the migration, or it'll hit
+   the same silent-`None` failure mode there.
+2. **A real bug in the audit-opinion parser, found only by testing against
+   a real filing:** pdftotext's handling of bidi Persian text in a numbered
+   paragraph corrupted a heading -- "مبنای اظهارنظر" ("Basis for Opinion")
+   lost its "مبنای" during extraction, leaving a bare "اظهار نظر" fragment
+   that matched the heading pattern and sat before the real canonical
+   opinion sentence, incorrectly anchoring the section there instead and
+   producing a false `None`. Fixed in `audit_parser.py`: the canonical
+   `به نظر این سازمان` sentence is now checked *first* and used directly
+   whenever present; the heading-line search is only a fallback for when
+   it's genuinely absent (see the updated "Audit-opinion parser hardening"
+   section above for the reasoning). New regression test:
+   `test_bounded_audit_parser_prefers_canonical_sentence_over_a_corrupt_heading`.
+3. **A real crash bug in `market_data.py`:** `/stock/recommendation/{code}`
+   is also called with a Persian company symbol (the CODAL-only fallback
+   path exists for exactly that), but `find_quote()` always tries the
+   TSETMC numeric-code endpoint first and interpolated the raw code
+   straight into the URL path -- any non-ASCII code crashed the whole
+   request with an unhandled `UnicodeEncodeError` instead of failing
+   gracefully into the CODAL fallback. Fixed by URL-encoding the code in
+   `_fetch_tsetmc_quote` and `fetch_extended_market_data`. New regression
+   test: `test_tsetmc_quote_lookup_encodes_non_ascii_code_instead_of_crashing`.
+
+This means the "still open, needs live CODAL access" caveat on items 1, 2
+and 5 above is now partially closeable -- at least for `فولاد`, real
+validation just happened. What's still open: doing this systematically
+across a representative sample of issuers (including ones with *actual*
+known qualified/adverse/disclaimer opinions or related-party flags, not just
+a clean one like فولاد, to prove the non-zero-flag paths against real data
+too) and across TSE/IFB/IFB_BASE, not just one TSE symbol.
+
+30/30 tests pass after these fixes (up from 28).
 
 ## Production operations
 
