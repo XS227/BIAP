@@ -1,4 +1,8 @@
 from agents import fundamental_agent
+from audit_parser import (
+    _extract_audit_opinion_section,
+    classify_audit_opinion_from_text,
+)
 from codal_data import CodalFiling, _row_values
 from financial_scope import (
     CONSOLIDATED,
@@ -67,6 +71,46 @@ def test_audit_opinion_ignores_unrelated_exception_text():
     """
 
     assert _classify_audit_opinion(text) == "unqualified"
+
+
+def test_bounded_audit_parser_ignores_exception_outside_opinion_section():
+    text = """
+    اظهارنظر
+    به نظر این سازمان، صورتهای مالی یادشده، وضعیت مالی گروه و شرکت را
+    از تمام جنبه های با اهمیت، طبق استانداردهای حسابداری،
+    به نحو منصفانه نشان می دهد.
+    مبنای اظهارنظر
+    شواهد حسابرسی کافی و مناسب کسب شده است.
+    سایر اطلاعات
+    موجودی مواد و کالا به استثنای موجودی کالای در راه بررسی شده است.
+    """
+
+    section = _extract_audit_opinion_section(text)
+    assert section is not None
+    assert "موجودی مواد و کالا" not in section
+    assert classify_audit_opinion_from_text(text) == "unqualified"
+
+
+def test_bounded_audit_parser_detects_qualified_opinion_inside_section():
+    text = """
+    اظهارنظر
+    به نظر این سازمان، به استثنای آثار موضوع شرح داده شده در بند مبنای
+    اظهارنظر مشروط، صورتهای مالی از تمام جنبه های با اهمیت به نحو
+    منصفانه نشان می دهد.
+    مبنای اظهارنظر
+    موضوع محدودیت رسیدگی در این بخش تشریح شده است.
+    """
+
+    assert classify_audit_opinion_from_text(text) == "qualified"
+
+
+def test_bounded_audit_parser_requires_reliable_opinion_anchor():
+    text = """
+    یادداشت موجودی کالا شامل عبارت به استثنای کالای در راه است.
+    اطلاعات دیگری نیز در صورتهای مالی ارائه شده است.
+    """
+
+    assert classify_audit_opinion_from_text(text) is None
 
 
 def test_related_party_parser_returns_none_without_context():
