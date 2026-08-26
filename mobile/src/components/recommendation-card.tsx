@@ -5,6 +5,12 @@ import { Recommendation, previewPaperOrder, submitPaperOrder } from '@/lib/api';
 import { recordLocalOrder } from '@/lib/order-history';
 
 const CALL_LABEL: Record<string, string> = { BUY: 'خرید', SELL: 'فروش', HOLD: 'نگهداری' };
+const AGENT_LABEL: Record<string, string> = {
+  fundamental: 'بنیادی',
+  risk: 'ریسک',
+  forecast: 'پیش‌بینی',
+  comparison: 'مقایسه',
+};
 
 function callColor(call: string) {
   if (call === 'BUY') return Brand.stockGreen;
@@ -25,8 +31,8 @@ export function RecommendationCard({ rec, colors }: { rec: Recommendation; color
   const [expanded, setExpanded] = useState(false);
   const accent = callColor(rec.call);
   const directional = rec.call === 'BUY' || rec.call === 'SELL';
-  const top = [...rec.breakdown].sort((a, b) => b.weight_normalized - a.weight_normalized)[0];
-  const isLimited = !rec.dataAvailability.codal || !rec.dataAvailability.market_extended;
+  const top = [...rec.breakdown].sort((a, b) => (b.weight_normalized ?? 0) - (a.weight_normalized ?? 0))[0];
+  const sourceLabel = rec.dataSource === 'live' ? 'TSETMC + CODAL' : rec.dataSource === 'codal' ? 'CODAL' : 'نمونه';
 
   const runPaperSim = async () => {
     if (!directional) return;
@@ -59,19 +65,18 @@ export function RecommendationCard({ rec, colors }: { rec: Recommendation; color
         <View style={[styles.badge, { backgroundColor: `${accent}22` }]}>
           <Text style={[styles.badgeText, { color: accent }]}>{CALL_LABEL[rec.call] ?? rec.call}</Text>
         </View>
-        <Text style={[styles.title, { color: colors.text }]}>توصیه هوش مصنوعی</Text>
+        <View style={styles.titleWrap}>
+          <Text style={[styles.title, { color: colors.text }]}>تحلیل کیا‌شا</Text>
+          <Text style={[styles.source, { color: colors.textSecondary }]}>منبع: {sourceLabel}</Text>
+        </View>
       </View>
 
       <Text style={[styles.score, { color: colors.textSecondary }]}>
-        امتیاز: {rec.score >= 0 ? '+' : ''}
-        {rec.score.toFixed(2)}
+        امتیاز نهایی: {rec.score >= 0 ? '+' : ''}{rec.score.toFixed(3)}
       </Text>
 
       {top ? (
-        <Text
-          style={[styles.reasoning, { color: colors.textSecondary }]}
-          numberOfLines={expanded ? undefined : 2}
-        >
+        <Text style={[styles.reasoning, { color: colors.textSecondary }]} numberOfLines={expanded ? undefined : 2}>
           {top.reasoning}
         </Text>
       ) : null}
@@ -88,25 +93,39 @@ export function RecommendationCard({ rec, colors }: { rec: Recommendation; color
         <View style={styles.breakdown}>
           {rec.breakdown.map((b) => (
             <View key={b.agent} style={styles.breakdownRow}>
-              <Text style={[styles.breakdownAgent, { color: colors.text }]}>{b.agent}</Text>
+              <Text style={[styles.breakdownAgent, { color: colors.text }]}>{AGENT_LABEL[b.agent] ?? b.agent}</Text>
               <Text style={[styles.breakdownDetail, { color: colors.textSecondary }]}>
-                {(b.weight_normalized * 100).toFixed(0)}٪ · {b.reasoning}
+                رأی {b.vote >= 0 ? '+' : ''}{b.vote.toFixed(2)} · اطمینان {(b.confidence * 100).toFixed(0)}٪ · وزن {((b.weight_normalized ?? 0) * 100).toFixed(0)}٪
               </Text>
+              <Text style={[styles.breakdownDetail, { color: colors.textSecondary }]}>{b.reasoning}</Text>
             </View>
           ))}
         </View>
       ) : null}
 
-      {isLimited ? (
-        <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>
-          فقط بر اساس قیمت لحظه‌ای — داده‌های بنیادی CODAL هنوز متصل نشده‌اند
-        </Text>
+      {rec.codalFundamentals ? (
+        <View style={styles.fundamentals}>
+          <Text style={[styles.fundTitle, { color: colors.text }]}>بنیادی از CODAL</Text>
+          {typeof rec.codalFundamentals.revenue_yoy_pct === 'number' ? (
+            <Text style={[styles.fact, { color: colors.textSecondary }]}>رشد درآمد سالانه: {rec.codalFundamentals.revenue_yoy_pct.toFixed(1)}٪</Text>
+          ) : null}
+          {typeof rec.codalFundamentals.net_margin_pct === 'number' ? (
+            <Text style={[styles.fact, { color: colors.textSecondary }]}>حاشیه سود خالص: {rec.codalFundamentals.net_margin_pct.toFixed(1)}٪</Text>
+          ) : null}
+          {rec.codalFundamentals.report_title ? (
+            <Text style={[styles.fact, { color: colors.textSecondary }]} numberOfLines={2}>{rec.codalFundamentals.report_title}</Text>
+          ) : null}
+        </View>
+      ) : null}
+
+      {!rec.dataAvailability.codal ? (
+        <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>داده بنیادی CODAL برای این نماد در این پاسخ در دسترس نبود.</Text>
+      ) : !rec.dataAvailability.market_extended ? (
+        <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>تحلیل بنیادی متصل است؛ بخشی از داده توسعه‌یافته بازار در دسترس نبود.</Text>
       ) : null}
 
       <View style={styles.simSection}>
-        <Text style={[styles.simLabel, { color: colors.textSecondary }]}>
-          Paper — فقط شبیه‌سازی، بدون معامله واقعی
-        </Text>
+        <Text style={[styles.simLabel, { color: colors.textSecondary }]}>Paper — فقط شبیه‌سازی، بدون معامله واقعی</Text>
         <Pressable
           disabled={!directional || sim.status === 'loading'}
           onPress={runPaperSim}
@@ -127,54 +146,37 @@ export function RecommendationCard({ rec, colors }: { rec: Recommendation; color
           )}
         </Pressable>
 
-        {sim.status === 'filled' ? (
-          <Text style={[styles.simResult, { color: Brand.stockGreen }]}>✓ {sim.note}</Text>
-        ) : null}
-        {sim.status === 'pending' ? (
-          <Text style={[styles.simResult, { color: colors.textSecondary }]}>{sim.note}</Text>
-        ) : null}
-        {sim.status === 'rejected' ? (
-          <Text style={[styles.simResult, { color: Brand.negative }]}>
-            رد شد توسط ریسک: {sim.reasons.join('؛ ')}
-          </Text>
-        ) : null}
-        {sim.status === 'error' ? (
-          <Text style={[styles.simResult, { color: Brand.negative }]}>{sim.message}</Text>
-        ) : null}
+        {sim.status === 'filled' ? <Text style={[styles.simResult, { color: Brand.stockGreen }]}>✓ {sim.note}</Text> : null}
+        {sim.status === 'pending' ? <Text style={[styles.simResult, { color: colors.textSecondary }]}>{sim.note}</Text> : null}
+        {sim.status === 'rejected' ? <Text style={[styles.simResult, { color: Brand.negative }]}>رد شد توسط ریسک: {sim.reasons.join('؛ ')}</Text> : null}
+        {sim.status === 'error' ? <Text style={[styles.simResult, { color: Brand.negative }]}>{sim.message}</Text> : null}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    borderRadius: Spacing.three,
-    padding: Spacing.four,
-    marginTop: Spacing.three,
-    gap: Spacing.two,
-    alignItems: 'flex-end',
-  },
-  header: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.two },
+  wrap: { borderRadius: Spacing.three, padding: Spacing.four, marginTop: Spacing.three, gap: Spacing.two, alignItems: 'flex-end' },
+  header: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.two, width: '100%', justifyContent: 'space-between' },
+  titleWrap: { alignItems: 'flex-end', flex: 1 },
   badge: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one, borderRadius: Spacing.five },
   badgeText: { fontFamily: Fonts.sans, fontSize: 13, fontWeight: '700' },
-  title: { fontFamily: Fonts.sans, fontSize: 13 },
+  title: { fontFamily: Fonts.sans, fontSize: 15, fontWeight: '700' },
+  source: { fontFamily: Fonts.sans, fontSize: 10, marginTop: 2 },
   score: { fontFamily: Fonts.mono, fontSize: 13, alignSelf: 'flex-end' },
   reasoning: { fontFamily: Fonts.sans, fontSize: 13, textAlign: 'right', lineHeight: 20, alignSelf: 'flex-end' },
   toggle: { fontFamily: Fonts.sans, fontSize: 12, fontWeight: '600' },
-  breakdown: { width: '100%', gap: Spacing.one, marginTop: Spacing.one },
+  breakdown: { width: '100%', gap: Spacing.two, marginTop: Spacing.one },
   breakdownRow: { alignItems: 'flex-end' },
   breakdownAgent: { fontFamily: Fonts.sans, fontSize: 12, fontWeight: '700' },
-  breakdownDetail: { fontFamily: Fonts.sans, fontSize: 11, textAlign: 'right' },
+  breakdownDetail: { fontFamily: Fonts.sans, fontSize: 11, textAlign: 'right', lineHeight: 17 },
+  fundamentals: { width: '100%', alignItems: 'flex-end', gap: 4, marginTop: Spacing.one },
+  fundTitle: { fontFamily: Fonts.sans, fontSize: 12, fontWeight: '700' },
+  fact: { fontFamily: Fonts.sans, fontSize: 11, textAlign: 'right' },
   disclaimer: { fontFamily: Fonts.sans, fontSize: 11, textAlign: 'right', lineHeight: 17, alignSelf: 'flex-end' },
   simSection: { width: '100%', marginTop: Spacing.two, gap: Spacing.two, alignItems: 'flex-end' },
   simLabel: { fontFamily: Fonts.sans, fontSize: 11 },
-  simBtn: {
-    width: '100%',
-    paddingVertical: Spacing.three,
-    borderRadius: Spacing.two,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  simBtn: { width: '100%', paddingVertical: Spacing.three, borderRadius: Spacing.two, alignItems: 'center', justifyContent: 'center' },
   simBtnText: { fontFamily: Fonts.sans, fontSize: 14, fontWeight: '700' },
   simResult: { fontFamily: Fonts.sans, fontSize: 12, textAlign: 'right', lineHeight: 18, alignSelf: 'flex-end' },
 });
