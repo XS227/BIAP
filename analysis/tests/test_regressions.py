@@ -1,5 +1,11 @@
 from agents import fundamental_agent
-from codal_data import _row_values
+from codal_data import CodalFiling, _row_values
+from financial_scope import (
+    CONSOLIDATED,
+    STANDALONE,
+    report_scope_from_title,
+    select_scope_filings,
+)
 from related_party import _related_party_flags_from_text
 
 
@@ -85,3 +91,42 @@ def test_related_party_explicit_noncompliance_is_flagged():
     """
 
     assert _related_party_flags_from_text(text) == 2
+
+
+def _filing(title: str) -> CodalFiling:
+    return CodalFiling(
+        tracing_no=None,
+        title=title,
+        sent_at=None,
+        publish_at=None,
+        letter_code=None,
+        url=None,
+        pdf_url=None,
+        excel_url=None,
+        attachment_url=None,
+    )
+
+
+def test_report_scope_classifies_consolidated_and_standalone():
+    assert report_scope_from_title("صورت های مالی تلفیقی سال مالی منتهی به 1404/12/29") == CONSOLIDATED
+    assert report_scope_from_title("صورت های مالی سال مالی منتهی به 1404/12/29") == STANDALONE
+    assert report_scope_from_title("تصمیمات مجمع عمومی عادی سالیانه") is None
+
+
+def test_report_scope_prefers_consolidated_when_both_exist():
+    standalone = _filing("صورت های مالی سال مالی منتهی به 1404/12/29")
+    consolidated = _filing("صورت های مالی تلفیقی سال مالی منتهی به 1404/12/29")
+
+    scope, filings = select_scope_filings([standalone, consolidated])
+
+    assert scope == CONSOLIDATED
+    assert filings == [consolidated]
+
+
+def test_report_scope_falls_back_to_standalone():
+    standalone = _filing("صورت های مالی سال مالی منتهی به 1404/12/29")
+
+    scope, filings = select_scope_filings([standalone])
+
+    assert scope == STANDALONE
+    assert filings == [standalone]
