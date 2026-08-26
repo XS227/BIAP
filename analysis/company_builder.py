@@ -11,9 +11,9 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+from audit_parser import audit_opinion_from_pdf
 from codal_data import (
     CodalDataUnavailable,
-    _audit_opinion_from_pdf,
     latest_financial_filings,
     metadata_for_symbol,
 )
@@ -58,7 +58,7 @@ def _enrich_codal_risk_fields(symbol: str, fundamentals, report_scope: str | Non
         related_party_flags = result.related_party_flags
 
         if audit_opinion is None:
-            audit_opinion = _audit_opinion_from_pdf(filing)
+            audit_opinion = audit_opinion_from_pdf(filing)
         if related_party_flags is None:
             related_party_flags = related_party_flags_from_pdf(filing)
 
