@@ -154,9 +154,10 @@ def build_company_from_symbol(symbol: str) -> dict | None:
     }
 
 
-def build_company_from_quote(quote: LiveQuote) -> dict:
+def build_company_from_quote(quote: LiveQuote, *, codal_symbol: str | None = None) -> dict:
     price = quote.last_price if quote.last_price is not None else quote.closing_price
-    codal_metadata, codal_fundamentals = _codal_parts(quote.name)
+    symbol_for_codal = (codal_symbol or quote.name).strip()
+    codal_metadata, codal_fundamentals = _codal_parts(symbol_for_codal)
     extended = fetch_extended_market_data(quote.code)
 
     data_available = dict(PRICE_ONLY_AVAILABILITY)
