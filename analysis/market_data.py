@@ -25,9 +25,7 @@ from typing import Optional
 from symbol_universe import SymbolUniverseUnavailable, fetch_symbol_universe
 
 DEFAULT_BASE_URL = "https://biap.dadashi.no/api"
-TSETMC_CLOSING_PRICE_BASE = "https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceInfo"
-TSETMC_DAILY_HISTORY_BASE = "https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList"
-TSETMC_INSTRUMENT_INFO_BASE = "https://cdn.tsetmc.com/api/Instrument/GetInstrumentInfo"
+DEFAULT_TSETMC_API_BASE = "https://cdn.tsetmc.com/api"
 CACHE_TTL_SECONDS = 30.0
 EXTENDED_CACHE_TTL_SECONDS = 300.0
 
@@ -95,6 +93,10 @@ class ExtendedMarketData:
 
 def base_url() -> str:
     return os.environ.get("BIAP_MARKET_API_BASE", DEFAULT_BASE_URL).rstrip("/")
+
+
+def tsetmc_api_base() -> str:
+    return os.environ.get("BIAP_TSETMC_API_BASE", DEFAULT_TSETMC_API_BASE).rstrip("/")
 
 
 def _auth_headers() -> dict:
@@ -195,7 +197,7 @@ def _read_json(url: str, *, timeout: float) -> dict:
 
 def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuote]:
     try:
-        payload = _read_json(f"{TSETMC_CLOSING_PRICE_BASE}/{code}", timeout=timeout)
+        payload = _read_json(f"{tsetmc_api_base()}/ClosingPrice/GetClosingPriceInfo/{code}", timeout=timeout)
     except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
         return None
     row = payload.get("closingPriceInfo")
@@ -230,10 +232,11 @@ def fetch_extended_market_data(code: str, *, timeout: float = 12.0, use_cache: b
     if use_cache and cached and now - cached[0] < EXTENDED_CACHE_TTL_SECONDS:
         return cached[1]
 
+    tsetmc = tsetmc_api_base()
     try:
-        current = _read_json(f"{TSETMC_CLOSING_PRICE_BASE}/{code}", timeout=timeout)
-        history = _read_json(f"{TSETMC_DAILY_HISTORY_BASE}/{code}/400", timeout=timeout)
-        instrument_payload = _read_json(f"{TSETMC_INSTRUMENT_INFO_BASE}/{code}", timeout=timeout)
+        current = _read_json(f"{tsetmc}/ClosingPrice/GetClosingPriceInfo/{code}", timeout=timeout)
+        history = _read_json(f"{tsetmc}/ClosingPrice/GetClosingPriceDailyList/{code}/400", timeout=timeout)
+        instrument_payload = _read_json(f"{tsetmc}/Instrument/GetInstrumentInfo/{code}", timeout=timeout)
     except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
         return None
 
