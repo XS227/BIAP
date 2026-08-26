@@ -334,6 +334,53 @@ Implemented:
 
 `AUTO` remains explicitly blocked in code. No real broker API is connected.
 
+## Order/audit ownership + idempotency (2026-08-26)
+
+`/orders/preview`, `/orders/submit`, `GET /orders/{id}`, `GET /audit/orders`
+and `GET /audit/events` now require `Authorization: Bearer <token>` and are
+scoped per caller. This reuses the same header the mobile app already sends
+on every request (`-biap-mobile`'s `src/lib/api.ts` reads `accessToken` from
+`AsyncStorage`) — **no mobile-side change is required** to get ownership.
+
+Important limitation, stated plainly per the project's "no implied live
+capability" rule: this is **ownership, not authentication**. `analysis/auth.py`
+hashes the bearer token into an opaque user id (`sha256(token)[:24]`) and
+never verifies its signature or expiry against the existing auth backend,
+because FIN has no visibility into that backend's session-verification
+internals. Two requests with the same token are treated as the same user; a
+missing token is rejected (401); the raw token itself is never persisted,
+only its hash. Actually validating the token against the existing
+`/api/auth/*` backend (e.g. a `/api/auth/me`-style call, if one exists) is
+still open — flagging for whoever owns that backend to confirm such an
+endpoint exists before FIN tries to call it blind.
+
+Idempotency: `POST /orders/preview` accepts an optional `Idempotency-Key`
+header, scoped per user — replaying the same key returns the original
+response verbatim instead of creating a duplicate intent or double-counting
+against the daily notional risk cap. `POST /orders/submit` is idempotent by
+intent state: resubmitting an intent already `PAPER_FILLED` or
+`PENDING_APPROVAL` returns the existing record as-is rather than re-running
+the fill/approval transition or re-timestamping it.
+
+Existing rows in `biap_audit.sqlite3` predate `user_id` and migrate to `''`
+(never another real user's id) — the migration is automatic on next start
+(`ALTER TABLE ... ADD COLUMN` guarded by `PRAGMA table_info`, safe to run
+against the live production DB). `GET /risk/status` and `/stock/*` stay
+unauthenticated (system-wide/public data, not user-owned).
+
+New tests: `analysis/tests/test_order_auth.py` (bearer-required, cross-user
+isolation, idempotent preview/submit) — 20/20 tests pass including the
+existing regression suite. `httpx` added to `requirements.txt` (needed by
+`fastapi.testclient.TestClient`).
+
+Mobile follow-up (not yet done): `-biap-mobile`'s `src/app/orders.tsx` and
+`src/lib/order-history.ts` currently track paper-order receipts locally in
+AsyncStorage specifically because `/audit/orders` had no per-user scoping —
+that blocker is now resolved server-side, so سفارش‌ها could switch to reading
+from `/audit/orders` directly. Not touched here since that file was flagged
+in Discussion #1 as mid-flight with an unrelated auth/guest-lock feature —
+coordinate with Nasrin before editing `orders.tsx`.
+
 ## Production operations
 
 Update the running FIN service after a reviewed GitHub change:
@@ -349,13 +396,20 @@ Regression and smoke tests:
 
 ```bash
 cd /root/BIAP/analysis
-./.venv/bin/python -m pytest tests/test_regressions.py -q
+./.venv/bin/python -m pytest tests/ -q
 
 curl http://127.0.0.1:8088/health
 curl https://biap.dadashi.no/api/stock/recommendation/46348559193224090
 curl https://biap.dadashi.no/api/stock/recommendation/65883838195688438
 curl https://biap.dadashi.no/api/stock/watchlist
 curl 'http://127.0.0.1:8088/stock/symbols?limit=10'
+
+# order/audit endpoints now require a bearer token (any non-empty value
+# during manual smoke tests -- see "Order/audit ownership" section above):
+curl -H 'Authorization: Bearer smoketest' -X POST http://127.0.0.1:8088/orders/preview \
+  -H 'Content-Type: application/json' \
+  -d '{"code":"SAMPLE1","side":"BUY","quantity":1,"mode":"paper"}'
+curl -H 'Authorization: Bearer smoketest' http://127.0.0.1:8088/audit/orders
 ```
 
 ## Agent handoff / self-update protocol
@@ -390,8 +444,16 @@ precedence and this file must be corrected in the same change.
    `5.249.252.88` with rollback and health checks.
 5. **Broad-market regression tests:** continuously verify representative TSE,
    IFB and IFB_BASE symbols.
-6. **Authentication + ownership:** bind order/audit endpoints to authenticated users/accounts.
-7. **Idempotency + approval state:** add idempotency keys and explicit signed/owned approval transitions.
+6. ~~**Authentication + ownership:**~~ done (2026-08-26) as *ownership*, not
+   full authentication — see "Order/audit ownership + idempotency" above.
+   Still open: actually verifying the bearer token against the existing auth
+   backend instead of trusting whatever caller presents it.
+7. ~~**Idempotency:**~~ done (2026-08-26) for `/orders/preview` (Idempotency-Key
+   header) and `/orders/submit` (state-based no-op on resubmit). Still open:
+   explicit signed/owned approval-state transitions for the `approval` mode
+   (currently anyone holding the bearer token that created a `PENDING_APPROVAL`
+   intent could theoretically flip it, since there's no separate approver
+   role yet).
 8. **PaperBroker:** move simulated fills behind a broker-adapter interface.
 9. **Risk hardening:** position/exposure checks, realized daily-loss limit,
    stale-quote and market-session rules.

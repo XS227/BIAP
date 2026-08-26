@@ -4,10 +4,11 @@ from datetime import datetime, timezone
 from typing import Literal, Optional
 import uuid
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from audit_store import AuditStore
+from auth import require_user_id
 from codal_data import base_url as codal_base_url
 from company_builder import availability, build_company_from_quote, build_company_from_symbol
 from data_sample import SAMPLE_COMPANY
@@ -65,6 +66,9 @@ def health():
             "brokerConnected": False,
             "persistentAudit": True,
             "riskPolicy": True,
+            "ownershipEnforced": True,
+            "authenticationVerified": False,
+            "idempotencySupported": True,
         },
     }
 
@@ -159,7 +163,16 @@ def risk_status():
 
 
 @app.post("/orders/preview")
-def preview_order(req: OrderPreviewRequest):
+def preview_order(
+    req: OrderPreviewRequest,
+    user_id: str = Depends(require_user_id),
+    idempotency_key: Optional[str] = Header(default=None, alias="Idempotency-Key"),
+):
+    if idempotency_key:
+        cached = AUDIT.get_idempotent_response(user_id=user_id, idempotency_key=idempotency_key)
+        if cached is not None:
+            return cached
+
     company, _source = _company_or_404(req.code)
     decision = decide(company)
     reference_price = _reference_price(company)
@@ -176,6 +189,7 @@ def preview_order(req: OrderPreviewRequest):
     if not risk.allowed:
         AUDIT.record_event(
             event_id=str(uuid.uuid4()),
+            user_id=user_id,
             event_type="RISK_REJECTED",
             payload={
                 "code": company["ticker"],
@@ -206,6 +220,7 @@ def preview_order(req: OrderPreviewRequest):
     except ExecutionPolicyError as exc:
         AUDIT.record_event(
             event_id=str(uuid.uuid4()),
+            user_id=user_id,
             intent_id=None,
             event_type="EXECUTION_POLICY_REJECTED",
             payload={
@@ -221,42 +236,55 @@ def preview_order(req: OrderPreviewRequest):
 
     intent["risk"] = risk.to_dict()
     intent["referencePrice"] = reference_price
-    AUDIT.save_intent(intent)
+    AUDIT.save_intent(intent, user_id=user_id)
     AUDIT.record_event(
         event_id=str(uuid.uuid4()),
+        user_id=user_id,
         intent_id=intent["id"],
         event_type="INTENT_CREATED",
         payload={"intent": intent},
     )
 
-    return {
+    response = {
         "intent": intent,
         "recommendation": {"call": decision.call, "score": decision.weighted_score},
         "risk": risk.to_dict(),
         "liveExecution": False,
     }
+    if idempotency_key:
+        AUDIT.save_idempotent_response(
+            user_id=user_id, idempotency_key=idempotency_key, intent_id=intent["id"], response=response
+        )
+    return response
 
 
 @app.post("/orders/submit")
-def submit_order(req: OrderSubmitRequest):
-    intent = AUDIT.get_intent(req.intentId)
+def submit_order(req: OrderSubmitRequest, user_id: str = Depends(require_user_id)):
+    intent = AUDIT.get_intent(req.intentId, user_id=user_id)
     if intent is None:
         raise HTTPException(status_code=404, detail="unknown intentId")
+
+    if intent["status"] in {"PAPER_FILLED", "PENDING_APPROVAL"}:
+        # Already submitted: return the existing state instead of re-simulating
+        # a fill or re-creating a pending-approval event for the same intent.
+        return intent
 
     try:
         receipt = submit_order_intent(intent)
     except ExecutionPolicyError as exc:
         AUDIT.record_event(
             event_id=str(uuid.uuid4()),
+            user_id=user_id,
             intent_id=req.intentId,
             event_type="SUBMIT_REJECTED",
             payload={"error": str(exc), "intent": intent},
         )
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    AUDIT.save_intent(receipt)
+    AUDIT.save_intent(receipt, user_id=user_id)
     AUDIT.record_event(
         event_id=str(uuid.uuid4()),
+        user_id=user_id,
         intent_id=req.intentId,
         event_type="ORDER_SUBMITTED",
         payload={"receipt": receipt},
@@ -265,18 +293,18 @@ def submit_order(req: OrderSubmitRequest):
 
 
 @app.get("/orders/{intent_id}")
-def get_order(intent_id: str):
-    intent = AUDIT.get_intent(intent_id)
+def get_order(intent_id: str, user_id: str = Depends(require_user_id)):
+    intent = AUDIT.get_intent(intent_id, user_id=user_id)
     if intent is None:
         raise HTTPException(status_code=404, detail="unknown intentId")
     return intent
 
 
 @app.get("/audit/orders")
-def audit_orders(limit: int = Query(default=100, ge=1, le=500)):
-    return {"items": AUDIT.list_intents(limit=limit)}
+def audit_orders(limit: int = Query(default=100, ge=1, le=500), user_id: str = Depends(require_user_id)):
+    return {"items": AUDIT.list_intents(user_id=user_id, limit=limit)}
 
 
 @app.get("/audit/events")
-def audit_events(limit: int = Query(default=200, ge=1, le=1000)):
-    return {"items": AUDIT.list_events(limit=limit)}
+def audit_events(limit: int = Query(default=200, ge=1, le=1000), user_id: str = Depends(require_user_id)):
+    return {"items": AUDIT.list_events(user_id=user_id, limit=limit)}

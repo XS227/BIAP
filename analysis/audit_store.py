@@ -45,6 +45,7 @@ class AuditStore:
                 """
                 CREATE TABLE IF NOT EXISTS order_intents (
                     id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL DEFAULT '',
                     code TEXT NOT NULL,
                     side TEXT NOT NULL,
                     quantity INTEGER NOT NULL,
@@ -61,11 +62,21 @@ class AuditStore:
                 CREATE TABLE IF NOT EXISTS audit_events (
                     seq INTEGER PRIMARY KEY AUTOINCREMENT,
                     event_id TEXT NOT NULL UNIQUE,
+                    user_id TEXT NOT NULL DEFAULT '',
                     intent_id TEXT,
                     event_type TEXT NOT NULL,
                     created_at TEXT NOT NULL,
                     payload_json TEXT NOT NULL,
                     FOREIGN KEY(intent_id) REFERENCES order_intents(id)
+                );
+
+                CREATE TABLE IF NOT EXISTS idempotency_keys (
+                    user_id TEXT NOT NULL,
+                    idempotency_key TEXT NOT NULL,
+                    intent_id TEXT NOT NULL,
+                    response_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    PRIMARY KEY (user_id, idempotency_key)
                 );
 
                 CREATE INDEX IF NOT EXISTS idx_audit_events_intent
@@ -74,45 +85,64 @@ class AuditStore:
                     ON order_intents(created_at);
                 """
             )
+            # Older databases created before ownership was added won't have
+            # these columns yet; ALTER TABLE has no "IF NOT EXISTS" so check
+            # first. Existing rows become '' (unowned/legacy), never another
+            # user's real id. Must run before the user_id indexes below.
+            existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(order_intents)")}
+            if "user_id" not in existing_cols:
+                conn.execute("ALTER TABLE order_intents ADD COLUMN user_id TEXT NOT NULL DEFAULT ''")
+            existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(audit_events)")}
+            if "user_id" not in existing_cols:
+                conn.execute("ALTER TABLE audit_events ADD COLUMN user_id TEXT NOT NULL DEFAULT ''")
 
-    def save_intent(self, intent: dict[str, Any]) -> None:
+            conn.executescript(
+                """
+                CREATE INDEX IF NOT EXISTS idx_order_intents_user
+                    ON order_intents(user_id, created_at);
+                CREATE INDEX IF NOT EXISTS idx_audit_events_user
+                    ON audit_events(user_id, seq);
+                """
+            )
+
+    def save_intent(self, intent: dict[str, Any], *, user_id: str) -> None:
         now = _now_iso()
         payload = json.dumps(intent, ensure_ascii=False, sort_keys=True)
         with self._connect() as conn:
             conn.execute(
                 """
                 INSERT INTO order_intents (
-                    id, code, side, quantity, limit_price, mode, status,
+                    id, user_id, code, side, quantity, limit_price, mode, status,
                     recommendation_call, recommendation_score, created_at,
                     updated_at, payload_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     status=excluded.status,
                     updated_at=excluded.updated_at,
                     payload_json=excluded.payload_json
                 """,
                 (
-                    intent["id"], intent["code"], intent["side"], intent["quantity"],
+                    intent["id"], user_id, intent["code"], intent["side"], intent["quantity"],
                     intent.get("limit_price"), intent["mode"], intent["status"],
                     intent["recommendation_call"], intent["recommendation_score"],
                     intent["created_at"], now, payload,
                 ),
             )
 
-    def get_intent(self, intent_id: str) -> Optional[dict[str, Any]]:
+    def get_intent(self, intent_id: str, *, user_id: str) -> Optional[dict[str, Any]]:
         with self._connect() as conn:
             row = conn.execute(
-                "SELECT payload_json FROM order_intents WHERE id = ?",
-                (intent_id,),
+                "SELECT payload_json FROM order_intents WHERE id = ? AND user_id = ?",
+                (intent_id, user_id),
             ).fetchone()
         return json.loads(row["payload_json"]) if row else None
 
-    def list_intents(self, limit: int = 100) -> list[dict[str, Any]]:
+    def list_intents(self, *, user_id: str, limit: int = 100) -> list[dict[str, Any]]:
         limit = max(1, min(limit, 500))
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT payload_json FROM order_intents ORDER BY created_at DESC LIMIT ?",
-                (limit,),
+                "SELECT payload_json FROM order_intents WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
+                (user_id, limit),
             ).fetchall()
         return [json.loads(row["payload_json"]) for row in rows]
 
@@ -122,17 +152,19 @@ class AuditStore:
         event_id: str,
         event_type: str,
         payload: dict[str, Any],
+        user_id: str,
         intent_id: Optional[str] = None,
     ) -> None:
         with self._connect() as conn:
             conn.execute(
                 """
                 INSERT INTO audit_events
-                    (event_id, intent_id, event_type, created_at, payload_json)
-                VALUES (?, ?, ?, ?, ?)
+                    (event_id, user_id, intent_id, event_type, created_at, payload_json)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 (
                     event_id,
+                    user_id,
                     intent_id,
                     event_type,
                     _now_iso(),
@@ -140,17 +172,18 @@ class AuditStore:
                 ),
             )
 
-    def list_events(self, limit: int = 200) -> list[dict[str, Any]]:
+    def list_events(self, *, user_id: str, limit: int = 200) -> list[dict[str, Any]]:
         limit = max(1, min(limit, 1000))
         with self._connect() as conn:
             rows = conn.execute(
                 """
                 SELECT seq, event_id, intent_id, event_type, created_at, payload_json
                 FROM audit_events
+                WHERE user_id = ?
                 ORDER BY seq DESC
                 LIMIT ?
                 """,
-                (limit,),
+                (user_id, limit),
             ).fetchall()
         return [
             {
@@ -163,6 +196,31 @@ class AuditStore:
             }
             for row in rows
         ]
+
+    def get_idempotent_response(self, *, user_id: str, idempotency_key: str) -> Optional[dict[str, Any]]:
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT response_json FROM idempotency_keys
+                WHERE user_id = ? AND idempotency_key = ?
+                """,
+                (user_id, idempotency_key),
+            ).fetchone()
+        return json.loads(row["response_json"]) if row else None
+
+    def save_idempotent_response(
+        self, *, user_id: str, idempotency_key: str, intent_id: str, response: dict[str, Any]
+    ) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO idempotency_keys
+                    (user_id, idempotency_key, intent_id, response_json, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(user_id, idempotency_key) DO NOTHING
+                """,
+                (user_id, idempotency_key, intent_id, json.dumps(response, ensure_ascii=False, sort_keys=True), _now_iso()),
+            )
 
     def submitted_notional_today(self) -> float:
         """Return PAPER_FILLED + PENDING_APPROVAL notional for current UTC day.
