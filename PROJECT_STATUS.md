@@ -252,7 +252,7 @@ continued to return a valid production response.
 
 ## Regression tests
 
-`analysis/tests/` (`test_regressions.py` plus `test_order_auth.py`) covers 23
+`analysis/tests/` (`test_regressions.py` plus `test_order_auth.py`) covers 28
 verified regression cases as of 2026-08-26, including:
 
 - exact net-profit row matching
@@ -267,13 +267,17 @@ verified regression cases as of 2026-08-26, including:
 - consolidated/standalone scope classification and selection behavior
 - order/audit ownership isolation and idempotency (see "Order/audit
   ownership + idempotency" above)
+- TSE/IFB/IFB_BASE flow mapping (both the JSON and legacy-text parsers),
+  market-filtered symbol queries, and one representative symbol per market
+  through the full recommendation pipeline (see "Broad-market regression
+  tests" below)
 
 Latest local test result (on `5.249.252.88`, not yet re-verified on the
 `89.42.199.20` production host after this change -- do that before trusting
 this count there):
 
 ```text
-23 passed in 0.3s
+28 passed in 0.3s
 ```
 
 ## Recommendation API
@@ -475,6 +479,36 @@ from the code without needing real data). Roadmap item 2 stays open for
 that reason — it needs live CODAL access, i.e. the still-unresolved gateway
 ask in Discussion #1.
 
+## Broad-market regression tests (2026-08-26)
+
+`symbol_universe.py` had zero test coverage for IFB and IFB_BASE specifically
+before this — every existing symbol test used a TSE (`فولاد`, flow=1)
+fixture. The market-segment logic (`_market_from_flow`, `_parse_symbol`, the
+plain-text TSETMC fallback parser, and `query_symbols`'s market filter) is
+independent of the recommendation pipeline (which resolves a quote, not a
+market segment, so it never actually branches on TSE/IFB/IFB_BASE) — the
+place market type matters is entirely in symbol discovery/filtering, which
+is what `/stock/symbols` exposes.
+
+No real bug found here (unlike items 1 and 2) — `_parse_symbol` was already
+defensive about an unrecognized flow value. What was missing was coverage:
+new tests now exercise flow 1/2/4 → TSE/IFB/IFB_BASE mapping and rejection
+of an unrecognized flow (e.g. 3) through *both* independent parsers (the
+JSON API path via `_parse_symbol`, and the plain-text fallback path via
+`_fetch_legacy_universe`, so a bug in one can't hide behind the other's
+coverage), `query_symbols(market=...)` filtering across all three, and one
+representative symbol per market run end-to-end through
+`build_company_from_quote` → all 4 agents → `kiasha.decide()` with no
+exception and a well-formed decision — a regression net for the case where
+someone later adds market-type-conditional logic that silently breaks for
+two of the three segments.
+
+Same live-access limitation as items 1/2: this uses synthetic representative
+data (constructed TSE/IFB/IFB_BASE rows), not real fetched TSETMC symbols,
+since direct TSETMC/CODAL access from `5.249.252.88` is still blocked.
+Verifying against the *actual* live symbol universe for all three markets is
+still open, same dependency as the CODAL gateway ask.
+
 ## Production operations
 
 Update the running FIN service after a reviewed GitHub change:
@@ -542,8 +576,12 @@ precedence and this file must be corrected in the same change.
    a controlled CODAL collector/gateway path for the new server.
 4. **New external data server:** migrate data-heavy workloads incrementally to
    `5.249.252.88` with rollback and health checks.
-5. **Broad-market regression tests:** continuously verify representative TSE,
-   IFB and IFB_BASE symbols.
+5. ~~**Broad-market regression tests:**~~ partially done (2026-08-26) —
+   see "Broad-market regression tests" below. Still open: doing this against
+   real, live-fetched TSE/IFB/IFB_BASE symbols instead of synthetic
+   representative data, since live TSETMC/CODAL access from `5.249.252.88`
+   is still blocked (same CODAL gateway dependency as items 1/2's remaining
+   gap).
 6. ~~**Authentication + ownership:**~~ done (2026-08-26) as *ownership*, not
    full authentication — see "Order/audit ownership + idempotency" above.
    Still open: actually verifying the bearer token against the existing auth

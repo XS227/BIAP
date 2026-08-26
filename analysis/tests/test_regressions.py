@@ -1,18 +1,21 @@
-from agents import fundamental_agent
+from agents import fundamental_agent, run_team
 from audit_parser import (
     _extract_audit_opinion_section,
     classify_audit_opinion_from_text,
 )
-from codal_data import CodalFiling, _row_values
+from codal_data import CodalFiling, CodalFundamentals, _row_values
+import company_builder
 from financial_scope import (
     CONSOLIDATED,
     STANDALONE,
     report_scope_from_title,
     select_scope_filings,
 )
+from kiasha import decide
+from market_data import ExtendedMarketData, LiveQuote
 from related_party import _related_party_flags_from_text
 import symbol_universe as su
-from symbol_universe import MarketSymbol
+from symbol_universe import MarketSymbol, _parse_symbol
 
 
 def test_exact_net_profit_row_matching():
@@ -286,3 +289,129 @@ def test_symbol_universe_uses_verified_snapshot_when_upstreams_fail(tmp_path, mo
     result = su.fetch_symbol_universe(use_cache=False)
 
     assert result == cached
+
+
+def test_parse_symbol_maps_all_three_market_flows():
+    for flow, expected_market in ((1, "TSE"), (2, "IFB"), (4, "IFB_BASE")):
+        raw = {
+            "insCode": "1000",
+            "lVal18AFC": "SYM",
+            "lVal30": "Sample Co",
+            "flow": flow,
+            "cs": "27",
+            "yVal": "300",
+        }
+        parsed = _parse_symbol(raw)
+        assert parsed is not None
+        assert parsed.market == expected_market
+
+
+def test_parse_symbol_rejects_unrecognized_flow():
+    # Flow 3 isn't one of the three markets BIAP resolves symbols for. A row
+    # like this must be excluded, never silently mapped to the wrong market.
+    raw = {"insCode": "1000", "lVal18AFC": "SYM", "lVal30": "Sample Co", "flow": 3}
+
+    assert _parse_symbol(raw) is None
+
+
+def _legacy_row(code: str, symbol: str, name: str, flow: int) -> str:
+    cols = [""] * 23
+    cols[0], cols[2], cols[3], cols[17] = code, symbol, name, str(flow)
+    cols[18], cols[22] = "27", "300"
+    return ",".join(cols)
+
+
+def test_legacy_universe_parser_handles_all_three_markets(monkeypatch):
+    # A second, independent parsing path (the plain-text TSETMC fallback used
+    # when the JSON API is unreachable) -- covering flow mapping there too so
+    # a bug in one parser can't hide behind the other's test coverage.
+    rows = [
+        _legacy_row("1", "TSE1", "TSE Co", 1),
+        _legacy_row("2", "IFB1", "IFB Co", 2),
+        _legacy_row("3", "BASE1", "Base Co", 4),
+        _legacy_row("4", "UNKNOWN1", "Unknown Flow Co", 3),  # must be dropped
+    ]
+    legacy_text = "header1@header2@" + ";".join(rows)
+    monkeypatch.setattr(su, "_read_url", lambda url, timeout: legacy_text.encode("utf-8"))
+
+    items = su._fetch_legacy_universe(timeout=1)
+
+    by_symbol = {item.symbol: item for item in items}
+    assert by_symbol["TSE1"].market == "TSE"
+    assert by_symbol["IFB1"].market == "IFB"
+    assert by_symbol["BASE1"].market == "IFB_BASE"
+    assert "UNKNOWN1" not in by_symbol
+
+
+def test_query_symbols_filters_by_market_across_all_three_markets(monkeypatch):
+    universe = [
+        MarketSymbol(code="1", symbol="TSE1", name="TSE Co", market="TSE", flow=1,
+                     industry_code="27", paper_type="300"),
+        MarketSymbol(code="2", symbol="IFB1", name="IFB Co", market="IFB", flow=2,
+                     industry_code="27", paper_type="300"),
+        MarketSymbol(code="3", symbol="BASE1", name="Base Co", market="IFB_BASE", flow=4,
+                     industry_code="27", paper_type="300"),
+    ]
+    monkeypatch.setattr(su, "fetch_symbol_universe", lambda: universe)
+
+    for market, expected_symbol in (("TSE", "TSE1"), ("IFB", "IFB1"), ("IFB_BASE", "BASE1")):
+        result = su.query_symbols(market=market)
+        assert [item.symbol for item in result] == [expected_symbol]
+
+
+def _synthetic_fundamentals(**overrides) -> CodalFundamentals:
+    defaults = dict(
+        symbol="SYM",
+        revenue_current=120.0,
+        revenue_prev=100.0,
+        net_profit_current=15.0,
+        net_profit_prev=10.0,
+        revenue_yoy_pct=20.0,
+        net_margin_pct=12.5,
+        net_margin_prev_pct=10.0,
+        audit_opinion="unqualified",
+        related_party_flags=0,
+    )
+    defaults.update(overrides)
+    return CodalFundamentals(**defaults)
+
+
+def test_recommendation_pipeline_handles_a_representative_symbol_from_each_market(monkeypatch):
+    # The recommendation pipeline (company_builder -> agents -> kiasha) takes
+    # a resolved quote, not a market segment -- so this isn't testing market
+    # *routing*, it's a regression net catching the case where someone adds
+    # market-type-conditional logic later and it silently breaks for two of
+    # the three segments. Exercises real TSE/IFB/IFB_BASE-representative
+    # symbols end to end with no live network access.
+    monkeypatch.setattr(company_builder, "metadata_for_symbol", lambda symbol: None)
+    monkeypatch.setattr(
+        company_builder, "scoped_fundamentals_for_symbol",
+        lambda symbol: (_synthetic_fundamentals(symbol=symbol), "standalone"),
+    )
+    monkeypatch.setattr(
+        company_builder, "fetch_extended_market_data",
+        lambda code: ExtendedMarketData(
+            day_low=900, day_high=1050, volume_today=500_000, trade_value_today=1.2e9,
+            trade_count_today=1200, avg_volume_30d=400_000, price_52w_high=1200,
+            price_52w_low=800, estimated_eps=95, eps_value=90, pe=11.1, sector_pe=13.4,
+            shares_outstanding=1_000_000_000, market_cap=1.0e12, base_volume=350_000,
+            sector_code="27", sector_name="Sample sector", market_flow=1, market_title="Sample",
+        ),
+    )
+
+    representative_quotes = [
+        LiveQuote(code="1", name="TSE1", last_price=1000, closing_price=990,
+                   yesterday_price=980, change=20, change_percent=2.04),
+        LiveQuote(code="2", name="IFB1", last_price=1000, closing_price=990,
+                   yesterday_price=980, change=20, change_percent=2.04),
+        LiveQuote(code="3", name="BASE1", last_price=1000, closing_price=990,
+                   yesterday_price=980, change=20, change_percent=2.04),
+    ]
+
+    for quote in representative_quotes:
+        company = company_builder.build_company_from_quote(quote)
+        decision = decide(company)
+
+        assert decision.call in {"BUY", "HOLD", "SELL"}
+        assert -1.0 <= decision.weighted_score <= 1.0
+        assert len(run_team(company)) == 4
