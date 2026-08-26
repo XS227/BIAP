@@ -20,9 +20,6 @@ from html.parser import HTMLParser
 import json
 import os
 import re
-import subprocess
-import tempfile
-import unicodedata
 import time
 from typing import Any, Optional
 from urllib.error import HTTPError, URLError
@@ -521,84 +518,3 @@ def metadata_for_symbol(symbol: str) -> Optional[CodalMetadata]:
         latest_financial_filings=[item.to_dict() for item in financial_filings],
     )
 
-
-def _classify_audit_opinion(text: str) -> Optional[str]:
-    normalized = _normalize_text(text)
-
-    if not normalized:
-        return None
-
-    # Strong negative opinions first.
-    if "عدم اظهارنظر" in normalized or "عدم اظهار نظر" in normalized:
-        return "disclaimer"
-
-    if "نظر مردود" in normalized or "مردود" in normalized:
-        return "adverse"
-
-    # Standard clean-opinion wording used in CODAL audit reports.
-    if (
-        "به نظر این سازمان" in normalized
-        and (
-            "به نحو منصفانه نشان می دهد" in normalized
-            or "به نحو منصفانه نشان میدهد" in normalized
-        )
-    ):
-        return "unqualified"
-
-    if "نظر مشروط" in normalized or "به استثنای" in normalized:
-        return "qualified"
-
-    return None
-
-
-def _audit_opinion_from_pdf(filing: CodalFiling) -> Optional[str]:
-    if not filing.pdf_url:
-        return None
-
-    pdf_url = urljoin(www_base_url() + "/", filing.pdf_url)
-    req = Request(pdf_url, headers={"User-Agent": "Mozilla/5.0 BIAP/1.0"})
-
-    try:
-        with urlopen(req, timeout=_TIMEOUT) as response:
-            pdf_bytes = response.read()
-    except (HTTPError, URLError, TimeoutError, OSError):
-        return None
-
-    try:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            pdf_path = os.path.join(tmpdir, "audit.pdf")
-            txt_path = os.path.join(tmpdir, "audit.txt")
-
-            with open(pdf_path, "wb") as handle:
-                handle.write(pdf_bytes)
-
-            subprocess.run(
-                ["pdftotext", "-layout", pdf_path, txt_path],
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                timeout=20,
-            )
-
-            with open(txt_path, "r", encoding="utf-8", errors="ignore") as handle:
-                raw_text = handle.read()
-
-    except (OSError, subprocess.SubprocessError):
-        return None
-
-    normalized = unicodedata.normalize("NFKC", raw_text)
-    normalized = "".join(
-        ch for ch in normalized
-        if unicodedata.category(ch) != "Cf"
-    )
-    normalized = normalized.translate(str.maketrans({
-        "ھ": "ه",
-        "ۀ": "ه",
-        "ة": "ه",
-        "ي": "ی",
-        "ى": "ی",
-        "ك": "ک",
-    }))
-    normalized = re.sub(r"\s+", " ", normalized)
-
-    return _classify_audit_opinion(normalized)

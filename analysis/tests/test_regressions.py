@@ -48,33 +48,6 @@ def test_negative_margin_is_penalized_even_if_improving():
     assert "loss margin improving" in result.reasoning
 
 
-def test_audit_opinion_unqualified_phrase():
-    from codal_data import _classify_audit_opinion
-
-    text = """
-    به نظر این سازمان، صورتهای مالی یادشده، وضعیت مالی گروه و شرکت
-    را از تمام جنبه های با اهمیت، طبق استانداردهای حسابداری،
-    به نحو منصفانه نشان می دهد.
-    """
-
-    assert _classify_audit_opinion(text) == "unqualified"
-
-
-def test_audit_opinion_ignores_unrelated_exception_text():
-    from codal_data import _classify_audit_opinion
-
-    text = """
-    مبنای اظهارنظر، کافی و مناسب است.
-    به نظر این سازمان، صورتهای مالی یادشده، وضعیت مالی گروه و شرکت را
-    از تمام جنبه های با اهمیت، طبق استانداردهای حسابداری،
-    به نحو منصفانه نشان میدهد.
-    تاکید بر مطالب خاص.
-    موجودی مواد و کالا به استثنای موجودی کالای در راه بررسی شده است.
-    """
-
-    assert _classify_audit_opinion(text) == "unqualified"
-
-
 def test_bounded_audit_parser_ignores_exception_outside_opinion_section():
     text = """
     اظهارنظر
@@ -113,6 +86,79 @@ def test_bounded_audit_parser_requires_reliable_opinion_anchor():
     """
 
     assert classify_audit_opinion_from_text(text) is None
+
+
+def test_bounded_audit_parser_detects_disclaimer_of_opinion():
+    text = """
+    اظهارنظر
+    با توجه به عدم دسترسی به شواهد حسابرسی کافی و مناسب در خصوص موجودی
+    کالا، این سازمان قادر به اظهارنظر نسبت به صورتهای مالی نیست. بر این
+    اساس، عدم اظهارنظر نسبت به صورتهای مالی ارائه می شود.
+    مبنای عدم اظهارنظر
+    محدودیت رسیدگی در این بخش تشریح شده است.
+    """
+
+    # "مبنای عدم اظهارنظر" must not itself be picked as the opinion heading
+    # (it contains "اظهارنظر" as a substring); the section should start at
+    # the real "اظهارنظر" heading above it.
+    section = _extract_audit_opinion_section(text)
+    assert section is not None
+    assert section.startswith("اظهارنظر")
+    assert classify_audit_opinion_from_text(text) == "disclaimer"
+
+
+def test_bounded_audit_parser_detects_adverse_opinion():
+    text = """
+    اظهارنظر
+    به نظر این سازمان، به علت اهمیت موضوعات مندرج در بند مبنای اظهارنظر
+    مردود، صورتهای مالی وضعیت مالی شرکت را به نحو مطلوب نشان نمی دهد.
+    مبنای اظهارنظر مردود
+    آثار موضوعات مورد اشاره در این بخش تشریح شده است.
+    """
+
+    assert classify_audit_opinion_from_text(text) == "adverse"
+
+
+def test_bounded_audit_parser_prefers_real_section_over_table_of_contents():
+    # Without a canonical fairness clause to anchor on (real for a disclaimer,
+    # which never confirms the statements are fairly presented), a naive
+    # "first heading wins" rule would grab the table-of-contents entry instead
+    # of the actual opinion section further down the document.
+    text = """
+    فهرست مطالب
+    اظهارنظر
+    سایر مطالب
+    این بخش صرفا فهرست گزارش است و شامل هیچ اظهارنظری نیست.
+
+    گزارش حسابرس مستقل
+    اظهارنظر
+    با توجه به عدم دسترسی به شواهد حسابرسی کافی و مناسب، این سازمان
+    قادر به اظهارنظر نسبت به صورتهای مالی نیست. عدم اظهارنظر نسبت به
+    صورتهای مالی ارائه می شود.
+    """
+
+    section = _extract_audit_opinion_section(text)
+    assert section is not None
+    assert "فهرست" not in section
+    assert classify_audit_opinion_from_text(text) == "disclaimer"
+
+
+def test_bounded_audit_parser_does_not_mistake_basis_heading_for_opinion_heading():
+    # "مبنای اظهارنظر" ("Basis for Opinion") contains "اظهارنظر" as a
+    # substring and must never itself be picked as the opinion heading.
+    text = """
+    مبنای اظهارنظر
+    شواهد حسابرسی کافی و مناسب کسب شده است.
+    اظهارنظر
+    به نظر این سازمان، صورتهای مالی یادشده، وضعیت مالی گروه و شرکت را
+    از تمام جنبه های با اهمیت، طبق استانداردهای حسابداری،
+    به نحو منصفانه نشان می دهد.
+    """
+
+    section = _extract_audit_opinion_section(text)
+    assert section is not None
+    assert "شواهد حسابرسی کافی" not in section
+    assert classify_audit_opinion_from_text(text) == "unqualified"
 
 
 def test_related_party_parser_returns_none_without_context():

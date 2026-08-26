@@ -50,34 +50,79 @@ def _normalize_pdf_text(text: str) -> str:
     return re.sub(r"\s+", " ", normalized).strip()
 
 
+# A genuine section heading is a line consisting of *only* the opinion
+# heading (optionally "عدم" for a disclaimer, or "مشروط"/"مردود" for a
+# qualified/adverse opinion) -- never a longer sentence that merely mentions
+# the word, which is common since the opinion paragraph itself repeatedly
+# talks about "اظهارنظر". Anchored with ^...$ so it only matches a line
+# checked in isolation (see _heading_line_offsets below), not a substring
+# picked out of running prose. This also naturally excludes "مبنای
+# اظهارنظر" ("Basis for Opinion"), a different, later section: that line
+# starts with "مبنای", which this pattern doesn't allow.
+_HEADING_LINE_RE = re.compile(r"^(?:عدم\s+)?(?:اظهارنظر|اظهار نظر)(?:\s+(?:مشروط|مردود))?\s*[:：]?$")
+
+
+def _heading_line_offsets(text: str) -> tuple[str, list[int]]:
+    """Normalize ``text`` line-by-line and return it with heading offsets.
+
+    PDF-to-text extraction loses page layout, but line breaks in the raw
+    text remain a real, useful signal: a heading is a short line on its own,
+    while an in-sentence use of the same words sits inside a longer
+    paragraph line. That signal only exists before whitespace is collapsed,
+    so line boundaries have to be inspected first -- normalizing the whole
+    blob at once (collapsing newlines into spaces) and then regex-scanning
+    it, as the previous version of this function did, cannot tell the two
+    apart and false-matches on any sentence that merely discusses the
+    opinion. Lines are normalized individually and rejoined with single
+    spaces so their offsets in the combined text are known exactly, rather
+    than re-derived with an ambiguous substring search.
+    """
+    offsets: list[int] = []
+    parts: list[str] = []
+    cursor = 0
+    for raw_line in (text or "").splitlines():
+        line = _normalize_pdf_text(raw_line)
+        if not line:
+            continue
+        if _HEADING_LINE_RE.match(line):
+            offsets.append(cursor)
+        parts.append(line)
+        cursor += len(line) + 1  # +1 for the single space each part is joined with
+    return " ".join(parts), offsets
+
+
 def _extract_audit_opinion_section(text: str) -> Optional[str]:
     """Return a bounded opinion section instead of scanning the whole report.
 
     Preference order:
-    1. explicit ``اظهارنظر`` / ``اظهار نظر`` heading;
+    1. explicit ``اظهارنظر`` / ``اظهار نظر`` heading line;
     2. the canonical ``به نظر این سازمان`` opinion sentence.
 
     The section stops at common following audit-report headings and is also
     hard-capped. If no reliable anchor exists, None is returned rather than
     classifying arbitrary PDF text.
     """
-    normalized = _normalize_pdf_text(text)
+    normalized, heading_offsets = _heading_line_offsets(text)
     if not normalized:
         return None
 
-    heading_matches = list(re.finditer(r"(?:^|\s)(اظهارنظر|اظهار نظر)(?:\s|[:：])", normalized))
     canonical_index = normalized.find("به نظر این سازمان")
 
     start: Optional[int] = None
-    if heading_matches:
-        # Prefer the heading nearest before the canonical opinion sentence when
-        # present; otherwise use the first explicit opinion heading.
+    if heading_offsets:
+        # Prefer the heading nearest before the canonical opinion sentence
+        # when present. Otherwise -- e.g. a disclaimer of opinion, which may
+        # never use that canonical fairness wording -- prefer the *last*
+        # heading line rather than the first: audit-report PDFs commonly
+        # repeat the section title in a table of contents before the real
+        # section, and the real content is always the later occurrence. This
+        # is only safe because heading_offsets are true standalone heading
+        # lines, never an in-sentence mention.
         if canonical_index >= 0:
-            prior = [m for m in heading_matches if m.start() <= canonical_index]
-            match = prior[-1] if prior else heading_matches[0]
+            prior = [pos for pos in heading_offsets if pos <= canonical_index]
+            start = prior[-1] if prior else heading_offsets[0]
         else:
-            match = heading_matches[0]
-        start = match.start()
+            start = heading_offsets[-1]
     elif canonical_index >= 0:
         start = canonical_index
 

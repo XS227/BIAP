@@ -252,20 +252,26 @@ continued to return a valid production response.
 
 ## Regression tests
 
-`analysis/tests/test_regressions.py` currently covers ten verified regression
-cases, including:
+`analysis/tests/` (`test_regressions.py` plus `test_order_auth.py`) covers 22
+verified regression cases as of 2026-08-26, including:
 
 - exact net-profit row matching
 - negative net-margin scoring
-- clean audit opinion recognition
-- prevention of unrelated `به استثنای` false positives
+- bounded audit-opinion extraction: unqualified, qualified, adverse and
+  disclaimer, table-of-contents-vs-real-section disambiguation, and
+  "Basis for Opinion" heading exclusion (see "Audit-opinion parser
+  hardening" below)
 - related-party parser conservative behavior
 - consolidated/standalone scope classification and selection behavior
+- order/audit ownership isolation and idempotency (see "Order/audit
+  ownership + idempotency" above)
 
-Latest production-server test result:
+Latest local test result (on `5.249.252.88`, not yet re-verified on the
+`89.42.199.20` production host after this change -- do that before trusting
+this count there):
 
 ```text
-10 passed in 0.07s
+22 passed in 0.3s
 ```
 
 ## Recommendation API
@@ -381,6 +387,60 @@ from `/audit/orders` directly. Not touched here since that file was flagged
 in Discussion #1 as mid-flight with an unrelated auth/guest-lock feature —
 coordinate with Nasrin before editing `orders.tsx`.
 
+## Audit-opinion parser hardening (2026-08-26)
+
+Two separate problems, both in the direction of roadmap item 1
+("isolate the actual audit-opinion paragraph instead of relying on
+whole-document phrase scanning for all edge cases"):
+
+**1. Removed dead, unbounded code.** `codal_data.py` still had the original
+pre-bounding implementation (`_classify_audit_opinion` / `_audit_opinion_from_pdf`)
+sitting alongside the newer bounded one in `audit_parser.py`
+(`audit_opinion_from_pdf`, the one actually wired into `company_builder.py`
+and the live pipeline). The dead copy was not just unused, it had a real
+latent bug worse than the whole-document-scanning problem it was supposed to
+avoid: it checked for the clean "unqualified" wording *before* checking for
+"qualified" wording, so a report containing both (a real qualified opinion
+still has to state what it's *not* free of exceptions on, which reads a lot
+like fair-presentation language) would have been silently misclassified as
+unqualified if this path were ever reconnected. Deleted outright, along with
+its two now-pointless tests and the `subprocess`/`tempfile`/`unicodedata`
+imports that only it used.
+
+**2. Fixed a real bug in the bounded parser itself.** `audit_parser.py`'s
+heading detector matched `اظهارنظر`/`اظهار نظر` anywhere it was surrounded by
+whitespace in the fully whitespace-collapsed text — including as an ordinary
+word inside a sentence (the opinion paragraph necessarily talks *about*
+"اظهارنظر" itself, e.g. "این سازمان قادر به اظهارنظر ... نیست"), and inside
+"مبنای اظهارنظر" ("Basis for Opinion", a different, later section, which
+contains the same substring). In practice this only produced the right
+answer because the *first* whitespace-collapsed match usually happened to be
+the true heading — which breaks the moment a document has a table-of-contents
+entry before the real section, a real and common PDF-extraction artifact.
+
+Fixed by moving heading detection to operate on individual lines *before*
+whitespace collapsing (`_heading_line_offsets` in `audit_parser.py`): a line
+now only counts as a heading if, once normalized, it consists of *just* the
+opinion heading (optionally with "عدم"/"مشروط"/"مردود") — never a longer
+sentence that merely mentions the word, and never a "مبنای ..." line. With
+that precise signal, a TOC entry appearing before the real section can be
+safely disambiguated by preferring the *last* heading line over the first
+when there's no `به نظر این سازمان` sentence to anchor on (true for some
+disclaimer wording).
+
+New regression coverage: bounded disclaimer classification, bounded adverse
+classification, TOC-vs-real-section disambiguation, and a case proving a
+"مبنای اظهارنظر" line is never mistaken for the opinion heading itself.
+
+Not attempted, and flagging so nobody assumes it's covered: no real CODAL PDF
+corpus was available to validate additional Persian phrasings (alternate
+wordings for disclaimer/adverse beyond what's already in
+`_classify_audit_opinion_section`) — only structural/robustness issues
+verifiable from the code itself were fixed here, per the project's rule
+against guessing unverified behavior. Testing against real filings with
+known opinion types (roadmap item 2's related-party validation has the same
+gap) is still open work.
+
 ## Production operations
 
 Update the running FIN service after a reviewed GitHub change:
@@ -433,8 +493,10 @@ precedence and this file must be corrected in the same change.
 
 ## Open work / next build order
 
-1. **Audit parser hardening:** isolate the actual audit-opinion paragraph instead
-   of relying on whole-document phrase scanning for all edge cases.
+1. ~~**Audit parser hardening:**~~ done (2026-08-26) for the structural issues
+   verifiable from the code itself — see "Audit-opinion parser hardening"
+   above. Still open: validation against a real corpus of CODAL filings with
+   known opinion types, since none was available here.
 2. **Related-party validation:** test representative issuers with known explicit
    related-party warnings/non-compliance so positive flags are verified against
    real CODAL filings.
