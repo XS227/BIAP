@@ -2,10 +2,11 @@
 
 TSETMC remains the preferred source because it provides real instrument codes,
 market flow and industry metadata. Some VPS networks cannot currently reach
-TSETMC, so symbol discovery falls back to CODAL's verified issuer directory
-instead of returning HTTP 503. The fallback never fabricates market metadata:
-unknown TSETMC-only fields remain empty and the CODAL symbol itself is used as
-the lookup code.
+TSETMC, so symbol discovery falls back to CODAL's verified issuer directory.
+A last-known-good verified snapshot is also persisted to disk and can be reused
+when both upstreams are temporarily unreachable. The fallback never fabricates
+market metadata: only values previously returned by a verified upstream are
+stored and replayed.
 """
 
 from __future__ import annotations
@@ -13,6 +14,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 import gzip
 import json
+import os
+from pathlib import Path
 import time
 import urllib.error
 import urllib.parse
@@ -24,10 +27,12 @@ from codal_data import CodalDataUnavailable, list_companies
 TSETMC_BASE = "https://cdn.tsetmc.com/api"
 TSETMC_LEGACY_URL = "http://old.tsetmc.com/tsev2/data/MarketWatchInit.aspx?h=0&r=0"
 CACHE_TTL_SECONDS = 300.0
+SNAPSHOT_ENV = "BIAP_SYMBOL_SNAPSHOT"
+DEFAULT_SNAPSHOT_PATH = Path.home() / ".cache" / "biap" / "symbol_universe.json"
 
 
 class SymbolUniverseUnavailable(RuntimeError):
-    """Raised only when neither TSETMC nor CODAL can provide a universe."""
+    """Raised only when no live or last-known-good verified universe exists."""
 
 
 @dataclass(frozen=True)
@@ -110,6 +115,62 @@ def _dedupe_sort(items: list[MarketSymbol]) -> list[MarketSymbol]:
         result.append(item)
     result.sort(key=lambda x: ((x.market or "ZZZ"), x.symbol))
     return result
+
+
+def _snapshot_path() -> Path:
+    configured = os.getenv(SNAPSHOT_ENV)
+    return Path(configured).expanduser() if configured else DEFAULT_SNAPSHOT_PATH
+
+
+def _load_snapshot() -> list[MarketSymbol]:
+    path = _snapshot_path()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    rows = payload.get("items") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return []
+    items: list[MarketSymbol] = []
+    for raw in rows:
+        if not isinstance(raw, dict):
+            continue
+        try:
+            item = MarketSymbol(
+                code=str(raw["code"]),
+                symbol=str(raw["symbol"]),
+                name=str(raw.get("name") or raw["symbol"]),
+                market=raw.get("market"),
+                flow=int(raw["flow"]) if raw.get("flow") is not None else None,
+                industry_code=str(raw["industry_code"]) if raw.get("industry_code") not in (None, "") else None,
+                paper_type=str(raw["paper_type"]) if raw.get("paper_type") not in (None, "") else None,
+                is_active=bool(raw.get("is_active", True)),
+                source=str(raw.get("source") or "snapshot"),
+            )
+        except (KeyError, TypeError, ValueError):
+            continue
+        if item.code and item.symbol:
+            items.append(item)
+    return _dedupe_sort(items)
+
+
+def _save_snapshot(items: list[MarketSymbol]) -> None:
+    if not items:
+        return
+    path = _snapshot_path()
+    payload = {
+        "savedAt": time.time(),
+        "items": [item.to_dict() for item in items],
+    }
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(path.suffix + ".tmp")
+        tmp.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(path)
+    except OSError:
+        # Snapshot persistence is a resilience aid, never a reason to fail a
+        # successful live request.
+        return
 
 
 def _fetch_json_universe(*, timeout: float) -> list[MarketSymbol]:
@@ -199,12 +260,18 @@ def fetch_symbol_universe(*, timeout: float = 6.0, use_cache: bool = True) -> li
         except CodalDataUnavailable as exc:
             errors.append(f"CODAL: {exc}")
 
-    if not symbols:
-        detail = "; ".join(errors) or "all sources returned empty data"
-        raise SymbolUniverseUnavailable(f"could not fetch symbol universe: {detail}")
+    if symbols:
+        _cache = (now, symbols)
+        _save_snapshot(symbols)
+        return symbols
 
-    _cache = (now, symbols)
-    return symbols
+    snapshot = _load_snapshot()
+    if snapshot:
+        _cache = (now, snapshot)
+        return snapshot
+
+    detail = "; ".join(errors) or "all sources returned empty data"
+    raise SymbolUniverseUnavailable(f"could not fetch symbol universe and no verified snapshot exists: {detail}")
 
 
 def query_symbols(*, market: Optional[str] = None, q: Optional[str] = None, limit: int = 5000) -> list[MarketSymbol]:
