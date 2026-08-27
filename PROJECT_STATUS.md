@@ -1,6 +1,6 @@
 # BIAP — Project Status
 
-_Last updated: 2026-08-27_
+_Last updated: 2026-08-27 (Kiasha real performance tracking deployed)_
 
 ## Production status
 
@@ -297,13 +297,16 @@ regression cases as of 2026-08-26, including:
   "Live relay confirmed working" below)
 - PaperBroker adapter produces the same fill receipt as before the refactor
   (see "PaperBroker adapter" below)
+- real performance-tracking store and evaluator behavior (recommendation
+  dedupe, horizon gating, neutral-vote exclusion, fallback-vs-observed
+  trust switchover) and test isolation from the production performance DB
+  (see "Kiasha real performance tracking" below)
 
-Latest local test result (on `5.249.252.88`, not yet re-verified on the
-`89.42.199.20` production host after this change -- do that before trusting
-this count there):
+Latest local test result (on `5.249.252.88`, verified 2026-08-27 after the
+performance-tracking deployment and the test-isolation fix):
 
 ```text
-34 passed in 0.4s
+62 passed in 0.5s
 ```
 
 ## Recommendation API
@@ -718,6 +721,69 @@ routed on either host. Moving those requires the order/audit data migration
 (SQLite `.backup` + schema-diff + `INSERT OR IGNORE` merge, timed immediately
 around the next nginx change to avoid a write-race window) designed but not
 yet executed -- see item 4 in "Open work" below.
+
+## Kiasha real performance tracking (2026-08-27)
+
+Eight commits landed on `main` (pushed under the `XS227` account, `7b70c95`
+through `2d48034`) adding a real, non-fabricated performance-tracking layer:
+`analysis/performance_store.py` (persistent SQLite: `recommendation_observations`
++ `agent_observations`) and `analysis/performance_evaluator.py` (a script that
+resolves each pending observation's real TSETMC closing price after a
+configured trading-day horizon and marks it evaluated). `kiasha.decide()` now
+records every recommendation via `_record_observation()`, and
+`_track_record_for_agent()` reads real observed per-agent accuracy/return
+stats once an agent has `MIN_OBSERVED_SAMPLES` (default 50) *evaluated*
+outcomes -- before that threshold, and for any agent that never accumulates
+enough real samples, decision-making is unchanged from the pre-existing
+hardcoded `TRACK_RECORDS` fallback. Storage errors in `_record_observation`
+are swallowed (tracking must never turn a valid recommendation into a 500).
+
+This was not yet reflected anywhere in this file when found (session started
+2026-08-27 mid-morning UTC, commits already on `main`) and the running
+`biap-fin` on `5.249.252.88` predated them, so **the following was newly
+verified and deployed in this session, not assumed from the commits alone:**
+
+- `analysis/tests/` passes 62/62 (up from 34) before touching anything.
+- `biap-fin.service` restarted on `5.249.252.88`; `/health` and a live
+  فولاد recommendation both confirmed working after restart, with the new
+  breakdown fields present: `trust_source: "fallback"`,
+  `observed_samples: 0` (correct -- no agent has 50 evaluated outcomes yet).
+- **Real bug found and fixed:** `test_recommendation_pipeline_handles_a_representative_symbol_from_each_market`
+  (`tests/test_regressions.py`) calls `kiasha.decide()` directly with
+  `TSE1`/`IFB1`/`BASE1` fixtures and never overrode the performance store, so
+  every test run was writing fixture rows straight into the real production
+  `biap_performance.sqlite3` (confirmed: ids 1/6/7/8 in
+  `recommendation_observations`, alongside the one genuine فولاد row).
+  Fixed with `analysis/tests/conftest.py`, an autouse fixture that points
+  `kiasha._performance_store` at a `tmp_path` SQLite file for every test
+  unless a test overrides it itself (the three dedicated performance test
+  files already did this correctly and are unaffected). Verified: 62/62
+  still pass, and a repeat test run left the production DB unchanged.
+  **Not yet done:** the 4 pre-existing junk rows in the live
+  `biap_performance.sqlite3` still need deleting (a raw DB write was blocked
+  by this session's own tooling policy) -- harmless in the meantime, since
+  `TSE1`/`IFB1`/`BASE1`/`SAMPLE1` can never resolve a real TSETMC close and
+  will just sit as `waiting` forever, but should be cleaned up manually
+  (`DELETE FROM recommendation_observations WHERE id IN (1,6,7,8)` and the
+  matching `agent_observations` rows) before relying on evaluated-sample
+  counts for anything precise.
+- `biap-performance-evaluator.service` (oneshot) +
+  `biap-performance-evaluator.timer` created on `5.249.252.88`, enabled and
+  running daily at `11:00 UTC` (`14:30` Asia/Tehran, fixed UTC+3:30, safely
+  after TSE's close) with `Persistent=true`. Manually verified the exact
+  evaluator command runs cleanly against the real relay
+  (`BIAP_TSETMC_API_BASE=http://89.42.199.20:8090/tsetmc-cdn/api`): all 5
+  pending observations correctly reported `"waiting"` (horizon not yet
+  reached), zero errors. This was previously only a docstring suggestion
+  ("run this periodically, e.g. via a systemd timer") with nothing actually
+  scheduled anywhere.
+
+**How to apply:** agent weights will not move from the seeded fallback until
+real evaluated samples accumulate past `MIN_OBSERVED_SAMPLES` per agent --
+this needs the timer to keep running for weeks/months of real recommendations
+before it has any visible effect. Don't expect `trust_source: "observed"` to
+appear soon. Check evaluator health periodically: `journalctl -u
+biap-performance-evaluator.service` on `5.249.252.88`.
 
 ## Production operations
 
