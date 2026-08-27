@@ -21,7 +21,9 @@ def _record(store: PerformanceStore, *, symbol="فولاد", vote=1.0, day=1):
 
 
 def test_performance_routes_are_mounted():
-    paths = {route.path for route in api_server.app.routes}
+    # app.routes may contain Starlette's internal _IncludedRouter entries that do
+    # not expose .path. OpenAPI is the stable public view of mounted HTTP paths.
+    paths = set(api_server.app.openapi()["paths"])
     assert "/performance/summary" in paths
     assert "/performance/agents" in paths
 
