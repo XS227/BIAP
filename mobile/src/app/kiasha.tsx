@@ -57,8 +57,8 @@ function AgentPerformanceRow({ agent, colors }: { agent: AgentPerformance; color
   return (
     <View style={[styles.performanceRow, { borderBottomColor: colors.backgroundSelected }]}>
       <View style={styles.performanceHead}>
-        <View style={[styles.trustBadge, { backgroundColor: agent.trustReady ? `${Brand.success}22` : colors.backgroundSelected }]}>
-          <Text style={[styles.trustBadgeText, { color: agent.trustReady ? Brand.success : colors.textSecondary }]}>
+        <View style={[styles.trustBadge, { backgroundColor: agent.trustReady ? `${Brand.positive}22` : colors.backgroundSelected }]}>
+          <Text style={[styles.trustBadgeText, { color: agent.trustReady ? Brand.positive : colors.textSecondary }]}>
             {agent.trustReady ? 'اعتماد فعال' : 'در حال جمع‌آوری داده'}
           </Text>
         </View>
@@ -92,8 +92,8 @@ const fStyles = StyleSheet.create({
 });
 
 export default function KiashaScreen() {
-  const scheme = useColorScheme() ?? 'light';
-  const colors = Colors[scheme];
+  const scheme = useColorScheme();
+  const colors = scheme === 'dark' ? Colors.dark : Colors.light;
   const [performance, setPerformance] = useState<KiashaPerformanceSummary | null>(null);
   const [loadingPerformance, setLoadingPerformance] = useState(true);
   const [performanceUnavailable, setPerformanceUnavailable] = useState(false);
@@ -180,8 +180,8 @@ export default function KiashaScreen() {
                   </View>
                 </View>
 
-                <View style={[styles.observedBadge, { backgroundColor: performance.observedTrustActive ? `${Brand.success}22` : `${Brand.warning}18` }]}>
-                  <Text style={[styles.observedBadgeText, { color: performance.observedTrustActive ? Brand.success : Brand.warning }]}>
+                <View style={[styles.observedBadge, { backgroundColor: performance.observedTrustActive ? `${Brand.positive}22` : `${Brand.warning}18` }]}>
+                  <Text style={[styles.observedBadgeText, { color: performance.observedTrustActive ? Brand.positive : Brand.warning }]}>
                     {performance.observedTrustActive ? 'وزن‌دهی بر اساس عملکرد مشاهده‌شده فعال است' : 'وزن‌دهی مشاهده‌شده هنوز فعال نشده'}
                   </Text>
                 </View>
