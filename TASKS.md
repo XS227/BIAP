@@ -43,6 +43,10 @@ Allowed working statuses: `TODO`, `IN PROGRESS`, `BLOCKED`, `REVIEW`, `DONE`,
 Any agent prompt/session working on this repository should be told: **read and
 update `TASKS.md` before and after doing project work.**
 
+## Agent work log
+
+`[DONE] Admin/ops panel for biap-fin — owner: Claude session (5.249.252.88) — since: 2026-08-27 — scope/result:` Built a server-rendered admin panel (`analysis/admin_routes.py` + `admin_auth.py` + `admin_store.py`) mounted directly on the existing `biap-fin` FastAPI app — cross-user order/audit visibility, approve/reject attributable to a named local admin operator (not the end-user JWT — no `/api/auth/me` exists to verify against, see P2 item 4 below), risk/agent-performance dashboard. 116/116 tests pass, commit `95e1e51` on main. **Not yet live**: needs `BIAP_ADMIN_JWT_SECRET` (+ bootstrap user/pass) added to the `biap-fin.service` unit on `5.249.252.88` and a restart, plus an nginx `/admin` route decision — neither done here (production systemd/nginx edits need a human to apply per this session's own operating rules). Full writeup in `PROJECT_STATUS.md`'s "Admin/ops panel" section.
+
 ## P0 — blocking everything downstream
 
 None currently. The last P0 (public route from `biap.dadashi.no/api` to a
