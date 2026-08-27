@@ -1,6 +1,6 @@
 # BIAP — Project Status
 
-_Last updated: 2026-08-27 (admin/ops panel added, not yet deployed to the live service)_
+_Last updated: 2026-08-27 (admin/ops panel deployed and verified live)_
 
 ## Production status
 
@@ -1146,20 +1146,34 @@ smoke-tested end-to-end on a throwaway local port (login -> cookie ->
 dashboard/orders/audit all 200, no cookie -> 303 redirect to
 `/admin/login`) -- not yet run against the live `biap-fin.service`.
 
-**Not done yet / needs a decision before going live:**
-- The live systemd unit (`/etc/systemd/system/biap-fin.service` on
-  `5.249.252.88`) does not have `BIAP_ADMIN_JWT_SECRET` set yet, so `/admin`
-  currently 503s in production. Needs the env vars above added and the
-  service restarted -- not done here since editing/reloading a live
-  systemd unit is exactly the kind of change this session asks a human to
-  run rather than doing unattended.
-- Nginx on `5.249.252.88` doesn't route `/admin` publicly yet (only `/api/`
-  is proxied per the existing vhost) -- needs a decision on whether the
-  panel should be reachable from `biap.dadashi.no/admin` or kept
-  internal/VPN-only, then a matching nginx location block.
-- No user data ("wallet") from the port-4000 backend is shown here yet --
-  that backend's code isn't in this repo and there's no read access to it
-  confirmed from this VPS (see TASKS.md).
+**Deployed 2026-08-27, verified live publicly:** the systemd unit
+(`/etc/systemd/system/biap-fin.service` on `5.249.252.88`) now has
+`BIAP_ADMIN_JWT_SECRET`/`BIAP_ADMIN_BOOTSTRAP_USER`/
+`BIAP_ADMIN_BOOTSTRAP_PASSWORD` set, and the `biap-dadashi` nginx vhost
+routes `/admin` to `127.0.0.1:8088` (public, chosen over internal/VPN-only
+-- the panel already requires its own login, same tradeoff as any other
+authenticated admin route). Verified end-to-end from outside the VPS:
+`https://biap.dadashi.no/admin/login` (200) -> login -> 303 -> dashboard
+(200), and the existing `/api/stock/recommendation/{code}` public route
+still works unchanged.
+
+**One deployment wrinkle worth recording:** the first attempt to add the
+nginx `/admin` location used a `sed` insert anchored on the substring
+`location /api/`, which matched three different `location` blocks in the
+vhost (`/api/stock/recommendation/`, `/api/performance/`, and the
+catch-all `/api/`), each inheriting the inserted `/admin` block --
+duplicating it 3x in the main server block plus once more in the
+`:8089` local-only test server. Fixed by writing the complete corrected
+file content directly (not another regex/sed edit) and replacing the
+vhost wholesale via `cp`, then verifying with `diff` that exactly one
+`/admin` block existed before touching `nginx -t`/reload. Takeaway for
+next time: prefer replacing a whole config file with known-good content
+over anchored inserts when the anchor text isn't guaranteed unique in the
+file.
+
+**Still open:** no user data ("wallet") from the port-4000 backend is
+shown here yet -- that backend's code isn't in this repo and there's no
+read access to it confirmed from this VPS (see TASKS.md item 4).
 
 ## Production operations
 
@@ -1301,11 +1315,10 @@ precedence and this file must be corrected in the same change.
 11. **Real broker research/integration:** only after API access, compliance and
     account authorization are confirmed. AUTO stays disabled until a separate,
     explicit production decision.
-12. **Admin/ops panel:** partially done (2026-08-27) -- see "Admin/ops panel"
-    above. Code + tests done; still open: set `BIAP_ADMIN_JWT_SECRET` (and
-    bootstrap user/password) on the live `biap-fin.service` unit and restart
-    it, decide + apply an nginx route for `/admin`, and hook up real user
-    ("wallet") data once port-4000 backend access/API is sorted (TASKS.md).
+12. ~~**Admin/ops panel:**~~ done and deployed (2026-08-27) -- see "Admin/ops
+    panel" above. Live at `https://biap.dadashi.no/admin`. Still open: hook
+    up real user ("wallet") data once port-4000 backend access/API is
+    sorted (TASKS.md item 4).
 
 ## Key safety rule
 
