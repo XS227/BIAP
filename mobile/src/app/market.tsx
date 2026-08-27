@@ -79,7 +79,7 @@ function Ticker({ items, colors }: { items: StockItem[]; colors: ThemeColors }) 
 }
 
 export default function MarketScreen() {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const [data, setData] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);

@@ -180,7 +180,7 @@ const sectionStyles = StyleSheet.create({
 });
 
 export default function BizDevScreen() {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
 
   const [stocks, setStocks] = useState<StockItem[]>([]);

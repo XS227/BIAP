@@ -8,7 +8,7 @@ import { API_BASE } from '@/lib/api';
 type Props = { onLogin: () => void };
 
 export default function LoginScreen({ onLogin }: Props) {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

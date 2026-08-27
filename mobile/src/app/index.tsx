@@ -104,7 +104,7 @@ const navStyles = StyleSheet.create({
 });
 
 export default function HomeScreen() {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const [data, setData] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);

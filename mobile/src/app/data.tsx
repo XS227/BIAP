@@ -274,7 +274,7 @@ async function exportCSV(stocks: StockItem[]) {
 }
 
 export default function DataScreen() {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
 
   const [stocks, setStocks] = useState<StockItem[]>([]);

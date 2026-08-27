@@ -162,7 +162,7 @@ const chartStyles = StyleSheet.create({
 
 export default function StockDetailScreen() {
   const { code } = useLocalSearchParams<{ code: string }>();
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
 
   const [item, setItem] = useState<StockItem | null>(null);

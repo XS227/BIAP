@@ -43,7 +43,7 @@ export default function AppTabs() {
 type TabButtonProps = TabTriggerSlotProps & { accent?: string; children?: React.ReactNode };
 
 export function TabButton({ children, isFocused, accent, ...props }: TabButtonProps) {
-    const scheme = useColorScheme() ?? 'light';
+    const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme ?? 'dark'];
 
   return (
@@ -72,7 +72,7 @@ export function TabButton({ children, isFocused, accent, ...props }: TabButtonPr
 }
 
 export function CustomTabList(props: TabListProps) {
-    const scheme = useColorScheme() ?? 'light';
+    const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme ?? 'dark'];
 
   return (

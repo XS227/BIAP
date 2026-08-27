@@ -30,7 +30,7 @@ const rowStyles = StyleSheet.create({
 });
 
 export default function MoreScreen() {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const logout = useLogout();
 

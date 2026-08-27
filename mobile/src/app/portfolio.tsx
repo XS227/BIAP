@@ -8,7 +8,7 @@ import { Colors, Brand, Fonts, Spacing, Radius, BottomTabInset, MaxContentWidth 
 // inventing numbers, so this screen says plainly what it is instead.
 
 export default function PortfolioScreen() {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
 
   return (

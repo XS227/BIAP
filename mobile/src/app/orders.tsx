@@ -85,7 +85,7 @@ const emptyStyles = StyleSheet.create({
 });
 
 export default function OrdersScreen() {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const [orders, setOrders] = useState<LocalOrderReceipt[]>([]);
   const [refreshing, setRefreshing] = useState(false);
