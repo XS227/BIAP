@@ -16,6 +16,7 @@ after a conservative minimum sample threshold is reached. Seeded and observed
 sample counts are never blended together.
 """
 
+from datetime import datetime, timezone
 import math
 from dataclasses import dataclass
 from functools import lru_cache
@@ -83,7 +84,7 @@ def _track_record_for_agent(agent: str) -> tuple[AgentTrackRecord, str, int]:
     fallback = TRACK_RECORDS[agent]
     try:
         stats = _performance_store().agent_stats(agent)
-    except OSError:
+    except (OSError, RuntimeError):
         stats = None
     if stats is None:
         return fallback, "fallback", 0
@@ -104,6 +105,33 @@ class Decision:
     weighted_score: float
     breakdown: list[dict]
     explanation: str
+
+
+def _record_observation(company: dict, decision: Decision) -> None:
+    market = company.get("market") or {}
+    raw_price = market.get("price")
+    try:
+        price = float(raw_price) if raw_price is not None else None
+    except (TypeError, ValueError):
+        price = None
+    symbol = str(company.get("name_fa") or company.get("ticker") or "").strip()
+    code = str(company.get("ticker") or symbol).strip()
+    if not symbol:
+        return
+    try:
+        _performance_store().record_recommendation(
+            code=code,
+            symbol=symbol,
+            generated_at=datetime.now(timezone.utc).isoformat(),
+            reference_price=price,
+            kiasha_call=decision.call,
+            weighted_score=decision.weighted_score,
+            breakdown=decision.breakdown,
+        )
+    except Exception:
+        # Tracking is observational infrastructure. A storage problem must never
+        # turn an otherwise valid production recommendation into a 500 response.
+        return
 
 
 def decide(company: dict) -> Decision:
@@ -151,4 +179,6 @@ def decide(company: dict) -> Decision:
         f"trust={top['trust_source']}) - {top['reasoning']}"
     )
 
-    return Decision(call, round(weighted_score, 3), breakdown, explanation)
+    decision = Decision(call, round(weighted_score, 3), breakdown, explanation)
+    _record_observation(company, decision)
+    return decision
