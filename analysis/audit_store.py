@@ -214,6 +214,57 @@ class AuditStore:
             for row in rows
         ]
 
+    def list_all_intents(self, *, status: Optional[str] = None, limit: int = 200) -> list[dict[str, Any]]:
+        """Cross-user intent listing for the admin panel (see admin_routes.py).
+
+        Unlike list_intents(), this is not scoped to a single caller -- only
+        reachable behind admin_auth.require_admin, never the end-user API.
+        """
+        limit = max(1, min(limit, 1000))
+        with self._connect() as conn:
+            if status:
+                rows = conn.execute(
+                    "SELECT user_id, payload_json FROM order_intents WHERE status = ? ORDER BY created_at DESC LIMIT ?",
+                    (status, limit),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT user_id, payload_json FROM order_intents ORDER BY created_at DESC LIMIT ?",
+                    (limit,),
+                ).fetchall()
+        results = []
+        for row in rows:
+            intent = json.loads(row["payload_json"])
+            intent["ownerUserId"] = row["user_id"]
+            results.append(intent)
+        return results
+
+    def list_all_events(self, *, limit: int = 200) -> list[dict[str, Any]]:
+        """Cross-user event listing for the admin panel (see admin_routes.py)."""
+        limit = max(1, min(limit, 1000))
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT seq, event_id, user_id, intent_id, event_type, created_at, payload_json
+                FROM audit_events
+                ORDER BY seq DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+        return [
+            {
+                "seq": row["seq"],
+                "eventId": row["event_id"],
+                "ownerUserId": row["user_id"],
+                "intentId": row["intent_id"],
+                "eventType": row["event_type"],
+                "createdAt": row["created_at"],
+                "payload": json.loads(row["payload_json"]),
+            }
+            for row in rows
+        ]
+
     def get_idempotent_response(self, *, user_id: str, idempotency_key: str) -> Optional[dict[str, Any]]:
         with self._connect() as conn:
             row = conn.execute(

@@ -7,9 +7,12 @@ import asyncio
 import os
 import uuid
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
+from admin_auth import AdminAuthRequired
+from admin_routes import router as admin_router
 from audit_store import AuditStore
 from auth import require_approver, require_user_id
 from codal_data import base_url as codal_base_url
@@ -90,6 +93,12 @@ async def _lifespan(_app: FastAPI):
 
 app = FastAPI(title="BIAP Kiasha recommendation service", lifespan=_lifespan)
 app.include_router(performance_router)
+app.include_router(admin_router)
+
+
+@app.exception_handler(AdminAuthRequired)
+def _admin_auth_required(_request: Request, _exc: AdminAuthRequired) -> RedirectResponse:
+    return RedirectResponse("/admin/login", status_code=303)
 
 MOCK_COMPANIES = {SAMPLE_COMPANY["ticker"]: SAMPLE_COMPANY}
 AUDIT = AuditStore()

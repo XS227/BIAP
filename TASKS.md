@@ -51,11 +51,19 @@ needs Nasrin's action right now.
 
 ## P1
 
-1. **Mobile source consolidation — resolved.** PR #4 merged the mobile app into
-   `XS227/BIAP/mobile/`, and this folder is now the source of truth for mobile
-   development. The previously referenced `/home/nasrin/Biap/mobile` working
-   tree is no longer present on the old VPS, so those stale WIP notes are not a
-   blocker anymore. New mobile changes should be made directly under
+1. **Mobile source consolidation — resolved, but correction (2026-08-27):**
+   PR #4 merged the mobile app into `XS227/BIAP/mobile/`, and this folder is
+   the source of truth for *new* mobile development. However, the previous
+   claim that `/home/nasrin/Biap/mobile` "is no longer present" was checked
+   directly today and is **wrong** -- that working tree still exists on
+   `5.249.252.88`, tmux session `biap` is still running from it, and it is
+   8 commits ahead / 2 behind `origin/main` with uncommitted changes in
+   `_layout.tsx`, `index.tsx`, `more.tsx`, `orders.tsx`, `app-tabs.tsx`,
+   `app-tabs.web.tsx`, `login-screen.tsx`, `recommendation-card.tsx`,
+   `api.ts`, plus untracked `search.tsx`/`auth-context.tsx`. Flagged to
+   Nasrin directly in Discussion #1 -- not touched, just don't assume it's
+   gone or safe to ignore until she confirms. New mobile changes should
+   still go under
    `XS227/BIAP/mobile/`.
 
 2. **Mobile Kiasha integration and build validation.** The mobile API layer now:

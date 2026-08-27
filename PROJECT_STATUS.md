@@ -1,6 +1,6 @@
 # BIAP — Project Status
 
-_Last updated: 2026-08-27 (CODAL balance-sheet fields + EPS exposure added)_
+_Last updated: 2026-08-27 (admin/ops panel added, not yet deployed to the live service)_
 
 ## Production status
 
@@ -1103,6 +1103,64 @@ did) before adding a guessed alias. The same caution applies to any other
 CODAL row label added later: verify against live HTML, don't guess from
 textbook accounting terminology.
 
+## Admin/ops panel (2026-08-27)
+
+Khabat asked for an admin side to actually run BIAP day-to-day (see pending
+orders, audit trail across *all* users, agent performance, risk policy) --
+separate from the end-user wallet/recommendation app. Built as a
+server-rendered HTML panel mounted directly on `biap-fin` (`api_server.py`)
+on `5.249.252.88`, not a new service, so nothing new needs deploying.
+
+**New files:** `admin_store.py` (local operator accounts, PBKDF2-hashed
+passwords, own SQLite file), `admin_auth.py` (session JWT + cookie,
+deliberately separate from `auth.py`'s end-user ownership tokens),
+`admin_routes.py` (the actual pages: `/admin` dashboard, `/admin/orders`
+with approve/reject, `/admin/audit`). No template-engine dependency added
+(jinja2 isn't installed) -- pages are built with small `html.escape`d
+string helpers.
+
+**Why a separate admin identity, not the existing user JWT:** TASKS.md item
+4 is still open -- there is no verified `/api/auth/me`-style endpoint on the
+port-4000 backend, so FIN cannot check whether a caller claiming to be an
+admin actually is one of the small set of people who run BIAP. Admin
+accounts are their own local table instead
+(`BIAP_ADMIN_BOOTSTRAP_USER`/`BIAP_ADMIN_BOOTSTRAP_PASSWORD` env vars create
+the first operator on first boot if the table is empty). Every
+approve/reject done through the panel now writes `actor: "admin:<username>"`
+into the audit event -- attributable to a person, unlike the existing JSON
+API's `/orders/{id}/approve` which still uses the single shared
+`BIAP_APPROVER_TOKEN` (untouched, both paths coexist).
+
+**New env vars needed to actually turn this on:**
+- `BIAP_ADMIN_JWT_SECRET` -- required; unset means the panel returns 503 and
+  refuses everyone (fail closed, same pattern as `require_approver`).
+- `BIAP_ADMIN_BOOTSTRAP_USER` / `BIAP_ADMIN_BOOTSTRAP_PASSWORD` -- only used
+  once, to create the first operator; harmless to leave in the unit file
+  after that since bootstrap is a no-op once any operator exists.
+- `BIAP_ADMIN_DB` -- optional, defaults to `analysis/biap_admin.sqlite3`.
+
+**Verified so far:** 116/116 tests pass (`admin_store`/`admin_auth`
+unit tests + `admin_routes` integration tests using a temp SQLite DB and
+`FastAPI TestClient`, same pattern as `test_order_auth.py`). Also manually
+smoke-tested end-to-end on a throwaway local port (login -> cookie ->
+dashboard/orders/audit all 200, no cookie -> 303 redirect to
+`/admin/login`) -- not yet run against the live `biap-fin.service`.
+
+**Not done yet / needs a decision before going live:**
+- The live systemd unit (`/etc/systemd/system/biap-fin.service` on
+  `5.249.252.88`) does not have `BIAP_ADMIN_JWT_SECRET` set yet, so `/admin`
+  currently 503s in production. Needs the env vars above added and the
+  service restarted -- not done here since editing/reloading a live
+  systemd unit is exactly the kind of change this session asks a human to
+  run rather than doing unattended.
+- Nginx on `5.249.252.88` doesn't route `/admin` publicly yet (only `/api/`
+  is proxied per the existing vhost) -- needs a decision on whether the
+  panel should be reachable from `biap.dadashi.no/admin` or kept
+  internal/VPN-only, then a matching nginx location block.
+- No user data ("wallet") from the port-4000 backend is shown here yet --
+  that backend's code isn't in this repo and there's no read access to it
+  confirmed from this VPS (see TASKS.md).
+
 ## Production operations
 
 Update the running FIN service after a reviewed GitHub change:
@@ -1243,6 +1301,11 @@ precedence and this file must be corrected in the same change.
 11. **Real broker research/integration:** only after API access, compliance and
     account authorization are confirmed. AUTO stays disabled until a separate,
     explicit production decision.
+12. **Admin/ops panel:** partially done (2026-08-27) -- see "Admin/ops panel"
+    above. Code + tests done; still open: set `BIAP_ADMIN_JWT_SECRET` (and
+    bootstrap user/password) on the live `biap-fin.service` unit and restart
+    it, decide + apply an nginx route for `/admin`, and hook up real user
+    ("wallet") data once port-4000 backend access/API is sorted (TASKS.md).
 
 ## Key safety rule
 
