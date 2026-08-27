@@ -1,12 +1,13 @@
-import { View, Text, StyleSheet, ScrollView, useColorScheme, SafeAreaView, Pressable } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, useColorScheme, SafeAreaView, Pressable, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, Radius, BottomTabInset, MaxContentWidth, ThemeColors } from '@/constants/theme';
+import { AgentPerformance, fetchKiashaPerformanceSummary, KiashaPerformanceSummary } from '@/lib/api';
 
-// Grounded in the real backend (XS227/BIAP: analysis/agents.py + kiasha.py),
-// not invented. Explicitly does NOT show a performance/return chart --
-// kiasha.py's own TRACK_RECORDS are seeded placeholders, not real logged
-// outcomes yet, and "auto invest" is explicitly not enabled (execution.py
-// blocks AUTO regardless of risk settings).
+// Grounded in the real backend (XS227/BIAP: analysis/agents.py + kiasha.py).
+// Performance values below are fetched from the observed-performance API.
+// The UI deliberately renders unavailable measurements as "—" rather than
+// inventing a return/accuracy number before enough outcomes have been observed.
 
 type FeatureItem = { icon: string; title: string; body: string; disabled?: boolean };
 
@@ -16,6 +17,13 @@ const FEATURES: FeatureItem[] = [
   { icon: '👥', title: 'گزارش تیم عامل‌ها', body: 'سهم هرکدام از چهار عامل (بنیادی، ریسک، پیش‌بینی، مقایسه) در تصمیم نهایی، شفاف نمایش داده می‌شود.' },
   { icon: '⚙️', title: 'سرمایه‌گذاری خودکار', body: 'به‌زودی — فقط پس از اتصال کارگزار واقعی و تأیید امنیتی/قانونی فعال می‌شود.', disabled: true },
 ];
+
+const AGENT_LABELS: Record<string, { name: string; desc: string }> = {
+  fundamental: { name: 'بنیادی', desc: 'رشد درآمد، حاشیه سود و صورت‌های مالی CODAL' },
+  risk: { name: 'ریسک', desc: 'نقدشوندگی، نوسان و کیفیت داده' },
+  forecast: { name: 'پیش‌بینی', desc: 'مومنتوم قیمت و حجم' },
+  comparison: { name: 'مقایسه', desc: 'مقایسه با صنعت و سهام مشابه' },
+};
 
 function FeatureCard({ item, colors }: { item: FeatureItem; colors: ThemeColors }) {
   return (
@@ -31,6 +39,50 @@ function FeatureCard({ item, colors }: { item: FeatureItem; colors: ThemeColors 
     </View>
   );
 }
+
+function pct(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return '—';
+  return `${(value * 100).toLocaleString('fa-IR', { maximumFractionDigits: 1 })}٪`;
+}
+
+function signedReturn(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return '—';
+  const percent = value * 100;
+  const sign = percent > 0 ? '+' : '';
+  return `${sign}${percent.toLocaleString('fa-IR', { maximumFractionDigits: 2 })}٪`;
+}
+
+function AgentPerformanceRow({ agent, colors }: { agent: AgentPerformance; colors: ThemeColors }) {
+  const label = AGENT_LABELS[agent.agent] ?? { name: agent.agent, desc: 'عامل کیاشا' };
+  return (
+    <View style={[styles.performanceRow, { borderBottomColor: colors.backgroundSelected }]}>
+      <View style={styles.performanceHead}>
+        <View style={[styles.trustBadge, { backgroundColor: agent.trustReady ? `${Brand.success}22` : colors.backgroundSelected }]}>
+          <Text style={[styles.trustBadgeText, { color: agent.trustReady ? Brand.success : colors.textSecondary }]}>
+            {agent.trustReady ? 'اعتماد فعال' : 'در حال جمع‌آوری داده'}
+          </Text>
+        </View>
+        <Text style={[styles.agentName, { color: colors.text }]}>{label.name}</Text>
+      </View>
+      <Text style={[styles.agentDesc, { color: colors.textSecondary }]}>{label.desc}</Text>
+      <View style={styles.metricsRow}>
+        <View style={styles.metric}>
+          <Text style={[styles.metricValue, { color: colors.text }]}>{agent.evaluatedCalls.toLocaleString('fa-IR')}</Text>
+          <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>ارزیابی‌شده</Text>
+        </View>
+        <View style={styles.metric}>
+          <Text style={[styles.metricValue, { color: colors.text }]}>{pct(agent.directionalAccuracy)}</Text>
+          <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>دقت جهت</Text>
+        </View>
+        <View style={styles.metric}>
+          <Text style={[styles.metricValue, { color: colors.text }]}>{signedReturn(agent.averageSignedReturn)}</Text>
+          <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>بازده امضاشده</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 const fStyles = StyleSheet.create({
   card: { flexBasis: '47%', borderRadius: Radius.md, padding: Spacing.three, alignItems: 'flex-end', gap: 4 },
   title: { fontFamily: Fonts.sans, fontSize: 14, fontWeight: '700', marginTop: 2 },
@@ -39,16 +91,28 @@ const fStyles = StyleSheet.create({
   badgeText: { fontFamily: Fonts.sans, fontSize: 10, fontWeight: '700' },
 });
 
-const AGENTS = [
-  { name: 'بنیادی', desc: 'رشد درآمد، حاشیه سود و صورت‌های مالی CODAL' },
-  { name: 'ریسک', desc: 'نقدشوندگی، نوسان و کیفیت داده' },
-  { name: 'پیش‌بینی', desc: 'مومنتوم قیمت و حجم' },
-  { name: 'مقایسه', desc: 'مقایسه با صنعت و سهام مشابه' },
-];
-
 export default function KiashaScreen() {
   const scheme = useColorScheme() ?? 'light';
   const colors = Colors[scheme];
+  const [performance, setPerformance] = useState<KiashaPerformanceSummary | null>(null);
+  const [loadingPerformance, setLoadingPerformance] = useState(true);
+  const [performanceUnavailable, setPerformanceUnavailable] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    fetchKiashaPerformanceSummary()
+      .then((data) => {
+        if (!mounted) return;
+        setPerformance(data);
+        setPerformanceUnavailable(data === null);
+      })
+      .finally(() => {
+        if (mounted) setLoadingPerformance(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
@@ -79,10 +143,10 @@ export default function KiashaScreen() {
 
           <Text style={[styles.sectionTitle, { color: colors.text }]}>تیم عامل‌ها</Text>
           <View style={[styles.agentsCard, { backgroundColor: colors.backgroundElement }]}>
-            {AGENTS.map((a, i) => (
+            {Object.entries(AGENT_LABELS).map(([key, a], i, all) => (
               <View
-                key={a.name}
-                style={[styles.agentRow, i < AGENTS.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.backgroundSelected }]}
+                key={key}
+                style={[styles.agentRow, i < all.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.backgroundSelected }]}
               >
                 <Text style={[styles.agentName, { color: colors.text }]}>{a.name}</Text>
                 <Text style={[styles.agentDesc, { color: colors.textSecondary }]}>{a.desc}</Text>
@@ -90,11 +154,52 @@ export default function KiashaScreen() {
             ))}
           </View>
 
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>عملکرد واقعی عامل‌ها</Text>
+          <View style={[styles.performanceCard, { backgroundColor: colors.backgroundElement }]}>
+            {loadingPerformance ? (
+              <View style={styles.loadingRow}>
+                <ActivityIndicator />
+                <Text style={[styles.noteBody, { color: colors.textSecondary }]}>در حال دریافت گزارش عملکرد…</Text>
+              </View>
+            ) : performanceUnavailable || !performance ? (
+              <Text style={[styles.noteBody, { color: colors.textSecondary }]}>گزارش عملکرد فعلاً از سرور در دسترس نیست.</Text>
+            ) : (
+              <>
+                <View style={styles.summaryRow}>
+                  <View style={styles.summaryItem}>
+                    <Text style={[styles.summaryValue, { color: colors.text }]}>{performance.pendingRecommendations.toLocaleString('fa-IR')}</Text>
+                    <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>منتظر ارزیابی</Text>
+                  </View>
+                  <View style={styles.summaryItem}>
+                    <Text style={[styles.summaryValue, { color: colors.text }]}>{performance.evaluatedRecommendationsLowerBound.toLocaleString('fa-IR')}</Text>
+                    <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>حداقل ارزیابی‌شده</Text>
+                  </View>
+                  <View style={styles.summaryItem}>
+                    <Text style={[styles.summaryValue, { color: colors.text }]}>{performance.minimumObservedSamples.toLocaleString('fa-IR')}</Text>
+                    <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>حداقل نمونه اعتماد</Text>
+                  </View>
+                </View>
+
+                <View style={[styles.observedBadge, { backgroundColor: performance.observedTrustActive ? `${Brand.success}22` : `${Brand.warning}18` }]}>
+                  <Text style={[styles.observedBadgeText, { color: performance.observedTrustActive ? Brand.success : Brand.warning }]}>
+                    {performance.observedTrustActive ? 'وزن‌دهی بر اساس عملکرد مشاهده‌شده فعال است' : 'وزن‌دهی مشاهده‌شده هنوز فعال نشده'}
+                  </Text>
+                </View>
+
+                {performance.agents.map((agent, i) => (
+                  <View key={agent.agent}>
+                    <AgentPerformanceRow agent={agent} colors={colors} />
+                    {i === performance.agents.length - 1 ? null : <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.backgroundSelected }} />}
+                  </View>
+                ))}
+              </>
+            )}
+          </View>
+
           <View style={[styles.noteCard, { backgroundColor: colors.backgroundElement }]}>
-            <Text style={[styles.noteTitle, { color: colors.text }]}>گزارش عملکرد</Text>
+            <Text style={[styles.noteTitle, { color: colors.text }]}>درباره این گزارش</Text>
             <Text style={[styles.noteBody, { color: colors.textSecondary }]}>
-              چون هنوز نتیجه‌ی واقعی معاملات ثبت و اندازه‌گیری نشده، گزارش بازدهی کیاشا فعلاً در دسترس نیست. این
-              بخش بعد از ثبت واقعی نتایج شبیه‌سازی‌ها و معاملات تکمیل می‌شود.
+              فقط نتیجه‌هایی نمایش داده می‌شوند که واقعاً توسط ارزیاب کیاشا ثبت شده‌اند. تا وقتی برای یک عامل نمونه کافی وجود نداشته باشد، دقت و بازده آن به‌صورت «—» نمایش داده می‌شود و در وزن‌دهی اعتماد استفاده نمی‌شود.
             </Text>
           </View>
         </View>
@@ -119,7 +224,23 @@ const styles = StyleSheet.create({
   agentsCard: { borderRadius: Radius.md, padding: Spacing.three, marginBottom: Spacing.four },
   agentRow: { alignItems: 'flex-end', paddingVertical: Spacing.two, gap: 2 },
   agentName: { fontFamily: Fonts.sans, fontSize: 14, fontWeight: '700' },
-  agentDesc: { fontFamily: Fonts.sans, fontSize: 12 },
+  agentDesc: { fontFamily: Fonts.sans, fontSize: 12, textAlign: 'right' },
+  performanceCard: { borderRadius: Radius.md, padding: Spacing.three, marginBottom: Spacing.four },
+  loadingRow: { flexDirection: 'row-reverse', gap: Spacing.two, alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.four },
+  summaryRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', gap: Spacing.two, marginBottom: Spacing.three },
+  summaryItem: { flex: 1, alignItems: 'center' },
+  summaryValue: { fontFamily: Fonts.sans, fontSize: 18, fontWeight: '800' },
+  summaryLabel: { fontFamily: Fonts.sans, fontSize: 10.5, textAlign: 'center', marginTop: 2 },
+  observedBadge: { borderRadius: Radius.sm, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, marginBottom: Spacing.two, alignItems: 'center' },
+  observedBadgeText: { fontFamily: Fonts.sans, fontSize: 11, fontWeight: '700', textAlign: 'center' },
+  performanceRow: { paddingVertical: Spacing.three },
+  performanceHead: { width: '100%', flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  trustBadge: { borderRadius: Radius.sm, paddingHorizontal: 8, paddingVertical: 4 },
+  trustBadgeText: { fontFamily: Fonts.sans, fontSize: 9.5, fontWeight: '700' },
+  metricsRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', marginTop: Spacing.two },
+  metric: { flex: 1, alignItems: 'center' },
+  metricValue: { fontFamily: Fonts.sans, fontSize: 13, fontWeight: '700' },
+  metricLabel: { fontFamily: Fonts.sans, fontSize: 9.5, marginTop: 2 },
   noteCard: { borderRadius: Radius.md, padding: Spacing.three, alignItems: 'flex-end', gap: 6 },
   noteTitle: { fontFamily: Fonts.sans, fontSize: 14, fontWeight: '700' },
   noteBody: { fontFamily: Fonts.sans, fontSize: 12.5, textAlign: 'right', lineHeight: 20 },
