@@ -5,6 +5,44 @@ Source: [Discussion #1](https://github.com/XS227/BIAP/discussions/1). Update thi
 file (don't just comment in the discussion) as items get resolved, so it stays a
 quick reference alongside `PROJECT_STATUS.md`.
 
+## Agent coordination rules — source of truth
+
+`TASKS.md` is the shared coordination board for every coding/ops agent working on
+BIAP, including agents running on the old VPS, the new VPS, local machines, and
+ChatGPT/Claude/Codex sessions. The goal is to prevent duplicate work, conflicting
+changes, and agents implementing different versions of the plan.
+
+Before starting any non-trivial task, every agent MUST:
+
+1. `git pull --ff-only` (or otherwise read the latest `main`) and review both
+   `TASKS.md` and `PROJECT_STATUS.md`.
+2. Check whether the same task, subsystem, migration, or file is already marked
+   in progress by another agent. Do not independently rebuild or redesign work
+   that is already owned/in progress.
+3. Claim the task in `TASKS.md` before making substantial changes. Add an owner,
+   status (`IN PROGRESS`), date, and a short scope note. If direct GitHub write
+   access is unavailable, stop before overlapping work and report what would
+   need to be claimed.
+4. Follow the current architecture/plan already recorded in the repo. If a new
+   finding requires changing the plan, update `TASKS.md` / `PROJECT_STATUS.md`
+   first so other agents see the decision before implementing against it.
+5. When work is completed, blocked, handed off, or superseded, immediately
+   update the task with the outcome, relevant PR/commit/path, verification
+   performed, remaining work, and any dependency for the next agent.
+6. Never silently start parallel implementations of the same feature. When in
+   doubt, extend or hand off the existing task rather than create a competing
+   solution.
+
+Recommended task marker format:
+
+`[STATUS] Task — owner: <agent/session> — since: YYYY-MM-DD — scope/result: ...`
+
+Allowed working statuses: `TODO`, `IN PROGRESS`, `BLOCKED`, `REVIEW`, `DONE`,
+`SUPERSEDED`.
+
+Any agent prompt/session working on this repository should be told: **read and
+update `TASKS.md` before and after doing project work.**
+
 ## P0 — blocking everything downstream
 
 None currently. The last P0 (public route from `biap.dadashi.no/api` to a
