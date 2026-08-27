@@ -10,17 +10,18 @@ There, Kiasha reallocated TON capital across trading strategies. Here,
 Kiasha reallocates *decision weight* across the BIAP analyst-agent team
 and turns the blend into a Buy/Hold/Sell call with an explanation.
 
-Track records below are seeded/hardcoded placeholders standing in for
-a real per-agent history (lifetime calls, rolling-window accuracy) that
-a live BIAP backend would persist and update after each verified
-outcome — mirroring how the arena's `kiasha_reallocations` /
-`trust_score` fields are computed from real trade history.
+The seeded TRACK_RECORDS below are an explicitly labelled fallback only. Real
+observed performance from performance_store.py replaces a fallback record only
+after a conservative minimum sample threshold is reached. Seeded and observed
+sample counts are never blended together.
 """
 
 import math
 from dataclasses import dataclass
+from functools import lru_cache
 
 from agents import AgentVote, run_team
+from performance_store import MIN_OBSERVED_SAMPLES, PerformanceStore
 
 MATURITY_CAPS = {
     "experiment": 0.10,  # <50 lifetime calls
@@ -48,8 +49,8 @@ class AgentTrackRecord:
     pnl_std: float          # dispersion of past outcomes; lower = more stable
 
 
-# Placeholder team history — replace with real per-agent stats once BIAP
-# starts logging outcomes and can compute these like Arena does.
+# Fallback history only. These values preserve the pre-tracking production
+# behavior until enough genuine evaluated observations exist for an agent.
 TRACK_RECORDS = {
     "fundamental": AgentTrackRecord("fundamental", 640, 0.58, 0.35),
     "risk":        AgentTrackRecord("risk",        310, 0.52, 0.55),
@@ -67,6 +68,36 @@ def trust_score(tr: AgentTrackRecord) -> tuple[float, str, float]:
     return score, tier, n_factor
 
 
+@lru_cache(maxsize=1)
+def _performance_store() -> PerformanceStore:
+    return PerformanceStore()
+
+
+def _track_record_for_agent(agent: str) -> tuple[AgentTrackRecord, str, int]:
+    """Return (track_record, source, real_sample_count).
+
+    Real performance only takes over after MIN_OBSERVED_SAMPLES directional
+    outcomes. Before that, the existing fallback is used unchanged. The real
+    sample count is still exposed so operators can see progress toward maturity.
+    """
+    fallback = TRACK_RECORDS[agent]
+    try:
+        stats = _performance_store().agent_stats(agent)
+    except OSError:
+        stats = None
+    if stats is None:
+        return fallback, "fallback", 0
+    if stats.evaluated_calls < MIN_OBSERVED_SAMPLES:
+        return fallback, "fallback", stats.evaluated_calls
+    observed = AgentTrackRecord(
+        agent=agent,
+        lifetime_calls=stats.evaluated_calls,
+        accuracy=stats.directional_accuracy,
+        pnl_std=stats.return_std,
+    )
+    return observed, "observed", stats.evaluated_calls
+
+
 @dataclass
 class Decision:
     call: str            # BUY / HOLD / SELL
@@ -81,7 +112,7 @@ def decide(company: dict) -> Decision:
     raw_weights = []
     breakdown = []
     for v in votes:
-        tr = TRACK_RECORDS[v.agent]
+        tr, trust_source, observed_samples = _track_record_for_agent(v.agent)
         score, tier, n_factor = trust_score(tr)
         cap = MATURITY_CAPS[tier]
         weight = min(v.confidence * score, cap)
@@ -91,6 +122,8 @@ def decide(company: dict) -> Decision:
             "vote": round(v.vote, 2),
             "confidence": v.confidence,
             "trust_score": round(score, 3),
+            "trust_source": trust_source,
+            "observed_samples": observed_samples,
             "maturity": tier,
             "weight_pre_norm": round(weight, 3),
             "reasoning": v.reasoning,
@@ -114,8 +147,8 @@ def decide(company: dict) -> Decision:
     explanation = (
         f"Kiasha blend = {weighted_score:+.2f} -> {call}. "
         f"Heaviest voice: {top['agent']} "
-        f"(weight {top['weight_normalized']:.0%}, maturity={top['maturity']}) - "
-        f"{top['reasoning']}"
+        f"(weight {top['weight_normalized']:.0%}, maturity={top['maturity']}, "
+        f"trust={top['trust_source']}) - {top['reasoning']}"
     )
 
     return Decision(call, round(weighted_score, 3), breakdown, explanation)
