@@ -45,6 +45,20 @@ update `TASKS.md` before and after doing project work.**
 
 ## Agent work log
 
+`[DONE] Reconcile P2 item 4 (real auth) — owner: Claude session — since: 2026-08-27 — scope/result:` No code
+change needed — verified real JWT-based authentication for `/orders/*`/`/audit/*`
+(`analysis/auth.py`, commit `8bf693f`) was already implemented and deployed
+live to `89.42.199.20` by an earlier session the same day, satisfying every
+requirement of the P2 item 4 ask (bearer token validated against the real
+auth backend's own signing scheme, per-user ownership preserved,
+invalid/expired/missing token rejected, existing login/register/
+recommendation endpoints unaffected). `TASKS.md` itself was the only thing
+out of date — still listing this as an open ask to Nasrin. Verified:
+116/116 tests pass (`analysis/.venv/bin/python -m pytest tests/ -q`),
+production `POST /api/orders/preview` without a bearer token returns `401`
+live, `/api/stock/watchlist` still `200`. See the updated P2 item 4 entry
+below for full detail. Did not touch mobile/order UI, per instruction.
+
 `[DONE] Admin/ops panel for biap-fin — owner: Claude session (5.249.252.88) — since: 2026-08-27 — scope/result:` Built and **deployed live** a server-rendered admin panel (`analysis/admin_routes.py` + `admin_auth.py` + `admin_store.py`) mounted directly on the existing `biap-fin` FastAPI app — cross-user order/audit visibility, approve/reject attributable to a named local admin operator (not the end-user JWT — no `/api/auth/me` exists to verify against, see P2 item 4 below), risk/agent-performance dashboard. 116/116 tests pass, commit `95e1e51` on main. Live at `https://biap.dadashi.no/admindir`, verified end-to-end publicly (login -> cookie -> dashboard, all 200, existing `/api/` routes unaffected). Systemd unit and nginx vhost on `5.249.252.88` updated (with Khabat running the actual `sudo` commands this session prepared, per this session's operating rules around production changes). Full writeup + a note on a duplicate-`location` nginx mistake made and fixed along the way in `PROJECT_STATUS.md`'s "Admin/ops panel" section. Still open: real user ("wallet") data isn't shown yet, blocked on P2 item 4 below.
 
 ## P0 — blocking everything downstream
@@ -93,26 +107,58 @@ needs Nasrin's action right now.
 
 ## P2
 
-4. **Does the existing auth backend (port 4000 on `89.42.199.20`) expose a
-   token-validation endpoint** (e.g. something like `/api/auth/me`)? FIN's
-   current `/orders/*` and `/audit/*` protection is *ownership* (same token →
-   same user) but not real *authentication* — it never checks the token
-   against the actual auth backend, since FIN has no visibility into that
-   backend's session internals. Needed to close that gap.
+4. **RESOLVED (2026-08-27, commit `8bf693f`) — no `/api/auth/me` needed after
+   all.** Original ask below is kept for context, but superseded: instead of
+   adding a new endpoint on the port-4000 Express backend, a session read
+   that backend's actual source
+   (`biap-backend/src/routes/auth.routes.js`/`auth.middleware.js` on
+   `89.42.199.20`) and found access tokens are plain
+   `jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '15m' })`
+   (HS256). Given the same shared secret, `biap-fin` can verify that exact
+   signature/expiry itself — no network round-trip to the existing backend,
+   no new endpoint required there, no second token system invented.
 
+   Implemented in `analysis/auth.py`'s `require_user_id`, gated on
+   `BIAP_AUTH_JWT_SECRET` being set: a valid token's `userId` claim becomes
+   the ownership key (prefixed `jwt:`); invalid/expired/garbage tokens are
+   rejected outright (401), never silently downgraded to the old opaque-hash
+   fallback. Wired into every route that needs it —
+   `POST /orders/preview`, `POST /orders/submit`, `GET /orders/{id}`,
+   `GET /audit/orders`, `GET /audit/events` — via `Depends(require_user_id)`
+   in `api_server.py`. `/api/auth/login`, `/api/auth/register`,
+   `/api/stock/recommendation/*` and `/api/stock/watchlist` are untouched
+   (biap-fin doesn't implement login/register at all; those stay on the
+   Express backend).
+
+   **Deployed and verified live** on `89.42.199.20` (the only host currently
+   serving `/orders/*`/`/audit/*`/`/risk/*` — `5.249.252.88` doesn't serve
+   those routes yet, so it doesn't need the secret yet either).
+   `POST https://biap.dadashi.no/api/orders/preview` without a bearer token
+   confirmed `401` in production (re-checked 2026-08-27, this session).
+   Regression coverage in `analysis/tests/test_auth_jwt.py`: unconfigured
+   fallback unchanged, valid JWT accepted, expired token rejected,
+   wrong-secret signature rejected, garbage token rejected, missing
+   `userId` claim rejected, missing token rejected, two different real users
+   get different ownership ids. 116/116 tests pass repo-wide (this session,
+   `analysis/.venv/bin/python -m pytest tests/ -q`).
+
+   **Note for the admin/ops panel work below:** that panel's own "no
+   `/api/auth/me` exists" note is about a *different, still-open* problem —
+   verifying that a caller is one of the small set of *admin* operators, not
+   just any authenticated end user. JWT verification here only proves *who*
+   the caller is (a real `userId`), not whether they're staff — the port-4000
+   backend has no role/claim for that today, so the admin panel's separate
+   local-operator-account approach is still the right call and is unaffected
+   by this closing.
+
+   Original ask, for context (now superseded — no endpoint needed):
    Black-box probed `https://biap.dadashi.no/api/...` (2026-08-26, GET and
    POST) against every commonly-named candidate: `/auth/me`, `/auth/verify`,
    `/auth/whoami`, `/auth/check`, `/auth/validate`, `/auth/session`,
    `/auth/profile`, `/user`, `/user/me`, `/users/me`, `/account`, `/profile`,
    `/me` — all return the Express default 404 (`Cannot GET/POST ...`), same as
    the mobile app's only two confirmed real routes (`/auth/login`,
-   `/auth/register`) would if misspelled. This is decent evidence no such
-   endpoint exists under a guessable name, but isn't conclusive (can't rule
-   out something on an unguessed path). If none exists: simplest close is a
-   small addition on your side — an authenticated `GET /api/auth/me` (or
-   similar) that just echoes back the user id/claims for the bearer token
-   already being validated on login — FIN would then call that instead of
-   just hashing the raw token.
+   `/auth/register`) would if misspelled.
 
 5. **Timing call on `orders.tsx`.** Per-user auth/ownership on `/audit/orders`
    is now live server-side (2026-08-26), which was the blocker you flagged for
