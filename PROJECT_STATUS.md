@@ -1153,7 +1153,7 @@ dashboard/orders/audit all 200, no cookie -> 303 redirect to
 routes `/admin` to `127.0.0.1:8088` (public, chosen over internal/VPN-only
 -- the panel already requires its own login, same tradeoff as any other
 authenticated admin route). Verified end-to-end from outside the VPS:
-`https://biap.dadashi.no/admin/login` (200) -> login -> 303 -> dashboard
+`https://biap.dadashi.no/admindir/login` (200) -> login -> 303 -> dashboard
 (200), and the existing `/api/stock/recommendation/{code}` public route
 still works unchanged.
 
@@ -1316,7 +1316,7 @@ precedence and this file must be corrected in the same change.
     account authorization are confirmed. AUTO stays disabled until a separate,
     explicit production decision.
 12. ~~**Admin/ops panel:**~~ done and deployed (2026-08-27) -- see "Admin/ops
-    panel" above. Live at `https://biap.dadashi.no/admin`. Still open: hook
+    panel" above. Live at `https://biap.dadashi.no/admindir`. Still open: hook
     up real user ("wallet") data once port-4000 backend access/API is
     sorted (TASKS.md item 4).
 
