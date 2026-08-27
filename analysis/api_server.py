@@ -242,6 +242,20 @@ def recommendation(code: str):
             "yesterdayPrice": market.get("yesterday_price"),
             "changePercent": market.get("change_percent"),
         } if source == "live" else None,
+        "extendedMarket": {
+            "dayLow": market.get("day_low"),
+            "dayHigh": market.get("day_high"),
+            "volumeToday": market.get("volume_today"),
+            "tradeValueToday": market.get("trade_value_today"),
+            "tradeCountToday": market.get("trade_count_today"),
+            "avgVolume30d": market.get("avg_volume_30d"),
+            "price52wHigh": market.get("price_52w_high"),
+            "price52wLow": market.get("price_52w_low"),
+            "pe": market.get("pe"),
+            "sectorAvgPe": market.get("sector_avg_pe"),
+            "marketCap": market.get("market_cap"),
+            "sectorName": market.get("sector_name"),
+        } if source == "live" else None,
         "breakdown": decision.breakdown,
     }
 
