@@ -9,17 +9,12 @@ from __future__ import annotations
 
 import os
 import re
-import subprocess
-import tempfile
 import unicodedata
 from typing import Optional
-from urllib.error import HTTPError, URLError
-from urllib.parse import urljoin
-from urllib.request import Request, urlopen
 
 from codal_data import CodalFiling
+from codal_pdf_cache import extracted_text_for_filing
 
-_TIMEOUT = 8
 _DEFAULT_WWW_BASE = "https://www.codal.ir"
 
 
@@ -114,43 +109,8 @@ def _related_party_flags_from_text(text: str) -> Optional[int]:
     return flags
 
 
-def _extract_pdf_text(filing: CodalFiling) -> Optional[str]:
-    if not filing.pdf_url:
-        return None
-
-    pdf_url = urljoin(_codal_www_base(), filing.pdf_url)
-    req = Request(pdf_url, headers={"User-Agent": "Mozilla/5.0 BIAP/1.0"})
-
-    try:
-        with urlopen(req, timeout=_TIMEOUT) as response:
-            pdf_bytes = response.read()
-    except (HTTPError, URLError, TimeoutError, OSError):
-        return None
-
-    try:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            pdf_path = os.path.join(tmpdir, "related-party.pdf")
-            txt_path = os.path.join(tmpdir, "related-party.txt")
-
-            with open(pdf_path, "wb") as handle:
-                handle.write(pdf_bytes)
-
-            subprocess.run(
-                ["pdftotext", "-layout", pdf_path, txt_path],
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                timeout=20,
-            )
-
-            with open(txt_path, "r", encoding="utf-8", errors="ignore") as handle:
-                return handle.read()
-    except (OSError, subprocess.SubprocessError):
-        return None
-
-
 def related_party_flags_from_pdf(filing: CodalFiling) -> Optional[int]:
-    text = _extract_pdf_text(filing)
+    text = extracted_text_for_filing(filing, www_base=_codal_www_base())
     if text is None:
         return None
     return _related_party_flags_from_text(text)

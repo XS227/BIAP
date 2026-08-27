@@ -10,17 +10,12 @@ from __future__ import annotations
 
 import os
 import re
-import subprocess
-import tempfile
 import unicodedata
 from typing import Optional
-from urllib.error import HTTPError, URLError
-from urllib.parse import urljoin
-from urllib.request import Request, urlopen
 
 from codal_data import CodalFiling
+from codal_pdf_cache import extracted_text_for_filing
 
-_TIMEOUT = 8
 _MAX_SECTION_CHARS = 2600
 _DEFAULT_WWW_BASE = "https://www.codal.ir"
 
@@ -199,37 +194,7 @@ def classify_audit_opinion_from_text(text: str) -> Optional[str]:
 
 
 def audit_opinion_from_pdf(filing: CodalFiling) -> Optional[str]:
-    if not filing.pdf_url:
+    raw_text = extracted_text_for_filing(filing, www_base=_codal_www_base())
+    if raw_text is None:
         return None
-
-    pdf_url = urljoin(_codal_www_base(), filing.pdf_url)
-    req = Request(pdf_url, headers={"User-Agent": "Mozilla/5.0 BIAP/1.0"})
-
-    try:
-        with urlopen(req, timeout=_TIMEOUT) as response:
-            pdf_bytes = response.read()
-    except (HTTPError, URLError, TimeoutError, OSError):
-        return None
-
-    try:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            pdf_path = os.path.join(tmpdir, "audit.pdf")
-            txt_path = os.path.join(tmpdir, "audit.txt")
-
-            with open(pdf_path, "wb") as handle:
-                handle.write(pdf_bytes)
-
-            subprocess.run(
-                ["pdftotext", "-layout", pdf_path, txt_path],
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                timeout=20,
-            )
-
-            with open(txt_path, "r", encoding="utf-8", errors="ignore") as handle:
-                raw_text = handle.read()
-    except (OSError, subprocess.SubprocessError):
-        return None
-
     return classify_audit_opinion_from_text(raw_text)

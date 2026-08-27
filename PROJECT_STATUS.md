@@ -301,12 +301,17 @@ regression cases as of 2026-08-26, including:
   dedupe, horizon gating, neutral-vote exclusion, fallback-vs-observed
   trust switchover) and test isolation from the production performance DB
   (see "Kiasha real performance tracking" below)
+- shared CODAL PDF text cache: persistence across a simulated process
+  restart, no caching of download/extraction failures, per-filing cache-key
+  isolation, and the audit-opinion/related-party parsers sharing one
+  download for the same filing (see "CODAL caching/gateway" in Open work)
 
 Latest local test result (on `5.249.252.88`, verified 2026-08-27 after the
-performance-tracking deployment and the test-isolation fix):
+performance-tracking deployment, the test-isolation fix, and the CODAL PDF
+cache):
 
 ```text
-62 passed in 0.5s
+68 passed in 0.5s
 ```
 
 ## Recommendation API
@@ -848,8 +853,30 @@ precedence and this file must be corrected in the same change.
    in real CODAL filings — blocked on the same thing as item 1's remaining
    gap, no live CODAL access from `5.249.252.88` yet (see the still-open
    CODAL gateway ask in Discussion #1).
-3. **CODAL caching/gateway:** avoid unnecessary repeated PDF downloads and prepare
-   a controlled CODAL collector/gateway path for the new server.
+3. ~~**CODAL caching/gateway:**~~ done (2026-08-27) for the PDF-download half.
+   The collector/gateway path itself was already effectively done as of the
+   "New VPS migration" cutover (the `89.42.199.20:8090` relay + `BIAP_CODAL_*`
+   env vars). What was still genuinely wasteful: `audit_parser.py` and
+   `related_party.py` each independently downloaded and ran `pdftotext` on
+   the *same* filing PDF for a given company (one real HTTP fetch + subprocess
+   call per parser, per request), and `company_builder.py`'s existing 5-minute
+   in-memory result cache was wiped on every `biap-fin` restart, which happens
+   on every deploy. Added `analysis/codal_pdf_cache.py`: a persistent,
+   disk-backed cache of the *raw extracted PDF text*, keyed by the filing's
+   `tracing_no` (never the classified result, so a future audit-opinion or
+   related-party parser bug fix always re-runs against the same cached text
+   instead of permanently serving a pre-fix answer). Download/extraction
+   failures are never cached, since a transient network or environment
+   problem is not a property of the immutable document. Both parsers
+   refactored to call this shared helper instead of their own duplicate
+   download logic. Verified live on `5.249.252.88` after a `biap-fin`
+   restart: فولاد's audited-filing text is now cached to
+   `analysis/codal_pdf_text_cache.json` (gitignored) after the first request,
+   and a second recommendation request for the same company completed in
+   ~24ms with no new PDF fetch. 6 new regression tests
+   (`analysis/tests/test_codal_pdf_cache.py`), including one proving the
+   audit-opinion and related-party parsers now share a single download for
+   the same filing. 68/68 tests pass.
 4. ~~**New external data server:**~~ partially done (2026-08-27) -- `biap-fin`
    is deployed and durable on `5.249.252.88` (systemd), and the
    `/api/stock/recommendation/` path is cut over to it in production, with
