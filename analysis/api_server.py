@@ -276,6 +276,7 @@ def preview_order(
         reference_price=reference_price,
         recommendation_score=decision.weighted_score,
         daily_notional_used=AUDIT.submitted_notional_today(),
+        current_symbol_position=AUDIT.symbol_net_position_today(company["ticker"]),
     )
 
     if not risk.allowed:

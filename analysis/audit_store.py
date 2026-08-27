@@ -239,22 +239,58 @@ class AuditStore:
                 (user_id, idempotency_key, intent_id, json.dumps(response, ensure_ascii=False, sort_keys=True), _now_iso()),
             )
 
+    # Committed intent states: a real trading commitment exists, whether or
+    # not a broker has actually filled it yet. APPROVED must be included here
+    # -- otherwise an approval-mode intent would count toward risk limits
+    # only while PENDING_APPROVAL and then silently drop out the moment it's
+    # approved, letting serial approval-mode submissions bypass the daily
+    # notional cap entirely.
+    _COMMITTED_STATUSES = ("PAPER_FILLED", "PENDING_APPROVAL", "APPROVED")
+
     def submitted_notional_today(self) -> float:
-        """Return PAPER_FILLED + PENDING_APPROVAL notional for current UTC day.
+        """Return committed-intent notional for the current UTC day.
 
         Only intents with a limit_price can contribute to notional until a live
         quote source is wired into the execution service.
         """
         today_prefix = datetime.now(timezone.utc).date().isoformat() + "%"
+        placeholders = ",".join("?" * len(self._COMMITTED_STATUSES))
         with self._connect() as conn:
             rows = conn.execute(
-                """
+                f"""
                 SELECT quantity, limit_price, status
                 FROM order_intents
                 WHERE created_at LIKE ?
-                  AND status IN ('PAPER_FILLED', 'PENDING_APPROVAL')
+                  AND status IN ({placeholders})
                   AND limit_price IS NOT NULL
                 """,
-                (today_prefix,),
+                (today_prefix, *self._COMMITTED_STATUSES),
             ).fetchall()
         return float(sum(row["quantity"] * row["limit_price"] for row in rows))
+
+    def symbol_net_position_today(self, code: str) -> float:
+        """Return today's net BUY-minus-SELL quantity for `code` across
+        committed intents (see _COMMITTED_STATUSES), independent of price.
+
+        This is a paper/approval-only system with no real holdings ledger,
+        so "position" here means committed order-intent quantity, not a
+        verified brokerage position -- it exists to bound how much exposure
+        a single symbol can accumulate through this system in one day.
+        """
+        today_prefix = datetime.now(timezone.utc).date().isoformat() + "%"
+        placeholders = ",".join("?" * len(self._COMMITTED_STATUSES))
+        with self._connect() as conn:
+            rows = conn.execute(
+                f"""
+                SELECT side, quantity
+                FROM order_intents
+                WHERE created_at LIKE ?
+                  AND code = ?
+                  AND status IN ({placeholders})
+                """,
+                (today_prefix, code.upper(), *self._COMMITTED_STATUSES),
+            ).fetchall()
+        net = 0.0
+        for row in rows:
+            net += row["quantity"] if row["side"] == "BUY" else -row["quantity"]
+        return net

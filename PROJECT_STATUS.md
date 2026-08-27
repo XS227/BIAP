@@ -427,6 +427,67 @@ from `/audit/orders` directly. Not touched here since that file was flagged
 in Discussion #1 as mid-flight with an unrelated auth/guest-lock feature —
 coordinate with Nasrin before editing `orders.tsx`.
 
+## Risk hardening: position limits + market session (2026-08-27)
+
+Two new checks in `analysis/risk.py`, both using data that genuinely exists
+rather than inventing a signal BIAP doesn't have (see roadmap item 9 above
+for why a realized-loss limit and literal quote-staleness check are *not*
+here yet):
+
+**Symbol position limit.** `AuditStore.symbol_net_position_today(code)` sums
+today's BUY-minus-SELL quantity across committed intents (`PAPER_FILLED`,
+`PENDING_APPROVAL`, `APPROVED` -- see below) for one symbol. A new
+`symbolPositionWithinLimit` check rejects an order whose *projected* net
+position (existing + this order, signed by side) would exceed
+`BIAP_MAX_SYMBOL_POSITION` (default 200,000) in either direction. This is
+committed order-intent quantity through this system, not a verified
+brokerage position -- there is no real holdings ledger -- but it is real,
+persisted, non-fabricated data, unlike a synthetic "position" would be.
+
+**Real bug fixed along the way:** `AuditStore.submitted_notional_today()`
+only counted `PAPER_FILLED`/`PENDING_APPROVAL` toward the daily notional
+cap. Once yesterday's order-approval-gate work (see "Order approval gate"
+below) introduced the `APPROVED` status, an approved intent would silently
+stop counting toward that cap the moment it was approved -- letting serial
+approval-mode submissions bypass `BIAP_MAX_DAILY_NOTIONAL` entirely. Fixed
+by extending both this and the new position query to a shared
+`_COMMITTED_STATUSES = (PAPER_FILLED, PENDING_APPROVAL, APPROVED)` tuple.
+
+**Market session.** `risk.py` now rejects any order (regardless of mode --
+even `paper`) placed outside TSE's ordinary trading calendar: Saturday
+through Wednesday, `09:00`-`12:30` Asia/Tehran by default
+(`BIAP_MARKET_SESSION_OPEN`/`_CLOSE`), computed with the stdlib `zoneinfo`
+(no new dependency). This deliberately approximates rather than claims a
+real trading calendar -- BIAP has no live TSE holiday feed, so an official
+holiday landing on an ordinary weekday will not be caught; it exists to
+stop the far more common ordinary-hours mistake. Toggle with
+`BIAP_ENFORCE_MARKET_SESSION=false` if it gets in the way of manual testing.
+
+**Behavior change, effective immediately on `5.249.252.88`:** since this
+enforces by default (`BIAP_ENFORCE_MARKET_SESSION` defaults to `true`) and
+today (2026-08-27) is a Thursday -- TSE's weekend -- `/orders/preview`
+now rejects every order until Saturday, verified live:
+
+```json
+{"allowed": false, "reasons": ["TSE is closed on Thursday (Asia/Tehran)"]}
+```
+
+This is intended, not a bug -- flagging it here because it is a real,
+immediate behavior change for anyone testing order flows today, including
+concurrently on another branch. Set `BIAP_ENFORCE_MARKET_SESSION=false` in
+`biap-fin.service`'s environment (and restart) if that blocks testing
+before Saturday.
+
+New tests: `analysis/tests/test_risk.py` (session open/closed/before-open/
+after-close, the toggle, position within/over limit for both BUY and SELL,
+a SELL correctly offsetting an existing long, a large SELL breaching the
+symmetric cap on the short side). All existing order-flow tests
+(`test_order_auth.py`, `test_order_approval.py`) needed
+`BIAP_ENFORCE_MARKET_SESSION=false` added via an autouse `conftest.py`
+fixture so they stay deterministic regardless of real wall-clock time --
+they were not testing market-session behavior and must not start failing
+or passing based on when they happen to run. 86/86 tests pass.
+
 ## Order approval gate (2026-08-27)
 
 Roadmap item 7's remaining half. Before this, `approval`-mode orders had a
@@ -960,8 +1021,21 @@ precedence and this file must be corrected in the same change.
    shared secret, not a real user/role system, which doesn't exist anywhere
    in BIAP yet).
 8. ~~**PaperBroker:**~~ done (2026-08-26) — see "PaperBroker adapter" below.
-9. **Risk hardening:** position/exposure checks, realized daily-loss limit,
-   stale-quote and market-session rules.
+9. ~~**Risk hardening:**~~ partially done (2026-08-27) -- position/exposure
+   checks and market-session rules landed, see "Risk hardening: position
+   limits + market session" below. Still open: a **realized daily-loss
+   limit** needs a real portfolio/PnL model (which entry price matured into
+   which exit, per symbol) that does not exist anywhere in BIAP yet --
+   `PaperBroker` only simulates a single fill receipt per intent, it does
+   not track a position's lifecycle from entry to exit, so a "loss" cannot
+   be honestly computed today. Not attempted rather than faked; needs that
+   model built first. **Stale-quote detection** (a literal tick-age check)
+   also stays open for the same kind of reason: `LiveQuote` carries no
+   fetched-at timestamp, so there is no real staleness signal to check
+   beyond the existing 30s market-data cache TTL already bounding it by
+   construction -- the market-session check below is the honest
+   substitute for the risk that "stale quote" was actually protecting
+   against here (a closed market's last price being treated as live).
 10. **Mobile integration:** `codalFundamentals` (incl. `report_scope`) is now on
     the wire (see Recommendation API section above); mobile still needs a
     fundamentals section in `recommendation-card.tsx` to render it, plus

@@ -18,3 +18,18 @@ def _isolated_performance_store(tmp_path, monkeypatch):
     store = PerformanceStore(str(tmp_path / "test_performance.sqlite3"))
     monkeypatch.setattr(kiasha, "_performance_store", lambda: store)
     yield store
+
+
+@pytest.fixture(autouse=True)
+def _market_session_check_disabled_by_default(monkeypatch):
+    """Keep order-flow tests deterministic regardless of wall-clock time.
+
+    risk.load_policy() defaults to enforcing TSE trading hours/days, which
+    depends on the real current time -- any test that exercises
+    /orders/preview through the real policy (not risk.py's own dedicated
+    tests, which call evaluate_order_risk() directly with an explicit
+    policy/now) would otherwise pass or fail depending on when it happens
+    to run. Dedicated market-session tests override this back with their
+    own explicit policy, never through this env var.
+    """
+    monkeypatch.setenv("BIAP_ENFORCE_MARKET_SESSION", "false")
