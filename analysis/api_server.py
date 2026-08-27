@@ -11,11 +11,17 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from audit_store import AuditStore
-from auth import require_user_id
+from auth import require_approver, require_user_id
 from codal_data import base_url as codal_base_url
 from company_builder import availability, build_company_from_quote, build_company_from_symbol
 from data_sample import SAMPLE_COMPANY
-from execution import ExecutionPolicyError, build_order_intent, submit_order_intent
+from execution import (
+    ExecutionPolicyError,
+    approve_order_intent,
+    build_order_intent,
+    reject_order_intent,
+    submit_order_intent,
+)
 from kiasha import decide
 from market_data import MarketDataUnavailable, base_url as market_base_url, find_quote
 from risk import evaluate_order_risk, policy_snapshot
@@ -97,6 +103,10 @@ class OrderPreviewRequest(BaseModel):
 
 class OrderSubmitRequest(BaseModel):
     intentId: str = Field(min_length=1)
+
+
+class OrderRejectRequest(BaseModel):
+    reason: Optional[str] = Field(default=None, max_length=500)
 
 
 def _require_warm_ready() -> None:
@@ -380,6 +390,49 @@ def get_order(intent_id: str, user_id: str = Depends(require_user_id)):
     if intent is None:
         raise HTTPException(status_code=404, detail="unknown intentId")
     return intent
+
+
+def _resolve_approval(intent_id: str, *, event_type: str, transition, payload_extra: dict):
+    found = AUDIT.get_intent_any_owner(intent_id)
+    if found is None:
+        raise HTTPException(status_code=404, detail="unknown intentId")
+    owner_user_id, intent = found
+
+    try:
+        resolved = transition(intent)
+    except ExecutionPolicyError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    AUDIT.save_intent(resolved, user_id=owner_user_id)
+    AUDIT.record_event(
+        event_id=str(uuid.uuid4()),
+        user_id=owner_user_id,
+        intent_id=intent_id,
+        event_type=event_type,
+        payload={"actor": "approver", "intent": resolved, **payload_extra},
+    )
+    return resolved
+
+
+@app.post("/orders/{intent_id}/approve")
+def approve_order(intent_id: str, _approver: None = Depends(require_approver)):
+    return _resolve_approval(
+        intent_id, event_type="ORDER_APPROVED", transition=approve_order_intent, payload_extra={}
+    )
+
+
+@app.post("/orders/{intent_id}/reject")
+def reject_order(
+    intent_id: str,
+    req: OrderRejectRequest = OrderRejectRequest(),
+    _approver: None = Depends(require_approver),
+):
+    return _resolve_approval(
+        intent_id,
+        event_type="ORDER_REJECTED",
+        transition=lambda intent: reject_order_intent(intent, reason=req.reason),
+        payload_extra={"reason": req.reason},
+    )
 
 
 @app.get("/audit/orders")

@@ -18,6 +18,8 @@ tracked as a follow-up in PROJECT_STATUS.md, not claimed as done here.
 """
 
 import hashlib
+import os
+import secrets
 
 from fastapi import Header, HTTPException
 
@@ -29,3 +31,31 @@ def require_user_id(authorization: str | None = Header(default=None)) -> str:
     if not token:
         raise HTTPException(status_code=401, detail="Authorization bearer token is required")
     return hashlib.sha256(token.encode("utf-8")).hexdigest()[:24]
+
+
+def require_approver(authorization: str | None = Header(default=None)) -> None:
+    """Gate order-approval transitions behind a distinct shared secret.
+
+    There is no user/role model anywhere in BIAP yet -- require_user_id above
+    only hashes a caller's own session token into an opaque ownership id, so
+    it cannot distinguish "the trader who created this order" from "someone
+    allowed to approve it". Introducing a real role system is a product
+    decision, not something to invent unilaterally for a financial
+    execution path. This is the deliberately narrow stopgap instead: a
+    single operator-held secret (BIAP_APPROVER_TOKEN), separate from every
+    caller's own bearer token, required to approve or reject a
+    PENDING_APPROVAL order intent.
+
+    Unconfigured means refuse everyone, not allow everyone -- APPROVAL mode
+    must not silently become approvable-by-anyone just because an operator
+    never set the secret.
+    """
+    expected = os.environ.get("BIAP_APPROVER_TOKEN", "")
+    if not expected:
+        raise HTTPException(status_code=503, detail="order approval is not configured")
+
+    token = (authorization or "").strip()
+    if token.lower().startswith("bearer "):
+        token = token[7:].strip()
+    if not token or not secrets.compare_digest(token, expected):
+        raise HTTPException(status_code=401, detail="a valid approver token is required")

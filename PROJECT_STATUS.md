@@ -427,6 +427,62 @@ from `/audit/orders` directly. Not touched here since that file was flagged
 in Discussion #1 as mid-flight with an unrelated auth/guest-lock feature —
 coordinate with Nasrin before editing `orders.tsx`.
 
+## Order approval gate (2026-08-27)
+
+Roadmap item 7's remaining half. Before this, `approval`-mode orders had a
+real dead end: `POST /orders/submit` could create a `PENDING_APPROVAL`
+intent, but nothing anywhere could ever move it out of that state -- no
+endpoint, no code path, nothing. This is more than the roadmap note implied
+("anyone holding the token could flip it") -- there was no flip mechanism
+at all yet.
+
+Building a real approver **role** would mean designing a user/permission
+model, and none exists anywhere in BIAP today -- `auth.py`'s
+`require_user_id` only hashes a caller's own bearer token into an opaque
+ownership id, it has no concept of *who* that caller is. Inventing a role
+system unilaterally for a financial order-execution path is a product
+decision, not a bug fix, so this intentionally stays narrower: a single
+operator-held shared secret, `BIAP_APPROVER_TOKEN`, distinct from every
+trader's own bearer token, gates two new endpoints:
+
+```text
+POST /orders/{intent_id}/approve
+POST /orders/{intent_id}/reject   {"reason": "optional string"}
+```
+
+- `auth.require_approver` (`analysis/auth.py`) checks
+  `Authorization: Bearer <token>` against `BIAP_APPROVER_TOKEN` with
+  `secrets.compare_digest`. If the env var is unset, the endpoints refuse
+  *everyone* (503) rather than defaulting to open -- approval mode must not
+  silently become approvable-by-anyone just because an operator forgot to
+  set the secret.
+- A trader's own bearer token cannot approve their own order: the approver
+  secret is checked independently of `require_user_id`, and
+  `AuditStore.get_intent_any_owner()` looks up the intent by id without the
+  usual ownership filter, since approving necessarily means acting on an
+  intent owned by a different caller.
+- `execution.approve_order_intent` / `reject_order_intent` only accept an
+  `approval`-mode intent still in `PENDING_APPROVAL` and are idempotent by
+  state (matching the existing `submit_order_intent` idempotency design):
+  re-approving an already-resolved intent returns it unchanged rather than
+  re-timestamping or erroring.
+- Every transition is written to `audit_events` with `"actor": "approver"`
+  in the payload, under the *original owner's* `user_id` so it still shows
+  up in that trader's own `/audit/orders`/`/audit/events` view.
+
+Not attempted: real per-approver identity (right now "the approver" is
+whoever holds the one shared secret, not an individually accountable
+person) and multi-approver workflows. Both need the same real role/user
+system this stopgap deliberately avoided building. `AUTO` execution is
+unaffected either way -- it stays rejected in `execution.py` before any of
+this is reached.
+
+New tests: `analysis/tests/test_order_approval.py` (unconfigured secret
+refuses everyone, wrong/missing token rejected, a trader's own token cannot
+approve their own order, cross-owner approve/reject, idempotent
+re-approval, rejection reason persisted, non-approval-mode orders can't be
+approved, unknown intent is 404). 77/77 tests pass.
+
 ## Audit-opinion parser hardening (2026-08-26)
 
 Two separate problems, both in the direction of roadmap item 1
@@ -898,11 +954,11 @@ precedence and this file must be corrected in the same change.
    Still open: actually verifying the bearer token against the existing auth
    backend instead of trusting whatever caller presents it.
 7. ~~**Idempotency:**~~ done (2026-08-26) for `/orders/preview` (Idempotency-Key
-   header) and `/orders/submit` (state-based no-op on resubmit). Still open:
-   explicit signed/owned approval-state transitions for the `approval` mode
-   (currently anyone holding the bearer token that created a `PENDING_APPROVAL`
-   intent could theoretically flip it, since there's no separate approver
-   role yet).
+   header) and `/orders/submit` (state-based no-op on resubmit).
+   ~~**Approval-state transitions:**~~ done (2026-08-27) -- see "Order
+   approval gate" below for what "approver role" actually means here (a
+   shared secret, not a real user/role system, which doesn't exist anywhere
+   in BIAP yet).
 8. ~~**PaperBroker:**~~ done (2026-08-26) — see "PaperBroker adapter" below.
 9. **Risk hardening:** position/exposure checks, realized daily-loss limit,
    stale-quote and market-session rules.

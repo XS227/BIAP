@@ -136,3 +136,26 @@ def submit_order_intent(intent: dict) -> dict:
     if mode == ExecutionMode.PAPER.value:
         return _PAPER_BROKER.submit(intent)
     raise ExecutionPolicyError("unsupported execution mode")
+
+
+def approve_order_intent(intent: dict) -> dict:
+    """Transition a PENDING_APPROVAL intent to APPROVED.
+
+    Idempotent by state, matching submit_order_intent's own idempotency
+    design: re-approving an already-APPROVED (or otherwise resolved) intent
+    returns it unchanged rather than re-timestamping or erroring.
+    """
+    if intent.get("mode") != ExecutionMode.APPROVAL.value:
+        raise ExecutionPolicyError("only an approval-mode intent can be approved")
+    if intent.get("status") != "PENDING_APPROVAL":
+        return intent
+    return {**intent, "status": "APPROVED", "resolvedAt": _now_iso()}
+
+
+def reject_order_intent(intent: dict, *, reason: Optional[str] = None) -> dict:
+    """Transition a PENDING_APPROVAL intent to REJECTED. Idempotent by state."""
+    if intent.get("mode") != ExecutionMode.APPROVAL.value:
+        raise ExecutionPolicyError("only an approval-mode intent can be rejected")
+    if intent.get("status") != "PENDING_APPROVAL":
+        return intent
+    return {**intent, "status": "REJECTED", "resolvedAt": _now_iso(), "rejectionReason": reason}

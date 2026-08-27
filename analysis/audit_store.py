@@ -137,6 +137,23 @@ class AuditStore:
             ).fetchone()
         return json.loads(row["payload_json"]) if row else None
 
+    def get_intent_any_owner(self, intent_id: str) -> Optional[tuple[str, dict[str, Any]]]:
+        """Look up an intent regardless of caller ownership.
+
+        Only for the approver path (see auth.require_approver): approving an
+        order necessarily means acting on an intent owned by a *different*
+        caller than the approver, so the normal ownership-scoped get_intent
+        does not apply here.
+        """
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT user_id, payload_json FROM order_intents WHERE id = ?",
+                (intent_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return row["user_id"], json.loads(row["payload_json"])
+
     def list_intents(self, *, user_id: str, limit: int = 100) -> list[dict[str, Any]]:
         limit = max(1, min(limit, 500))
         with self._connect() as conn:
