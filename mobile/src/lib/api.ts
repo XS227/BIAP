@@ -208,3 +208,56 @@ export async function submitPaperOrder(
     return { ok: false, message: 'اتصال به سرور برقرار نشد' };
   }
 }
+
+// --- Kiasha observed performance -------------------------------------------
+// These endpoints expose only measured/evaluated recommendation outcomes.
+// Null values are kept as null in the UI; the client must not invent returns.
+
+export type AgentPerformance = {
+  agent: 'fundamental' | 'risk' | 'forecast' | 'comparison' | string;
+  evaluatedCalls: number;
+  directionalAccuracy: number | null;
+  averageSignedReturn: number | null;
+  returnStd: number | null;
+  lastUpdated: string | null;
+  trustReady: boolean;
+  minimumObservedSamples: number;
+};
+
+export type KiashaPerformanceSummary = {
+  pendingRecommendations: number;
+  evaluatedRecommendationsLowerBound: number;
+  minimumObservedSamples: number;
+  observedTrustActive: boolean;
+  agents: AgentPerformance[];
+  note?: string;
+};
+
+export type KiashaPerformanceAgentsResponse = {
+  items: AgentPerformance[];
+  minimumObservedSamples: number;
+  observedTrustEnabledFor?: string[];
+};
+
+async function fetchKiashaJson<T>(path: string, timeoutMs = 10_000): Promise<T | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const headers = await getHeaders();
+    const res = await fetch(`${KIASHA_API_BASE}${path}`, { headers, signal: controller.signal });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function fetchKiashaPerformanceSummary(timeoutMs = 10_000): Promise<KiashaPerformanceSummary | null> {
+  return fetchKiashaJson<KiashaPerformanceSummary>('/performance/summary', timeoutMs);
+}
+
+export async function fetchKiashaPerformanceAgents(timeoutMs = 10_000): Promise<KiashaPerformanceAgentsResponse | null> {
+  return fetchKiashaJson<KiashaPerformanceAgentsResponse>('/performance/agents', timeoutMs);
+}
