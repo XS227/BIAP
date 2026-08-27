@@ -18,6 +18,7 @@ from data_sample import SAMPLE_COMPANY
 from execution import ExecutionPolicyError, build_order_intent, submit_order_intent
 from kiasha import decide
 from market_data import MarketDataUnavailable, base_url as market_base_url, find_quote
+from performance_routes import router as performance_router
 from risk import evaluate_order_risk, policy_snapshot
 from symbol_universe import SymbolUniverseUnavailable, query_symbols
 
@@ -82,6 +83,7 @@ async def _lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="BIAP Kiasha recommendation service", lifespan=_lifespan)
+app.include_router(performance_router)
 
 MOCK_COMPANIES = {SAMPLE_COMPANY["ticker"]: SAMPLE_COMPANY}
 AUDIT = AuditStore()
