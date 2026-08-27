@@ -1,18 +1,34 @@
 # BIAP — Project Status
 
-_Last updated: 2026-08-26_
+_Last updated: 2026-08-27_
 
 ## Production status
 
-The FIN service from this repository is deployed on the current BIAP VPS
-(`89.42.199.20`) and is live behind the existing BIAP domain.
+**As of 2026-08-27, `https://biap.dadashi.no/api/` traffic is split across two
+hosts** -- see "New VPS migration -- Kiasha recommendation cutover" below for
+the full picture. Summary:
 
-- systemd service: `biap-fin.service`
-- internal listener: `127.0.0.1:8088`
+- `/api/stock/recommendation/{code}` -> `biap-fin.service` on the **new** VPS
+  (`5.249.252.88`, `127.0.0.1:8088`).
+- Every other `/api/` path (`auth/*`, `stock/watchlist`, `orders/*`,
+  `audit/*`, `risk/*`) -> unchanged, still `89.42.199.20`, which itself runs
+  its own `biap-fin.service` (the original one) for `orders/*`/`audit/*`/
+  `risk/*` and the existing Express backend on `127.0.0.1:4000` for
+  `auth/*`/`stock/watchlist`.
+
+This means **there are now two live `biap-fin` instances** (old on
+`89.42.199.20`, new on `5.249.252.88`), each with its own separate
+`biap_audit.sqlite3` -- the new instance's order/audit tables are currently
+empty (no data migrated yet, and `/orders/*`/`/audit/*` still route to the old
+instance's DB, so this is safe for now). Do not assume both instances see the
+same order history.
+
+- systemd service: `biap-fin.service` (exists independently on both hosts)
+- internal listener on both hosts: `127.0.0.1:8088`
 - Nginx proxies FIN routes under `https://biap.dadashi.no/api/...`
-- service is enabled at boot and verified `active (running)`
-- existing backend on `127.0.0.1:4000` remains responsible for the original
-  `/api/` routes such as auth and `/api/stock/watchlist`
+- both services enabled at boot and verified `active (running)`
+- existing backend on `127.0.0.1:4000` (on `89.42.199.20`) remains responsible
+  for the original `/api/` routes such as auth and `/api/stock/watchlist`
 - existing mobile contract was not replaced or broken
 
 Verified public recommendation example:
@@ -39,13 +55,17 @@ Existing BIAP backend: 127.0.0.1:4000
 
 ### New external data server
 
-A new external VPS is available for moving/hosting BIAP data workloads:
-
 ```text
 Host: 5.249.252.88
 SSH user: ubuntu
-Role: new external BIAP data/infrastructure server
-Status: available; migration/deployment work still needs to be completed and verified
+Role: BIAP data/infrastructure server -- now also running a durable biap-fin
+Status: biap-fin.service deployed, systemd-managed, enabled at boot; the
+        Kiasha recommendation endpoint is cut over to it in production nginx
+        (2026-08-27). orders/audit/risk/symbols/health still on the old VPS --
+        see "New VPS migration" section below for exact scope and what's left.
+Clone used: /home/ubuntu/biap-kiasha/XS227-BIAP (NOT /home/ubuntu/BIAP, which
+        is a separate, stale clone left over from earlier manual testing --
+        do not confuse the two; do not delete either without checking first).
 ```
 
 Direct connectivity from the new server to CODAL has been unreliable, while the
@@ -604,6 +624,101 @@ is considered.
 
 New tests: `analysis/tests/test_broker.py`. 34/34 tests pass.
 
+## New VPS migration -- Kiasha recommendation cutover (2026-08-27)
+
+Migrated `biap-fin` to the new VPS (`5.249.252.88`) and cut the public
+`/api/stock/recommendation/` path over to it, deliberately narrow in scope.
+Full sequence, in order:
+
+1. **CODAL gateway env-var fix.** The relay on `89.42.199.20:8090`
+   (`relay_server.py`, sources `codal-search`/`codal-www`/`codal-excel`/
+   `tsetmc-cdn`/`tsetmc-old`) only answers on `codal-`-prefixed paths. An
+   earlier attempt used `BIAP_CODAL_BASE=http://89.42.199.20:8090/search`
+   (etc., no prefix), which 404s with `{"detail":"unknown relay source"}` --
+   not a code bug, not a gateway bug, just wrong env values. Correct values
+   (already documented in `analysis/RELAY_DEPLOYMENT.md` and
+   `analysis/deploy_data_server.sh`, confirmed working via curl and a full
+   فولاد pipeline run):
+   ```
+   BIAP_CODAL_BASE=http://89.42.199.20:8090/codal-search
+   BIAP_CODAL_WWW_BASE=http://89.42.199.20:8090/codal-www
+   BIAP_CODAL_EXCEL_BASE=http://89.42.199.20:8090/codal-excel
+   BIAP_TSETMC_API_BASE=http://89.42.199.20:8090/tsetmc-cdn/api
+   ```
+
+2. **`biap-fin.service` created on `5.249.252.88`** (systemd, not the
+   fragile `nohup` pattern `deploy_data_server.sh` used previously -- that
+   nohup process had already died with nothing to restart it). Runs
+   `analysis/.venv/bin/uvicorn api_server:app --host 127.0.0.1 --port 8088`
+   from `/home/ubuntu/biap-kiasha/XS227-BIAP/analysis` as user `ubuntu`, the
+   four env vars above baked in via `Environment=`, `Restart=on-failure`,
+   enabled at boot. Verified: health, فولاد recommendation (`codal: true`,
+   real fundamentals), and survives a manual restart.
+
+3. **Real bug found and fixed while proving step 2 end-to-end: commit
+   `b264124`.** `api_server.py`'s `_company_or_404` was passing the raw
+   numeric TSETMC code (e.g. `46348559193224090`) as the CODAL search symbol
+   instead of the resolved Persian ticker (`quote.name`) -- CODAL only
+   indexes by Persian symbol, so every numeric-code recommendation request
+   (the normal way the endpoint is called) silently lost CODAL enrichment
+   (`codal: false`, no fundamentals), even though the CODAL gateway itself
+   was fine. Introduced earlier the same day in `a0cba08`. Fixed by passing
+   `quote.name` explicitly, with a regression test
+   (`test_numeric_code_lookup_passes_persian_ticker_to_codal_enrichment`)
+   that fails against the old behavior and passes against the fix. 39/39
+   tests pass. Pushed to `main`.
+
+4. **Local-only nginx test route** (`127.0.0.1:8089` in
+   `sites-available/biap-dadashi`) proved the intended `/api/` -> `:8088`
+   proxy shape before touching the public vhost. Left in place, harmless
+   (loopback-only, not wired into the public `biap.dadashi.no` server block).
+
+5. **Endpoint ownership audit before cutover.** Read-only investigation
+   found the public gateway on `89.42.199.20` was *already* internally
+   splitting `/api/` traffic between its own local `biap-fin` (recommendation,
+   orders, risk, audit) and the Express backend on `:4000` (auth, watchlist)
+   -- confirmed by curling each path's distinct response shape. `stock/symbols`
+   and `health` were not routed to biap-fin on either host (404 on both,
+   before and after). Full ownership table and the data-migration design for
+   `/orders/*`/`/audit/*` (needed before those can safely cut over, since each
+   `biap-fin` instance has its own separate `biap_audit.sqlite3`) is not
+   duplicated here -- see the conversation/PR history for the detailed
+   endpoint table, SQLite schema, and migration procedure design (not yet
+   executed: new instance's audit DB is still empty, 0 rows in all three
+   tables as of this writing).
+
+6. **Limited production cutover, applied.** Added exactly one new location to
+   the real `:4430` TLS server block in `sites-available/biap-dadashi`
+   (backup: `biap-dadashi.bak-20260827-001322`):
+   ```nginx
+   location /api/stock/recommendation/ {
+       proxy_pass http://127.0.0.1:8088/stock/recommendation/;
+       proxy_set_header Host $host;
+       proxy_set_header X-Real-IP $remote_addr;
+       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+       proxy_set_header X-Forwarded-Proto $scheme;
+   }
+   ```
+   Placed before the existing generic `location /api/ { proxy_pass
+   https://89.42.199.20/api/; ... }`, which is otherwise untouched --
+   nginx's longest-prefix-match means this is safe regardless of file order,
+   but ordering it first keeps the file readable. `nginx -t` passed before
+   reload. Verified post-reload: public فولاد recommendation `200`,
+   `codal: true`, `call: BUY`; confirmed via `journalctl -u biap-fin` that
+   the request timestamp matched a log line on the *new* instance (proof of
+   correct routing, not just a plausible-looking response); `auth/login`,
+   `auth/register`, `stock/watchlist`, `orders/preview`, and `audit/orders`
+   (the latter still showing the old instance's pre-existing order
+   `377c7e30-...`, unchanged) all still confirmed routing to `89.42.199.20`
+   exactly as before. No DNS or certificate change. No rollback needed.
+
+**What's NOT done yet:** `/orders/*`, `/audit/*`, `/risk/*` still route to
+`89.42.199.20`'s own `biap-fin`, and `/stock/symbols`/`/health` aren't publicly
+routed on either host. Moving those requires the order/audit data migration
+(SQLite `.backup` + schema-diff + `INSERT OR IGNORE` merge, timed immediately
+around the next nginx change to avoid a write-race window) designed but not
+yet executed -- see item 4 in "Open work" below.
+
 ## Production operations
 
 Update the running FIN service after a reviewed GitHub change:
@@ -669,8 +784,16 @@ precedence and this file must be corrected in the same change.
    CODAL gateway ask in Discussion #1).
 3. **CODAL caching/gateway:** avoid unnecessary repeated PDF downloads and prepare
    a controlled CODAL collector/gateway path for the new server.
-4. **New external data server:** migrate data-heavy workloads incrementally to
-   `5.249.252.88` with rollback and health checks.
+4. ~~**New external data server:**~~ partially done (2026-08-27) -- `biap-fin`
+   is deployed and durable on `5.249.252.88` (systemd), and the
+   `/api/stock/recommendation/` path is cut over to it in production, with
+   verified rollback available (see "New VPS migration" above). Still open:
+   migrate `/orders/*`/`/audit/*` SQLite state from `89.42.199.20` before
+   cutting those paths over too (design done, not executed -- two live
+   `biap-fin` instances currently have separate, unsynced audit DBs), then
+   cut over `/orders/*`, `/audit/*`, `/risk/*`, and decide whether to also
+   expose `/stock/symbols`/`/health` publicly (currently unrouted on both
+   hosts, zero risk either way since nothing depends on them yet).
 5. ~~**Broad-market regression tests:**~~ partially done (2026-08-26) —
    see "Broad-market regression tests" below. Still open: doing this against
    real, live-fetched TSE/IFB/IFB_BASE symbols instead of synthetic

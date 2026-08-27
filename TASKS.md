@@ -7,33 +7,20 @@ quick reference alongside `PROJECT_STATUS.md`.
 
 ## P0 — blocking everything downstream
 
-1. **Public route from `biap.dadashi.no/api` to the Kiasha service.**
-   The mobile source now lives in `XS227/BIAP/mobile/` and calls
-   `/stock/recommendation/{code}` plus guarded `/orders/*` through its API base.
-   The Kiasha FastAPI service exposes these routes in `analysis/api_server.py`,
-   but the production web/API gateway still needs to be verified to forward
-   those paths to the running Kiasha service. Until this is confirmed, the app
-   may render normally while recommendation calls return 404/502/null.
-
-   Needed on the server/gateway:
-   - Verify `https://biap.dadashi.no/api/stock/recommendation/<symbol>` reaches
-     the Kiasha FastAPI service rather than the older Express API.
-   - If not, add a narrow reverse-proxy/forwarding route for Kiasha endpoints;
-     do not disturb existing `/api/auth/*`, watchlist, or port-4000 routes.
-   - Verify 503 warmup responses pass through unchanged and a ready request
-     returns the real `dataAvailability`, `codalFundamentals`, and `breakdown`.
-   - Verify `/orders/preview` and `/orders/submit` keep bearer-token forwarding.
+None currently. The last P0 (public route from `biap.dadashi.no/api` to a
+Kiasha service) was resolved 2026-08-27 -- see "Resolved" below. Nothing here
+needs Nasrin's action right now.
 
 ## P1
 
-2. **Mobile source consolidation — resolved.** PR #4 merged the mobile app into
+1. **Mobile source consolidation — resolved.** PR #4 merged the mobile app into
    `XS227/BIAP/mobile/`, and this folder is now the source of truth for mobile
    development. The previously referenced `/home/nasrin/Biap/mobile` working
    tree is no longer present on the old VPS, so those stale WIP notes are not a
    blocker anymore. New mobile changes should be made directly under
    `XS227/BIAP/mobile/`.
 
-3. **Mobile Kiasha integration and build validation.** The mobile API layer now:
+2. **Mobile Kiasha integration and build validation.** The mobile API layer now:
    - supports `live`, `codal`, and `mock` recommendation sources;
    - understands CODAL metadata/fundamentals returned by the backend;
    - retries one transient 503 warmup response;
@@ -46,7 +33,7 @@ quick reference alongside `PROJECT_STATUS.md`.
    to be enabled/observed or the same check run on a dev machine with
    `cd mobile && npm ci && npx tsc --noEmit`.
 
-4. **On-device review of the consolidated mobile app.** Once the public Kiasha
+3. **On-device review of the consolidated mobile app.** Once the public Kiasha
    route is verified and a build/tunnel is running, check on a real device:
    - the 6-tab bar (خانه/بازار/سفارش‌ها/پرتفوی/کیاشا/بیشتر)
    - RTL layout overall
@@ -56,7 +43,7 @@ quick reference alongside `PROJECT_STATUS.md`.
 
 ## P2
 
-5. **Does the existing auth backend (port 4000 on `89.42.199.20`) expose a
+4. **Does the existing auth backend (port 4000 on `89.42.199.20`) expose a
    token-validation endpoint** (e.g. something like `/api/auth/me`)? FIN's
    current `/orders/*` and `/audit/*` protection is *ownership* (same token →
    same user) but not real *authentication* — it never checks the token
@@ -77,7 +64,7 @@ quick reference alongside `PROJECT_STATUS.md`.
    already being validated on login — FIN would then call that instead of
    just hashing the raw token.
 
-6. **Timing call on `orders.tsx`.** Per-user auth/ownership on `/audit/orders`
+5. **Timing call on `orders.tsx`.** Per-user auth/ownership on `/audit/orders`
    is now live server-side (2026-08-26), which was the blocker you flagged for
    keeping سفارش‌ها on local `AsyncStorage` instead of the real endpoint. Since
    `orders.tsx`/tab nav has your guest-lock feature mid-flight, this is your
@@ -96,3 +83,21 @@ quick reference alongside `PROJECT_STATUS.md`.
 
 - ~~Mobile repo merge into `XS227/BIAP`~~. PR #4 merged successfully; mobile
   development now lives under `mobile/` in this repository.
+
+- ~~Public route from `biap.dadashi.no/api` to the Kiasha service~~ (2026-08-27).
+  `biap-fin` is now durable (systemd) on the new VPS (`5.249.252.88`), and
+  `/api/stock/recommendation/{code}` is cut over to it in production nginx --
+  verified publicly (`codal: true`, real fundamentals) with proof it reached
+  the new instance via journalctl correlation, and confirmed `auth/*`,
+  `stock/watchlist`, `orders/*`, `audit/*` all still route to `89.42.199.20`
+  unchanged. Nothing needed from Nasrin for this specific item. Full detail in
+  `PROJECT_STATUS.md`'s "New VPS migration" section.
+
+  Not yet cut over (informational, not currently blocking anything or asking
+  for Nasrin's action): `/orders/*`, `/audit/*`, `/risk/*` -- each `biap-fin`
+  instance (old and new) has its own separate SQLite order/audit database, so
+  those need a data migration first. Design exists (SQLite `.backup` +
+  schema-diff + `INSERT OR IGNORE` merge, timed tight around the nginx change
+  to avoid a write race) but hasn't been executed. Will resurface as a task
+  here if/when that migration needs anything from Nasrin (e.g. access to
+  `89.42.199.20` to pull its DB).
