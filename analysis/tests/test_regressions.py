@@ -4,7 +4,7 @@ from audit_parser import (
     _extract_audit_opinion_section,
     classify_audit_opinion_from_text,
 )
-from codal_data import CodalFiling, CodalFundamentals, _row_values
+from codal_data import CodalFiling, CodalFundamentals, _parse_fundamentals, _row_values
 import company_builder
 from financial_scope import (
     CONSOLIDATED,
@@ -31,6 +31,96 @@ def test_exact_net_profit_row_matching():
     )
 
     assert result == (100.0, 80.0)
+
+
+def test_balance_sheet_totals_row_matching():
+    rows = [
+        ["جمع دارایی‌ها", "500", "400"],
+        ["جمع بدهی‌ها", "300", "250"],
+        ["جمع حقوق صاحبان سهام", "200", "150"],
+    ]
+
+    assert _row_values(rows, ("جمع دارایی‌ها", "جمع دارایی ها")) == (500.0, 400.0)
+    assert _row_values(rows, ("جمع بدهی‌ها", "جمع بدهی ها")) == (300.0, 250.0)
+    assert _row_values(rows, ("جمع حقوق صاحبان سهام",)) == (200.0, 150.0)
+
+
+def test_parse_fundamentals_extracts_balance_sheet_alongside_income_statement():
+    filing = CodalFiling(
+        tracing_no="123",
+        title="صورت‌های مالی سال مالی منتهی به ۱۴۰۴/۱۲/۲۹",
+        sent_at=None,
+        publish_at=None,
+        letter_code=None,
+        url=None,
+        pdf_url=None,
+        excel_url="https://excel.codal.ir/service/Excel/GetAll/xyz/0",
+        attachment_url=None,
+    )
+    report_html = """
+    <table>
+      <tr><td>درآمدهای عملیاتی</td><td>120</td><td>100</td></tr>
+      <tr><td>سود (زیان) ناخالص</td><td>40</td><td>30</td></tr>
+      <tr><td>سود (زیان) خالص</td><td>15</td><td>10</td></tr>
+      <tr><td>جمع دارایی‌ها</td><td>500</td><td>400</td></tr>
+      <tr><td>جمع بدهی‌ها</td><td>300</td><td>250</td></tr>
+      <tr><td>جمع حقوق صاحبان سهام</td><td>200</td><td>150</td></tr>
+    </table>
+    """
+
+    result = _parse_fundamentals("فولاد", filing, report_html)
+
+    assert result is not None
+    assert result.total_assets_current == 500.0
+    assert result.total_assets_prev == 400.0
+    assert result.total_liabilities_current == 300.0
+    assert result.total_liabilities_prev == 250.0
+    assert result.total_equity_current == 200.0
+    assert result.total_equity_prev == 150.0
+
+
+def test_balance_sheet_equity_prefers_current_codal_template_label():
+    # Verified live against فولاد's 1404 consolidated statement on
+    # 2026-08-27: CODAL's current template labels the equity total
+    # "جمع حقوق مالکانه", not the older "جمع حقوق صاحبان سهام".
+    rows = [
+        ["جمع حقوق مالکانه", "5,129,927,668", "4,146,581,655"],
+        ["جمع حقوق صاحبان سهام", "999", "888"],
+    ]
+
+    result = _row_values(
+        rows,
+        ("جمع حقوق مالکانه", "جمع حقوق صاحبان سهام"),
+    )
+
+    assert result == (5129927668.0, 4146581655.0)
+
+
+def test_parse_fundamentals_leaves_balance_sheet_none_when_rows_absent():
+    filing = CodalFiling(
+        tracing_no="124",
+        title="صورت‌های مالی سال مالی منتهی به ۱۴۰۴/۱۲/۲۹",
+        sent_at=None,
+        publish_at=None,
+        letter_code=None,
+        url=None,
+        pdf_url=None,
+        excel_url="https://excel.codal.ir/service/Excel/GetAll/xyz/0",
+        attachment_url=None,
+    )
+    report_html = """
+    <table>
+      <tr><td>درآمدهای عملیاتی</td><td>120</td><td>100</td></tr>
+      <tr><td>سود (زیان) خالص</td><td>15</td><td>10</td></tr>
+    </table>
+    """
+
+    result = _parse_fundamentals("فولاد", filing, report_html)
+
+    assert result is not None
+    assert result.total_assets_current is None
+    assert result.total_liabilities_current is None
+    assert result.total_equity_current is None
 
 
 def test_negative_margin_is_penalized_even_if_improving():

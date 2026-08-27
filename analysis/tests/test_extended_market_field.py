@@ -74,7 +74,11 @@ def test_recommendation_endpoint_exposes_extended_market_fields(monkeypatch):
         "price52wLow": 1600.0,
         "pe": 5.21,
         "sectorAvgPe": 11.08,
+        "epsValue": 517,
+        "estimatedEps": None,
         "marketCap": 2_698_000_000_000,
+        "marketCapBn": 2698.0,
+        "sharesOutstanding": 1_000_000_000,
         "sectorName": "Basic Metals",
     }
 

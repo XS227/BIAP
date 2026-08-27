@@ -82,6 +82,12 @@ class CodalFundamentals:
     net_margin_prev_pct: float
     gross_profit_current: Optional[float] = None
     gross_profit_prev: Optional[float] = None
+    total_assets_current: Optional[float] = None
+    total_assets_prev: Optional[float] = None
+    total_liabilities_current: Optional[float] = None
+    total_liabilities_prev: Optional[float] = None
+    total_equity_current: Optional[float] = None
+    total_equity_prev: Optional[float] = None
     audit_opinion: Optional[str] = None
     related_party_flags: Optional[int] = None
     guidance_note: Optional[str] = None
@@ -442,6 +448,27 @@ def _parse_fundamentals(symbol: str, filing: CodalFiling, report_html: str) -> O
         parser.rows,
         ("سود (زیان) ناخالص", "سود ناخالص", "زیان ناخالص"),
     )
+    total_assets = _row_values(
+        parser.rows,
+        ("جمع دارایی‌ها", "جمع دارایی ها", "جمع کل دارایی‌ها", "جمع داراییها"),
+    )
+    total_liabilities = _row_values(
+        parser.rows,
+        ("جمع بدهی‌ها", "جمع بدهی ها", "جمع کل بدهی‌ها", "جمع بدهیها"),
+    )
+    total_equity = _row_values(
+        parser.rows,
+        (
+            # "جمع حقوق مالکانه" is CODAL's current template label (verified
+            # live against فولاد's 1404 consolidated statement). Older
+            # filings/templates use "جمع حقوق صاحبان سهام" instead -- kept as
+            # a fallback rather than assumed, since it was not observed live.
+            "جمع حقوق مالکانه",
+            "جمع حقوق صاحبان سهام",
+            "جمع حقوق صاحبان سرمایه",
+            "جمع حقوق صاحبان سهام شرکت اصلی",
+        ),
+    )
 
     if revenue is None or net_profit is None:
         return None
@@ -462,6 +489,12 @@ def _parse_fundamentals(symbol: str, filing: CodalFiling, report_html: str) -> O
         net_profit_prev=net_profit_prev,
         gross_profit_current=gross_profit[0] if gross_profit else None,
         gross_profit_prev=gross_profit[1] if gross_profit else None,
+        total_assets_current=total_assets[0] if total_assets else None,
+        total_assets_prev=total_assets[1] if total_assets else None,
+        total_liabilities_current=total_liabilities[0] if total_liabilities else None,
+        total_liabilities_prev=total_liabilities[1] if total_liabilities else None,
+        total_equity_current=total_equity[0] if total_equity else None,
+        total_equity_prev=total_equity[1] if total_equity else None,
         revenue_yoy_pct=revenue_yoy_pct,
         net_margin_pct=net_margin_pct,
         net_margin_prev_pct=net_margin_prev_pct,

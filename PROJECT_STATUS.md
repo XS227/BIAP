@@ -1,6 +1,6 @@
 # BIAP — Project Status
 
-_Last updated: 2026-08-27 (Kiasha real performance tracking deployed)_
+_Last updated: 2026-08-27 (CODAL balance-sheet fields + EPS exposure added)_
 
 ## Production status
 
@@ -115,7 +115,11 @@ GET https://biap.dadashi.no/api/stock/watchlist
 Direct TSETMC lookup is used as a fallback for symbols outside the original
 watchlist, and extended market data is now connected for recommendation analysis.
 Verified production output includes 52-week range, volume, P/E and sector P/E
-where the upstream source exposes them.
+where the upstream source exposes them. TSETMC's own `eps` field
+(`epsValue`/`estimatedEps`, whichever is used to compute `pe`) is fetched and
+was already used internally to derive P/E, but was not itself exposed on the
+API response until 2026-08-27 -- see "CODAL balance-sheet fields + EPS
+exposure" below.
 
 A broad symbol universe is available for TSE, IFB and IFB_BASE instruments. The
 system must remain market/industry agnostic and must not hard-code a small sector
@@ -132,6 +136,9 @@ The parser currently verifies and exposes:
 - current and previous operating revenue
 - current and previous net profit/loss
 - current and previous gross profit/loss when available
+- current and previous balance-sheet totals (assets, liabilities, equity)
+  when available (added 2026-08-27, see "CODAL balance-sheet fields +
+  EPS exposure" below)
 - revenue YoY growth
 - current and previous net margin
 - filing/report identifiers and source URLs
@@ -1011,6 +1018,91 @@ before it has any visible effect. Don't expect `trust_source: "observed"` to
 appear soon. Check evaluator health periodically: `journalctl -u
 biap-performance-evaluator.service` on `5.249.252.88`.
 
+## CODAL balance-sheet fields + EPS exposure (2026-08-27)
+
+Scoped follow-up on this VPS (`5.249.252.88`): connect real balance-sheet
+fundamentals and EPS to the Kiasha recommendation pipeline. Explicitly out of
+scope for this change: orders/audit migration, broker work, AUTO mode, mobile
+UI.
+
+**Re-verified the CODAL access story first, live, before changing anything:**
+a direct `curl` from this VPS to `search.codal.ir`/`codal.ir` times out at the
+TCP level (10s, `curl: (28) Connection timed out`) even though DNS resolves
+fine (`185.117.20x.x`, not a DNS problem) -- this is a network-level block on
+the path from this host to Iran-hosted CODAL, not an HTTP/auth/rate-limit
+response. The existing production-ready fix (Nasrin's `relay_server.py` on
+`89.42.199.20:8090`, a read-only reverse relay reachable from `5.249.252.88`,
+wired in via `BIAP_CODAL_BASE`/`BIAP_CODAL_WWW_BASE`/`BIAP_CODAL_EXCEL_BASE`)
+was already in place and confirmed still working (`/health` on the FIN
+service reports `codal.metadataConnected: true`,
+`codal.fundamentalsConnected: true`; a live فولاد request returned real
+`codalMetadata`/`codalFundamentals`). No new gateway work was needed here --
+this is the same relay documented under "Live relay confirmed working" above.
+
+**What was actually missing, found by reading the real API response against
+the request (EPS, P/E, revenue, profit, margins, balance sheet):** revenue,
+profit and margins were already wired end-to-end (see "CODAL fundamentals"
+above); two real gaps existed:
+
+1. **EPS was already fetched from TSETMC and used internally to compute
+   `pe`, but never exposed on the response.** `company_builder.py` has
+   carried `estimated_eps`/`eps_value` in its internal `market` dict since
+   the extended-market-data work, but `api_server.py`'s
+   `/stock/recommendation/{code}` handler only read `pe`/`sector_avg_pe`
+   off it. Added `epsValue`/`estimatedEps` (plus `marketCapBn` and
+   `sharesOutstanding`, same situation -- already fetched, never exposed) to
+   the `extendedMarket` object. No new HTTP calls; this is data the service
+   was already paying for and discarding.
+2. **Balance-sheet totals were never parsed at all.** `codal_data.py`'s
+   `_parse_fundamentals` only ever scanned the already-downloaded filing
+   HTML for income-statement rows (revenue/net profit/gross profit). Added
+   `total_assets_current/prev`, `total_liabilities_current/prev`,
+   `total_equity_current/prev` to `CodalFundamentals`, extracted with the
+   same `_row_values` label-matching approach from the *same* already-cached
+   filing HTML (no new download, no new CODAL request -- reuses
+   `codal_pdf_cache`'s sibling text fetch path).
+
+**Verified against real data, not assumed:** dumped فولاد's actual filing
+HTML rows live and found CODAL's current template labels the balance-sheet
+totals `جمع دارايي‌ها` / `جمع بدهي‌ها` / `جمع حقوق مالکانه` -- the last one is
+*not* the older, more commonly assumed `جمع حقوق صاحبان سهام`, which was the
+first alias tried and would have silently returned `None` for every company
+still on this newer template. Fixed by making `جمع حقوق مالکانه` the primary
+alias and keeping `جمع حقوق صاحبان سهام` (and other older variants) as
+fallbacks for filings that still use them, rather than assuming either one.
+After the fix, the live فولاد response satisfies the balance-sheet identity
+exactly: `total_assets_current (9,576,820,406) == total_liabilities_current
+(4,446,892,738) + total_equity_current (5,129,927,668)` -- a hard correctness
+check, not just a plausibility check.
+
+New regression tests (`analysis/tests/test_regressions.py`): row-matching for
+all three balance-sheet totals, an end-to-end `_parse_fundamentals` test
+proving balance-sheet fields populate alongside income-statement fields from
+one HTML document, a test proving they stay `None` (not guessed) when the
+rows are genuinely absent, and a test pinning the `جمع حقوق مالکانه` label
+preference. `test_extended_market_field.py` updated for the new
+`extendedMarket` keys. 105/105 tests pass. `biap-fin.service` restarted on
+`5.249.252.88` and re-verified live post-deploy.
+
+**Still open, unrelated to this fix (see "Open work" below):** validating
+balance-sheet parsing against issuers other than فولاد was blocked the same
+way item 5's remaining gap is -- the bare Persian-symbol CODAL-only lookup
+path returned `codal: false` for `خودرو`/`شپنا`/`وبملت` during this session
+(company not found in the cached CODAL company list for that exact symbol
+string), and the numeric-code live path's `market_data.find_quote()` call
+itself timed out (>40s) for those symbols when tried directly, consistent
+with the already-documented "TSETMC symbol universe fetch from
+`5.249.252.88` is unreliable" limitation -- not something this change
+touched or fixed. `/stock/symbols` is currently reporting `"degraded": true`
+(CODAL-only fallback) for search results, which predates this change.
+
+**How to apply:** don't assume `جمع حقوق مالکانه` is the only real-world
+label without checking -- if a future issuer's balance-sheet total comes
+back `None`, dump that issuer's real filing HTML rows (like this session
+did) before adding a guessed alias. The same caution applies to any other
+CODAL row label added later: verify against live HTML, don't guess from
+textbook accounting terminology.
+
 ## Production operations
 
 Update the running FIN service after a reviewed GitHub change:
@@ -1139,9 +1231,11 @@ precedence and this file must be corrected in the same change.
    construction -- the market-session check below is the honest
    substitute for the risk that "stale quote" was actually protecting
    against here (a closed market's last price being treated as live).
-10. **Mobile integration:** `codalFundamentals` (incl. `report_scope`) is now on
-    the wire (see Recommendation API section above); mobile still needs a
-    fundamentals section in `recommendation-card.tsx` to render it, plus
+10. **Mobile integration:** `codalFundamentals` (incl. `report_scope`, and as
+    of 2026-08-27 balance-sheet totals) and `extendedMarket` (as of
+    2026-08-27, EPS) are now on the wire (see Recommendation API section
+    above); mobile still needs a fundamentals section in
+    `recommendation-card.tsx` to render it, plus
     `/stock/symbols` search UI and server-backed `/orders/{id}`,
     `/audit/orders`, `/risk/status` wiring (mobile repo currently has an
     unrelated auth/guest-lock feature mid-flight, uncommitted, touching
