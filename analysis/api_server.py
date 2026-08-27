@@ -98,7 +98,7 @@ app.include_router(admin_router)
 
 @app.exception_handler(AdminAuthRequired)
 def _admin_auth_required(_request: Request, _exc: AdminAuthRequired) -> RedirectResponse:
-    return RedirectResponse("/admin/login", status_code=303)
+    return RedirectResponse("/admindir/login", status_code=303)
 
 MOCK_COMPANIES = {SAMPLE_COMPANY["ticker"]: SAMPLE_COMPANY}
 AUDIT = AuditStore()

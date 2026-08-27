@@ -32,7 +32,7 @@ SESSION_TTL_SECONDS = 12 * 60 * 60  # 12h -- an operator shift, not a persistent
 
 
 class AdminAuthRequired(Exception):
-    """Raised by require_admin; caught by an exception handler that redirects to /admin/login."""
+    """Raised by require_admin; caught by an exception handler that redirects to /admindir/login."""
 
 
 def _secret() -> str:

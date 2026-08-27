@@ -27,7 +27,7 @@ def client(tmp_path, monkeypatch):
 
 def _login(client, username="khabat", password="s3cret-pass"):
     return client.post(
-        "/admin/login", data={"username": username, "password": password}, follow_redirects=False
+        "/admindir/login", data={"username": username, "password": password}, follow_redirects=False
     )
 
 
@@ -43,24 +43,24 @@ def _approval_intent(client, user_headers, quantity=10):
 
 
 def test_dashboard_redirects_when_not_logged_in(client):
-    r = client.get("/admin", follow_redirects=False)
+    r = client.get("/admindir", follow_redirects=False)
     assert r.status_code == 303
-    assert r.headers["location"] == "/admin/login"
+    assert r.headers["location"] == "/admindir/login"
 
 
 def test_login_wrong_password_does_not_authenticate(client):
     r = _login(client, password="wrong")
     assert r.status_code == 303
-    assert r.headers["location"].startswith("/admin/login")
-    r2 = client.get("/admin", follow_redirects=False)
+    assert r.headers["location"].startswith("/admindir/login")
+    r2 = client.get("/admindir", follow_redirects=False)
     assert r2.status_code == 303
 
 
 def test_login_then_dashboard_accessible(client):
     r = _login(client)
     assert r.status_code == 303
-    assert r.headers["location"] == "/admin"
-    r2 = client.get("/admin")
+    assert r.headers["location"] == "/admindir"
+    r2 = client.get("/admindir")
     assert r2.status_code == 200
     assert "khabat" in r2.text
 
@@ -73,7 +73,7 @@ def test_admin_can_approve_pending_order_and_audit_records_actor(client):
     assert order["status"] == "PENDING_APPROVAL"
 
     _login(client)
-    r = client.post(f"/admin/orders/{intent_id}/approve", follow_redirects=False)
+    r = client.post(f"/admindir/orders/{intent_id}/approve", follow_redirects=False)
     assert r.status_code == 303
 
     order_after = client.get(f"/orders/{intent_id}", headers=user_headers).json()
@@ -86,11 +86,11 @@ def test_admin_can_approve_pending_order_and_audit_records_actor(client):
 
 
 def test_admin_orders_and_audit_pages_require_login(client):
-    assert client.get("/admin/orders", follow_redirects=False).status_code == 303
-    assert client.get("/admin/audit", follow_redirects=False).status_code == 303
+    assert client.get("/admindir/orders", follow_redirects=False).status_code == 303
+    assert client.get("/admindir/audit", follow_redirects=False).status_code == 303
 
 
 def test_login_page_503_when_unconfigured(client, monkeypatch):
     monkeypatch.delenv("BIAP_ADMIN_JWT_SECRET", raising=False)
-    r = client.get("/admin/login")
+    r = client.get("/admindir/login")
     assert r.status_code == 503

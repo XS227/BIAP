@@ -1,5 +1,9 @@
 """BIAP ops/admin panel: server-rendered HTML mounted directly on biap-fin.
 
+Mounted under /admindir (not /admin) because biap.dadashi.no already serves
+something else at /admin -- see PROJECT_STATUS.md's "Admin/ops panel"
+section for the path-collision note.
+
 Why here and not a separate service: biap-fin (api_server.py) already has
 the order/audit/risk/performance data an operator needs; a thin HTML layer
 on top avoids standing up and deploying a second app for a small internal
@@ -28,7 +32,7 @@ from performance_store import MIN_OBSERVED_SAMPLES, PerformanceStore
 from risk import policy_snapshot
 
 
-router = APIRouter(prefix="/admin", include_in_schema=False)
+router = APIRouter(prefix="/admindir", include_in_schema=False)
 
 _ADMIN_STORE = AdminStore()
 _AUDIT = AuditStore()
@@ -42,11 +46,11 @@ def _page(title: str, body: str, *, username: Optional[str] = None) -> str:
     if username:
         nav = f"""
         <nav>
-          <a href="/admin">Dashboard</a>
-          <a href="/admin/orders">Ordre</a>
-          <a href="/admin/audit">Audit-logg</a>
+          <a href="/admindir">Dashboard</a>
+          <a href="/admindir/orders">Ordre</a>
+          <a href="/admindir/audit">Audit-logg</a>
           <span class="who">{html.escape(username)}</span>
-          <a href="/admin/logout">Logg ut</a>
+          <a href="/admindir/logout">Logg ut</a>
         </nav>
         """
     return f"""<!doctype html>
@@ -102,7 +106,7 @@ def login_form(error: Optional[str] = None):
         return HTMLResponse(_page("Ikke konfigurert", "<p class='err'>BIAP_ADMIN_JWT_SECRET er ikke satt på denne serveren.</p>"), status_code=503)
     err_html = f"<p class='err'>{html.escape(error)}</p>" if error else ""
     body = f"""
-    <form class="login" method="post" action="/admin/login">
+    <form class="login" method="post" action="/admindir/login">
       {err_html}
       <label>Brukernavn<br><input name="username" autocomplete="username" required></label>
       <label>Passord<br><input name="password" type="password" autocomplete="current-password" required></label>
@@ -115,21 +119,21 @@ def login_form(error: Optional[str] = None):
 @router.post("/login")
 def login_submit(username: str = Form(...), password: str = Form(...)):
     if not admin_panel_configured():
-        return RedirectResponse("/admin/login", status_code=303)
+        return RedirectResponse("/admindir/login", status_code=303)
     if not _ADMIN_STORE.verify_operator(username, password):
-        return RedirectResponse("/admin/login?error=Feil+brukernavn+eller+passord", status_code=303)
+        return RedirectResponse("/admindir/login?error=Feil+brukernavn+eller+passord", status_code=303)
     token = create_session_token(username)
-    resp = RedirectResponse("/admin", status_code=303)
+    resp = RedirectResponse("/admindir", status_code=303)
     resp.set_cookie(
-        COOKIE_NAME, token, httponly=True, samesite="strict", secure=True, max_age=12 * 60 * 60, path="/admin"
+        COOKIE_NAME, token, httponly=True, samesite="strict", secure=True, max_age=12 * 60 * 60, path="/admindir"
     )
     return resp
 
 
 @router.get("/logout")
 def logout():
-    resp = RedirectResponse("/admin/login", status_code=303)
-    resp.delete_cookie(COOKIE_NAME, path="/admin")
+    resp = RedirectResponse("/admindir/login", status_code=303)
+    resp.delete_cookie(COOKIE_NAME, path="/admindir")
     return resp
 
 
@@ -180,9 +184,9 @@ def orders_list(username: str = Depends(require_admin), status: Optional[str] = 
         actions = ""
         if intent.get("status") == "PENDING_APPROVAL":
             actions = (
-                f'<form class="inline" method="post" action="/admin/orders/{html.escape(intent["id"])}/approve">'
+                f'<form class="inline" method="post" action="/admindir/orders/{html.escape(intent["id"])}/approve">'
                 f'<button type="submit">Godkjenn</button></form> '
-                f'<form class="inline" method="post" action="/admin/orders/{html.escape(intent["id"])}/reject">'
+                f'<form class="inline" method="post" action="/admindir/orders/{html.escape(intent["id"])}/reject">'
                 f'<button type="submit">Avvis</button></form>'
             )
         rows += (
@@ -198,7 +202,7 @@ def orders_list(username: str = Depends(require_admin), status: Optional[str] = 
             "</tr>"
         )
     filter_links = " · ".join(
-        f'<a href="/admin/orders{"?status=" + s if s else ""}">{s or "alle"}</a>'
+        f'<a href="/admindir/orders{"?status=" + s if s else ""}">{s or "alle"}</a>'
         for s in [None, "PENDING_APPROVAL", "APPROVED", "REJECTED", "PAPER_FILLED"]
     )
     body = f"""
@@ -227,7 +231,7 @@ def _act_on_order(intent_id: str, *, username: str, event_type: str, transition,
             )
         except ExecutionPolicyError:
             pass
-    return RedirectResponse("/admin/orders", status_code=303)
+    return RedirectResponse("/admindir/orders", status_code=303)
 
 
 @router.post("/orders/{intent_id}/approve")
