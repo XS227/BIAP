@@ -1,20 +1,35 @@
 """Caller-identity boundary for order/audit endpoints.
 
-BIAP's FIN service does not issue or verify user accounts -- the existing
-backend under https://biap.dadashi.no/api/auth/* already does that, and the
-mobile app already sends its session token as `Authorization: Bearer <token>`
-on every request (see -biap-mobile's src/lib/api.ts). This module reuses that
-same header to partition order/audit data by caller instead of duplicating
-auth, so no mobile-side change is required to adopt it.
+BIAP's FIN service does not issue user accounts -- the existing backend
+under https://biap.dadashi.no/api/auth/* already does that
+(`biap-backend/src/routes/auth.routes.js`), and the mobile app already
+sends its session token as `Authorization: Bearer <token>` on every request
+(see -biap-mobile's src/lib/api.ts). This module reuses that same header,
+so no mobile-side change is required.
 
-This binds *ownership*, not *authentication*: the token is hashed into an
-opaque user id, but its signature/expiry is never checked here since FIN has
-no access to the existing backend's session-verification internals. Two
-requests presenting the same bearer token are treated as the same user; a
-missing token is rejected outright. The raw token is never stored -- only
-its hash -- so audit records can't leak live session credentials. Wiring FIN
-up to actually validate the token against the existing auth backend is
-tracked as a follow-up in PROJECT_STATUS.md, not claimed as done here.
+Two modes, selected by whether `BIAP_AUTH_JWT_SECRET` is configured:
+
+- **Configured (real authentication).** The existing backend signs access
+  tokens as `jwt.sign({ userId }, JWT_SECRET, { expiresIn: '15m' })`
+  (HS256, confirmed from its source). Given the same shared secret, FIN can
+  verify that signature and expiry itself, with no network round-trip to
+  the existing backend and no direct access to its Postgres `users` table.
+  A valid token yields the real `userId` claim as the ownership key,
+  prefixed `jwt:` to stay visually distinct from the fallback below. Once
+  this mode is on, a bad or expired token is rejected outright (401) --
+  it must never silently fall back to the weaker scheme below, or anyone
+  could bypass real authentication by sending garbage instead of a token.
+- **Unconfigured (ownership only, no authentication).** The original
+  behavior: the token is hashed into an opaque id with no signature or
+  expiry check, since FIN has no way to verify it without the shared
+  secret. Two requests with the same token are treated as the same caller;
+  a missing token is rejected. This mode intentionally stays available
+  (rather than being deleted now that JWT verification exists) for any
+  environment that hasn't configured the secret -- tests, and local/dev
+  setups that don't proxy the real auth backend at all.
+
+Neither mode stores the raw token, only a hash or the verified claim, so
+audit records can't leak live session credentials.
 """
 
 import hashlib
@@ -22,6 +37,7 @@ import os
 import secrets
 
 from fastapi import Header, HTTPException
+import jwt as pyjwt
 
 
 def require_user_id(authorization: str | None = Header(default=None)) -> str:
@@ -30,6 +46,18 @@ def require_user_id(authorization: str | None = Header(default=None)) -> str:
         token = token[7:].strip()
     if not token:
         raise HTTPException(status_code=401, detail="Authorization bearer token is required")
+
+    secret = os.environ.get("BIAP_AUTH_JWT_SECRET", "")
+    if secret:
+        try:
+            payload = pyjwt.decode(token, secret, algorithms=["HS256"])
+        except pyjwt.PyJWTError as exc:
+            raise HTTPException(status_code=401, detail="invalid or expired token") from exc
+        user_id = payload.get("userId")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="token is missing a userId claim")
+        return f"jwt:{user_id}"
+
     return hashlib.sha256(token.encode("utf-8")).hexdigest()[:24]
 
 

@@ -427,6 +427,110 @@ from `/audit/orders` directly. Not touched here since that file was flagged
 in Discussion #1 as mid-flight with an unrelated auth/guest-lock feature —
 coordinate with Nasrin before editing `orders.tsx`.
 
+## Production sync: 89.42.199.20 was 29 commits behind (2026-08-27)
+
+Got SSH access to the actual production VPS (`89.42.199.20`, port `2222`,
+key-based, root) for the first time this session -- previously blocked by
+network-level filtering of port 22 from `5.249.252.88`'s IP, opened by the
+operator during this session. This surfaced a real, live gap: `/root/BIAP`
+there was checked out at `3e55bfd` (29 commits behind `main`), and more
+importantly **`biap-fin.service` had last started 2026-08-26 06:36 UTC --
+13 hours *before* that checkout was even pulled**, so the running process
+was serving code from well before ownership scoping existed at all.
+Confirmed directly: `biap_audit.sqlite3` there had only 3 legacy
+`order_intents` rows and *no `user_id` column whatsoever* -- meaning, until
+this was found and fixed, **any bearer token could read or act on any other
+caller's orders on the real production `/orders/*`/`/audit/*` endpoints**,
+despite ownership scoping having shipped to `main` the previous day.
+
+Fixed: `git pull --ff-only` (clean fast-forward `3e55bfd..a4c3c6d`, no
+divergent local history), full `pytest tests/ -q` run on that host first
+(86/86 passed) before touching the live service, then
+`systemctl restart biap-fin`. Verified live afterward:
+
+- the 3 legacy rows auto-migrated to `user_id=''` exactly as
+  `audit_store.py`'s existing migration code promises (never a fabricated
+  real user id);
+- `POST https://biap.dadashi.no/api/orders/preview` without a bearer token
+  now correctly returns `401` (previously would have proceeded unscoped);
+- `GET /api/risk/status`, `POST /api/auth/login`, `GET /api/stock/watchlist`
+  all unaffected.
+
+**Side effect also worth knowing:** this pull included the new
+market-session risk check (see below), so real order submissions on
+production are now also gated to TSE's Sat-Wed 09:00-12:30 Asia/Tehran
+window -- today being Thursday, they are rejected until Saturday. Same
+toggle as documented below (`BIAP_ENFORCE_MARKET_SESSION=false`) applies
+here if that's disruptive before then.
+
+**Also discovered, undocumented until now:** `89.42.199.20` runs more than
+BIAP's FIN/auth/watchlist path. There's a Postgres 16 instance (the auth
+backend's real `users`/`auth_sessions` tables), a static file server on
+port 3000 (`serve -s dist`, purpose not yet investigated), and the Express
+backend (`/root/biap-backend/biap-backend`) has route modules for
+`reports`, `projects`, `analysis`, `google-oauth`, and `integrations` --
+a broader product surface than what this document has tracked so far. Not
+investigated further in this session since it's outside BIAP's stock-
+analysis scope; flagging so nobody assumes this host runs only BIAP.
+
+## Real authentication (JWT verification) (2026-08-27)
+
+Roadmap item 6's remaining half, and the last piece of the ownership work
+from 2026-08-26. `auth.py`'s `require_user_id` previously only hashed
+whatever string a caller sent as a bearer token into an opaque id --
+*ownership*, explicitly not authentication, since FIN had no way to verify
+a token without access to the existing backend's internals.
+
+Investigating the real auth backend's source
+(`biap-backend/src/routes/auth.routes.js`,
+`biap-backend/src/middleware/auth.middleware.js`) on `89.42.199.20` found
+the actual scheme: access tokens are
+`jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '15m' })` --
+standard HS256 JWTs. That means FIN can verify the exact same signature and
+expiry itself, given the same shared secret, with **no network round-trip
+to the existing backend and no access to its Postgres `users` table
+required** for the signature/expiry check itself (it does not re-check
+`is_active`/`plan`, which still requires that table).
+
+Implemented in `auth.py`, gated by whether `BIAP_AUTH_JWT_SECRET` is set:
+
+- **Configured:** `jwt.decode(token, secret, algorithms=["HS256"])`
+  (PyJWT, new dependency) verifies signature and expiry. A valid token's
+  `userId` claim becomes the ownership key, prefixed `jwt:` to stay
+  visually distinct from the fallback hash. A bad or expired token is
+  rejected outright (401) -- it must never silently fall back to the
+  weaker hash scheme, or real authentication would be trivially
+  bypassable by sending garbage instead of a token.
+- **Unconfigured:** unchanged fallback behavior (opaque hash, no
+  signature/expiry check) -- kept intentionally rather than removed, for
+  any environment that hasn't configured the secret (tests; a future
+  local/dev setup not proxying the real auth backend).
+
+Deployed to `89.42.199.20` only (the only host currently serving
+`/orders/*`/`/audit/*`/`/risk/*`): `PyJWT` installed into that host's
+venv, `BIAP_AUTH_JWT_SECRET` set in `biap-fin.service`'s environment from
+the existing backend's own `JWT_SECRET` (transferred directly between the
+two files on that host in one command; the value itself was never
+displayed, logged, or committed anywhere). `/health`'s
+`execution.authenticationVerified` now reflects this live instead of being
+hardcoded `false`.
+
+**Not done:** re-checking `is_active`/`plan` against Postgres (the
+signature/expiry check alone is the real security boundary -- a
+deactivated account's still-unexpired 15-minute token would still pass
+here, same as it would against the existing backend's own `requireAuth`
+between logout and natural expiry, so this is not a new gap). Also not
+done: propagating `BIAP_AUTH_JWT_SECRET` to `5.249.252.88`'s `biap-fin`,
+since that host doesn't serve any order/audit endpoint today -- add it
+there too if `/orders/*` ever cuts over to it.
+
+New tests: `analysis/tests/test_auth_jwt.py` (fallback-mode unchanged
+behavior, valid JWT accepted and yields the real claim, expired token
+rejected, wrong-secret signature rejected, garbage token rejected outright
+rather than downgraded, missing `userId` claim rejected, missing token
+rejected, two different real users get different ownership ids). 95/95
+tests pass.
+
 ## Risk hardening: position limits + market session (2026-08-27)
 
 Two new checks in `analysis/risk.py`, both using data that genuinely exists
@@ -1010,10 +1114,9 @@ precedence and this file must be corrected in the same change.
    representative data, since live TSETMC/CODAL access from `5.249.252.88`
    is still blocked (same CODAL gateway dependency as items 1/2's remaining
    gap).
-6. ~~**Authentication + ownership:**~~ done (2026-08-26) as *ownership*, not
-   full authentication — see "Order/audit ownership + idempotency" above.
-   Still open: actually verifying the bearer token against the existing auth
-   backend instead of trusting whatever caller presents it.
+6. ~~**Authentication + ownership:**~~ fully done (2026-08-27) -- real JWT
+   verification now backs ownership too, see "Real authentication (JWT
+   verification)" below.
 7. ~~**Idempotency:**~~ done (2026-08-26) for `/orders/preview` (Idempotency-Key
    header) and `/orders/submit` (state-based no-op on resubmit).
    ~~**Approval-state transitions:**~~ done (2026-08-27) -- see "Order

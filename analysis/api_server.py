@@ -154,7 +154,7 @@ def health():
             "persistentAudit": True,
             "riskPolicy": True,
             "ownershipEnforced": True,
-            "authenticationVerified": False,
+            "authenticationVerified": bool(os.environ.get("BIAP_AUTH_JWT_SECRET")),
             "idempotencySupported": True,
         },
     }
