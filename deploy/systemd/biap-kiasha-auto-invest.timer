@@ -1,0 +1,10 @@
+[Unit]
+Description=Run BIAP Kiasha Paper Auto Invest every 5 minutes
+
+[Timer]
+OnCalendar=*-*-* *:0/5:00
+Persistent=true
+Unit=biap-kiasha-auto-invest.service
+
+[Install]
+WantedBy=timers.target
