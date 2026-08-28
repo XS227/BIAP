@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Brand, BottomTabInset, Colors, Fonts, MaxContentWidth, Radius, Spacing, ThemeColors } from '@/constants/theme';
 import { fetchKiashaPerformanceSummary, KiashaPerformanceSummary } from '@/lib/api';
 import { fetchPaperPortfolio, PaperPortfolio } from '@/lib/paper-portfolio';
@@ -19,12 +19,13 @@ export default function KiashaProfileScreen() {
     const [p, perf] = await Promise.all([fetchPaperPortfolio(), fetchKiashaPerformanceSummary(6_000)]);
     setPortfolio(p); setPerformance(perf); setLoading(false); setRefreshing(false);
   }, []);
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const managed = useMemo(() => {
     if (!portfolio) return null;
     return portfolio.totalCostBasis ?? portfolio.totalMarketValue;
   }, [portfolio]);
+  const equity = portfolio && portfolio.totalMarketValue !== null ? (portfolio.cash ?? 0) + portfolio.totalMarketValue : null;
   const returnPct = portfolio?.totalUnrealizedPnLPct ?? null;
   const evaluated = performance?.evaluatedRecommendationsLowerBound ?? 0;
   const accuracyValues = performance?.agents.map((a) => a.directionalAccuracy).filter((x): x is number => x != null) ?? [];
@@ -39,7 +40,9 @@ export default function KiashaProfileScreen() {
       <Text style={[styles.section, { color: colors.text }]}>سرمایه و عملکرد</Text>
       <View style={styles.grid}>
         <Metric title="سرمایه تحت مدیریت Paper" value={money(managed)} colors={colors} />
-        <Metric title="ارزش فعلی Paper" value={money(portfolio?.totalMarketValue)} colors={colors} />
+        <Metric title="ارزش کل حساب Paper" value={money(equity)} colors={colors} />
+        <Metric title="قدرت خرید / نقد" value={money(portfolio?.cash)} colors={colors} />
+        <Metric title="ارزش سهام" value={money(portfolio?.totalMarketValue)} colors={colors} />
         <Metric title="بازده فعلی Paper" value={percent(returnPct)} colors={colors} accent={returnPct == null ? undefined : returnPct >= 0 ? Brand.positive : Brand.negative} />
         <Metric title="موقعیت‌های قیمت‌گذاری‌شده" value={portfolio ? `${portfolio.pricedPositions.toLocaleString('fa-IR')} / ${portfolio.totalPositions.toLocaleString('fa-IR')}` : '—'} colors={colors} />
       </View>
