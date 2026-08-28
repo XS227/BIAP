@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { router } from 'expo-router';
-import { Brand, BottomTabInset, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { Brand, BottomTabInset, Colors, Fonts, MaxContentWidth, Radius, Spacing, ThemeColors } from '@/constants/theme';
 import { fetchKiashaPerformanceSummary, KiashaPerformanceSummary } from '@/lib/api';
 import { fetchPaperPortfolio, PaperPortfolio } from '@/lib/paper-portfolio';
 
@@ -59,7 +59,7 @@ export default function KiashaProfileScreen() {
   </View></ScrollView></SafeAreaView>;
 }
 
-function Metric({ title, value, colors, accent }: { title: string; value: string; colors: typeof Colors.dark; accent?: string }) {
+function Metric({ title, value, colors, accent }: { title: string; value: string; colors: ThemeColors; accent?: string }) {
   return <View style={[styles.metric, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.metricValue, { color: accent ?? colors.text }]}>{value}</Text><Text style={[styles.metricTitle, { color: colors.textSecondary }]}>{title}</Text></View>;
 }
 
