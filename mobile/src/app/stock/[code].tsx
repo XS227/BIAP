@@ -9,6 +9,7 @@ import { getDemoMode } from '@/lib/demo-mode';
 import { executeDemoTrade, getDemoWallet } from '@/lib/demo-trading';
 import { StockRowSkeleton } from '@/components/skeleton';
 import { RecommendationCard } from '@/components/recommendation-card';
+import { RealTradeGate } from '@/components/real-trade-gate';
 
 function MiniHistoryChart({ points, colors }: { points: PricePoint[]; colors: ThemeColors }) {
   const sample = useMemo(() => {
@@ -114,7 +115,7 @@ export default function StockDetailScreen() {
       <View style={[styles.priceCard, { backgroundColor: colors.backgroundElement }]}><View style={styles.titleLine}><View style={[styles.marketBadge, { backgroundColor: colors.backgroundSelected }]}><Text style={[styles.marketBadgeText, { color: colors.textSecondary }]}>{symbol.market ?? 'TSETMC'}</Text></View><View style={{ alignItems: 'flex-end', flex: 1 }}><Text style={[styles.symbol, { color: colors.text }]}>{symbol.symbol}</Text><Text style={[styles.company, { color: colors.textSecondary }]}>{symbol.name}</Text></View></View><View style={styles.priceLine}><Text style={[styles.price, { color: colors.text }]}>{livePrice === null ? '—' : formatPrice(livePrice)}</Text><Text style={[styles.unit, { color: colors.textSecondary }]}>ریال</Text></View>{pct !== null ? <Text style={[styles.change, { color: up ? Brand.stockGreen : Brand.negative }]}>{up ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}٪</Text> : <Text style={[styles.noQuote, { color: colors.textSecondary }]}>قیمت زنده از TSETMC روی این دستگاه دریافت نشد.</Text>}</View>
       <MiniHistoryChart points={history} colors={colors} />
       <View style={[styles.table, { backgroundColor: colors.backgroundElement }]}><Row label="آخرین قیمت" value={`${formatPrice(item.lastPrice)} ریال`} colors={colors} /><Row label="قیمت پایانی" value={`${formatPrice(item.closingPrice)} ریال`} colors={colors} /><Row label="قیمت دیروز" value={`${formatPrice(item.yesterdayPrice)} ریال`} colors={colors} /><Row label="شناسه بازار" value={symbol.code} colors={colors} /><Row label="بازار" value={symbol.market ?? 'در حال تطبیق با TSETMC'} colors={colors} /></View>
-      {demo && livePrice ? <DemoTradePanel symbol={symbol.symbol || symbol.code} price={livePrice} colors={colors} /> : demo ? <View style={[styles.stateCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stateText, { color: colors.textSecondary }]}>برای خرید و فروش دمو باید ابتدا قیمت معتبر TSETMC دریافت شود.</Text></View> : null}
+      {demo && livePrice ? <DemoTradePanel symbol={symbol.symbol || symbol.code} price={livePrice} colors={colors} /> : demo ? <View style={[styles.stateCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stateText, { color: colors.textSecondary }]}>برای خرید و فروش دمو باید ابتدا قیمت معتبر TSETMC دریافت شود.</Text></View> : <RealTradeGate colors={colors} />}
       {rec ? <RecommendationCard rec={rec} colors={colors} /> : <View style={[styles.stateCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stateText, { color: colors.textSecondary }]}>تحلیل کیا‌شا برای این نماد فعلاً دریافت نشد. قیمت، نمودار و معامله دمو مستقل از تحلیل کیا‌شا هستند.</Text></View>}
       <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>قیمت و تاریخچه از TSETMC؛ مقدار ناموجود ساخته نمی‌شود.</Text>
     </> : null}
