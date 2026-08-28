@@ -1,9 +1,11 @@
 """Read-only API routes for real Kiasha/agent performance observations."""
 
+import os
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from audit_store import AuditStore
 from auth import require_user_id
 from kiasha_ai import analyze as analyze_with_ai, status as kiasha_ai_status
 from kiasha_paper import evaluate_ai_paper_proposal
@@ -14,7 +16,9 @@ from symbol_universe import SymbolUniverseUnavailable, query_symbols
 
 router = APIRouter(prefix="/performance", tags=["performance"])
 STORE = PerformanceStore()
+AUDIT_STORE = AuditStore()
 AGENTS = ("fundamental", "risk", "forecast", "comparison")
+DEFAULT_PAPER_INITIAL_CASH = float(os.getenv("KIASHA_PAPER_INITIAL_CASH", "100000000"))
 
 
 def _agent_payload(agent: str) -> dict:
@@ -40,6 +44,30 @@ def _agent_payload(agent: str) -> dict:
         "trustReady": stats.evaluated_calls >= MIN_OBSERVED_SAMPLES,
         "minimumObservedSamples": MIN_OBSERVED_SAMPLES,
     }
+
+
+def _server_paper_account(user_id: str) -> dict:
+    return AUDIT_STORE.ensure_paper_account(
+        user_id=str(user_id),
+        initial_cash=DEFAULT_PAPER_INITIAL_CASH,
+    )
+
+
+def _paper_sizing_capital(account: dict) -> float:
+    """Server-owned sizing base. Positions use persisted cost basis, never client input."""
+    invested_cost = sum(
+        float(position["quantity"]) * float(position["avgCost"])
+        for position in account.get("positions", [])
+    )
+    return float(account["cashBalance"]) + invested_cost
+
+
+def _paper_symbol_position(account: dict, code: str) -> float:
+    target = code.strip().upper()
+    for position in account.get("positions", []):
+        if str(position.get("code") or "").strip().upper() == target:
+            return float(position.get("quantity") or 0)
+    return 0.0
 
 
 @router.get("/agents")
@@ -100,20 +128,48 @@ def ai_analyze(
     }
 
 
+@router.get("/ai/paper-account")
+def ai_paper_account(user_id: str = Depends(require_user_id)):
+    """Return server-owned Paper capital/positions; no mutation or execution."""
+    account = _server_paper_account(user_id)
+    return {
+        "account": account,
+        "sizingCapital": _paper_sizing_capital(account),
+        "serverOwned": True,
+        "paperExecutionEnabled": False,
+        "liveExecution": False,
+    }
+
+
+@router.get("/ai/paper-decisions")
+def ai_paper_decisions(
+    limit: int = Query(default=50, ge=1, le=200),
+    user_id: str = Depends(require_user_id),
+):
+    """Authenticated immutable decision history for the current user."""
+    return {
+        "items": AUDIT_STORE.list_kiasha_ai_decisions(user_id=str(user_id), limit=limit),
+        "paperExecutionEnabled": False,
+        "liveExecution": False,
+    }
+
+
 @router.post("/ai/paper-dry-run/{code}")
 def ai_paper_dry_run(
     code: str,
     horizon: Literal["short", "long"] = Query(default="short"),
-    portfolio_value: float = Query(default=100_000_000.0, gt=0, le=100_000_000_000_000.0),
-    _user_id: str = Depends(require_user_id),
+    user_id: str = Depends(require_user_id),
 ):
-    """Run Claude then the deterministic Paper risk gate without any fill.
+    """Run Claude then deterministic Paper risk checks without any fill.
 
-    ``portfolio_value`` is hypothetical sizing input for this dry-run endpoint;
-    it is not treated as a verified brokerage balance. The function always calls
-    the gate with ``execute=False``, so neither PaperBroker nor any live broker
-    receives an order.
+    Sizing comes exclusively from the authenticated user's server-owned Paper
+    account. Client-supplied balances are not accepted. The gate is always
+    called with execute=False, so neither PaperBroker nor a live broker can fill.
+    Every resulting proposal/risk decision is persisted before returning.
     """
+    user_id = str(user_id)
+    account = _server_paper_account(user_id)
+    sizing_capital = _paper_sizing_capital(account)
     proposal = _run_ai_analysis(code, horizon)
 
     reference_price = None
@@ -130,19 +186,32 @@ def ai_paper_dry_run(
 
     result = evaluate_ai_paper_proposal(
         proposal,
-        portfolio_value=portfolio_value,
+        portfolio_value=sizing_capital,
         reference_price=reference_price,
+        current_symbol_position=_paper_symbol_position(account, code),
         execute=False,
     )
     payload = result.to_dict()
     payload.update({
         "dryRun": True,
-        "hypotheticalPortfolioValue": portfolio_value,
+        "serverPaperSizingCapital": sizing_capital,
         "referencePrice": reference_price,
         "referencePriceSource": reference_source,
         "paperExecution": False,
         "liveExecution": False,
     })
+    decision_id = AUDIT_STORE.save_kiasha_ai_decision(
+        user_id=user_id,
+        code=code,
+        horizon=horizon,
+        proposal=proposal.to_dict(),
+        risk=result.risk,
+        result=payload,
+        reference_price=reference_price,
+        reference_source=reference_source,
+        dry_run=True,
+    )
+    payload["decisionId"] = decision_id
     return payload
 
 
