@@ -31,9 +31,14 @@ export type PaperPortfolio = {
   demo?: boolean;
 };
 
+const PAPER_QUOTE_TIMEOUT_MS = 40_000;
+
 async function enrichPositions(base: Array<{ code: string; quantity: number; averageCost: number | null }>): Promise<PaperPosition[]> {
+  // The verified recommendation/market path can take ~25-30s when TSETMC is
+  // degraded on the VPS. A 6s timeout made valid Paper positions look unpriced.
+  // Keep requests parallel, but give the shared verified backend enough time.
   return Promise.all(base.map(async (p) => {
-    const rec = await fetchRecommendation(p.code, 6_000);
+    const rec = await fetchRecommendation(p.code, PAPER_QUOTE_TIMEOUT_MS);
     const currentPrice = rec?.livePrice?.lastPrice ?? rec?.livePrice?.closingPrice ?? null;
     const costBasis = p.averageCost === null ? null : p.averageCost * p.quantity;
     const marketValue = currentPrice === null ? null : currentPrice * p.quantity;
