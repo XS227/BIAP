@@ -1,0 +1,18 @@
+[Unit]
+Description=BIAP Kiasha Paper Auto Invest one-shot runner
+After=network-online.target biap-fin.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/biap-kiasha/XS227-BIAP/analysis
+EnvironmentFile=/home/ubuntu/biap-kiasha/XS227-BIAP/analysis/.env.ai
+EnvironmentFile=/home/ubuntu/BIAP/analysis/.env.broker
+Environment=KIASHA_PAPER_EXECUTION_ENABLED=true
+Environment=KIASHA_AUTO_INVEST_RUNNER_ENABLED=true
+Environment=LIVE_TRADING_ENABLED=false
+ExecStart=/home/ubuntu/biap-kiasha/XS227-BIAP/analysis/.venv/bin/python /home/ubuntu/biap-kiasha/XS227-BIAP/analysis/run_kiasha_auto_invest.py
+
+[Install]
+WantedBy=multi-user.target
