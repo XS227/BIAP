@@ -1,289 +1,99 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  useColorScheme,
-  SafeAreaView,
-  RefreshControl,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, useColorScheme, SafeAreaView, RefreshControl } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { Colors, Brand, Fonts, Spacing, BottomTabInset, ThemeColors } from '@/constants/theme';
-import { fetchWatchlist, fetchRecommendation, formatPrice, parsePct, Recommendation, StockItem } from '@/lib/api';
+import { Colors, Brand, Fonts, Spacing, BottomTabInset } from '@/constants/theme';
+import { fetchSymbols, fetchRecommendation, formatPrice, parsePct, Recommendation, StockItem, MarketSymbolResult } from '@/lib/api';
+import { fetchTsetmcQuote } from '@/lib/market-quote';
 import { StockRowSkeleton } from '@/components/skeleton';
 import { RecommendationCard } from '@/components/recommendation-card';
-
-function BackButton({ colors }: { colors: ThemeColors }) {
-  return (
-    <Pressable
-      onPress={() => router.back()}
-      style={({ pressed }) => [
-        backStyles.btn,
-        { backgroundColor: colors.backgroundElement, opacity: pressed ? 0.7 : 1 },
-      ]}
-    >
-      <Text style={[backStyles.arrow, { color: colors.text }]}>←</Text>
-      <Text style={[backStyles.label, { color: colors.text }]}>بازگشت</Text>
-    </Pressable>
-  );
-}
-const backStyles = StyleSheet.create({
-  btn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.two,
-    alignSelf: 'flex-end',
-  },
-  arrow: { fontSize: 18 },
-  label: { fontFamily: Fonts.sans, fontSize: 14 },
-});
-
-function PriceCard({
-  item,
-  colors,
-}: {
-  item: StockItem;
-  colors: ThemeColors;
-}) {
-  const pct = parsePct(item.changePercent);
-  const up = pct >= 0;
-  const accent = up ? Brand.stockGreen : Brand.negative;
-  const diff = (item.closingPrice ?? 0) - (item.yesterdayPrice ?? 0);
-
-  return (
-    <View style={[cardStyles.wrap, { backgroundColor: colors.backgroundElement }]}>
-      <Text style={[cardStyles.name, { color: colors.text }]}>{item.name}</Text>
-      <Text style={[cardStyles.code, { color: colors.textSecondary }]}>{item.code}</Text>
-
-      <View style={cardStyles.priceRow}>
-        <Text style={[cardStyles.price, { color: colors.text }]}>
-          {formatPrice(item.closingPrice)}
-        </Text>
-        <Text style={[cardStyles.unit, { color: colors.textSecondary }]}>ریال</Text>
-      </View>
-
-      <View style={[cardStyles.badge, { backgroundColor: up ? '#1a3d2b' : '#3d1a1a' }]}>
-        <Text style={[cardStyles.pct, { color: accent }]}>
-          {up ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}٪
-        </Text>
-        <Text style={[cardStyles.diffText, { color: accent }]}>
-          ({diff >= 0 ? '+' : ''}{formatPrice(diff)} ریال)
-        </Text>
-      </View>
-    </View>
-  );
-}
-const cardStyles = StyleSheet.create({
-  wrap: { borderRadius: Spacing.three, padding: Spacing.four, alignItems: 'flex-end', gap: Spacing.two },
-  name: { fontSize: 24, fontFamily: Fonts.sans },
-  code: { fontSize: 12, fontFamily: Fonts.mono },
-  priceRow: { flexDirection: 'row-reverse', alignItems: 'baseline', gap: 6 },
-  price: { fontSize: 32, fontFamily: Fonts.mono, fontWeight: '700' },
-  unit: { fontSize: 14, fontFamily: Fonts.sans },
-  badge: { flexDirection: 'row-reverse', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one, borderRadius: Spacing.five },
-  pct: { fontSize: 16, fontFamily: Fonts.mono, fontWeight: '700' },
-  diffText: { fontSize: 14, fontFamily: Fonts.mono },
-});
-
-function InfoRow({ label, value, accent, colors }: { label: string; value: string; accent?: string; colors: ThemeColors }) {
-  return (
-    <View style={[infoStyles.row, { borderBottomColor: colors.backgroundSelected }]}>
-      <Text style={[infoStyles.val, { color: accent ?? colors.text }]}>{value}</Text>
-      <Text style={[infoStyles.lbl, { color: colors.textSecondary }]}>{label}</Text>
-    </View>
-  );
-}
-const infoStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: Spacing.three,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  lbl: { fontFamily: Fonts.sans, fontSize: 14 },
-  val: { fontFamily: Fonts.mono, fontSize: 15, fontWeight: '700' },
-});
-
-function MiniBarChart({ item, colors }: { item: StockItem; colors: ThemeColors }) {
-  const prices = [
-    { label: 'دیروز', value: item.yesterdayPrice ?? 0 },
-    { label: 'پایانی', value: item.closingPrice ?? 0 },
-    { label: 'آخرین', value: item.lastPrice ?? 0 },
-  ];
-  const max = Math.max(...prices.map((p) => p.value));
-  const pct = parsePct(item.changePercent);
-  const up = pct >= 0;
-
-  return (
-    <View style={[chartStyles.wrap, { backgroundColor: colors.backgroundElement }]}>
-      <Text style={[chartStyles.title, { color: colors.text }]}>مقایسه قیمت</Text>
-      <View style={chartStyles.bars}>
-        {prices.map((p) => (
-          <View key={p.label} style={chartStyles.col}>
-            <Text style={[chartStyles.val, { color: colors.textSecondary }]}>
-              {(p.value / 1000).toFixed(0)}K
-            </Text>
-            <View style={chartStyles.track}>
-              <View
-                style={[
-                  chartStyles.bar,
-                  {
-                    height: `${max > 0 ? (p.value / max) * 100 : 4}%`,
-                    backgroundColor: p.label === 'دیروز'
-                      ? colors.textSecondary
-                      : up ? Brand.stockGreen : Brand.negative,
-                  },
-                ]}
-              />
-            </View>
-            <Text style={[chartStyles.lbl, { color: colors.text }]}>{p.label}</Text>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-const chartStyles = StyleSheet.create({
-  wrap: { borderRadius: Spacing.two, padding: Spacing.three, marginTop: Spacing.three },
-  title: { fontFamily: Fonts.sans, fontSize: 15, textAlign: 'right', marginBottom: Spacing.three },
-  bars: { flexDirection: 'row-reverse', alignItems: 'flex-end', height: 120, gap: Spacing.three },
-  col: { flex: 1, alignItems: 'center', height: '100%' },
-  track: { flex: 1, width: '100%', justifyContent: 'flex-end', alignItems: 'center' },
-  bar: { width: '60%', borderRadius: 4, minHeight: 4 },
-  val: { fontFamily: Fonts.mono, fontSize: 10, marginBottom: 4 },
-  lbl: { fontFamily: Fonts.sans, fontSize: 12, marginTop: 6 },
-});
 
 export default function StockDetailScreen() {
   const { code } = useLocalSearchParams<{ code: string }>();
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
-
+  const [symbol, setSymbol] = useState<MarketSymbolResult | null>(null);
   const [item, setItem] = useState<StockItem | null>(null);
   const [rec, setRec] = useState<Recommendation | null>(null);
   const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   const load = useCallback(async () => {
+    if (!code) return;
     try {
-      const all = await fetchWatchlist();
-      const found = all.find((s) => s.code === code) ?? null;
-      setItem(found);
-      setNotFound(found === null);
-      if (found) {
-        // Additive and best-effort: the recommendation endpoint may not be
-        // deployed yet, fetchRecommendation resolves to null rather than
-        // throwing, and the rest of the screen doesn't wait on it.
-        fetchRecommendation(found.code).then(setRec);
-      } else {
+      const candidates = await fetchSymbols({ q: code, limit: 30 });
+      const found = candidates.find((s) => s.code === code) ?? candidates.find((s) => s.symbol === code) ?? null;
+      setSymbol(found);
+      if (!found) {
+        setNotFound(true);
+        setItem(null);
         setRec(null);
+        return;
       }
-    } catch {
-      // keep previous item if refresh fails
+      setNotFound(false);
+      const [quote, recommendation] = await Promise.all([
+        fetchTsetmcQuote(found),
+        fetchRecommendation(found.code),
+      ]);
+      setItem(quote.error ? { name: found.symbol || found.name, code: found.code } : quote);
+      setRec(recommendation);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, [code]);
 
-  useEffect(() => {
-    load();
-    const interval = setInterval(load, 30_000);
-    return () => clearInterval(interval);
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
-  const pct = item ? parsePct(item.changePercent) : 0;
-  const up = pct >= 0;
-  const accent = up ? Brand.stockGreen : Brand.negative;
+  const pct = item?.changePercent !== undefined ? parsePct(item.changePercent) : null;
+  const up = (pct ?? 0) >= 0;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={Brand.stockGreen} />
-        }
-      >
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={Brand.stockGreen} />}>
         <View style={styles.header}>
-          <BackButton colors={colors} />
+          <Pressable onPress={() => router.back()} style={[styles.back, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.backText, { color: colors.text }]}>← بازگشت</Text></Pressable>
           <Text style={[styles.headerLabel, { color: colors.textSecondary }]}>جزئیات نماد</Text>
         </View>
 
-        {loading ? (
-          <View style={{ paddingTop: Spacing.two }}>
-            {[1, 2, 3].map((i) => <StockRowSkeleton key={i} />)}
+        {loading ? <View>{[1,2,3].map(i => <StockRowSkeleton key={i} />)}</View> : null}
+
+        {!loading && notFound ? <View style={[styles.stateCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stateTitle, { color: colors.text }]}>نماد یافت نشد</Text><Text style={[styles.stateText, { color: colors.textSecondary }]}>این نماد در فهرست کل بازار TSE/IFB پیدا نشد.</Text></View> : null}
+
+        {!loading && symbol && item ? <>
+          <View style={[styles.priceCard, { backgroundColor: colors.backgroundElement }]}>
+            <View style={styles.titleLine}><View style={[styles.marketBadge, { backgroundColor: colors.backgroundSelected }]}><Text style={[styles.marketBadgeText, { color: colors.textSecondary }]}>{symbol.market ?? '—'}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.symbol, { color: colors.text }]}>{symbol.symbol}</Text><Text style={[styles.company, { color: colors.textSecondary }]}>{symbol.name}</Text></View></View>
+            <View style={styles.priceLine}><Text style={[styles.price, { color: colors.text }]}>{formatPrice(item.lastPrice ?? item.closingPrice)}</Text><Text style={[styles.unit, { color: colors.textSecondary }]}>ریال</Text></View>
+            {pct !== null ? <Text style={[styles.change, { color: up ? Brand.stockGreen : Brand.negative }]}>{up ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}٪</Text> : <Text style={[styles.noQuote, { color: colors.textSecondary }]}>قیمت زنده برای این نماد در این لحظه در دسترس نیست.</Text>}
           </View>
-        ) : notFound ? (
-          <View style={styles.center}>
-            <Text style={[styles.notFoundTitle, { color: colors.text }]}>نماد یافت نشد</Text>
-            <Text style={[styles.notFoundSub, { color: colors.textSecondary }]}>
-              این نماد در watchlist شما وجود ندارد
-            </Text>
-            <Pressable
-              onPress={() => router.back()}
-              style={[styles.notFoundBtn, { backgroundColor: colors.backgroundElement }]}
-            >
-              <Text style={[styles.notFoundBtnText, { color: colors.text }]}>← بازگشت</Text>
-            </Pressable>
+
+          <View style={[styles.table, { backgroundColor: colors.backgroundElement }]}>
+            <Row label="آخرین قیمت" value={`${formatPrice(item.lastPrice)} ریال`} colors={colors} />
+            <Row label="قیمت پایانی" value={`${formatPrice(item.closingPrice)} ریال`} colors={colors} />
+            <Row label="قیمت دیروز" value={`${formatPrice(item.yesterdayPrice)} ریال`} colors={colors} />
+            <Row label="کد TSETMC" value={symbol.code} colors={colors} />
+            <Row label="بازار" value={symbol.market ?? '—'} colors={colors} />
           </View>
-        ) : item ? (
-          <>
-            <PriceCard item={item} colors={colors} />
 
-            <MiniBarChart item={item} colors={colors} />
-
-            {/* Details table */}
-            <View style={[styles.table, { backgroundColor: colors.backgroundElement }]}>
-              <Text style={[styles.tableTitle, { color: colors.text }]}>اطلاعات بازار</Text>
-              <InfoRow label="قیمت پایانی"   value={`${formatPrice(item.closingPrice)} ریال`}   accent={colors.text} colors={colors} />
-              <InfoRow label="آخرین قیمت"    value={`${formatPrice(item.lastPrice)} ریال`}      accent={colors.text} colors={colors} />
-              <InfoRow label="قیمت دیروز"    value={`${formatPrice(item.yesterdayPrice)} ریال`} colors={colors} />
-              <InfoRow label="تغییر"          value={`${item.change ?? 0}`}                      colors={colors} />
-              <InfoRow
-                label="درصد تغییر"
-                value={`${up ? '▲' : '▼'} ${Math.abs(pct).toFixed(2)}٪`}
-                accent={accent}
-                colors={colors}
-              />
-              <InfoRow label="کد نماد" value={item.code} colors={colors} />
-            </View>
-
-            {rec ? <RecommendationCard rec={rec} colors={colors} /> : null}
-
-            {/* Disclaimer */}
-            <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>
-              داده‌ها از TSETMC · هر ۳۰ ثانیه به‌روز می‌شود
-            </Text>
-          </>
-        ) : null}
+          {rec ? <RecommendationCard rec={rec} colors={colors} /> : <View style={[styles.stateCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stateText, { color: colors.textSecondary }]}>تحلیل کیا‌شا برای این نماد فعلاً دریافت نشد؛ قیمت بازار مستقل از تحلیل نمایش داده می‌شود.</Text></View>}
+          <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>فهرست بازار و قیمت از TSETMC؛ مقدار ناموجود ساخته نمی‌شود.</Text>
+        </> : null}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+function Row({ label, value, colors }: { label: string; value: string; colors: typeof Colors.dark }) {
+  return <View style={[styles.row, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.rowValue, { color: colors.text }]}>{value}</Text><Text style={[styles.rowLabel, { color: colors.textSecondary }]}>{label}</Text></View>;
+}
+
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  content: { paddingHorizontal: Spacing.three },
-  header: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: Spacing.three,
-  },
-  headerLabel: { fontFamily: Fonts.sans, fontSize: 13 },
-  center: { alignItems: 'center', marginTop: Spacing.six, gap: Spacing.two },
-  notFoundTitle: { fontFamily: Fonts.sans, fontSize: 20 },
-  notFoundSub: { fontFamily: Fonts.sans, fontSize: 14, textAlign: 'center', paddingHorizontal: Spacing.four },
-  notFoundBtn: { marginTop: Spacing.three, paddingHorizontal: Spacing.four, paddingVertical: Spacing.two, borderRadius: Spacing.two },
-  notFoundBtnText: { fontFamily: Fonts.sans, fontSize: 15 },
-  table: { borderRadius: Spacing.two, padding: Spacing.three, marginTop: Spacing.three },
-  tableTitle: { fontFamily: Fonts.sans, fontSize: 15, textAlign: 'right', marginBottom: Spacing.two },
-  disclaimer: { fontFamily: Fonts.sans, fontSize: 11, textAlign: 'center', marginTop: Spacing.three },
+  safe: { flex: 1 }, content: { paddingHorizontal: Spacing.three },
+  header: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', paddingVertical: Spacing.three },
+  back: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, borderRadius: Spacing.two }, backText: { fontFamily: Fonts.sans, fontSize: 13 }, headerLabel: { fontFamily: Fonts.sans, fontSize: 12 },
+  priceCard: { borderRadius: Spacing.three, padding: Spacing.four, alignItems: 'flex-end' }, titleLine: { width: '100%', flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' },
+  marketBadge: { borderRadius: 13, paddingHorizontal: 9, paddingVertical: 5 }, marketBadgeText: { fontFamily: Fonts.mono, fontSize: 9 }, symbol: { fontFamily: Fonts.sans, fontSize: 24, fontWeight: '800' }, company: { fontFamily: Fonts.sans, fontSize: 11, marginTop: 3, textAlign: 'right' },
+  priceLine: { flexDirection: 'row-reverse', alignItems: 'baseline', gap: 6, marginTop: Spacing.three }, price: { fontFamily: Fonts.mono, fontSize: 31, fontWeight: '800' }, unit: { fontFamily: Fonts.sans, fontSize: 12 }, change: { fontFamily: Fonts.mono, fontSize: 15, fontWeight: '800', marginTop: 5 }, noQuote: { fontFamily: Fonts.sans, fontSize: 11, marginTop: Spacing.two },
+  table: { borderRadius: Spacing.two, paddingHorizontal: Spacing.three, marginTop: Spacing.three }, row: { flexDirection: 'row-reverse', justifyContent: 'space-between', paddingVertical: Spacing.three, borderBottomWidth: StyleSheet.hairlineWidth }, rowLabel: { fontFamily: Fonts.sans, fontSize: 12 }, rowValue: { fontFamily: Fonts.mono, fontSize: 12, fontWeight: '700', maxWidth: '65%' },
+  stateCard: { borderRadius: Spacing.three, padding: Spacing.four, alignItems: 'center', marginTop: Spacing.three }, stateTitle: { fontFamily: Fonts.sans, fontSize: 17, fontWeight: '800' }, stateText: { fontFamily: Fonts.sans, fontSize: 12, lineHeight: 20, textAlign: 'center' }, disclaimer: { fontFamily: Fonts.sans, fontSize: 10.5, textAlign: 'center', marginVertical: Spacing.three },
 });
