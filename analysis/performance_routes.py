@@ -4,11 +4,13 @@ import os
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from audit_store import AuditStore
 from auth import require_user_id
 from execution import submit_order_intent
 from kiasha_ai import analyze as analyze_with_ai, status as kiasha_ai_status
+from kiasha_auto_invest import auto_status, run_user_auto_invest, update_auto_settings
 from kiasha_paper import evaluate_ai_paper_proposal
 from market_data import MarketDataUnavailable, find_quote
 from paper_execution_store import PaperExecutionStore
@@ -22,6 +24,12 @@ AUDIT_STORE = AuditStore()
 PAPER_EXECUTION_STORE = PaperExecutionStore()
 AGENTS = ("fundamental", "risk", "forecast", "comparison")
 DEFAULT_PAPER_INITIAL_CASH = float(os.getenv("KIASHA_PAPER_INITIAL_CASH", "100000000"))
+
+
+class AutoInvestSettingsRequest(BaseModel):
+    enabled: bool
+    horizon: Literal["short", "long"] = "short"
+    maxDailyTrades: int = Field(default=1, ge=1, le=3)
 
 
 def _paper_execution_enabled() -> bool:
@@ -121,6 +129,36 @@ def ai_status():
     payload = kiasha_ai_status()
     payload["paperExecutionEnabled"] = _paper_execution_enabled()
     return payload
+
+
+@router.get("/ai/auto-invest")
+def ai_auto_invest_status(user_id: str = Depends(require_user_id)):
+    """Return this user's server-owned Paper Auto Invest settings/status."""
+    return auto_status(str(user_id))
+
+
+@router.put("/ai/auto-invest")
+def ai_auto_invest_update(
+    req: AutoInvestSettingsRequest,
+    user_id: str = Depends(require_user_id),
+):
+    """Explicitly arm/disarm Paper Auto Invest for the authenticated user."""
+    return update_auto_settings(
+        str(user_id),
+        enabled=req.enabled,
+        horizon=req.horizon,
+        max_daily_trades=req.maxDailyTrades,
+    )
+
+
+@router.post("/ai/auto-invest/run-now")
+def ai_auto_invest_run_now(user_id: str = Depends(require_user_id)):
+    """Manually trigger the authenticated user's Paper agent for verification.
+
+    This bypasses the daily time window, but never bypasses the user's enabled
+    switch or the global Paper execution safety flag. It cannot reach live trading.
+    """
+    return run_user_auto_invest(str(user_id), force=True)
 
 
 def _run_ai_analysis(code: str, horizon: Literal["short", "long"]):
