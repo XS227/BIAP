@@ -45,12 +45,14 @@ async function enrichPositions(base: Array<{ code: string; quantity: number; ave
 
 function summarize(positions: PaperPosition[], extra?: Partial<PaperPortfolio>): PaperPortfolio {
   const priced = positions.filter((p) => p.marketValue !== null);
-  const totalMarketValue = priced.reduce((s, p) => s + (p.marketValue ?? 0), 0);
+  const allPositionsPriced = priced.length === positions.length;
+  const pricedMarketValue = priced.reduce((s, p) => s + (p.marketValue ?? 0), 0);
+  const totalMarketValue = allPositionsPriced ? pricedMarketValue : null;
   const costed = positions.filter((p) => p.costBasis !== null);
   const totalCostBasis = costed.length === positions.length ? costed.reduce((s, p) => s + (p.costBasis ?? 0), 0) : null;
-  const totalUnrealizedPnL = totalCostBasis !== null ? totalMarketValue - totalCostBasis : null;
+  const totalUnrealizedPnL = allPositionsPriced && totalCostBasis !== null ? pricedMarketValue - totalCostBasis : null;
   const totalUnrealizedPnLPct = totalUnrealizedPnL !== null && totalCostBasis && totalCostBasis > 0 ? (totalUnrealizedPnL / totalCostBasis) * 100 : null;
-  const weighted = positions.map((p) => ({ ...p, weightPct: totalMarketValue > 0 && p.marketValue !== null ? (p.marketValue / totalMarketValue) * 100 : null }));
+  const weighted = positions.map((p) => ({ ...p, weightPct: pricedMarketValue > 0 && p.marketValue !== null ? (p.marketValue / pricedMarketValue) * 100 : null }));
   return {
     positions: weighted.sort((a, b) => (b.marketValue ?? -1) - (a.marketValue ?? -1)),
     totalMarketValue,
