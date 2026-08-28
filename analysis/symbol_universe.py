@@ -216,12 +216,6 @@ def _fetch_legacy_universe(*, timeout: float) -> list[MarketSymbol]:
 
 
 def _looks_like_ticker(symbol: str) -> bool:
-    """Keep CODAL fallback focused on ticker-like issuer symbols.
-
-    CODAL's company directory also contains long project/issuer names. Those
-    rows are valid disclosures but are not useful as exchange instruments in
-    the mobile Market tab. TSETMC remains authoritative whenever reachable.
-    """
     value = " ".join(symbol.split())
     if not value or len(value) > 16 or value.count(" ") > 3:
         return False
@@ -230,25 +224,59 @@ def _looks_like_ticker(symbol: str) -> bool:
     return bool(re.search(r"[\u0600-\u06FFA-Za-z0-9]", value))
 
 
+def _relaxed_codal_symbol(symbol: str) -> bool:
+    """Safety net used only when the strict CODAL ticker filter is too sparse.
+
+    This keeps the market usable on hosts where TSETMC is blocked, while still
+    excluding obvious disclosure/project titles. No market metadata or prices
+    are invented; rows remain source=codal until individually resolved to TSETMC.
+    """
+    value = " ".join(symbol.split())
+    if not value or len(value) > 28 or value.count(" ") > 5:
+        return False
+    if any(ch in value for ch in "/\\,:;()[]{}"):
+        return False
+    return bool(re.search(r"[\u0600-\u06FFA-Za-z0-9]", value))
+
+
+def _codal_item(row: dict) -> Optional[MarketSymbol]:
+    symbol = str(row.get("sy") or "").strip()
+    if not symbol:
+        return None
+    name = str(row.get("n") or symbol).strip()
+    return MarketSymbol(
+        code=symbol,
+        symbol=symbol,
+        name=name,
+        market=None,
+        flow=None,
+        industry_code=None,
+        paper_type=None,
+        source="codal",
+    )
+
+
 def _fetch_codal_universe() -> list[MarketSymbol]:
     """Verified issuer-directory fallback; TSETMC-only fields stay unknown."""
-    items: list[MarketSymbol] = []
-    for row in list_companies():
-        symbol = str(row.get("sy") or "").strip()
-        if not _looks_like_ticker(symbol):
+    rows = list_companies()
+    strict: list[MarketSymbol] = []
+    relaxed: list[MarketSymbol] = []
+    for row in rows:
+        item = _codal_item(row)
+        if item is None:
             continue
-        name = str(row.get("n") or symbol).strip()
-        items.append(MarketSymbol(
-            code=symbol,
-            symbol=symbol,
-            name=name,
-            market=None,
-            flow=None,
-            industry_code=None,
-            paper_type=None,
-            source="codal",
-        ))
-    return _dedupe_sort(items)
+        if _looks_like_ticker(item.symbol):
+            strict.append(item)
+        elif _relaxed_codal_symbol(item.symbol):
+            relaxed.append(item)
+
+    # A healthy CODAL directory should yield hundreds of ticker-like entries.
+    # If upstream formatting changes and the strict filter suddenly removes
+    # almost everything, preserve availability instead of returning an empty
+    # market tab. Strict rows stay first; relaxed rows only fill the safety net.
+    if len(strict) >= 100:
+        return _dedupe_sort(strict)
+    return _dedupe_sort(strict + relaxed)
 
 
 _cache: tuple[float, list[MarketSymbol]] | None = None
