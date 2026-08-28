@@ -45,6 +45,8 @@ update `TASKS.md` before and after doing project work.**
 
 ## Agent work log
 
+`[DONE] Consolidate mobile WIP + orders.tsx backend migration — owner: Claude session + manual completion — result: search.tsx integrated; obsolete local order-history removed; orders.tsx now reads authenticated real /audit/orders backend; mobile TypeScript check passed with npx tsc --noEmit; implementation commit a8f6724. Remaining: on-device Expo review.
+
 `[DONE] Reconcile P2 item 4 (real auth) — owner: Claude session — since: 2026-08-27 — scope/result:` No code
 change needed — verified real JWT-based authentication for `/orders/*`/`/audit/*`
 (`analysis/auth.py`, commit `8bf693f`) was already implemented and deployed
