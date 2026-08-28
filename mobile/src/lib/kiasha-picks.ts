@@ -24,9 +24,18 @@ export type KiashaPicksResult = {
   generatedAt: string;
 };
 
-// Keep today's scan stable for normal navigation, while pull-to-refresh can
-// explicitly rescan. No fabricated BUY is inserted when fewer than three real
-// candidates qualify.
+// These are discovery seeds only: real Iranian ticker labels, never prices,
+// scores or recommendations. Each one must still resolve through BIAP and pass
+// the same live/CODAL verification below before it can appear as a pick. This
+// keeps discovery useful when the VPS can only obtain CODAL's issuer directory.
+const VERIFIED_DISCOVERY_SEEDS = [
+  'فولاد', 'فملی', 'فخوز', 'ذوب', 'کگل', 'کچاد', 'شستا', 'فارس',
+  'شپنا', 'شبندر', 'شتران', 'نوری', 'بوعلی', 'پارسان', 'تاپیکو', 'وغدیر',
+  'وبملت', 'وتجارت', 'وبصادر', 'وپاسار', 'خودرو', 'خساپا', 'خگستر', 'خزامیا',
+  'حکشتی', 'رمپنا', 'اخابر', 'همراه', 'مبین', 'جم', 'زاگرس', 'مارون',
+  'شپدیس', 'کرماشا', 'شیراز', 'خراسان', 'دماوند', 'بترانس',
+] as const;
+
 const CACHE_TTL_MS = 15 * 60_000;
 const cache = new Map<InvestmentHorizon, { at: number; value: KiashaPicksResult }>();
 
@@ -42,10 +51,6 @@ function uniqCandidates(items: MarketSymbolResult[]): MarketSymbolResult[] {
   return out;
 }
 
-// CODAL's issuer directory is a verified fallback, but it also contains legal
-// entity/project names that are not exchange tickers. Prefer compact ticker-like
-// symbols before spending recommendation requests. This is ranking only: every
-// accepted pick still has to resolve to real BIAP/TSETMC/CODAL data below.
 function tickerPriority(item: MarketSymbolResult): number {
   const value = (item.symbol || item.code || '').trim().replace(/\s+/g, ' ');
   if (!value) return -100;
@@ -107,18 +112,21 @@ export async function fetchKiashaTopPicks(
 
   const [watchlist, universe] = await Promise.all([
     fetchWatchlist(4_000).catch(() => []),
-    // Pull a wider verified fallback universe, then rank compact ticker-like
-    // symbols locally. The previous first-80 alphabetical CODAL slice was often
-    // dominated by issuer names and never reached real tickers such as فولاد.
-    fetchMarketSymbols({ limit: 500 }).catch(() => []),
+    fetchMarketSymbols({ limit: 1200 }).catch(() => []),
   ]);
+
+  const seedCandidates: MarketSymbolResult[] = VERIFIED_DISCOVERY_SEEDS.map((symbol) => ({
+    code: symbol,
+    symbol,
+    name: symbol,
+    market: null,
+  }));
   const watchCandidates: MarketSymbolResult[] = watchlist.map((x) => ({ code: x.code, symbol: x.name || x.code, name: x.name || x.code, market: null }));
-  const scanLimit = Math.max(24, Math.min(options.scanLimit ?? 64, 96));
-  const candidates = prioritizeCandidates(uniqCandidates([...watchCandidates, ...universe])).slice(0, scanLimit);
+  const dynamicCandidates = prioritizeCandidates(uniqCandidates(universe));
+  const scanLimit = Math.max(48, Math.min(options.scanLimit ?? 64, 96));
+  const candidates = uniqCandidates([...seedCandidates, ...watchCandidates, ...dynamicCandidates]).slice(0, scanLimit);
 
   const recs: Array<{ candidate: MarketSymbolResult; rec: Recommendation } | null> = [];
-  // Bounded batches avoid hammering FIN/TSETMC while still scanning a useful
-  // cross-section of the real universe for three daily candidates.
   for (let i = 0; i < candidates.length; i += 8) {
     const chunk = candidates.slice(i, i + 8);
     const batch = await Promise.all(chunk.map(async (candidate) => {
@@ -132,9 +140,9 @@ export async function fetchKiashaTopPicks(
   const ranked = verified.map(({ candidate, rec }) => {
     const price = rec.livePrice?.lastPrice ?? rec.livePrice?.closingPrice ?? null;
     return {
-      symbol: rec.code || candidate.symbol,
-      name: rec.name || candidate.name || candidate.symbol,
-      code: candidate.code,
+      symbol: candidate.symbol || rec.code,
+      name: rec.name && rec.name !== rec.code ? rec.name : (candidate.name || candidate.symbol),
+      code: rec.code || candidate.code,
       horizon,
       score: rank(rec, horizon),
       source: rec.dataSource === 'live' ? 'live' as const : 'codal' as const,
