@@ -42,6 +42,33 @@ function uniqCandidates(items: MarketSymbolResult[]): MarketSymbolResult[] {
   return out;
 }
 
+// CODAL's issuer directory is a verified fallback, but it also contains legal
+// entity/project names that are not exchange tickers. Prefer compact ticker-like
+// symbols before spending recommendation requests. This is ranking only: every
+// accepted pick still has to resolve to real BIAP/TSETMC/CODAL data below.
+function tickerPriority(item: MarketSymbolResult): number {
+  const value = (item.symbol || item.code || '').trim().replace(/\s+/g, ' ');
+  if (!value) return -100;
+  const spaces = (value.match(/ /g) || []).length;
+  const hasPersian = /[\u0600-\u06FF]/.test(value);
+  const hasLatin = /[A-Za-z]/.test(value);
+  let score = 0;
+  if (spaces === 0) score += 8;
+  else if (spaces === 1) score += 3;
+  else score -= spaces * 3;
+  if (value.length <= 8) score += 6;
+  else if (value.length <= 12) score += 3;
+  else if (value.length > 18) score -= 8;
+  if (hasPersian) score += 3;
+  if (hasLatin) score -= 2;
+  if (item.market) score += 10;
+  return score;
+}
+
+function prioritizeCandidates(items: MarketSymbolResult[]): MarketSymbolResult[] {
+  return [...items].sort((a, b) => tickerPriority(b) - tickerPriority(a));
+}
+
 function entry(rec: Recommendation, agent: string) { return rec.breakdown.find((x) => x.agent === agent); }
 
 function rank(rec: Recommendation, horizon: InvestmentHorizon): number {
@@ -80,11 +107,14 @@ export async function fetchKiashaTopPicks(
 
   const [watchlist, universe] = await Promise.all([
     fetchWatchlist(4_000).catch(() => []),
-    fetchMarketSymbols({ limit: 80 }).catch(() => []),
+    // Pull a wider verified fallback universe, then rank compact ticker-like
+    // symbols locally. The previous first-80 alphabetical CODAL slice was often
+    // dominated by issuer names and never reached real tickers such as فولاد.
+    fetchMarketSymbols({ limit: 500 }).catch(() => []),
   ]);
   const watchCandidates: MarketSymbolResult[] = watchlist.map((x) => ({ code: x.code, symbol: x.name || x.code, name: x.name || x.code, market: null }));
-  const scanLimit = Math.max(12, Math.min(options.scanLimit ?? 36, 48));
-  const candidates = uniqCandidates([...watchCandidates, ...universe]).slice(0, scanLimit);
+  const scanLimit = Math.max(24, Math.min(options.scanLimit ?? 64, 96));
+  const candidates = prioritizeCandidates(uniqCandidates([...watchCandidates, ...universe])).slice(0, scanLimit);
 
   const recs: Array<{ candidate: MarketSymbolResult; rec: Recommendation } | null> = [];
   // Bounded batches avoid hammering FIN/TSETMC while still scanning a useful
