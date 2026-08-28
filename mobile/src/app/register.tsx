@@ -1,218 +1,30 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  Image,
-  TextInput,
-  Pressable,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  ActivityIndicator,
-  useColorScheme,
-} from 'react-native';
+import { View, Text, Image, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, useColorScheme } from 'react-native';
 import { router } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, Radius, BiapLogo } from '@/constants/theme';
 import { API_BASE } from '@/lib/api';
+import { setDemoMode } from '@/lib/demo-mode';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Presentational only -- there's no entitlement/credits backend yet to
-// enforce or track this against, so it's shown as a welcome offer, not a
-// live, decrementing counter.
 function FreeAnalysisCard() {
-  return (
-    <View style={[promoStyles.card, { backgroundColor: Brand.secondary }]}>
-      <View style={promoStyles.row}>
-        <View style={promoStyles.badge}>
-          <Text style={promoStyles.badgeText}>✓</Text>
-        </View>
-        <Text style={{ fontSize: 26 }}>🎁</Text>
-      </View>
-      <Text style={promoStyles.title}>۵ تحلیل رایگان</Text>
-      <Text style={promoStyles.body}>پس از ثبت‌نام، ۵ تحلیل رایگان از عامل هوشمند کیاشا دریافت کنید.</Text>
-    </View>
-  );
+  return <View style={[promoStyles.card, { backgroundColor: Brand.secondary }]}><View style={promoStyles.row}><View style={promoStyles.badge}><Text style={promoStyles.badgeText}>✓</Text></View><Text style={{ fontSize: 26 }}>🎁</Text></View><Text style={promoStyles.title}>۵ تحلیل رایگان</Text><Text style={promoStyles.body}>پس از ثبت‌نام، ۵ تحلیل رایگان از عامل هوشمند کیاشا دریافت کنید.</Text></View>;
 }
-const promoStyles = StyleSheet.create({
-  card: { width: '100%', borderRadius: Radius.lg, padding: Spacing.four, alignItems: 'flex-end', gap: 6, marginBottom: Spacing.three },
-  row: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', width: '100%' },
-  badge: { width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
-  badgeText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  title: { color: '#fff', fontSize: 18, fontFamily: Fonts.sans, fontWeight: '700' },
-  body: { color: 'rgba(255,255,255,0.9)', fontSize: 13, fontFamily: Fonts.sans, textAlign: 'right', lineHeight: 20 },
-});
+const promoStyles = StyleSheet.create({ card: { width: '100%', borderRadius: Radius.lg, padding: Spacing.four, alignItems: 'flex-end', gap: 6, marginBottom: Spacing.three }, row: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', width: '100%' }, badge: { width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' }, badgeText: { color: '#fff', fontSize: 13, fontWeight: '700' }, title: { color: '#fff', fontSize: 18, fontFamily: Fonts.sans, fontWeight: '700' }, body: { color: 'rgba(255,255,255,0.9)', fontSize: 13, fontFamily: Fonts.sans, textAlign: 'right', lineHeight: 20 } });
 
 type Props = { onLogin?: () => void };
-
 export default function RegisterScreen({ onLogin }: Props) {
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const colors = Colors[scheme];
-
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [success, setSuccess] = useState(false);
-
-  const validate = (): string | null => {
-    if (!name.trim()) return 'نام را وارد کنید';
-    if (!email.trim()) return 'ایمیل را وارد کنید';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'ایمیل معتبر وارد کنید';
-    if (password.length < 8) return 'رمز عبور باید حداقل ۸ کاراکتر باشد';
-    if (password !== confirm) return 'رمز عبور و تکرار آن یکسان نیستند';
-    return null;
-  };
-
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light'; const colors = Colors[scheme];
+  const [name, setName] = useState(''); const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [confirm, setConfirm] = useState(''); const [loading, setLoading] = useState(false); const [errorMsg, setErrorMsg] = useState(''); const [success, setSuccess] = useState(false);
+  const validate = (): string | null => { if (!name.trim()) return 'نام را وارد کنید'; if (!email.trim()) return 'ایمیل را وارد کنید'; if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'ایمیل معتبر وارد کنید'; if (password.length < 8) return 'رمز عبور باید حداقل ۸ کاراکتر باشد'; if (password !== confirm) return 'رمز عبور و تکرار آن یکسان نیستند'; return null; };
   const handleRegister = async () => {
-    const err = validate();
-    if (err) { setErrorMsg(err); return; }
-    setErrorMsg('');
-    setLoading(true);
+    const err = validate(); if (err) { setErrorMsg(err); return; } setErrorMsg(''); setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/auth/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fullName: name.trim(),
-          email: email.trim().toLowerCase(),
-          password,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setErrorMsg(data.error ?? 'خطا در ثبت‌نام');
-        return;
-      }
-      // The live signup endpoint returns an access token, so keep registration
-      // and login on the same AsyncStorage contract used by lib/api.ts.
-      if (data.accessToken) {
-        await AsyncStorage.setItem('accessToken', data.accessToken);
-        if (data.user) await AsyncStorage.setItem('user', JSON.stringify(data.user));
-        onLogin?.();
-      } else {
-        setSuccess(true);
-      }
-    } catch {
-      setErrorMsg('اتصال به سرور برقرار نشد');
-    } finally {
-      setLoading(false);
-    }
+      const res = await fetch(`${API_BASE}/auth/signup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName: name.trim(), email: email.trim().toLowerCase(), password }) });
+      const data = await res.json(); if (!res.ok) { setErrorMsg(data.error ?? 'خطا در ثبت‌نام'); return; }
+      if (data.accessToken) { await AsyncStorage.setItem('accessToken', data.accessToken); if (data.user) await AsyncStorage.setItem('user', JSON.stringify(data.user)); await setDemoMode(false); onLogin?.(); } else setSuccess(true);
+    } catch { setErrorMsg('اتصال به سرور برقرار نشد'); } finally { setLoading(false); }
   };
-
-  if (success) {
-    return (
-      <View style={[styles.container, styles.successWrap, { backgroundColor: colors.background }]}>
-        <Image source={BiapLogo} style={styles.logo} resizeMode="contain" />
-        <Text style={[styles.successTitle, { color: colors.text }]}>ثبت‌نام موفق!</Text>
-        <Text style={[styles.successSub, { color: colors.textSecondary }]}>
-          حساب شما ایجاد شد. اکنون می‌توانید وارد شوید.
-        </Text>
-        <FreeAnalysisCard />
-        <Pressable
-          style={[styles.button, { backgroundColor: Brand.primary }]}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.buttonText}>ورود به حساب</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
-  return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <Image source={BiapLogo} style={styles.logo} resizeMode="contain" />
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          ایجاد حساب کاربری جدید
-        </Text>
-
-        <View style={{ height: 20 }} />
-        <FreeAnalysisCard />
-        <View style={{ height: 8 }} />
-
-        <TextInput
-          placeholder="نام و نام خانوادگی"
-          placeholderTextColor={colors.textSecondary}
-          value={name}
-          onChangeText={setName}
-          style={[styles.input, { color: colors.text, backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}
-          textAlign="right"
-        />
-        <TextInput
-          placeholder="ایمیل"
-          placeholderTextColor={colors.textSecondary}
-          value={email}
-          onChangeText={setEmail}
-          style={[styles.input, { color: colors.text, backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          textAlign="right"
-        />
-        <TextInput
-          placeholder="رمز عبور (حداقل ۸ کاراکتر)"
-          placeholderTextColor={colors.textSecondary}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          style={[styles.input, { color: colors.text, backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}
-          textAlign="right"
-        />
-        <TextInput
-          placeholder="تکرار رمز عبور"
-          placeholderTextColor={colors.textSecondary}
-          value={confirm}
-          onChangeText={setConfirm}
-          secureTextEntry
-          style={[styles.input, { color: colors.text, backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}
-          textAlign="right"
-        />
-
-        {errorMsg ? (
-          <Text style={styles.error}>{errorMsg}</Text>
-        ) : null}
-
-        <Pressable
-          style={[styles.button, { backgroundColor: Brand.primary, opacity: loading ? 0.7 : 1 }]}
-          onPress={handleRegister}
-          disabled={loading}
-        >
-          {loading
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.buttonText}>ثبت‌نام</Text>
-          }
-        </Pressable>
-
-        <Pressable onPress={() => router.back()} style={{ marginTop: Spacing.three }}>
-          <Text style={[styles.link, { color: colors.textSecondary }]}>
-            حساب دارید؟ وارد شوید
-          </Text>
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
-  );
+  if (success) return <View style={[styles.container, styles.successWrap, { backgroundColor: colors.background }]}><Image source={BiapLogo} style={styles.logo} resizeMode="contain" /><Text style={[styles.successTitle, { color: colors.text }]}>ثبت‌نام موفق!</Text><Text style={[styles.successSub, { color: colors.textSecondary }]}>حساب شما ایجاد شد. اکنون می‌توانید وارد شوید.</Text><FreeAnalysisCard /><Pressable style={[styles.button, { backgroundColor: Brand.primary }]} onPress={() => router.back()}><Text style={styles.buttonText}>ورود به حساب</Text></Pressable></View>;
+  return <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}><Image source={BiapLogo} style={styles.logo} resizeMode="contain" /><Text style={[styles.subtitle, { color: colors.textSecondary }]}>ایجاد حساب کاربری جدید</Text><View style={{ height: 20 }} /><FreeAnalysisCard /><View style={{ height: 8 }} /><TextInput placeholder="نام و نام خانوادگی" placeholderTextColor={colors.textSecondary} value={name} onChangeText={setName} style={[styles.input, { color: colors.text, backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]} textAlign="right" /><TextInput placeholder="ایمیل" placeholderTextColor={colors.textSecondary} value={email} onChangeText={setEmail} style={[styles.input, { color: colors.text, backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]} keyboardType="email-address" autoCapitalize="none" textAlign="right" /><TextInput placeholder="رمز عبور (حداقل ۸ کاراکتر)" placeholderTextColor={colors.textSecondary} value={password} onChangeText={setPassword} secureTextEntry style={[styles.input, { color: colors.text, backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]} textAlign="right" /><TextInput placeholder="تکرار رمز عبور" placeholderTextColor={colors.textSecondary} value={confirm} onChangeText={setConfirm} secureTextEntry style={[styles.input, { color: colors.text, backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]} textAlign="right" />{errorMsg ? <Text style={styles.error}>{errorMsg}</Text> : null}<Pressable style={[styles.button, { backgroundColor: Brand.primary, opacity: loading ? 0.7 : 1 }]} onPress={handleRegister} disabled={loading}>{loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>ثبت‌نام</Text>}</Pressable><Pressable onPress={() => router.back()} style={{ marginTop: Spacing.three }}><Text style={[styles.link, { color: colors.textSecondary }]}>حساب دارید؟ وارد شوید</Text></Pressable></ScrollView></KeyboardAvoidingView>;
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  successWrap: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.four, gap: Spacing.two },
-  scroll: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.four, paddingVertical: Spacing.six },
-  logo: { width: 120, height: 40 },
-  subtitle: { fontSize: 14, marginTop: 8, textAlign: 'center', fontFamily: Fonts.sans },
-  input: { width: '100%', borderWidth: 1, borderRadius: Radius.md, paddingHorizontal: Spacing.three, paddingVertical: 14, marginBottom: 14, fontSize: 16, fontFamily: Fonts.sans },
-  button: { width: '100%', borderRadius: Radius.md, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: Fonts.sans },
-  link: { fontSize: 13, fontFamily: Fonts.sans },
-  error: { color: '#E15B5B', fontSize: 13, marginBottom: 8, textAlign: 'center', fontFamily: Fonts.sans },
-  successTitle: { fontSize: 24, fontFamily: Fonts.sans, marginTop: Spacing.three },
-  successSub: { fontSize: 14, fontFamily: Fonts.sans, textAlign: 'center', marginTop: Spacing.two, paddingHorizontal: Spacing.four },
-});
+const styles = StyleSheet.create({ container: { flex: 1 }, successWrap: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.four, gap: Spacing.two }, scroll: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.four, paddingVertical: Spacing.six }, logo: { width: 120, height: 40 }, subtitle: { fontSize: 14, marginTop: 8, textAlign: 'center', fontFamily: Fonts.sans }, input: { width: '100%', borderWidth: 1, borderRadius: Radius.md, paddingHorizontal: Spacing.three, paddingVertical: 14, marginBottom: 14, fontSize: 16, fontFamily: Fonts.sans }, button: { width: '100%', borderRadius: Radius.md, paddingVertical: 16, alignItems: 'center', marginTop: 8 }, buttonText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: Fonts.sans }, link: { fontSize: 13, fontFamily: Fonts.sans }, error: { color: '#E15B5B', fontSize: 13, marginBottom: 8, textAlign: 'center', fontFamily: Fonts.sans }, successTitle: { fontSize: 24, fontFamily: Fonts.sans, marginTop: Spacing.three }, successSub: { fontSize: 14, fontFamily: Fonts.sans, textAlign: 'center', marginTop: Spacing.two, paddingHorizontal: Spacing.four } });
