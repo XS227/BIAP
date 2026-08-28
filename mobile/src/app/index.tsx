@@ -1,15 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  ScrollView,
-  RefreshControl,
-  useColorScheme,
-  SafeAreaView,
-  Pressable,
-} from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView, RefreshControl, useColorScheme, SafeAreaView, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, Radius, BottomTabInset, MaxContentWidth, ThemeColors, BiapLogo } from '@/constants/theme';
 import { fetchWatchlist, formatPrice, parsePct, StockItem } from '@/lib/api';
@@ -17,219 +7,24 @@ import { computeMarketSummary } from '@/lib/market-stats';
 import { marketStatusLabel } from '@/lib/market-hours';
 import { StockRowSkeleton } from '@/components/skeleton';
 
-function Avatar({ colors }: { colors: ThemeColors }) {
-  return (
-    <Pressable onPress={() => router.push('/more')} style={[avatarStyles.circle, { backgroundColor: Brand.primary }]}>
-      <Text style={avatarStyles.text}>؟</Text>
-    </Pressable>
-  );
-}
-const avatarStyles = StyleSheet.create({
-  circle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  text: { color: '#fff', fontSize: 15, fontWeight: '700' },
-});
-
-function StatChip({ label, value, accent, colors }: { label: string; value: string; accent?: string; colors: ThemeColors }) {
-  return (
-    <View style={[chipStyles.wrap, { backgroundColor: colors.backgroundElement }]}>
-      <Text style={[chipStyles.value, { color: accent ?? colors.text }]}>{value}</Text>
-      <Text style={[chipStyles.label, { color: colors.textSecondary }]}>{label}</Text>
-    </View>
-  );
-}
-const chipStyles = StyleSheet.create({
-  wrap: { flex: 1, borderRadius: Radius.md, padding: Spacing.three, alignItems: 'center', gap: 4 },
-  value: { fontSize: 17, fontFamily: Fonts.mono, fontWeight: '700' },
-  label: { fontSize: 11, fontFamily: Fonts.sans, textAlign: 'center' },
-});
-
-function WatchRow({ item, colors }: { item: StockItem; colors: ThemeColors }) {
-  const pct = parsePct(item.changePercent);
-  const up = pct >= 0;
-  return (
-    <Pressable
-      onPress={() => router.push(`/stock/${item.code}`)}
-      style={({ pressed }) => [rowStyles.row, { backgroundColor: colors.backgroundElement, opacity: pressed ? 0.75 : 1 }]}
-    >
-      <View style={rowStyles.left}>
-        <View style={[rowStyles.dot, { backgroundColor: up ? Brand.positive : Brand.negative }]} />
-        <Text style={[rowStyles.name, { color: colors.text }]}>{item.name}</Text>
-      </View>
-      <View style={rowStyles.right}>
-        <Text style={[rowStyles.price, { color: colors.text }]}>{formatPrice(item.closingPrice)}</Text>
-        <Text style={{ color: up ? Brand.positive : Brand.negative, fontSize: 12, fontFamily: Fonts.mono }}>
-          {up ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}٪
-        </Text>
-      </View>
-    </Pressable>
-  );
-}
-const rowStyles = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderRadius: Radius.sm, paddingHorizontal: Spacing.three, paddingVertical: Spacing.three, marginBottom: Spacing.two },
-  left: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  name: { fontFamily: Fonts.sans, fontSize: 15 },
-  right: { alignItems: 'flex-end', gap: 3 },
-  price: { fontFamily: Fonts.mono, fontSize: 14 },
-});
-
-type QuickNavItem = { key: string; title: string; sub: string; icon: string; accent: string; href: '/market' | '/orders' | '/portfolio' | '/kiasha' };
-
-const QUICK_NAV: QuickNavItem[] = [
-  { key: 'market', title: 'بازار', sub: 'همه نمادها', icon: '📈', accent: Brand.positive, href: '/market' },
-  { key: 'orders', title: 'سفارش‌ها', sub: 'شبیه‌سازی‌های Paper', icon: '🧾', accent: Brand.warning, href: '/orders' },
-  { key: 'portfolio', title: 'پرتفوی', sub: 'وضعیت دارایی', icon: '💼', accent: Brand.secondary, href: '/portfolio' },
-  { key: 'kiasha', title: 'کیاشا', sub: 'عامل هوشمند', icon: '🤖', accent: Brand.primary, href: '/kiasha' },
-];
-
-function QuickNavCard({ item, colors }: { item: QuickNavItem; colors: ThemeColors }) {
-  return (
-    <Pressable
-      onPress={() => router.push(item.href)}
-      style={({ pressed }) => [navStyles.card, { backgroundColor: colors.backgroundElement, opacity: pressed ? 0.8 : 1 }]}
-    >
-      <View style={[navStyles.iconWrap, { backgroundColor: `${item.accent}1F` }]}>
-        <Text style={{ fontSize: 20 }}>{item.icon}</Text>
-      </View>
-      <Text style={[navStyles.title, { color: colors.text }]}>{item.title}</Text>
-      <Text style={[navStyles.sub, { color: colors.textSecondary }]}>{item.sub}</Text>
-    </Pressable>
-  );
-}
-const navStyles = StyleSheet.create({
-  card: { flexBasis: '47%', borderRadius: Radius.md, padding: Spacing.three, alignItems: 'flex-end', gap: 4 },
-  iconWrap: { width: 40, height: 40, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  title: { fontFamily: Fonts.sans, fontSize: 15, fontWeight: '700' },
-  sub: { fontFamily: Fonts.sans, fontSize: 11 },
-});
-
+function WatchRow({ item, colors }: { item: StockItem; colors: ThemeColors }) { const pct = parsePct(item.changePercent); const up = pct >= 0; return <Pressable onPress={() => router.push(`/stock/${item.code}`)} style={({ pressed }) => [styles.watchRow, { backgroundColor: colors.backgroundElement, opacity: pressed ? .75 : 1 }]}><View style={styles.watchLeft}><View style={[styles.dot, { backgroundColor: up ? Brand.positive : Brand.negative }]} /><Text style={[styles.watchName, { color: colors.text }]}>{item.name}</Text></View><View style={styles.watchRight}><Text style={[styles.price, { color: colors.text }]}>{formatPrice(item.closingPrice)}</Text><Text style={{ color: up ? Brand.positive : Brand.negative, fontFamily: Fonts.mono, fontSize: 12 }}>{up ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}٪</Text></View></Pressable>; }
+function ProductCard({ icon, title, body, accent, onPress, colors }: { icon: string; title: string; body: string; accent: string; onPress: () => void; colors: ThemeColors }) { return <Pressable onPress={onPress} style={({ pressed }) => [styles.productCard, { backgroundColor: colors.backgroundElement, borderColor: `${accent}44`, opacity: pressed ? .78 : 1 }]}><View style={[styles.productIcon, { backgroundColor: `${accent}22` }]}><Text style={{ fontSize: 23 }}>{icon}</Text></View><View style={{ flex: 1, alignItems: 'flex-end' }}><Text style={[styles.productTitle, { color: colors.text }]}>{title}</Text><Text style={[styles.productBody, { color: colors.textSecondary }]}>{body}</Text></View></Pressable>; }
 export default function HomeScreen() {
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const colors = Colors[scheme];
-  const [data, setData] = useState<StockItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(false);
-  const marketStatus = marketStatusLabel();
-
-  const load = useCallback(async () => {
-    try {
-      setError(false);
-      const symbols = await fetchWatchlist();
-      setData(symbols);
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-    const interval = setInterval(load, 30_000);
-    return () => clearInterval(interval);
-  }, [load]);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    load();
-  };
-
-  const summary = useMemo(() => computeMarketSummary(data), [data]);
-  const preview = data.slice(0, 5);
-  const avgUp = summary.avgChange >= 0;
-
-  return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Brand.primary} />}
-      >
-        <View style={{ maxWidth: MaxContentWidth, width: '100%', alignSelf: 'center' }}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Avatar colors={colors} />
-            <Image source={BiapLogo} style={styles.logo} resizeMode="contain" />
-            <Pressable onPress={() => router.push('/search')} style={[styles.searchBtn, { backgroundColor: colors.backgroundElement }]}>
-              <Text style={{ fontSize: 16 }}>🔍</Text>
-            </Pressable>
-          </View>
-
-          <View style={[styles.marketPill, { backgroundColor: marketStatus.open ? '#123d2b' : colors.backgroundElement, alignSelf: 'flex-end' }]}>
-            <View style={[styles.marketDot, { backgroundColor: marketStatus.open ? Brand.positive : colors.textSecondary }]} />
-            <Text style={[styles.marketLabel, { color: marketStatus.open ? Brand.positive : colors.textSecondary }]}>
-              {marketStatus.label}
-            </Text>
-          </View>
-
-          {error ? (
-            <View style={[styles.errorBox, { backgroundColor: colors.backgroundElement }]}>
-              <Text style={{ color: colors.textSecondary, textAlign: 'right', fontFamily: Fonts.sans }}>
-                دریافت داده با خطا مواجه شد. برای تلاش دوباره پایین را بکشید.
-              </Text>
-            </View>
-          ) : null}
-
-          {!loading && data.length > 0 ? (
-            <>
-              {/* Honest watchlist-derived summary -- not the official TSE index */}
-              <View style={styles.statsRow}>
-                <StatChip
-                  label="میانگین تغییر دیده‌بان"
-                  value={`${avgUp ? '▲' : '▼'} ${Math.abs(summary.avgChange).toFixed(2)}٪`}
-                  accent={avgUp ? Brand.positive : Brand.negative}
-                  colors={colors}
-                />
-                <StatChip label="تعداد نمادها" value={String(summary.total)} colors={colors} />
-                <StatChip label="مثبت / منفی" value={`${summary.gainers} / ${summary.losers}`} accent={Brand.primary} colors={colors} />
-              </View>
-
-              {/* Watchlist preview */}
-              <View style={styles.sectionHead}>
-                <Pressable onPress={() => router.push('/market')}>
-                  <Text style={[styles.sectionLink, { color: Brand.primary }]}>مشاهده همه ←</Text>
-                </Pressable>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>دیده‌بان من</Text>
-              </View>
-              {preview.map((item) => (
-                <WatchRow key={item.code} item={item} colors={colors} />
-              ))}
-            </>
-          ) : null}
-
-          {loading ? (
-            <View style={{ marginTop: Spacing.two }}>
-              {[1, 2, 3].map((i) => <StockRowSkeleton key={i} />)}
-            </View>
-          ) : null}
-
-          {/* Quick nav */}
-          <Text style={[styles.sectionTitle, { color: colors.text, marginTop: Spacing.four }]}>دسترسی سریع</Text>
-          <View style={styles.navGrid}>
-            {QUICK_NAV.map((item) => (
-              <QuickNavCard key={item.key} item={item} colors={colors} />
-            ))}
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light'; const colors = Colors[scheme]; const [data, setData] = useState<StockItem[]>([]); const [loading, setLoading] = useState(true); const [refreshing, setRefreshing] = useState(false); const [error, setError] = useState(false); const marketStatus = marketStatusLabel();
+  const load = useCallback(async () => { try { setError(false); setData(await fetchWatchlist()); } catch { setError(true); } finally { setLoading(false); setRefreshing(false); } }, []);
+  useEffect(() => { load(); const interval = setInterval(load, 30_000); return () => clearInterval(interval); }, [load]);
+  const summary = useMemo(() => computeMarketSummary(data), [data]); const preview = data.slice(0, 3);
+  return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={Brand.primary} />}><View style={styles.maxWidth}>
+    <View style={styles.header}><Pressable onPress={() => router.push('/more')} style={[styles.avatar, { backgroundColor: Brand.primary }]}><Text style={styles.avatarText}>؟</Text></Pressable><Image source={BiapLogo} style={styles.logo} resizeMode="contain" /><Pressable onPress={() => router.push('/search')} style={[styles.search, { backgroundColor: colors.backgroundElement }]}><Text>🔍</Text></Pressable></View>
+    <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}><Text style={styles.eyebrow}>BIAP • Business & Investment Analysis Platform</Text><Text style={[styles.heroTitle, { color: colors.text }]}>سرمایه‌گذاری، تحلیل داده و رشد کسب‌وکار</Text><Text style={[styles.heroBody, { color: colors.textSecondary }]}>کیاشا برای بازار سرمایه؛ ابزارهای تحلیلی و مدیریتی برای داده و کسب‌وکار، همه در یک اپ.</Text><Pressable onPress={() => router.push('/modules' as never)} style={[styles.heroButton, { backgroundColor: Brand.primary }]}><Text style={styles.heroButtonText}>مشاهده همه ماژول‌ها</Text></Pressable></View>
+    <Text style={[styles.sectionTitle, { color: colors.text }]}>حوزه‌های BIAP</Text>
+    <ProductCard icon="🤖" title="بازار سرمایه • Kiasha" body="بازار، تحلیل نماد، پیشنهاد عامل‌ها و پرتفوی Paper" accent={Brand.positive} onPress={() => router.push('/kiasha')} colors={colors} />
+    <ProductCard icon="📊" title="تحلیل داده" body="EDA، KPI، SQL، Forecast، Anomaly و داشبورد" accent={Brand.dataViolet} onPress={() => router.push('/modules' as never)} colors={colors} />
+    <ProductCard icon="💼" title="توسعه کسب‌وکار" body="SWOT، CRM، Journey، Pricing، Business Plan و مدل مالی" accent={Brand.secondary} onPress={() => router.push('/modules' as never)} colors={colors} />
+    <View style={styles.sectionHead}><Pressable onPress={() => router.push('/market')}><Text style={{ color: Brand.primary, fontFamily: Fonts.sans }}>مشاهده بازار ←</Text></Pressable><Text style={[styles.sectionTitle, { color: colors.text }]}>نمای زنده دیده‌بان</Text></View>
+    <View style={[styles.marketPill, { backgroundColor: colors.backgroundElement }]}><Text style={{ color: marketStatus.open ? Brand.positive : colors.textSecondary, fontFamily: Fonts.sans }}>{marketStatus.label} • {summary.total ? `${summary.gainers} مثبت / ${summary.losers} منفی` : 'در انتظار داده'}</Text></View>
+    {error ? <Text style={[styles.error, { color: colors.textSecondary, backgroundColor: colors.backgroundElement }]}>دریافت داده بازار با خطا مواجه شد. برای تلاش دوباره صفحه را پایین بکشید.</Text> : null}
+    {loading ? [1,2,3].map(i => <StockRowSkeleton key={i} />) : preview.map(item => <WatchRow key={item.code} item={item} colors={colors} />)}
+  </View></ScrollView></SafeAreaView>;
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  content: { paddingHorizontal: Spacing.three, paddingTop: Spacing.three },
-  header: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.two },
-  logo: { width: 84, height: 28 },
-  searchBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  marketPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, marginBottom: Spacing.three },
-  marketDot: { width: 6, height: 6, borderRadius: 3 },
-  marketLabel: { fontSize: 12, fontFamily: Fonts.sans },
-  errorBox: { borderRadius: Radius.sm, padding: Spacing.three, marginBottom: Spacing.three },
-  statsRow: { flexDirection: 'row-reverse', gap: Spacing.two, marginBottom: Spacing.four },
-  sectionHead: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.two },
-  sectionTitle: { fontFamily: Fonts.sans, fontSize: 16, fontWeight: '700', textAlign: 'right' },
-  sectionLink: { fontFamily: Fonts.sans, fontSize: 13 },
-  navGrid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: Spacing.two, marginTop: Spacing.two },
-});
+const styles = StyleSheet.create({ safe:{flex:1}, content:{paddingHorizontal:Spacing.three,paddingTop:Spacing.three}, maxWidth:{maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'}, header:{flexDirection:'row-reverse',alignItems:'center',justifyContent:'space-between',marginBottom:Spacing.three}, avatar:{width:36,height:36,borderRadius:18,alignItems:'center',justifyContent:'center'}, avatarText:{color:'#fff',fontWeight:'800'}, logo:{width:92,height:31}, search:{width:36,height:36,borderRadius:18,alignItems:'center',justifyContent:'center'}, hero:{borderRadius:Radius.lg,padding:Spacing.four,alignItems:'flex-end',marginBottom:Spacing.four}, eyebrow:{color:'#8ab4ff',fontFamily:Fonts.mono,fontSize:9,fontWeight:'800',textAlign:'right'}, heroTitle:{fontFamily:Fonts.sans,fontSize:21,fontWeight:'800',textAlign:'right',lineHeight:32,marginTop:7}, heroBody:{fontFamily:Fonts.sans,fontSize:12,lineHeight:21,textAlign:'right',marginTop:5}, heroButton:{borderRadius:Radius.sm,paddingHorizontal:16,paddingVertical:10,marginTop:Spacing.three}, heroButtonText:{color:'#fff',fontFamily:Fonts.sans,fontSize:12,fontWeight:'800'}, sectionTitle:{fontFamily:Fonts.sans,fontSize:16,fontWeight:'800',textAlign:'right',marginBottom:Spacing.two}, productCard:{borderWidth:1,borderRadius:Radius.md,padding:Spacing.three,flexDirection:'row-reverse',alignItems:'center',gap:Spacing.three,marginBottom:Spacing.two}, productIcon:{width:48,height:48,borderRadius:Radius.sm,alignItems:'center',justifyContent:'center'}, productTitle:{fontFamily:Fonts.sans,fontSize:15,fontWeight:'800',textAlign:'right'}, productBody:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:18,textAlign:'right',marginTop:3}, sectionHead:{flexDirection:'row-reverse',alignItems:'center',justifyContent:'space-between',marginTop:Spacing.four}, marketPill:{borderRadius:Radius.sm,padding:Spacing.three,alignItems:'flex-end',marginBottom:Spacing.two}, error:{padding:Spacing.three,borderRadius:Radius.sm,textAlign:'right',fontFamily:Fonts.sans,marginBottom:Spacing.two}, watchRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',borderRadius:Radius.sm,padding:Spacing.three,marginBottom:Spacing.two}, watchLeft:{flexDirection:'row',alignItems:'center',gap:Spacing.two}, dot:{width:8,height:8,borderRadius:4}, watchName:{fontFamily:Fonts.sans,fontSize:14}, watchRight:{alignItems:'flex-end',gap:2}, price:{fontFamily:Fonts.mono,fontSize:13} });
