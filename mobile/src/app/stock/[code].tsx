@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, useColorScheme, SafeAreaView, RefreshControl } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, BottomTabInset, ThemeColors } from '@/constants/theme';
-import { fetchSymbols, fetchRecommendation, formatPrice, parsePct, Recommendation, StockItem, MarketSymbolResult } from '@/lib/api';
+import { fetchRecommendation, formatPrice, parsePct, Recommendation, StockItem, MarketSymbolResult } from '@/lib/api';
+import { fetchMarketSymbols } from '@/lib/market-symbols';
 import { fetchTsetmcQuote } from '@/lib/market-quote';
 import { StockRowSkeleton } from '@/components/skeleton';
 import { RecommendationCard } from '@/components/recommendation-card';
@@ -21,7 +22,7 @@ export default function StockDetailScreen() {
   const load = useCallback(async () => {
     if (!code) return;
     try {
-      const candidates = await fetchSymbols({ q: code, limit: 30 });
+      const candidates = await fetchMarketSymbols({ q: code, limit: 30 });
       const found = candidates.find((s) => s.code === code) ?? candidates.find((s) => s.symbol === code) ?? null;
       setSymbol(found);
       if (!found) {
