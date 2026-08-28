@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, useColorScheme, SafeAreaView, RefreshControl } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { Colors, Brand, Fonts, Spacing, BottomTabInset } from '@/constants/theme';
+import { Colors, Brand, Fonts, Spacing, BottomTabInset, ThemeColors } from '@/constants/theme';
 import { fetchSymbols, fetchRecommendation, formatPrice, parsePct, Recommendation, StockItem, MarketSymbolResult } from '@/lib/api';
 import { fetchTsetmcQuote } from '@/lib/market-quote';
 import { StockRowSkeleton } from '@/components/skeleton';
@@ -83,7 +83,7 @@ export default function StockDetailScreen() {
   );
 }
 
-function Row({ label, value, colors }: { label: string; value: string; colors: typeof Colors.dark }) {
+function Row({ label, value, colors }: { label: string; value: string; colors: ThemeColors }) {
   return <View style={[styles.row, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.rowValue, { color: colors.text }]}>{value}</Text><Text style={[styles.rowLabel, { color: colors.textSecondary }]}>{label}</Text></View>;
 }
 
