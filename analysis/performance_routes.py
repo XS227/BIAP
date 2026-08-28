@@ -36,6 +36,10 @@ def _paper_execution_enabled() -> bool:
     return os.getenv("KIASHA_PAPER_EXECUTION_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _auto_invest_runner_enabled() -> bool:
+    return os.getenv("KIASHA_AUTO_INVEST_RUNNER_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _agent_payload(agent: str) -> dict:
     stats = STORE.agent_stats(agent)
     if stats is None:
@@ -125,9 +129,11 @@ def performance_summary():
 
 @router.get("/ai/status")
 def ai_status():
-    """Safe public readiness only; never returns the API key."""
+    """Safe public readiness only; never returns the API key or user settings."""
     payload = kiasha_ai_status()
     payload["paperExecutionEnabled"] = _paper_execution_enabled()
+    payload["runnerEnabled"] = _auto_invest_runner_enabled()
+    payload["liveExecution"] = False
     return payload
 
 
