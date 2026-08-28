@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, useColorScheme, SafeAreaView, Pressable } from 'react-native';
 import { useFocusEffect, router } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, Radius, BottomTabInset, MaxContentWidth, ThemeColors } from '@/constants/theme';
-import { getLocalOrders, LocalOrderReceipt } from '@/lib/order-history';
+import { fetchOrderHistory, OrderReceipt } from '@/lib/api';
 
 const SIDE_LABEL: Record<string, string> = { BUY: 'خرید', SELL: 'فروش' };
 const STATUS_LABEL: Record<string, string> = {
@@ -17,10 +17,10 @@ function statusColor(status: string) {
   return Brand.secondary;
 }
 
-function OrderCard({ order, colors }: { order: LocalOrderReceipt; colors: ThemeColors }) {
+function OrderCard({ order, colors }: { order: OrderReceipt; colors: ThemeColors }) {
   const sideColor = order.side === 'BUY' ? Brand.positive : Brand.negative;
-  const date = new Date(order.submittedAt);
-  const dateLabel = Number.isNaN(date.getTime()) ? '' : date.toLocaleString('fa-IR');
+  const date = order.submittedAt ? new Date(order.submittedAt) : null;
+  const dateLabel = date && !Number.isNaN(date.getTime()) ? date.toLocaleString('fa-IR') : '';
 
   return (
     <Pressable
@@ -87,12 +87,18 @@ const emptyStyles = StyleSheet.create({
 export default function OrdersScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
-  const [orders, setOrders] = useState<LocalOrderReceipt[]>([]);
+  const [orders, setOrders] = useState<OrderReceipt[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
-    const items = await getLocalOrders();
-    setOrders(items);
+    const items = await fetchOrderHistory();
+    if (items === null) {
+      setError(true);
+    } else {
+      setError(false);
+      setOrders(items);
+    }
     setRefreshing(false);
   }, []);
 
@@ -119,11 +125,17 @@ export default function OrdersScreen() {
           <View style={styles.header}>
             <Text style={[styles.headerTitle, { color: colors.text }]}>سفارش‌ها</Text>
             <Text style={[styles.headerSub, { color: colors.textSecondary }]}>
-              شبیه‌سازی‌های Paper شما — فقط روی همین دستگاه ذخیره می‌شود
+              شبیه‌سازی‌های Paper شما — همگام با حساب کاربری‌تان
             </Text>
           </View>
 
-          {orders.length === 0 ? (
+          {error ? (
+            <View style={[styles.errorBox, { backgroundColor: colors.backgroundElement }]}>
+              <Text style={[styles.errorText, { color: colors.textSecondary }]}>
+                دریافت سفارش‌ها با خطا مواجه شد. برای تلاش دوباره پایین را بکشید.
+              </Text>
+            </View>
+          ) : orders.length === 0 ? (
             <EmptyState colors={colors} />
           ) : (
             orders.map((o) => <OrderCard key={o.id} order={o} colors={colors} />)
@@ -140,4 +152,6 @@ const styles = StyleSheet.create({
   header: { paddingTop: Spacing.four, paddingBottom: Spacing.three },
   headerTitle: { fontSize: 22, fontFamily: Fonts.sans, textAlign: 'right', fontWeight: '700' },
   headerSub: { fontSize: 13, fontFamily: Fonts.sans, textAlign: 'right', marginTop: 4 },
+  errorBox: { borderRadius: Radius.md, padding: Spacing.three, marginTop: Spacing.two },
+  errorText: { fontFamily: Fonts.sans, fontSize: 13, textAlign: 'right' },
 });

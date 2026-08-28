@@ -209,6 +209,79 @@ export async function submitPaperOrder(
   }
 }
 
+// --- Order history -----------------------------------------------------
+// `/audit/orders` is scoped per caller by `analysis/auth.py`'s `require_user_id`
+// (bearer token, JWT-verified when the backend is configured with the shared
+// secret) -- the same header this app already sends on every request. A
+// preview call alone also writes a row (status "SIMULATED"/"PENDING_APPROVAL",
+// no `submittedAt`) before the user ever confirms, so only rows that reached
+// `/orders/submit` (identified by having `submittedAt`) belong in the user's
+// order history.
+
+export type OrderReceipt = OrderIntent & {
+  submittedAt?: string;
+  broker?: string | null;
+  brokerOrderId?: string | null;
+  rejectionReason?: string;
+};
+
+export async function fetchOrderHistory(limit = 100, timeoutMs = 10_000): Promise<OrderReceipt[] | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const headers = await getHeaders();
+    const res = await fetch(`${KIASHA_API_BASE}/audit/orders?limit=${limit}`, {
+      headers,
+      signal: controller.signal,
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const items = Array.isArray(json?.items) ? (json.items as OrderReceipt[]) : [];
+    return items.filter((item) => Boolean(item.submittedAt));
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// --- Global symbol search -----------------------------------------------
+// Searches the full TSE/IFB/IFB_BASE universe via `/stock/symbols`, not just
+// the caller's watchlist (see `analysis/symbol_universe.py`).
+
+export type MarketSymbolResult = {
+  code: string;
+  symbol: string;
+  name: string;
+  market?: string | null;
+};
+
+export async function fetchSymbols(
+  params: { q?: string; market?: 'TSE' | 'IFB' | 'IFB_BASE'; limit?: number },
+  timeoutMs = 10_000
+): Promise<MarketSymbolResult[]> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const query = new URLSearchParams();
+    if (params.q) query.set('q', params.q);
+    if (params.market) query.set('market', params.market);
+    if (params.limit) query.set('limit', String(params.limit));
+    const headers = await getHeaders();
+    const res = await fetch(`${KIASHA_API_BASE}/stock/symbols?${query.toString()}`, {
+      headers,
+      signal: controller.signal,
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return Array.isArray(json?.items) ? (json.items as MarketSymbolResult[]) : [];
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // --- Kiasha observed performance -------------------------------------------
 // These endpoints expose only measured/evaluated recommendation outcomes.
 // Null values are kept as null in the UI; the client must not invent returns.

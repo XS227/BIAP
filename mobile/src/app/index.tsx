@@ -151,7 +151,7 @@ export default function HomeScreen() {
           <View style={styles.header}>
             <Avatar colors={colors} />
             <Image source={BiapLogo} style={styles.logo} resizeMode="contain" />
-            <Pressable onPress={() => router.push('/market')} style={[styles.searchBtn, { backgroundColor: colors.backgroundElement }]}>
+            <Pressable onPress={() => router.push('/search')} style={[styles.searchBtn, { backgroundColor: colors.backgroundElement }]}>
               <Text style={{ fontSize: 16 }}>🔍</Text>
             </Pressable>
           </View>

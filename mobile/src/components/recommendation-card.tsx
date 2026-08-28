@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { Brand, Fonts, Spacing, ThemeColors } from '@/constants/theme';
 import { Recommendation, previewPaperOrder, submitPaperOrder } from '@/lib/api';
-import { recordLocalOrder } from '@/lib/order-history';
 
 const CALL_LABEL: Record<string, string> = { BUY: 'خرید', SELL: 'فروش', HOLD: 'نگهداری' };
 const AGENT_LABEL: Record<string, string> = {
@@ -51,7 +50,6 @@ export function RecommendationCard({ rec, colors }: { rec: Recommendation; color
       setSim({ status: 'error', message: submitted.message });
       return;
     }
-    recordLocalOrder(submitted.receipt);
     if (submitted.receipt.status === 'PAPER_FILLED') {
       setSim({ status: 'filled', note: submitted.receipt.note ?? 'شبیه‌سازی انجام شد' });
     } else {
