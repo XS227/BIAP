@@ -8,13 +8,15 @@ Prioritized list of what's needed from Nasrin to unblock work on `XS227/BIAP`.
 
 ## Agent work log
 
-`[IN PROGRESS] Real-money broker integration — owner: ChatGPT session — since: 2026-08-28 — scope/status:` Defined the safe production money/order flow in `BROKER_INTEGRATION.md` and added a mobile `RealTradeGate` scaffold. BIAP must never collect card PAN/CVV/expiry/OTP or custody customer cash. Funding must be broker/approved-PSP hosted and credited to the customer's brokerage buying power; confirmed orders then go through a licensed broker API. Existing `PaperBroker` remains the only executable adapter and AUTO/live execution stays disabled. Blocker: select a licensed brokerage, obtain integration contract/API docs, sandbox credentials, hosted deposit flow and production authorization. Commits: `904b992`, `c7f46ad`.
+`[IN PROGRESS] Farabi live-trading onboarding — owner: ChatGPT session — since: 2026-08-28 — scope/status:` Selected Farabi as the first brokerage to approach. Added `docs/FARABI_LIVE_TRADING_ONBOARDING.md` with the exact partner-API, sandbox, account-linking, buying-power/portfolio, order, fill-status, hosted-funding, security and compliance requirements, plus Persian outreach text and call script. Farabi's currently published support channel is 1561 (without area code). Blocker is now external: obtain official partner/API documentation, sandbox credentials and the brokerage-hosted deposit flow. Commit: `87837ed`.
+
+`[IN PROGRESS] Real-money broker integration — owner: ChatGPT session — since: 2026-08-28 — scope/status:` Defined the safe production money/order flow in `BROKER_INTEGRATION.md` and added a mobile `RealTradeGate` scaffold. BIAP must never collect card PAN/CVV/expiry/OTP or custody customer cash. Funding must be broker/approved-PSP hosted and credited to the customer's brokerage buying power; confirmed orders then go through a licensed broker API. Existing `PaperBroker` remains the only executable adapter and AUTO/live execution stays disabled. First provider approach is Farabi; implementation waits for official integration material. Commits: `904b992`, `c7f46ad`.
 
 `[REVIEW] Connect real BIAP data into mobile module detail screens — owner: ChatGPT session — since: 2026-08-28 — scope/result:` Added `real-module-data.ts` as a grounded bridge from existing production feeds into module detail screens. Real Mode now uses authenticated BIAP watchlist prices, FIN market universe and Kiasha observed-performance for modules that can be supported today (EDA, anomaly, KPI extraction, BI dashboard, analytical report, governance, MBR, forecast-status). Unsupported SQL/CRM/business/financial modules explicitly request account-specific source data instead of showing demo values. Demo Mode remains separately labelled. Relevant commits: `c1d1452`, `33849e2`. Awaiting `npx tsc --noEmit` and Expo device review.
 
 `[REVIEW] Real-data visual pass + Kiasha weighting — owner: ChatGPT session — since: 2026-08-28 — scope/result:` Added verified company-brand metadata for a small high-traffic symbol set and a safe ticker-avatar fallback (no invented logos). Market now merges the authenticated BIAP watchlist quotes when available, while direct TSETMC remains best-effort; stock detail now tries the existing BIAP Kiasha recommendation endpoint as a server-side live-price proxy before direct TSETMC. Existing numeric demo-wallet holdings for verified instrument IDs are migrated to readable symbols (e.g. فولاد / وبملت). Portfolio shows symbol logos/fallback avatars and allocation bars. Recommendation cards now surface active normalized Kiasha agent weights and a real CODAL fundamentals mini-chart when price history is unavailable. Kiasha UI upgraded to a layered 3D-like cat identity and clarifies that decision weighting is always active: fallback track records are used until sufficient observed outcomes replace them. Awaiting Expo device review.
 
-`[TODO] Create normal Nasrin user — owner: ChatGPT session — blocker:` Production signup requires a real email and password. Need Nasrin's intended login email (password can be supplied by Nasrin or generated once explicitly approved). Account must be normal/non-demo so Demo Mode stays OFF.
+`[TODO] Create normal Nasrin user — owner: ChatGPT session — blocker:` Login email selected: `nasrin.dadashi@gmail.com`. Need to complete production signup/login verification and ensure Demo Mode remains OFF for this normal account.
 
 `[REVIEW] Kiasha playful AI + portfolio allocation UI — owner: ChatGPT session — since: 2026-08-28 — scope/result:` Updated Kiasha to a purple futuristic cat-AI identity while keeping performance numbers grounded in the real evaluator. Added portfolio allocation view and readable symbol resolution where available.
 
@@ -36,8 +38,8 @@ Prioritized list of what's needed from Nasrin to unblock work on `XS227/BIAP`.
 
 1. Pull latest `main` on `~/biap-kiasha/XS227-BIAP` and run `cd mobile && npx tsc --noEmit`.
 2. Expo device test: module hub → EDA/Dashboard/Anomaly/Governance in Real Mode; verify `LIVE` badges and real-source metrics, and an unsupported business module shows input-required/no-fake-data state.
-3. Create Nasrin's normal user after login email is provided.
-4. Choose the first licensed brokerage for real-money integration and obtain API/hosted-funding access; do not enable live order submission before this is complete.
+3. Complete Nasrin production signup/login verification for `nasrin.dadashi@gmail.com`.
+4. Contact Farabi at 1561 and ask for the technical/business unit handling official third-party trading APIs/algorithmic-trading platform integrations. Request partner API docs, sandbox/UAT credentials, account linking, buying power/portfolio, order/fill APIs and official hosted deposit/funding flow.
 
 ## Architecture notes
 
@@ -46,3 +48,4 @@ Prioritized list of what's needed from Nasrin to unblock work on `XS227/BIAP`.
 - Demo datasets and demo trades are restricted to explicit Demo Mode and are never broker executions or real financial holdings.
 - Auth/signup/login remain on the Express backend; Kiasha recommendation routes are served by the FIN service behind nginx.
 - Real-money funding must stay on broker/approved PSP infrastructure; BIAP must not custody customer cash or collect raw card credentials.
+- Live trading remains fail-closed (`LIVE_TRADING_ENABLED=false`) until a licensed broker supplies official integration material and production authorization.
