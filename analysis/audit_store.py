@@ -1,11 +1,11 @@
-"""Persistent audit storage for BIAP execution intents.
+"""Persistent audit storage for BIAP execution intents and Kiasha Paper state.
 
 Uses Python's built-in sqlite3 so the prototype gains durable state without
 adding a dependency. The database path is configurable with BIAP_AUDIT_DB.
 
-This store is intentionally broker-agnostic. It records intent snapshots and
-append-only audit events so Paper/Approval actions survive process restarts and
-can later be correlated with a real broker adapter.
+This store is intentionally broker-agnostic. It records intent snapshots,
+append-only audit events, Kiasha AI/risk decisions, and server-owned Paper
+account state so Paper sizing never has to trust a client-supplied balance.
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ import json
 import os
 import sqlite3
 from typing import Any, Optional
+from uuid import uuid4
 
 
 DEFAULT_DB_PATH = os.environ.get(
@@ -79,16 +80,49 @@ class AuditStore:
                     PRIMARY KEY (user_id, idempotency_key)
                 );
 
+                CREATE TABLE IF NOT EXISTS kiasha_ai_decisions (
+                    decision_id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    code TEXT NOT NULL,
+                    horizon TEXT NOT NULL,
+                    allowed INTEGER NOT NULL,
+                    dry_run INTEGER NOT NULL,
+                    reference_price REAL,
+                    reference_source TEXT,
+                    created_at TEXT NOT NULL,
+                    proposal_json TEXT NOT NULL,
+                    risk_json TEXT,
+                    result_json TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS paper_accounts (
+                    user_id TEXT PRIMARY KEY,
+                    initial_cash REAL NOT NULL,
+                    cash_balance REAL NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS paper_positions (
+                    user_id TEXT NOT NULL,
+                    code TEXT NOT NULL,
+                    quantity INTEGER NOT NULL,
+                    avg_cost REAL NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    PRIMARY KEY (user_id, code),
+                    FOREIGN KEY(user_id) REFERENCES paper_accounts(user_id)
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_audit_events_intent
                     ON audit_events(intent_id, seq);
                 CREATE INDEX IF NOT EXISTS idx_order_intents_created
                     ON order_intents(created_at);
+                CREATE INDEX IF NOT EXISTS idx_kiasha_ai_decisions_user
+                    ON kiasha_ai_decisions(user_id, created_at);
+                CREATE INDEX IF NOT EXISTS idx_kiasha_ai_decisions_code
+                    ON kiasha_ai_decisions(code, created_at);
                 """
             )
-            # Older databases created before ownership was added won't have
-            # these columns yet; ALTER TABLE has no "IF NOT EXISTS" so check
-            # first. Existing rows become '' (unowned/legacy), never another
-            # user's real id. Must run before the user_id indexes below.
             existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(order_intents)")}
             if "user_id" not in existing_cols:
                 conn.execute("ALTER TABLE order_intents ADD COLUMN user_id TEXT NOT NULL DEFAULT ''")
@@ -138,13 +172,6 @@ class AuditStore:
         return json.loads(row["payload_json"]) if row else None
 
     def get_intent_any_owner(self, intent_id: str) -> Optional[tuple[str, dict[str, Any]]]:
-        """Look up an intent regardless of caller ownership.
-
-        Only for the approver path (see auth.require_approver): approving an
-        order necessarily means acting on an intent owned by a *different*
-        caller than the approver, so the normal ownership-scoped get_intent
-        does not apply here.
-        """
         with self._connect() as conn:
             row = conn.execute(
                 "SELECT user_id, payload_json FROM order_intents WHERE id = ?",
@@ -214,12 +241,155 @@ class AuditStore:
             for row in rows
         ]
 
-    def list_all_intents(self, *, status: Optional[str] = None, limit: int = 200) -> list[dict[str, Any]]:
-        """Cross-user intent listing for the admin panel (see admin_routes.py).
+    def save_kiasha_ai_decision(
+        self,
+        *,
+        user_id: str,
+        code: str,
+        horizon: str,
+        proposal: dict[str, Any],
+        risk: Optional[dict[str, Any]],
+        result: dict[str, Any],
+        reference_price: Optional[float],
+        reference_source: Optional[str],
+        dry_run: bool,
+    ) -> str:
+        """Persist an immutable Claude proposal + deterministic risk decision."""
+        decision_id = f"kai_{uuid4().hex}"
+        created_at = _now_iso()
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO kiasha_ai_decisions (
+                    decision_id, user_id, code, horizon, allowed, dry_run,
+                    reference_price, reference_source, created_at,
+                    proposal_json, risk_json, result_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    decision_id,
+                    user_id,
+                    code,
+                    horizon,
+                    1 if result.get("allowed") else 0,
+                    1 if dry_run else 0,
+                    reference_price,
+                    reference_source,
+                    created_at,
+                    json.dumps(proposal, ensure_ascii=False, sort_keys=True),
+                    json.dumps(risk, ensure_ascii=False, sort_keys=True) if risk is not None else None,
+                    json.dumps(result, ensure_ascii=False, sort_keys=True),
+                ),
+            )
+            conn.execute(
+                """
+                INSERT INTO audit_events
+                    (event_id, user_id, intent_id, event_type, created_at, payload_json)
+                VALUES (?, ?, NULL, ?, ?, ?)
+                """,
+                (
+                    f"evt_{uuid4().hex}",
+                    user_id,
+                    "KIASHA_AI_PAPER_DRY_RUN" if dry_run else "KIASHA_AI_PAPER_DECISION",
+                    created_at,
+                    json.dumps({
+                        "decisionId": decision_id,
+                        "code": code,
+                        "horizon": horizon,
+                        "allowed": bool(result.get("allowed")),
+                        "referencePrice": reference_price,
+                        "referenceSource": reference_source,
+                    }, ensure_ascii=False, sort_keys=True),
+                ),
+            )
+        return decision_id
 
-        Unlike list_intents(), this is not scoped to a single caller -- only
-        reachable behind admin_auth.require_admin, never the end-user API.
-        """
+    def list_kiasha_ai_decisions(self, *, user_id: str, limit: int = 100) -> list[dict[str, Any]]:
+        limit = max(1, min(limit, 500))
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT decision_id, code, horizon, allowed, dry_run, reference_price,
+                       reference_source, created_at, proposal_json, risk_json, result_json
+                FROM kiasha_ai_decisions
+                WHERE user_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                """,
+                (user_id, limit),
+            ).fetchall()
+        return [
+            {
+                "decisionId": row["decision_id"],
+                "code": row["code"],
+                "horizon": row["horizon"],
+                "allowed": bool(row["allowed"]),
+                "dryRun": bool(row["dry_run"]),
+                "referencePrice": row["reference_price"],
+                "referencePriceSource": row["reference_source"],
+                "createdAt": row["created_at"],
+                "proposal": json.loads(row["proposal_json"]),
+                "risk": json.loads(row["risk_json"]) if row["risk_json"] else None,
+                "result": json.loads(row["result_json"]),
+            }
+            for row in rows
+        ]
+
+    def ensure_paper_account(self, *, user_id: str, initial_cash: float) -> dict[str, Any]:
+        """Create a server-owned Paper account once; caller cannot reset its cash."""
+        initial_cash = float(initial_cash)
+        if initial_cash <= 0:
+            raise ValueError("initial_cash must be positive")
+        now = _now_iso()
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO paper_accounts (user_id, initial_cash, cash_balance, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(user_id) DO NOTHING
+                """,
+                (user_id, initial_cash, initial_cash, now, now),
+            )
+        account = self.get_paper_account(user_id=user_id)
+        assert account is not None
+        return account
+
+    def get_paper_account(self, *, user_id: str) -> Optional[dict[str, Any]]:
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT user_id, initial_cash, cash_balance, created_at, updated_at
+                FROM paper_accounts WHERE user_id = ?
+                """,
+                (user_id,),
+            ).fetchone()
+            if row is None:
+                return None
+            positions = conn.execute(
+                """
+                SELECT code, quantity, avg_cost, updated_at
+                FROM paper_positions WHERE user_id = ? ORDER BY code
+                """,
+                (user_id,),
+            ).fetchall()
+        return {
+            "userId": row["user_id"],
+            "initialCash": float(row["initial_cash"]),
+            "cashBalance": float(row["cash_balance"]),
+            "positions": [
+                {
+                    "code": p["code"],
+                    "quantity": int(p["quantity"]),
+                    "avgCost": float(p["avg_cost"]),
+                    "updatedAt": p["updated_at"],
+                }
+                for p in positions
+            ],
+            "createdAt": row["created_at"],
+            "updatedAt": row["updated_at"],
+        }
+
+    def list_all_intents(self, *, status: Optional[str] = None, limit: int = 200) -> list[dict[str, Any]]:
         limit = max(1, min(limit, 1000))
         with self._connect() as conn:
             if status:
@@ -240,7 +410,6 @@ class AuditStore:
         return results
 
     def list_all_events(self, *, limit: int = 200) -> list[dict[str, Any]]:
-        """Cross-user event listing for the admin panel (see admin_routes.py)."""
         limit = max(1, min(limit, 1000))
         with self._connect() as conn:
             rows = conn.execute(
@@ -290,20 +459,9 @@ class AuditStore:
                 (user_id, idempotency_key, intent_id, json.dumps(response, ensure_ascii=False, sort_keys=True), _now_iso()),
             )
 
-    # Committed intent states: a real trading commitment exists, whether or
-    # not a broker has actually filled it yet. APPROVED must be included here
-    # -- otherwise an approval-mode intent would count toward risk limits
-    # only while PENDING_APPROVAL and then silently drop out the moment it's
-    # approved, letting serial approval-mode submissions bypass the daily
-    # notional cap entirely.
     _COMMITTED_STATUSES = ("PAPER_FILLED", "PENDING_APPROVAL", "APPROVED")
 
     def submitted_notional_today(self) -> float:
-        """Return committed-intent notional for the current UTC day.
-
-        Only intents with a limit_price can contribute to notional until a live
-        quote source is wired into the execution service.
-        """
         today_prefix = datetime.now(timezone.utc).date().isoformat() + "%"
         placeholders = ",".join("?" * len(self._COMMITTED_STATUSES))
         with self._connect() as conn:
@@ -320,14 +478,6 @@ class AuditStore:
         return float(sum(row["quantity"] * row["limit_price"] for row in rows))
 
     def symbol_net_position_today(self, code: str) -> float:
-        """Return today's net BUY-minus-SELL quantity for `code` across
-        committed intents (see _COMMITTED_STATUSES), independent of price.
-
-        This is a paper/approval-only system with no real holdings ledger,
-        so "position" here means committed order-intent quantity, not a
-        verified brokerage position -- it exists to bound how much exposure
-        a single symbol can accumulate through this system in one day.
-        """
         today_prefix = datetime.now(timezone.utc).date().isoformat() + "%"
         placeholders = ",".join("?" * len(self._COMMITTED_STATUSES))
         with self._connect() as conn:
