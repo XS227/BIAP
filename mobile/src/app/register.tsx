@@ -60,8 +60,8 @@ export default function RegisterScreen({ onLogin }: Props) {
   const validate = (): string | null => {
     if (!name.trim()) return 'نام را وارد کنید';
     if (!email.trim()) return 'ایمیل را وارد کنید';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'ایمیل معتبر وارد کنید';
-    if (password.length < 6) return 'رمز عبور باید حداقل ۶ کاراکتر باشد';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'ایمیل معتبر وارد کنید';
+    if (password.length < 8) return 'رمز عبور باید حداقل ۸ کاراکتر باشد';
     if (password !== confirm) return 'رمز عبور و تکرار آن یکسان نیستند';
     return null;
   };
@@ -72,17 +72,22 @@ export default function RegisterScreen({ onLogin }: Props) {
     setErrorMsg('');
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/auth/register`, {
+      const res = await fetch(`${API_BASE}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({
+          fullName: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
         setErrorMsg(data.error ?? 'خطا در ثبت‌نام');
         return;
       }
-      // If register returns a token, log in automatically
+      // The live signup endpoint returns an access token, so keep registration
+      // and login on the same AsyncStorage contract used by lib/api.ts.
       if (data.accessToken) {
         await AsyncStorage.setItem('accessToken', data.accessToken);
         if (data.user) await AsyncStorage.setItem('user', JSON.stringify(data.user));
@@ -154,7 +159,7 @@ export default function RegisterScreen({ onLogin }: Props) {
           textAlign="right"
         />
         <TextInput
-          placeholder="رمز عبور"
+          placeholder="رمز عبور (حداقل ۸ کاراکتر)"
           placeholderTextColor={colors.textSecondary}
           value={password}
           onChangeText={setPassword}
