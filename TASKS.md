@@ -45,6 +45,8 @@ update `TASKS.md` before and after doing project work.**
 
 ## Agent work log
 
+`[REVIEW] BIAP Mobile V2 module data layer — owner: ChatGPT session — since: 2026-08-28 — scope/result:` Implemented the unified mobile module hub plus dedicated module detail route, isolated explicit Demo Mode (`mobile/src/lib/demo-mode.ts`), curated visibly-labeled demo datasets (`mobile/src/demo/demo-data.ts`) for EDA/SQL/anomaly/forecast/KPI/BI dashboard/governance/report/SWOT/Journey/CRM/campaign/pricing/Business Plan/financial model/scenario/unit economics/MBR, and wired non-investment module cards to those pages. Real-user mode deliberately shows unavailable state instead of fake fallback values. Investment cards continue to existing real Market/Kiasha/Portfolio flows. Also implemented Paper Portfolio from authenticated submitted Paper orders + live recommendation prices when available. Relevant commits include `6846d59`, `fd1fdb0`, `74d69d1`, `975c0b8`, `f259111`, `323675f`, `4bebfa8`. Awaiting `cd mobile && npx tsc --noEmit` and on-device Expo review before DONE.
+
 `[DONE] Consolidate mobile WIP + orders.tsx backend migration — owner: Claude session + manual completion — result: search.tsx integrated; obsolete local order-history removed; orders.tsx now reads authenticated real /audit/orders backend; mobile TypeScript check passed with npx tsc --noEmit; implementation commit a8f6724. Remaining: on-device Expo review.
 
 `[DONE] Reconcile P2 item 4 (real auth) — owner: Claude session — since: 2026-08-27 — scope/result:` No code
