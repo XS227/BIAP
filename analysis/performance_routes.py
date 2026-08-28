@@ -1,15 +1,17 @@
-"""Read-only API routes for real Kiasha/agent performance observations."""
+"""Read-only performance routes plus guarded Kiasha Paper simulation APIs."""
 
 import os
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 
 from audit_store import AuditStore
 from auth import require_user_id
+from execution import submit_order_intent
 from kiasha_ai import analyze as analyze_with_ai, status as kiasha_ai_status
 from kiasha_paper import evaluate_ai_paper_proposal
 from market_data import MarketDataUnavailable, find_quote
+from paper_execution_store import PaperExecutionStore
 from performance_store import MIN_OBSERVED_SAMPLES, PerformanceStore
 from symbol_universe import SymbolUniverseUnavailable, query_symbols
 
@@ -17,8 +19,13 @@ from symbol_universe import SymbolUniverseUnavailable, query_symbols
 router = APIRouter(prefix="/performance", tags=["performance"])
 STORE = PerformanceStore()
 AUDIT_STORE = AuditStore()
+PAPER_EXECUTION_STORE = PaperExecutionStore()
 AGENTS = ("fundamental", "risk", "forecast", "comparison")
 DEFAULT_PAPER_INITIAL_CASH = float(os.getenv("KIASHA_PAPER_INITIAL_CASH", "100000000"))
+
+
+def _paper_execution_enabled() -> bool:
+    return os.getenv("KIASHA_PAPER_EXECUTION_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _agent_payload(agent: str) -> dict:
@@ -70,6 +77,19 @@ def _paper_symbol_position(account: dict, code: str) -> float:
     return 0.0
 
 
+def _verified_reference_price(code: str) -> tuple[Optional[float], Optional[str]]:
+    try:
+        quote = find_quote(code)
+    except MarketDataUnavailable:
+        quote = None
+    if quote is None:
+        return None, None
+    candidate = getattr(quote, "last_price", None) or getattr(quote, "closing_price", None)
+    if candidate is None or float(candidate) <= 0:
+        return None, None
+    return float(candidate), "verified-market-quote"
+
+
 @router.get("/agents")
 def performance_agents():
     items = [_agent_payload(agent) for agent in AGENTS]
@@ -98,7 +118,9 @@ def performance_summary():
 @router.get("/ai/status")
 def ai_status():
     """Safe public readiness only; never returns the API key."""
-    return kiasha_ai_status()
+    payload = kiasha_ai_status()
+    payload["paperExecutionEnabled"] = _paper_execution_enabled()
+    return payload
 
 
 def _run_ai_analysis(code: str, horizon: Literal["short", "long"]):
@@ -130,13 +152,13 @@ def ai_analyze(
 
 @router.get("/ai/paper-account")
 def ai_paper_account(user_id: str = Depends(require_user_id)):
-    """Return server-owned Paper capital/positions; no mutation or execution."""
+    """Return server-owned Paper capital/positions."""
     account = _server_paper_account(user_id)
     return {
         "account": account,
         "sizingCapital": _paper_sizing_capital(account),
         "serverOwned": True,
-        "paperExecutionEnabled": False,
+        "paperExecutionEnabled": _paper_execution_enabled(),
         "liveExecution": False,
     }
 
@@ -149,7 +171,7 @@ def ai_paper_decisions(
     """Authenticated immutable decision history for the current user."""
     return {
         "items": AUDIT_STORE.list_kiasha_ai_decisions(user_id=str(user_id), limit=limit),
-        "paperExecutionEnabled": False,
+        "paperExecutionEnabled": _paper_execution_enabled(),
         "liveExecution": False,
     }
 
@@ -160,29 +182,12 @@ def ai_paper_dry_run(
     horizon: Literal["short", "long"] = Query(default="short"),
     user_id: str = Depends(require_user_id),
 ):
-    """Run Claude then deterministic Paper risk checks without any fill.
-
-    Sizing comes exclusively from the authenticated user's server-owned Paper
-    account. Client-supplied balances are not accepted. The gate is always
-    called with execute=False, so neither PaperBroker nor a live broker can fill.
-    Every resulting proposal/risk decision is persisted before returning.
-    """
+    """Run Claude then deterministic Paper risk checks without any fill."""
     user_id = str(user_id)
     account = _server_paper_account(user_id)
     sizing_capital = _paper_sizing_capital(account)
     proposal = _run_ai_analysis(code, horizon)
-
-    reference_price = None
-    reference_source = None
-    try:
-        quote = find_quote(code)
-    except MarketDataUnavailable:
-        quote = None
-    if quote is not None:
-        candidate = getattr(quote, "last_price", None) or getattr(quote, "closing_price", None)
-        if candidate is not None and float(candidate) > 0:
-            reference_price = float(candidate)
-            reference_source = "verified-market-quote"
+    reference_price, reference_source = _verified_reference_price(code)
 
     result = evaluate_ai_paper_proposal(
         proposal,
@@ -215,19 +220,109 @@ def ai_paper_dry_run(
     return payload
 
 
+@router.post("/ai/paper-execute/{code}")
+def ai_paper_execute(
+    code: str,
+    horizon: Literal["short", "long"] = Query(default="short"),
+    idempotency_key: str = Header(..., alias="Idempotency-Key", min_length=8, max_length=128),
+    user_id: str = Depends(require_user_id),
+):
+    """Execute one guarded Paper-only BUY after Claude + deterministic risk checks.
+
+    This endpoint is disabled unless KIASHA_PAPER_EXECUTION_ENABLED=true. It
+    never reaches AUTO/live. A client must provide an Idempotency-Key so retries
+    cannot debit the Paper account twice.
+    """
+    if not _paper_execution_enabled():
+        raise HTTPException(status_code=503, detail="Kiasha Paper execution is disabled")
+
+    user_id = str(user_id)
+    cached = AUDIT_STORE.get_idempotent_response(user_id=user_id, idempotency_key=idempotency_key)
+    if cached is not None:
+        return cached
+
+    account = _server_paper_account(user_id)
+    sizing_capital = _paper_sizing_capital(account)
+    proposal = _run_ai_analysis(code, horizon)
+    reference_price, reference_source = _verified_reference_price(code)
+
+    result = evaluate_ai_paper_proposal(
+        proposal,
+        portfolio_value=sizing_capital,
+        reference_price=reference_price,
+        current_symbol_position=_paper_symbol_position(account, code),
+        execute=False,
+    )
+    base_payload = result.to_dict()
+    base_payload.update({
+        "dryRun": False,
+        "serverPaperSizingCapital": sizing_capital,
+        "referencePrice": reference_price,
+        "referencePriceSource": reference_source,
+        "paperExecution": False,
+        "liveExecution": False,
+    })
+
+    if not result.allowed or result.intent is None or result.risk is None:
+        decision_id = AUDIT_STORE.save_kiasha_ai_decision(
+            user_id=user_id,
+            code=code,
+            horizon=horizon,
+            proposal=proposal.to_dict(),
+            risk=result.risk,
+            result=base_payload,
+            reference_price=reference_price,
+            reference_source=reference_source,
+            dry_run=False,
+        )
+        base_payload["decisionId"] = decision_id
+        return base_payload
+
+    assert reference_price is not None and reference_source is not None
+    cost = int(result.intent["quantity"]) * float(reference_price)
+    if cost > float(account["cashBalance"]) + 1e-9:
+        base_payload["allowed"] = False
+        base_payload["reasons"] = ["insufficient Paper cash balance"]
+        base_payload["intent"] = None
+        decision_id = AUDIT_STORE.save_kiasha_ai_decision(
+            user_id=user_id,
+            code=code,
+            horizon=horizon,
+            proposal=proposal.to_dict(),
+            risk=result.risk,
+            result=base_payload,
+            reference_price=reference_price,
+            reference_source=reference_source,
+            dry_run=False,
+        )
+        base_payload["decisionId"] = decision_id
+        return base_payload
+
+    receipt = submit_order_intent(result.intent)
+    try:
+        return PAPER_EXECUTION_STORE.commit_buy_fill(
+            user_id=user_id,
+            code=code,
+            horizon=horizon,
+            proposal=proposal.to_dict(),
+            risk=result.risk,
+            intent=result.intent,
+            receipt=receipt,
+            reference_price=reference_price,
+            reference_source=reference_source,
+            idempotency_key=idempotency_key,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
 @router.get("/market-symbols")
 def market_symbols(
     market: Optional[str] = Query(default=None, description="TSE, IFB or IFB_BASE"),
     q: Optional[str] = Query(default=None, max_length=64),
     limit: int = Query(default=5000, ge=1, le=10000),
 ):
-    """Compatibility route for mobile full-market discovery.
-
-    `/api/performance/*` is already routed by production nginx to biap-fin,
-    while generic `/api/stock/symbols` may still fall through to the legacy
-    Express backend during migration. Keep the canonical `/stock/symbols`
-    route in api_server.py; this alias lets mobile work before nginx cutover.
-    """
+    """Compatibility route for mobile full-market discovery."""
     if market and market.upper() not in {"TSE", "IFB", "IFB_BASE"}:
         raise HTTPException(status_code=400, detail="market must be TSE, IFB or IFB_BASE")
     try:
