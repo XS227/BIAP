@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, useColorScheme, SafeAreaView, Pressable, ActivityIndicator, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, Radius, BottomTabInset, MaxContentWidth, ThemeColors } from '@/constants/theme';
 import { AgentPerformance, fetchKiashaPerformanceSummary, formatPrice, KiashaPerformanceSummary } from '@/lib/api';
 import { fetchKiashaTopPicks, InvestmentHorizon, KiashaPicksResult } from '@/lib/kiasha-picks';
@@ -53,7 +53,7 @@ function PickCard({ pick, colors, index }: { pick: KiashaPicksResult['picks'][nu
 
 function PaperPerformance({ portfolio, colors }: { portfolio: PaperPortfolio | null; colors: ThemeColors }) {
   const pnl = portfolio?.totalUnrealizedPnLPct ?? null;
-  const equity = portfolio ? (portfolio.cash ?? 0) + (portfolio.totalMarketValue ?? 0) : null;
+  const equity = portfolio && portfolio.totalMarketValue !== null ? (portfolio.cash ?? 0) + portfolio.totalMarketValue : null;
   return <View style={[styles.paperCard, { backgroundColor: colors.backgroundElement }]}>
     <View style={styles.paperHead}><Text style={styles.paperBadge}>PAPER</Text><Text style={[styles.paperTitle, { color: colors.text }]}>حساب Paper کیا‌شا</Text></View>
     <View style={styles.paperBalanceRow}><View style={styles.paperBalance}><Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>قدرت خرید / نقد</Text><Text style={[styles.balanceValue, { color: Brand.primary }]}>{money(portfolio?.cash)} ریال</Text></View><View style={styles.paperBalance}><Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>ارزش کل Paper</Text><Text style={[styles.balanceValue, { color: colors.text }]}>{money(equity)} ریال</Text></View></View>
@@ -74,9 +74,9 @@ export default function KiashaScreen() {
   const [picksLoading, setPicksLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadBase = useCallback(async () => { const [p, portfolio] = await Promise.all([fetchKiashaPerformanceSummary(6_000), fetchPaperPortfolio()]); setPerformance(p); setPaper(portfolio); }, []);
+  const loadBase = useCallback(async () => { const [p, portfolio] = await Promise.all([fetchKiashaPerformanceSummary(6_000), fetchPaperPortfolio()]); setPerformance(p); setPaper(portfolio); setLoading(false); }, []);
   const loadPicks = useCallback(async (force = false) => { setPicksLoading(true); try { setPicks(await fetchKiashaTopPicks(horizon, { force, scanLimit: 36 })); } finally { setPicksLoading(false); } }, [horizon]);
-  useEffect(() => { let mounted = true; (async () => { try { await loadBase(); } finally { if (mounted) setLoading(false); } })(); return () => { mounted = false; }; }, [loadBase]);
+  useFocusEffect(useCallback(() => { loadBase(); }, [loadBase]));
   useEffect(() => { loadPicks(false); }, [loadPicks]);
   const refresh = async () => { setRefreshing(true); await Promise.all([loadBase(), loadPicks(true)]); setRefreshing(false); };
 
