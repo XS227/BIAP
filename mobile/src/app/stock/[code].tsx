@@ -33,6 +33,27 @@ function MiniHistoryChart({ points, colors }: { points: PricePoint[]; colors: Th
   );
 }
 
+function quoteFromRecommendation(rec: Recommendation | null, fallback: MarketSymbolResult): StockItem | null {
+  const live = rec?.livePrice;
+  if (!live) return null;
+  const lastPrice = live.lastPrice == null ? undefined : Number(live.lastPrice);
+  const closingPrice = live.closingPrice == null ? undefined : Number(live.closingPrice);
+  const yesterdayPrice = live.yesterdayPrice == null ? undefined : Number(live.yesterdayPrice);
+  if (!Number.isFinite(lastPrice) && !Number.isFinite(closingPrice)) return null;
+  const effective = Number.isFinite(lastPrice) ? lastPrice : closingPrice;
+  const change = Number.isFinite(effective) && Number.isFinite(yesterdayPrice) ? Number(effective) - Number(yesterdayPrice) : undefined;
+  const changePercent = live.changePercent == null ? (change !== undefined && yesterdayPrice ? (change / yesterdayPrice) * 100 : undefined) : Number(live.changePercent);
+  return {
+    name: rec?.name || fallback.name,
+    code: rec?.code || fallback.code,
+    lastPrice: Number.isFinite(lastPrice) ? lastPrice : undefined,
+    closingPrice: Number.isFinite(closingPrice) ? closingPrice : undefined,
+    yesterdayPrice: Number.isFinite(yesterdayPrice) ? yesterdayPrice : undefined,
+    change,
+    changePercent,
+  };
+}
+
 function DemoTradePanel({ symbol, price, colors }: { symbol: string; price: number; colors: ThemeColors }) {
   const [cash, setCash] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(0);
@@ -88,17 +109,28 @@ export default function StockDetailScreen() {
       const found = candidates.find((s) => s.code === code)
         ?? candidates.find((s) => s.symbol === code)
         ?? { code, symbol: code, name: code, market: null };
-      setSymbol(found);
-      const [quote, recommendation, points, demoMode] = await Promise.all([
-        fetchTsetmcQuote(found),
-        fetchRecommendation(found.symbol || found.code),
-        fetchTsetmcHistory(found, 60),
+
+      // Recommendation is also a verified server-side symbol resolver. On
+      // degraded VPS/mobile networks it often knows the numeric TSETMC insCode
+      // even when direct phone-side InstrumentSearch cannot resolve the ticker.
+      const [recommendation, demoMode] = await Promise.all([
+        fetchRecommendation(found.symbol || found.code, 55_000),
         getDemoMode(),
       ]);
-      setItem(quote);
+      const resolved: MarketSymbolResult = recommendation?.code && /^\d+$/.test(recommendation.code)
+        ? { ...found, code: recommendation.code }
+        : found;
+      setSymbol(resolved);
       setRec(recommendation);
-      setHistory(points);
       setDemo(demoMode);
+
+      const [directQuote, points] = await Promise.all([
+        fetchTsetmcQuote(resolved, 6_000, false),
+        fetchTsetmcHistory(resolved, 60, 10_000),
+      ]);
+      const fallbackQuote = quoteFromRecommendation(recommendation, resolved);
+      setItem(!directQuote.error ? directQuote : (fallbackQuote ?? directQuote));
+      setHistory(points);
     } finally { setLoading(false); setRefreshing(false); }
   }, [code]);
 
@@ -112,12 +144,12 @@ export default function StockDetailScreen() {
     <View style={styles.header}><Pressable onPress={() => router.back()} style={[styles.back, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.backText, { color: colors.text }]}>← بازگشت</Text></Pressable><Text style={[styles.headerLabel, { color: colors.textSecondary }]}>جزئیات نماد</Text></View>
     {loading ? <View>{[1,2,3].map(i => <StockRowSkeleton key={i} />)}</View> : null}
     {!loading && symbol && item ? <>
-      <View style={[styles.priceCard, { backgroundColor: colors.backgroundElement }]}><View style={styles.titleLine}><View style={[styles.marketBadge, { backgroundColor: colors.backgroundSelected }]}><Text style={[styles.marketBadgeText, { color: colors.textSecondary }]}>{symbol.market ?? 'TSETMC'}</Text></View><View style={{ alignItems: 'flex-end', flex: 1 }}><Text style={[styles.symbol, { color: colors.text }]}>{symbol.symbol}</Text><Text style={[styles.company, { color: colors.textSecondary }]}>{symbol.name}</Text></View></View><View style={styles.priceLine}><Text style={[styles.price, { color: colors.text }]}>{livePrice === null ? '—' : formatPrice(livePrice)}</Text><Text style={[styles.unit, { color: colors.textSecondary }]}>ریال</Text></View>{pct !== null ? <Text style={[styles.change, { color: up ? Brand.stockGreen : Brand.negative }]}>{up ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}٪</Text> : <Text style={[styles.noQuote, { color: colors.textSecondary }]}>قیمت زنده از TSETMC روی این دستگاه دریافت نشد.</Text>}</View>
-      <MiniHistoryChart points={history} colors={colors} />
-      <View style={[styles.table, { backgroundColor: colors.backgroundElement }]}><Row label="آخرین قیمت" value={`${formatPrice(item.lastPrice)} ریال`} colors={colors} /><Row label="قیمت پایانی" value={`${formatPrice(item.closingPrice)} ریال`} colors={colors} /><Row label="قیمت دیروز" value={`${formatPrice(item.yesterdayPrice)} ریال`} colors={colors} /><Row label="شناسه بازار" value={symbol.code} colors={colors} /><Row label="بازار" value={symbol.market ?? 'در حال تطبیق با TSETMC'} colors={colors} /></View>
+      <View style={[styles.priceCard, { backgroundColor: colors.backgroundElement }]}><View style={styles.titleLine}><View style={[styles.marketBadge, { backgroundColor: colors.backgroundSelected }]}><Text style={[styles.marketBadgeText, { color: colors.textSecondary }]}>{symbol.market ?? 'TSETMC'}</Text></View><View style={{ alignItems: 'flex-end', flex: 1 }}><Text style={[styles.symbol, { color: colors.text }]}>{symbol.symbol}</Text><Text style={[styles.company, { color: colors.textSecondary }]}>{symbol.name}</Text></View></View><View style={styles.priceLine}><Text style={[styles.price, { color: colors.text }]}>{livePrice === null ? '—' : formatPrice(livePrice)}</Text><Text style={[styles.unit, { color: colors.textSecondary }]}>ریال</Text></View>{pct !== null ? <Text style={[styles.change, { color: up ? Brand.stockGreen : Brand.negative }]}>{up ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}٪</Text> : <Text style={[styles.noQuote, { color: colors.textSecondary }]}>قیمت زنده معتبر فعلاً دریافت نشد.</Text>}</View>
+      {history.length >= 2 ? <MiniHistoryChart points={history} colors={colors} /> : <View style={[styles.stateCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stateText, { color: colors.textSecondary }]}>تاریخچه قیمت TSETMC برای این نماد فعلاً قابل دریافت نیست؛ نمودار ساختگی نمایش داده نمی‌شود.</Text></View>}
+      <View style={[styles.table, { backgroundColor: colors.backgroundElement }]}><Row label="آخرین قیمت" value={`${formatPrice(item.lastPrice)} ریال`} colors={colors} /><Row label="قیمت پایانی" value={`${formatPrice(item.closingPrice)} ریال`} colors={colors} /><Row label="قیمت دیروز" value={`${formatPrice(item.yesterdayPrice)} ریال`} colors={colors} /><Row label="شناسه بازار" value={symbol.code} colors={colors} /><Row label="بازار" value={symbol.market ?? 'TSETMC verified resolver'} colors={colors} /></View>
       {demo && livePrice ? <DemoTradePanel symbol={symbol.symbol || symbol.code} price={livePrice} colors={colors} /> : demo ? <View style={[styles.stateCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stateText, { color: colors.textSecondary }]}>برای خرید و فروش دمو باید ابتدا قیمت معتبر TSETMC دریافت شود.</Text></View> : <RealTradeGate colors={colors} />}
-      {rec ? <RecommendationCard rec={rec} colors={colors} /> : <View style={[styles.stateCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stateText, { color: colors.textSecondary }]}>تحلیل کیا‌شا برای این نماد فعلاً دریافت نشد. قیمت، نمودار و معامله دمو مستقل از تحلیل کیا‌شا هستند.</Text></View>}
-      <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>قیمت و تاریخچه از TSETMC؛ مقدار ناموجود ساخته نمی‌شود.</Text>
+      {rec ? <RecommendationCard rec={rec} colors={colors} /> : <View style={[styles.stateCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stateText, { color: colors.textSecondary }]}>تحلیل کیا‌شا برای این نماد فعلاً دریافت نشد. قیمت و تاریخچه فقط از داده معتبر نمایش داده می‌شوند.</Text></View>}
+      <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>قیمت و تاریخچه از مسیر تأییدشده BIAP/TSETMC؛ مقدار ناموجود ساخته نمی‌شود.</Text>
     </> : null}
   </ScrollView></SafeAreaView>;
 }
