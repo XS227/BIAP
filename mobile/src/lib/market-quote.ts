@@ -2,10 +2,13 @@ import { fetchRecommendation, type MarketSymbolResult, type StockItem } from '@/
 
 const TSETMC_API_BASE = 'https://cdn.tsetmc.com/api';
 const resolvedCodeCache = new Map<string, string>();
+const quoteCache = new Map<string, { at: number; value: StockItem }>();
+const QUOTE_CACHE_MS = 25_000;
 
 export type PricePoint = { date: string; close: number };
 function numberOrUndefined(value: unknown): number | undefined { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : undefined; }
 function normalized(value: string): string { return value.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/\s+/g, '').trim(); }
+function usable(item: StockItem | null | undefined): item is StockItem { return Boolean(item && !item.error && (item.lastPrice !== undefined || item.closingPrice !== undefined)); }
 
 async function proxyQuote(symbol: MarketSymbolResult): Promise<StockItem | null> {
   const rec = await fetchRecommendation(symbol.symbol || symbol.code, 5_500);
@@ -55,31 +58,17 @@ async function directQuote(symbol: MarketSymbolResult, timeoutMs = 3_500): Promi
   } catch { return null; } finally { clearTimeout(timer); }
 }
 
-function firstRealQuote(tasks: Array<Promise<StockItem | null>>, timeoutMs: number, fallback: StockItem): Promise<StockItem> {
-  return new Promise((resolve) => {
-    let pending = tasks.length;
-    let settled = false;
-    const finish = (value: StockItem) => { if (!settled) { settled = true; resolve(value); } };
-    const timer = setTimeout(() => finish(fallback), timeoutMs);
-    tasks.forEach((task) => task.then((value) => {
-      if (value && !value.error && (value.lastPrice !== undefined || value.closingPrice !== undefined)) {
-        clearTimeout(timer); finish(value); return;
-      }
-      pending -= 1;
-      if (pending === 0) { clearTimeout(timer); finish(fallback); }
-    }).catch(() => {
-      pending -= 1;
-      if (pending === 0) { clearTimeout(timer); finish(fallback); }
-    }));
-  });
-}
-
 export async function fetchTsetmcQuote(symbol: MarketSymbolResult, timeoutMs = 3_500, allowProxy = true): Promise<StockItem> {
-  const fallback = { name: symbol.symbol || symbol.name, code: symbol.code, error: true };
-  if (!allowProxy) return (await directQuote(symbol, timeoutMs)) ?? fallback;
-  // Phone-direct TSETMC and BIAP server-side verified live data are raced in
-  // parallel. Whichever returns a real price first wins; no fake price is used.
-  return firstRealQuote([directQuote(symbol, timeoutMs), proxyQuote(symbol)], Math.max(timeoutMs, 6_000), fallback);
+  const cached = quoteCache.get(symbol.code);
+  if (cached && Date.now() - cached.at < QUOTE_CACHE_MS) return cached.value;
+  const fallback: StockItem = { name: symbol.symbol || symbol.name, code: symbol.code, error: true };
+  const direct = await directQuote(symbol, timeoutMs);
+  if (usable(direct)) { quoteCache.set(symbol.code, { at: Date.now(), value: direct }); return direct; }
+  if (allowProxy) {
+    const proxy = await proxyQuote(symbol);
+    if (usable(proxy)) { quoteCache.set(symbol.code, { at: Date.now(), value: proxy }); return proxy; }
+  }
+  return fallback;
 }
 
 export async function fetchTsetmcHistory(symbol: MarketSymbolResult, days = 60, timeoutMs = 5_000): Promise<PricePoint[]> {
@@ -95,11 +84,12 @@ export async function fetchTsetmcHistory(symbol: MarketSymbolResult, days = 60, 
 
 export async function fetchTsetmcQuotes(symbols: MarketSymbolResult[]): Promise<Record<string, StockItem>> {
   const output: Record<string, StockItem> = {};
-  // Keep batches small enough not to overload TSETMC, but use a short timeout so
-  // one unreachable endpoint cannot freeze a whole mobile screen.
-  for (let i = 0; i < symbols.length; i += 8) {
-    const chunk = symbols.slice(i, i + 8);
-    const results = await Promise.all(chunk.map((s) => fetchTsetmcQuote(s, 3_000, false)));
+  // Try direct TSETMC first. For rows the phone cannot resolve, retry through
+  // BIAP's verified server-side recommendation/market-data path. Small chunks
+  // protect both TSETMC and the FIN service.
+  for (let i = 0; i < symbols.length; i += 6) {
+    const chunk = symbols.slice(i, i + 6);
+    const results = await Promise.all(chunk.map((s) => fetchTsetmcQuote(s, 2_800, true)));
     results.forEach((q) => { output[q.code] = q; });
   }
   return output;
