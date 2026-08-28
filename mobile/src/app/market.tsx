@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, useColorScheme, SafeAreaView, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, BottomTabInset, MaxContentWidth } from '@/constants/theme';
-import { fetchSymbols, formatPrice, MarketSymbolResult, StockItem } from '@/lib/api';
+import { formatPrice, MarketSymbolResult, StockItem } from '@/lib/api';
+import { fetchMarketSymbols } from '@/lib/market-symbols';
 import { fetchTsetmcQuotes } from '@/lib/market-quote';
 import { StockRowSkeleton } from '@/components/skeleton';
 import { marketStatusLabel } from '@/lib/market-hours';
@@ -40,7 +41,7 @@ export default function MarketScreen() {
   const loadUniverse = useCallback(async () => {
     try {
       setError(false);
-      const items = await fetchSymbols({ limit: 5000 });
+      const items = await fetchMarketSymbols({ limit: 5000 });
       if (!items.length) throw new Error('empty symbol universe');
       setSymbols(items);
       setVisibleCount(PAGE_SIZE);
