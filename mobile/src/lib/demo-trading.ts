@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { displaySymbol } from '@/lib/symbol-brand';
 
 const KEY = 'biapDemoTradingWalletV1';
 export const DEMO_INITIAL_CASH = 100_000_000;
@@ -8,6 +9,27 @@ export type DemoTrade = { id: string; code: string; side: 'BUY' | 'SELL'; quanti
 export type DemoWallet = { cash: number; holdings: Record<string, DemoHolding>; trades: DemoTrade[] };
 
 const freshWallet = (): DemoWallet => ({ cash: DEMO_INITIAL_CASH, holdings: {}, trades: [] });
+
+function migrateWallet(wallet: DemoWallet): DemoWallet {
+  const holdings: Record<string, DemoHolding> = {};
+  for (const [rawCode, holding] of Object.entries(wallet.holdings)) {
+    const code = displaySymbol(rawCode).toUpperCase();
+    const current = holdings[code];
+    if (!current) holdings[code] = holding;
+    else {
+      const totalQty = current.quantity + holding.quantity;
+      holdings[code] = {
+        quantity: totalQty,
+        averageCost: totalQty > 0 ? ((current.quantity * current.averageCost) + (holding.quantity * holding.averageCost)) / totalQty : 0,
+      };
+    }
+  }
+  return {
+    ...wallet,
+    holdings,
+    trades: wallet.trades.map((trade) => ({ ...trade, code: displaySymbol(trade.code).toUpperCase() })),
+  };
+}
 
 export async function getDemoWallet(): Promise<DemoWallet> {
   const raw = await AsyncStorage.getItem(KEY);
@@ -19,7 +41,9 @@ export async function getDemoWallet(): Promise<DemoWallet> {
   try {
     const parsed = JSON.parse(raw) as DemoWallet;
     if (!Number.isFinite(parsed.cash) || !parsed.holdings || !Array.isArray(parsed.trades)) throw new Error('bad wallet');
-    return parsed;
+    const migrated = migrateWallet(parsed);
+    await AsyncStorage.setItem(KEY, JSON.stringify(migrated));
+    return migrated;
   } catch {
     const wallet = freshWallet();
     await AsyncStorage.setItem(KEY, JSON.stringify(wallet));
@@ -27,38 +51,30 @@ export async function getDemoWallet(): Promise<DemoWallet> {
   }
 }
 
-async function save(wallet: DemoWallet): Promise<void> {
-  await AsyncStorage.setItem(KEY, JSON.stringify(wallet));
-}
+async function save(wallet: DemoWallet): Promise<void> { await AsyncStorage.setItem(KEY, JSON.stringify(wallet)); }
 
 export async function executeDemoTrade(params: { code: string; side: 'BUY' | 'SELL'; quantity: number; price: number }): Promise<{ ok: true; wallet: DemoWallet } | { ok: false; message: string }> {
   const { code, side, quantity, price } = params;
   if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price) || price <= 0) return { ok: false, message: 'قیمت یا تعداد برای معامله دمو معتبر نیست.' };
   const wallet = await getDemoWallet();
-  const symbol = code.toUpperCase();
+  const symbol = displaySymbol(code).toUpperCase();
   const holding = wallet.holdings[symbol] ?? { quantity: 0, averageCost: 0 };
   const value = quantity * price;
-
   if (side === 'BUY') {
     if (wallet.cash < value) return { ok: false, message: 'موجودی دمو برای این خرید کافی نیست.' };
     const nextQty = holding.quantity + quantity;
-    const nextAvg = ((holding.quantity * holding.averageCost) + value) / nextQty;
     wallet.cash -= value;
-    wallet.holdings[symbol] = { quantity: nextQty, averageCost: nextAvg };
+    wallet.holdings[symbol] = { quantity: nextQty, averageCost: ((holding.quantity * holding.averageCost) + value) / nextQty };
   } else {
     if (holding.quantity < quantity) return { ok: false, message: 'تعداد سهم دمو برای این فروش کافی نیست.' };
     wallet.cash += value;
     const nextQty = holding.quantity - quantity;
-    if (nextQty === 0) delete wallet.holdings[symbol];
-    else wallet.holdings[symbol] = { ...holding, quantity: nextQty };
+    if (nextQty === 0) delete wallet.holdings[symbol]; else wallet.holdings[symbol] = { ...holding, quantity: nextQty };
   }
-
   wallet.trades.unshift({ id: `demo-${Date.now()}`, code: symbol, side, quantity, price, createdAt: new Date().toISOString() });
   wallet.trades = wallet.trades.slice(0, 200);
   await save(wallet);
   return { ok: true, wallet };
 }
 
-export async function resetDemoWallet(): Promise<void> {
-  await save(freshWallet());
-}
+export async function resetDemoWallet(): Promise<void> { await save(freshWallet()); }
