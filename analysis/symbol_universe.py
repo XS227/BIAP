@@ -16,6 +16,7 @@ import gzip
 import json
 import os
 from pathlib import Path
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -166,10 +167,7 @@ def _save_snapshot(items: list[MarketSymbol]) -> None:
     if not items:
         return
     path = _snapshot_path()
-    payload = {
-        "savedAt": time.time(),
-        "items": [item.to_dict() for item in items],
-    }
+    payload = {"savedAt": time.time(), "items": [item.to_dict() for item in items]}
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_suffix(path.suffix + ".tmp")
@@ -217,12 +215,27 @@ def _fetch_legacy_universe(*, timeout: float) -> list[MarketSymbol]:
     return _dedupe_sort(items)
 
 
+def _looks_like_ticker(symbol: str) -> bool:
+    """Keep CODAL fallback focused on ticker-like issuer symbols.
+
+    CODAL's company directory also contains long project/issuer names. Those
+    rows are valid disclosures but are not useful as exchange instruments in
+    the mobile Market tab. TSETMC remains authoritative whenever reachable.
+    """
+    value = " ".join(symbol.split())
+    if not value or len(value) > 16 or value.count(" ") > 3:
+        return False
+    if any(ch in value for ch in "/\\,:;()[]{}"):
+        return False
+    return bool(re.search(r"[\u0600-\u06FFA-Za-z0-9]", value))
+
+
 def _fetch_codal_universe() -> list[MarketSymbol]:
     """Verified issuer-directory fallback; TSETMC-only fields stay unknown."""
     items: list[MarketSymbol] = []
     for row in list_companies():
         symbol = str(row.get("sy") or "").strip()
-        if not symbol:
+        if not _looks_like_ticker(symbol):
             continue
         name = str(row.get("n") or symbol).strip()
         items.append(MarketSymbol(
