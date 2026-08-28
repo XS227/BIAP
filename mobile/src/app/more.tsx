@@ -37,6 +37,8 @@ export default function MoreScreen() {
   const colors = Colors[scheme];
   const logout = useLogout();
 
+  const openModules = () => router.push('/modules' as never);
+
   const handleLogout = () => {
     Alert.alert('خروج از حساب', 'آیا مطمئن هستید که می‌خواهید خارج شوید؟', [
       { text: 'انصراف', style: 'cancel' },
@@ -52,7 +54,7 @@ export default function MoreScreen() {
   };
 
   const items: MenuItem[] = [
-    { icon: '🧩', title: 'همه ماژول‌های BIAP', sub: 'سرمایه‌گذاری، داده، KPI، کسب‌وکار و مدل مالی', onPress: () => router.push('/modules'), accent: Brand.primary },
+    { icon: '🧩', title: 'همه ماژول‌های BIAP', sub: 'سرمایه‌گذاری، داده، KPI، کسب‌وکار و مدل مالی', onPress: openModules, accent: Brand.primary },
     { icon: '💼', title: 'توسعه کسب‌وکار', sub: 'SWOT، CRM، Journey، کمپین و مدل مالی', onPress: () => router.push('/bizdev'), accent: Brand.secondary },
     { icon: '📊', title: 'تحلیل داده', sub: 'EDA، آمار، نمودار و خروجی CSV', onPress: () => router.push('/data'), accent: Brand.dataViolet },
     { icon: '👤', title: 'حساب کاربری', sub: 'اطلاعات و تنظیمات حساب', onPress: () => router.push('/profile') },
@@ -67,7 +69,7 @@ export default function MoreScreen() {
             <Text style={[styles.headerSub, { color: colors.textSecondary }]}>مرکز ماژول‌های BIAP V2</Text>
           </View>
 
-          <Pressable onPress={() => router.push('/modules')} style={[styles.hero, { backgroundColor: colors.backgroundElement }]}>
+          <Pressable onPress={openModules} style={[styles.hero, { backgroundColor: colors.backgroundElement }]}>
             <Text style={styles.heroEyebrow}>BIAP V2</Text>
             <Text style={[styles.heroTitle, { color: colors.text }]}>همه ابزارها در یک اپ</Text>
             <Text style={[styles.heroBody, { color: colors.textSecondary }]}>بازار و کیاشا + تحلیل داده + KPI + توسعه کسب‌وکار + مدل مالی</Text>
