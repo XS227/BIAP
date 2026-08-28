@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchRecommendation, fetchWatchlist, MarketSymbolResult, Recommendation } from '@/lib/api';
 import { fetchMarketSymbols } from '@/lib/market-symbols';
 
@@ -35,14 +36,52 @@ const VERIFIED_DISCOVERY_SEEDS = [
 ] as const;
 
 const CACHE_TTL_MS = 15 * 60_000;
-// The public recommendation route measured ~27s from the VPS. A phone over an
-// Expo tunnel can add enough latency to exceed the previous 35s ceiling, so the
-// discovery request gets a wider budget while still remaining bounded.
+const RECOMMENDATION_CACHE_TTL_MS = 15 * 60_000;
 const RECOMMENDATION_TIMEOUT_MS = 55_000;
-// Smaller waves reduce load on the degraded TSETMC/CODAL path while keeping the
-// first verified seeds parallel. فولاد remains in the first wave.
 const SCAN_WAVE_SIZE = 6;
 const cache = new Map<InvestmentHorizon, { at: number; value: KiashaPicksResult }>();
+const recommendationCache = new Map<string, { at: number; value: Recommendation | null }>();
+const recommendationInflight = new Map<string, Promise<Recommendation | null>>();
+const STORAGE_PREFIX = 'kiasha:picks:v2:';
+
+function storageKey(horizon: InvestmentHorizon): string { return `${STORAGE_PREFIX}${horizon}`; }
+function normalizedKey(value: string): string { return value.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/\s+/g, '').trim(); }
+
+function sameTehranDay(iso: string): boolean {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tehran', year: 'numeric', month: '2-digit', day: '2-digit' });
+    return formatter.format(new Date(iso)) === formatter.format(new Date());
+  } catch {
+    return Date.now() - new Date(iso).getTime() < 12 * 60 * 60_000;
+  }
+}
+
+async function readPersisted(horizon: InvestmentHorizon): Promise<KiashaPicksResult | null> {
+  try {
+    const raw = await AsyncStorage.getItem(storageKey(horizon));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as KiashaPicksResult;
+    if (!parsed || parsed.horizon !== horizon || !Array.isArray(parsed.picks) || !sameTehranDay(parsed.generatedAt)) return null;
+    return parsed;
+  } catch { return null; }
+}
+
+async function writePersisted(result: KiashaPicksResult): Promise<void> {
+  try { await AsyncStorage.setItem(storageKey(result.horizon), JSON.stringify(result)); } catch { /* best effort */ }
+}
+
+async function fetchCachedRecommendation(code: string, force = false): Promise<Recommendation | null> {
+  const key = normalizedKey(code);
+  const cached = recommendationCache.get(key);
+  if (!force && cached && Date.now() - cached.at < RECOMMENDATION_CACHE_TTL_MS) return cached.value;
+  const inflight = recommendationInflight.get(key);
+  if (!force && inflight) return inflight;
+  const request = fetchRecommendation(code, RECOMMENDATION_TIMEOUT_MS)
+    .then((value) => { recommendationCache.set(key, { at: Date.now(), value }); return value; })
+    .finally(() => recommendationInflight.delete(key));
+  recommendationInflight.set(key, request);
+  return request;
+}
 
 function uniqCandidates(items: MarketSymbolResult[]): MarketSymbolResult[] {
   const seen = new Set<string>();
@@ -99,9 +138,6 @@ function isVerifiedForHorizon(rec: Recommendation, horizon: InvestmentHorizon): 
       && Boolean(rec.livePrice?.lastPrice || rec.livePrice?.closingPrice)
       && rec.dataAvailability.market_extended;
   }
-  // Long horizon may use a real live recommendation even when CODAL financial
-  // statements are currently unavailable. We do not fabricate fundamentals;
-  // the rank simply gives the missing fundamental agent zero contribution.
   return rec.dataSource === 'live' || (rec.dataSource === 'codal' && Boolean(rec.codalFundamentals));
 }
 
@@ -134,6 +170,14 @@ export async function fetchKiashaTopPicks(
   const cached = cache.get(horizon);
   if (!options.force && cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.value;
 
+  if (!options.force) {
+    const persisted = await readPersisted(horizon);
+    if (persisted) {
+      cache.set(horizon, { at: Date.now(), value: persisted });
+      return persisted;
+    }
+  }
+
   const [watchlist, universe] = await Promise.all([
     fetchWatchlist(4_000).catch(() => []),
     fetchMarketSymbols({ limit: 1200 }).catch(() => []),
@@ -151,7 +195,7 @@ export async function fetchKiashaTopPicks(
   for (let i = 0; i < candidates.length; i += SCAN_WAVE_SIZE) {
     const chunk = candidates.slice(i, i + SCAN_WAVE_SIZE);
     const batch = await Promise.all(chunk.map(async (candidate) => {
-      const rec = await fetchRecommendation(candidate.symbol || candidate.code, RECOMMENDATION_TIMEOUT_MS);
+      const rec = await fetchCachedRecommendation(candidate.symbol || candidate.code, Boolean(options.force));
       return rec ? { candidate, rec } : null;
     }));
     scanned += chunk.length;
@@ -173,5 +217,6 @@ export async function fetchKiashaTopPicks(
 
   const result: KiashaPicksResult = { horizon, picks: ranked, scanned, verified: verified.length, generatedAt: new Date().toISOString() };
   cache.set(horizon, { at: Date.now(), value: result });
+  await writePersisted(result);
   return result;
 }
