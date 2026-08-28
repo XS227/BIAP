@@ -35,8 +35,13 @@ const VERIFIED_DISCOVERY_SEEDS = [
 ] as const;
 
 const CACHE_TTL_MS = 15 * 60_000;
-const RECOMMENDATION_TIMEOUT_MS = 35_000;
-const SCAN_WAVE_SIZE = 12;
+// The public recommendation route measured ~27s from the VPS. A phone over an
+// Expo tunnel can add enough latency to exceed the previous 35s ceiling, so the
+// discovery request gets a wider budget while still remaining bounded.
+const RECOMMENDATION_TIMEOUT_MS = 55_000;
+// Smaller waves reduce load on the degraded TSETMC/CODAL path while keeping the
+// first verified seeds parallel. فولاد remains in the first wave.
+const SCAN_WAVE_SIZE = 6;
 const cache = new Map<InvestmentHorizon, { at: number; value: KiashaPicksResult }>();
 
 function uniqCandidates(items: MarketSymbolResult[]): MarketSymbolResult[] {
@@ -94,6 +99,9 @@ function isVerifiedForHorizon(rec: Recommendation, horizon: InvestmentHorizon): 
       && Boolean(rec.livePrice?.lastPrice || rec.livePrice?.closingPrice)
       && rec.dataAvailability.market_extended;
   }
+  // Long horizon may use a real live recommendation even when CODAL financial
+  // statements are currently unavailable. We do not fabricate fundamentals;
+  // the rank simply gives the missing fundamental agent zero contribution.
   return rec.dataSource === 'live' || (rec.dataSource === 'codal' && Boolean(rec.codalFundamentals));
 }
 
@@ -140,10 +148,6 @@ export async function fetchKiashaTopPicks(
   const verified: Array<{ candidate: MarketSymbolResult; rec: Recommendation }> = [];
   let scanned = 0;
 
-  // The production recommendation endpoint can legitimately take ~25-30s on a
-  // cold/degraded data path. Scan in parallel waves and stop once three valid
-  // BUY candidates exist instead of aborting every request at 6 seconds or
-  // waiting for the entire universe.
   for (let i = 0; i < candidates.length; i += SCAN_WAVE_SIZE) {
     const chunk = candidates.slice(i, i + SCAN_WAVE_SIZE);
     const batch = await Promise.all(chunk.map(async (candidate) => {
