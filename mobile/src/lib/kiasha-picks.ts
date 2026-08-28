@@ -24,7 +24,10 @@ export type KiashaPicksResult = {
   generatedAt: string;
 };
 
-const CACHE_TTL_MS = 90_000;
+// Keep today's scan stable for normal navigation, while pull-to-refresh can
+// explicitly rescan. No fabricated BUY is inserted when fewer than three real
+// candidates qualify.
+const CACHE_TTL_MS = 15 * 60_000;
 const cache = new Map<InvestmentHorizon, { at: number; value: KiashaPicksResult }>();
 
 function uniqCandidates(items: MarketSymbolResult[]): MarketSymbolResult[] {
@@ -39,9 +42,7 @@ function uniqCandidates(items: MarketSymbolResult[]): MarketSymbolResult[] {
   return out;
 }
 
-function entry(rec: Recommendation, agent: string) {
-  return rec.breakdown.find((x) => x.agent === agent);
-}
+function entry(rec: Recommendation, agent: string) { return rec.breakdown.find((x) => x.agent === agent); }
 
 function rank(rec: Recommendation, horizon: InvestmentHorizon): number {
   const fundamental = entry(rec, 'fundamental');
@@ -49,14 +50,9 @@ function rank(rec: Recommendation, horizon: InvestmentHorizon): number {
   const forecast = entry(rec, 'forecast');
   const comparison = entry(rec, 'comparison');
   const weighted = Number.isFinite(rec.score) ? rec.score : 0;
-  if (horizon === 'short') {
-    return weighted * 0.42
-      + (forecast?.vote ?? 0) * (forecast?.confidence ?? 0) * 0.38
-      + (risk?.vote ?? 0) * (risk?.confidence ?? 0) * 0.20;
-  }
-  return weighted * 0.36
-    + (fundamental?.vote ?? 0) * (fundamental?.confidence ?? 0) * 0.44
-    + (comparison?.vote ?? 0) * (comparison?.confidence ?? 0) * 0.20;
+  return horizon === 'short'
+    ? weighted * 0.42 + (forecast?.vote ?? 0) * (forecast?.confidence ?? 0) * 0.38 + (risk?.vote ?? 0) * (risk?.confidence ?? 0) * 0.20
+    : weighted * 0.36 + (fundamental?.vote ?? 0) * (fundamental?.confidence ?? 0) * 0.44 + (comparison?.vote ?? 0) * (comparison?.confidence ?? 0) * 0.20;
 }
 
 function isVerifiedForHorizon(rec: Recommendation, horizon: InvestmentHorizon): boolean {
@@ -71,13 +67,8 @@ function isVerifiedForHorizon(rec: Recommendation, horizon: InvestmentHorizon): 
 
 function rationale(rec: Recommendation, horizon: InvestmentHorizon): string {
   const names = horizon === 'short' ? ['forecast', 'risk'] : ['fundamental', 'comparison'];
-  const parts = names
-    .map((name) => entry(rec, name))
-    .filter(Boolean)
-    .map((x) => x!.reasoning)
-    .filter(Boolean)
-    .slice(0, 2);
-  return parts.join(' • ') || 'رتبه‌بندی فقط از داده‌های واقعی قابل‌دسترسی کیا‌شا انجام شده است.';
+  return names.map((name) => entry(rec, name)).filter(Boolean).map((x) => x!.reasoning).filter(Boolean).slice(0, 2).join(' • ')
+    || 'رتبه‌بندی فقط از داده‌های واقعی قابل‌دسترسی کیا‌شا انجام شده است.';
 }
 
 export async function fetchKiashaTopPicks(
@@ -89,52 +80,44 @@ export async function fetchKiashaTopPicks(
 
   const [watchlist, universe] = await Promise.all([
     fetchWatchlist(4_000).catch(() => []),
-    fetchMarketSymbols({ limit: 24 }).catch(() => []),
+    fetchMarketSymbols({ limit: 80 }).catch(() => []),
   ]);
-  const watchCandidates: MarketSymbolResult[] = watchlist.map((x) => ({
-    code: x.code,
-    symbol: x.name || x.code,
-    name: x.name || x.code,
-    market: null,
-  }));
-  const scanLimit = Math.max(6, Math.min(options.scanLimit ?? 12, 18));
+  const watchCandidates: MarketSymbolResult[] = watchlist.map((x) => ({ code: x.code, symbol: x.name || x.code, name: x.name || x.code, market: null }));
+  const scanLimit = Math.max(12, Math.min(options.scanLimit ?? 36, 48));
   const candidates = uniqCandidates([...watchCandidates, ...universe]).slice(0, scanLimit);
 
-  const recs = await Promise.all(
-    candidates.map(async (candidate) => {
-      const rec = await fetchRecommendation(candidate.symbol || candidate.code, 5_000);
+  const recs: Array<{ candidate: MarketSymbolResult; rec: Recommendation } | null> = [];
+  // Bounded batches avoid hammering FIN/TSETMC while still scanning a useful
+  // cross-section of the real universe for three daily candidates.
+  for (let i = 0; i < candidates.length; i += 8) {
+    const chunk = candidates.slice(i, i + 8);
+    const batch = await Promise.all(chunk.map(async (candidate) => {
+      const rec = await fetchRecommendation(candidate.symbol || candidate.code, 6_000);
       return rec ? { candidate, rec } : null;
-    })
-  );
+    }));
+    recs.push(...batch);
+  }
 
   const verified = recs.filter((x): x is NonNullable<typeof x> => Boolean(x) && isVerifiedForHorizon(x!.rec, horizon));
-  const ranked = verified
-    .map(({ candidate, rec }) => {
-      const price = rec.livePrice?.lastPrice ?? rec.livePrice?.closingPrice ?? null;
-      return {
-        symbol: rec.code || candidate.symbol,
-        name: rec.name || candidate.name || candidate.symbol,
-        code: candidate.code,
-        horizon,
-        score: rank(rec, horizon),
-        source: rec.dataSource === 'live' ? 'live' as const : 'codal' as const,
-        price,
-        changePercent: rec.livePrice?.changePercent ?? null,
-        rationale: rationale(rec, horizon),
-        recommendation: rec,
-      };
-    })
-    .filter((x) => x.recommendation.call === 'BUY' && x.score > 0)
+  const ranked = verified.map(({ candidate, rec }) => {
+    const price = rec.livePrice?.lastPrice ?? rec.livePrice?.closingPrice ?? null;
+    return {
+      symbol: rec.code || candidate.symbol,
+      name: rec.name || candidate.name || candidate.symbol,
+      code: candidate.code,
+      horizon,
+      score: rank(rec, horizon),
+      source: rec.dataSource === 'live' ? 'live' as const : 'codal' as const,
+      price,
+      changePercent: rec.livePrice?.changePercent ?? null,
+      rationale: rationale(rec, horizon),
+      recommendation: rec,
+    };
+  }).filter((x) => x.recommendation.call === 'BUY' && x.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
 
-  const result: KiashaPicksResult = {
-    horizon,
-    picks: ranked,
-    scanned: candidates.length,
-    verified: verified.length,
-    generatedAt: new Date().toISOString(),
-  };
+  const result: KiashaPicksResult = { horizon, picks: ranked, scanned: candidates.length, verified: verified.length, generatedAt: new Date().toISOString() };
   cache.set(horizon, { at: Date.now(), value: result });
   return result;
 }
