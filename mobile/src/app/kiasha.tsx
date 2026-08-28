@@ -1,12 +1,129 @@
-import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, useColorScheme, SafeAreaView, Pressable, ActivityIndicator } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, useColorScheme, SafeAreaView, Pressable, ActivityIndicator, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, Radius, BottomTabInset, MaxContentWidth, ThemeColors } from '@/constants/theme';
-import { AgentPerformance, fetchKiashaPerformanceSummary, KiashaPerformanceSummary } from '@/lib/api';
-const AGENT_LABELS:Record<string,{name:string;desc:string}>={fundamental:{name:'بنیادی',desc:'رشد درآمد، حاشیه سود و صورت‌های مالی CODAL'},risk:{name:'ریسک',desc:'نقدشوندگی، نوسان و کیفیت داده'},forecast:{name:'پیش‌بینی',desc:'مومنتوم قیمت و حجم'},comparison:{name:'مقایسه',desc:'مقایسه با صنعت و سهام مشابه'}};
-function pct(v:number|null){return v==null||!Number.isFinite(v)?'—':`${(v*100).toLocaleString('fa-IR',{maximumFractionDigits:1})}٪`}
-function AgentRow({agent,colors}:{agent:AgentPerformance;colors:ThemeColors}){const l=AGENT_LABELS[agent.agent]??{name:agent.agent,desc:'عامل کیاشا'};return <View style={styles.agent}><View style={styles.agentHead}><Text style={[styles.badge,{color:agent.trustReady?Brand.positive:Brand.warning}]}>{agent.trustReady?'وزن مشاهده‌شده':'وزن fallback فعال'}</Text><Text style={[styles.agentName,{color:colors.text}]}>{l.name}</Text></View><Text style={[styles.desc,{color:colors.textSecondary}]}>{l.desc}</Text><View style={styles.metrics}><Text style={[styles.metric,{color:colors.text}]}>{agent.evaluatedCalls.toLocaleString('fa-IR')} ارزیابی</Text><Text style={[styles.metric,{color:colors.text}]}>{pct(agent.directionalAccuracy)} دقت واقعی</Text></View></View>}
-function KiashaCat(){return <LinearGradient colors={['#29105f','#13152b','#070b17']} style={styles.catShell}><View style={styles.catEarRow}><View style={[styles.ear,{transform:[{rotate:'-16deg'}]}]}/><View style={[styles.ear,{transform:[{rotate:'16deg'}]}]}/></View><LinearGradient colors={['#73717f','#4f4d58','#2f3038']} style={styles.catFace}><View style={styles.eyeRow}><View style={styles.eye}><View style={styles.pupil}/></View><View style={styles.eye}><View style={styles.pupil}/></View></View><Text style={styles.nose}>◆</Text><View style={styles.mouth}><View style={styles.mouthLine}/><View style={[styles.mouthLine,{transform:[{rotate:'35deg'}]}]}/><View style={[styles.mouthLine,{transform:[{rotate:'-35deg'}]}]}/></View><View style={styles.headsetL}/><View style={styles.headsetR}/><View style={styles.neck}><Text style={styles.ai}>KIASHA AI</Text></View></LinearGradient></LinearGradient>}
-export default function KiashaScreen(){const colors=useColorScheme()==='dark'?Colors.dark:Colors.light;const[p,setP]=useState<KiashaPerformanceSummary|null>(null);const[loading,setLoading]=useState(true);useEffect(()=>{let m=true;fetchKiashaPerformanceSummary().then(x=>{if(m)setP(x)}).finally(()=>{if(m)setLoading(false)});return()=>{m=false}},[]);return <SafeAreaView style={[styles.safe,{backgroundColor:colors.background}]}><ScrollView contentContainerStyle={[styles.content,{paddingBottom:BottomTabInset+Spacing.four}]}><View style={{maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'}}><View style={styles.header}><Text style={[styles.title,{color:colors.text}]}>کیاشا AI</Text><Text style={[styles.sub,{color:colors.textSecondary}]}>دستیار سرمایه‌گذاری باهوش، کنجکاو و کمی گربه‌ای 😺</Text></View><LinearGradient colors={['#341174','#22104f','#14162d']} style={styles.hero}><KiashaCat/><View style={styles.heroCopy}><Text style={styles.heroTitle}>سلام، من کیاشام 👋</Text><Text style={styles.heroBody}>چهار عامل بنیادی، ریسک، پیش‌بینی و مقایسه را وزن‌دهی می‌کنم؛ داده واقعی را از دمو جدا نگه می‌دارم و برای هر تصمیم دلیل می‌دهم.</Text><Pressable onPress={()=>router.push('/market')} style={styles.cta}><Text style={styles.ctaText}>یک سهم برای تحلیل انتخاب کن</Text></Pressable></View></LinearGradient><View style={styles.quick}><Pressable onPress={()=>router.push('/market')} style={[styles.quickCard,{backgroundColor:colors.backgroundElement}]}><Text style={styles.quickIcon}>📈</Text><Text style={[styles.quickText,{color:colors.text}]}>تحلیل پیشرفته</Text></Pressable><Pressable onPress={()=>router.push('/portfolio')} style={[styles.quickCard,{backgroundColor:colors.backgroundElement}]}><Text style={styles.quickIcon}>◔</Text><Text style={[styles.quickText,{color:colors.text}]}>وزن‌دهی پرتفوی</Text></Pressable></View><Text style={[styles.section,{color:colors.text}]}>عملکرد واقعی عامل‌ها</Text><View style={[styles.panel,{backgroundColor:colors.backgroundElement}]}>{loading?<ActivityIndicator color={Brand.primary}/>:p?<><View style={[styles.status,{backgroundColor:p.observedTrustActive?'#143b31':'#312744'}]}><Text style={{color:p.observedTrustActive?Brand.positive:'#c9b7ff',fontFamily:Fonts.sans,fontWeight:'800',textAlign:'center'}}>{p.observedTrustActive?'وزن‌دهی کیا‌شا فعال است و از عملکرد مشاهده‌شده استفاده می‌کند':'وزن‌دهی کیا‌شا فعال است؛ فعلاً fallback تاریخی استفاده می‌شود و داده واقعی جایگزین آن خواهد شد'}</Text></View>{p.agents.map(a=><AgentRow key={a.agent} agent={a} colors={colors}/>)}</>:<Text style={[styles.desc,{color:colors.textSecondary}]}>گزارش عملکرد فعلاً در دسترس نیست.</Text>}</View><View style={[styles.note,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.noteTitle,{color:colors.text}]}>هوشمندی بدون عددسازی</Text><Text style={[styles.desc,{color:colors.textSecondary}]}>وزن‌دهی تصمیم همیشه فعال است؛ فقط منبع اعتماد از fallback به performance واقعی تغییر می‌کند وقتی نمونه کافی جمع شود.</Text></View></View></ScrollView></SafeAreaView>}
-const styles=StyleSheet.create({safe:{flex:1},content:{paddingHorizontal:Spacing.three},header:{paddingTop:Spacing.four,paddingBottom:Spacing.three,alignItems:'flex-end'},title:{fontFamily:Fonts.sans,fontSize:24,fontWeight:'900'},sub:{fontFamily:Fonts.sans,fontSize:11.5,marginTop:4},hero:{borderRadius:Radius.lg,padding:Spacing.four,flexDirection:'row-reverse',gap:Spacing.three,alignItems:'center',marginBottom:Spacing.three,overflow:'hidden'},catShell:{width:128,height:158,borderRadius:58,alignItems:'center',justifyContent:'center',borderWidth:2,borderColor:'#7c3aed',shadowColor:'#8b5cf6',shadowOpacity:.9,shadowRadius:20},catEarRow:{position:'absolute',top:12,width:88,flexDirection:'row',justifyContent:'space-between'},ear:{width:29,height:38,backgroundColor:'#676572',borderTopLeftRadius:4,borderTopRightRadius:18,borderBottomLeftRadius:18,borderWidth:2,borderColor:'#8b5cf6'},catFace:{width:93,height:102,borderRadius:48,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:'#96939f'},eyeRow:{flexDirection:'row',gap:24,marginTop:7},eye:{width:18,height:18,borderRadius:9,backgroundColor:'#ffb13b',alignItems:'center',justifyContent:'center',shadowColor:'#ffb13b',shadowOpacity:.8,shadowRadius:8},pupil:{width:5,height:11,borderRadius:3,backgroundColor:'#16131b'},nose:{color:'#f6a137',fontSize:12,marginTop:8},mouth:{height:12,width:26,alignItems:'center'},mouthLine:{position:'absolute',top:2,width:10,height:1.5,backgroundColor:'#ddd6e5'},headsetL:{position:'absolute',left:7,top:57,width:13,height:35,borderRadius:8,backgroundColor:'#6d28d9',borderWidth:2,borderColor:'#a78bfa'},headsetR:{position:'absolute',right:7,top:57,width:13,height:35,borderRadius:8,backgroundColor:'#6d28d9',borderWidth:2,borderColor:'#a78bfa'},neck:{position:'absolute',bottom:8,backgroundColor:'#161827',borderRadius:8,paddingHorizontal:9,paddingVertical:4,borderWidth:1,borderColor:'#5b21b6'},ai:{color:'#d8ccff',fontFamily:Fonts.mono,fontSize:8,fontWeight:'900'},heroCopy:{flex:1,alignItems:'flex-end'},heroTitle:{color:'#fff',fontFamily:Fonts.sans,fontSize:18,fontWeight:'900'},heroBody:{color:'#d9d1ef',fontFamily:Fonts.sans,fontSize:11.5,lineHeight:19,textAlign:'right',marginTop:6},cta:{backgroundColor:'#7c3aed',borderRadius:12,paddingHorizontal:12,paddingVertical:9,marginTop:10},ctaText:{color:'#fff',fontFamily:Fonts.sans,fontSize:11,fontWeight:'800'},quick:{flexDirection:'row-reverse',gap:Spacing.two,marginBottom:Spacing.four},quickCard:{flex:1,borderRadius:Radius.md,padding:Spacing.three,alignItems:'center'},quickIcon:{fontSize:24},quickText:{fontFamily:Fonts.sans,fontSize:12,fontWeight:'800',marginTop:5},section:{fontFamily:Fonts.sans,fontSize:17,fontWeight:'900',textAlign:'right',marginBottom:Spacing.two},panel:{borderRadius:Radius.lg,padding:Spacing.three},status:{borderRadius:12,padding:10,alignItems:'center',marginBottom:Spacing.two},agent:{paddingVertical:Spacing.three,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:'#313852'},agentHead:{flexDirection:'row-reverse',justifyContent:'space-between'},agentName:{fontFamily:Fonts.sans,fontSize:15,fontWeight:'900'},badge:{fontFamily:Fonts.sans,fontSize:10,fontWeight:'800'},desc:{fontFamily:Fonts.sans,fontSize:11.5,lineHeight:19,textAlign:'right',marginTop:5},metrics:{flexDirection:'row-reverse',gap:18,marginTop:8},metric:{fontFamily:Fonts.mono,fontSize:11},note:{borderRadius:Radius.md,padding:Spacing.three,marginTop:Spacing.three,alignItems:'flex-end'},noteTitle:{fontFamily:Fonts.sans,fontSize:14,fontWeight:'900'}});
+import { AgentPerformance, fetchKiashaPerformanceSummary, formatPrice, KiashaPerformanceSummary } from '@/lib/api';
+import { fetchKiashaTopPicks, InvestmentHorizon, KiashaPicksResult } from '@/lib/kiasha-picks';
+import { fetchPaperPortfolio, PaperPortfolio } from '@/lib/paper-portfolio';
+import { SymbolLogo } from '@/components/symbol-logo';
+
+const AGENT_LABELS: Record<string, { name: string; desc: string }> = {
+  fundamental: { name: 'بنیادی', desc: 'رشد درآمد، حاشیه سود و صورت‌های مالی CODAL' },
+  risk: { name: 'ریسک', desc: 'نقدشوندگی، نوسان و کیفیت داده' },
+  forecast: { name: 'پیش‌بینی', desc: 'مومنتوم قیمت و حجم' },
+  comparison: { name: 'مقایسه', desc: 'مقایسه با صنعت و سهام مشابه' },
+};
+
+function pct(v: number | null) {
+  return v == null || !Number.isFinite(v) ? '—' : `${(v * 100).toLocaleString('fa-IR', { maximumFractionDigits: 1 })}٪`;
+}
+
+function AgentRow({ agent, colors }: { agent: AgentPerformance; colors: ThemeColors }) {
+  const label = AGENT_LABELS[agent.agent] ?? { name: agent.agent, desc: 'عامل کیا‌شا' };
+  return <View style={styles.agent}>
+    <View style={styles.agentHead}>
+      <Text style={[styles.badge, { color: agent.trustReady ? Brand.positive : colors.textSecondary }]}>{agent.trustReady ? 'عملکرد واقعی فعال' : 'در انتظار نمونه واقعی'}</Text>
+      <Text style={[styles.agentName, { color: colors.text }]}>{label.name}</Text>
+    </View>
+    <Text style={[styles.desc, { color: colors.textSecondary }]}>{label.desc}</Text>
+    <View style={styles.metrics}>
+      <Text style={[styles.metric, { color: colors.text }]}>{agent.evaluatedCalls.toLocaleString('fa-IR')} ارزیابی</Text>
+      <Text style={[styles.metric, { color: colors.text }]}>{pct(agent.directionalAccuracy)} دقت مشاهده‌شده</Text>
+    </View>
+  </View>;
+}
+
+function KiashaCat() {
+  return <LinearGradient colors={['#29105f', '#13152b', '#070b17']} style={styles.catShell}>
+    <View style={styles.catEarRow}><View style={[styles.ear, { transform: [{ rotate: '-16deg' }] }]} /><View style={[styles.ear, { transform: [{ rotate: '16deg' }] }]} /></View>
+    <LinearGradient colors={['#73717f', '#4f4d58', '#2f3038']} style={styles.catFace}>
+      <View style={styles.eyeRow}><View style={styles.eye}><View style={styles.pupil} /></View><View style={styles.eye}><View style={styles.pupil} /></View></View>
+      <Text style={styles.nose}>◆</Text><View style={styles.mouth}><View style={styles.mouthLine} /><View style={[styles.mouthLine, { transform: [{ rotate: '35deg' }] }]} /><View style={[styles.mouthLine, { transform: [{ rotate: '-35deg' }] }]} /></View>
+      <View style={styles.headsetL} /><View style={styles.headsetR} /><View style={styles.neck}><Text style={styles.ai}>KIASHA AI</Text></View>
+    </LinearGradient>
+  </LinearGradient>;
+}
+
+function HorizonButton({ value, current, onPress }: { value: InvestmentHorizon; current: InvestmentHorizon; onPress: () => void }) {
+  const active = value === current;
+  return <Pressable onPress={onPress} style={[styles.horizonButton, { backgroundColor: active ? Brand.primary : 'transparent', borderColor: active ? Brand.primary : '#4b5563' }]}>
+    <Text style={[styles.horizonText, { color: active ? '#fff' : '#b9c0d0' }]}>{value === 'short' ? 'کوتاه‌مدت' : 'بلندمدت'}</Text>
+  </Pressable>;
+}
+
+function PickCard({ pick, colors, index }: { pick: KiashaPicksResult['picks'][number]; colors: ThemeColors; index: number }) {
+  return <Pressable onPress={() => router.push(`/stock/${encodeURIComponent(pick.code)}`)} style={[styles.pickCard, { backgroundColor: colors.backgroundElement }]}>
+    <View style={styles.pickHead}>
+      <View style={styles.rank}><Text style={styles.rankText}>{index + 1}</Text></View>
+      <View style={styles.pickIdentity}><SymbolLogo symbol={pick.symbol} size={40} /><View style={{ flex: 1, alignItems: 'flex-end' }}><Text style={[styles.pickSymbol, { color: colors.text }]}>{pick.symbol}</Text><Text style={[styles.pickName, { color: colors.textSecondary }]} numberOfLines={1}>{pick.name}</Text></View></View>
+    </View>
+    <View style={styles.pickMetrics}>
+      <Text style={[styles.pickMetric, { color: Brand.positive }]}>امتیاز کیا‌شا {pick.score.toFixed(2)}</Text>
+      <Text style={[styles.pickMetric, { color: colors.text }]}>{pick.price == null ? 'قیمت: —' : `${formatPrice(pick.price)} ریال`}</Text>
+      <Text style={[styles.source, { color: pick.source === 'live' ? Brand.positive : '#c9b7ff' }]}>{pick.source === 'live' ? 'LIVE + CODAL' : 'CODAL واقعی'}</Text>
+    </View>
+    <Text style={[styles.reason, { color: colors.textSecondary }]} numberOfLines={3}>{pick.rationale}</Text>
+  </Pressable>;
+}
+
+function PaperPerformance({ portfolio, colors }: { portfolio: PaperPortfolio | null; colors: ThemeColors }) {
+  const pnl = portfolio?.totalUnrealizedPnLPct ?? null;
+  return <View style={[styles.paperCard, { backgroundColor: colors.backgroundElement }]}>
+    <View style={styles.paperHead}><Text style={styles.paperBadge}>PAPER</Text><Text style={[styles.paperTitle, { color: colors.text }]}>ردیابی شفاف عملکرد کیا‌شا</Text></View>
+    <Text style={[styles.paperBig, { color: pnl == null ? colors.textSecondary : pnl >= 0 ? Brand.positive : Brand.negative }]}>{pnl == null ? '—' : `${pnl >= 0 ? '+' : ''}${pnl.toLocaleString('fa-IR', { maximumFractionDigits: 2 })}٪`}</Text>
+    <Text style={[styles.desc, { color: colors.textSecondary }]}>{portfolio ? `${portfolio.pricedPositions.toLocaleString('fa-IR')} موقعیت قیمت‌گذاری‌شده از ${portfolio.totalPositions.toLocaleString('fa-IR')} موقعیت Paper. این درصد بازده تحقق‌نیافته واقعی سفارش‌های Paper ثبت‌شده است، نه وعده سود آینده.` : 'هنوز سفارش Paper کافی برای محاسبه عملکرد ثبت نشده است.'}</Text>
+    <Pressable onPress={() => router.push('/portfolio')} style={styles.paperLink}><Text style={styles.paperLinkText}>مشاهده پرتفوی و جزئیات →</Text></Pressable>
+  </View>;
+}
+
+export default function KiashaScreen() {
+  const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
+  const [performance, setPerformance] = useState<KiashaPerformanceSummary | null>(null);
+  const [paper, setPaper] = useState<PaperPortfolio | null>(null);
+  const [horizon, setHorizon] = useState<InvestmentHorizon>('short');
+  const [picks, setPicks] = useState<KiashaPicksResult | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [picksLoading, setPicksLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadBase = useCallback(async () => {
+    const [p, portfolio] = await Promise.all([fetchKiashaPerformanceSummary(6_000), fetchPaperPortfolio()]);
+    setPerformance(p); setPaper(portfolio);
+  }, []);
+
+  const loadPicks = useCallback(async (force = false) => {
+    setPicksLoading(true);
+    try { setPicks(await fetchKiashaTopPicks(horizon, { force, scanLimit: 12 })); }
+    finally { setPicksLoading(false); }
+  }, [horizon]);
+
+  useEffect(() => { let mounted = true; (async () => { try { await loadBase(); } finally { if (mounted) setLoading(false); } })(); return () => { mounted = false; }; }, [loadBase]);
+  useEffect(() => { loadPicks(false); }, [loadPicks]);
+
+  const refresh = async () => { setRefreshing(true); await Promise.all([loadBase(), loadPicks(true)]); setRefreshing(false); };
+
+  return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={Brand.primary} />} contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]}><View style={{ maxWidth: MaxContentWidth, width: '100%', alignSelf: 'center' }}>
+    <View style={styles.header}><Text style={[styles.title, { color: colors.text }]}>کیاشا AI</Text><Text style={[styles.sub, { color: colors.textSecondary }]}>پیشنهادها فقط از داده واقعی قابل‌تأیید ساخته می‌شوند؛ داده ناموجود ساخته نمی‌شود.</Text></View>
+    <LinearGradient colors={['#341174', '#22104f', '#14162d']} style={styles.hero}><KiashaCat /><View style={styles.heroCopy}><Text style={styles.heroTitle}>سرمایه‌گذاری با افق انتخابی</Text><Text style={styles.heroBody}>کوتاه‌مدت روی مومنتوم و ریسک وزن بیشتری می‌گیرد؛ بلندمدت روی بنیادی و مقایسه. نتیجه از داده LIVE/CODAL موجود رتبه‌بندی می‌شود.</Text><Pressable onPress={() => router.push('/market')} style={styles.cta}><Text style={styles.ctaText}>باز کردن کل بازار</Text></Pressable></View></LinearGradient>
+
+    <View style={styles.horizonRow}><HorizonButton value="short" current={horizon} onPress={() => setHorizon('short')} /><HorizonButton value="long" current={horizon} onPress={() => setHorizon('long')} /></View>
+    <View style={styles.sectionHead}><Pressable onPress={() => loadPicks(true)}><Text style={styles.refreshText}>به‌روزرسانی</Text></Pressable><Text style={[styles.section, { color: colors.text }]}>۳ پیشنهاد برتر امروز</Text></View>
+    {picksLoading ? <View style={[styles.loadingCard, { backgroundColor: colors.backgroundElement }]}><ActivityIndicator color={Brand.primary} /><Text style={[styles.desc, { color: colors.textSecondary }]}>در حال بررسی داده واقعی نمادها…</Text></View> : picks && picks.picks.length ? <>{picks.picks.map((pick, i) => <PickCard key={`${pick.symbol}-${i}`} pick={pick} colors={colors} index={i} />)}<Text style={[styles.coverage, { color: colors.textSecondary }]}>از {picks.scanned.toLocaleString('fa-IR')} نماد بررسی‌شده، {picks.verified.toLocaleString('fa-IR')} نماد داده کافی و قابل‌تأیید برای این افق داشت. رتبه «بهترین امتیاز کیا‌شا» است و تضمین سود نیست.</Text></> : <View style={[styles.loadingCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.desc, { color: colors.textSecondary }]}>فعلاً سه BUY با داده واقعی کافی پیدا نشد. کیا‌شا به‌جای پر کردن جای خالی با fallback یا عدد ساختگی، نتیجه را خالی نگه می‌دارد.</Text></View>}
+
+    <PaperPerformance portfolio={paper} colors={colors} />
+
+    <Text style={[styles.section, { color: colors.text }]}>عملکرد واقعی عامل‌ها</Text>
+    <View style={[styles.panel, { backgroundColor: colors.backgroundElement }]}>{loading ? <ActivityIndicator color={Brand.primary} /> : performance ? <><View style={[styles.status, { backgroundColor: performance.observedTrustActive ? '#143b31' : '#242938' }]}><Text style={{ color: performance.observedTrustActive ? Brand.positive : colors.textSecondary, fontFamily: Fonts.sans, fontWeight: '800', textAlign: 'center' }}>{performance.observedTrustActive ? 'وزن‌دهی از عملکرد مشاهده‌شده واقعی استفاده می‌کند' : 'هنوز نمونه واقعی کافی برای فعال‌کردن وزن‌دهی عملکردی وجود ندارد؛ دقت یا سود ساختگی نمایش داده نمی‌شود'}</Text></View>{performance.agents.map((a) => <AgentRow key={a.agent} agent={a} colors={colors} />)}</> : <Text style={[styles.desc, { color: colors.textSecondary }]}>گزارش عملکرد فعلاً در دسترس نیست.</Text>}</View>
+  </View></ScrollView></SafeAreaView>;
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 }, content: { paddingHorizontal: Spacing.three }, header: { paddingTop: Spacing.four, paddingBottom: Spacing.three, alignItems: 'flex-end' }, title: { fontFamily: Fonts.sans, fontSize: 24, fontWeight: '900' }, sub: { fontFamily: Fonts.sans, fontSize: 11.5, marginTop: 4, textAlign: 'right' },
+  hero: { borderRadius: Radius.lg, padding: Spacing.four, flexDirection: 'row-reverse', gap: Spacing.three, alignItems: 'center', marginBottom: Spacing.three, overflow: 'hidden' }, catShell: { width: 118, height: 146, borderRadius: 54, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#7c3aed' }, catEarRow: { position: 'absolute', top: 12, width: 82, flexDirection: 'row', justifyContent: 'space-between' }, ear: { width: 27, height: 36, backgroundColor: '#676572', borderTopLeftRadius: 4, borderTopRightRadius: 18, borderBottomLeftRadius: 18, borderWidth: 2, borderColor: '#8b5cf6' }, catFace: { width: 88, height: 96, borderRadius: 45, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#96939f' }, eyeRow: { flexDirection: 'row', gap: 22, marginTop: 7 }, eye: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#ffb13b', alignItems: 'center', justifyContent: 'center' }, pupil: { width: 5, height: 11, borderRadius: 3, backgroundColor: '#16131b' }, nose: { color: '#f6a137', fontSize: 12, marginTop: 8 }, mouth: { height: 12, width: 26, alignItems: 'center' }, mouthLine: { position: 'absolute', top: 2, width: 10, height: 1.5, backgroundColor: '#ddd6e5' }, headsetL: { position: 'absolute', left: 7, top: 54, width: 13, height: 33, borderRadius: 8, backgroundColor: '#6d28d9', borderWidth: 2, borderColor: '#a78bfa' }, headsetR: { position: 'absolute', right: 7, top: 54, width: 13, height: 33, borderRadius: 8, backgroundColor: '#6d28d9', borderWidth: 2, borderColor: '#a78bfa' }, neck: { position: 'absolute', bottom: 7, backgroundColor: '#161827', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4, borderWidth: 1, borderColor: '#5b21b6' }, ai: { color: '#d8ccff', fontFamily: Fonts.mono, fontSize: 8, fontWeight: '900' },
+  heroCopy: { flex: 1, alignItems: 'flex-end' }, heroTitle: { color: '#fff', fontFamily: Fonts.sans, fontSize: 18, fontWeight: '900', textAlign: 'right' }, heroBody: { color: '#d9d1ef', fontFamily: Fonts.sans, fontSize: 11.5, lineHeight: 19, textAlign: 'right', marginTop: 6 }, cta: { backgroundColor: '#7c3aed', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, marginTop: 10 }, ctaText: { color: '#fff', fontFamily: Fonts.sans, fontSize: 11, fontWeight: '800' },
+  horizonRow: { flexDirection: 'row-reverse', gap: Spacing.two, marginBottom: Spacing.three }, horizonButton: { flex: 1, borderWidth: 1, borderRadius: Radius.sm, paddingVertical: 10, alignItems: 'center' }, horizonText: { fontFamily: Fonts.sans, fontSize: 12, fontWeight: '900' }, sectionHead: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.two }, section: { fontFamily: Fonts.sans, fontSize: 17, fontWeight: '900', textAlign: 'right', marginTop: Spacing.three, marginBottom: Spacing.two }, refreshText: { color: Brand.primary, fontFamily: Fonts.sans, fontSize: 11, fontWeight: '800' },
+  loadingCard: { borderRadius: Radius.md, padding: Spacing.four, alignItems: 'center', gap: Spacing.two }, pickCard: { borderRadius: Radius.md, padding: Spacing.three, marginBottom: Spacing.two }, pickHead: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' }, rank: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#6d28d9', alignItems: 'center', justifyContent: 'center' }, rankText: { color: '#fff', fontFamily: Fonts.mono, fontWeight: '900' }, pickIdentity: { flex: 1, flexDirection: 'row-reverse', alignItems: 'center', gap: 10, marginLeft: 10 }, pickSymbol: { fontFamily: Fonts.sans, fontSize: 16, fontWeight: '900' }, pickName: { fontFamily: Fonts.sans, fontSize: 10.5, marginTop: 2 }, pickMetrics: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 10, marginTop: 10 }, pickMetric: { fontFamily: Fonts.mono, fontSize: 10.5 }, source: { fontFamily: Fonts.sans, fontSize: 9.5, fontWeight: '800' }, reason: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 17, textAlign: 'right', marginTop: 8 }, coverage: { fontFamily: Fonts.sans, fontSize: 9.5, lineHeight: 16, textAlign: 'right', marginBottom: Spacing.two },
+  paperCard: { borderRadius: Radius.lg, padding: Spacing.four, marginTop: Spacing.four, alignItems: 'flex-end' }, paperHead: { width: '100%', flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' }, paperBadge: { color: '#fff', backgroundColor: '#7048e8', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, fontFamily: Fonts.mono, fontSize: 9, fontWeight: '900' }, paperTitle: { fontFamily: Fonts.sans, fontSize: 15, fontWeight: '900' }, paperBig: { fontFamily: Fonts.mono, fontSize: 30, fontWeight: '900', marginTop: 10 }, paperLink: { marginTop: 8 }, paperLinkText: { color: Brand.primary, fontFamily: Fonts.sans, fontSize: 11, fontWeight: '800' },
+  panel: { borderRadius: Radius.lg, padding: Spacing.three }, status: { borderRadius: 12, padding: 10, alignItems: 'center', marginBottom: Spacing.two }, agent: { paddingVertical: Spacing.three, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#313852' }, agentHead: { flexDirection: 'row-reverse', justifyContent: 'space-between' }, agentName: { fontFamily: Fonts.sans, fontSize: 15, fontWeight: '900' }, badge: { fontFamily: Fonts.sans, fontSize: 10, fontWeight: '800' }, desc: { fontFamily: Fonts.sans, fontSize: 11.5, lineHeight: 19, textAlign: 'right', marginTop: 5 }, metrics: { flexDirection: 'row-reverse', gap: 18, marginTop: 8 }, metric: { fontFamily: Fonts.mono, fontSize: 11 },
+});
