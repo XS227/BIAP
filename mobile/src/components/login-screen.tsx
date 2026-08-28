@@ -4,8 +4,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, Radius, BiapLogo } from '@/constants/theme';
 import { API_BASE } from '@/lib/api';
+import { setDemoMode } from '@/lib/demo-mode';
 
 type Props = { onLogin: () => void };
+const DEMO_EMAIL = 'demo@biap.app';
 
 export default function LoginScreen({ onLogin }: Props) {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
@@ -23,10 +25,11 @@ export default function LoginScreen({ onLogin }: Props) {
     }
     setLoading(true);
     try {
+      const normalizedEmail = email.trim().toLowerCase();
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: normalizedEmail, password }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -35,6 +38,9 @@ export default function LoginScreen({ onLogin }: Props) {
       }
       await AsyncStorage.setItem('accessToken', data.accessToken);
       await AsyncStorage.setItem('user', JSON.stringify(data.user));
+      // Demo data is opt-in for the dedicated demo account only. A normal
+      // authenticated user always starts with Demo Mode off.
+      await setDemoMode(normalizedEmail === DEMO_EMAIL);
       onLogin();
     } catch {
       setErrorMsg('اتصال به سرور برقرار نشد');
@@ -50,42 +56,14 @@ export default function LoginScreen({ onLogin }: Props) {
     >
       <Image source={BiapLogo} style={styles.logo} resizeMode="contain" />
       <Text style={[styles.title, { color: colors.text }]}>سرمایه‌گذاری هوشمند با BIAP</Text>
-      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-        بورس ایران، ساده، سریع و همراه با تحلیل هوش مصنوعی
-      </Text>
-
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>بورس ایران، ساده، سریع و همراه با تحلیل هوش مصنوعی</Text>
       <View style={{ height: 32 }} />
-
-      <TextInput
-        placeholder="ایمیل"
-        placeholderTextColor={colors.textSecondary}
-        value={email}
-        onChangeText={setEmail}
-        style={[styles.input, { color: colors.text, backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        textAlign="right"
-      />
-      <TextInput
-        placeholder="رمز عبور"
-        placeholderTextColor={colors.textSecondary}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        style={[styles.input, { color: colors.text, backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}
-        textAlign="right"
-      />
-
+      <TextInput placeholder="ایمیل" placeholderTextColor={colors.textSecondary} value={email} onChangeText={setEmail} style={[styles.input, { color: colors.text, backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]} keyboardType="email-address" autoCapitalize="none" textAlign="right" />
+      <TextInput placeholder="رمز عبور" placeholderTextColor={colors.textSecondary} value={password} onChangeText={setPassword} secureTextEntry style={[styles.input, { color: colors.text, backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]} textAlign="right" />
       {errorMsg ? <Text style={styles.error}>{errorMsg}</Text> : null}
-
-      <Pressable
-        style={[styles.button, { backgroundColor: Brand.primary, opacity: loading ? 0.7 : 1 }]}
-        onPress={handleLogin}
-        disabled={loading}
-      >
+      <Pressable style={[styles.button, { backgroundColor: Brand.primary, opacity: loading ? 0.7 : 1 }]} onPress={handleLogin} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>ورود</Text>}
       </Pressable>
-
       <Pressable onPress={() => router.push('/register')} style={[styles.buttonOutline, { borderColor: colors.backgroundSelected }]}>
         <Text style={[styles.buttonOutlineText, { color: colors.text }]}>ثبت‌نام</Text>
       </Pressable>
@@ -98,16 +76,7 @@ const styles = StyleSheet.create({
   logo: { width: 140, height: 46 },
   title: { fontSize: 19, fontFamily: Fonts.sans, fontWeight: '700', marginTop: Spacing.three, textAlign: 'center' },
   subtitle: { fontSize: 14, marginTop: 8, textAlign: 'center', fontFamily: Fonts.sans },
-  input: {
-    width: '100%',
-    borderWidth: 1,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: 14,
-    marginBottom: 14,
-    fontSize: 16,
-    fontFamily: Fonts.sans,
-  },
+  input: { width: '100%', borderWidth: 1, borderRadius: Radius.md, paddingHorizontal: Spacing.three, paddingVertical: 14, marginBottom: 14, fontSize: 16, fontFamily: Fonts.sans },
   button: { width: '100%', borderRadius: Radius.md, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: Fonts.sans },
   buttonOutline: { width: '100%', borderRadius: Radius.md, paddingVertical: 16, alignItems: 'center', marginTop: Spacing.two, borderWidth: 1 },
