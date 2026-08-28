@@ -19,20 +19,66 @@ export type AutoInvestStatus = {
   paperExecutionEnabled: boolean;
   paperOnly: true;
   liveExecution: false;
+  authRequired?: boolean;
   latestRun?: AutoInvestRun | null;
   createdAt?: string;
   updatedAt?: string;
 };
 
+type PublicAiStatus = {
+  runnerEnabled?: boolean;
+  paperExecutionEnabled?: boolean;
+  liveExecution?: boolean;
+};
+
+async function token(): Promise<string | null> {
+  return AsyncStorage.getItem('accessToken');
+}
+
 async function headers(): Promise<Record<string, string>> {
-  const token = await AsyncStorage.getItem('accessToken');
+  const accessToken = await token();
   return {
     'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+  };
+}
+
+async function fetchPublicReadiness(timeoutMs = 5000): Promise<PublicAiStatus | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${KIASHA_API_BASE}/performance/ai/status`, {
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as PublicAiStatus;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function authFallback(readiness: PublicAiStatus | null): AutoInvestStatus | null {
+  if (!readiness) return null;
+  return {
+    enabled: false,
+    horizon: 'short',
+    maxDailyTrades: 1,
+    runnerEnabled: Boolean(readiness.runnerEnabled),
+    paperExecutionEnabled: Boolean(readiness.paperExecutionEnabled),
+    paperOnly: true,
+    liveExecution: false,
+    authRequired: true,
+    latestRun: null,
   };
 }
 
 export async function fetchAutoInvestStatus(timeoutMs = 8000): Promise<AutoInvestStatus | null> {
+  const accessToken = await token();
+  if (!accessToken) return authFallback(await fetchPublicReadiness());
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -40,6 +86,9 @@ export async function fetchAutoInvestStatus(timeoutMs = 8000): Promise<AutoInves
       headers: await headers(),
       signal: controller.signal,
     });
+    if (res.status === 401 || res.status === 403) {
+      return authFallback(await fetchPublicReadiness());
+    }
     if (!res.ok) return null;
     return (await res.json()) as AutoInvestStatus;
   } catch {
@@ -54,6 +103,8 @@ export async function updateAutoInvest(params: {
   horizon: InvestmentHorizon;
   maxDailyTrades?: number;
 }): Promise<AutoInvestStatus | null> {
+  const accessToken = await token();
+  if (!accessToken) return null;
   try {
     const res = await fetch(`${KIASHA_API_BASE}/performance/ai/auto-invest`, {
       method: 'PUT',
@@ -72,6 +123,8 @@ export async function updateAutoInvest(params: {
 }
 
 export async function runAutoInvestNow(): Promise<Record<string, unknown> | null> {
+  const accessToken = await token();
+  if (!accessToken) return null;
   try {
     const res = await fetch(`${KIASHA_API_BASE}/performance/ai/auto-invest/run-now`, {
       method: 'POST',
