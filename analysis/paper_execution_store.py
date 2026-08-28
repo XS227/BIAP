@@ -7,17 +7,33 @@ SQLite transaction. It never contacts a real broker and never enables AUTO.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, time, timedelta, timezone
 import json
 import sqlite3
-from typing import Any, Optional
+from typing import Any
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 from audit_store import DEFAULT_DB_PATH
+from risk import load_policy
+
+
+_TSE_TZ = ZoneInfo("Asia/Tehran")
 
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _tehran_day_bounds_utc(now_utc: datetime) -> tuple[str, str]:
+    """Return UTC ISO boundaries for the current Tehran calendar day."""
+    local_day = now_utc.astimezone(_TSE_TZ).date()
+    start_local = datetime.combine(local_day, time.min, tzinfo=_TSE_TZ)
+    end_local = start_local + timedelta(days=1)
+    return (
+        start_local.astimezone(timezone.utc).isoformat(),
+        end_local.astimezone(timezone.utc).isoformat(),
+    )
 
 
 class PaperExecutionStore:
@@ -30,6 +46,32 @@ class PaperExecutionStore:
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA foreign_keys=ON")
         return conn
+
+    @staticmethod
+    def _user_daily_paper_notional(conn: sqlite3.Connection, *, user_id: str, now_utc: datetime) -> float:
+        """Sum today's successful Paper fill costs for one authenticated owner."""
+        start_utc, end_utc = _tehran_day_bounds_utc(now_utc)
+        rows = conn.execute(
+            """
+            SELECT payload_json
+            FROM audit_events
+            WHERE user_id = ?
+              AND event_type = 'KIASHA_AI_PAPER_FILLED'
+              AND created_at >= ?
+              AND created_at < ?
+            """,
+            (user_id, start_utc, end_utc),
+        ).fetchall()
+        total = 0.0
+        for row in rows:
+            try:
+                payload = json.loads(row["payload_json"])
+                total += max(0.0, float(payload.get("fillCost") or 0.0))
+            except (TypeError, ValueError, json.JSONDecodeError):
+                # Fail closed: an unreadable successful-fill record means we
+                # cannot prove remaining daily capacity safely.
+                return float("inf")
+        return total
 
     def commit_buy_fill(
         self,
@@ -48,7 +90,9 @@ class PaperExecutionStore:
         """Atomically commit a Paper BUY fill and return the persisted response.
 
         Reusing the same idempotency key for the same user returns the original
-        persisted response and cannot debit cash twice.
+        persisted response and cannot debit cash twice. The per-user daily
+        notional check runs inside the same BEGIN IMMEDIATE transaction as the
+        ledger mutation, so concurrent requests cannot race around the limit.
         """
         if receipt.get("broker") != "paper" or receipt.get("status") != "PAPER_FILLED":
             raise ValueError("only PAPER_FILLED receipts from PaperBroker are accepted")
@@ -61,7 +105,8 @@ class PaperExecutionStore:
         if price <= 0:
             raise ValueError("verified reference price must be positive")
         cost = quantity * price
-        now = _now_iso()
+        now_utc = datetime.now(timezone.utc)
+        now = now_utc.isoformat()
 
         conn = self._connect()
         try:
@@ -86,6 +131,15 @@ class PaperExecutionStore:
             cash_before = float(account["cash_balance"])
             if cost > cash_before + 1e-9:
                 raise ValueError("insufficient Paper cash balance")
+
+            policy = load_policy()
+            daily_notional_before = self._user_daily_paper_notional(
+                conn, user_id=user_id, now_utc=now_utc
+            )
+            if daily_notional_before + cost > policy.max_daily_notional + 1e-9:
+                raise ValueError(
+                    f"projected user Paper daily notional exceeds max {policy.max_daily_notional:.0f}"
+                )
 
             prior = conn.execute(
                 "SELECT quantity, avg_cost FROM paper_positions WHERE user_id = ? AND code = ?",
@@ -157,6 +211,9 @@ class PaperExecutionStore:
                 "referencePrice": price,
                 "referencePriceSource": reference_source,
                 "fillCost": cost,
+                "dailyNotionalBefore": daily_notional_before,
+                "dailyNotionalAfter": daily_notional_before + cost,
+                "dailyNotionalLimit": policy.max_daily_notional,
                 "accountAfter": account_after,
             }
             conn.execute(
@@ -189,6 +246,9 @@ class PaperExecutionStore:
                         "quantity": quantity,
                         "price": price,
                         "fillCost": cost,
+                        "dailyNotionalBefore": daily_notional_before,
+                        "dailyNotionalAfter": daily_notional_before + cost,
+                        "dailyNotionalLimit": policy.max_daily_notional,
                         "cashBefore": cash_before,
                         "cashAfter": cash_after,
                         "broker": "paper",
