@@ -28,6 +28,8 @@ export default function MoreScreen() {
   const openModules = () => router.push('/modules' as never);
   const handleLogout = () => { Alert.alert('خروج از حساب', 'آیا مطمئن هستید که می‌خواهید خارج شوید؟', [{ text: 'انصراف', style: 'cancel' }, { text: 'خروج', style: 'destructive', onPress: async () => { await AsyncStorage.multiRemove(['accessToken', 'user']); logout(); } }]); };
   const items: MenuItem[] = [
+    { icon: '🧾', title: 'سفارش‌ها', sub: 'سفارش‌های Paper و تاریخچه اجرای کیا‌شا', onPress: () => router.push('/orders'), accent: Brand.warning },
+    { icon: '💼', title: 'پرتفوی', sub: 'موقعیت‌ها، تخصیص سرمایه و بازده Paper', onPress: () => router.push('/portfolio'), accent: Brand.secondary },
     { icon: '❓', title: 'چطور از BIAP استفاده کنم؟', sub: 'How to do it • راهنمای بازار، کیا‌شا، Paper و ماژول‌ها', onPress: () => router.push('/how-to' as never), accent: Brand.primary },
     { icon: '🤖', title: 'پروفایل سرمایه‌گذاری کیا‌شا', sub: 'سرمایه Paper، بازده، دقت و Track Record ایجنت', onPress: () => router.push('/kiasha-profile' as never), accent: '#7c3aed' },
     { icon: '🧩', title: 'همه ماژول‌های BIAP', sub: 'سرمایه‌گذاری، داده، KPI، کسب‌وکار و مدل مالی', onPress: openModules, accent: Brand.primary },
@@ -36,7 +38,7 @@ export default function MoreScreen() {
     { icon: '👤', title: 'حساب کاربری', sub: 'اطلاعات و تنظیمات حساب', onPress: () => router.push('/profile') },
   ];
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]}><View style={{ maxWidth: MaxContentWidth, width: '100%', alignSelf: 'center' }}>
-    <View style={styles.header}><Text style={[styles.headerTitle, { color: colors.text }]}>بیشتر</Text><Text style={[styles.headerSub, { color: colors.textSecondary }]}>مرکز ماژول‌ها، راهنما و تنظیمات BIAP</Text></View>
+    <View style={styles.header}><Text style={[styles.headerTitle, { color: colors.text }]}>بیشتر</Text><Text style={[styles.headerSub, { color: colors.textSecondary }]}>مرکز ماژول‌ها، سفارش‌ها، پرتفوی، راهنما و تنظیمات BIAP</Text></View>
     <Pressable onPress={() => router.push('/how-to' as never)} style={[styles.hero, { backgroundColor: colors.backgroundElement }]}><Text style={styles.heroEyebrow}>START HERE</Text><Text style={[styles.heroTitle, { color: colors.text }]}>اولین بار است؟ از اینجا شروع کن</Text><Text style={[styles.heroBody, { color: colors.textSecondary }]}>راهنمای قدم‌به‌قدم بازار، کیا‌شا، Paper Trade، تحلیل داده و معامله واقعی آینده.</Text><Text style={styles.heroLink}>مشاهده راهنما ←</Text></Pressable>
     {items.map((item) => <MenuRow key={item.title} item={item} colors={colors} />)}
     <View style={{ height: Spacing.three }} /><MenuRow item={{ icon: '🚪', title: 'خروج از حساب', sub: 'خروج از حساب کاربری فعلی', onPress: handleLogout, destructive: true }} colors={colors} />
