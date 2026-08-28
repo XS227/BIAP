@@ -1,9 +1,11 @@
 """Read-only API routes for real Kiasha/agent performance observations."""
 
-from typing import Optional
+from typing import Literal, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from auth import require_user_id
+from kiasha_ai import analyze as analyze_with_ai, status as kiasha_ai_status
 from performance_store import MIN_OBSERVED_SAMPLES, PerformanceStore
 from symbol_universe import SymbolUniverseUnavailable, query_symbols
 
@@ -60,6 +62,39 @@ def performance_summary():
         "observedTrustActive": any(item["trustReady"] for item in agents),
         "agents": agents,
         "note": "evaluatedRecommendationsLowerBound is derived from agent observations; neutral votes may make per-agent counts differ.",
+    }
+
+
+@router.get("/ai/status")
+def ai_status():
+    """Safe public readiness only; never returns the API key."""
+    return kiasha_ai_status()
+
+
+@router.post("/ai/analyze/{code}")
+def ai_analyze(
+    code: str,
+    horizon: Literal["short", "long"] = Query(default="short"),
+    _user_id: str = Depends(require_user_id),
+):
+    """Run the paid Claude brain in proposal-only mode.
+
+    This endpoint cannot submit Paper or live orders. A future Paper runner may
+    consume the returned proposal only after deterministic BIAP risk checks.
+    """
+    try:
+        proposal = analyze_with_ai(code, horizon=horizon)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="AI provider request failed") from exc
+    return {
+        "proposal": proposal.to_dict(),
+        "paperExecution": False,
+        "liveExecution": False,
+        "requiresRiskCheckBeforeExecution": True,
     }
 
 
