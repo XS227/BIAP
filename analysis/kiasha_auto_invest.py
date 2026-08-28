@@ -245,7 +245,7 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
     if not force:
         if local.weekday() not in _TRADING_WEEKDAYS:
             return {"status": "SKIPPED", "reason": "TSE trading day is closed", "trades": []}
-        if not (time(8, 45) <= local.time().replace(tzinfo=None) <= time(12, 30)):
+        if not (time(9, 0) <= local.time().replace(tzinfo=None) <= time(12, 30)):
             return {"status": "SKIPPED", "reason": "outside TSE Auto Invest window", "trades": []}
 
     run_id = STORE.claim_today(user_id=user_id, now_utc=now_utc)
