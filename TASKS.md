@@ -8,6 +8,8 @@ Prioritized list of what's needed from Nasrin to unblock work on `XS227/BIAP`.
 
 ## Agent work log
 
+`[REVIEW] Pre-wire Farabi broker integration — owner: ChatGPT session — since: 2026-08-28 — scope/result:` Added fail-closed server runtime/config (`analysis/broker_runtime.py`), configurable future Farabi HTTP gateway (`analysis/broker_gateway.py`), server-only environment template (`analysis/.env.broker.example`), readiness tests, and a clearer mobile RealTradeGate checklist. Official endpoint paths and payload mappings are intentionally not guessed: when Farabi replies, populate the documented base URL/credentials/paths in server environment and complete the documented serializer/parser layer. LIVE_TRADING_ENABLED remains false. Commits: `f87d373`, `0c2d198`, `33d142f`, `a657462`, `5639d25`.
+
 `[IN PROGRESS] Farabi live-trading onboarding — owner: ChatGPT session — since: 2026-08-28 — scope/status:` Selected Farabi as the first brokerage to approach. Added `docs/FARABI_LIVE_TRADING_ONBOARDING.md` with the exact partner-API, sandbox, account-linking, buying-power/portfolio, order, fill-status, hosted-funding, security and compliance requirements, plus Persian outreach text and call script. Farabi's currently published support channel is 1561 (without area code). Blocker is now external: obtain official partner/API documentation, sandbox credentials and the brokerage-hosted deposit flow. Commit: `87837ed`.
 
 `[IN PROGRESS] Real-money broker integration — owner: ChatGPT session — since: 2026-08-28 — scope/status:` Defined the safe production money/order flow in `BROKER_INTEGRATION.md` and added a mobile `RealTradeGate` scaffold. BIAP must never collect card PAN/CVV/expiry/OTP or custody customer cash. Funding must be broker/approved-PSP hosted and credited to the customer's brokerage buying power; confirmed orders then go through a licensed broker API. Existing `PaperBroker` remains the only executable adapter and AUTO/live execution stays disabled. First provider approach is Farabi; implementation waits for official integration material. Commits: `904b992`, `c7f46ad`.
@@ -37,9 +39,10 @@ Prioritized list of what's needed from Nasrin to unblock work on `XS227/BIAP`.
 ## Current verification / deployment asks
 
 1. Pull latest `main` on `~/biap-kiasha/XS227-BIAP` and run `cd mobile && npx tsc --noEmit`.
-2. Expo device test: module hub → EDA/Dashboard/Anomaly/Governance in Real Mode; verify `LIVE` badges and real-source metrics, and an unsupported business module shows input-required/no-fake-data state.
-3. Complete Nasrin production signup/login verification for `nasrin.dadashi@gmail.com`.
-4. Contact Farabi at 1561 and ask for the technical/business unit handling official third-party trading APIs/algorithmic-trading platform integrations. Request partner API docs, sandbox/UAT credentials, account linking, buying power/portfolio, order/fill APIs and official hosted deposit/funding flow.
+2. On FIN checkout run `cd ~/BIAP/analysis && pytest -q test_broker_runtime.py` after pulling latest main.
+3. Expo device test: verify Real Trade card now shows Farabi selected plus completed/pending readiness checklist; no real order action should be enabled yet.
+4. Complete Nasrin production signup/login verification for `nasrin.dadashi@gmail.com`.
+5. Contact Farabi at 1561 and ask for the technical/business unit handling official third-party trading APIs/algorithmic-trading platform integrations. Request partner API docs, sandbox/UAT credentials, account linking, buying power/portfolio, order/fill APIs and official hosted deposit/funding flow.
 
 ## Architecture notes
 
