@@ -24,10 +24,8 @@ export type KiashaPicksResult = {
   generatedAt: string;
 };
 
-// These are discovery seeds only: real Iranian ticker labels, never prices,
-// scores or recommendations. Each one must still resolve through BIAP and pass
-// the same live/CODAL verification below before it can appear as a pick. This
-// keeps discovery useful when the VPS can only obtain CODAL's issuer directory.
+// Discovery seeds only. Each symbol still has to resolve through BIAP and pass
+// the real-data verification below before it can appear as a pick.
 const VERIFIED_DISCOVERY_SEEDS = [
   'فولاد', 'فملی', 'فخوز', 'ذوب', 'کگل', 'کچاد', 'شستا', 'فارس',
   'شپنا', 'شبندر', 'شتران', 'نوری', 'بوعلی', 'پارسان', 'تاپیکو', 'وغدیر',
@@ -37,6 +35,8 @@ const VERIFIED_DISCOVERY_SEEDS = [
 ] as const;
 
 const CACHE_TTL_MS = 15 * 60_000;
+const RECOMMENDATION_TIMEOUT_MS = 35_000;
+const SCAN_WAVE_SIZE = 12;
 const cache = new Map<InvestmentHorizon, { at: number; value: KiashaPicksResult }>();
 
 function uniqCandidates(items: MarketSymbolResult[]): MarketSymbolResult[] {
@@ -103,6 +103,22 @@ function rationale(rec: Recommendation, horizon: InvestmentHorizon): string {
     || 'رتبه‌بندی فقط از داده‌های واقعی قابل‌دسترسی کیا‌شا انجام شده است.';
 }
 
+function toPick(candidate: MarketSymbolResult, rec: Recommendation, horizon: InvestmentHorizon): KiashaPick {
+  const price = rec.livePrice?.lastPrice ?? rec.livePrice?.closingPrice ?? null;
+  return {
+    symbol: candidate.symbol || rec.code,
+    name: rec.name && rec.name !== rec.code ? rec.name : (candidate.name || candidate.symbol),
+    code: rec.code || candidate.code,
+    horizon,
+    score: rank(rec, horizon),
+    source: rec.dataSource === 'live' ? 'live' : 'codal',
+    price,
+    changePercent: rec.livePrice?.changePercent ?? null,
+    rationale: rationale(rec, horizon),
+    recommendation: rec,
+  };
+}
+
 export async function fetchKiashaTopPicks(
   horizon: InvestmentHorizon,
   options: { force?: boolean; scanLimit?: number } = {}
@@ -115,47 +131,43 @@ export async function fetchKiashaTopPicks(
     fetchMarketSymbols({ limit: 1200 }).catch(() => []),
   ]);
 
-  const seedCandidates: MarketSymbolResult[] = VERIFIED_DISCOVERY_SEEDS.map((symbol) => ({
-    code: symbol,
-    symbol,
-    name: symbol,
-    market: null,
-  }));
+  const seedCandidates: MarketSymbolResult[] = VERIFIED_DISCOVERY_SEEDS.map((symbol) => ({ code: symbol, symbol, name: symbol, market: null }));
   const watchCandidates: MarketSymbolResult[] = watchlist.map((x) => ({ code: x.code, symbol: x.name || x.code, name: x.name || x.code, market: null }));
   const dynamicCandidates = prioritizeCandidates(uniqCandidates(universe));
-  const scanLimit = Math.max(48, Math.min(options.scanLimit ?? 64, 96));
+  const scanLimit = Math.max(24, Math.min(options.scanLimit ?? 36, 60));
   const candidates = uniqCandidates([...seedCandidates, ...watchCandidates, ...dynamicCandidates]).slice(0, scanLimit);
 
-  const recs: Array<{ candidate: MarketSymbolResult; rec: Recommendation } | null> = [];
-  for (let i = 0; i < candidates.length; i += 8) {
-    const chunk = candidates.slice(i, i + 8);
+  const verified: Array<{ candidate: MarketSymbolResult; rec: Recommendation }> = [];
+  let scanned = 0;
+
+  // The production recommendation endpoint can legitimately take ~25-30s on a
+  // cold/degraded data path. Scan in parallel waves and stop once three valid
+  // BUY candidates exist instead of aborting every request at 6 seconds or
+  // waiting for the entire universe.
+  for (let i = 0; i < candidates.length; i += SCAN_WAVE_SIZE) {
+    const chunk = candidates.slice(i, i + SCAN_WAVE_SIZE);
     const batch = await Promise.all(chunk.map(async (candidate) => {
-      const rec = await fetchRecommendation(candidate.symbol || candidate.code, 6_000);
+      const rec = await fetchRecommendation(candidate.symbol || candidate.code, RECOMMENDATION_TIMEOUT_MS);
       return rec ? { candidate, rec } : null;
     }));
-    recs.push(...batch);
+    scanned += chunk.length;
+    for (const item of batch) {
+      if (item && isVerifiedForHorizon(item.rec, horizon)) verified.push(item);
+    }
+    const validBuyCount = verified.reduce((count, item) => {
+      const pick = toPick(item.candidate, item.rec, horizon);
+      return count + (pick.recommendation.call === 'BUY' && pick.score > 0 ? 1 : 0);
+    }, 0);
+    if (validBuyCount >= 3) break;
   }
 
-  const verified = recs.filter((x): x is NonNullable<typeof x> => Boolean(x) && isVerifiedForHorizon(x!.rec, horizon));
-  const ranked = verified.map(({ candidate, rec }) => {
-    const price = rec.livePrice?.lastPrice ?? rec.livePrice?.closingPrice ?? null;
-    return {
-      symbol: candidate.symbol || rec.code,
-      name: rec.name && rec.name !== rec.code ? rec.name : (candidate.name || candidate.symbol),
-      code: rec.code || candidate.code,
-      horizon,
-      score: rank(rec, horizon),
-      source: rec.dataSource === 'live' ? 'live' as const : 'codal' as const,
-      price,
-      changePercent: rec.livePrice?.changePercent ?? null,
-      rationale: rationale(rec, horizon),
-      recommendation: rec,
-    };
-  }).filter((x) => x.recommendation.call === 'BUY' && x.score > 0)
+  const ranked = verified
+    .map(({ candidate, rec }) => toPick(candidate, rec, horizon))
+    .filter((x) => x.recommendation.call === 'BUY' && x.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
 
-  const result: KiashaPicksResult = { horizon, picks: ranked, scanned: candidates.length, verified: verified.length, generatedAt: new Date().toISOString() };
+  const result: KiashaPicksResult = { horizon, picks: ranked, scanned, verified: verified.length, generatedAt: new Date().toISOString() };
   cache.set(horizon, { at: Date.now(), value: result });
   return result;
 }
