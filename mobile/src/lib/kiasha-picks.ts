@@ -1,0 +1,140 @@
+import { fetchRecommendation, fetchWatchlist, MarketSymbolResult, Recommendation } from '@/lib/api';
+import { fetchMarketSymbols } from '@/lib/market-symbols';
+
+export type InvestmentHorizon = 'short' | 'long';
+
+export type KiashaPick = {
+  symbol: string;
+  name: string;
+  code: string;
+  horizon: InvestmentHorizon;
+  score: number;
+  source: 'live' | 'codal';
+  price: number | null;
+  changePercent: number | null;
+  rationale: string;
+  recommendation: Recommendation;
+};
+
+export type KiashaPicksResult = {
+  horizon: InvestmentHorizon;
+  picks: KiashaPick[];
+  scanned: number;
+  verified: number;
+  generatedAt: string;
+};
+
+const CACHE_TTL_MS = 90_000;
+const cache = new Map<InvestmentHorizon, { at: number; value: KiashaPicksResult }>();
+
+function uniqCandidates(items: MarketSymbolResult[]): MarketSymbolResult[] {
+  const seen = new Set<string>();
+  const out: MarketSymbolResult[] = [];
+  for (const item of items) {
+    const key = (item.symbol || item.code).trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
+  }
+  return out;
+}
+
+function entry(rec: Recommendation, agent: string) {
+  return rec.breakdown.find((x) => x.agent === agent);
+}
+
+function rank(rec: Recommendation, horizon: InvestmentHorizon): number {
+  const fundamental = entry(rec, 'fundamental');
+  const risk = entry(rec, 'risk');
+  const forecast = entry(rec, 'forecast');
+  const comparison = entry(rec, 'comparison');
+  const weighted = Number.isFinite(rec.score) ? rec.score : 0;
+  if (horizon === 'short') {
+    return weighted * 0.42
+      + (forecast?.vote ?? 0) * (forecast?.confidence ?? 0) * 0.38
+      + (risk?.vote ?? 0) * (risk?.confidence ?? 0) * 0.20;
+  }
+  return weighted * 0.36
+    + (fundamental?.vote ?? 0) * (fundamental?.confidence ?? 0) * 0.44
+    + (comparison?.vote ?? 0) * (comparison?.confidence ?? 0) * 0.20;
+}
+
+function isVerifiedForHorizon(rec: Recommendation, horizon: InvestmentHorizon): boolean {
+  if (rec.dataSource === 'mock') return false;
+  if (horizon === 'short') {
+    return rec.dataSource === 'live'
+      && Boolean(rec.livePrice?.lastPrice || rec.livePrice?.closingPrice)
+      && rec.dataAvailability.market_extended;
+  }
+  return rec.dataSource === 'live' || (rec.dataSource === 'codal' && Boolean(rec.codalFundamentals));
+}
+
+function rationale(rec: Recommendation, horizon: InvestmentHorizon): string {
+  const names = horizon === 'short' ? ['forecast', 'risk'] : ['fundamental', 'comparison'];
+  const parts = names
+    .map((name) => entry(rec, name))
+    .filter(Boolean)
+    .map((x) => x!.reasoning)
+    .filter(Boolean)
+    .slice(0, 2);
+  return parts.join(' • ') || 'رتبه‌بندی فقط از داده‌های واقعی قابل‌دسترسی کیا‌شا انجام شده است.';
+}
+
+export async function fetchKiashaTopPicks(
+  horizon: InvestmentHorizon,
+  options: { force?: boolean; scanLimit?: number } = {}
+): Promise<KiashaPicksResult> {
+  const cached = cache.get(horizon);
+  if (!options.force && cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.value;
+
+  const [watchlist, universe] = await Promise.all([
+    fetchWatchlist(4_000).catch(() => []),
+    fetchMarketSymbols({ limit: 24 }).catch(() => []),
+  ]);
+  const watchCandidates: MarketSymbolResult[] = watchlist.map((x) => ({
+    code: x.code,
+    symbol: x.name || x.code,
+    name: x.name || x.code,
+    market: null,
+  }));
+  const scanLimit = Math.max(6, Math.min(options.scanLimit ?? 12, 18));
+  const candidates = uniqCandidates([...watchCandidates, ...universe]).slice(0, scanLimit);
+
+  const recs = await Promise.all(
+    candidates.map(async (candidate) => {
+      const rec = await fetchRecommendation(candidate.symbol || candidate.code, 5_000);
+      return rec ? { candidate, rec } : null;
+    })
+  );
+
+  const verified = recs.filter((x): x is NonNullable<typeof x> => Boolean(x) && isVerifiedForHorizon(x!.rec, horizon));
+  const ranked = verified
+    .map(({ candidate, rec }) => {
+      const price = rec.livePrice?.lastPrice ?? rec.livePrice?.closingPrice ?? null;
+      return {
+        symbol: rec.code || candidate.symbol,
+        name: rec.name || candidate.name || candidate.symbol,
+        code: candidate.code,
+        horizon,
+        score: rank(rec, horizon),
+        source: rec.dataSource === 'live' ? 'live' as const : 'codal' as const,
+        price,
+        changePercent: rec.livePrice?.changePercent ?? null,
+        rationale: rationale(rec, horizon),
+        recommendation: rec,
+      };
+    })
+    .filter((x) => x.recommendation.call === 'BUY' && x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
+  const result: KiashaPicksResult = {
+    horizon,
+    picks: ranked,
+    scanned: candidates.length,
+    verified: verified.length,
+    generatedAt: new Date().toISOString(),
+  };
+  cache.set(horizon, { at: Date.now(), value: result });
+  return result;
+}
