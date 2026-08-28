@@ -8,11 +8,15 @@ Prioritized list of what's needed from Nasrin to unblock work on `XS227/BIAP`.
 
 ## Agent work log
 
-`[REVIEW] Kiasha playful AI + portfolio allocation UI — owner: ChatGPT session — since: 2026-08-28 — scope/result:` Updated Kiasha to a purple futuristic cat-AI identity while keeping performance numbers grounded in the real evaluator. Added a dedicated portfolio allocation view, resolves portfolio instrument IDs to readable market symbols where available, and keeps demo wallet separation. Commits: `188a533`, `30d1379`. Awaiting `npx tsc --noEmit` and Expo device review. Real company logos remain a follow-up data-source task; no fake logos are injected.
+`[REVIEW] Real-data visual pass + Kiasha weighting — owner: ChatGPT session — since: 2026-08-28 — scope/result:` Added verified company-brand metadata for a small high-traffic symbol set and a safe ticker-avatar fallback (no invented logos). Market now merges the authenticated BIAP watchlist quotes when available, while direct TSETMC remains best-effort; stock detail now tries the existing BIAP Kiasha recommendation endpoint as a server-side live-price proxy before direct TSETMC. Existing numeric demo-wallet holdings for verified instrument IDs are migrated to readable symbols (e.g. فولاد / وبملت). Portfolio shows symbol logos/fallback avatars and allocation bars. Recommendation cards now surface active normalized Kiasha agent weights and a real CODAL fundamentals mini-chart when price history is unavailable. Kiasha UI upgraded to a layered 3D-like cat identity and clarifies that decision weighting is always active: fallback track records are used until sufficient observed outcomes replace them. Commits include `b0a4311`, `00dfc3e`, `669d2d9`, `4b61521`, `bf22f46`, `19c7c05`, `69bc6c8`, `87de252`. Awaiting `npx tsc --noEmit` and Expo device review.
 
-`[REVIEW] Complete mobile market detail, chart and demo trading — owner: ChatGPT session — since: 2026-08-28 — scope/result:` Completed the missing end-to-end stock experience for the degraded CODAL-universe case. CODAL fallback filters obvious long non-ticker issuer/project rows. Mobile quote resolution maps Persian ticker symbols to exact TSETMC instrument codes, caches verified matches, then loads real closing-price data. Added verified 60-day TSETMC price history and in-app history chart. Demo buy/sell uses the existing local demo wallet and never submits to a broker.
+`[TODO] Create normal Nasrin user — owner: ChatGPT session — blocker:` Production signup requires a real email and password. Need Nasrin's intended login email (password can be supplied by Nasrin or generated once explicitly approved). Account must be normal/non-demo so Demo Mode stays OFF.
 
-`[REVIEW] Full mobile market universe + live quote feed — owner: ChatGPT session — since: 2026-08-28 — scope/result:` Market tab uses the FIN-routed market-symbol endpoint, searches the returned universe, paginates visible rows, and fetches verified TSETMC prices. Missing prices remain unavailable rather than fabricated.
+`[REVIEW] Kiasha playful AI + portfolio allocation UI — owner: ChatGPT session — since: 2026-08-28 — scope/result:` Updated Kiasha to a purple futuristic cat-AI identity while keeping performance numbers grounded in the real evaluator. Added portfolio allocation view and readable symbol resolution where available.
+
+`[REVIEW] Complete mobile market detail, chart and demo trading — owner: ChatGPT session — since: 2026-08-28 — scope/result:` End-to-end stock detail supports verified TSETMC quote/history when reachable, CODAL analysis when degraded, and isolated demo buy/sell without broker submission.
+
+`[REVIEW] Full mobile market universe + live quote feed — owner: ChatGPT session — since: 2026-08-28 — scope/result:` Market tab uses the FIN-routed market-symbol endpoint and keeps missing prices unavailable rather than fabricated.
 
 `[REVIEW] BIAP Mobile V2 final integration — owner: ChatGPT session — since: 2026-08-28 — scope/result:` Home presents Kiasha/market investment, data analysis and business development. Dedicated demo account enables explicit Demo Mode; ordinary accounts force Demo Mode off. Live Express auth contract is aligned.
 
@@ -27,7 +31,8 @@ Prioritized list of what's needed from Nasrin to unblock work on `XS227/BIAP`.
 ## Current verification / deployment asks
 
 1. Pull latest `main` on `~/biap-kiasha/XS227-BIAP` and run `cd mobile && npx tsc --noEmit`.
-2. Expo device test: Market, stock detail/chart/demo trade, Portfolio readable symbols + allocation, Kiasha cat-AI screen and observed-weight status.
+2. Expo device test: Market verified logos/fallbacks and known real watchlist quotes; stock detail proxy/live fallback + CODAL chart; Portfolio symbol-name migration + logos + allocation; Kiasha cat-AI + visible agent weights.
+3. Create Nasrin's normal user after login email is provided.
 
 ## Architecture notes
 
