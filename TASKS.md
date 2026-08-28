@@ -45,6 +45,8 @@ update `TASKS.md` before and after doing project work.**
 
 ## Agent work log
 
+`[IN PROGRESS] Align mobile registration with live Express auth contract — owner: ChatGPT session — since: 2026-08-28 — scope/result:` Production Express auth on `89.42.199.20` was verified live: registration is `POST /api/auth/signup` with `fullName`, email and password (minimum 8 chars), and login returns an `accessToken`. Update the consolidated mobile registration flow to match that real contract and verify token storage remains compatible with the API layer.
+
 `[REVIEW] BIAP Mobile V2 module data layer — owner: ChatGPT session — since: 2026-08-28 — scope/result:` Implemented the unified mobile module hub plus dedicated module detail route, isolated explicit Demo Mode (`mobile/src/lib/demo-mode.ts`), curated visibly-labeled demo datasets (`mobile/src/demo/demo-data.ts`) for EDA/SQL/anomaly/forecast/KPI/BI dashboard/governance/report/SWOT/Journey/CRM/campaign/pricing/Business Plan/financial model/scenario/unit economics/MBR, and wired non-investment module cards to those pages. Real-user mode deliberately shows unavailable state instead of fake fallback values. Investment cards continue to existing real Market/Kiasha/Portfolio flows. Also implemented Paper Portfolio from authenticated submitted Paper orders + live recommendation prices when available. Relevant commits include `6846d59`, `fd1fdb0`, `74d69d1`, `975c0b8`, `f259111`, `323675f`, `4bebfa8`. Awaiting `cd mobile && npx tsc --noEmit` and on-device Expo review before DONE.
 
 `[DONE] Consolidate mobile WIP + orders.tsx backend migration — owner: Claude session + manual completion — result: search.tsx integrated; obsolete local order-history removed; orders.tsx now reads authenticated real /audit/orders backend; mobile TypeScript check passed with npx tsc --noEmit; implementation commit a8f6724. Remaining: on-device Expo review.
@@ -162,7 +164,7 @@ needs Nasrin's action right now.
    `/auth/profile`, `/user`, `/user/me`, `/users/me`, `/account`, `/profile`,
    `/me` — all return the Express default 404 (`Cannot GET/POST ...`), same as
    the mobile app's only two confirmed real routes (`/auth/login`,
-   `/auth/register`) would if misspelled.
+   `/api/auth/register`) would if misspelled.
 
 5. **Timing call on `orders.tsx`.** Per-user auth/ownership on `/audit/orders`
    is now live server-side (2026-08-26), which was the blocker you flagged for
