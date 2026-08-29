@@ -41,9 +41,6 @@ def _memory_history(company: dict) -> tuple[str, list[dict]]:
     candidates = []
     if remembered.get("symbol"):
         candidates.append(str(remembered["symbol"]).strip())
-    # For CODAL-only records ticker is the issuer symbol while name_fa may be the
-    # full company name; for TSETMC records ticker can be numeric and name_fa is
-    # the useful Persian symbol. Try both identities without inventing aliases.
     if ticker and not ticker.isdigit():
         candidates.append(ticker)
     if name:
@@ -160,3 +157,67 @@ def build_scenarios(company: dict | None, *, horizon: str = "90d", persist: bool
     if persist and symbol:
         save_analysis(scope="symbol", analysis_type="scenario_forecast", payload=payload, symbol=symbol, horizon=horizon, score=base)
     return payload
+
+
+def build_business_scenarios(dataset: dict | None) -> dict:
+    """Build conservative business scenarios from the authenticated user's dataset.
+
+    The engine looks for numeric columns and observed first-half/second-half movement.
+    It does not invent revenue, cost, customers, or future values when the dataset
+    does not contain enough observations.
+    """
+    if not isinstance(dataset, dict):
+        return {"status": "insufficient_verified_data", "generatedAt": datetime.now(timezone.utc).isoformat(), "scenarios": None, "evidence": [], "missingData": ["company dataset unavailable"]}
+    rows = dataset.get("rows") or []
+    columns = dataset.get("columns") or []
+    if not isinstance(rows, list) or len(rows) < 2 or not isinstance(columns, list):
+        return {"status": "insufficient_verified_data", "generatedAt": datetime.now(timezone.utc).isoformat(), "scenarios": None, "evidence": [], "missingData": ["at least two dataset rows are required"]}
+
+    numeric: list[tuple[str, list[float]]] = []
+    for column in columns:
+        values: list[float] = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            raw = str(row.get(column, "")).replace(",", "").strip()
+            try:
+                values.append(float(raw))
+            except ValueError:
+                pass
+        if len(values) >= max(2, int(len(rows) * 0.6)):
+            numeric.append((str(column), values))
+
+    if not numeric:
+        return {"status": "insufficient_verified_data", "generatedAt": datetime.now(timezone.utc).isoformat(), "scenarios": None, "evidence": [], "missingData": ["no sufficiently populated numeric column"]}
+
+    evidence: list[str] = []
+    changes: list[float] = []
+    for column, values in numeric[:6]:
+        mid = max(1, len(values) // 2)
+        first = mean(values[:mid])
+        second = mean(values[mid:]) if values[mid:] else first
+        change = 0.0 if first == 0 else (second - first) / abs(first)
+        changes.append(_clamp(change, -1.0, 1.0))
+        evidence.append(f"{column}: observed half-to-half change {change * 100:+.1f}%")
+
+    base = mean(changes)
+    dispersion = mean(abs(x - base) for x in changes) if len(changes) > 1 else 0.15
+    width = _clamp(0.15 + dispersion, 0.15, 0.55)
+    confidence = round(min(0.85, 0.30 + 0.08 * len(changes) + min(len(rows), 20) * 0.01), 3)
+
+    def scenario(score: float) -> dict:
+        score = _clamp(score, -1.0, 1.0)
+        direction = "positive" if score >= 0.08 else "negative" if score <= -0.08 else "neutral"
+        return {"direction": direction, "score": round(score, 3)}
+
+    return {
+        "status": "ok",
+        "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "dataset": dataset.get("name") or "Company data",
+        "method": "observed-business-data-scenarios",
+        "confidence": confidence,
+        "scenarios": {"pessimistic": scenario(base - width), "base": scenario(base), "optimistic": scenario(base + width)},
+        "evidence": evidence,
+        "missingData": [],
+        "policy": "Scenarios are directional ranges derived only from imported observations; no future business value is fabricated.",
+    }
