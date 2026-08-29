@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { View, Text, Image, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, useColorScheme } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, Radius, BiapLogo } from '@/constants/theme';
 import { API_BASE } from '@/lib/api';
 import { setDemoMode } from '@/lib/demo-mode';
+import { storeAuthPayload } from '@/lib/auth-session';
 
 type Props = { onLogin: () => void };
 const DEMO_EMAIL = 'demo@biap.app';
@@ -33,13 +33,11 @@ export default function LoginScreen({ onLogin }: Props) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setErrorMsg(data.error || 'خطا در ورود');
+        const detail = typeof data?.detail?.error === 'string' ? data.detail.error : null;
+        setErrorMsg(data?.error || detail || 'خطا در ورود');
         return;
       }
-      await AsyncStorage.setItem('accessToken', data.accessToken);
-      await AsyncStorage.setItem('user', JSON.stringify(data.user));
-      // Demo data is opt-in for the dedicated demo account only. A normal
-      // authenticated user always starts with Demo Mode off.
+      await storeAuthPayload(data);
       await setDemoMode(normalizedEmail === DEMO_EMAIL);
       onLogin();
     } catch {
@@ -50,10 +48,7 @@ export default function LoginScreen({ onLogin }: Props) {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Image source={BiapLogo} style={styles.logo} resizeMode="contain" />
       <Text style={[styles.title, { color: colors.text }]}>سرمایه‌گذاری هوشمند با BIAP</Text>
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>بورس ایران، ساده، سریع و همراه با تحلیل هوش مصنوعی</Text>
