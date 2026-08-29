@@ -5,7 +5,7 @@ import { Colors, Brand, Fonts, Spacing, BottomTabInset, MaxContentWidth } from '
 import { fetchWatchlist, formatPrice, MarketSymbolResult, StockItem } from '@/lib/api';
 import { fetchMarketSymbols } from '@/lib/market-symbols';
 import { fetchTsetmcQuotes } from '@/lib/market-quote';
-import { getFavorites } from '@/lib/favorites';
+import { listFavorites } from '@/lib/favorites';
 import { SymbolLogo } from '@/components/symbol-logo';
 import { StockRowSkeleton } from '@/components/skeleton';
 import { marketStatusLabel } from '@/lib/market-hours';
@@ -23,7 +23,7 @@ export default function MarketScreen(){
  const marketStatus=marketStatusLabel();
  const activeCategory=CATEGORIES.find(c=>c.key===category)?.label??'فیلتر';
 
- useFocusEffect(useCallback(()=>{let active=true;getFavorites().then(items=>{if(active)setFavoriteCodes(items.map(x=>x.code))});return()=>{active=false}},[]));
+ useFocusEffect(useCallback(()=>{let active=true;listFavorites().then(items=>{if(active)setFavoriteCodes(items.map(x=>x.code))});return()=>{active=false}},[]));
 
  const filtered=useMemo(()=>{
    const q=query.trim();let items=q?symbols.filter(s=>s.symbol.includes(q)||s.name.includes(q)||s.code.includes(q)):symbols;
