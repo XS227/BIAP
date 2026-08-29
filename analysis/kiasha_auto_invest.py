@@ -11,6 +11,8 @@ from datetime import datetime, time, timezone
 import json
 import os
 import sqlite3
+import urllib.error
+import urllib.request
 from typing import Any, Literal, Optional
 from uuid import uuid4
 from zoneinfo import ZoneInfo
@@ -21,7 +23,7 @@ from execution import submit_order_intent
 from kiasha import decide
 from kiasha_ai import analyze as analyze_with_ai
 from kiasha_paper import evaluate_ai_paper_proposal
-from market_data import MarketDataUnavailable, find_quote
+from market_data import MarketDataUnavailable, find_quote, tsetmc_api_base
 from paper_execution_store import PaperExecutionStore
 from paper_sell_store import PaperSellStore
 
@@ -48,12 +50,36 @@ def _paper_symbol_position(account: dict[str, Any], code: str) -> float:
     for p in account.get("positions",[]):
         if str(p.get("code") or "").strip().upper()==target:return float(p.get("quantity") or 0)
     return 0.0
+
+def _analysis_code(code: str, *, timeout: float = 5.0) -> str:
+    """Resolve a stored numeric TSETMC insCode to its verified ticker for AI.
+
+    Paper positions intentionally keep the immutable instrument code as their
+    identity. Kiasha's analysis layer, however, needs the human ticker so CODAL
+    and market evidence can be joined correctly. Never guess: on lookup failure
+    the original code is returned and the normal no-data safety path applies.
+    """
+    raw=str(code or "").strip()
+    if not raw or not raw.isascii() or not raw.isdigit():return raw
+    controller_url=f"{tsetmc_api_base()}/Instrument/GetInstrumentInfo/{raw}"
+    req=urllib.request.Request(controller_url,headers={"User-Agent":"Mozilla/5.0 BIAP/1.0","Accept":"application/json"})
+    try:
+        with urllib.request.urlopen(req,timeout=timeout) as resp:payload=json.loads(resp.read().decode("utf-8"))
+        row=payload.get("instrumentInfo") if isinstance(payload,dict) else None
+        if isinstance(row,dict):
+            symbol=str(row.get("lVal18AFC") or "").strip()
+            if symbol and symbol!=raw:return symbol
+    except (urllib.error.URLError,TimeoutError,OSError,json.JSONDecodeError):pass
+    return raw
+
 def _verified_company(code: str) -> tuple[Optional[dict[str, Any]], Optional[float]]:
     try: quote=find_quote(code)
     except MarketDataUnavailable: quote=None
     if quote is not None:
-        company=build_company_from_quote(quote,codal_symbol=quote.name);raw=getattr(quote,"last_price",None) or getattr(quote,"closing_price",None);price=float(raw) if raw is not None and float(raw)>0 else None;return company,price
-    return build_company_from_symbol(code),None
+        codal_symbol=_analysis_code(code) if str(code).isdigit() else quote.name
+        company=build_company_from_quote(quote,codal_symbol=codal_symbol);raw=getattr(quote,"last_price",None) or getattr(quote,"closing_price",None);price=float(raw) if raw is not None and float(raw)>0 else None;return company,price
+    analysis_code=_analysis_code(code)
+    return build_company_from_symbol(analysis_code),None
 
 class AutoInvestStore:
     def __init__(self, db_path: str = DEFAULT_DB_PATH): self.db_path=db_path;self._init_db()
@@ -138,27 +164,26 @@ def run_user_auto_invest(user_id: str, *, force: bool=False) -> dict[str, Any]:
     candidate_limit=max(max_trades,min(int(os.getenv("KIASHA_AUTO_MAX_CANDIDATES","6")),8))
     starting_capital=_paper_sizing_capital(account);daily_budget=starting_capital*_daily_budget_pct()/100.0;reserve_cash=starting_capital*_min_cash_reserve_pct()/100.0;spent_this_run=0.0
     try:
-        # Rebalance owned positions first. SELL frees cash and is not charged to
-        # the new-capital daily BUY budget; it still consumes a daily trade slot.
         for position in list(account.get("positions",[])):
             if _filled_count(results)>=max_trades:break
-            code=str(position.get("code") or "").strip()
-            owned=int(position.get("quantity") or 0)
+            code=str(position.get("code") or "").strip();owned=int(position.get("quantity") or 0)
             if not code or owned<=0:continue
             try:
-                proposal=analyze_with_ai(code,horizon=horizon);company,reference_price=_verified_company(code)
+                analysis_code=_analysis_code(code)
+                proposal=analyze_with_ai(analysis_code,horizon=horizon);company,reference_price=_verified_company(code)
                 if company is None or reference_price is None:continue
                 if proposal.action!="SELL":continue
                 sizing_capital=_paper_sizing_capital(account)
                 gate=evaluate_ai_paper_proposal(proposal,portfolio_value=sizing_capital,reference_price=reference_price,current_symbol_position=owned,execute=False)
                 if not gate.allowed or gate.intent is None or gate.risk is None:
-                    payload=gate.to_dict();AUDIT.save_kiasha_ai_decision(user_id=user_id,code=code,horizon=horizon,proposal=proposal.to_dict(),risk=gate.risk,result=payload,reference_price=reference_price,reference_source="verified-market-quote",dry_run=False);results.append({"code":code,"status":"NO_TRADE","phase":"REBALANCE",**payload});continue
+                    payload=gate.to_dict();AUDIT.save_kiasha_ai_decision(user_id=user_id,code=code,horizon=horizon,proposal=proposal.to_dict(),risk=gate.risk,result=payload,reference_price=reference_price,reference_source="verified-market-quote",dry_run=False);results.append({"code":code,"symbol":analysis_code,"status":"NO_TRADE","phase":"REBALANCE",**payload});continue
                 receipt=submit_order_intent(gate.intent)
                 fill=PAPER_SELL.commit_sell_fill(user_id=user_id,code=code,horizon=horizon,proposal=proposal.to_dict(),risk=gate.risk,intent=gate.intent,receipt=receipt,reference_price=reference_price,reference_source="verified-market-quote",idempotency_key=f"auto:{local.date().isoformat()}:SELL:{code}:{horizon}")
-                sold_codes.add(code.upper());results.append({"code":code,"status":"FILLED","phase":"REBALANCE",**fill});account=AUDIT.get_paper_account(user_id=user_id) or account
-            except Exception as exc:results.append({"code":code,"status":"ERROR","phase":"REBALANCE","reason":str(exc)[:300]})
+                sold_codes.add(code.upper());results.append({"code":code,"symbol":analysis_code,"status":"FILLED","phase":"REBALANCE",**fill});account=AUDIT.get_paper_account(user_id=user_id) or account
+            except Exception as exc:results.append({"code":code,"symbol":_analysis_code(code),"status":"ERROR","phase":"REBALANCE","reason":str(exc)[:300]})
 
         ranked=_rank_candidates()[:candidate_limit]
+        if not ranked:results.append({"status":"NO_TRADE","phase":"DISCOVERY","reason":"no verified BUY candidates passed deterministic ranking"})
         for code,baseline_score in ranked:
             if _filled_count(results)>=max_trades:break
             if code.upper() in sold_codes:continue
@@ -167,7 +192,7 @@ def run_user_auto_invest(user_id: str, *, force: bool=False) -> dict[str, Any]:
             try:
                 proposal=analyze_with_ai(code,horizon=horizon);company,reference_price=_verified_company(code)
                 if company is None or reference_price is None:results.append({"code":code,"status":"NO_TRADE","reason":"verified price unavailable","baselineScore":baseline_score});continue
-                if proposal.action!="BUY":continue
+                if proposal.action!="BUY":results.append({"code":code,"status":"NO_TRADE","phase":"ENTRY","reason":f"AI action was {proposal.action}","baselineScore":baseline_score});continue
                 sizing_capital=_paper_sizing_capital(account);current_qty=_paper_symbol_position(account,code);current_symbol_value=current_qty*reference_price;current_symbol_pct=(current_symbol_value/sizing_capital*100.0) if sizing_capital>0 else 100.0;remaining_symbol_pct=max(0.0,_max_symbol_pct()-current_symbol_pct)
                 if remaining_symbol_pct<=0:continue
                 gate=evaluate_ai_paper_proposal(proposal,portfolio_value=sizing_capital,reference_price=reference_price,current_symbol_position=current_qty,max_position_pct=remaining_symbol_pct,execute=False)
