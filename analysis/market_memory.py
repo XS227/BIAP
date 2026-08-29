@@ -60,12 +60,12 @@ def _init(con: sqlite3.Connection) -> None:
             created_at TEXT NOT NULL,
             analysis_date TEXT NOT NULL,
             scope TEXT NOT NULL,
-            symbol TEXT,
-            horizon TEXT,
+            symbol TEXT NOT NULL DEFAULT '',
+            horizon TEXT NOT NULL DEFAULT '',
             analysis_type TEXT NOT NULL,
             score REAL,
             payload_json TEXT NOT NULL,
-            UNIQUE(analysis_date, scope, COALESCE(symbol,''), COALESCE(horizon,''), analysis_type)
+            UNIQUE(analysis_date, scope, symbol, horizon, analysis_type)
         );
         CREATE INDEX IF NOT EXISTS idx_analysis_snapshots_scope_time
             ON analysis_snapshots(scope, created_at DESC);
@@ -133,7 +133,7 @@ def save_analysis(*, scope: str, analysis_type: str, payload: dict, symbol: str 
                 (created_at, analysis_date, scope, symbol, horizon, analysis_type, score, payload_json)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (when.isoformat(), when.date().isoformat(), scope, symbol, horizon, analysis_type, score,
+            (when.isoformat(), when.date().isoformat(), scope, symbol or "", horizon or "", analysis_type, score,
              json.dumps(payload, ensure_ascii=False, separators=(",", ":"))),
         )
         con.commit()
