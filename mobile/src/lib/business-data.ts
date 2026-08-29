@@ -67,10 +67,25 @@ async function writeLocal(dataset: BusinessDataset | null): Promise<void> {
 
 export async function saveBusinessDataset(dataset: BusinessDataset): Promise<void> {
   await writeLocal(dataset);
-  try {
-    const headers = await authHeaders();
-    await authFetch(`${KIASHA_API_BASE}/business/dataset`, { method: 'PUT', headers, body: JSON.stringify(dataset) });
-  } catch {}
+  const headers = await authHeaders();
+  const res = await authFetch(`${KIASHA_API_BASE}/business/dataset`, { method: 'PUT', headers, body: JSON.stringify(dataset) });
+  if (!res.ok) throw new Error(`sync failed: HTTP ${res.status}`);
+}
+
+export async function importExcelBusinessDataset(params: { filename: string; name?: string; base64Data: string }): Promise<BusinessDataset> {
+  const headers = await authHeaders();
+  const res = await authFetch(`${KIASHA_API_BASE}/business/excel-import`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ filename: params.filename, name: params.name, base64Data: params.base64Data }),
+  });
+  const body = await res.json().catch(() => null) as { dataset?: BusinessDataset; detail?: unknown } | null;
+  if (!res.ok || !body?.dataset) {
+    const detail = typeof body?.detail === 'string' ? body.detail : `HTTP ${res.status}`;
+    throw new Error(`Excel import failed: ${detail}`);
+  }
+  await writeLocal(body.dataset);
+  return body.dataset;
 }
 
 export async function getBusinessDataset(): Promise<BusinessDataset | null> {
@@ -90,11 +105,10 @@ export async function getBusinessDataset(): Promise<BusinessDataset | null> {
 }
 
 export async function clearBusinessDataset(): Promise<void> {
+  const headers = await authHeaders();
+  const res = await authFetch(`${KIASHA_API_BASE}/business/dataset`, { method: 'DELETE', headers });
+  if (!res.ok) throw new Error(`delete failed: HTTP ${res.status}`);
   await writeLocal(null);
-  try {
-    const headers = await authHeaders();
-    await authFetch(`${KIASHA_API_BASE}/business/dataset`, { method: 'DELETE', headers });
-  } catch {}
 }
 
 export function summarizeBusinessDataset(dataset: BusinessDataset) {
