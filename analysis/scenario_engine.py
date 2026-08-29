@@ -24,7 +24,26 @@ def _clamp(value: float, low: float, high: float) -> float:
     return max(low, min(high, value))
 
 
-def build_scenarios(company: dict, *, horizon: str = "90d", persist: bool = True) -> dict:
+def _empty_result(horizon: str, reason: str) -> dict:
+    return {
+        "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "symbol": None,
+        "horizon": horizon,
+        "method": "scenario-not-exact-price-forecast",
+        "confidence": 0.0,
+        "historyObservations": 0,
+        "scenarios": None,
+        "evidence": [],
+        "missingData": [reason],
+        "status": "insufficient_verified_data",
+        "policy": "No scenario is produced when verified company data is unavailable.",
+    }
+
+
+def build_scenarios(company: dict | None, *, horizon: str = "90d", persist: bool = True) -> dict:
+    if not isinstance(company, dict):
+        return _empty_result(horizon, "verified company record unavailable")
+
     symbol = str(company.get("name_fa") or company.get("ticker") or "").strip()
     market = company.get("market") or {}
     codal = company.get("codal") or {}
@@ -90,7 +109,13 @@ def build_scenarios(company: dict, *, horizon: str = "90d", persist: bool = True
     else:
         missing.append("verified volatility")
 
-    base = _clamp(signal / max(1, confidence_parts), -1.0, 1.0)
+    if confidence_parts == 0:
+        result = _empty_result(horizon, "no verified forecast inputs available")
+        result["symbol"] = symbol or None
+        result["missingData"] = missing
+        return result
+
+    base = _clamp(signal / confidence_parts, -1.0, 1.0)
     pessimistic = _clamp(base - risk_width, -1.0, 1.0)
     optimistic = _clamp(base + risk_width, -1.0, 1.0)
     confidence = round(min(0.9, 0.18 + 0.12 * confidence_parts), 3)
@@ -109,6 +134,7 @@ def build_scenarios(company: dict, *, horizon: str = "90d", persist: bool = True
         "method": "scenario-not-exact-price-forecast",
         "confidence": confidence,
         "historyObservations": len(history),
+        "status": "ok",
         "scenarios": {
             "pessimistic": {"direction": label(pessimistic), "score": round(pessimistic, 3)},
             "base": {"direction": label(base), "score": round(base, 3)},
