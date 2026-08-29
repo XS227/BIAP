@@ -25,8 +25,6 @@ export type KiashaPicksResult = {
   generatedAt: string;
 };
 
-// Discovery seeds only. Each symbol still has to resolve through BIAP and pass
-// the real-data verification below before it can appear as a pick.
 const VERIFIED_DISCOVERY_SEEDS = [
   'فولاد', 'فملی', 'فخوز', 'ذوب', 'کگل', 'کچاد', 'شستا', 'فارس',
   'شپنا', 'شبندر', 'شتران', 'نوری', 'بوعلی', 'پارسان', 'تاپیکو', 'وغدیر',
@@ -35,6 +33,7 @@ const VERIFIED_DISCOVERY_SEEDS = [
   'شپدیس', 'کرماشا', 'شیراز', 'خراسان', 'دماوند', 'بترانس',
 ] as const;
 
+const TARGET_PICK_COUNT = 10;
 const CACHE_TTL_MS = 15 * 60_000;
 const RECOMMENDATION_CACHE_TTL_MS = 15 * 60_000;
 const RECOMMENDATION_TIMEOUT_MS = 55_000;
@@ -42,7 +41,7 @@ const SCAN_WAVE_SIZE = 6;
 const cache = new Map<InvestmentHorizon, { at: number; value: KiashaPicksResult }>();
 const recommendationCache = new Map<string, { at: number; value: Recommendation | null }>();
 const recommendationInflight = new Map<string, Promise<Recommendation | null>>();
-const STORAGE_PREFIX = 'kiasha:picks:v2:';
+const STORAGE_PREFIX = 'kiasha:picks:v3:';
 
 function storageKey(horizon: InvestmentHorizon): string { return `${STORAGE_PREFIX}${horizon}`; }
 function normalizedKey(value: string): string { return value.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/\s+/g, '').trim(); }
@@ -87,7 +86,7 @@ function uniqCandidates(items: MarketSymbolResult[]): MarketSymbolResult[] {
   const seen = new Set<string>();
   const out: MarketSymbolResult[] = [];
   for (const item of items) {
-    const key = (item.symbol || item.code).trim();
+    const key = normalizedKey(item.symbol || item.code);
     if (!key || seen.has(key)) continue;
     seen.add(key);
     out.push(item);
@@ -180,13 +179,13 @@ export async function fetchKiashaTopPicks(
 
   const [watchlist, universe] = await Promise.all([
     fetchWatchlist(4_000).catch(() => []),
-    fetchMarketSymbols({ limit: 1200 }).catch(() => []),
+    fetchMarketSymbols({ limit: 1800 }).catch(() => []),
   ]);
 
   const seedCandidates: MarketSymbolResult[] = VERIFIED_DISCOVERY_SEEDS.map((symbol) => ({ code: symbol, symbol, name: symbol, market: null }));
   const watchCandidates: MarketSymbolResult[] = watchlist.map((x) => ({ code: x.code, symbol: x.name || x.code, name: x.name || x.code, market: null }));
   const dynamicCandidates = prioritizeCandidates(uniqCandidates(universe));
-  const scanLimit = Math.max(24, Math.min(options.scanLimit ?? 36, 60));
+  const scanLimit = Math.max(48, Math.min(options.scanLimit ?? 72, 120));
   const candidates = uniqCandidates([...seedCandidates, ...watchCandidates, ...dynamicCandidates]).slice(0, scanLimit);
 
   const verified: Array<{ candidate: MarketSymbolResult; rec: Recommendation }> = [];
@@ -206,14 +205,14 @@ export async function fetchKiashaTopPicks(
       const pick = toPick(item.candidate, item.rec, horizon);
       return count + (pick.recommendation.call === 'BUY' && pick.score > 0 ? 1 : 0);
     }, 0);
-    if (validBuyCount >= 3) break;
+    if (validBuyCount >= TARGET_PICK_COUNT) break;
   }
 
   const ranked = verified
     .map(({ candidate, rec }) => toPick(candidate, rec, horizon))
     .filter((x) => x.recommendation.call === 'BUY' && x.score > 0)
     .sort((a, b) => b.score - a.score)
-    .slice(0, 3);
+    .slice(0, TARGET_PICK_COUNT);
 
   const result: KiashaPicksResult = { horizon, picks: ranked, scanned, verified: verified.length, generatedAt: new Date().toISOString() };
   cache.set(horizon, { at: Date.now(), value: result });
