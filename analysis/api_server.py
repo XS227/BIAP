@@ -180,6 +180,49 @@ def symbols(market: Optional[str] = Query(default=None, description="TSE, IFB or
     return {"count": len(items), "source": sources[0] if len(sources) == 1 else "mixed", "sources": sources, "markets": ["TSE", "IFB", "IFB_BASE"], "degraded": bool(items) and all(item.source == "codal" for item in items), "items": [item.to_dict() for item in items]}
 
 
+@app.get("/stock/company/{code}")
+def company_dataset(code: str):
+    """Return one normalized, provenance-aware company dataset without AI generation."""
+    _require_warm_ready()
+    company, source = _company_or_404(code)
+    market = company.get("market") or {}
+    available = availability(company)
+    sources = []
+    if source == "live":
+        sources.append("tsetmc")
+    if available.get("codal") or available.get("codal_metadata"):
+        sources.append("codal")
+    if available.get("tindex"):
+        sources.append("tindex")
+    if available.get("market_memory"):
+        sources.append("market_memory")
+    return {
+        "code": company.get("ticker"),
+        "name": company.get("name_fa"),
+        "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "dataSource": source,
+        "dataAvailability": available,
+        "identity": {
+            "ticker": company.get("ticker"),
+            "nameFa": company.get("name_fa"),
+            "nameEn": company.get("name_en"),
+        },
+        "market": market,
+        "financials": company.get("codal"),
+        "codalMetadata": company.get("codal_metadata"),
+        "performance": market.get("tindex_performance"),
+        "flow": market.get("tindex_flow"),
+        "tindex": company.get("tindex"),
+        "marketMemory": company.get("market_memory"),
+        "provenance": {
+            "sources": sources,
+            "primary": "tsetmc" if source == "live" else source,
+            "isLive": source == "live",
+            "syntheticValues": False,
+        },
+    }
+
+
 @app.get("/stock/recommendation/{code}")
 def recommendation(code: str):
     _require_warm_ready()
