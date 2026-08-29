@@ -8,6 +8,8 @@ Prioritized list of what's needed from Nasrin to unblock work on `XS227/BIAP`.
 
 ## Agent work log
 
+`[REVIEW] Tindex attribution page — owner: ChatGPT session — since: 2026-08-29 — scope/result:` Added `web-showcase/data-sources/index.html`, a public Persian BIAP data-source transparency page with explicit Tindex attribution/link plus CODAL/TSETMC provenance and a no-fabricated-data disclaimer. Intended public URL after showcase deployment is `https://biap.dadashi.no/data-sources/` for Tindex source-attribution upgrade review. Next: deploy latest `web-showcase` on VPS and verify that public URL returns HTTP 200 before submitting it to Tindex.
+
 `[IN PROGRESS] Broker-neutral manual Kiasha tracking — owner: ChatGPT session — since: 2026-08-29 — scope/status:` Removed the broker-specific orange live-trading checklist from mobile and replaced it with a broker-neutral manual execution boundary. Kiasha now supports entering either share quantity or rial budget, converting between them from a verified price, then marking an externally executed BUY as "خریدم" for local tracking and later "فروختم" to close it. The current Kiasha recommendation is shown while a tracked position is open so SELL signals are visible. Manual tracking is intentionally not a broker execution and currently persists on-device via AsyncStorage; live order submission stays disabled. Kiasha discovery was widened from Top-3 to up to Top-10 verified BUY candidates, with a larger scan pool and no fabricated fillers. Next: reload latest mobile build, verify Top-10 loading and manually test two short-horizon positions; later move manual position tracking to authenticated server persistence if cross-device history is needed.
 
 `[IN PROGRESS] Mobile auth/history/analysis reliability — owner: ChatGPT session — since: 2026-08-29 — scope/status:` Device report showed the blue Kiasha analysis retry button appearing to do nothing and authenticated user history loading incompletely. Root cause in `mobile/src/lib/api.ts`: recommendation/history/watchlist/performance requests were still reading the raw stored access token directly and did not use the newer refresh-token retry path. Commit `a0dd9d0` routes those requests through `authFetch`/`authHeaders`, so a 401/403 triggers one refresh/retry and stale long-lived app sessions do not silently lose Kiasha analysis or order history. Next: pull latest main, run `npx tsc --noEmit`, reload Expo, then device-verify stock analysis and history. If an account predates refresh-token support and has no refresh token stored, one fresh login is required.
@@ -52,6 +54,7 @@ Prioritized list of what's needed from Nasrin to unblock work on `XS227/BIAP`.
 4. Verify scheduled Auto Invest retry/fill behavior during a valid Tehran trading session.
 5. Add persisted Paper equity snapshots so daily/monthly Track Record reflects actual autonomous account history.
 6. Complete Nasrin production signup/login verification for `nasrin.dadashi@gmail.com`.
+7. Deploy `web-showcase/data-sources/` and verify `https://biap.dadashi.no/data-sources/` returns HTTP 200 before using it in the Tindex attribution request.
 
 ## Architecture notes
 
