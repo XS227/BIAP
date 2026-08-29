@@ -26,23 +26,34 @@ function splitCsvLine(line: string): string[] {
   return out;
 }
 
+function asRecordArray(value: unknown): Record<string, unknown>[] {
+  const candidate = Array.isArray(value)
+    ? value
+    : value && typeof value === 'object' && Array.isArray((value as { rows?: unknown }).rows)
+      ? (value as { rows: unknown[] }).rows
+      : [];
+  return candidate.filter((row): row is Record<string, unknown> => Boolean(row) && typeof row === 'object' && !Array.isArray(row));
+}
+
 export function parseBusinessData(input: string, name = 'Company data'): BusinessDataset {
   const text = input.trim();
   if (!text) throw new Error('داده خالی است');
   if (text.startsWith('[') || text.startsWith('{')) {
-    const parsed = JSON.parse(text);
-    const arr = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.rows) ? parsed.rows : [];
-    if (!arr.length || typeof arr[0] !== 'object') throw new Error('JSON باید شامل آرایه‌ای از رکوردها باشد');
-    const columns = Array.from(new Set(arr.flatMap((row: Record<string, unknown>) => Object.keys(row))));
-    const rows = arr.map((row: Record<string, unknown>) => Object.fromEntries(columns.map((c) => [c, row[c] == null ? '' : String(row[c])])));
+    const parsed: unknown = JSON.parse(text);
+    const arr = asRecordArray(parsed);
+    if (!arr.length) throw new Error('JSON باید شامل آرایه‌ای از رکوردها باشد');
+    const columns: string[] = Array.from(new Set<string>(arr.flatMap((row) => Object.keys(row))));
+    const rows: Record<string, string>[] = arr.map((row) => Object.fromEntries(
+      columns.map((c) => [c, row[c] == null ? '' : String(row[c])])
+    ) as Record<string, string>);
     return { name, columns, rows, importedAt: new Date().toISOString(), source: 'json-paste' };
   }
   const lines = text.split(/\r?\n/).filter((x) => x.trim());
   if (lines.length < 2) throw new Error('CSV باید حداقل یک ردیف عنوان و یک ردیف داده داشته باشد');
   const columns = splitCsvLine(lines[0]);
-  const rows = lines.slice(1).map((line) => {
+  const rows: Record<string, string>[] = lines.slice(1).map((line) => {
     const values = splitCsvLine(line);
-    return Object.fromEntries(columns.map((c, i) => [c, values[i] ?? '']));
+    return Object.fromEntries(columns.map((c, i) => [c, values[i] ?? ''])) as Record<string, string>;
   });
   return { name, columns, rows, importedAt: new Date().toISOString(), source: 'csv-paste' };
 }
