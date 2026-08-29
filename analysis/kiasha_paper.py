@@ -63,12 +63,15 @@ def evaluate_ai_paper_proposal(
     current_symbol_position: float = 0.0,
     risk_policy: Optional[RiskPolicy] = None,
     min_confidence: Optional[float] = None,
+    max_position_pct: Optional[float] = None,
     execute: bool = False,
 ) -> PaperGateResult:
     """Evaluate, and optionally execute, a Kiasha proposal in PAPER mode only.
 
-    ``execute=False`` is a dry run. ``execute=True`` may call PaperBroker only
-    after every deterministic check passes. There is no code path to AUTO/live.
+    ``max_position_pct`` is a deterministic upper bound supplied by the caller.
+    Claude may propose a smaller allocation, but it can never size above this
+    cap. ``execute=False`` is a dry run. ``execute=True`` may call PaperBroker
+    only after every deterministic check passes. There is no AUTO/live path.
     """
     proposal_dict = proposal.to_dict()
     reasons: list[str] = []
@@ -92,12 +95,17 @@ def evaluate_ai_paper_proposal(
         reasons.append("verified positive reference price is required")
     if proposal.position_pct <= 0:
         reasons.append("proposal positionPct must be positive")
+    if max_position_pct is not None and max_position_pct <= 0:
+        reasons.append("max_position_pct must be positive")
 
     if reasons:
         return PaperGateResult(False, reasons, proposal_dict, None, None, None)
 
     assert reference_price is not None
-    target_notional = portfolio_value * proposal.position_pct / 100.0
+    effective_position_pct = float(proposal.position_pct)
+    if max_position_pct is not None:
+        effective_position_pct = min(effective_position_pct, float(max_position_pct))
+    target_notional = portfolio_value * effective_position_pct / 100.0
     quantity = math.floor(target_notional / reference_price)
     if quantity <= 0:
         return PaperGateResult(
