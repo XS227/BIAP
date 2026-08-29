@@ -11,9 +11,11 @@ import { SymbolLogo } from '@/components/symbol-logo';
 
 const AGENT_LABELS: Record<string, { name: string; desc: string }> = {
   fundamental: { name: 'بنیادی', desc: 'رشد درآمد، حاشیه سود و صورت‌های مالی CODAL' },
-  risk: { name: 'ریسک', desc: 'نقدشوندگی، نوسان و کیفیت داده' },
-  forecast: { name: 'پیش‌بینی', desc: 'مومنتوم قیمت و حجم' },
-  comparison: { name: 'مقایسه', desc: 'مقایسه با صنعت و سهام مشابه' },
+  risk: { name: 'ریسک', desc: 'نقدشوندگی، نوسان، افت سرمایه و کیفیت داده' },
+  forecast: { name: 'پیش‌بینی', desc: 'مومنتوم قیمت، حجم و روند کوتاه‌مدت' },
+  comparison: { name: 'مقایسه', desc: 'ارزش‌گذاری نسبی در برابر صنعت و سهام مشابه' },
+  technical: { name: 'تکنیکال', desc: 'بازده ۱ هفته، ۱ ماه، ۳ ماه، ۱ سال و جایگاه در بازه ۵۲ هفته' },
+  flow: { name: 'جریان پول', desc: 'ورود و خروج پول حقیقی و قدرت خرید/فروش سرانه' },
 };
 
 function pct(v: number | null) { return v == null || !Number.isFinite(v) ? '—' : `${(v * 100).toLocaleString('fa-IR', { maximumFractionDigits: 1 })}٪`; }
@@ -110,14 +112,14 @@ export default function KiashaScreen() {
 
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={Brand.primary} />} contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]}><View style={{ maxWidth: MaxContentWidth, width: '100%', alignSelf: 'center' }}>
     <View style={styles.header}><Text style={[styles.title, { color: colors.text }]}>کیاشا AI</Text><Text style={[styles.sub, { color: colors.textSecondary }]}>پیشنهادها فقط از داده واقعی قابل‌تأیید ساخته می‌شوند؛ داده ناموجود ساخته نمی‌شود.</Text></View>
-    <LinearGradient colors={['#341174', '#22104f', '#14162d']} style={styles.hero}><KiashaCat /><View style={styles.heroCopy}><Text style={styles.heroTitle}>سرمایه‌گذاری با افق انتخابی</Text><Text style={styles.heroBody}>کوتاه‌مدت روی مومنتوم و ریسک وزن بیشتری می‌گیرد؛ بلندمدت روی بنیادی و مقایسه. کیا‌شا بازار را برای حداکثر ۱۰ گزینه BUY معتبر رتبه‌بندی می‌کند.</Text><Pressable onPress={() => router.push('/market')} style={styles.cta}><Text style={styles.ctaText}>باز کردن کل بازار</Text></Pressable></View></LinearGradient>
+    <LinearGradient colors={['#341174', '#22104f', '#14162d']} style={styles.hero}><KiashaCat /><View style={styles.heroCopy}><Text style={styles.heroTitle}>سرمایه‌گذاری با افق انتخابی</Text><Text style={styles.heroBody}>کوتاه‌مدت روی مومنتوم، تکنیکال، جریان پول و ریسک وزن بیشتری می‌گیرد؛ بلندمدت روی بنیادی و مقایسه. کیا‌شا بازار را برای حداکثر ۱۰ گزینه BUY معتبر رتبه‌بندی می‌کند.</Text><Pressable onPress={() => router.push('/market')} style={styles.cta}><Text style={styles.ctaText}>باز کردن کل بازار</Text></Pressable></View></LinearGradient>
     <View style={styles.horizonRow}><HorizonButton value="short" current={horizon} onPress={() => setHorizon('short')} /><HorizonButton value="long" current={horizon} onPress={() => setHorizon('long')} /></View>
     {!paper?.demo ? <AutoInvestCard status={autoInvest} colors={colors} busy={autoBusy} onToggle={toggleAutoInvest} currentHorizon={horizon} /> : null}
     <View style={styles.sectionHead}><Pressable onPress={() => loadPicks(true)}><Text style={styles.refreshText}>به‌روزرسانی</Text></Pressable><Text style={[styles.section, { color: colors.text }]}>۱۰ پیشنهاد برتر امروز</Text></View>
     {picksLoading ? <View style={[styles.loadingCard, { backgroundColor: colors.backgroundElement }]}><ActivityIndicator color={Brand.primary} /><Text style={[styles.desc, { color: colors.textSecondary }]}>در حال بررسی داده واقعی نمادها…</Text></View> : picks && picks.picks.length ? <>{picks.picks.map((pick, i) => <PickCard key={`${pick.symbol}-${i}`} pick={pick} colors={colors} index={i} />)}<Text style={[styles.coverage, { color: colors.textSecondary }]}>از {picks.scanned.toLocaleString('fa-IR')} نماد بررسی‌شده، {picks.verified.toLocaleString('fa-IR')} نماد داده کافی داشت. اگر کمتر از ۱۰ BUY معتبر باشد، کیا‌شا گزینه ساختگی اضافه نمی‌کند. برای شروع می‌توانید فقط دو رتبه اول کوتاه‌مدت را دستی تست کنید.</Text></> : <View style={[styles.loadingCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.desc, { color: colors.textSecondary }]}>فعلاً BUY معتبر کافی پیدا نشد. نتیجه خالی می‌ماند تا داده واقعی شرایط لازم را داشته باشد.</Text></View>}
     <PaperPerformance portfolio={paper} colors={colors} />
-    <Text style={[styles.section, { color: colors.text }]}>عملکرد واقعی عامل‌ها</Text>
-    <View style={[styles.panel, { backgroundColor: colors.backgroundElement }]}>{loading ? <ActivityIndicator color={Brand.primary} /> : performance ? <><View style={[styles.status, { backgroundColor: performance.observedTrustActive ? '#143b31' : '#242938' }]}><Text style={{ color: performance.observedTrustActive ? Brand.positive : colors.textSecondary, fontFamily: Fonts.sans, fontWeight: '800', textAlign: 'center' }}>{performance.observedTrustActive ? 'وزن‌دهی از عملکرد مشاهده‌شده واقعی استفاده می‌کند' : 'هنوز نمونه واقعی کافی برای وزن‌دهی عملکردی وجود ندارد'}</Text></View>{performance.agents.map((a) => <AgentRow key={a.agent} agent={a} colors={colors} />)}</> : <Text style={[styles.desc, { color: colors.textSecondary }]}>گزارش عملکرد فعلاً در دسترس نیست.</Text>}</View>
+    <Text style={[styles.section, { color: colors.text }]}>عملکرد واقعی ۶ عامل کیا‌شا</Text>
+    <View style={[styles.panel, { backgroundColor: colors.backgroundElement }]}>{loading ? <ActivityIndicator color={Brand.primary} /> : performance ? <><View style={[styles.status, { backgroundColor: performance.observedTrustActive ? '#143b31' : '#242938' }]}><Text style={{ color: performance.observedTrustActive ? Brand.positive : colors.textSecondary, fontFamily: Fonts.sans, fontWeight: '800', textAlign: 'center' }}>{performance.observedTrustActive ? 'وزن‌دهی از عملکرد مشاهده‌شده واقعی استفاده می‌کند' : 'عامل‌های جدید تا جمع شدن نمونه واقعی با وزن محافظه‌کارانه شروع می‌کنند'}</Text></View>{performance.agents.map((a) => <AgentRow key={a.agent} agent={a} colors={colors} />)}</> : <Text style={[styles.desc, { color: colors.textSecondary }]}>گزارش عملکرد فعلاً در دسترس نیست.</Text>}</View>
   </View></ScrollView></SafeAreaView>;
 }
 
