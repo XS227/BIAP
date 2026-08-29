@@ -31,6 +31,27 @@ def test_auto_invest_claim_once_per_tehran_day(tmp_path):
     assert first is not None
     assert second is None
     store.finish(run_id=first, status="COMPLETED", result={"status": "COMPLETED"})
+    assert store.claim_today(user_id="u1", now_utc=now) is None
     latest = store.latest_run(user_id="u1")
     assert latest is not None
     assert latest["status"] == "COMPLETED"
+
+
+def test_auto_invest_retryable_run_can_reclaim_same_day(tmp_path):
+    store = AutoInvestStore(str(tmp_path / "auto.sqlite3"))
+    now = datetime(2026, 8, 29, 6, 0, tzinfo=timezone.utc)
+    first = store.claim_today(user_id="u1", now_utc=now)
+    assert first is not None
+    store.finish(
+        run_id=first,
+        status="RETRYABLE",
+        result={"status": "RETRYABLE", "trades": [], "liveExecution": False},
+    )
+
+    retried = store.claim_today(user_id="u1", now_utc=now)
+    assert retried == first
+    latest = store.latest_run(user_id="u1")
+    assert latest is not None
+    assert latest["status"] == "RUNNING"
+    assert latest["finishedAt"] is None
+    assert latest["result"] is None
