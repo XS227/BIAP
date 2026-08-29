@@ -155,6 +155,33 @@ def set_meta(key: str, value: str) -> None:
         con.commit()
 
 
+def latest_symbol_snapshot(symbol: str, *, max_age_days: int | None = None) -> dict | None:
+    """Return the newest persisted verified observation, including its raw payload."""
+    wanted = symbol.strip()
+    if not wanted:
+        return None
+    params: list[Any] = [wanted]
+    where = "symbol=?"
+    if max_age_days is not None:
+        since = (datetime.now(timezone.utc) - timedelta(days=max(1, max_age_days))).date().isoformat()
+        where += " AND observed_date>=?"
+        params.append(since)
+    with _connect() as con:
+        row = con.execute(
+            f"SELECT observed_at,observed_date,symbol,instrument_code,market,source,price,change_percent,pe,market_cap,raw_json FROM symbol_snapshots WHERE {where} ORDER BY observed_at DESC LIMIT 1",
+            params,
+        ).fetchone()
+    if row is None:
+        return None
+    result = dict(row)
+    try:
+        result["raw"] = json.loads(result.pop("raw_json"))
+    except (TypeError, json.JSONDecodeError):
+        result["raw"] = {}
+        result.pop("raw_json", None)
+    return result
+
+
 def recent_symbol_history(symbol: str, *, days: int = 30) -> list[dict]:
     since = (datetime.now(timezone.utc) - timedelta(days=max(1, days))).date().isoformat()
     with _connect() as con:
