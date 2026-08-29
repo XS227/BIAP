@@ -1,0 +1,12 @@
+[Unit]
+Description=BIAP weekly TSE/IFB market intelligence report
+After=biap-market-memory.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/biap-kiasha/XS227-BIAP/analysis
+Environment=BIAP_MARKET_MEMORY_DB=/var/lib/biap/market-memory.sqlite3
+Environment=BIAP_WEEKLY_MARKET_WINDOW_DAYS=7
+Environment=BIAP_WEEKLY_MARKET_REPORT_JSON=/var/lib/biap/weekly-market-report.json
+ExecStart=/home/ubuntu/biap-kiasha/XS227-BIAP/analysis/.venv/bin/python /home/ubuntu/biap-kiasha/XS227-BIAP/analysis/run_weekly_market_report.py
