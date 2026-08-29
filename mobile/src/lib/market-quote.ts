@@ -76,7 +76,7 @@ async function directQuote(symbol: MarketSymbolResult, timeoutMs = 3_500): Promi
     const effective = lastPrice ?? closingPrice;
     const change = effective !== undefined && yesterdayPrice !== undefined ? effective - yesterdayPrice : undefined;
     const changePercent = change !== undefined && yesterdayPrice ? (change / yesterdayPrice) * 100 : undefined;
-    const label = labelCache.get(resolvedCode) ?? symbol.symbol || symbol.name;
+    const label = labelCache.get(resolvedCode) ?? (symbol.symbol || symbol.name);
     return { name: label, code: symbol.code, lastPrice, closingPrice, yesterdayPrice, change, changePercent };
   } catch { return null; } finally { clearTimeout(timer); }
 }
@@ -107,8 +107,6 @@ export async function fetchTsetmcHistory(symbol: MarketSymbolResult, days = 60, 
 
 export async function fetchTsetmcQuotes(symbols: MarketSymbolResult[]): Promise<Record<string, StockItem>> {
   const output: Record<string, StockItem> = {};
-  // Run a few small chunks concurrently. This keeps requests bounded while
-  // avoiding the old 20-40s serial wait before any market prices appeared.
   const chunks: MarketSymbolResult[][] = [];
   for (let i = 0; i < symbols.length; i += 6) chunks.push(symbols.slice(i, i + 6));
   for (let i = 0; i < chunks.length; i += 3) {
