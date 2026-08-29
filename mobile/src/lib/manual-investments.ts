@@ -53,8 +53,23 @@ export async function confirmManualBuy(input: {
   const quantity = Math.max(1, Math.floor(input.quantity));
   if (!Number.isFinite(input.buyPrice) || input.buyPrice <= 0) throw new Error('قیمت خرید معتبر نیست.');
   const items = await readAll();
-  const existing = items.find((x) => x.status === 'OPEN' && x.code.trim().toUpperCase() === input.code.trim().toUpperCase());
-  if (existing) return existing;
+  const index = items.findIndex((x) => x.status === 'OPEN' && x.code.trim().toUpperCase() === input.code.trim().toUpperCase());
+  if (index >= 0) {
+    const existing = items[index];
+    const oldNotional = existing.buyPrice * existing.quantity;
+    const addedNotional = input.buyPrice * quantity;
+    const nextQuantity = existing.quantity + quantity;
+    const updated: ManualInvestment = {
+      ...existing,
+      symbol: input.symbol || existing.symbol,
+      quantity: nextQuantity,
+      buyPrice: (oldNotional + addedNotional) / nextQuantity,
+      buyNotional: oldNotional + addedNotional,
+    };
+    items[index] = updated;
+    await writeAll(items);
+    return updated;
+  }
   const item: ManualInvestment = {
     id: `manual_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     code: input.code,
