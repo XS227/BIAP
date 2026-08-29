@@ -83,7 +83,7 @@ function performanceMetrics(data: ModuleInputs): RealModulePayload {
   const p = data.performance;
   if (!p) return { available: false, sourceLabel: 'Kiasha Performance', summary: '', metrics: [], bullets: [] };
   const ready = p.agents.filter((a) => a.trustReady).length;
-  const evaluated = p.agents.reduce((m, a) => Math.max(m, a.evaluatedCalls), 0);
+  const maxEvaluated = p.agents.reduce((m, a) => Math.max(m, a.evaluatedCalls), 0);
   const withAccuracy = p.agents.filter((a) => a.directionalAccuracy !== null);
   const avgAcc = withAccuracy.length
     ? withAccuracy.reduce((s, a) => s + (a.directionalAccuracy ?? 0), 0) / withAccuracy.length
@@ -94,7 +94,7 @@ function performanceMetrics(data: ModuleInputs): RealModulePayload {
     summary: 'خلاصه واقعی عملکرد ثبت‌شده عامل‌های Kiasha. وزن مشاهده‌شده فقط بعد از عبور هر عامل از حداقل نمونه فعال می‌شود.',
     metrics: [
       { label: 'عامل آماده وزن واقعی', value: fa(ready) },
-      { label: 'حداقل ارزیابی ثبت‌شده', value: fa(evaluated) },
+      { label: 'بیشترین ارزیابی یک عامل', value: fa(maxEvaluated) },
       { label: 'میانگین دقت ثبت‌شده', value: avgAcc === null ? '—' : `${fa(avgAcc * 100, 1)}٪` },
     ],
     bullets: p.agents.map((a) => `${a.agent}: ${fa(a.evaluatedCalls)} ارزیابی${a.directionalAccuracy === null ? '' : `، دقت ${fa(a.directionalAccuracy * 100, 1)}٪`}`),
