@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from agents import run_team
+from market_memory import save_analysis
 from performance_store import MIN_OBSERVED_SAMPLES, PerformanceStore
 
 MATURITY_CAPS = {
@@ -41,9 +42,6 @@ class AgentTrackRecord:
     pnl_std: float
 
 
-# Non-historical placeholders only. These values MUST NOT represent claimed
-# performance. They keep the shape of the track-record object while the actual
-# weighting path below uses UNTRAINED_PRIOR_TRUST until enough real samples exist.
 TRACK_RECORDS = {
     agent: AgentTrackRecord(agent, 0, 0.50, 1.00)
     for agent in ("fundamental", "risk", "forecast", "comparison", "technical", "flow")
@@ -102,18 +100,40 @@ def _record_observation(company: dict, decision: Decision) -> None:
     code = str(company.get("ticker") or symbol).strip()
     if not symbol:
         return
+    generated_at = datetime.now(timezone.utc)
     try:
         _performance_store().record_recommendation(
             code=code,
             symbol=symbol,
-            generated_at=datetime.now(timezone.utc).isoformat(),
+            generated_at=generated_at.isoformat(),
             reference_price=price,
             kiasha_call=decision.call,
             weighted_score=decision.weighted_score,
             breakdown=decision.breakdown,
         )
     except Exception:
-        return
+        pass
+    try:
+        save_analysis(
+            scope="symbol",
+            symbol=symbol,
+            analysis_type="kiasha_decision",
+            score=decision.weighted_score,
+            created_at=generated_at,
+            payload={
+                "code": code,
+                "symbol": symbol,
+                "call": decision.call,
+                "weightedScore": decision.weighted_score,
+                "explanation": decision.explanation,
+                "breakdown": decision.breakdown,
+                "referencePrice": price,
+                "dataAvailability": company.get("data_available") or {},
+            },
+        )
+    except Exception:
+        # Historical memory is fail-soft and must never block a recommendation.
+        pass
 
 
 def decide(company: dict) -> Decision:
