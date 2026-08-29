@@ -6,6 +6,8 @@ receive ``None`` and the existing TSETMC/CODAL path continues unchanged.
 
 Server configuration:
     TINDEX_API_TOKEN=<developer token>
+    TINDEX_CACHE_TTL_SECONDS=900
+    TINDEX_FULL_ENRICHMENT=true|false
 
 The token is server-only and must never be embedded in Expo/mobile code.
 """
@@ -14,14 +16,15 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from dataclasses import dataclass
-from functools import lru_cache
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 BASE_URL = "https://tindex.app"
 TIMEOUT_SECONDS = 8
+_CACHE: dict[tuple[str, str], tuple[float, dict | None]] = {}
 
 
 @dataclass(frozen=True)
@@ -57,6 +60,17 @@ def configured() -> bool:
     return bool(os.getenv("TINDEX_API_TOKEN", "").strip())
 
 
+def full_enrichment_enabled() -> bool:
+    return os.getenv("TINDEX_FULL_ENRICHMENT", "false").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _cache_ttl() -> float:
+    try:
+        return max(0.0, float(os.getenv("TINDEX_CACHE_TTL_SECONDS", "900")))
+    except ValueError:
+        return 900.0
+
+
 def _num(value):
     try:
         return float(value) if value is not None else None
@@ -64,10 +78,15 @@ def _num(value):
         return None
 
 
-def _get(path: str) -> dict | None:
+def _get(path: str, *, cache_key: str | None = None) -> dict | None:
     token = os.getenv("TINDEX_API_TOKEN", "").strip()
     if not token:
         return None
+    key = (token[-8:], cache_key or path)
+    now = time.monotonic()
+    cached = _CACHE.get(key)
+    if cached and now < cached[0]:
+        return cached[1]
     req = Request(
         f"{BASE_URL}{path}",
         headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
@@ -80,25 +99,26 @@ def _get(path: str) -> dict | None:
     if not isinstance(payload, dict) or not payload.get("success"):
         return None
     data = payload.get("data")
-    return data if isinstance(data, dict) else None
+    result = data if isinstance(data, dict) else None
+    _CACHE[key] = (now + _cache_ttl(), result)
+    return result
 
 
-@lru_cache(maxsize=256)
-def fetch_symbol_snapshot(symbol: str) -> TindexSymbolSnapshot | None:
-    """Fetch verified Tindex overview/profile/flow/performance for a Persian ticker."""
+def fetch_symbol_overview(symbol: str) -> dict | None:
+    """Fetch only the one-request Tindex overview endpoint for a ticker.
+
+    This is the preferred path for bulk collectors because it consumes one API
+    request per symbol and carries quote/valuation fields needed for daily market
+    memory. Full four-endpoint enrichment is opt-in separately.
+    """
     ticker = symbol.strip()
     if not ticker or not configured():
         return None
     slug = quote(ticker, safe="")
+    return _get(f"/api/public/stock-market/symbol/{slug}/overview", cache_key=f"overview:{ticker}")
 
-    overview = _get(f"/api/public/stock-market/symbol/{slug}/overview") or {}
-    profile = _get(f"/api/public/stock-market/symbol/{slug}/profile") or {}
-    flow_data = _get(f"/api/public/stock-market/symbol/{slug}/flow") or {}
-    perf_data = _get(f"/api/public/stock-market/symbol/{slug}/performance") or {}
 
-    if not any((overview, profile, flow_data, perf_data)):
-        return None
-
+def _snapshot_from_parts(ticker: str, overview: dict, profile: dict, flow_data: dict, perf_data: dict) -> TindexSymbolSnapshot:
     symbol_info = overview.get("symbol") or profile.get("symbol") or {}
     quote_data = overview.get("quote") or overview.get("market") or overview.get("latest") or {}
     company = profile.get("company") or {}
@@ -110,7 +130,7 @@ def fetch_symbol_snapshot(symbol: str) -> TindexSymbolSnapshot | None:
     return TindexSymbolSnapshot(
         ticker=str(symbol_info.get("ticker") or ticker),
         price=_num(quote_data.get("last_price") or quote_data.get("price") or quote_data.get("closing_price")),
-        change_percent=_num(quote_data.get("change_percent")),
+        change_percent=_num(quote_data.get("last_change_percent") or quote_data.get("change_percent")),
         pe=_num(quote_data.get("pe") or overview.get("pe")),
         market_cap=_num(quote_data.get("market_cap") or overview.get("market_cap")),
         sector=profile.get("sector") or company.get("industry"),
@@ -133,3 +153,27 @@ def fetch_symbol_snapshot(symbol: str) -> TindexSymbolSnapshot | None:
         range_52w_position=_num(range_52w.get("position")),
         avg_trade_value_30d=_num(performance.get("avg_trade_value_30d")),
     )
+
+
+def fetch_symbol_snapshot(symbol: str) -> TindexSymbolSnapshot | None:
+    """Fetch a verified Tindex snapshot for a Persian ticker.
+
+    By default this performs only one request (overview). Set
+    ``TINDEX_FULL_ENRICHMENT=true`` only after the account has sufficient rate
+    capacity; then profile/flow/performance are fetched as well.
+    """
+    ticker = symbol.strip()
+    if not ticker or not configured():
+        return None
+    overview = fetch_symbol_overview(ticker) or {}
+    profile: dict = {}
+    flow_data: dict = {}
+    perf_data: dict = {}
+    if full_enrichment_enabled():
+        slug = quote(ticker, safe="")
+        profile = _get(f"/api/public/stock-market/symbol/{slug}/profile", cache_key=f"profile:{ticker}") or {}
+        flow_data = _get(f"/api/public/stock-market/symbol/{slug}/flow", cache_key=f"flow:{ticker}") or {}
+        perf_data = _get(f"/api/public/stock-market/symbol/{slug}/performance", cache_key=f"performance:{ticker}") or {}
+    if not any((overview, profile, flow_data, perf_data)):
+        return None
+    return _snapshot_from_parts(ticker, overview, profile, flow_data, perf_data)
