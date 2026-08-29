@@ -1,48 +1,51 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, useColorScheme, SafeAreaView, Pressable, TextInput, ActivityIndicator } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, BottomTabInset, MaxContentWidth } from '@/constants/theme';
 import { fetchWatchlist, formatPrice, MarketSymbolResult, StockItem } from '@/lib/api';
 import { fetchMarketSymbols } from '@/lib/market-symbols';
 import { fetchTsetmcQuotes } from '@/lib/market-quote';
+import { getFavorites } from '@/lib/favorites';
 import { SymbolLogo } from '@/components/symbol-logo';
 import { StockRowSkeleton } from '@/components/skeleton';
 import { marketStatusLabel } from '@/lib/market-hours';
 
 const PAGE_SIZE=40;
-type Category='ALL'|'TOP'|'LOSERS'|'PRICED'|'TSE'|'IFB'|'IFB_BASE';
-const CATEGORIES:{key:Category;label:string}[]=[{key:'ALL',label:'همه نمادها'},{key:'PRICED',label:'دارای قیمت'},{key:'TOP',label:'برترین‌ها'},{key:'LOSERS',label:'بیشترین افت'},{key:'TSE',label:'بورس'},{key:'IFB',label:'فرابورس'},{key:'IFB_BASE',label:'بازار پایه'}];
+type Category='ALL'|'FAVORITES'|'TOP'|'LOSERS'|'PRICED'|'TSE'|'IFB'|'IFB_BASE';
+const CATEGORIES:{key:Category;label:string}[]=[{key:'ALL',label:'همه نمادها'},{key:'FAVORITES',label:'علاقه‌مندی‌ها'},{key:'PRICED',label:'دارای قیمت'},{key:'TOP',label:'برترین‌ها'},{key:'LOSERS',label:'بیشترین افت'},{key:'TSE',label:'بورس'},{key:'IFB',label:'فرابورس'},{key:'IFB_BASE',label:'بازار پایه'}];
 
 export default function MarketScreen(){
  const scheme=useColorScheme()==='dark'?'dark':'light',colors=Colors[scheme];
  const[symbols,setSymbols]=useState<MarketSymbolResult[]>([]),[quotes,setQuotes]=useState<Record<string,StockItem>>({});
+ const[favoriteCodes,setFavoriteCodes]=useState<string[]>([]);
  const[loading,setLoading]=useState(true),[refreshing,setRefreshing]=useState(false),[loadingMore,setLoadingMore]=useState(false),[pricing,setPricing]=useState(false),[error,setError]=useState(false);
  const[query,setQuery]=useState(''),[category,setCategory]=useState<Category>('ALL'),[filtersOpen,setFiltersOpen]=useState(false),[visibleCount,setVisibleCount]=useState(PAGE_SIZE),[countdown,setCountdown]=useState(30);
  const marketStatus=marketStatusLabel();
  const activeCategory=CATEGORIES.find(c=>c.key===category)?.label??'فیلتر';
 
+ useFocusEffect(useCallback(()=>{let active=true;getFavorites().then(items=>{if(active)setFavoriteCodes(items.map(x=>x.code))});return()=>{active=false}},[]));
+
  const filtered=useMemo(()=>{
    const q=query.trim();let items=q?symbols.filter(s=>s.symbol.includes(q)||s.name.includes(q)||s.code.includes(q)):symbols;
+   if(category==='FAVORITES'){const fav=new Set(favoriteCodes);items=items.filter(s=>fav.has(s.code)||fav.has(s.symbol));}
    if(category==='TSE'||category==='IFB'||category==='IFB_BASE')items=items.filter(s=>(s.market??'').toUpperCase()===category);
    if(category==='PRICED')items=items.filter(s=>{const x=quotes[s.code];return Boolean(x&&!x.error&&(x.lastPrice!=null||x.closingPrice!=null))});
    if(category==='TOP'||category==='LOSERS')items=[...items].filter(s=>{const q=quotes[s.code];return q?.changePercent!=null&&!q.error}).sort((a,b)=>{const pa=Number(quotes[a.code]?.changePercent??0),pb=Number(quotes[b.code]?.changePercent??0);return category==='TOP'?pb-pa:pa-pb});
    return items;
- },[symbols,query,category,quotes]);
+ },[symbols,query,category,quotes,favoriteCodes]);
  const visible=useMemo(()=>filtered.slice(0,visibleCount),[filtered,visibleCount]);
 
  const mergeWatchlist=useCallback(async(items:MarketSymbolResult[])=>{try{const watch=await fetchWatchlist();setQuotes(cur=>{const next={...cur};for(const w of watch){const match=items.find(s=>s.symbol===w.name||s.symbol===w.code||s.code===w.code||s.name===w.name);if(match)next[match.code]={...w,code:match.code,name:match.symbol}}return next})}catch{}},[]);
  const refreshQuotes=useCallback(async(items:MarketSymbolResult[])=>{
    if(!items.length)return;setPricing(true);
    try{
-     // Update the screen after every small batch instead of waiting for a large
-     // market scan to finish. Users see the first verified prices immediately.
      for(let i=0;i<items.length;i+=12){const batch=items.slice(i,i+12);const next=await fetchTsetmcQuotes(batch);setQuotes(cur=>({...cur,...next}))}
      mergeWatchlist(items);
    }finally{setPricing(false)}
  },[mergeWatchlist]);
  const loadUniverse=useCallback(async()=>{try{setError(false);const items=await fetchMarketSymbols({limit:5000});if(!items.length)throw new Error('empty');setSymbols(items);setVisibleCount(PAGE_SIZE);refreshQuotes(items.slice(0,60))}catch{setError(true)}finally{setLoading(false);setRefreshing(false)}},[refreshQuotes]);
  useEffect(()=>{loadUniverse()},[loadUniverse]);
- useEffect(()=>{setVisibleCount(PAGE_SIZE);const timer=setTimeout(()=>{const source=(category==='TOP'||category==='LOSERS'||category==='PRICED')?symbols.slice(0,72):filtered.slice(0,PAGE_SIZE);refreshQuotes(source)},150);return()=>clearTimeout(timer)},[query,category]);
+ useEffect(()=>{setVisibleCount(PAGE_SIZE);const timer=setTimeout(()=>{const source=(category==='TOP'||category==='LOSERS'||category==='PRICED')?symbols.slice(0,72):filtered.slice(0,PAGE_SIZE);refreshQuotes(source)},150);return()=>clearTimeout(timer)},[query,category,favoriteCodes]);
  useEffect(()=>{const interval=setInterval(()=>{const target=category==='PRICED'?symbols.slice(0,48):visible;refreshQuotes(target);setCountdown(30)},30000),tick=setInterval(()=>setCountdown(c=>c>0?c-1:30),1000);return()=>{clearInterval(interval);clearInterval(tick)}},[refreshQuotes,visible,category,symbols]);
  const selectCategory=(key:Category)=>{setCategory(key);setFiltersOpen(false)};
  const loadMore=async()=>{if(loadingMore||visibleCount>=filtered.length)return;setLoadingMore(true);const n=Math.min(visibleCount+PAGE_SIZE,filtered.length),more=filtered.slice(visibleCount,n);setVisibleCount(n);refreshQuotes(more).finally(()=>setLoadingMore(false))};
@@ -52,6 +55,7 @@ export default function MarketScreen(){
    <View style={styles.searchRow}><Pressable hitSlop={8} onPress={()=>setFiltersOpen(v=>!v)} style={[styles.filterButton,{backgroundColor:filtersOpen?Brand.primary:colors.backgroundElement,borderColor:filtersOpen?Brand.primary:colors.backgroundSelected}]}><Text style={[styles.filterButtonIcon,{color:filtersOpen?'#fff':colors.text}]}>☰</Text><Text style={[styles.filterButtonText,{color:filtersOpen?'#fff':colors.text}]}>{activeCategory}</Text></Pressable><TextInput value={query} onChangeText={setQuery} placeholder="جستجوی نماد یا شرکت..." placeholderTextColor={colors.textSecondary} style={[styles.searchBox,{backgroundColor:colors.backgroundElement,color:colors.text,borderColor:colors.backgroundSelected}]} textAlign="right"/></View>
    {filtersOpen?<View style={[styles.filterMenu,{backgroundColor:colors.backgroundElement,borderColor:colors.backgroundSelected}]}>{CATEGORIES.map(c=><Pressable key={c.key} onPress={()=>selectCategory(c.key)} style={[styles.filterOption,{backgroundColor:category===c.key?colors.backgroundSelected:'transparent'}]}><View style={[styles.radio,{borderColor:category===c.key?Brand.primary:colors.textSecondary},category===c.key&&{backgroundColor:Brand.primary}]}/><Text style={[styles.filterOptionText,{color:category===c.key?Brand.primary:colors.text}]}>{c.label}</Text></Pressable>)}</View>:null}
    {(category==='TOP'||category==='LOSERS')?<Text style={[styles.rankingNote,{color:colors.textSecondary}]}>رتبه‌بندی فقط از قیمت و درصد تغییر تأییدشده انجام می‌شود.</Text>:null}
+   {category==='FAVORITES'&&!favoriteCodes.length?<Text style={[styles.rankingNote,{color:colors.textSecondary}]}>هنوز نمادی به علاقه‌مندی‌ها اضافه نشده است.</Text>:null}
    {error?<Text style={[styles.errorText,{color:colors.textSecondary}]}>فهرست بازار فعلاً در دسترس نیست؛ دوباره پایین بکشید.</Text>:null}
    <FlatList data={visible} keyExtractor={i=>i.code} keyboardShouldPersistTaps="handled" onEndReached={loadMore} onEndReachedThreshold={.35} contentContainerStyle={{paddingHorizontal:Spacing.three,paddingBottom:BottomTabInset+Spacing.four,maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'}} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);setQuotes({});setCountdown(30);loadUniverse()}} tintColor={Brand.stockGreen}/>} ListEmptyComponent={loading?<View>{[1,2,3,4].map(i=><StockRowSkeleton key={i}/>)}</View>:pricing?<View style={styles.priceLoading}><ActivityIndicator color={Brand.primary}/><Text style={[styles.empty,{color:colors.textSecondary}]}>در حال پیدا کردن نمادهای دارای قیمت تأییدشده…</Text></View>:<Text style={[styles.empty,{color:colors.textSecondary}]}>نمادی با این فیلتر پیدا نشد</Text>} ListFooterComponent={loadingMore?<ActivityIndicator color={Brand.primary}/>:null} renderItem={({item,index})=>{const quote=quotes[item.code],hasPrice=Boolean(quote&&!quote.error&&(quote.lastPrice!=null||quote.closingPrice!=null)),hasPct=quote?.changePercent!=null&&!quote.error,p=hasPct?Number(quote.changePercent):null,up=(p??0)>=0,ranked=(category==='TOP'||category==='LOSERS')&&p!==null;return <Pressable hitSlop={3} onPress={()=>router.push(`/stock/${item.code}`)}><View style={[styles.row,{backgroundColor:colors.backgroundElement}]}><View style={styles.rowLeft}>{ranked?<Text style={[styles.rank,{color:colors.textSecondary}]}>{index+1}</Text>:null}<SymbolLogo symbol={item.symbol} size={42}/><View style={{alignItems:'flex-start',flex:1}}><Text style={[styles.rowName,{color:colors.text}]}>{item.symbol}</Text><Text style={[styles.rowCompany,{color:colors.textSecondary}]} numberOfLines={1}>{item.name}</Text><Text style={[styles.marketTagText,{color:colors.textSecondary}]}>{item.market??'CODAL'}</Text></View></View><View style={styles.rowRight}>{hasPrice?<><Text style={[styles.rowPrice,{color:colors.text}]}>{formatPrice(quote.lastPrice??quote.closingPrice)} ریال</Text>{hasPct&&p!==null?<Text style={{color:up?Brand.stockGreen:Brand.negative,fontFamily:Fonts.mono,fontSize:12}}>{up?'▲':'▼'} {Math.abs(p).toFixed(2)}٪</Text>:null}</>:<Text style={[styles.quoteState,{color:colors.textSecondary}]}>{pricing?'در حال دریافت…':'قیمت تأییدشده ندارد'}</Text>}</View></View></Pressable>}}/>
  </View></SafeAreaView>
