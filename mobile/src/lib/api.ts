@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authFetch, authHeaders } from '@/lib/auth-session';
 
 export const API_BASE = 'https://biap.dadashi.no/api';
 export const KIASHA_API_BASE = process.env.EXPO_PUBLIC_KIASHA_API_BASE || API_BASE;
@@ -19,11 +19,7 @@ export type WatchlistResponse = {
 };
 
 async function getHeaders(): Promise<Record<string, string>> {
-  const token = await AsyncStorage.getItem('accessToken');
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
+  return authHeaders();
 }
 
 export async function fetchWatchlist(timeoutMs = 10_000): Promise<StockItem[]> {
@@ -31,7 +27,7 @@ export async function fetchWatchlist(timeoutMs = 10_000): Promise<StockItem[]> {
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const headers = await getHeaders();
-    const res = await fetch(`${API_BASE}/stock/watchlist`, { headers, signal: controller.signal });
+    const res = await authFetch(`${API_BASE}/stock/watchlist`, { headers, signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json: WatchlistResponse = await res.json();
     return json.symbols ?? [];
@@ -103,13 +99,14 @@ async function sleep(ms: number): Promise<void> {
 export async function fetchRecommendation(code: string, timeoutMs = 15_000): Promise<Recommendation | null> {
   // The Kiasha service can briefly return 503 while its verified CODAL/TSETMC
   // caches warm after a restart. Retry that state once rather than making the
-  // screen look permanently unavailable. All other failures stay best-effort.
+  // screen look permanently unavailable. authFetch also refreshes an expired
+  // access token once, which keeps analysis usable after a long app session.
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const headers = await getHeaders();
-      const res = await fetch(`${KIASHA_API_BASE}/stock/recommendation/${encodeURIComponent(code)}`, {
+      const res = await authFetch(`${KIASHA_API_BASE}/stock/recommendation/${encodeURIComponent(code)}`, {
         headers,
         signal: controller.signal,
       });
@@ -166,7 +163,7 @@ export async function previewPaperOrder(params: {
 }): Promise<OrderPreviewResult> {
   try {
     const headers = await getHeaders();
-    const res = await fetch(`${KIASHA_API_BASE}/orders/preview`, {
+    const res = await authFetch(`${KIASHA_API_BASE}/orders/preview`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ code: params.code, side: params.side, quantity: params.quantity, mode: 'paper' }),
@@ -194,7 +191,7 @@ export async function submitPaperOrder(
 ): Promise<{ ok: true; receipt: OrderIntent & { submittedAt: string; broker: string | null; brokerOrderId: string | null } } | { ok: false; message: string }> {
   try {
     const headers = await getHeaders();
-    const res = await fetch(`${KIASHA_API_BASE}/orders/submit`, {
+    const res = await authFetch(`${KIASHA_API_BASE}/orders/submit`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ intentId }),
@@ -210,13 +207,8 @@ export async function submitPaperOrder(
 }
 
 // --- Order history -----------------------------------------------------
-// `/audit/orders` is scoped per caller by `analysis/auth.py`'s `require_user_id`
-// (bearer token, JWT-verified when the backend is configured with the shared
-// secret) -- the same header this app already sends on every request. A
-// preview call alone also writes a row (status "SIMULATED"/"PENDING_APPROVAL",
-// no `submittedAt`) before the user ever confirms, so only rows that reached
-// `/orders/submit` (identified by having `submittedAt`) belong in the user's
-// order history.
+// `/audit/orders` is scoped per caller by `analysis/auth.py`'s `require_user_id`.
+// authFetch refreshes stale access tokens before retrying the history request.
 
 export type OrderReceipt = OrderIntent & {
   submittedAt?: string;
@@ -230,7 +222,7 @@ export async function fetchOrderHistory(limit = 100, timeoutMs = 10_000): Promis
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const headers = await getHeaders();
-    const res = await fetch(`${KIASHA_API_BASE}/audit/orders?limit=${limit}`, {
+    const res = await authFetch(`${KIASHA_API_BASE}/audit/orders?limit=${limit}`, {
       headers,
       signal: controller.signal,
     });
@@ -268,7 +260,7 @@ export async function fetchSymbols(
     if (params.market) query.set('market', params.market);
     if (params.limit) query.set('limit', String(params.limit));
     const headers = await getHeaders();
-    const res = await fetch(`${KIASHA_API_BASE}/stock/symbols?${query.toString()}`, {
+    const res = await authFetch(`${KIASHA_API_BASE}/stock/symbols?${query.toString()}`, {
       headers,
       signal: controller.signal,
     });
@@ -317,7 +309,7 @@ async function fetchKiashaJson<T>(path: string, timeoutMs = 10_000): Promise<T |
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const headers = await getHeaders();
-    const res = await fetch(`${KIASHA_API_BASE}${path}`, { headers, signal: controller.signal });
+    const res = await authFetch(`${KIASHA_API_BASE}${path}`, { headers, signal: controller.signal });
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {
