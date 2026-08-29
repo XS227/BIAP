@@ -150,12 +150,7 @@ def _record_observation(company: dict, decision: Decision) -> None:
 
 
 def _scenario_signal(company: dict) -> tuple[dict | None, float | None, float]:
-    """Return grounded scenario, base signal and conservative blend weight.
-
-    Scenario evidence can influence Kiasha only when the engine reports status=ok.
-    The influence is capped and scaled by scenario confidence, so one sparse
-    memory observation can never overpower the six analyst agents.
-    """
+    """Return grounded scenario, base signal and conservative blend weight."""
     try:
         scenario = build_scenarios(company, persist=True)
     except Exception:
@@ -201,6 +196,24 @@ def decide(company: dict) -> Decision:
     if scenario_score is not None and scenario_weight > 0:
         weighted_score = agent_score * (1.0 - scenario_weight) + scenario_score * scenario_weight
 
+    # Expose scenario details through the existing breakdown contract so old
+    # clients remain compatible while newer mobile builds can render all three
+    # grounded scenarios without requiring a breaking API response change.
+    if scenario is not None:
+        breakdown.append({
+            "agent": "scenario",
+            "vote": round(scenario_score or 0.0, 3),
+            "confidence": float(scenario.get("confidence") or 0.0),
+            "trust_score": None,
+            "trust_source": "verified-scenario-engine",
+            "observed_samples": int(scenario.get("historyObservations") or 0),
+            "maturity": "grounded" if scenario.get("status") == "ok" else "insufficient",
+            "weight_pre_norm": round(scenario_weight, 3),
+            "weight_normalized": round(scenario_weight, 3),
+            "reasoning": "سناریو بر پایه داده‌های معتبر موجود ساخته شده و قیمت آینده دقیق جعل نمی‌شود.",
+            "scenario": scenario,
+        })
+
     if weighted_score > 0.25:
         call = "BUY"
     elif weighted_score < -0.25:
@@ -208,7 +221,8 @@ def decide(company: dict) -> Decision:
     else:
         call = "HOLD"
 
-    top = max(breakdown, key=lambda e: e["weight_normalized"])
+    agent_entries = [entry for entry in breakdown if entry.get("agent") != "scenario"]
+    top = max(agent_entries, key=lambda e: e["weight_normalized"])
     scenario_note = ""
     if scenario is not None:
         if scenario_score is not None:
