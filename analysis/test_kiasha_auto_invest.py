@@ -8,7 +8,7 @@ def test_auto_invest_defaults_off(tmp_path):
     status = store.get_settings(user_id="u1")
     assert status["enabled"] is False
     assert status["horizon"] == "short"
-    assert status["maxDailyTrades"] == 1
+    assert status["maxDailyTrades"] == 3
 
 
 def test_auto_invest_update_is_user_scoped(tmp_path):
@@ -19,6 +19,7 @@ def test_auto_invest_update_is_user_scoped(tmp_path):
     assert changed["horizon"] == "long"
     assert changed["maxDailyTrades"] == 2
     assert untouched["enabled"] is False
+    assert untouched["maxDailyTrades"] == 3
     assert store.enabled_users() == ["u1"]
 
 
