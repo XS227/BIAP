@@ -15,11 +15,16 @@ function idempotencyKey(code: string): string {
   return `mobile-${Date.now()}-${code.replace(/[^\p{L}\p{N}]/gu, '').slice(0, 20)}`;
 }
 
-export async function executeKiashaPaper(code: string, horizon: 'short' | 'long' = 'short'): Promise<{ ok: true; data: KiashaPaperExecution } | { ok: false; auth: boolean; message: string }> {
+export async function executeKiashaPaper(
+  code: string,
+  side: 'BUY' | 'SELL',
+  quantity = 10,
+): Promise<{ ok: true; data: KiashaPaperExecution } | { ok: false; auth: boolean; message: string }> {
   try {
-    const res = await authFetch(`${KIASHA_API_BASE}/performance/ai/paper-execute/${encodeURIComponent(code)}?horizon=${horizon}`, {
+    const res = await authFetch(`${KIASHA_API_BASE}/performance/ai/manual-paper/${encodeURIComponent(code)}`, {
       method: 'POST',
       headers: { 'Idempotency-Key': idempotencyKey(code) },
+      body: JSON.stringify({ side, quantity }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
