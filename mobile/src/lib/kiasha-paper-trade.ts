@@ -6,9 +6,30 @@ export type KiashaPaperExecution = {
   reasons?: string[];
   paperExecution?: boolean;
   liveExecution?: boolean;
+  queued?: boolean;
+  orderStatus?: string;
+  note?: string;
+  order?: ManualPaperOrder;
   receipt?: { status?: string; note?: string; side?: string; quantity?: number } | null;
   intent?: { side?: string; quantity?: number } | null;
   accountAfter?: Record<string, unknown>;
+};
+
+export type ManualPaperOrder = {
+  id: string;
+  code: string;
+  side: 'BUY' | 'SELL';
+  quantity: number;
+  limit_price?: number | null;
+  mode: string;
+  status: string;
+  recommendation_call: string;
+  recommendation_score: number;
+  created_at: string;
+  submittedAt?: string;
+  note?: string;
+  queued?: boolean;
+  executedAt?: string | null;
 };
 
 function idempotencyKey(code: string): string {
@@ -38,5 +59,18 @@ export async function executeKiashaPaper(
     return { ok: true, data: data as KiashaPaperExecution };
   } catch {
     return { ok: false, auth: false, message: 'اتصال به سرور برقرار نشد' };
+  }
+}
+
+export async function fetchManualPaperOrders(limit = 100): Promise<ManualPaperOrder[] | null> {
+  try {
+    const res = await authFetch(`${KIASHA_API_BASE}/performance/ai/manual-paper-orders?limit=${limit}`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return Array.isArray(data?.items) ? (data.items as ManualPaperOrder[]) : [];
+  } catch {
+    return null;
   }
 }
