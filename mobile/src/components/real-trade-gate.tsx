@@ -1,34 +1,31 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Brand, Fonts, Spacing, ThemeColors } from '@/constants/theme';
 
-/** Broker-neutral production boundary. Real orders stay outside BIAP until an
- * officially authorized broker adapter is connected. */
+/** Compact broker-API placeholder. Real orders remain disabled until an
+ * officially authorized broker/order API is connected. */
 export function RealTradeGate({ colors }: { colors: ThemeColors }) {
   return (
-    <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
+    <View style={[styles.card, { backgroundColor: colors.backgroundElement, borderColor: `${Brand.primary}55` }]}>
       <View style={styles.head}>
-        <View style={styles.manualBadge}><Text style={styles.manualBadgeText}>MANUAL</Text></View>
-        <Text style={[styles.title, { color: colors.text }]}>اجرای واقعی فعلاً دستی است</Text>
+        <View style={styles.badge}><Text style={styles.badgeText}>SOON</Text></View>
+        <View style={styles.copy}>
+          <Text style={[styles.title, { color: colors.text }]}>اتصال API کارگزاری</Text>
+          <Text style={[styles.body, { color: colors.textSecondary }]}>به‌زودی — پس از اتصال منبع مجاز، خرید و فروش مستقیم از همین بخش فعال می‌شود.</Text>
+        </View>
+        <View style={styles.apiDot}><Text style={styles.apiIcon}>↔</Text></View>
       </View>
-      <Text style={[styles.body, { color: colors.textSecondary }]}>
-        BIAP به کارگزاری خاصی وابسته نیست. کیا‌شا تحلیل، نماد، اندازه پیشنهادی و زمان تصمیم را ارائه می‌کند؛ خرید یا فروش واقعی را شما در کارگزاری دلخواه انجام می‌دهید و سپس داخل BIAP تأیید می‌کنید تا موقعیت برای پیگیری بعدی ثبت شود.
-      </Text>
-      <View style={[styles.flow, { backgroundColor: colors.backgroundSelected }]}>
-        <Text style={[styles.flowText, { color: colors.text }]}>داده بازار + CODAL ← کیا‌شا ← کنترل ریسک ← پیشنهاد اندازه/زمان ← اجرای دستی در کارگزاری دلخواه ← تأیید خرید/فروش در BIAP</Text>
-      </View>
-      <Text style={[styles.note, { color: Brand.warning }]}>ارسال مستقیم سفارش از BIAP تا زمان اتصال رسمی یک Broker Adapter مجاز، غیرفعال می‌ماند.</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: Spacing.three, padding: Spacing.four, marginTop: Spacing.three, alignItems: 'flex-end', gap: Spacing.two },
-  head: { width: '100%', flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontFamily: Fonts.sans, fontSize: 15, fontWeight: '800' },
-  manualBadge: { backgroundColor: '#365314', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
-  manualBadgeText: { color: '#fff', fontFamily: Fonts.mono, fontSize: 9, fontWeight: '800' },
-  body: { fontFamily: Fonts.sans, fontSize: 11.5, lineHeight: 19, textAlign: 'right' },
-  flow: { width: '100%', borderRadius: Spacing.two, padding: Spacing.three },
-  flowText: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 18, textAlign: 'right' },
-  note: { fontFamily: Fonts.sans, fontSize: 10.5, fontWeight: '700', textAlign: 'right' },
+  card: { borderRadius: Spacing.three, padding: Spacing.three, marginTop: Spacing.three, borderWidth: 1 },
+  head: { width: '100%', flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.two },
+  copy: { flex: 1, alignItems: 'flex-end' },
+  title: { fontFamily: Fonts.sans, fontSize: 14, fontWeight: '900' },
+  body: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 17, textAlign: 'right', marginTop: 2 },
+  badge: { backgroundColor: '#4c1d95', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
+  badgeText: { color: '#ddd6fe', fontFamily: Fonts.mono, fontSize: 9, fontWeight: '900' },
+  apiDot: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#26134f', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#7c3aed' },
+  apiIcon: { color: '#c4b5fd', fontSize: 17, fontWeight: '900' },
 });
