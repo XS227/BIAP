@@ -1,7 +1,8 @@
-import { fetchRecommendation } from '@/lib/api';
+import { fetchRecommendation, type MarketSymbolResult } from '@/lib/api';
 import { fetchServerPaperAccount } from '@/lib/paper-account';
 import { getDemoMode } from '@/lib/demo-mode';
 import { getDemoWallet } from '@/lib/demo-trading';
+import { fetchTsetmcQuote } from '@/lib/market-quote';
 
 export type PaperPosition = {
   code: string;
@@ -32,25 +33,26 @@ export type PaperPortfolio = {
   demo?: boolean;
 };
 
-const PAPER_QUOTE_TIMEOUT_MS = 40_000;
+const NAME_TIMEOUT_MS = 6_000;
+
+async function enrichPosition(p: { code: string; quantity: number; averageCost: number | null }): Promise<PaperPosition> {
+  const symbol: MarketSymbolResult = { code: p.code, symbol: p.code, name: p.code };
+  const [quote, rec] = await Promise.all([
+    fetchTsetmcQuote(symbol, 2_800, false).catch(() => null),
+    fetchRecommendation(p.code, NAME_TIMEOUT_MS).catch(() => null),
+  ]);
+  const directPrice = quote && !quote.error ? (quote.lastPrice ?? quote.closingPrice ?? null) : null;
+  const currentPrice = directPrice ?? rec?.livePrice?.lastPrice ?? rec?.livePrice?.closingPrice ?? null;
+  const costBasis = p.averageCost === null ? null : p.averageCost * p.quantity;
+  const marketValue = currentPrice === null ? null : currentPrice * p.quantity;
+  const unrealizedPnL = marketValue !== null && costBasis !== null ? marketValue - costBasis : null;
+  const unrealizedPnLPct = unrealizedPnL !== null && costBasis && costBasis > 0 ? (unrealizedPnL / costBasis) * 100 : null;
+  const resolvedName = typeof rec?.name === 'string' && rec.name.trim() && rec.name !== p.code ? rec.name.trim() : undefined;
+  return { ...p, displayName: resolvedName, currentPrice, marketValue, costBasis, unrealizedPnL, unrealizedPnLPct, weightPct: null };
+}
 
 async function enrichPositions(base: Array<{ code: string; quantity: number; averageCost: number | null }>): Promise<PaperPosition[]> {
-  // The verified recommendation path also resolves TSETMC numeric instrument
-  // IDs back to a human-readable ticker/name. Store that presentation label on
-  // the position so the portfolio never exposes opaque insCode values as the
-  // primary stock name.
-  return Promise.all(base.map(async (p) => {
-    const rec = await fetchRecommendation(p.code, PAPER_QUOTE_TIMEOUT_MS);
-    const currentPrice = rec?.livePrice?.lastPrice ?? rec?.livePrice?.closingPrice ?? null;
-    const costBasis = p.averageCost === null ? null : p.averageCost * p.quantity;
-    const marketValue = currentPrice === null ? null : currentPrice * p.quantity;
-    const unrealizedPnL = marketValue !== null && costBasis !== null ? marketValue - costBasis : null;
-    const unrealizedPnLPct = unrealizedPnL !== null && costBasis && costBasis > 0 ? (unrealizedPnL / costBasis) * 100 : null;
-    const resolvedName = typeof rec?.name === 'string' && rec.name.trim() && rec.name !== p.code
-      ? rec.name.trim()
-      : undefined;
-    return { ...p, displayName: resolvedName, currentPrice, marketValue, costBasis, unrealizedPnL, unrealizedPnLPct, weightPct: null };
-  }));
+  return Promise.all(base.map(enrichPosition));
 }
 
 function summarize(positions: PaperPosition[], extra?: Partial<PaperPortfolio>): PaperPortfolio {
@@ -63,38 +65,17 @@ function summarize(positions: PaperPosition[], extra?: Partial<PaperPortfolio>):
   const totalUnrealizedPnL = allPositionsPriced && totalCostBasis !== null ? pricedMarketValue - totalCostBasis : null;
   const totalUnrealizedPnLPct = totalUnrealizedPnL !== null && totalCostBasis && totalCostBasis > 0 ? (totalUnrealizedPnL / totalCostBasis) * 100 : null;
   const weighted = positions.map((p) => ({ ...p, weightPct: pricedMarketValue > 0 && p.marketValue !== null ? (p.marketValue / pricedMarketValue) * 100 : null }));
-  return {
-    positions: weighted.sort((a, b) => (b.marketValue ?? -1) - (a.marketValue ?? -1)),
-    totalMarketValue,
-    totalCostBasis,
-    totalUnrealizedPnL,
-    totalUnrealizedPnLPct,
-    pricedPositions: priced.length,
-    totalPositions: positions.length,
-    ...extra,
-  };
+  return { positions: weighted.sort((a, b) => (b.marketValue ?? -1) - (a.marketValue ?? -1)), totalMarketValue, totalCostBasis, totalUnrealizedPnL, totalUnrealizedPnLPct, pricedPositions: priced.length, totalPositions: positions.length, ...extra };
 }
 
 export async function fetchPaperPortfolio(): Promise<PaperPortfolio | null> {
   if (await getDemoMode()) {
     const wallet = await getDemoWallet();
-    const base = Object.entries(wallet.holdings)
-      .filter(([, h]) => h.quantity > 0)
-      .map(([code, h]) => ({ code, quantity: h.quantity, averageCost: h.averageCost }));
+    const base = Object.entries(wallet.holdings).filter(([, h]) => h.quantity > 0).map(([code, h]) => ({ code, quantity: h.quantity, averageCost: h.averageCost }));
     return summarize(await enrichPositions(base), { cash: wallet.cash, initialCash: 100_000_000, demo: true, serverOwned: false });
   }
-
   const server = await fetchServerPaperAccount();
   if (!server) return null;
-  const base = server.account.positions
-    .filter((p) => Number(p.quantity) > 0)
-    .map((p) => ({ code: p.code, quantity: Number(p.quantity), averageCost: Number.isFinite(Number(p.avgCost)) ? Number(p.avgCost) : null }));
-  return summarize(await enrichPositions(base), {
-    cash: Number(server.account.cashBalance),
-    initialCash: Number(server.account.initialCash),
-    sizingCapital: Number(server.sizingCapital),
-    serverOwned: Boolean(server.serverOwned),
-    paperExecutionEnabled: Boolean(server.paperExecutionEnabled),
-    demo: false,
-  });
+  const base = server.account.positions.filter((p) => Number(p.quantity) > 0).map((p) => ({ code: p.code, quantity: Number(p.quantity), averageCost: Number.isFinite(Number(p.avgCost)) ? Number(p.avgCost) : null }));
+  return summarize(await enrichPositions(base), { cash: Number(server.account.cashBalance), initialCash: Number(server.account.initialCash), sizingCapital: Number(server.sizingCapital), serverOwned: Boolean(server.serverOwned), paperExecutionEnabled: Boolean(server.paperExecutionEnabled), demo: false });
 }
