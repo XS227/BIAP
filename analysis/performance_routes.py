@@ -12,6 +12,7 @@ from execution import submit_order_intent
 from kiasha_ai import analyze as analyze_with_ai, status as kiasha_ai_status
 from kiasha_auto_invest import auto_status, run_user_auto_invest, update_auto_settings
 from kiasha_paper import evaluate_ai_paper_proposal
+from manual_paper_routes import router as manual_paper_router
 from market_data import MarketDataUnavailable, find_quote
 from paper_execution_store import PaperExecutionStore
 from paper_sell_store import PaperSellStore
@@ -19,6 +20,7 @@ from performance_store import MIN_OBSERVED_SAMPLES, PerformanceStore
 from symbol_universe import SymbolUniverseUnavailable, query_symbols
 
 router = APIRouter(prefix="/performance", tags=["performance"])
+router.include_router(manual_paper_router)
 STORE = PerformanceStore()
 AUDIT_STORE = AuditStore()
 PAPER_EXECUTION_STORE = PaperExecutionStore()
