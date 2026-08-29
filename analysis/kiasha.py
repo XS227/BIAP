@@ -1,9 +1,9 @@
 """
 Kiasha decision layer for BIAP.
 
-Kiasha weights the BIAP analyst-agent team by observed track record. Seeded
-records are explicitly-labelled fallbacks only; real evaluated performance takes
-over once the conservative sample threshold is reached.
+Kiasha weights the BIAP analyst-agent team by observed track record. Until an
+agent has enough genuinely evaluated observations, Kiasha uses a transparent,
+non-historical experiment prior instead of invented performance history.
 """
 
 from datetime import datetime, timezone
@@ -20,6 +20,7 @@ MATURITY_CAPS = {
     "production": 0.35,
     "core": 0.50,
 }
+UNTRAINED_PRIOR_TRUST = 0.35
 
 
 def maturity_tier(n_calls: int, accuracy: float) -> str:
@@ -40,15 +41,12 @@ class AgentTrackRecord:
     pnl_std: float
 
 
-# Fallback history only. New evidence dimensions start conservatively in the
-# experiment tier until enough genuine observations exist.
+# Non-historical placeholders only. These values MUST NOT represent claimed
+# performance. They keep the shape of the track-record object while the actual
+# weighting path below uses UNTRAINED_PRIOR_TRUST until enough real samples exist.
 TRACK_RECORDS = {
-    "fundamental": AgentTrackRecord("fundamental", 640, 0.58, 0.35),
-    "risk": AgentTrackRecord("risk", 310, 0.52, 0.55),
-    "forecast": AgentTrackRecord("forecast", 80, 0.49, 0.90),
-    "comparison": AgentTrackRecord("comparison", 1240, 0.56, 0.40),
-    "technical": AgentTrackRecord("technical", 0, 0.50, 1.00),
-    "flow": AgentTrackRecord("flow", 0, 0.50, 1.00),
+    agent: AgentTrackRecord(agent, 0, 0.50, 1.00)
+    for agent in ("fundamental", "risk", "forecast", "comparison", "technical", "flow")
 }
 
 
@@ -67,15 +65,15 @@ def _performance_store() -> PerformanceStore:
 
 
 def _track_record_for_agent(agent: str) -> tuple[AgentTrackRecord, str, int]:
-    fallback = TRACK_RECORDS[agent]
+    prior = TRACK_RECORDS[agent]
     try:
         stats = _performance_store().agent_stats(agent)
     except (OSError, RuntimeError):
         stats = None
     if stats is None:
-        return fallback, "fallback", 0
+        return prior, "untrained-prior", 0
     if stats.evaluated_calls < MIN_OBSERVED_SAMPLES:
-        return fallback, "fallback", stats.evaluated_calls
+        return prior, "untrained-prior", stats.evaluated_calls
     observed = AgentTrackRecord(
         agent=agent,
         lifetime_calls=stats.evaluated_calls,
@@ -125,7 +123,10 @@ def decide(company: dict) -> Decision:
     breakdown = []
     for v in votes:
         tr, trust_source, observed_samples = _track_record_for_agent(v.agent)
-        score, tier, n_factor = trust_score(tr)
+        if trust_source == "observed":
+            score, tier, n_factor = trust_score(tr)
+        else:
+            score, tier, n_factor = UNTRAINED_PRIOR_TRUST, "experiment", 0.0
         cap = MATURITY_CAPS[tier]
         weight = min(v.confidence * score, cap)
         raw_weights.append(weight)
