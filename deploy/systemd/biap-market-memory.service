@@ -1,0 +1,15 @@
+[Unit]
+Description=BIAP verified market memory daily collector
+After=network-online.target biap-fin.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/biap-kiasha/XS227-BIAP/analysis
+Environment=BIAP_MARKET_MEMORY_DB=/var/lib/biap/market-memory.sqlite3
+Environment=TINDEX_DAILY_REQUEST_BUDGET=200
+Environment=TINDEX_REQUEST_INTERVAL_SECONDS=1
+Environment=TINDEX_CONSECUTIVE_FAILURE_STOP=3
+EnvironmentFile=-/etc/biap/market-memory.env
+ExecStart=/home/ubuntu/biap-kiasha/XS227-BIAP/analysis/.venv/bin/python /home/ubuntu/biap-kiasha/XS227-BIAP/analysis/run_market_memory_update.py
