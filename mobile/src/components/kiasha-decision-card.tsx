@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Brand, Fonts, Spacing, ThemeColors } from '@/constants/theme';
 import { Recommendation } from '@/lib/api';
-import { getDemoWallet } from '@/lib/demo-trading';
+import { DEMO_INITIAL_CASH, getDemoWallet } from '@/lib/demo-trading';
 import { fetchServerPaperAccount } from '@/lib/paper-account';
 
 function clamp(value: number, low: number, high: number) {
@@ -21,7 +21,7 @@ export function KiashaDecisionCard({ rec, colors, demo }: { rec: Recommendation;
         const wallet = await getDemoWallet();
         if (!active) return;
         setCash(wallet.cash);
-        setSizingCapital(wallet.cash);
+        setSizingCapital(DEMO_INITIAL_CASH);
         setBalanceSource('demo');
         return;
       }
@@ -48,9 +48,6 @@ export function KiashaDecisionCard({ rec, colors, demo }: { rec: Recommendation;
 
   const sizing = useMemo(() => {
     if (rec.call !== 'BUY' || cash === null || sizingCapital === null || cash <= 0 || sizingCapital <= 0) return null;
-    // Keep the UI aligned with BIAP's conservative Paper controls: max 5% per
-    // symbol and preserve at least a 30% cash reserve. Stronger BUY scores can
-    // use more of that ceiling, but the deterministic server risk gate remains authoritative.
     const strength = clamp((rec.score - 0.25) / 0.75, 0, 1);
     const targetFraction = 0.02 + 0.03 * strength;
     const symbolCap = sizingCapital * 0.05;
@@ -70,7 +67,8 @@ export function KiashaDecisionCard({ rec, colors, demo }: { rec: Recommendation;
       {sizing ? <>
         <Text style={[styles.sizingTitle, { color: colors.text }]}>حد پیشنهادی کیا‌شا برای این موقعیت</Text>
         <Text style={[styles.amount, { color: Brand.stockGreen }]}>{sizing.toLocaleString('fa-IR')} ریال</Text>
-        <Text style={[styles.meta, { color: colors.textSecondary }]}>مبنای محاسبه: {balanceSource === 'demo' ? 'موجودی Demo' : 'حساب Paper سرور'} • سقف هر نماد ۵٪ سرمایه • حداقل ۳۰٪ ذخیره نقد</Text>
+        <Text style={[styles.cash, { color: colors.text }]}>موجودی نقد فعلی: {cash?.toLocaleString('fa-IR')} ریال</Text>
+        <Text style={[styles.meta, { color: colors.textSecondary }]}>مبنای محاسبه: {balanceSource === 'demo' ? 'همان کیف پول Demo پرتفوی' : 'همان حساب Paper سرور'} • سقف هر نماد ۵٪ سرمایه • حداقل ۳۰٪ ذخیره نقد</Text>
       </> : <Text style={[styles.meta, { color: colors.textSecondary }]}>برای پیشنهاد مبلغ، موجودی معتبر Paper/Demo لازم است. موجودی کارگزاری واقعی از داخل BIAP حدس زده نمی‌شود.</Text>}
     </View> : null}
     <Text style={[styles.note, { color: colors.textSecondary }]}>این «GO / WAIT / NO-GO» نتیجه تحلیل فعلی است، نه اجرای سفارش. کنترل ریسک سرور می‌تواند مبلغ را کمتر یا معامله را رد کند.</Text>
@@ -88,6 +86,7 @@ const styles = StyleSheet.create({
   sizingBox: { width: '100%', borderRadius: Spacing.two, padding: Spacing.three, alignItems: 'flex-end', gap: 5 },
   sizingTitle: { fontFamily: Fonts.sans, fontSize: 12, fontWeight: '800' },
   amount: { fontFamily: Fonts.mono, fontSize: 21, fontWeight: '900' },
+  cash: { fontFamily: Fonts.mono, fontSize: 11, fontWeight: '700' },
   meta: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 18, textAlign: 'right' },
   note: { fontFamily: Fonts.sans, fontSize: 10, lineHeight: 17, textAlign: 'right' },
 });
