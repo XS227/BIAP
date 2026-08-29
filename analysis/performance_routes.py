@@ -25,7 +25,7 @@ STORE = PerformanceStore()
 AUDIT_STORE = AuditStore()
 PAPER_EXECUTION_STORE = PaperExecutionStore()
 PAPER_SELL_STORE = PaperSellStore()
-AGENTS = ("fundamental", "risk", "forecast", "comparison")
+AGENTS = ("fundamental", "risk", "forecast", "comparison", "technical", "flow")
 DEFAULT_PAPER_INITIAL_CASH = float(os.getenv("KIASHA_PAPER_INITIAL_CASH", "100000000"))
 
 class AutoInvestSettingsRequest(BaseModel):
