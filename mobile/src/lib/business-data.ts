@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authFetch, authHeaders } from '@/lib/auth-session';
+import { KIASHA_API_BASE } from '@/lib/api';
 
 const KEY = 'biap:business-dataset:v1';
-const SYNC_URL = 'https://biap.dadashi.no/api/auth/business-dataset';
 
 export type BusinessDataset = {
   name: string;
@@ -10,7 +10,6 @@ export type BusinessDataset = {
   rows: Record<string, string>[];
   importedAt: string;
   source: 'csv-paste' | 'json-paste' | 'xlsx-file';
-  syncedAt?: string;
 };
 
 function splitCsvLine(line: string): string[] {
@@ -61,34 +60,27 @@ export function parseBusinessData(input: string, name = 'Company data'): Busines
   return { name, columns, rows, importedAt: new Date().toISOString(), source: 'csv-paste' };
 }
 
-async function cache(dataset: BusinessDataset | null): Promise<void> {
+async function writeLocal(dataset: BusinessDataset | null): Promise<void> {
   if (dataset) await AsyncStorage.setItem(KEY, JSON.stringify(dataset));
   else await AsyncStorage.removeItem(KEY);
 }
 
-export async function saveBusinessDataset(dataset: BusinessDataset): Promise<{ synced: boolean }> {
-  await cache(dataset);
+export async function saveBusinessDataset(dataset: BusinessDataset): Promise<void> {
+  await writeLocal(dataset);
   try {
     const headers = await authHeaders();
-    const res = await authFetch(SYNC_URL, { method: 'PUT', headers, body: JSON.stringify(dataset) });
-    if (!res.ok) return { synced: false };
-    const body = await res.json() as { dataset?: BusinessDataset };
-    if (body.dataset) await cache(body.dataset);
-    return { synced: true };
-  } catch {
-    return { synced: false };
-  }
+    await authFetch(`${KIASHA_API_BASE}/business/dataset`, { method: 'PUT', headers, body: JSON.stringify(dataset) });
+  } catch {}
 }
 
 export async function getBusinessDataset(): Promise<BusinessDataset | null> {
   try {
     const headers = await authHeaders();
-    const res = await authFetch(SYNC_URL, { headers });
+    const res = await authFetch(`${KIASHA_API_BASE}/business/dataset`, { headers });
     if (res.ok) {
       const body = await res.json() as { dataset?: BusinessDataset | null };
-      const remote = body.dataset ?? null;
-      await cache(remote);
-      if (remote) return remote;
+      if (body.dataset) await writeLocal(body.dataset);
+      return body.dataset ?? null;
     }
   } catch {}
   try {
@@ -98,10 +90,10 @@ export async function getBusinessDataset(): Promise<BusinessDataset | null> {
 }
 
 export async function clearBusinessDataset(): Promise<void> {
-  await AsyncStorage.removeItem(KEY);
+  await writeLocal(null);
   try {
     const headers = await authHeaders();
-    await authFetch(SYNC_URL, { method: 'DELETE', headers });
+    await authFetch(`${KIASHA_API_BASE}/business/dataset`, { method: 'DELETE', headers });
   } catch {}
 }
 
