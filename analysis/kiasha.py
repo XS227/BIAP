@@ -14,9 +14,11 @@ from functools import lru_cache
 from agents import run_team
 from market_memory import save_analysis, save_symbol_snapshot
 from performance_store import MIN_OBSERVED_SAMPLES, PerformanceStore
+from scenario_engine import build_scenarios
 
 MATURITY_CAPS = {"experiment": 0.10, "observed": 0.20, "production": 0.35, "core": 0.50}
 UNTRAINED_PRIOR_TRUST = 0.35
+SCENARIO_MAX_BLEND_WEIGHT = 0.25
 
 
 def maturity_tier(n_calls: int, accuracy: float) -> str:
@@ -74,6 +76,7 @@ class Decision:
     weighted_score: float
     breakdown: list[dict]
     explanation: str
+    scenario: dict | None = None
 
 
 def _memory_symbol(company: dict) -> str:
@@ -120,12 +123,9 @@ def _record_observation(company: dict, decision: Decision) -> None:
                 observed_at=generated_at,
                 payload={
                     "market": {
-                        "price": market.get("price"),
-                        "last_price": market.get("last_price"),
-                        "closing_price": market.get("closing_price"),
-                        "change_percent": market.get("change_percent"),
-                        "pe": market.get("pe"),
-                        "market_cap": market.get("market_cap"),
+                        "price": market.get("price"), "last_price": market.get("last_price"),
+                        "closing_price": market.get("closing_price"), "change_percent": market.get("change_percent"),
+                        "pe": market.get("pe"), "market_cap": market.get("market_cap"),
                     },
                     "dataAvailability": availability,
                     "provenance": "verified inputs used by Kiasha decision",
@@ -142,11 +142,33 @@ def _record_observation(company: dict, decision: Decision) -> None:
                 "code": code, "symbol": symbol, "call": decision.call,
                 "weightedScore": decision.weighted_score, "explanation": decision.explanation,
                 "breakdown": decision.breakdown, "referencePrice": price,
-                "dataAvailability": availability,
+                "dataAvailability": availability, "scenario": decision.scenario,
             },
         )
     except Exception:
         pass
+
+
+def _scenario_signal(company: dict) -> tuple[dict | None, float | None, float]:
+    """Return grounded scenario, base signal and conservative blend weight.
+
+    Scenario evidence can influence Kiasha only when the engine reports status=ok.
+    The influence is capped and scaled by scenario confidence, so one sparse
+    memory observation can never overpower the six analyst agents.
+    """
+    try:
+        scenario = build_scenarios(company, persist=True)
+    except Exception:
+        return None, None, 0.0
+    if scenario.get("status") != "ok":
+        return scenario, None, 0.0
+    base = ((scenario.get("scenarios") or {}).get("base") or {}).get("score")
+    try:
+        base_score = float(base)
+        confidence = max(0.0, min(1.0, float(scenario.get("confidence") or 0.0)))
+    except (TypeError, ValueError):
+        return scenario, None, 0.0
+    return scenario, max(-1.0, min(1.0, base_score)), min(SCENARIO_MAX_BLEND_WEIGHT, SCENARIO_MAX_BLEND_WEIGHT * confidence)
 
 
 def decide(company: dict) -> Decision:
@@ -170,9 +192,14 @@ def decide(company: dict) -> Decision:
         })
 
     total_weight = sum(raw_weights) or 1e-9
-    weighted_score = sum(v.vote * w / total_weight for v, w in zip(votes, raw_weights))
+    agent_score = sum(v.vote * w / total_weight for v, w in zip(votes, raw_weights))
     for entry, w in zip(breakdown, raw_weights):
         entry["weight_normalized"] = round(w / total_weight, 3)
+
+    scenario, scenario_score, scenario_weight = _scenario_signal(company)
+    weighted_score = agent_score
+    if scenario_score is not None and scenario_weight > 0:
+        weighted_score = agent_score * (1.0 - scenario_weight) + scenario_score * scenario_weight
 
     if weighted_score > 0.25:
         call = "BUY"
@@ -182,11 +209,17 @@ def decide(company: dict) -> Decision:
         call = "HOLD"
 
     top = max(breakdown, key=lambda e: e["weight_normalized"])
+    scenario_note = ""
+    if scenario is not None:
+        if scenario_score is not None:
+            scenario_note = f" Scenario base={scenario_score:+.2f}, confidence={scenario.get('confidence', 0):.0%}, blend={scenario_weight:.0%}."
+        else:
+            scenario_note = " Scenario evidence insufficient; no scenario weight applied."
     explanation = (
         f"Kiasha blend = {weighted_score:+.2f} -> {call}. "
         f"Heaviest voice: {top['agent']} (weight {top['weight_normalized']:.0%}, "
-        f"maturity={top['maturity']}, trust={top['trust_source']}) - {top['reasoning']}"
+        f"maturity={top['maturity']}, trust={top['trust_source']}) - {top['reasoning']}." + scenario_note
     )
-    decision = Decision(call, round(weighted_score, 3), breakdown, explanation)
+    decision = Decision(call, round(weighted_score, 3), breakdown, explanation, scenario)
     _record_observation(company, decision)
     return decision
