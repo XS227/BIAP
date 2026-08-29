@@ -3,8 +3,8 @@
 Users must explicitly enable Auto Invest. The runner operates only on the
 server-owned Paper ledger, never a client balance and never a live broker.
 Candidate ranking uses verified BIAP market/CODAL data first; Claude is called
-only for the strongest BUY candidates, then every order must pass the existing
-deterministic Paper risk gate and atomic Paper fill store.
+only for the strongest BUY candidates, then every order must pass deterministic
+risk checks and the atomic Paper fill store.
 """
 
 from __future__ import annotations
@@ -39,12 +39,31 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        return default
+
+
 def _paper_execution_enabled() -> bool:
     return os.getenv("KIASHA_PAPER_EXECUTION_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _auto_runner_enabled() -> bool:
     return os.getenv("KIASHA_AUTO_INVEST_RUNNER_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _daily_budget_pct() -> float:
+    return max(0.0, min(100.0, _env_float("KIASHA_AUTO_DAILY_BUDGET_PCT", 15.0)))
+
+
+def _max_symbol_pct() -> float:
+    return max(0.1, min(100.0, _env_float("KIASHA_AUTO_MAX_SYMBOL_PCT", 5.0)))
+
+
+def _min_cash_reserve_pct() -> float:
+    return max(0.0, min(99.0, _env_float("KIASHA_AUTO_MIN_CASH_RESERVE_PCT", 30.0)))
 
 
 def _candidate_symbols() -> list[str]:
@@ -99,7 +118,7 @@ class AutoInvestStore:
                     user_id TEXT PRIMARY KEY,
                     enabled INTEGER NOT NULL DEFAULT 0,
                     horizon TEXT NOT NULL DEFAULT 'short',
-                    max_daily_trades INTEGER NOT NULL DEFAULT 1,
+                    max_daily_trades INTEGER NOT NULL DEFAULT 3,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 );
@@ -117,6 +136,9 @@ class AutoInvestStore:
                     ON kiasha_auto_invest_settings(enabled, updated_at);
                 """
             )
+            # Until now there was no UI for choosing this value and every
+            # existing row used the old hard-coded safety default of 1.
+            conn.execute("UPDATE kiasha_auto_invest_settings SET max_daily_trades = 3 WHERE max_daily_trades = 1")
 
     def get_settings(self, *, user_id: str) -> dict[str, Any]:
         now = _now_iso()
@@ -124,7 +146,7 @@ class AutoInvestStore:
             conn.execute(
                 """INSERT INTO kiasha_auto_invest_settings
                    (user_id, enabled, horizon, max_daily_trades, created_at, updated_at)
-                   VALUES (?, 0, 'short', 1, ?, ?)
+                   VALUES (?, 0, 'short', 3, ?, ?)
                    ON CONFLICT(user_id) DO NOTHING""",
                 (user_id, now, now),
             )
@@ -203,6 +225,9 @@ def auto_status(user_id: str) -> dict[str, Any]:
     settings = STORE.get_settings(user_id=user_id)
     return {
         **settings,
+        "dailyBudgetPct": _daily_budget_pct(),
+        "maxSymbolPct": _max_symbol_pct(),
+        "minCashReservePct": _min_cash_reserve_pct(),
         "runnerEnabled": _auto_runner_enabled(),
         "paperExecutionEnabled": _paper_execution_enabled(),
         "paperOnly": True,
@@ -258,7 +283,11 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
     horizon = settings["horizon"]
     max_trades = int(settings["maxDailyTrades"])
     results: list[dict[str, Any]] = []
-    candidate_limit = max(max_trades, min(int(os.getenv("KIASHA_AUTO_MAX_CANDIDATES", "3")), 6))
+    candidate_limit = max(max_trades, min(int(os.getenv("KIASHA_AUTO_MAX_CANDIDATES", "6")), 8))
+    starting_capital = _paper_sizing_capital(account)
+    daily_budget = starting_capital * _daily_budget_pct() / 100.0
+    reserve_cash = starting_capital * _min_cash_reserve_pct() / 100.0
+    spent_this_run = 0.0
 
     try:
         ranked = _rank_candidates()[:candidate_limit]
@@ -266,7 +295,8 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
             if len([x for x in results if x.get("paperExecution")]) >= max_trades:
                 break
             account = AUDIT.get_paper_account(user_id=user_id) or account
-            if float(account["cashBalance"]) <= 0:
+            cash = float(account["cashBalance"])
+            if cash <= reserve_cash + 1e-9 or spent_this_run >= daily_budget - 1e-9:
                 break
             try:
                 proposal = analyze_with_ai(code, horizon=horizon)
@@ -274,11 +304,22 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
                 if company is None or reference_price is None:
                     results.append({"code": code, "status": "NO_TRADE", "reason": "verified price unavailable", "baselineScore": baseline_score})
                     continue
+
+                sizing_capital = _paper_sizing_capital(account)
+                current_qty = _paper_symbol_position(account, code)
+                current_symbol_value = current_qty * reference_price
+                current_symbol_pct = (current_symbol_value / sizing_capital * 100.0) if sizing_capital > 0 else 100.0
+                remaining_symbol_pct = max(0.0, _max_symbol_pct() - current_symbol_pct)
+                if remaining_symbol_pct <= 0:
+                    results.append({"code": code, "status": "NO_TRADE", "reason": "symbol allocation cap reached", "baselineScore": baseline_score})
+                    continue
+
                 gate = evaluate_ai_paper_proposal(
                     proposal,
-                    portfolio_value=_paper_sizing_capital(account),
+                    portfolio_value=sizing_capital,
                     reference_price=reference_price,
-                    current_symbol_position=_paper_symbol_position(account, code),
+                    current_symbol_position=current_qty,
+                    max_position_pct=remaining_symbol_pct,
                     execute=False,
                 )
                 if not gate.allowed or gate.intent is None or gate.risk is None:
@@ -289,6 +330,19 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
                     )
                     results.append({"code": code, "status": "NO_TRADE", "baselineScore": baseline_score, **payload})
                     continue
+
+                proposed_cost = int(gate.intent["quantity"]) * reference_price
+                remaining_daily_budget = daily_budget - spent_this_run
+                remaining_cash_above_reserve = cash - reserve_cash
+                max_allowed_cost = min(remaining_daily_budget, remaining_cash_above_reserve)
+                if proposed_cost > max_allowed_cost + 1e-9:
+                    affordable_qty = int(max_allowed_cost // reference_price)
+                    if affordable_qty <= 0:
+                        results.append({"code": code, "status": "NO_TRADE", "reason": "daily budget or cash reserve reached", "baselineScore": baseline_score})
+                        continue
+                    gate.intent["quantity"] = affordable_qty
+                    proposed_cost = affordable_qty * reference_price
+
                 receipt = submit_order_intent(gate.intent)
                 fill = PAPER.commit_buy_fill(
                     user_id=user_id, code=code, horizon=horizon, proposal=proposal.to_dict(), risk=gate.risk,
@@ -296,6 +350,7 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
                     reference_source="verified-market-quote",
                     idempotency_key=f"auto:{local.date().isoformat()}:{code}:{horizon}",
                 )
+                spent_this_run += float(fill.get("fillCost") or proposed_cost)
                 results.append({"code": code, "status": "FILLED", "baselineScore": baseline_score, **fill})
             except Exception as exc:
                 results.append({"code": code, "status": "ERROR", "baselineScore": baseline_score, "reason": str(exc)[:300]})
@@ -306,6 +361,12 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
             "tehranDay": local.date().isoformat(),
             "horizon": horizon,
             "maxDailyTrades": max_trades,
+            "dailyBudgetPct": _daily_budget_pct(),
+            "dailyBudget": daily_budget,
+            "spentThisRun": spent_this_run,
+            "maxSymbolPct": _max_symbol_pct(),
+            "minCashReservePct": _min_cash_reserve_pct(),
+            "reserveCash": reserve_cash,
             "trades": results,
             "liveExecution": False,
         }
