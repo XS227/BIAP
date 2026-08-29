@@ -1,5 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { KIASHA_API_BASE } from '@/lib/api';
+import { authFetch } from '@/lib/auth-session';
 
 export type ServerPaperPosition = {
   code: string;
@@ -27,13 +27,8 @@ export async function fetchServerPaperAccount(timeoutMs = 8_000): Promise<Server
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const token = await AsyncStorage.getItem('accessToken');
-    if (!token) return null;
-    const res = await fetch(`${KIASHA_API_BASE}/performance/ai/paper-account`, {
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+    const res = await authFetch(`${KIASHA_API_BASE}/performance/ai/paper-account`, {
+      headers: { Accept: 'application/json' },
       signal: controller.signal,
     });
     if (!res.ok) return null;
