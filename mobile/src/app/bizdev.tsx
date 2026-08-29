@@ -1,199 +1,30 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  RefreshControl,
-  useColorScheme,
-  SafeAreaView,
-  Pressable,
-} from 'react-native';
-import { Colors, Brand, Fonts, Spacing, BottomTabInset, MaxContentWidth, ThemeColors } from '@/constants/theme';
-import { fetchWatchlist, formatPrice, parsePct, StockItem } from '@/lib/api';
+import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { router } from 'expo-router';
+import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { fetchWatchlist } from '@/lib/api';
 import { computeMarketSummary } from '@/lib/market-stats';
 
-type SortKey = 'pct' | 'price' | 'name';
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'pct', label: 'تغییر٪' },
-  { key: 'price', label: 'قیمت' },
-  { key: 'name', label: 'نام' },
-];
-
-function StatCard({
-  label,
-  value,
-  accent,
-  colors,
-}: {
-  label: string;
-  value: string;
-  accent?: string;
-  colors: ThemeColors;
-}) {
-  return (
-    <View style={[statStyles.card, { backgroundColor: colors.backgroundElement }]}>
-      <Text style={[statStyles.value, { color: accent ?? colors.text }]}>{value}</Text>
-      <Text style={[statStyles.label, { color: colors.textSecondary }]}>{label}</Text>
-    </View>
-  );
-}
-
-const statStyles = StyleSheet.create({
-  card: {
-    flex: 1,
-    borderRadius: Spacing.two,
-    padding: Spacing.three,
-    alignItems: 'center',
-    gap: 4,
-  },
-  value: { fontSize: 20, fontFamily: Fonts.mono, fontWeight: '700' },
-  label: { fontSize: 12, fontFamily: Fonts.sans, textAlign: 'center' },
-});
-
-function SentimentBar({
-  gainers,
-  losers,
-  unchanged,
-  total,
-  colors,
-}: {
-  gainers: number;
-  losers: number;
-  unchanged: number;
-  total: number;
-  colors: ThemeColors;
-}) {
-  if (total === 0) return null;
-  const gPct = (gainers / total) * 100;
-  const lPct = (losers / total) * 100;
-  const uPct = (unchanged / total) * 100;
-
-  return (
-    <View style={[sentStyles.wrap, { backgroundColor: colors.backgroundElement }]}>
-      <Text style={[sentStyles.title, { color: colors.text }]}>احساس بازار</Text>
-      <View style={sentStyles.bar}>
-        <View style={[sentStyles.seg, { flex: gPct, backgroundColor: Brand.stockGreen }]} />
-        <View style={[sentStyles.seg, { flex: uPct, backgroundColor: colors.textSecondary }]} />
-        <View style={[sentStyles.seg, { flex: lPct, backgroundColor: Brand.negative }]} />
-      </View>
-      <View style={sentStyles.legend}>
-        <View style={sentStyles.legendItem}>
-          <View style={[sentStyles.dot, { backgroundColor: Brand.stockGreen }]} />
-          <Text style={[sentStyles.legendText, { color: colors.textSecondary }]}>
-            مثبت {gainers}
-          </Text>
-        </View>
-        <View style={sentStyles.legendItem}>
-          <View style={[sentStyles.dot, { backgroundColor: colors.textSecondary }]} />
-          <Text style={[sentStyles.legendText, { color: colors.textSecondary }]}>
-            صفر {unchanged}
-          </Text>
-        </View>
-        <View style={sentStyles.legendItem}>
-          <View style={[sentStyles.dot, { backgroundColor: Brand.negative }]} />
-          <Text style={[sentStyles.legendText, { color: colors.textSecondary }]}>
-            منفی {losers}
-          </Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-const sentStyles = StyleSheet.create({
-  wrap: { borderRadius: Spacing.two, padding: Spacing.three, gap: Spacing.two },
-  title: { fontFamily: Fonts.sans, fontSize: 15, textAlign: 'right' },
-  bar: { flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', gap: 2 },
-  seg: { borderRadius: 5 },
-  legend: { flexDirection: 'row-reverse', gap: Spacing.three },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontSize: 12, fontFamily: Fonts.sans },
-});
-
-function RankRow({
-  item,
-  rank,
-  colors,
-}: {
-  item: StockItem;
-  rank: number;
-  colors: ThemeColors;
-}) {
-  const pct = parsePct(item.changePercent);
-  const up = pct >= 0;
-  const accentColor = up ? Brand.stockGreen : Brand.negative;
-
-  return (
-    <View style={[rankStyles.row, { backgroundColor: colors.backgroundElement }]}>
-      <View style={[rankStyles.rankBadge, { backgroundColor: colors.backgroundSelected }]}>
-        <Text style={[rankStyles.rankNum, { color: colors.textSecondary }]}>{rank}</Text>
-      </View>
-      <View style={rankStyles.info}>
-        <Text style={[rankStyles.name, { color: colors.text }]}>{item.name}</Text>
-        <Text style={[rankStyles.price, { color: colors.textSecondary }]}>
-          {formatPrice(item.closingPrice)} ریال
-        </Text>
-      </View>
-      <View style={[rankStyles.badge, { backgroundColor: up ? '#1a3d2b' : '#3d1a1a' }]}>
-        <Text style={[rankStyles.pct, { color: accentColor }]}>
-          {up ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}٪
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-const rankStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: Spacing.two,
-    padding: Spacing.two,
-    marginBottom: Spacing.two,
-    gap: Spacing.two,
-  },
-  rankBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rankNum: { fontSize: 13, fontFamily: Fonts.mono, fontWeight: '700' },
-  info: { flex: 1, alignItems: 'flex-end', gap: 2 },
-  name: { fontSize: 15, fontFamily: Fonts.sans },
-  price: { fontSize: 12, fontFamily: Fonts.mono },
-  badge: { borderRadius: Spacing.one, paddingHorizontal: Spacing.two, paddingVertical: 4 },
-  pct: { fontSize: 13, fontFamily: Fonts.mono, fontWeight: '700' },
-});
-
-function SectionHeader({ title, colors }: { title: string; colors: ThemeColors }) {
-  return (
-    <Text style={[sectionStyles.title, { color: colors.text }]}>{title}</Text>
-  );
-}
-
-const sectionStyles = StyleSheet.create({
-  title: { fontSize: 16, fontFamily: Fonts.sans, textAlign: 'right', marginBottom: Spacing.two },
-});
+const BUSINESS_MODULES = [
+  { key: 'swot', icon: '⚔️', title: 'SWOT + رقبا', sub: 'جایگاه، نقاط قوت/ضعف و رقبا' },
+  { key: 'crm', icon: '👥', title: 'CRM + Pipeline', sub: 'قیف فروش، فرصت‌ها و نرخ برد' },
+  { key: 'journey', icon: '🗺️', title: 'Journey Map', sub: 'مسیر مشتری و نقاط اصطکاک' },
+  { key: 'pricing', icon: '💰', title: 'قیمت‌گذاری', sub: 'سناریوهای قیمت و اثر روی درآمد' },
+  { key: 'financial-model', icon: '📈', title: 'مدل مالی', sub: 'درآمد، هزینه، سود و سناریو' },
+  { key: 'unit', icon: '⚙️', title: 'Unit Economics', sub: 'CAC، LTV و کیفیت رشد' },
+] as const;
 
 export default function BizDevScreen() {
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const colors = Colors[scheme];
-
-  const [stocks, setStocks] = useState<StockItem[]>([]);
+  const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
+  const [stocks, setStocks] = useState<Awaited<ReturnType<typeof fetchWatchlist>>>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>('pct');
 
   const load = useCallback(async () => {
     try {
       setError(false);
-      const data = await fetchWatchlist();
-      setStocks(data);
+      setStocks(await fetchWatchlist());
     } catch {
       setError(true);
     } finally {
@@ -202,196 +33,51 @@ export default function BizDevScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-    const interval = setInterval(load, 60_000);
-    return () => clearInterval(interval);
-  }, [load]);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    load();
-  };
-
+  useEffect(() => { load(); }, [load]);
   const summary = useMemo(() => computeMarketSummary(stocks), [stocks]);
+  const avgPositive = summary.avgChange >= 0;
 
-  const gainers = useMemo(() => {
-    const byPct = [...stocks].sort((a, b) => parsePct(b.changePercent) - parsePct(a.changePercent));
-    return byPct.filter((s) => parsePct(s.changePercent) > 0);
-  }, [stocks]);
-
-  const losers = useMemo(() => {
-    const byPct = [...stocks].sort((a, b) => parsePct(a.changePercent) - parsePct(b.changePercent));
-    return byPct.filter((s) => parsePct(s.changePercent) < 0);
-  }, [stocks]);
-
-  const sortedAll = useMemo(() =>
-    [...stocks].sort((a, b) => {
-      if (sortKey === 'pct') return parsePct(b.changePercent) - parsePct(a.changePercent);
-      if (sortKey === 'price') return (b.closingPrice ?? 0) - (a.closingPrice ?? 0);
-      return a.name.localeCompare(b.name, 'fa');
-    }),
-    [stocks, sortKey]
-  );
-
-  const avgUp = summary.avgChange >= 0;
+  const openModule = (key: string) => router.push({ pathname: '/module', params: { key } } as never);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: BottomTabInset + Spacing.four },
-        ]}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={Brand.bizBlue}
-          />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={Brand.secondary} />}
+        contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]}
       >
-        <View style={{ maxWidth: MaxContentWidth, width: '100%', alignSelf: 'center' }}>
-          {/* Header */}
+        <View style={styles.wrap}>
           <View style={styles.header}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>تحلیل کسب‌وکار</Text>
-            <Text style={[styles.headerSub, { color: colors.textSecondary }]}>
-              خلاصه وضعیت بازار سرمایه
-            </Text>
+            <Text style={[styles.title, { color: colors.text }]}>تحلیل کسب‌وکار</Text>
+            <Text style={[styles.sub, { color: colors.textSecondary }]}>Business Analysis Center</Text>
           </View>
 
-          {error && (
-            <View style={[styles.errorBox, { backgroundColor: colors.backgroundElement }]}>
-              <Text style={{ color: colors.textSecondary, textAlign: 'right', fontFamily: Fonts.sans }}>
-                خطا در دریافت داده. برای تلاش دوباره پایین بکشید.
-              </Text>
-            </View>
-          )}
+          <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}>
+            <Text style={styles.heroTag}>BUSINESS AI</Text>
+            <Text style={[styles.heroTitle, { color: colors.text }]}>داده شرکت → تحلیل → تصمیم مدیریتی</Text>
+            <Text style={[styles.heroBody, { color: colors.textSecondary }]}>برای تحلیل واقعی کسب‌وکار، BIAP به داده خود شرکت نیاز دارد. تا قبل از اتصال CSV/Excel، SQL، CRM/ERP یا API، هیچ KPI یا نتیجه ساختگی به‌عنوان داده واقعی نمایش داده نمی‌شود.</Text>
+            <Pressable onPress={() => router.push('/data-connections' as never)} style={styles.primaryBtn}><Text style={styles.primaryBtnText}>اتصال داده شرکت</Text></Pressable>
+          </View>
 
-          {!loading && stocks.length > 0 && (
-            <>
-              {/* Stats row */}
-              <View style={styles.statsRow}>
-                <StatCard
-                  label="میانگین تغییر"
-                  value={`${avgUp ? '▲' : '▼'} ${Math.abs(summary.avgChange).toFixed(2)}٪`}
-                  accent={avgUp ? Brand.stockGreen : Brand.negative}
-                  colors={colors}
-                />
-                <StatCard
-                  label="تعداد نمادها"
-                  value={String(summary.total)}
-                  colors={colors}
-                />
-                <StatCard
-                  label="مثبت / منفی"
-                  value={`${summary.gainers} / ${summary.losers}`}
-                  accent={Brand.bizBlue}
-                  colors={colors}
-                />
-              </View>
+          <View style={styles.statusRow}>
+            <View style={[styles.statusCard, { backgroundColor: colors.backgroundElement }]}><Text style={styles.live}>LIVE</Text><Text style={[styles.statusTitle, { color: colors.text }]}>بازار / CODAL / Kiasha</Text><Text style={[styles.statusText, { color: colors.textSecondary }]}>منابع مالی متصل BIAP</Text></View>
+            <View style={[styles.statusCard, { backgroundColor: colors.backgroundElement }]}><Text style={styles.soon}>SOON</Text><Text style={[styles.statusTitle, { color: colors.text }]}>داده اختصاصی شرکت</Text><Text style={[styles.statusText, { color: colors.textSecondary }]}>CSV • SQL • CRM • API</Text></View>
+          </View>
 
-              {/* Sentiment bar */}
-              <SentimentBar
-                gainers={summary.gainers}
-                losers={summary.losers}
-                unchanged={summary.unchanged}
-                total={summary.total}
-                colors={colors}
-              />
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>ابزارهای تحلیل کسب‌وکار</Text>
+          <View style={styles.grid}>{BUSINESS_MODULES.map((m) => (
+            <Pressable key={m.key} onPress={() => openModule(m.key)} style={[styles.module, { backgroundColor: colors.backgroundElement }]}>
+              <Text style={styles.icon}>{m.icon}</Text><Text style={[styles.moduleTitle, { color: colors.text }]}>{m.title}</Text><Text style={[styles.moduleSub, { color: colors.textSecondary }]}>{m.sub}</Text>
+            </Pressable>
+          ))}</View>
 
-              {/* Top gainer / loser highlight */}
-              {(summary.topGainer || summary.topLoser) && (
-                <View style={styles.highlightRow}>
-                  {summary.topGainer && (
-                    <View
-                      style={[styles.highlight, { backgroundColor: '#1a3d2b', flex: 1 }]}
-                    >
-                      <Text style={[styles.highlightLabel, { color: Brand.stockGreen }]}>
-                        بیشترین رشد
-                      </Text>
-                      <Text style={[styles.highlightName, { color: colors.text }]}>
-                        {summary.topGainer.name}
-                      </Text>
-                      <Text style={[styles.highlightPct, { color: Brand.stockGreen }]}>
-                        ▲ {Math.abs(parsePct(summary.topGainer.changePercent)).toFixed(2)}٪
-                      </Text>
-                    </View>
-                  )}
-                  {summary.topLoser && (
-                    <View
-                      style={[styles.highlight, { backgroundColor: '#3d1a1a', flex: 1 }]}
-                    >
-                      <Text style={[styles.highlightLabel, { color: Brand.negative }]}>
-                        بیشترین افت
-                      </Text>
-                      <Text style={[styles.highlightName, { color: colors.text }]}>
-                        {summary.topLoser.name}
-                      </Text>
-                      <Text style={[styles.highlightPct, { color: Brand.negative }]}>
-                        ▼ {Math.abs(parsePct(summary.topLoser.changePercent)).toFixed(2)}٪
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              )}
+          <View style={styles.sectionHead}><Pressable onPress={() => router.push('/market' as never)}><Text style={styles.link}>باز کردن بازار ←</Text></Pressable><Text style={[styles.sectionTitle, { color: colors.text }]}>نمای بازار متصل</Text></View>
+          {loading ? <View style={[styles.marketCard, { backgroundColor: colors.backgroundElement }]}><ActivityIndicator color={Brand.secondary} /></View> : error ? <View style={[styles.marketCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.marketNote, { color: colors.textSecondary }]}>داده بازار فعلاً دریافت نشد. برای تلاش دوباره صفحه را پایین بکشید.</Text></View> : <View style={[styles.marketCard, { backgroundColor: colors.backgroundElement }]}>
+            <View style={styles.marketStats}><View style={styles.marketMetric}><Text style={[styles.metricValue, { color: colors.text }]}>{summary.total.toLocaleString('fa-IR')}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>نمادهای متصل</Text></View><View style={styles.marketMetric}><Text style={[styles.metricValue, { color: Brand.stockGreen }]}>{summary.gainers.toLocaleString('fa-IR')}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>مثبت</Text></View><View style={styles.marketMetric}><Text style={[styles.metricValue, { color: Brand.negative }]}>{summary.losers.toLocaleString('fa-IR')}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>منفی</Text></View></View>
+            <Text style={[styles.marketAvg, { color: avgPositive ? Brand.stockGreen : Brand.negative }]}>{avgPositive ? '▲' : '▼'} {Math.abs(summary.avgChange).toFixed(2)}٪ میانگین تغییر</Text>
+            <Text style={[styles.marketNote, { color: colors.textSecondary }]}>این بخش فقط یک snapshot واقعی از منابع مالی متصل است؛ تحلیل کسب‌وکار شرکت شما پس از اتصال داده اختصاصی فعال می‌شود.</Text>
+          </View>}
 
-              {/* Gainers ranking */}
-              {gainers.length > 0 && (
-                <View style={styles.section}>
-                  <SectionHeader title="برترین رشدها" colors={colors} />
-                  {gainers.map((s, i) => (
-                    <RankRow key={s.code} item={s} rank={i + 1} colors={colors} />
-                  ))}
-                </View>
-              )}
-
-              {/* Losers ranking */}
-              {losers.length > 0 && (
-                <View style={styles.section}>
-                  <SectionHeader title="بیشترین افت‌ها" colors={colors} />
-                  {losers.map((s, i) => (
-                    <RankRow key={s.code} item={s} rank={i + 1} colors={colors} />
-                  ))}
-                </View>
-              )}
-
-              {/* All stocks — sortable */}
-              <View style={styles.section}>
-                <View style={sortStyles.row}>
-                  <SectionHeader title="همه نمادها" colors={colors} />
-                  <View style={sortStyles.pills}>
-                    {SORT_OPTIONS.map(({ key, label }) => (
-                      <Pressable
-                        key={key}
-                        onPress={() => setSortKey(key)}
-                        style={[
-                          sortStyles.pill,
-                          { backgroundColor: sortKey === key ? Brand.bizBlue : colors.backgroundElement },
-                        ]}
-                      >
-                        <Text style={[sortStyles.pillText, { color: sortKey === key ? '#fff' : colors.textSecondary }]}>
-                          {label}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
-                {sortedAll.map((s, i) => (
-                  <RankRow key={s.code} item={s} rank={i + 1} colors={colors} />
-                ))}
-              </View>
-            </>
-          )}
-
-          {loading && (
-            <View style={styles.loadingWrap}>
-              <Text style={{ color: colors.textSecondary, fontFamily: Fonts.sans }}>
-                در حال بارگذاری...
-              </Text>
-            </View>
-          )}
+          <Pressable onPress={() => router.push('/modules' as never)} style={[styles.allModules, { borderColor: colors.backgroundSelected }]}><Text style={[styles.allModulesText, { color: colors.text }]}>مشاهده همه ماژول‌های BIAP</Text></Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -399,33 +85,9 @@ export default function BizDevScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  content: { paddingHorizontal: Spacing.three },
-  header: {
-    paddingTop: Spacing.four,
-    paddingBottom: Spacing.three,
-  },
-  headerTitle: { fontSize: 22, fontFamily: Fonts.sans, textAlign: 'right' },
-  headerSub: { fontSize: 13, fontFamily: Fonts.sans, textAlign: 'right', marginTop: 2 },
-  errorBox: { borderRadius: Spacing.two, padding: Spacing.three, marginBottom: Spacing.three },
-  statsRow: { flexDirection: 'row-reverse', gap: Spacing.two, marginBottom: Spacing.three },
-  highlightRow: { flexDirection: 'row-reverse', gap: Spacing.two, marginVertical: Spacing.three },
-  highlight: {
-    borderRadius: Spacing.two,
-    padding: Spacing.three,
-    gap: 4,
-    alignItems: 'flex-end',
-  },
-  highlightLabel: { fontSize: 11, fontFamily: Fonts.sans },
-  highlightName: { fontSize: 16, fontFamily: Fonts.sans },
-  highlightPct: { fontSize: 15, fontFamily: Fonts.mono, fontWeight: '700' },
-  section: { marginTop: Spacing.three },
-  loadingWrap: { alignItems: 'center', marginTop: Spacing.six },
-});
-
-const sortStyles = StyleSheet.create({
-  row: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.two },
-  pills: { flexDirection: 'row', gap: Spacing.one },
-  pill: { paddingHorizontal: Spacing.two, paddingVertical: 4, borderRadius: Spacing.five },
-  pillText: { fontFamily: Fonts.sans, fontSize: 12 },
+  safe:{flex:1},content:{paddingHorizontal:Spacing.three},wrap:{maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},header:{paddingTop:Spacing.four,paddingBottom:Spacing.three,alignItems:'flex-end'},title:{fontFamily:Fonts.sans,fontSize:24,fontWeight:'900'},sub:{fontFamily:Fonts.sans,fontSize:11,marginTop:3},
+  hero:{borderRadius:Radius.lg,padding:Spacing.four,alignItems:'flex-end'},heroTag:{fontFamily:Fonts.mono,fontSize:10,fontWeight:'900',color:Brand.secondary},heroTitle:{fontFamily:Fonts.sans,fontSize:19,fontWeight:'900',textAlign:'right',marginTop:7},heroBody:{fontFamily:Fonts.sans,fontSize:11.5,lineHeight:20,textAlign:'right',marginTop:7},primaryBtn:{backgroundColor:Brand.secondary,borderRadius:12,paddingHorizontal:14,paddingVertical:10,marginTop:12},primaryBtnText:{color:'#fff',fontFamily:Fonts.sans,fontSize:12,fontWeight:'900'},
+  statusRow:{flexDirection:'row-reverse',gap:Spacing.two,marginTop:Spacing.three},statusCard:{flex:1,borderRadius:Radius.md,padding:Spacing.three,alignItems:'flex-end'},live:{fontFamily:Fonts.mono,fontSize:9,fontWeight:'900',color:Brand.stockGreen},soon:{fontFamily:Fonts.mono,fontSize:9,fontWeight:'900',color:'#f59e0b'},statusTitle:{fontFamily:Fonts.sans,fontSize:12,fontWeight:'900',marginTop:4,textAlign:'right'},statusText:{fontFamily:Fonts.sans,fontSize:9.5,marginTop:3,textAlign:'right'},
+  sectionTitle:{fontFamily:Fonts.sans,fontSize:16,fontWeight:'900',textAlign:'right',marginTop:Spacing.four,marginBottom:Spacing.two},grid:{flexDirection:'row-reverse',flexWrap:'wrap',gap:Spacing.two},module:{flexBasis:'48%',flexGrow:1,minHeight:128,borderRadius:Radius.md,padding:Spacing.three,alignItems:'flex-end'},icon:{fontSize:22},moduleTitle:{fontFamily:Fonts.sans,fontSize:13,fontWeight:'900',textAlign:'right',marginTop:7},moduleSub:{fontFamily:Fonts.sans,fontSize:10,lineHeight:17,textAlign:'right',marginTop:4},
+  sectionHead:{flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center'},link:{fontFamily:Fonts.sans,fontSize:10.5,fontWeight:'800',color:Brand.secondary,marginTop:Spacing.four},marketCard:{borderRadius:Radius.lg,padding:Spacing.four},marketStats:{flexDirection:'row-reverse'},marketMetric:{flex:1,alignItems:'center'},metricValue:{fontFamily:Fonts.mono,fontSize:18,fontWeight:'900'},metricLabel:{fontFamily:Fonts.sans,fontSize:9.5,marginTop:4},marketAvg:{fontFamily:Fonts.mono,fontSize:13,fontWeight:'900',textAlign:'right',marginTop:Spacing.three},marketNote:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:18,textAlign:'right',marginTop:Spacing.two},allModules:{borderWidth:1,borderRadius:Radius.md,paddingVertical:12,alignItems:'center',marginTop:Spacing.three},allModulesText:{fontFamily:Fonts.sans,fontSize:12,fontWeight:'800'}
 });
