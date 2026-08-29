@@ -3,45 +3,40 @@ import { View, Text, StyleSheet, ScrollView, RefreshControl, useColorScheme, Saf
 import { useFocusEffect, router } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, Radius, BottomTabInset, MaxContentWidth, ThemeColors } from '@/constants/theme';
 import { fetchOrderHistory, OrderReceipt } from '@/lib/api';
+import { fetchManualPaperOrders, ManualPaperOrder } from '@/lib/kiasha-paper-trade';
 
 const SIDE_LABEL: Record<string, string> = { BUY: 'خرید', SELL: 'فروش' };
 const STATUS_LABEL: Record<string, string> = {
   PAPER_FILLED: 'اجرا شد (Paper)',
   PENDING_APPROVAL: 'در انتظار تأیید',
+  PENDING_MARKET_OPEN: 'در صف بازگشایی بازار',
+  CANCELLED_SIGNAL: 'لغو شد — سیگنال تغییر کرد',
+  CANCELLED_RISK: 'لغو شد — کنترل ریسک',
   SIMULATED: 'شبیه‌سازی شد',
 };
 
+type DisplayOrder = OrderReceipt | ManualPaperOrder;
+
 function statusColor(status: string) {
   if (status === 'PAPER_FILLED') return Brand.positive;
-  if (status === 'PENDING_APPROVAL') return Brand.warning;
+  if (status === 'PENDING_APPROVAL' || status === 'PENDING_MARKET_OPEN') return Brand.warning;
+  if (status.startsWith('CANCELLED')) return Brand.negative;
   return Brand.secondary;
 }
 
-function OrderCard({ order, colors }: { order: OrderReceipt; colors: ThemeColors }) {
+function OrderCard({ order, colors }: { order: DisplayOrder; colors: ThemeColors }) {
   const sideColor = order.side === 'BUY' ? Brand.positive : Brand.negative;
-  const date = order.submittedAt ? new Date(order.submittedAt) : null;
+  const rawDate = order.submittedAt || order.created_at;
+  const date = rawDate ? new Date(rawDate) : null;
   const dateLabel = date && !Number.isNaN(date.getTime()) ? date.toLocaleString('fa-IR') : '';
-
   return (
-    <Pressable
-      onPress={() => router.push(`/stock/${order.code}`)}
-      style={({ pressed }) => [orderStyles.card, { backgroundColor: colors.backgroundElement, opacity: pressed ? 0.8 : 1 }]}
-    >
+    <Pressable onPress={() => router.push(`/stock/${order.code}`)} style={({ pressed }) => [orderStyles.card, { backgroundColor: colors.backgroundElement, opacity: pressed ? 0.8 : 1 }]}>
       <View style={orderStyles.topRow}>
-        <View style={[orderStyles.statusBadge, { backgroundColor: `${statusColor(order.status)}22` }]}>
-          <Text style={[orderStyles.statusText, { color: statusColor(order.status) }]}>
-            {STATUS_LABEL[order.status] ?? order.status}
-          </Text>
-        </View>
-        <View style={[orderStyles.sideBadge, { backgroundColor: `${sideColor}22` }]}>
-          <Text style={[orderStyles.sideText, { color: sideColor }]}>{SIDE_LABEL[order.side] ?? order.side}</Text>
-        </View>
+        <View style={[orderStyles.statusBadge, { backgroundColor: `${statusColor(order.status)}22` }]}><Text style={[orderStyles.statusText, { color: statusColor(order.status) }]}>{STATUS_LABEL[order.status] ?? order.status}</Text></View>
+        <View style={[orderStyles.sideBadge, { backgroundColor: `${sideColor}22` }]}><Text style={[orderStyles.sideText, { color: sideColor }]}>{SIDE_LABEL[order.side] ?? order.side}</Text></View>
       </View>
-
       <Text style={[orderStyles.code, { color: colors.text }]}>{order.code}</Text>
-      <Text style={[orderStyles.meta, { color: colors.textSecondary }]}>
-        {order.quantity} سهم · Paper — بدون معامله واقعی
-      </Text>
+      <Text style={[orderStyles.meta, { color: colors.textSecondary }]}>{order.quantity} سهم · Paper — بدون معامله واقعی</Text>
       {order.note ? <Text style={[orderStyles.note, { color: colors.textSecondary }]}>{order.note}</Text> : null}
       {dateLabel ? <Text style={[orderStyles.date, { color: colors.textSecondary }]}>{dateLabel}</Text> : null}
     </Pressable>
@@ -57,101 +52,41 @@ const orderStyles = StyleSheet.create({
   sideText: { fontFamily: Fonts.sans, fontSize: 11, fontWeight: '700' },
   code: { fontFamily: Fonts.mono, fontSize: 15, marginTop: 4 },
   meta: { fontFamily: Fonts.sans, fontSize: 12 },
-  note: { fontFamily: Fonts.sans, fontSize: 12 },
+  note: { fontFamily: Fonts.sans, fontSize: 12, textAlign: 'right', lineHeight: 19 },
   date: { fontFamily: Fonts.mono, fontSize: 11, marginTop: 2 },
 });
 
 function EmptyState({ colors }: { colors: ThemeColors }) {
-  return (
-    <View style={emptyStyles.wrap}>
-      <Text style={{ fontSize: 40 }}>🧾</Text>
-      <Text style={[emptyStyles.title, { color: colors.text }]}>هنوز سفارشی ثبت نشده</Text>
-      <Text style={[emptyStyles.body, { color: colors.textSecondary }]}>
-        از صفحه‌ی هر سهم می‌توانید توصیه‌ی هوش مصنوعی را ببینید و یک معامله را در حالت Paper شبیه‌سازی کنید — بدون
-        اینکه معامله‌ی واقعی انجام شود.
-      </Text>
-      <Pressable onPress={() => router.push('/market')} style={[emptyStyles.btn, { backgroundColor: Brand.primary }]}>
-        <Text style={emptyStyles.btnText}>برو به بازار</Text>
-      </Pressable>
-    </View>
-  );
+  return <View style={emptyStyles.wrap}><Text style={{ fontSize: 40 }}>🧾</Text><Text style={[emptyStyles.title, { color: colors.text }]}>هنوز سفارشی ثبت نشده</Text><Text style={[emptyStyles.body, { color: colors.textSecondary }]}>سفارش Paper در زمان بسته بودن بازار در صف بازگشایی ثبت می‌شود و قبل از اجرا دوباره توسط کیا‌شا و کنترل ریسک بررسی می‌شود.</Text><Pressable onPress={() => router.push('/market')} style={[emptyStyles.btn, { backgroundColor: Brand.primary }]}><Text style={emptyStyles.btnText}>برو به بازار</Text></Pressable></View>;
 }
-const emptyStyles = StyleSheet.create({
-  wrap: { alignItems: 'center', gap: Spacing.two, paddingTop: Spacing.six, paddingHorizontal: Spacing.four },
-  title: { fontFamily: Fonts.sans, fontSize: 17, fontWeight: '700' },
-  body: { fontFamily: Fonts.sans, fontSize: 13, textAlign: 'center', lineHeight: 21 },
-  btn: { marginTop: Spacing.two, borderRadius: Radius.sm, paddingHorizontal: Spacing.four, paddingVertical: Spacing.three },
-  btnText: { color: '#fff', fontFamily: Fonts.sans, fontSize: 14, fontWeight: '700' },
-});
+const emptyStyles = StyleSheet.create({wrap:{alignItems:'center',gap:Spacing.two,paddingTop:Spacing.six,paddingHorizontal:Spacing.four},title:{fontFamily:Fonts.sans,fontSize:17,fontWeight:'700'},body:{fontFamily:Fonts.sans,fontSize:13,textAlign:'center',lineHeight:21},btn:{marginTop:Spacing.two,borderRadius:Radius.sm,paddingHorizontal:Spacing.four,paddingVertical:Spacing.three},btnText:{color:'#fff',fontFamily:Fonts.sans,fontSize:14,fontWeight:'700'}});
 
 export default function OrdersScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
-  const [orders, setOrders] = useState<OrderReceipt[]>([]);
+  const [orders, setOrders] = useState<DisplayOrder[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
-    const items = await fetchOrderHistory();
-    if (items === null) {
+    const [legacy, queued] = await Promise.all([fetchOrderHistory(), fetchManualPaperOrders()]);
+    if (legacy === null && queued === null) {
       setError(true);
     } else {
       setError(false);
-      setOrders(items);
+      const combined: DisplayOrder[] = [...(queued ?? []), ...(legacy ?? [])];
+      const seen = new Set<string>();
+      const unique = combined.filter((item) => { if (seen.has(item.id)) return false; seen.add(item.id); return true; });
+      unique.sort((a, b) => String(b.submittedAt || b.created_at).localeCompare(String(a.submittedAt || a.created_at)));
+      setOrders(unique);
     }
     setRefreshing(false);
   }, []);
 
-  // Reload every time this tab gains focus -- e.g. after simulating an
-  // order from a stock detail screen and navigating back here.
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load])
-  );
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+  const onRefresh = () => { setRefreshing(true); load(); };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    load();
-  };
-
-  return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Brand.primary} />}
-      >
-        <View style={{ maxWidth: MaxContentWidth, width: '100%', alignSelf: 'center' }}>
-          <View style={styles.header}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>سفارش‌ها</Text>
-            <Text style={[styles.headerSub, { color: colors.textSecondary }]}>
-              شبیه‌سازی‌های Paper شما — همگام با حساب کاربری‌تان
-            </Text>
-          </View>
-
-          {error ? (
-            <View style={[styles.errorBox, { backgroundColor: colors.backgroundElement }]}>
-              <Text style={[styles.errorText, { color: colors.textSecondary }]}>
-                دریافت سفارش‌ها با خطا مواجه شد. برای تلاش دوباره پایین را بکشید.
-              </Text>
-            </View>
-          ) : orders.length === 0 ? (
-            <EmptyState colors={colors} />
-          ) : (
-            orders.map((o) => <OrderCard key={o.id} order={o} colors={colors} />)
-          )}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
+  return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Brand.primary} />}><View style={{ maxWidth: MaxContentWidth, width: '100%', alignSelf: 'center' }}><View style={styles.header}><Text style={[styles.headerTitle, { color: colors.text }]}>سفارش‌ها</Text><Text style={[styles.headerSub, { color: colors.textSecondary }]}>Paper شما — سفارش خارج از ساعت بازار در صف می‌ماند و هنگام بازگشایی دوباره کنترل می‌شود.</Text></View>{error ? <View style={[styles.errorBox, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.errorText, { color: colors.textSecondary }]}>دریافت سفارش‌ها با خطا مواجه شد. برای تلاش دوباره پایین را بکشید.</Text></View> : orders.length === 0 ? <EmptyState colors={colors} /> : orders.map((o) => <OrderCard key={o.id} order={o} colors={colors} />)}</View></ScrollView></SafeAreaView>;
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  content: { paddingHorizontal: Spacing.three },
-  header: { paddingTop: Spacing.four, paddingBottom: Spacing.three },
-  headerTitle: { fontSize: 22, fontFamily: Fonts.sans, textAlign: 'right', fontWeight: '700' },
-  headerSub: { fontSize: 13, fontFamily: Fonts.sans, textAlign: 'right', marginTop: 4 },
-  errorBox: { borderRadius: Radius.md, padding: Spacing.three, marginTop: Spacing.two },
-  errorText: { fontFamily: Fonts.sans, fontSize: 13, textAlign: 'right' },
-});
+const styles=StyleSheet.create({safe:{flex:1},content:{paddingHorizontal:Spacing.three},header:{paddingTop:Spacing.four,paddingBottom:Spacing.three},headerTitle:{fontSize:22,fontFamily:Fonts.sans,textAlign:'right',fontWeight:'700'},headerSub:{fontSize:13,fontFamily:Fonts.sans,textAlign:'right',marginTop:4,lineHeight:21},errorBox:{borderRadius:Radius.md,padding:Spacing.three,marginTop:Spacing.two},errorText:{fontFamily:Fonts.sans,fontSize:13,textAlign:'right'}});
