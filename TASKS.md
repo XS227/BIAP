@@ -8,6 +8,8 @@ Prioritized list of what's needed from Nasrin to unblock work on `XS227/BIAP`.
 
 ## Agent work log
 
+`[REVIEW] Mobile analysis data-connection hub — owner: ChatGPT session — since: 2026-08-29 — scope/result:` Added `/data-connect` as the honest entry point for company-owned analysis data. It shows currently active BIAP Market/CODAL/Kiasha feeds as LIVE, and CSV/Excel, SQL/Database, CRM/ERP and Custom API as SOON until server-side connectors exist. Module detail empty states now link directly to this hub, and How-To explains which analysis modules already use real BIAP data versus which require company-specific sources. Secrets/DB credentials are explicitly server-only; the mobile app does not pretend a connector is active before backend support exists. Commits `9500edb`, `db3990f`, `1a93d11`. Next: pull main, TypeScript-check and build/device-review; then implement the first real authenticated company-data backend connector, preferably CSV/Excel ingestion, before marking any source LIVE.
+
 `[REVIEW] Clear Kiasha GO/WAIT/NO-GO + balance-aware sizing — owner: ChatGPT session — since: 2026-08-29 — scope/result:` Stock detail now resolves a numeric market ID to the verified CODAL ticker when available, keeps the technical market ID only in the details table, and shows a prominent Kiasha decision card before execution controls. BUY displays GO and a conservative suggested position ceiling derived from verified Demo/Paper cash, max 5% per-symbol exposure and 30% minimum cash reserve; HOLD displays WAIT and SELL displays NO-GO, with no new-buy amount suggested. The card explicitly says this is analysis, not broker execution, and that the deterministic server risk gate remains authoritative. Added `mobile/src/components/kiasha-decision-card.tsx`; stock detail integration commit `fe83158`. Next: pull main, run TypeScript, build/reload mobile and device-test numeric-id symbol resolution plus BUY/HOLD/SELL presentation.
 
 `[IN PROGRESS] Kiasha market memory + weekly TSE/IFB intelligence — owner: ChatGPT session — since: 2026-08-29 — scope/status:` Building a server-owned historical market library that persists verified per-symbol snapshots and dated Kiasha/market analyses instead of discarding them after each request. Daily collector will be rate-budgeted for Tindex and fail-soft to existing CODAL/TSETMC sources; weekly job will produce a grounded TSE/IFB market report from persisted observations only, with explicit coverage/missing-data metadata. No fabricated prices or forecasts. Deployment will use repo-managed systemd service/timer templates.
@@ -61,6 +63,7 @@ Prioritized list of what's needed from Nasrin to unblock work on `XS227/BIAP`.
 5. Add persisted Paper equity snapshots so daily/monthly Track Record reflects actual autonomous account history.
 6. Complete Nasrin production signup/login verification for `nasrin.dadashi@gmail.com`.
 7. Deploy `web-showcase/data-sources/` and verify `https://biap.dadashi.no/data-sources/` returns HTTP 200 before using it in the Tindex attribution request.
+8. Build/device-review `/data-connect`, then implement the first real authenticated company-data connector before changing any SOON source to LIVE.
 
 ## Architecture notes
 
