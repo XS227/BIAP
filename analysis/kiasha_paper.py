@@ -1,8 +1,8 @@
 """Deterministic bridge from Kiasha AI proposals to PaperBroker.
 
-Claude remains proposal-only. This module is the policy boundary that may turn a
-validated BUY proposal into a PAPER order intent after deterministic checks.
-It never enables AUTO/live execution and never talks to a real broker.
+Claude remains proposal-only. BUY and SELL proposals can become PAPER intents
+only after deterministic checks. SELL is ownership-bounded and can never create
+a short position. There is no live/AUTO execution path here.
 """
 
 from __future__ import annotations
@@ -66,29 +66,17 @@ def evaluate_ai_paper_proposal(
     max_position_pct: Optional[float] = None,
     execute: bool = False,
 ) -> PaperGateResult:
-    """Evaluate, and optionally execute, a Kiasha proposal in PAPER mode only.
-
-    ``max_position_pct`` is a deterministic upper bound supplied by the caller.
-    Claude may propose a smaller allocation, but it can never size above this
-    cap. ``execute=False`` is a dry run. ``execute=True`` may call PaperBroker
-    only after every deterministic check passes. There is no AUTO/live path.
-    """
     proposal_dict = proposal.to_dict()
     reasons: list[str] = []
-
-    threshold = min_confidence
-    if threshold is None:
-        threshold = _env_float("KIASHA_PAPER_MIN_CONFIDENCE", 0.55)
+    threshold = min_confidence if min_confidence is not None else _env_float("KIASHA_PAPER_MIN_CONFIDENCE", 0.55)
     threshold = max(0.0, min(1.0, threshold))
 
     if proposal.execution_allowed:
         reasons.append("AI proposal must remain executionAllowed=false")
-    if proposal.action != "BUY":
-        reasons.append("Paper entry gate currently accepts BUY proposals only")
+    if proposal.action not in {"BUY", "SELL"}:
+        reasons.append("Paper gate accepts BUY or SELL proposals only")
     if proposal.confidence < threshold:
-        reasons.append(
-            f"AI confidence {proposal.confidence:.3f} below Paper minimum {threshold:.3f}"
-        )
+        reasons.append(f"AI confidence {proposal.confidence:.3f} below Paper minimum {threshold:.3f}")
     if portfolio_value <= 0:
         reasons.append("portfolio value must be positive")
     if reference_price is None or reference_price <= 0:
@@ -97,29 +85,27 @@ def evaluate_ai_paper_proposal(
         reasons.append("proposal positionPct must be positive")
     if max_position_pct is not None and max_position_pct <= 0:
         reasons.append("max_position_pct must be positive")
-
+    if proposal.action == "SELL" and current_symbol_position <= 0:
+        reasons.append("cannot SELL a Paper position that this account does not own")
     if reasons:
         return PaperGateResult(False, reasons, proposal_dict, None, None, None)
 
     assert reference_price is not None
-    effective_position_pct = float(proposal.position_pct)
+    effective_pct = float(proposal.position_pct)
     if max_position_pct is not None:
-        effective_position_pct = min(effective_position_pct, float(max_position_pct))
-    target_notional = portfolio_value * effective_position_pct / 100.0
+        effective_pct = min(effective_pct, float(max_position_pct))
+    target_notional = portfolio_value * effective_pct / 100.0
     quantity = math.floor(target_notional / reference_price)
+    if proposal.action == "SELL":
+        quantity = min(quantity, int(current_symbol_position))
     if quantity <= 0:
-        return PaperGateResult(
-            False,
-            ["proposal size is too small to buy one share at the verified reference price"],
-            proposal_dict,
-            None,
-            None,
-            None,
-        )
+        action = proposal.action.lower()
+        return PaperGateResult(False, [f"proposal size is too small to {action} one share at the verified reference price"], proposal_dict, None, None, None)
 
+    side = proposal.action
     score = _signed_score(proposal)
     risk: RiskDecision = evaluate_order_risk(
-        side="BUY",
+        side=side,
         quantity=quantity,
         limit_price=reference_price,
         reference_price=reference_price,
@@ -131,10 +117,13 @@ def evaluate_ai_paper_proposal(
     if not risk.allowed:
         return PaperGateResult(False, list(risk.reasons), proposal_dict, risk.to_dict(), None, None)
 
+    if side == "SELL" and quantity > int(current_symbol_position):
+        return PaperGateResult(False, ["SELL quantity exceeds owned Paper position"], proposal_dict, risk.to_dict(), None, None)
+
     try:
         intent = build_order_intent(
             code=proposal.code,
-            side="BUY",
+            side=side,
             quantity=quantity,
             limit_price=reference_price,
             mode=ExecutionMode.PAPER.value,
