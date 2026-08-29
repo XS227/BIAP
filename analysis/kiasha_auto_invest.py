@@ -23,13 +23,21 @@ from execution import submit_order_intent
 from kiasha import decide
 from kiasha_ai import analyze as analyze_with_ai
 from kiasha_paper import evaluate_ai_paper_proposal
-from market_data import MarketDataUnavailable, find_quote, tsetmc_api_base
+from market_data import MarketDataUnavailable, fetch_watchlist, find_quote, tsetmc_api_base
 from paper_execution_store import PaperExecutionStore
 from paper_sell_store import PaperSellStore
 
 _TZ = ZoneInfo("Asia/Tehran")
 _DEFAULT_SYMBOLS = ("فولاد","وبملت","فخوز","فملی","کگل","کچاد","شپنا","شبندر","شتران","نوری","فارس","وغدیر","خودرو","خساپا","رمپنا","همراه")
 _TRADING_WEEKDAYS = {5, 6, 0, 1, 2}
+# Stable TSETMC instrument identities observed in existing BIAP Paper history.
+# These are identifier aliases, not market values, and are only a fallback when
+# BIAP's own verified watchlist cannot supply the symbol and TSETMC is blocked.
+_KNOWN_TSETMC_SYMBOLS = {
+    "28864540805361867": "فخوز",
+    "46348559193224090": "فولاد",
+    "778253364357513": "وبملت",
+}
 
 def _now_iso() -> str: return datetime.now(timezone.utc).isoformat()
 def _env_float(name: str, default: float) -> float:
@@ -55,16 +63,26 @@ def _analysis_code(code: str, *, timeout: float = 5.0) -> str:
     """Resolve a stored numeric TSETMC insCode to its verified ticker for AI.
 
     Paper positions intentionally keep the immutable instrument code as their
-    identity. Kiasha's analysis layer, however, needs the human ticker so CODAL
-    and market evidence can be joined correctly. Never guess: on lookup failure
-    the original code is returned and the normal no-data safety path applies.
+    identity. Kiasha's analysis layer needs the human ticker so CODAL and market
+    evidence can be joined correctly. Resolution first uses BIAP's own verified
+    watchlist, then stable known identifier aliases, and only then tries TSETMC.
+    No price/fundamental value is fabricated by this resolver.
     """
     raw=str(code or "").strip()
     if not raw or not raw.isascii() or not raw.isdigit():return raw
+    try:
+        for quote in fetch_watchlist(timeout=min(max(timeout, 0.5), 2.5), use_cache=True):
+            if str(quote.code).strip()==raw:
+                symbol=str(quote.name or "").strip()
+                if symbol and symbol!=raw and not symbol.isdigit():return symbol
+    except MarketDataUnavailable:
+        pass
+    known=_KNOWN_TSETMC_SYMBOLS.get(raw)
+    if known:return known
     controller_url=f"{tsetmc_api_base()}/Instrument/GetInstrumentInfo/{raw}"
     req=urllib.request.Request(controller_url,headers={"User-Agent":"Mozilla/5.0 BIAP/1.0","Accept":"application/json"})
     try:
-        with urllib.request.urlopen(req,timeout=timeout) as resp:payload=json.loads(resp.read().decode("utf-8"))
+        with urllib.request.urlopen(req,timeout=min(max(timeout,0.5),2.0)) as resp:payload=json.loads(resp.read().decode("utf-8"))
         row=payload.get("instrumentInfo") if isinstance(payload,dict) else None
         if isinstance(row,dict):
             symbol=str(row.get("lVal18AFC") or "").strip()
@@ -76,7 +94,8 @@ def _verified_company(code: str) -> tuple[Optional[dict[str, Any]], Optional[flo
     try: quote=find_quote(code)
     except MarketDataUnavailable: quote=None
     if quote is not None:
-        codal_symbol=_analysis_code(code) if str(code).isdigit() else quote.name
+        quote_name=str(getattr(quote,"name","") or "").strip()
+        codal_symbol=quote_name if quote_name and not quote_name.isdigit() else _analysis_code(code)
         company=build_company_from_quote(quote,codal_symbol=codal_symbol);raw=getattr(quote,"last_price",None) or getattr(quote,"closing_price",None);price=float(raw) if raw is not None and float(raw)>0 else None;return company,price
     analysis_code=_analysis_code(code)
     return build_company_from_symbol(analysis_code),None
