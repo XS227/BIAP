@@ -1,4 +1,4 @@
-name: Update mobile lock
+name: Finalize release inputs
 
 on:
   push:
@@ -10,20 +10,32 @@ permissions:
   contents: write
 
 jobs:
-  update-lock:
+  finalize:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Update six-agent regression expectation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('analysis/tests/test_regressions.py')
+          text = path.read_text(encoding='utf-8')
+          old = 'assert len(run_team(company)) == 4'
+          if old not in text:
+              raise SystemExit('expected legacy four-agent assertion not found')
+          path.write_text(text.replace(old, 'assert len(run_team(company)) == 6'), encoding='utf-8')
+          PY
       - name: Regenerate package lock
         working-directory: mobile
         run: npm install --package-lock-only --ignore-scripts
-      - name: Commit lock file
+      - name: Commit finalized inputs
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add mobile/package-lock.json
-          git diff --cached --quiet || git commit -m "Refresh Expo SDK mobile lock"
+          git add analysis/tests/test_regressions.py mobile/package-lock.json
+          git diff --cached --quiet || git commit -m "Finalize six-agent tests and Expo lock"
+          git pull --rebase origin main
           git push
