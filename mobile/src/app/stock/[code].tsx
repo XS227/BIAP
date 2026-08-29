@@ -9,6 +9,7 @@ import { getDemoMode } from '@/lib/demo-mode';
 import { executeDemoTrade, getDemoWallet } from '@/lib/demo-trading';
 import { StockRowSkeleton } from '@/components/skeleton';
 import { RecommendationCard } from '@/components/recommendation-card';
+import { KiashaDecisionCard } from '@/components/kiasha-decision-card';
 import { RealTradeGate } from '@/components/real-trade-gate';
 
 function MiniHistoryChart({ points, colors }: { points: PricePoint[]; colors: ThemeColors }) {
@@ -118,9 +119,15 @@ export default function StockDetailScreen() {
         getDemoMode(),
       ]);
       if (activeCodeRef.current !== requestedCode) return;
-      const resolved: MarketSymbolResult = recommendation?.code && /^\d+$/.test(recommendation.code)
-        ? { ...found, code: recommendation.code }
-        : found;
+      const fundamentalTicker = String(recommendation?.codalFundamentals?.symbol ?? '').trim();
+      const displayTicker = !/^\d+$/.test(found.symbol) ? found.symbol : (!/^\d+$/.test(fundamentalTicker) && fundamentalTicker ? fundamentalTicker : found.symbol);
+      const displayName = !/^\d+$/.test(found.name) ? found.name : (recommendation?.name || displayTicker || found.name);
+      const resolved: MarketSymbolResult = {
+        ...found,
+        symbol: displayTicker,
+        name: displayName,
+        code: recommendation?.code && /^\d+$/.test(recommendation.code) ? recommendation.code : found.code,
+      };
       setSymbol(resolved);
       setRec(recommendation);
       setDemo(demoMode);
@@ -163,6 +170,7 @@ export default function StockDetailScreen() {
       <View style={[styles.priceCard, { backgroundColor: colors.backgroundElement }]}><View style={styles.titleLine}><View style={[styles.marketBadge, { backgroundColor: colors.backgroundSelected }]}><Text style={[styles.marketBadgeText, { color: colors.textSecondary }]}>{symbol.market ?? 'TSETMC'}</Text></View><View style={{ alignItems: 'flex-end', flex: 1 }}><Text style={[styles.symbol, { color: colors.text }]}>{symbol.symbol}</Text><Text style={[styles.company, { color: colors.textSecondary }]}>{symbol.name}</Text></View></View><View style={styles.priceLine}><Text style={[styles.price, { color: colors.text }]}>{livePrice === null ? '—' : formatPrice(livePrice)}</Text><Text style={[styles.unit, { color: colors.textSecondary }]}>ریال</Text></View>{pct !== null ? <Text style={[styles.change, { color: up ? Brand.stockGreen : Brand.negative }]}>{up ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}٪</Text> : <Text style={[styles.noQuote, { color: colors.textSecondary }]}>قیمت زنده معتبر فعلاً دریافت نشد.</Text>}</View>
       {history.length >= 2 ? <MiniHistoryChart points={history} colors={colors} /> : <View style={[styles.stateCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stateText, { color: colors.textSecondary }]}>تاریخچه قیمت TSETMC برای این نماد فعلاً قابل دریافت نیست؛ نمودار ساختگی نمایش داده نمی‌شود.</Text></View>}
       <View style={[styles.table, { backgroundColor: colors.backgroundElement }]}><Row label="آخرین قیمت" value={`${formatPrice(item.lastPrice)} ریال`} colors={colors} /><Row label="قیمت پایانی" value={`${formatPrice(item.closingPrice)} ریال`} colors={colors} /><Row label="قیمت دیروز" value={`${formatPrice(item.yesterdayPrice)} ریال`} colors={colors} /><Row label="شناسه بازار" value={symbol.code} colors={colors} /><Row label="بازار" value={symbol.market ?? 'TSETMC verified resolver'} colors={colors} /></View>
+      {rec ? <KiashaDecisionCard rec={rec} colors={colors} demo={demo} /> : null}
       {demo && livePrice ? <DemoTradePanel symbol={symbol.symbol || symbol.code} price={livePrice} colors={colors} /> : demo ? <View style={[styles.stateCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stateText, { color: colors.textSecondary }]}>برای خرید و فروش دمو باید ابتدا قیمت معتبر TSETMC دریافت شود.</Text></View> : <RealTradeGate colors={colors} />}
       {rec ? <RecommendationCard rec={rec} colors={colors} /> : <View style={[styles.stateCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stateText, { color: colors.textSecondary }]}>تحلیل کیا‌شا برای این نماد فعلاً دریافت نشد. دکمه اجرای Paper فقط بعد از دریافت تحلیل معتبر نمایش داده می‌شود.</Text><Pressable disabled={refreshing} onPress={() => { setRefreshing(true); load(); }} style={[styles.retryButton, { backgroundColor: Brand.primary, opacity: refreshing ? 0.65 : 1 }]}>{refreshing ? <ActivityIndicator color="#fff" /> : <Text style={styles.retryText}>تلاش دوباره برای تحلیل کیا‌شا</Text>}</Pressable></View>}
       <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>قیمت و تاریخچه از مسیر تأییدشده BIAP/TSETMC؛ مقدار ناموجود ساخته نمی‌شود.</Text>
