@@ -1,0 +1,11 @@
+[Unit]
+Description=Generate BIAP weekly TSE/IFB report after the trading week
+
+[Timer]
+OnCalendar=Wed *-*-* 16:30:00 Asia/Tehran
+Persistent=true
+RandomizedDelaySec=10m
+Unit=biap-weekly-market-report.service
+
+[Install]
+WantedBy=timers.target
