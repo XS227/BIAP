@@ -530,7 +530,7 @@ def test_recommendation_pipeline_handles_a_representative_symbol_from_each_marke
 
         assert decision.call in {"BUY", "HOLD", "SELL"}
         assert -1.0 <= decision.weighted_score <= 1.0
-        assert len(run_team(company)) == 4
+        assert len(run_team(company)) == 6
 
 
 # Found live on the same crash: /stock/recommendation/{code} is also called
