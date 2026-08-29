@@ -15,6 +15,9 @@ export type AutoInvestStatus = {
   enabled: boolean;
   horizon: InvestmentHorizon;
   maxDailyTrades: number;
+  dailyBudgetPct?: number;
+  maxSymbolPct?: number;
+  minCashReservePct?: number;
   runnerEnabled: boolean;
   paperExecutionEnabled: boolean;
   paperOnly: true;
@@ -65,7 +68,10 @@ function authFallback(readiness: PublicAiStatus | null): AutoInvestStatus | null
   return {
     enabled: false,
     horizon: 'short',
-    maxDailyTrades: 1,
+    maxDailyTrades: 3,
+    dailyBudgetPct: 15,
+    maxSymbolPct: 5,
+    minCashReservePct: 30,
     runnerEnabled: Boolean(readiness.runnerEnabled),
     paperExecutionEnabled: Boolean(readiness.paperExecutionEnabled),
     paperOnly: true,
@@ -112,7 +118,7 @@ export async function updateAutoInvest(params: {
       body: JSON.stringify({
         enabled: params.enabled,
         horizon: params.horizon,
-        maxDailyTrades: params.maxDailyTrades ?? 1,
+        maxDailyTrades: params.maxDailyTrades ?? 3,
       }),
     });
     if (!res.ok) return null;
