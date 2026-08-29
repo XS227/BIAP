@@ -1,19 +1,9 @@
 """
 Kiasha decision layer for BIAP.
 
-Same core idea as the Kiasha capital allocator in the Arena project
-(~ v7/capital_allocator.py on the TON VPS): don't trust every voice
-equally — weight by a track record (trust_score = accuracy x stability
-x n_factor), cap immature voices, and let evidence dominate over time.
-
-There, Kiasha reallocated TON capital across trading strategies. Here,
-Kiasha reallocates *decision weight* across the BIAP analyst-agent team
-and turns the blend into a Buy/Hold/Sell call with an explanation.
-
-The seeded TRACK_RECORDS below are an explicitly labelled fallback only. Real
-observed performance from performance_store.py replaces a fallback record only
-after a conservative minimum sample threshold is reached. Seeded and observed
-sample counts are never blended together.
+Kiasha weights the BIAP analyst-agent team by observed track record. Seeded
+records are explicitly-labelled fallbacks only; real evaluated performance takes
+over once the conservative sample threshold is reached.
 """
 
 from datetime import datetime, timezone
@@ -21,14 +11,14 @@ import math
 from dataclasses import dataclass
 from functools import lru_cache
 
-from agents import AgentVote, run_team
+from agents import run_team
 from performance_store import MIN_OBSERVED_SAMPLES, PerformanceStore
 
 MATURITY_CAPS = {
-    "experiment": 0.10,  # <50 lifetime calls
-    "observed": 0.20,    # 50-200 calls, or 200+ with weak accuracy
-    "production": 0.35,  # 200+ calls, solid accuracy
-    "core": 0.50,        # 1000+ calls, accuracy >= 0.55, stable
+    "experiment": 0.10,
+    "observed": 0.20,
+    "production": 0.35,
+    "core": 0.50,
 }
 
 
@@ -46,24 +36,26 @@ def maturity_tier(n_calls: int, accuracy: float) -> str:
 class AgentTrackRecord:
     agent: str
     lifetime_calls: int
-    accuracy: float        # fraction of past calls that were directionally correct
-    pnl_std: float          # dispersion of past outcomes; lower = more stable
+    accuracy: float
+    pnl_std: float
 
 
-# Fallback history only. These values preserve the pre-tracking production
-# behavior until enough genuine evaluated observations exist for an agent.
+# Fallback history only. New evidence dimensions start conservatively in the
+# experiment tier until enough genuine observations exist.
 TRACK_RECORDS = {
     "fundamental": AgentTrackRecord("fundamental", 640, 0.58, 0.35),
-    "risk":        AgentTrackRecord("risk",        310, 0.52, 0.55),
-    "forecast":    AgentTrackRecord("forecast",     80, 0.49, 0.90),
-    "comparison":  AgentTrackRecord("comparison",  1240, 0.56, 0.40),
+    "risk": AgentTrackRecord("risk", 310, 0.52, 0.55),
+    "forecast": AgentTrackRecord("forecast", 80, 0.49, 0.90),
+    "comparison": AgentTrackRecord("comparison", 1240, 0.56, 0.40),
+    "technical": AgentTrackRecord("technical", 0, 0.50, 1.00),
+    "flow": AgentTrackRecord("flow", 0, 0.50, 1.00),
 }
 
 
 def trust_score(tr: AgentTrackRecord) -> tuple[float, str, float]:
     stability = 1 / (1 + tr.pnl_std)
     n_factor = math.log1p(tr.lifetime_calls) / math.log1p(200)
-    n_factor = min(n_factor, 1.5)  # let core agents exceed the 200-call reference a bit
+    n_factor = min(n_factor, 1.5)
     score = tr.accuracy * stability * n_factor
     tier = maturity_tier(tr.lifetime_calls, tr.accuracy)
     return score, tier, n_factor
@@ -75,12 +67,6 @@ def _performance_store() -> PerformanceStore:
 
 
 def _track_record_for_agent(agent: str) -> tuple[AgentTrackRecord, str, int]:
-    """Return (track_record, source, real_sample_count).
-
-    Real performance only takes over after MIN_OBSERVED_SAMPLES directional
-    outcomes. Before that, the existing fallback is used unchanged. The real
-    sample count is still exposed so operators can see progress toward maturity.
-    """
     fallback = TRACK_RECORDS[agent]
     try:
         stats = _performance_store().agent_stats(agent)
@@ -101,7 +87,7 @@ def _track_record_for_agent(agent: str) -> tuple[AgentTrackRecord, str, int]:
 
 @dataclass
 class Decision:
-    call: str            # BUY / HOLD / SELL
+    call: str
     weighted_score: float
     breakdown: list[dict]
     explanation: str
@@ -129,8 +115,6 @@ def _record_observation(company: dict, decision: Decision) -> None:
             breakdown=decision.breakdown,
         )
     except Exception:
-        # Tracking is observational infrastructure. A storage problem must never
-        # turn an otherwise valid production recommendation into a 500 response.
         return
 
 
@@ -158,9 +142,7 @@ def decide(company: dict) -> Decision:
         })
 
     total_weight = sum(raw_weights) or 1e-9
-    weighted_score = sum(
-        v.vote * w / total_weight for v, w in zip(votes, raw_weights)
-    )
+    weighted_score = sum(v.vote * w / total_weight for v, w in zip(votes, raw_weights))
     for entry, w in zip(breakdown, raw_weights):
         entry["weight_normalized"] = round(w / total_weight, 3)
 
