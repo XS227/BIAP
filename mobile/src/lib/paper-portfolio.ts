@@ -5,6 +5,7 @@ import { getDemoWallet } from '@/lib/demo-trading';
 
 export type PaperPosition = {
   code: string;
+  displayName?: string;
   quantity: number;
   averageCost: number | null;
   currentPrice: number | null;
@@ -34,9 +35,10 @@ export type PaperPortfolio = {
 const PAPER_QUOTE_TIMEOUT_MS = 40_000;
 
 async function enrichPositions(base: Array<{ code: string; quantity: number; averageCost: number | null }>): Promise<PaperPosition[]> {
-  // The verified recommendation/market path can take ~25-30s when TSETMC is
-  // degraded on the VPS. A 6s timeout made valid Paper positions look unpriced.
-  // Keep requests parallel, but give the shared verified backend enough time.
+  // The verified recommendation path also resolves TSETMC numeric instrument
+  // IDs back to a human-readable ticker/name. Store that presentation label on
+  // the position so the portfolio never exposes opaque insCode values as the
+  // primary stock name.
   return Promise.all(base.map(async (p) => {
     const rec = await fetchRecommendation(p.code, PAPER_QUOTE_TIMEOUT_MS);
     const currentPrice = rec?.livePrice?.lastPrice ?? rec?.livePrice?.closingPrice ?? null;
@@ -44,7 +46,10 @@ async function enrichPositions(base: Array<{ code: string; quantity: number; ave
     const marketValue = currentPrice === null ? null : currentPrice * p.quantity;
     const unrealizedPnL = marketValue !== null && costBasis !== null ? marketValue - costBasis : null;
     const unrealizedPnLPct = unrealizedPnL !== null && costBasis && costBasis > 0 ? (unrealizedPnL / costBasis) * 100 : null;
-    return { ...p, currentPrice, marketValue, costBasis, unrealizedPnL, unrealizedPnLPct, weightPct: null };
+    const resolvedName = typeof rec?.name === 'string' && rec.name.trim() && rec.name !== p.code
+      ? rec.name.trim()
+      : undefined;
+    return { ...p, displayName: resolvedName, currentPrice, marketValue, costBasis, unrealizedPnL, unrealizedPnLPct, weightPct: null };
   }));
 }
 
