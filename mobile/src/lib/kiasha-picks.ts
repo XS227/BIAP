@@ -41,7 +41,7 @@ const SCAN_WAVE_SIZE = 6;
 const cache = new Map<InvestmentHorizon, { at: number; value: KiashaPicksResult }>();
 const recommendationCache = new Map<string, { at: number; value: Recommendation | null }>();
 const recommendationInflight = new Map<string, Promise<Recommendation | null>>();
-const STORAGE_PREFIX = 'kiasha:picks:v3:';
+const STORAGE_PREFIX = 'kiasha:picks:v4:';
 
 function storageKey(horizon: InvestmentHorizon): string { return `${STORAGE_PREFIX}${horizon}`; }
 function normalizedKey(value: string): string { return value.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/\s+/g, '').trim(); }
@@ -118,30 +118,43 @@ function prioritizeCandidates(items: MarketSymbolResult[]): MarketSymbolResult[]
 }
 
 function entry(rec: Recommendation, agent: string) { return rec.breakdown.find((x) => x.agent === agent); }
+function contribution(rec: Recommendation, agent: string): number {
+  const item = entry(rec, agent);
+  return (item?.vote ?? 0) * (item?.confidence ?? 0);
+}
 
 function rank(rec: Recommendation, horizon: InvestmentHorizon): number {
-  const fundamental = entry(rec, 'fundamental');
-  const risk = entry(rec, 'risk');
-  const forecast = entry(rec, 'forecast');
-  const comparison = entry(rec, 'comparison');
   const weighted = Number.isFinite(rec.score) ? rec.score : 0;
-  return horizon === 'short'
-    ? weighted * 0.42 + (forecast?.vote ?? 0) * (forecast?.confidence ?? 0) * 0.38 + (risk?.vote ?? 0) * (risk?.confidence ?? 0) * 0.20
-    : weighted * 0.36 + (fundamental?.vote ?? 0) * (fundamental?.confidence ?? 0) * 0.44 + (comparison?.vote ?? 0) * (comparison?.confidence ?? 0) * 0.20;
+  if (horizon === 'short') {
+    return weighted * 0.34
+      + contribution(rec, 'forecast') * 0.18
+      + contribution(rec, 'risk') * 0.14
+      + contribution(rec, 'technical') * 0.20
+      + contribution(rec, 'flow') * 0.14;
+  }
+  return weighted * 0.34
+    + contribution(rec, 'fundamental') * 0.32
+    + contribution(rec, 'comparison') * 0.18
+    + contribution(rec, 'technical') * 0.10
+    + contribution(rec, 'flow') * 0.06;
 }
 
 function isVerifiedForHorizon(rec: Recommendation, horizon: InvestmentHorizon): boolean {
   if (rec.dataSource === 'mock') return false;
   if (horizon === 'short') {
+    // A verified live quote is enough to enter the short-horizon candidate pool.
+    // Individual agents stay neutral when their own extended inputs are absent,
+    // instead of excluding an otherwise real symbol from Kiasha entirely.
     return rec.dataSource === 'live'
-      && Boolean(rec.livePrice?.lastPrice || rec.livePrice?.closingPrice)
-      && rec.dataAvailability.market_extended;
+      && Boolean(rec.livePrice?.lastPrice || rec.livePrice?.closingPrice);
   }
   return rec.dataSource === 'live' || (rec.dataSource === 'codal' && Boolean(rec.codalFundamentals));
 }
 
 function rationale(rec: Recommendation, horizon: InvestmentHorizon): string {
-  const names = horizon === 'short' ? ['forecast', 'risk'] : ['fundamental', 'comparison'];
+  const names = horizon === 'short'
+    ? ['technical', 'flow', 'forecast', 'risk']
+    : ['fundamental', 'comparison', 'technical', 'flow'];
   return names.map((name) => entry(rec, name)).filter(Boolean).map((x) => x!.reasoning).filter(Boolean).slice(0, 2).join(' • ')
     || 'رتبه‌بندی فقط از داده‌های واقعی قابل‌دسترسی کیا‌شا انجام شده است.';
 }
