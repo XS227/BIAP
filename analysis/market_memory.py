@@ -13,7 +13,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-DEFAULT_DB = Path.home() / ".local" / "share" / "biap" / "market_memory.sqlite3"
+# One shared server-owned DB for biap-fin, the daily collector and weekly report.
+# This avoids silently creating separate per-user databases under /root or /home.
+DEFAULT_DB = Path("/var/lib/biap/market-memory.sqlite3")
 
 
 def db_path() -> Path:
@@ -137,6 +139,22 @@ def save_analysis(*, scope: str, analysis_type: str, payload: dict, symbol: str 
              json.dumps(payload, ensure_ascii=False, separators=(",", ":"))),
         )
         con.commit()
+
+
+def memory_stats() -> dict:
+    """Small operational health summary for the shared Market Memory DB."""
+    with _connect() as con:
+        snapshots = int(con.execute("SELECT COUNT(*) FROM symbol_snapshots").fetchone()[0])
+        analyses = int(con.execute("SELECT COUNT(*) FROM analysis_snapshots").fetchone()[0])
+        latest_snapshot = con.execute("SELECT MAX(observed_at) FROM symbol_snapshots").fetchone()[0]
+        latest_analysis = con.execute("SELECT MAX(created_at) FROM analysis_snapshots").fetchone()[0]
+    return {
+        "db": str(db_path()),
+        "marketSnapshots": snapshots,
+        "kiashaAnalyses": analyses,
+        "latestMarketSnapshot": latest_snapshot,
+        "latestAnalysis": latest_analysis,
+    }
 
 
 def get_meta(key: str, default: str | None = None) -> str | None:
