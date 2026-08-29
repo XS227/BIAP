@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View, Pressable, useColorScheme } from 'react-native';
 import { router } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
-import { clearBusinessDataset, getBusinessDataset, parseBusinessData, saveBusinessDataset } from '@/lib/business-data';
-import { parseExcelArrayBuffer } from '@/lib/excel-import';
+import { clearBusinessDataset, getBusinessDataset, importExcelBusinessDataset, parseBusinessData, saveBusinessDataset } from '@/lib/business-data';
 
 const SOURCES = [
   { key: 'sql', icon: '🗄️', title: 'SQL / Database', body: 'کانکتور Read-only سمت سرور؛ رمز دیتابیس داخل موبایل ذخیره نمی‌شود.', state: 'نیازمند مشخصات دیتابیس' },
@@ -26,37 +26,35 @@ export default function DataConnectScreen() {
   };
   useEffect(() => { refresh(); }, []);
 
-  const persist = async (dataset: ReturnType<typeof parseBusinessData>) => {
-    await saveBusinessDataset(dataset);
-    setStatus(`✓ متصل و همگام شد: ${dataset.rows.length} ردیف و ${dataset.columns.length} ستون`);
-    await refresh();
-  };
-
   const importData = async () => {
     try {
       const dataset = parseBusinessData(raw, name.trim() || 'Company data');
-      await persist(dataset);
+      await saveBusinessDataset(dataset);
+      setStatus(`✓ متصل و همگام شد: ${dataset.rows.length} ردیف و ${dataset.columns.length} ستون`);
       setRaw('');
+      await refresh();
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : 'خطا در خواندن داده');
+      setStatus(e instanceof Error ? e.message : 'خطا در خواندن یا همگام‌سازی داده');
     }
   };
 
   const importExcel = async () => {
     setImportingFile(true);
+    setStatus('');
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'],
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         copyToCacheDirectory: true,
         multiple: false,
       });
       if (result.canceled) return;
       const asset = result.assets[0];
-      const response = await fetch(asset.uri);
-      const buffer = await response.arrayBuffer();
-      const cleanName = (name.trim() && name.trim() !== 'Company data') ? name.trim() : (asset.name?.replace(/\.xlsx?$/i, '') || 'Excel data');
-      const dataset = parseExcelArrayBuffer(buffer, cleanName);
-      await persist(dataset);
+      if (!asset.name.toLowerCase().endsWith('.xlsx')) throw new Error('فقط فایل واقعی .xlsx پشتیبانی می‌شود');
+      const base64Data = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.Base64 });
+      const cleanName = (name.trim() && name.trim() !== 'Company data') ? name.trim() : asset.name.replace(/\.xlsx$/i, '');
+      const dataset = await importExcelBusinessDataset({ filename: asset.name, name: cleanName, base64Data });
+      setStatus(`✓ Excel خوانده و با حساب همگام شد: ${dataset.rows.length} ردیف و ${dataset.columns.length} ستون`);
+      await refresh();
     } catch (e) {
       setStatus(e instanceof Error ? e.message : 'خطا در خواندن فایل Excel');
     } finally {
@@ -64,7 +62,15 @@ export default function DataConnectScreen() {
     }
   };
 
-  const clear = async () => { await clearBusinessDataset(); setStatus('داده شرکت از حساب و دستگاه حذف شد'); await refresh(); };
+  const clear = async () => {
+    try {
+      await clearBusinessDataset();
+      setStatus('✓ داده شرکت از حساب و دستگاه حذف شد');
+      await refresh();
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : 'خطا در حذف داده');
+    }
+  };
 
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]}>
@@ -82,9 +88,9 @@ export default function DataConnectScreen() {
 
         <View style={[styles.importCard, { backgroundColor: colors.backgroundElement }]}>
           <View style={styles.activeHead}><View style={styles.liveBadge}><Text style={styles.liveBadgeText}>READY</Text></View><Text style={[styles.activeTitle, { color: colors.text }]}>CSV / JSON / Excel</Text></View>
-          <Text style={[styles.body, { color: colors.textSecondary }]}>CSV یا JSON را paste کنید، یا فایل واقعی Excel با پسوند .xlsx/.xls انتخاب کنید. داده واردشده در Real Mode ماژول‌ها استفاده می‌شود.</Text>
+          <Text style={[styles.body, { color: colors.textSecondary }]}>CSV یا JSON را paste کنید، یا فایل واقعی Excel با پسوند .xlsx انتخاب کنید. فایل Excel در backend امن خوانده می‌شود و dataset نرمال‌شده در حساب شما ذخیره می‌شود.</Text>
           <TextInput value={name} onChangeText={setName} placeholder="نام منبع داده" placeholderTextColor={colors.textSecondary} style={[styles.input, { color: colors.text, borderColor: colors.backgroundSelected }]} />
-          <Pressable disabled={importingFile} onPress={importExcel} style={[styles.excelButton, { borderColor: Brand.primary, opacity: importingFile ? .6 : 1 }]}><Text style={[styles.excelButtonText, { color: Brand.primary }]}>{importingFile ? 'در حال خواندن Excel…' : 'انتخاب فایل Excel (.xlsx / .xls)'}</Text></Pressable>
+          <Pressable disabled={importingFile} onPress={importExcel} style={[styles.excelButton, { borderColor: Brand.primary, opacity: importingFile ? .6 : 1 }]}><Text style={[styles.excelButtonText, { color: Brand.primary }]}>{importingFile ? 'در حال خواندن Excel…' : 'انتخاب فایل Excel (.xlsx)'}</Text></Pressable>
           <TextInput value={raw} onChangeText={setRaw} multiline textAlignVertical="top" placeholder={'یا paste کنید:\nmonth,revenue,cost,customers\n1405-01,1200000,700000,240'} placeholderTextColor={colors.textSecondary} style={[styles.area, { color: colors.text, borderColor: colors.backgroundSelected }]} />
           <Pressable onPress={importData} style={styles.primary}><Text style={styles.primaryText}>اتصال CSV / JSON</Text></Pressable>
           <Text style={[styles.dataset, { color: colors.textSecondary }]}>{datasetInfo}</Text>
