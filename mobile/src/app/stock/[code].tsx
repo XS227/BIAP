@@ -7,6 +7,7 @@ import { fetchMarketSymbols } from '@/lib/market-symbols';
 import { fetchTsetmcHistory, fetchTsetmcQuote, PricePoint } from '@/lib/market-quote';
 import { getDemoMode } from '@/lib/demo-mode';
 import { executeDemoTrade, getDemoWallet } from '@/lib/demo-trading';
+import { isFavorite, toggleFavorite } from '@/lib/favorites';
 import { StockRowSkeleton } from '@/components/skeleton';
 import { RecommendationCard } from '@/components/recommendation-card';
 import { KiashaDecisionCard } from '@/components/kiasha-decision-card';
@@ -101,6 +102,7 @@ export default function StockDetailScreen() {
   const [history, setHistory] = useState<PricePoint[]>([]);
   const [rec, setRec] = useState<Recommendation | null>(null);
   const [demo, setDemo] = useState(false);
+  const [favorite, setFavorite] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -131,6 +133,7 @@ export default function StockDetailScreen() {
       setSymbol(resolved);
       setRec(recommendation);
       setDemo(demoMode);
+      setFavorite(await isFavorite(resolved.code));
 
       const [directQuote, points] = await Promise.all([
         fetchTsetmcQuote(resolved, 6_000, false),
@@ -156,18 +159,20 @@ export default function StockDetailScreen() {
     setItem(null);
     setHistory([]);
     setRec(null);
+    setFavorite(false);
     load();
   }, [code, load]);
 
   const pct = item?.changePercent !== undefined && !item?.error ? parsePct(item.changePercent) : null;
   const up = (pct ?? 0) >= 0;
   const livePrice = item && !item.error ? (item.lastPrice ?? item.closingPrice ?? null) : null;
+  const onFavorite = async () => { if (!symbol) return; setFavorite(await toggleFavorite(symbol)); };
 
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={Brand.stockGreen} />}>
     <View style={styles.header}><Pressable onPress={() => router.back()} style={[styles.back, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.backText, { color: colors.text }]}>← بازگشت</Text></Pressable><Text style={[styles.headerLabel, { color: colors.textSecondary }]}>جزئیات نماد</Text></View>
     {loading ? <View>{[1,2,3].map(i => <StockRowSkeleton key={i} />)}</View> : null}
     {!loading && symbol && item ? <>
-      <View style={[styles.priceCard, { backgroundColor: colors.backgroundElement }]}><View style={styles.titleLine}><View style={[styles.marketBadge, { backgroundColor: colors.backgroundSelected }]}><Text style={[styles.marketBadgeText, { color: colors.textSecondary }]}>{symbol.market ?? 'TSETMC'}</Text></View><View style={{ alignItems: 'flex-end', flex: 1 }}><Text style={[styles.symbol, { color: colors.text }]}>{symbol.symbol}</Text><Text style={[styles.company, { color: colors.textSecondary }]}>{symbol.name}</Text></View></View><View style={styles.priceLine}><Text style={[styles.price, { color: colors.text }]}>{livePrice === null ? '—' : formatPrice(livePrice)}</Text><Text style={[styles.unit, { color: colors.textSecondary }]}>ریال</Text></View>{pct !== null ? <Text style={[styles.change, { color: up ? Brand.stockGreen : Brand.negative }]}>{up ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}٪</Text> : <Text style={[styles.noQuote, { color: colors.textSecondary }]}>قیمت زنده معتبر فعلاً دریافت نشد.</Text>}</View>
+      <View style={[styles.priceCard, { backgroundColor: colors.backgroundElement }]}><View style={styles.titleLine}><Pressable accessibilityLabel={favorite ? 'حذف از علاقه‌مندی‌ها' : 'افزودن به علاقه‌مندی‌ها'} onPress={onFavorite} style={[styles.favoriteBtn, { backgroundColor: favorite ? '#4c1d95' : colors.backgroundSelected }]}><Text style={[styles.favoriteIcon, { color: favorite ? '#ffd166' : colors.textSecondary }]}>{favorite ? '★' : '☆'}</Text></Pressable><View style={[styles.marketBadge, { backgroundColor: colors.backgroundSelected }]}><Text style={[styles.marketBadgeText, { color: colors.textSecondary }]}>{symbol.market ?? 'TSETMC'}</Text></View><View style={{ alignItems: 'flex-end', flex: 1 }}><Text style={[styles.symbol, { color: colors.text }]}>{symbol.symbol}</Text><Text style={[styles.company, { color: colors.textSecondary }]}>{symbol.name}</Text></View></View><View style={styles.priceLine}><Text style={[styles.price, { color: colors.text }]}>{livePrice === null ? '—' : formatPrice(livePrice)}</Text><Text style={[styles.unit, { color: colors.textSecondary }]}>ریال</Text></View>{pct !== null ? <Text style={[styles.change, { color: up ? Brand.stockGreen : Brand.negative }]}>{up ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}٪</Text> : <Text style={[styles.noQuote, { color: colors.textSecondary }]}>قیمت زنده معتبر فعلاً دریافت نشد.</Text>}<Text style={[styles.favoriteHint, { color: favorite ? '#ffd166' : colors.textSecondary }]}>{favorite ? 'در علاقه‌مندی‌های شما' : 'برای ذخیره این نماد ستاره را بزنید'}</Text></View>
       {history.length >= 2 ? <MiniHistoryChart points={history} colors={colors} /> : <View style={[styles.stateCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stateText, { color: colors.textSecondary }]}>تاریخچه قیمت TSETMC برای این نماد فعلاً قابل دریافت نیست؛ نمودار ساختگی نمایش داده نمی‌شود.</Text></View>}
       <View style={[styles.table, { backgroundColor: colors.backgroundElement }]}><Row label="آخرین قیمت" value={`${formatPrice(item.lastPrice)} ریال`} colors={colors} /><Row label="قیمت پایانی" value={`${formatPrice(item.closingPrice)} ریال`} colors={colors} /><Row label="قیمت دیروز" value={`${formatPrice(item.yesterdayPrice)} ریال`} colors={colors} /><Row label="شناسه بازار" value={symbol.code} colors={colors} /><Row label="بازار" value={symbol.market ?? 'TSETMC verified resolver'} colors={colors} /></View>
       {rec ? <KiashaDecisionCard rec={rec} colors={colors} demo={demo} /> : null}
@@ -182,7 +187,7 @@ function Row({ label, value, colors }: { label: string; value: string; colors: T
 
 const styles = StyleSheet.create({
   safe:{flex:1}, content:{paddingHorizontal:Spacing.three}, header:{flexDirection:'row-reverse',alignItems:'center',justifyContent:'space-between',paddingVertical:Spacing.three}, back:{paddingHorizontal:Spacing.three,paddingVertical:Spacing.two,borderRadius:Spacing.two}, backText:{fontFamily:Fonts.sans,fontSize:13}, headerLabel:{fontFamily:Fonts.sans,fontSize:12},
-  priceCard:{borderRadius:Spacing.three,padding:Spacing.four,alignItems:'flex-end'}, titleLine:{width:'100%',flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center',gap:Spacing.two}, marketBadge:{borderRadius:13,paddingHorizontal:9,paddingVertical:5}, marketBadgeText:{fontFamily:Fonts.mono,fontSize:9}, symbol:{fontFamily:Fonts.sans,fontSize:24,fontWeight:'800'}, company:{fontFamily:Fonts.sans,fontSize:11,marginTop:3,textAlign:'right'}, priceLine:{flexDirection:'row-reverse',alignItems:'baseline',gap:6,marginTop:Spacing.three}, price:{fontFamily:Fonts.mono,fontSize:31,fontWeight:'800'}, unit:{fontFamily:Fonts.sans,fontSize:12}, change:{fontFamily:Fonts.mono,fontSize:15,fontWeight:'800',marginTop:5}, noQuote:{fontFamily:Fonts.sans,fontSize:11,marginTop:Spacing.two},
+  priceCard:{borderRadius:Spacing.three,padding:Spacing.four,alignItems:'flex-end'}, titleLine:{width:'100%',flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center',gap:Spacing.two}, marketBadge:{borderRadius:13,paddingHorizontal:9,paddingVertical:5}, marketBadgeText:{fontFamily:Fonts.mono,fontSize:9}, favoriteBtn:{width:38,height:38,borderRadius:19,alignItems:'center',justifyContent:'center'}, favoriteIcon:{fontSize:23,fontWeight:'900'}, favoriteHint:{fontFamily:Fonts.sans,fontSize:10,marginTop:8}, symbol:{fontFamily:Fonts.sans,fontSize:24,fontWeight:'800'}, company:{fontFamily:Fonts.sans,fontSize:11,marginTop:3,textAlign:'right'}, priceLine:{flexDirection:'row-reverse',alignItems:'baseline',gap:6,marginTop:Spacing.three}, price:{fontFamily:Fonts.mono,fontSize:31,fontWeight:'800'}, unit:{fontFamily:Fonts.sans,fontSize:12}, change:{fontFamily:Fonts.mono,fontSize:15,fontWeight:'800',marginTop:5}, noQuote:{fontFamily:Fonts.sans,fontSize:11,marginTop:Spacing.two},
   chartCard:{borderRadius:Spacing.three,padding:Spacing.three,marginTop:Spacing.three}, chartHead:{flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center'}, chartTitle:{fontFamily:Fonts.sans,fontSize:14,fontWeight:'800'}, chartMeta:{fontFamily:Fonts.mono,fontSize:10}, bars:{height:120,flexDirection:'row',alignItems:'flex-end',gap:3,marginTop:Spacing.three}, bar:{flex:1,borderRadius:3,minWidth:2}, chartFoot:{flexDirection:'row',justifyContent:'space-between',marginTop:6},
   table:{borderRadius:Spacing.two,paddingHorizontal:Spacing.three,marginTop:Spacing.three}, row:{flexDirection:'row-reverse',justifyContent:'space-between',paddingVertical:Spacing.three,borderBottomWidth:StyleSheet.hairlineWidth}, rowLabel:{fontFamily:Fonts.sans,fontSize:12}, rowValue:{fontFamily:Fonts.mono,fontSize:12,fontWeight:'700',maxWidth:'65%'},
   tradeCard:{borderRadius:Spacing.three,padding:Spacing.four,marginTop:Spacing.three,alignItems:'flex-end',gap:Spacing.two}, tradeHead:{width:'100%',flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center'}, tradeTitle:{fontFamily:Fonts.sans,fontSize:15,fontWeight:'800'}, demoBadge:{backgroundColor:'#7048e8',borderRadius:12,paddingHorizontal:8,paddingVertical:4}, demoBadgeText:{color:'#fff',fontFamily:Fonts.mono,fontSize:9,fontWeight:'800'}, tradeMeta:{fontFamily:Fonts.sans,fontSize:11,textAlign:'right'}, tradeButtons:{width:'100%',flexDirection:'row-reverse',gap:Spacing.two}, tradeBtn:{flex:1,paddingVertical:Spacing.three,borderRadius:Spacing.two,alignItems:'center'}, tradeBtnText:{color:'#fff',fontFamily:Fonts.sans,fontSize:13,fontWeight:'800'}, tradeMessage:{fontFamily:Fonts.sans,fontSize:11,textAlign:'right'}, tradeNotice:{fontFamily:Fonts.sans,fontSize:10,lineHeight:17,textAlign:'right'},
