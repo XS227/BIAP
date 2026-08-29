@@ -1,13 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authFetch, authHeaders } from '@/lib/auth-session';
 
 const KEY = 'biap:business-dataset:v1';
+const SYNC_URL = 'https://biap.dadashi.no/api/auth/business-dataset';
 
 export type BusinessDataset = {
   name: string;
   columns: string[];
   rows: Record<string, string>[];
   importedAt: string;
-  source: 'csv-paste' | 'json-paste';
+  source: 'csv-paste' | 'json-paste' | 'xlsx-file';
+  syncedAt?: string;
 };
 
 function splitCsvLine(line: string): string[] {
@@ -58,11 +61,36 @@ export function parseBusinessData(input: string, name = 'Company data'): Busines
   return { name, columns, rows, importedAt: new Date().toISOString(), source: 'csv-paste' };
 }
 
-export async function saveBusinessDataset(dataset: BusinessDataset): Promise<void> {
-  await AsyncStorage.setItem(KEY, JSON.stringify(dataset));
+async function cache(dataset: BusinessDataset | null): Promise<void> {
+  if (dataset) await AsyncStorage.setItem(KEY, JSON.stringify(dataset));
+  else await AsyncStorage.removeItem(KEY);
+}
+
+export async function saveBusinessDataset(dataset: BusinessDataset): Promise<{ synced: boolean }> {
+  await cache(dataset);
+  try {
+    const headers = await authHeaders();
+    const res = await authFetch(SYNC_URL, { method: 'PUT', headers, body: JSON.stringify(dataset) });
+    if (!res.ok) return { synced: false };
+    const body = await res.json() as { dataset?: BusinessDataset };
+    if (body.dataset) await cache(body.dataset);
+    return { synced: true };
+  } catch {
+    return { synced: false };
+  }
 }
 
 export async function getBusinessDataset(): Promise<BusinessDataset | null> {
+  try {
+    const headers = await authHeaders();
+    const res = await authFetch(SYNC_URL, { headers });
+    if (res.ok) {
+      const body = await res.json() as { dataset?: BusinessDataset | null };
+      const remote = body.dataset ?? null;
+      await cache(remote);
+      if (remote) return remote;
+    }
+  } catch {}
   try {
     const raw = await AsyncStorage.getItem(KEY);
     return raw ? JSON.parse(raw) as BusinessDataset : null;
@@ -71,6 +99,10 @@ export async function getBusinessDataset(): Promise<BusinessDataset | null> {
 
 export async function clearBusinessDataset(): Promise<void> {
   await AsyncStorage.removeItem(KEY);
+  try {
+    const headers = await authHeaders();
+    await authFetch(SYNC_URL, { method: 'DELETE', headers });
+  } catch {}
 }
 
 export function summarizeBusinessDataset(dataset: BusinessDataset) {
