@@ -19,6 +19,7 @@ from business_dataset_store import delete_dataset, get_dataset, save_dataset
 from codal_data import base_url as codal_base_url
 from company_builder import availability, build_company_from_quote, build_company_from_symbol
 from data_sample import SAMPLE_COMPANY
+from excel_business_import import parse_excel_base64
 from execution import (
     ExecutionPolicyError,
     approve_order_intent,
@@ -115,6 +116,12 @@ class OrderRejectRequest(BaseModel):
     reason: Optional[str] = Field(default=None, max_length=500)
 
 
+class ExcelImportRequest(BaseModel):
+    filename: str = Field(min_length=1, max_length=255)
+    name: Optional[str] = Field(default=None, max_length=160)
+    base64Data: str = Field(min_length=4)
+
+
 def _require_warm_ready() -> None:
     if not _WARMUP["ready"]:
         raise HTTPException(status_code=503, detail={"message": "service warming caches", "retryable": True, "warmup": dict(_WARMUP)})
@@ -131,7 +138,7 @@ def health():
         "liveMarketData": {"base": market_base_url(), "fields": ["lastPrice", "closingPrice", "yesterdayPrice", "change", "changePercent"], "extendedMarketDataConnected": False},
         "symbolUniverse": {"preferredSource": "tsetmc", "fallbackSource": "codal", "markets": ["TSE", "IFB", "IFB_BASE"], "watchlistIndependent": True, "degradedModeSupported": True},
         "codal": {"base": codal_base_url(), "metadataConnected": True, "fundamentalsConnected": True},
-        "businessData": {"accountSync": True, "scenarioEngine": True},
+        "businessData": {"accountSync": True, "scenarioEngine": True, "excelImport": True},
         "execution": {"paper": True, "approval": True, "auto": False, "brokerConnected": False, "persistentAudit": True, "riskPolicy": True, "ownershipEnforced": True, "authenticationVerified": bool(os.environ.get("BIAP_AUTH_JWT_SECRET")), "idempotencySupported": True},
     }
 
@@ -218,6 +225,17 @@ def business_dataset_put(dataset: dict, user_id: str = Depends(require_user_id))
 def business_dataset_delete(user_id: str = Depends(require_user_id)):
     delete_dataset(user_id)
     return {"deleted": True}
+
+
+@app.post("/business/excel-import")
+def business_excel_import(req: ExcelImportRequest, user_id: str = Depends(require_user_id)):
+    try:
+        dataset = parse_excel_base64(req.base64Data, name=req.name or req.filename.rsplit(".", 1)[0])
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    dataset["importedAt"] = datetime.now(timezone.utc).isoformat()
+    clean = _validate_business_dataset(dataset)
+    return {"dataset": save_dataset(user_id, clean), "synced": True}
 
 
 @app.post("/business/scenario")
