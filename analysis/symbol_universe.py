@@ -137,7 +137,10 @@ def fetch_symbol_universe(*,timeout:float=6.0,use_cache:bool=True)->list[MarketS
     """Backward-compatible API used by market_data and older callers."""
     return get_symbol_universe(force=not use_cache,timeout=timeout)
 def query_symbols(*,market:Optional[str]=None,q:Optional[str]=None,limit:int=5000)->list[MarketSymbol]:
-    items=get_symbol_universe();market_key=market.upper() if market else None;needle=(q or "").strip().replace("ي","ی").replace("ك","ک").lower();result=[]
+    # Route through the public wrapper, then filter locally. This keeps search
+    # behavior consistent for callers/tests that replace fetch_symbol_universe,
+    # while the wrapper itself still owns cache policy and upstream fallback.
+    items=fetch_symbol_universe();market_key=market.upper() if market else None;needle=(q or "").strip().replace("ي","ی").replace("ك","ک").lower();result=[]
     for item in items:
         if market_key and item.market!=market_key:continue
         if needle:
