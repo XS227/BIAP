@@ -70,13 +70,13 @@ export function RecommendationCard({ rec, colors }: { rec: Recommendation; color
   };
 
   const markBought = async () => {
-    if (rec.call !== 'BUY') { setSim({ status: 'error', message: 'برای ثبت خرید دستی، تحلیل فعلی کیا‌شا باید BUY باشد.' }); return; }
     if (!price || quantity < 1) { setSim({ status: 'error', message: 'قیمت معتبر و تعداد سهم را وارد کنید.' }); return; }
     setSim({ status: 'loading' });
     try {
       const item = await confirmManualBuy({ code: rec.code, symbol: rec.name || rec.code, quantity, buyPrice: price });
       setTracked(item);
-      setSim({ status: 'filled', note: `ثبت شد: ${item.quantity.toLocaleString('fa-IR')} سهم برای پیگیری کیا‌شا. خرید واقعی را شما در کارگزاری انجام می‌دهید.` });
+      const signalNote = rec.call === 'BUY' ? '' : ` سیگنال فعلی کیا‌شا ${CALL_LABEL[rec.call] ?? rec.call} است؛ این فقط ثبت معامله‌ای است که خودتان بیرون BIAP انجام داده‌اید.`;
+      setSim({ status: 'filled', note: `ثبت شد: مجموع موقعیت ${item.quantity.toLocaleString('fa-IR')} سهم شد.${signalNote}` });
     } catch (e) { setSim({ status: 'error', message: e instanceof Error ? e.message : 'ثبت خرید دستی انجام نشد.' }); }
   };
 
@@ -86,7 +86,7 @@ export function RecommendationCard({ rec, colors }: { rec: Recommendation; color
     try {
       await confirmManualSell(tracked.id, price);
       setTracked(null);
-      setSim({ status: 'filled', note: 'فروش دستی ثبت شد و موقعیت از پیگیری فعال خارج شد.' });
+      setSim({ status: 'filled', note: 'فروش کل موقعیت دستی ثبت شد و پیگیری این موقعیت بسته شد.' });
     } catch (e) { setSim({ status: 'error', message: e instanceof Error ? e.message : 'ثبت فروش دستی انجام نشد.' }); }
   };
 
@@ -101,12 +101,11 @@ export function RecommendationCard({ rec, colors }: { rec: Recommendation; color
 
     <View style={styles.manualSection}>
       <Text style={[styles.manualTitle, { color: colors.text }]}>اجرای دستی از طریق کارگزاری دلخواه</Text>
-      <Text style={[styles.manualNote, { color: colors.textSecondary }]}>کیا‌شا فقط نماد، تعداد پیشنهادی و زمان تصمیم را دنبال می‌کند. سفارش واقعی را خودتان در هر کارگزاری انجام دهید؛ بعد از خرید/فروش اینجا تأیید کنید.</Text>
-      {tracked ? <View style={[styles.trackedBox, { backgroundColor: colors.backgroundSelected }]}><Text style={[styles.trackedTitle, { color: Brand.positive }]}>✓ در حال پیگیری توسط کیا‌شا</Text><Text style={[styles.trackedMeta, { color: colors.textSecondary }]}>{tracked.quantity.toLocaleString('fa-IR')} سهم • قیمت ثبت خرید {Math.round(tracked.buyPrice).toLocaleString('fa-IR')} ریال</Text><Text style={[styles.trackedSignal, { color: rec.call === 'SELL' ? Brand.negative : colors.text }]}>{rec.call === 'SELL' ? 'کیا‌شا اکنون سیگنال فروش دارد؛ قبل از اقدام جزئیات تحلیل را بررسی کنید.' : `سیگنال فعلی: ${CALL_LABEL[rec.call] ?? rec.call}`}</Text><Pressable disabled={sim.status === 'loading'} onPress={markSold} style={[styles.manualBtn, { backgroundColor: Brand.negative }]}><Text style={styles.simBtnText}>فروختم — بستن پیگیری</Text></Pressable></View> : <>
-        <View style={styles.inputRow}><View style={styles.inputBox}><Text style={[styles.inputLabel, { color: colors.textSecondary }]}>مبلغ تقریبی (ریال)</Text><TextInput value={rialText} onChangeText={onRialChange} keyboardType="number-pad" placeholder="مثلاً 5000000" placeholderTextColor={colors.textSecondary} style={[styles.input, { color: colors.text, borderColor: colors.backgroundSelected }]} /></View><View style={styles.inputBox}><Text style={[styles.inputLabel, { color: colors.textSecondary }]}>تعداد سهم</Text><TextInput value={quantityText} onChangeText={onQuantityChange} keyboardType="number-pad" placeholder="10" placeholderTextColor={colors.textSecondary} style={[styles.input, { color: colors.text, borderColor: colors.backgroundSelected }]} /></View></View>
-        <Text style={[styles.calc, { color: colors.textSecondary }]}>{price > 0 ? `قیمت مبنا ${Math.round(price).toLocaleString('fa-IR')} ریال • ارزش تقریبی ${Math.round(notional).toLocaleString('fa-IR')} ریال` : 'قیمت معتبر فعلاً دریافت نشده است.'}</Text>
-        {demo ? <View style={styles.demoButtons}><Pressable disabled={sim.status === 'loading'} onPress={() => runDemoTrade('BUY')} style={[styles.demoBtn, { backgroundColor: Brand.stockGreen }]}><Text style={styles.simBtnText}>خرید دمو</Text></Pressable><Pressable disabled={sim.status === 'loading'} onPress={() => runDemoTrade('SELL')} style={[styles.demoBtn, { backgroundColor: Brand.negative }]}><Text style={styles.simBtnText}>فروش دمو</Text></Pressable></View> : <Pressable disabled={sim.status === 'loading' || rec.call !== 'BUY'} onPress={markBought} style={[styles.manualBtn, { backgroundColor: rec.call === 'BUY' ? Brand.stockGreen : colors.backgroundSelected, opacity: rec.call === 'BUY' ? 1 : .7 }]}>{sim.status === 'loading' ? <ActivityIndicator color="#fff" /> : <Text style={[styles.simBtnText, { color: rec.call === 'BUY' ? '#fff' : colors.textSecondary }]}>{rec.call === 'BUY' ? 'خریدم — شروع پیگیری کیا‌شا' : 'فعلاً پیشنهاد خرید نیست'}</Text>}</Pressable>}
-      </>}
+      <Text style={[styles.manualNote, { color: colors.textSecondary }]}>خرید و فروش واقعی خارج از BIAP انجام می‌شود. اینجا می‌توانید هر بار خرید جدید را به موقعیت اضافه کنید یا فروش کل موقعیت را ثبت کنید؛ سیگنال کیا‌شا جداگانه نمایش داده می‌شود.</Text>
+      {tracked ? <View style={[styles.trackedBox, { backgroundColor: colors.backgroundSelected }]}><Text style={[styles.trackedTitle, { color: Brand.positive }]}>✓ در حال پیگیری توسط کیا‌شا</Text><Text style={[styles.trackedMeta, { color: colors.textSecondary }]}>{tracked.quantity.toLocaleString('fa-IR')} سهم • میانگین ثبت خرید {Math.round(tracked.buyPrice).toLocaleString('fa-IR')} ریال</Text><Text style={[styles.trackedSignal, { color: rec.call === 'SELL' ? Brand.negative : colors.text }]}>{`سیگنال فعلی: ${CALL_LABEL[rec.call] ?? rec.call}`}</Text></View> : null}
+      <View style={styles.inputRow}><View style={styles.inputBox}><Text style={[styles.inputLabel, { color: colors.textSecondary }]}>مبلغ تقریبی (ریال)</Text><TextInput value={rialText} onChangeText={onRialChange} keyboardType="number-pad" placeholder="مثلاً 5000000" placeholderTextColor={colors.textSecondary} style={[styles.input, { color: colors.text, borderColor: colors.backgroundSelected }]} /></View><View style={styles.inputBox}><Text style={[styles.inputLabel, { color: colors.textSecondary }]}>تعداد سهم</Text><TextInput value={quantityText} onChangeText={onQuantityChange} keyboardType="number-pad" placeholder="10" placeholderTextColor={colors.textSecondary} style={[styles.input, { color: colors.text, borderColor: colors.backgroundSelected }]} /></View></View>
+      <Text style={[styles.calc, { color: colors.textSecondary }]}>{price > 0 ? `قیمت مبنا ${Math.round(price).toLocaleString('fa-IR')} ریال • ارزش تقریبی ${Math.round(notional).toLocaleString('fa-IR')} ریال` : 'قیمت معتبر فعلاً دریافت نشده است.'}</Text>
+      {demo ? <View style={styles.demoButtons}><Pressable disabled={sim.status === 'loading'} onPress={() => runDemoTrade('BUY')} style={[styles.demoBtn, { backgroundColor: Brand.stockGreen }]}><Text style={styles.simBtnText}>خرید دمو</Text></Pressable><Pressable disabled={sim.status === 'loading'} onPress={() => runDemoTrade('SELL')} style={[styles.demoBtn, { backgroundColor: Brand.negative }]}><Text style={styles.simBtnText}>فروش دمو</Text></Pressable></View> : <View style={styles.demoButtons}><Pressable disabled={sim.status === 'loading'} onPress={markBought} style={[styles.demoBtn, { backgroundColor: Brand.stockGreen }]}>{sim.status === 'loading' ? <ActivityIndicator color="#fff" /> : <Text style={styles.simBtnText}>{tracked ? 'خریدم بیشتر — ثبت' : 'خریدم — شروع پیگیری'}</Text>}</Pressable><Pressable disabled={sim.status === 'loading' || !tracked} onPress={markSold} style={[styles.demoBtn, { backgroundColor: tracked ? Brand.negative : colors.backgroundSelected, opacity: tracked ? 1 : .6 }]}><Text style={[styles.simBtnText, { color: tracked ? '#fff' : colors.textSecondary }]}>فروختم همه</Text></Pressable></View>}
       {demo ? <Text style={[styles.demoCash, { color: colors.textSecondary }]}>موجودی Demo: {demoCash === null ? '—' : Math.round(demoCash).toLocaleString('fa-IR')} ریال</Text> : null}
       {sim.status === 'filled' ? <Text style={[styles.simResult, { color: Brand.stockGreen }]}>✓ {sim.note}</Text> : null}
       {sim.status === 'error' ? <Text style={[styles.simResult, { color: Brand.negative }]}>{sim.message}</Text> : null}
