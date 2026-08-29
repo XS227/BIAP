@@ -1,0 +1,283 @@
+"""Whole-market discovery layer for Kiasha.
+
+This module separates cheap market-wide discovery from expensive deep analysis.
+It scans the live TSETMC market-watch payload once, scores every verified row,
+then asks the existing six-agent Kiasha team to deeply study only the strongest
+shortlist. Results are cached on disk and are safe to reuse by the 5-minute
+Auto-Invest runner without burning Claude credit on the entire market.
+"""
+from __future__ import annotations
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
+from datetime import datetime, timezone
+import json
+import math
+import os
+from pathlib import Path
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from typing import Any, Optional
+
+from company_builder import build_company_from_quote
+from kiasha import decide
+from market_data import LiveQuote
+from symbol_universe import get_symbol_universe, tsetmc_base
+
+CACHE_ENV = "BIAP_MARKET_SCAN_CACHE"
+DEFAULT_CACHE_PATH = Path.home() / ".cache" / "biap" / "market_scan.json"
+DEFAULT_TTL_SECONDS = 15 * 60
+DEFAULT_PREFILTER_LIMIT = 60
+DEFAULT_DEEP_LIMIT = 24
+DEFAULT_TOP_LIMIT = 10
+
+
+@dataclass(frozen=True)
+class BulkCandidate:
+    code: str
+    symbol: str
+    name: str
+    last_price: float
+    closing_price: Optional[float]
+    yesterday_price: Optional[float]
+    change_percent: float
+    volume: float
+    trade_value: float
+    trade_count: float
+    discovery_score: float
+
+
+def _float(value: Any) -> Optional[float]:
+    if value in (None, ""):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _int_env(name: str, default: int, minimum: int, maximum: int) -> int:
+    try:
+        value = int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        value = default
+    return max(minimum, min(maximum, value))
+
+
+def _cache_path() -> Path:
+    configured = os.getenv(CACHE_ENV)
+    return Path(configured).expanduser() if configured else DEFAULT_CACHE_PATH
+
+
+def _market_watch_url() -> str:
+    params = [("market", "0"), ("withBestLimits", "false"), ("showTraded", "false"), ("hEven", "0"), ("RefID", "0")]
+    params.extend((f"paperTypes[{i}]", str(i + 1)) for i in range(9))
+    return f"{tsetmc_base()}/ClosingPrice/GetMarketWatch?{urllib.parse.urlencode(params)}"
+
+
+def _read_market_watch(timeout: float) -> list[dict[str, Any]]:
+    req = urllib.request.Request(
+        _market_watch_url(),
+        headers={"User-Agent": "Mozilla/5.0 BIAP/1.0", "Accept": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        payload = json.loads(resp.read().decode("utf-8"))
+    rows = payload.get("marketwatch") if isinstance(payload, dict) else None
+    return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+
+
+def _normalize_symbol(raw: dict[str, Any]) -> tuple[str, str, str]:
+    code = str(raw.get("insCode") or raw.get("ins_code") or "").strip()
+    symbol = str(raw.get("lVal18AFC") or raw.get("l18") or raw.get("symbol") or "").strip()
+    name = str(raw.get("lVal30") or raw.get("l30") or raw.get("name") or symbol).strip()
+    return code, symbol, name
+
+
+def _bulk_candidate(raw: dict[str, Any]) -> Optional[BulkCandidate]:
+    code, symbol, name = _normalize_symbol(raw)
+    if not code or not symbol:
+        return None
+    flow = _float(raw.get("flow"))
+    if flow not in (1.0, 2.0, 4.0):
+        return None
+    last_price = _float(raw.get("pDrCotVal")) or _float(raw.get("pClosing"))
+    closing_price = _float(raw.get("pClosing"))
+    yesterday = _float(raw.get("priceYesterday"))
+    if last_price is None or last_price <= 0:
+        return None
+    change_pct = 0.0
+    if yesterday not in (None, 0):
+        change_pct = ((last_price - float(yesterday)) / float(yesterday)) * 100.0
+    volume = max(0.0, _float(raw.get("qTotTran5J")) or 0.0)
+    trade_value = max(0.0, _float(raw.get("qTotCap")) or 0.0)
+    trade_count = max(0.0, _float(raw.get("zTotTran")) or 0.0)
+    momentum = max(-10.0, min(10.0, change_pct)) / 10.0
+    liquidity = min(1.0, math.log1p(trade_value) / math.log1p(1e13)) if trade_value > 0 else 0.0
+    volume_signal = min(1.0, math.log1p(volume) / math.log1p(1e9)) if volume > 0 else 0.0
+    activity = min(1.0, math.log1p(trade_count) / math.log1p(1e5)) if trade_count > 0 else 0.0
+    score = 0.38 * momentum + 0.30 * liquidity + 0.20 * volume_signal + 0.12 * activity
+    return BulkCandidate(
+        code=code,
+        symbol=symbol,
+        name=name or symbol,
+        last_price=last_price,
+        closing_price=closing_price,
+        yesterday_price=yesterday,
+        change_percent=change_pct,
+        volume=volume,
+        trade_value=trade_value,
+        trade_count=trade_count,
+        discovery_score=round(score, 6),
+    )
+
+
+def _deep_analyze(candidate: BulkCandidate) -> dict[str, Any]:
+    quote = LiveQuote(
+        code=candidate.code,
+        name=candidate.symbol,
+        last_price=candidate.last_price,
+        closing_price=candidate.closing_price,
+        yesterday_price=candidate.yesterday_price,
+        change=(candidate.last_price - candidate.yesterday_price) if candidate.yesterday_price not in (None, 0) else None,
+        change_percent=candidate.change_percent,
+    )
+    company = build_company_from_quote(quote, codal_symbol=candidate.symbol)
+    decision = decide(company)
+    return {
+        "code": candidate.code,
+        "symbol": candidate.symbol,
+        "name": candidate.name,
+        "discoveryScore": candidate.discovery_score,
+        "kiashaCall": decision.call,
+        "kiashaScore": float(decision.weighted_score),
+        "explanation": decision.explanation,
+        "agentBreakdown": decision.breakdown,
+        "changePercent": round(candidate.change_percent, 4),
+        "tradeValue": candidate.trade_value,
+        "volume": candidate.volume,
+    }
+
+
+def _load_cache(max_age: float) -> Optional[dict[str, Any]]:
+    path = _cache_path()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    created = _float(payload.get("createdEpoch")) if isinstance(payload, dict) else None
+    if created is None or time.time() - created > max_age:
+        return None
+    return payload
+
+
+def _save_cache(payload: dict[str, Any]) -> None:
+    path = _cache_path()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temp = path.with_suffix(path.suffix + ".tmp")
+        temp.write_text(json.dumps(payload, ensure_ascii=False, sort_keys=True), encoding="utf-8")
+        temp.replace(path)
+    except OSError:
+        pass
+
+
+def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[str, Any]:
+    ttl = float(_int_env("BIAP_MARKET_SCAN_TTL_SECONDS", DEFAULT_TTL_SECONDS, 60, 86400))
+    if not force:
+        cached = _load_cache(ttl)
+        if cached is not None:
+            return {**cached, "cacheHit": True}
+
+    prefilter_limit = _int_env("BIAP_MARKET_SCAN_PREFILTER", DEFAULT_PREFILTER_LIMIT, 10, 300)
+    deep_limit = _int_env("BIAP_MARKET_SCAN_DEEP_LIMIT", DEFAULT_DEEP_LIMIT, 10, prefilter_limit)
+    top_limit = _int_env("BIAP_MARKET_SCAN_TOP", DEFAULT_TOP_LIMIT, 1, min(25, deep_limit))
+    workers = _int_env("BIAP_MARKET_SCAN_WORKERS", 6, 1, 12)
+
+    rows: list[dict[str, Any]] = []
+    source = "tsetmc-marketwatch"
+    errors: list[str] = []
+    try:
+        rows = _read_market_watch(timeout)
+    except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
+        errors.append(str(exc))
+
+    candidates = [item for raw in rows if (item := _bulk_candidate(raw)) is not None]
+    if not candidates:
+        try:
+            universe = get_symbol_universe(timeout=timeout)
+        except Exception as exc:
+            universe = []
+            errors.append(str(exc))
+        payload = {
+            "status": "DEGRADED",
+            "source": source,
+            "createdAt": datetime.now(timezone.utc).isoformat(),
+            "createdEpoch": time.time(),
+            "universeCount": len(universe),
+            "marketRowsScanned": len(rows),
+            "eligibleCount": 0,
+            "prefilteredCount": 0,
+            "deepAnalyzedCount": 0,
+            "top10": [],
+            "errors": errors[-3:],
+            "cacheHit": False,
+        }
+        _save_cache(payload)
+        return payload
+
+    candidates.sort(key=lambda item: item.discovery_score, reverse=True)
+    shortlist = candidates[:prefilter_limit]
+    deep_input = shortlist[:deep_limit]
+    deep_results: list[dict[str, Any]] = []
+    deep_errors: list[dict[str, str]] = []
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        jobs = {pool.submit(_deep_analyze, item): item for item in deep_input}
+        for job in as_completed(jobs):
+            item = jobs[job]
+            try:
+                deep_results.append(job.result())
+            except Exception as exc:
+                deep_errors.append({"code": item.code, "symbol": item.symbol, "reason": str(exc)[:240]})
+
+    deep_results.sort(
+        key=lambda item: (1 if item.get("kiashaCall") == "BUY" else 0, float(item.get("kiashaScore") or -999), float(item.get("discoveryScore") or -999)),
+        reverse=True,
+    )
+    top = deep_results[:top_limit]
+    payload = {
+        "status": "OK" if deep_results else "DEGRADED",
+        "source": source,
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "createdEpoch": time.time(),
+        "universeCount": len(rows),
+        "marketRowsScanned": len(rows),
+        "eligibleCount": len(candidates),
+        "prefilteredCount": len(shortlist),
+        "deepAnalyzedCount": len(deep_results),
+        "top10": top,
+        "deepErrors": deep_errors[:20],
+        "errors": errors[-3:],
+        "cacheHit": False,
+        "claudeCallsUsedForScan": 0,
+        "note": "Full market discovery is deterministic; Claude/Sonnet is reserved for the final Kiasha candidates.",
+    }
+    _save_cache(payload)
+    return payload
+
+
+def candidate_symbols(*, force_refresh: bool = False) -> list[str]:
+    payload = refresh_market_scan(force=force_refresh)
+    rows = payload.get("top10") if isinstance(payload, dict) else None
+    symbols = [str(item.get("symbol") or item.get("code") or "").strip() for item in rows or [] if isinstance(item, dict)]
+    return list(dict.fromkeys(symbol for symbol in symbols if symbol))
+
+
+def scan_status() -> dict[str, Any]:
+    cached = _load_cache(float("inf"))
+    if cached is None:
+        return {"status": "EMPTY", "top10": [], "candidateSymbols": []}
+    rows = cached.get("top10") if isinstance(cached, dict) else []
+    symbols = [str(item.get("symbol") or item.get("code") or "").strip() for item in rows or [] if isinstance(item, dict)]
+    return {**cached, "candidateSymbols": list(dict.fromkeys(symbol for symbol in symbols if symbol))}
