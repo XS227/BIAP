@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, useColorScheme, SafeAreaView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, BottomTabInset, ThemeColors } from '@/constants/theme';
@@ -94,6 +94,7 @@ export default function StockDetailScreen() {
   const { code } = useLocalSearchParams<{ code: string }>();
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
+  const activeCodeRef = useRef<string | undefined>(code);
   const [symbol, setSymbol] = useState<MarketSymbolResult | null>(null);
   const [item, setItem] = useState<StockItem | null>(null);
   const [history, setHistory] = useState<PricePoint[]>([]);
@@ -104,16 +105,19 @@ export default function StockDetailScreen() {
 
   const load = useCallback(async () => {
     if (!code) return;
+    const requestedCode = code;
     try {
-      const candidates = await fetchMarketSymbols({ q: code, limit: 30 });
-      const found = candidates.find((s) => s.code === code)
-        ?? candidates.find((s) => s.symbol === code)
-        ?? { code, symbol: code, name: code, market: null };
+      const candidates = await fetchMarketSymbols({ q: requestedCode, limit: 30 });
+      if (activeCodeRef.current !== requestedCode) return;
+      const found = candidates.find((s) => s.code === requestedCode)
+        ?? candidates.find((s) => s.symbol === requestedCode)
+        ?? { code: requestedCode, symbol: requestedCode, name: requestedCode, market: null };
 
       const [recommendation, demoMode] = await Promise.all([
         fetchRecommendation(found.symbol || found.code, 55_000),
         getDemoMode(),
       ]);
+      if (activeCodeRef.current !== requestedCode) return;
       const resolved: MarketSymbolResult = recommendation?.code && /^\d+$/.test(recommendation.code)
         ? { ...found, code: recommendation.code }
         : found;
@@ -125,13 +129,28 @@ export default function StockDetailScreen() {
         fetchTsetmcQuote(resolved, 6_000, false),
         fetchTsetmcHistory(resolved, 60, 10_000),
       ]);
+      if (activeCodeRef.current !== requestedCode) return;
       const fallbackQuote = quoteFromRecommendation(recommendation, resolved);
       setItem(!directQuote.error ? directQuote : (fallbackQuote ?? directQuote));
       setHistory(points);
-    } finally { setLoading(false); setRefreshing(false); }
+    } finally {
+      if (activeCodeRef.current === requestedCode) {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    }
   }, [code]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    activeCodeRef.current = code;
+    setLoading(true);
+    setRefreshing(false);
+    setSymbol(null);
+    setItem(null);
+    setHistory([]);
+    setRec(null);
+    load();
+  }, [code, load]);
 
   const pct = item?.changePercent !== undefined && !item?.error ? parsePct(item.changePercent) : null;
   const up = (pct ?? 0) >= 0;
@@ -159,5 +178,5 @@ const styles = StyleSheet.create({
   chartCard:{borderRadius:Spacing.three,padding:Spacing.three,marginTop:Spacing.three}, chartHead:{flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center'}, chartTitle:{fontFamily:Fonts.sans,fontSize:14,fontWeight:'800'}, chartMeta:{fontFamily:Fonts.mono,fontSize:10}, bars:{height:120,flexDirection:'row',alignItems:'flex-end',gap:3,marginTop:Spacing.three}, bar:{flex:1,borderRadius:3,minWidth:2}, chartFoot:{flexDirection:'row',justifyContent:'space-between',marginTop:6},
   table:{borderRadius:Spacing.two,paddingHorizontal:Spacing.three,marginTop:Spacing.three}, row:{flexDirection:'row-reverse',justifyContent:'space-between',paddingVertical:Spacing.three,borderBottomWidth:StyleSheet.hairlineWidth}, rowLabel:{fontFamily:Fonts.sans,fontSize:12}, rowValue:{fontFamily:Fonts.mono,fontSize:12,fontWeight:'700',maxWidth:'65%'},
   tradeCard:{borderRadius:Spacing.three,padding:Spacing.four,marginTop:Spacing.three,alignItems:'flex-end',gap:Spacing.two}, tradeHead:{width:'100%',flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center'}, tradeTitle:{fontFamily:Fonts.sans,fontSize:15,fontWeight:'800'}, demoBadge:{backgroundColor:'#7048e8',borderRadius:12,paddingHorizontal:8,paddingVertical:4}, demoBadgeText:{color:'#fff',fontFamily:Fonts.mono,fontSize:9,fontWeight:'800'}, tradeMeta:{fontFamily:Fonts.sans,fontSize:11,textAlign:'right'}, tradeButtons:{width:'100%',flexDirection:'row-reverse',gap:Spacing.two}, tradeBtn:{flex:1,paddingVertical:Spacing.three,borderRadius:Spacing.two,alignItems:'center'}, tradeBtnText:{color:'#fff',fontFamily:Fonts.sans,fontSize:13,fontWeight:'800'}, tradeMessage:{fontFamily:Fonts.sans,fontSize:11,textAlign:'right'}, tradeNotice:{fontFamily:Fonts.sans,fontSize:10,lineHeight:17,textAlign:'right'},
-  stateCard:{borderRadius:Spacing.three,padding:Spacing.four,alignItems:'center',marginTop:Spacing.three}, stateText:{fontFamily:Fonts.sans,fontSize:12,lineHeight:20,textAlign:'center'}, retryButton:{width:'100%',marginTop:Spacing.three,paddingVertical:Spacing.three,borderRadius:Spacing.two,alignItems:'center'}, retryText:{color:'#fff',fontFamily:Fonts.sans,fontSize:13,fontWeight:'800'}, disclaimer:{fontFamily:Fonts.sans,fontSize:10.5,textAlign:'center',marginVertical:Spacing.three},
+  stateCard:{borderRadius:Spacing.three,padding:Spacing.four,alignItems:'center',marginTop:Spacing.three}, stateText:{fontFamily:Fonts.sans,fontSize:12,lineHeight:20,textAlign:'center'}, retryButton:{marginTop:Spacing.three,width:'100%',paddingVertical:Spacing.three,borderRadius:Spacing.two,alignItems:'center'},retryText:{color:'#fff',fontFamily:Fonts.sans,fontSize:13,fontWeight:'800'}, disclaimer:{fontFamily:Fonts.sans,fontSize:10.5,textAlign:'center',marginVertical:Spacing.three},
 });
