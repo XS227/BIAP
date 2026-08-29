@@ -11,13 +11,13 @@ import { marketStatusLabel } from '@/lib/market-hours';
 
 const PAGE_SIZE=40;
 type Category='ALL'|'TOP'|'LOSERS'|'PRICED'|'TSE'|'IFB'|'IFB_BASE';
-const CATEGORIES:{key:Category;label:string}[]=[{key:'PRICED',label:'دارای قیمت'},{key:'TOP',label:'برترین‌ها'},{key:'LOSERS',label:'بیشترین افت'},{key:'ALL',label:'همه نمادها'},{key:'TSE',label:'بورس'},{key:'IFB',label:'فرابورس'},{key:'IFB_BASE',label:'بازار پایه'}];
+const CATEGORIES:{key:Category;label:string}[]=[{key:'ALL',label:'همه نمادها'},{key:'PRICED',label:'دارای قیمت'},{key:'TOP',label:'برترین‌ها'},{key:'LOSERS',label:'بیشترین افت'},{key:'TSE',label:'بورس'},{key:'IFB',label:'فرابورس'},{key:'IFB_BASE',label:'بازار پایه'}];
 
 export default function MarketScreen(){
  const scheme=useColorScheme()==='dark'?'dark':'light',colors=Colors[scheme];
  const[symbols,setSymbols]=useState<MarketSymbolResult[]>([]),[quotes,setQuotes]=useState<Record<string,StockItem>>({});
  const[loading,setLoading]=useState(true),[refreshing,setRefreshing]=useState(false),[loadingMore,setLoadingMore]=useState(false),[pricing,setPricing]=useState(false),[error,setError]=useState(false);
- const[query,setQuery]=useState(''),[category,setCategory]=useState<Category>('PRICED'),[filtersOpen,setFiltersOpen]=useState(false),[visibleCount,setVisibleCount]=useState(PAGE_SIZE),[countdown,setCountdown]=useState(30);
+ const[query,setQuery]=useState(''),[category,setCategory]=useState<Category>('ALL'),[filtersOpen,setFiltersOpen]=useState(false),[visibleCount,setVisibleCount]=useState(PAGE_SIZE),[countdown,setCountdown]=useState(30);
  const marketStatus=marketStatusLabel();
  const activeCategory=CATEGORIES.find(c=>c.key===category)?.label??'فیلتر';
 
