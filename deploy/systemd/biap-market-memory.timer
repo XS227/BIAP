@@ -1,0 +1,11 @@
+[Unit]
+Description=Run BIAP market memory after Tehran market sessions
+
+[Timer]
+OnCalendar=Sat,Sun,Mon,Tue,Wed *-*-* 15:30:00 Asia/Tehran
+Persistent=true
+RandomizedDelaySec=10m
+Unit=biap-market-memory.service
+
+[Install]
+WantedBy=timers.target
