@@ -100,6 +100,20 @@ def test_safe_buy_dry_run_builds_paper_intent_without_fill():
     assert result.to_dict()["liveExecution"] is False
 
 
+def test_position_pct_is_capped_by_deterministic_limit():
+    result = evaluate_ai_paper_proposal(
+        _proposal(position_pct=20.0),
+        portfolio_value=100_000_000,
+        reference_price=10_000,
+        risk_policy=_policy(),
+        max_position_pct=5.0,
+        execute=False,
+    )
+    assert result.allowed is True
+    assert result.intent is not None
+    assert result.intent["quantity"] == 500  # 5,000,000 / 10,000
+
+
 def test_safe_buy_execute_reaches_paper_broker_only():
     result = evaluate_ai_paper_proposal(
         _proposal(),
