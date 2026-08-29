@@ -17,8 +17,14 @@ import sqlite3
 from uuid import uuid4
 
 import jwt as pyjwt
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+
+from auth import require_user_id
+from business_dataset_store import delete_dataset, get_dataset, save_dataset
+from company_builder import build_company_from_quote, build_company_from_symbol
+from market_data import MarketDataUnavailable, find_quote
+from scenario_engine import build_scenarios
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -46,6 +52,14 @@ class LoginRequest(BaseModel):
 
 class RefreshRequest(BaseModel):
     refreshToken: str = Field(min_length=32, max_length=512)
+
+
+class BusinessDatasetRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=160)
+    columns: list[str] = Field(min_length=1, max_length=250)
+    rows: list[dict[str, str]] = Field(max_length=10000)
+    importedAt: str
+    source: str = Field(pattern=r"^(csv-paste|json-paste|xlsx-file)$")
 
 
 def _normalize_email(value: str) -> str:
@@ -236,3 +250,42 @@ def refresh(req: RefreshRequest):
             "refreshTokenTtlDays": REFRESH_TOKEN_TTL_DAYS,
             "user": _public_user(row),
         }
+
+
+@router.get("/business-dataset")
+def read_business_dataset(user_id: str = Depends(require_user_id)):
+    return {"dataset": get_dataset(user_id)}
+
+
+@router.put("/business-dataset")
+def write_business_dataset(req: BusinessDatasetRequest, user_id: str = Depends(require_user_id)):
+    dataset = req.model_dump()
+    dataset["syncedAt"] = datetime.now(timezone.utc).isoformat()
+    save_dataset(user_id, dataset)
+    return {"dataset": dataset, "synced": True}
+
+
+@router.delete("/business-dataset", status_code=204)
+def remove_business_dataset(user_id: str = Depends(require_user_id)):
+    delete_dataset(user_id)
+    return None
+
+
+def _scenario_company(code: str) -> dict:
+    try:
+        quote = find_quote(code)
+    except MarketDataUnavailable:
+        quote = None
+    if quote is not None:
+        return build_company_from_quote(quote, codal_symbol=quote.name)
+    company = build_company_from_symbol(code)
+    if company is None:
+        raise HTTPException(status_code=404, detail="no verified company data for scenario")
+    return company
+
+
+@router.get("/scenario/{code}")
+def scenario(code: str, horizon: str = "90d", _user_id: str = Depends(require_user_id)):
+    if horizon not in {"30d", "90d", "180d", "365d"}:
+        raise HTTPException(status_code=400, detail="horizon must be 30d, 90d, 180d or 365d")
+    return build_scenarios(_scenario_company(code), horizon=horizon, persist=True)
