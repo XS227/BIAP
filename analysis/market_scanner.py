@@ -1,10 +1,8 @@
 """Whole-market discovery layer for Kiasha.
 
-This module separates cheap market-wide discovery from expensive deep analysis.
-It scans the live TSETMC market-watch payload once, scores every verified row,
-then asks the existing six-agent Kiasha team to deeply study only the strongest
-shortlist. Results are cached on disk and are safe to reuse by the 5-minute
-Auto-Invest runner without burning Claude credit on the entire market.
+Scans the live TSETMC market-watch payload once, cheaply ranks verified rows,
+then sends only the strongest shortlist through the existing Kiasha agent team.
+Claude/Sonnet is intentionally not used during the market-wide scan.
 """
 from __future__ import annotations
 
@@ -49,6 +47,14 @@ class BulkCandidate:
     discovery_score: float
 
 
+def _first(raw: dict[str, Any], *keys: str) -> Any:
+    for key in keys:
+        value = raw.get(key)
+        if value not in (None, ""):
+            return value
+    return None
+
+
 def _float(value: Any) -> Optional[float]:
     if value in (None, ""):
         return None
@@ -89,9 +95,10 @@ def _read_market_watch(timeout: float) -> list[dict[str, Any]]:
 
 
 def _normalize_symbol(raw: dict[str, Any]) -> tuple[str, str, str]:
-    code = str(raw.get("insCode") or raw.get("ins_code") or "").strip()
-    symbol = str(raw.get("lVal18AFC") or raw.get("l18") or raw.get("symbol") or "").strip()
-    name = str(raw.get("lVal30") or raw.get("l30") or raw.get("name") or symbol).strip()
+    code = str(_first(raw, "insCode", "ins_code") or "").strip()
+    # TSETMC currently uses compact lva/lvc names in GetMarketWatch.
+    symbol = str(_first(raw, "lVal18AFC", "l18", "symbol", "lva") or "").strip()
+    name = str(_first(raw, "lVal30", "l30", "name", "lvc") or symbol).strip()
     return code, symbol, name
 
 
@@ -99,25 +106,47 @@ def _bulk_candidate(raw: dict[str, Any]) -> Optional[BulkCandidate]:
     code, symbol, name = _normalize_symbol(raw)
     if not code or not symbol:
         return None
-    flow = _float(raw.get("flow"))
-    if flow not in (1.0, 2.0, 4.0):
-        return None
-    last_price = _float(raw.get("pDrCotVal")) or _float(raw.get("pClosing"))
-    closing_price = _float(raw.get("pClosing"))
-    yesterday = _float(raw.get("priceYesterday"))
+
+    # Older TSETMC payloads exposed flow; the current compact GetMarketWatch
+    # payload does not. Only reject a row when flow is explicitly present and
+    # explicitly outside the supported exchange flows.
+    flow_raw = _first(raw, "flow")
+    if flow_raw not in (None, ""):
+        flow = _float(flow_raw)
+        if flow not in (1.0, 2.0, 4.0):
+            return None
+
+    # Support both legacy descriptive names and the compact live payload:
+    # pdv=last trade, pcl=closing, py=yesterday, qtj=volume,
+    # qtc=trade value, ztt=trade count.
+    last_price = _float(_first(raw, "pDrCotVal", "pdv"))
+    closing_price = _float(_first(raw, "pClosing", "pcl"))
+    yesterday = _float(_first(raw, "priceYesterday", "py"))
+
+    if not last_price or last_price <= 0:
+        last_price = closing_price
     if last_price is None or last_price <= 0:
         return None
+
     change_pct = 0.0
     if yesterday not in (None, 0):
         change_pct = ((last_price - float(yesterday)) / float(yesterday)) * 100.0
-    volume = max(0.0, _float(raw.get("qTotTran5J")) or 0.0)
-    trade_value = max(0.0, _float(raw.get("qTotCap")) or 0.0)
-    trade_count = max(0.0, _float(raw.get("zTotTran")) or 0.0)
+
+    volume = max(0.0, _float(_first(raw, "qTotTran5J", "qtj")) or 0.0)
+    trade_value = max(0.0, _float(_first(raw, "qTotCap", "qtc")) or 0.0)
+    trade_count = max(0.0, _float(_first(raw, "zTotTran", "ztt")) or 0.0)
+
+    # Ignore rows that are present in the market-watch directory but have no
+    # meaningful live/last-known trading activity at all.
+    if trade_value <= 0 and volume <= 0 and trade_count <= 0:
+        return None
+
     momentum = max(-10.0, min(10.0, change_pct)) / 10.0
     liquidity = min(1.0, math.log1p(trade_value) / math.log1p(1e13)) if trade_value > 0 else 0.0
     volume_signal = min(1.0, math.log1p(volume) / math.log1p(1e9)) if volume > 0 else 0.0
     activity = min(1.0, math.log1p(trade_count) / math.log1p(1e5)) if trade_count > 0 else 0.0
     score = 0.38 * momentum + 0.30 * liquidity + 0.20 * volume_signal + 0.12 * activity
+
     return BulkCandidate(
         code=code,
         symbol=symbol,
@@ -232,6 +261,7 @@ def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[s
     deep_input = shortlist[:deep_limit]
     deep_results: list[dict[str, Any]] = []
     deep_errors: list[dict[str, str]] = []
+
     with ThreadPoolExecutor(max_workers=workers) as pool:
         jobs = {pool.submit(_deep_analyze, item): item for item in deep_input}
         for job in as_completed(jobs):
@@ -242,7 +272,11 @@ def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[s
                 deep_errors.append({"code": item.code, "symbol": item.symbol, "reason": str(exc)[:240]})
 
     deep_results.sort(
-        key=lambda item: (1 if item.get("kiashaCall") == "BUY" else 0, float(item.get("kiashaScore") or -999), float(item.get("discoveryScore") or -999)),
+        key=lambda item: (
+            1 if item.get("kiashaCall") == "BUY" else 0,
+            float(item.get("kiashaScore") or -999),
+            float(item.get("discoveryScore") or -999),
+        ),
         reverse=True,
     )
     top = deep_results[:top_limit]
