@@ -101,11 +101,8 @@ def _normalize_symbol(raw: dict[str, Any]) -> tuple[str, str, str]:
 def _ordinary_equity(raw: dict[str, Any], symbol: str, name: str) -> bool:
     """Keep ordinary Iranian company shares and reject derivatives/funds/debt/rights."""
     isin = str(_first(raw, "insID", "insId", "isin") or "").strip().upper()
-    # TSETMC ordinary shares use IRO1 instrument identifiers. Options observed in
-    # production use IRO9; this gate removes the large derivative universe early.
     if isin and not isin.startswith("IRO1"):
         return False
-
     text = f"{symbol} {name}".replace("ي", "ی").replace("ك", "ک").replace("‌", " ")
     compact = " ".join(text.split())
     rejected_terms = (
@@ -115,8 +112,6 @@ def _ordinary_equity(raw: dict[str, Any], symbol: str, name: str) -> bool:
     )
     if any(term in compact for term in rejected_terms):
         return False
-    # Iranian rights tickers conventionally append ح; their company names often
-    # also start with ح . / حق تقدم. Exclude them from investment candidates.
     if symbol.endswith("ح") or compact.startswith("ح .") or compact.startswith("ح."):
         return False
     return True
@@ -126,15 +121,11 @@ def _bulk_candidate(raw: dict[str, Any]) -> Optional[BulkCandidate]:
     code, symbol, name = _normalize_symbol(raw)
     if not code or not symbol or not _ordinary_equity(raw, symbol, name):
         return None
-
     flow_raw = _first(raw, "flow")
     if flow_raw not in (None, ""):
         flow = _float(flow_raw)
         if flow not in (1.0, 2.0, 4.0):
             return None
-
-    # Compact TSETMC fields contain the live values; relay payloads can also carry
-    # zero-filled legacy aliases, so compact fields deliberately take priority.
     last_price = _float(_first(raw, "pdv", "pDrCotVal"))
     closing_price = _float(_first(raw, "pcl", "pClosing"))
     yesterday = _float(_first(raw, "py", "priceYesterday"))
@@ -142,14 +133,12 @@ def _bulk_candidate(raw: dict[str, Any]) -> Optional[BulkCandidate]:
         last_price = closing_price
     if last_price is None or last_price <= 0:
         return None
-
     change_pct = ((last_price - float(yesterday)) / float(yesterday) * 100.0) if yesterday not in (None, 0) else 0.0
     volume = max(0.0, _float(_first(raw, "qtj", "qTotTran5J")) or 0.0)
     trade_value = max(0.0, _float(_first(raw, "qtc", "qTotCap")) or 0.0)
     trade_count = max(0.0, _float(_first(raw, "ztt", "zTotTran")) or 0.0)
     if trade_value <= 0 and volume <= 0 and trade_count <= 0:
         return None
-
     momentum = max(-10.0, min(10.0, change_pct)) / 10.0
     liquidity = min(1.0, math.log1p(trade_value) / math.log1p(1e13)) if trade_value > 0 else 0.0
     volume_signal = min(1.0, math.log1p(volume) / math.log1p(1e9)) if volume > 0 else 0.0
@@ -167,14 +156,14 @@ def _deep_analyze(candidate: BulkCandidate) -> dict[str, Any]:
     )
     company = build_company_from_quote(quote, codal_symbol=candidate.symbol)
     decision = decide(company)
-    availability = company.get("data_available") or {}
     return {
         "code": candidate.code, "symbol": candidate.symbol, "name": candidate.name,
         "discoveryScore": candidate.discovery_score, "kiashaCall": decision.call,
         "kiashaScore": float(decision.weighted_score), "explanation": decision.explanation,
         "agentBreakdown": decision.breakdown, "changePercent": round(candidate.change_percent, 4),
         "tradeValue": candidate.trade_value, "volume": candidate.volume,
-        "dataAvailability": availability,
+        "dataAvailability": company.get("data_available") or {},
+        "dataDiagnostics": company.get("data_diagnostics") or {},
     }
 
 
@@ -207,12 +196,10 @@ def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[s
         cached = _load_cache(ttl)
         if cached is not None:
             return {**cached, "cacheHit": True}
-
     prefilter_limit = _int_env("BIAP_MARKET_SCAN_PREFILTER", DEFAULT_PREFILTER_LIMIT, 10, 300)
     deep_limit = _int_env("BIAP_MARKET_SCAN_DEEP_LIMIT", DEFAULT_DEEP_LIMIT, 10, prefilter_limit)
     top_limit = _int_env("BIAP_MARKET_SCAN_TOP", DEFAULT_TOP_LIMIT, 1, min(25, deep_limit))
     workers = _int_env("BIAP_MARKET_SCAN_WORKERS", 6, 1, 12)
-
     rows: list[dict[str, Any]] = []
     source = "tsetmc-marketwatch"
     errors: list[str] = []
@@ -220,7 +207,6 @@ def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[s
         rows = _read_market_watch(timeout)
     except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
         errors.append(str(exc))
-
     candidates = [item for raw in rows if (item := _bulk_candidate(raw)) is not None]
     if not candidates:
         try:
@@ -236,7 +222,6 @@ def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[s
         }
         _save_cache(payload)
         return payload
-
     candidates.sort(key=lambda item: item.discovery_score, reverse=True)
     shortlist = candidates[:prefilter_limit]
     deep_input = shortlist[:deep_limit]
@@ -250,18 +235,27 @@ def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[s
                 deep_results.append(job.result())
             except Exception as exc:
                 deep_errors.append({"code": item.code, "symbol": item.symbol, "reason": str(exc)[:240]})
-
     deep_results.sort(key=lambda item: (1 if item.get("kiashaCall") == "BUY" else 0, float(item.get("kiashaScore") or -999), float(item.get("discoveryScore") or -999)), reverse=True)
     top = deep_results[:top_limit]
     codal_ready = sum(1 for item in deep_results if (item.get("dataAvailability") or {}).get("codal"))
+    codal_metadata_ready = sum(1 for item in deep_results if (item.get("dataAvailability") or {}).get("codal_metadata"))
     market_extended_ready = sum(1 for item in deep_results if (item.get("dataAvailability") or {}).get("market_extended"))
     tindex_ready = sum(1 for item in deep_results if (item.get("dataAvailability") or {}).get("tindex"))
+    codal_diagnostics = []
+    for item in deep_results:
+        diag = (item.get("dataDiagnostics") or {}).get("codal")
+        if diag and diag not in codal_diagnostics:
+            codal_diagnostics.append(diag)
+        if len(codal_diagnostics) >= 3:
+            break
     payload = {
         "status": "OK" if deep_results else "DEGRADED", "source": source,
         "createdAt": datetime.now(timezone.utc).isoformat(), "createdEpoch": time.time(),
         "universeCount": len(rows), "marketRowsScanned": len(rows), "ordinaryEquityCount": len(candidates),
         "eligibleCount": len(candidates), "prefilteredCount": len(shortlist), "deepAnalyzedCount": len(deep_results),
-        "deepDataCoverage": {"codal": codal_ready, "marketExtended": market_extended_ready, "tindex": tindex_ready, "total": len(deep_results)},
+        "deepDataCoverage": {"codal": codal_ready, "codalMetadata": codal_metadata_ready, "marketExtended": market_extended_ready, "tindex": tindex_ready, "total": len(deep_results)},
+        "codalDiagnostics": codal_diagnostics,
+        "tindexConfigured": bool(os.getenv("TINDEX_API_TOKEN")),
         "top10": top, "deepErrors": deep_errors[:20], "errors": errors[-3:], "cacheHit": False,
         "claudeCallsUsedForScan": 0,
         "note": "Discovery is restricted to ordinary IRO1 company shares; derivatives, rights, funds and debt instruments are excluded before Kiasha deep analysis.",
