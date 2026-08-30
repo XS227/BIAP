@@ -8,5 +8,6 @@ Type=oneshot
 User=ubuntu
 WorkingDirectory=/home/ubuntu/biap-kiasha/XS227-BIAP/analysis
 Environment=PYTHONUNBUFFERED=1
+Environment="BIAP_TSETMC_API_BASE=http://89.42.199.20:8090/tsetmc-cdn/api"
 ExecStart=/home/ubuntu/biap-kiasha/XS227-BIAP/analysis/.venv/bin/python /home/ubuntu/biap-kiasha/XS227-BIAP/analysis/performance_evaluator.py --limit 500
 Nice=10
