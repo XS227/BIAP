@@ -3,11 +3,6 @@
 Live TSETMC quotes are enriched with CODAL fundamentals and risk fields. When
 TSETMC is unreachable, a CODAL-only company can still be built from a verified
 issuer symbol; market-only fields remain unavailable rather than fabricated.
-
-When ``TINDEX_API_TOKEN`` is configured server-side, Tindex is used as an
-optional secondary source for market performance/flow/profile fields. Failure of
-Tindex never blocks the existing TSETMC/CODAL path. Persisted BIAP Market Memory
-is the final verified fallback and is explicitly marked stale/non-live.
 """
 from __future__ import annotations
 
@@ -30,10 +25,7 @@ _codal_parts_cache: dict[str, tuple[float, tuple[dict | None, dict | None, dict]
 
 
 def _canonical_symbol(symbol: str) -> str:
-    """Normalize TSETMC/CODAL Persian ticker variants without changing meaning."""
-    return " ".join(
-        symbol.translate(str.maketrans({"ي": "ی", "ى": "ی", "ك": "ک", "\u200c": "", "\u200f": "", "\u200e": ""})).split()
-    ).strip()
+    return " ".join(symbol.translate(str.maketrans({"ي": "ی", "ى": "ی", "ك": "ک", "\u200c": "", "\u200f": "", "\u200e": ""})).split()).strip()
 
 
 def _symbol_variants(symbol: str) -> list[str]:
@@ -75,36 +67,41 @@ def _enrich_codal_risk_fields(symbol: str, fundamentals, report_scope: str | Non
     return result
 
 
-def _codal_parts(symbol: str):
+def _codal_parts(symbol: str, *, lightweight: bool = False):
     wanted = _canonical_symbol(symbol)
     if not wanted:
         return None, None, {"status": "skipped", "reason": "empty symbol"}
+    cache_key = f"{wanted}|{'light' if lightweight else 'full'}"
     now = time.monotonic()
-    cached = _codal_parts_cache.get(wanted)
+    cached = _codal_parts_cache.get(cache_key)
     if cached and now - cached[0] < _CODAL_PARTS_TTL_SECONDS:
         return cached[1]
 
     codal_metadata = None
     codal_fundamentals = None
-    diagnostic: dict = {"status": "unavailable", "symbol": wanted, "variantsTried": _symbol_variants(symbol)}
+    diagnostic: dict = {"status": "unavailable", "symbol": wanted, "variantsTried": _symbol_variants(symbol), "mode": "lightweight" if lightweight else "full"}
     metadata_errors: list[str] = []
     fundamentals_errors: list[str] = []
 
-    for variant in _symbol_variants(symbol):
-        try:
-            meta = metadata_for_symbol(variant)
-            if meta is not None:
-                codal_metadata = meta.to_dict()
-                diagnostic["metadataSymbol"] = variant
-                break
-        except CodalDataUnavailable as exc:
-            metadata_errors.append(str(exc)[:240])
+    if not lightweight:
+        for variant in _symbol_variants(symbol):
+            try:
+                meta = metadata_for_symbol(variant)
+                if meta is not None:
+                    codal_metadata = meta.to_dict()
+                    diagnostic["metadataSymbol"] = variant
+                    break
+            except CodalDataUnavailable as exc:
+                metadata_errors.append(str(exc)[:240])
+    else:
+        diagnostic["metadataReason"] = "skipped in market scan to reduce CODAL rate-limit load"
 
     report_scope = None
     for variant in _symbol_variants(symbol):
         try:
             fundamentals, report_scope = scoped_fundamentals_for_symbol(variant)
-            fundamentals = _enrich_codal_risk_fields(variant, fundamentals, report_scope)
+            if not lightweight:
+                fundamentals = _enrich_codal_risk_fields(variant, fundamentals, report_scope)
             if fundamentals is not None:
                 codal_fundamentals = fundamentals.to_dict()
                 codal_fundamentals["report_scope"] = report_scope
@@ -119,21 +116,19 @@ def _codal_parts(symbol: str):
         diagnostic["metadataError"] = metadata_errors[-1]
     if fundamentals_errors:
         diagnostic["fundamentalsError"] = fundamentals_errors[-1]
-    if not metadata_errors and codal_metadata is None:
+    if not lightweight and not metadata_errors and codal_metadata is None:
         diagnostic["metadataReason"] = "no matching CODAL company metadata"
     if not fundamentals_errors and codal_fundamentals is None:
         diagnostic["fundamentalsReason"] = "no parseable verified financial statement"
 
     result = (codal_metadata, codal_fundamentals, diagnostic)
-    _codal_parts_cache[wanted] = (now, result)
+    _codal_parts_cache[cache_key] = (now, result)
     return result
 
 
 def _tindex_dict(symbol: str) -> dict | None:
     snapshot = fetch_symbol_snapshot(_canonical_symbol(symbol))
-    if snapshot is None:
-        return None
-    return dict(snapshot.__dict__)
+    return dict(snapshot.__dict__) if snapshot is not None else None
 
 
 def _empty_market() -> dict:
@@ -239,11 +234,11 @@ def build_company_from_symbol(symbol: str) -> dict | None:
     }
 
 
-def build_company_from_quote(quote: LiveQuote, *, codal_symbol: str | None = None) -> dict:
+def build_company_from_quote(quote: LiveQuote, *, codal_symbol: str | None = None, scan_mode: bool = False) -> dict:
     price = quote.last_price if quote.last_price is not None else quote.closing_price
     symbol_for_codal = _canonical_symbol(codal_symbol or quote.name)
     with ThreadPoolExecutor(max_workers=3, thread_name_prefix="biap-company") as pool:
-        codal_future = pool.submit(_codal_parts, symbol_for_codal)
+        codal_future = pool.submit(_codal_parts, symbol_for_codal, lightweight=scan_mode)
         extended_future = pool.submit(fetch_extended_market_data, quote.code)
         tindex_future = pool.submit(_tindex_dict, symbol_for_codal)
         codal_metadata, codal_fundamentals, codal_diagnostic = codal_future.result()

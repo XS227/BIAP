@@ -28,9 +28,9 @@ CACHE_ENV = "BIAP_MARKET_SCAN_CACHE"
 DEFAULT_CACHE_PATH = Path.home() / ".cache" / "biap" / "market_scan.json"
 DEFAULT_TTL_SECONDS = 15 * 60
 DEFAULT_PREFILTER_LIMIT = 60
-DEFAULT_DEEP_LIMIT = 24
+DEFAULT_DEEP_LIMIT = 12
 DEFAULT_TOP_LIMIT = 10
-DEFAULT_CODAL_DELAY_SECONDS = 0.35
+DEFAULT_CODAL_DELAY_SECONDS = 1.5
 
 
 @dataclass(frozen=True)
@@ -164,7 +164,7 @@ def _deep_analyze(candidate: BulkCandidate, delay_seconds: float) -> dict[str, A
         change=(candidate.last_price - candidate.yesterday_price) if candidate.yesterday_price not in (None, 0) else None,
         change_percent=candidate.change_percent,
     )
-    company = build_company_from_quote(quote, codal_symbol=candidate.symbol)
+    company = build_company_from_quote(quote, codal_symbol=candidate.symbol, scan_mode=True)
     decision = decide(company)
     return {
         "code": candidate.code, "symbol": candidate.symbol, "name": candidate.name,
@@ -210,7 +210,7 @@ def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[s
     deep_limit = _int_env("BIAP_MARKET_SCAN_DEEP_LIMIT", DEFAULT_DEEP_LIMIT, 10, prefilter_limit)
     top_limit = _int_env("BIAP_MARKET_SCAN_TOP", DEFAULT_TOP_LIMIT, 1, min(25, deep_limit))
     workers = 1
-    codal_delay = _float_env("BIAP_MARKET_SCAN_CODAL_DELAY_SECONDS", DEFAULT_CODAL_DELAY_SECONDS, 0.0, 2.0)
+    codal_delay = _float_env("BIAP_MARKET_SCAN_CODAL_DELAY_SECONDS", DEFAULT_CODAL_DELAY_SECONDS, 0.0, 5.0)
     rows: list[dict[str, Any]] = []
     source = "tsetmc-marketwatch"
     errors: list[str] = []
@@ -266,11 +266,11 @@ def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[s
         "eligibleCount": len(candidates), "prefilteredCount": len(shortlist), "deepAnalyzedCount": len(deep_results),
         "deepDataCoverage": {"codal": codal_ready, "codalMetadata": codal_metadata_ready, "marketExtended": market_extended_ready, "tindex": tindex_ready, "total": len(deep_results)},
         "codalDiagnostics": codal_diagnostics,
-        "codalThrottle": {"workers": workers, "delaySeconds": codal_delay},
+        "codalThrottle": {"workers": workers, "delaySeconds": codal_delay, "mode": "lightweight-fundamentals-only"},
         "tindexConfigured": bool(os.getenv("TINDEX_API_TOKEN")),
         "top10": top, "deepErrors": deep_errors[:20], "errors": errors[-3:], "cacheHit": False,
         "claudeCallsUsedForScan": 0,
-        "note": "Discovery is restricted to ordinary IRO1 shares; CODAL enrichment is serialized to respect relay rate limits.",
+        "note": "Discovery is restricted to ordinary IRO1 shares. The scan uses lightweight CODAL fundamentals only; heavy metadata/audit enrichment is deferred to final candidate analysis.",
     }
     _save_cache(payload)
     return payload
