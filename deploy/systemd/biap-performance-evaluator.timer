@@ -1,0 +1,11 @@
+[Unit]
+Description=Run BIAP Kiasha performance evaluator after TSE close
+
+[Timer]
+OnCalendar=Sat,Sun,Mon,Tue,Wed *-*-* 13:30:00 Asia/Tehran
+Persistent=true
+RandomizedDelaySec=10m
+Unit=biap-performance-evaluator.service
+
+[Install]
+WantedBy=timers.target
