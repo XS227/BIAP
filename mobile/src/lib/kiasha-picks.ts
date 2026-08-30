@@ -10,6 +10,8 @@ export type KiashaPick = {
   code: string;
   horizon: InvestmentHorizon;
   score: number;
+  rank: number;
+  activeAgents: number;
   source: 'live' | 'codal';
   price: number | null;
   changePercent: number | null;
@@ -21,13 +23,14 @@ export type KiashaPicksResult = {
   horizon: InvestmentHorizon;
   picks: KiashaPick[];
   scanned: number;
+  eligible: number;
   verified: number;
   generatedAt: string;
 };
 
 const CACHE_TTL_MS = 15 * 60_000;
 const cache = new Map<InvestmentHorizon, { at: number; value: KiashaPicksResult }>();
-const STORAGE_PREFIX = 'kiasha:picks:v5:';
+const STORAGE_PREFIX = 'kiasha:picks:v6:';
 
 function storageKey(horizon: InvestmentHorizon): string { return `${STORAGE_PREFIX}${horizon}`; }
 
@@ -54,7 +57,12 @@ async function writePersisted(result: KiashaPicksResult): Promise<void> {
   try { await AsyncStorage.setItem(storageKey(result.horizon), JSON.stringify(result)); } catch { /* best effort */ }
 }
 
-function pickFromScan(row: KiashaMarketScanItem, horizon: InvestmentHorizon): KiashaPick {
+function countActiveAgents(row: KiashaMarketScanItem): number {
+  const breakdown = Array.isArray(row.agentBreakdown) ? row.agentBreakdown : [];
+  return breakdown.filter((entry) => entry.agent !== 'scenario' && Number(entry.confidence || 0) > 0).length;
+}
+
+function pickFromScan(row: KiashaMarketScanItem, horizon: InvestmentHorizon, rank: number): KiashaPick {
   const breakdown = Array.isArray(row.agentBreakdown) ? row.agentBreakdown : [];
   const recommendation: Recommendation = {
     code: row.code,
@@ -79,6 +87,8 @@ function pickFromScan(row: KiashaMarketScanItem, horizon: InvestmentHorizon): Ki
     code: row.code,
     horizon,
     score: Number(row.kiashaScore || 0),
+    rank,
+    activeAgents: countActiveAgents(row),
     source: 'live',
     price: null,
     changePercent: row.changePercent ?? null,
@@ -104,16 +114,17 @@ export async function fetchKiashaTopPicks(
 
   const scan = await fetchKiashaMarketScan(Boolean(options.force));
   const rows = scan?.top10 ?? [];
-  const ranked = rows
+  const rankedRows = rows
     .filter((x) => x.kiashaCall === 'BUY' && Number(x.kiashaScore) > 0)
-    .map((x) => pickFromScan(x, horizon))
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => Number(b.kiashaScore || 0) - Number(a.kiashaScore || 0))
     .slice(0, 10);
+  const ranked = rankedRows.map((x, index) => pickFromScan(x, horizon, index + 1));
 
   const result: KiashaPicksResult = {
     horizon,
     picks: ranked,
     scanned: Number(scan?.marketRowsScanned ?? 0),
+    eligible: Number(scan?.ordinaryEquityCount ?? 0),
     verified: Number(scan?.deepAnalyzedCount ?? 0),
     generatedAt: scan?.createdAt ?? new Date().toISOString(),
   };
