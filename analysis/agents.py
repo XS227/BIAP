@@ -10,6 +10,7 @@ guessed.
 from dataclasses import dataclass
 
 from company_builder import availability
+from tsetmc_enrichment import fetch_verified_enrichment
 
 
 @dataclass
@@ -18,6 +19,35 @@ class AgentVote:
     vote: float
     confidence: float
     reasoning: str
+
+
+def _verified_market_enrichment(company: dict) -> tuple[dict, dict]:
+    """Prefer Tindex fields, then fill only missing technical/flow data from TSETMC."""
+    market = company.get("market") or {}
+    perf = market.get("tindex_performance") or {}
+    flow = market.get("tindex_flow") or {}
+    perf_has_data = any(value is not None for key, value in perf.items() if key != "source")
+    flow_has_data = any(value is not None for key, value in flow.items() if key != "source")
+    if perf_has_data and flow_has_data:
+        return perf, flow
+    try:
+        fallback = fetch_verified_enrichment(str(company.get("ticker") or company.get("name_fa") or ""))
+    except Exception:
+        fallback = {}
+    if not perf_has_data:
+        verified = fallback.get("performance") if isinstance(fallback, dict) else None
+        if isinstance(verified, dict) and verified:
+            perf = verified
+            market["tindex_performance"] = perf
+            market["technical_source"] = "tsetmc-history"
+    if not flow_has_data:
+        verified = fallback.get("flow") if isinstance(fallback, dict) else None
+        if isinstance(verified, dict) and verified:
+            flow = verified
+            market["tindex_flow"] = flow
+            market["flow_source"] = "tsetmc-client-type"
+    company["market"] = market
+    return perf, flow
 
 
 def fundamental_agent(company: dict) -> AgentVote:
@@ -148,7 +178,7 @@ def risk_agent(company: dict) -> AgentVote:
     else:
         reasons.append("52-week range unavailable")
 
-    perf = market.get("tindex_performance") or {}
+    perf, _ = _verified_market_enrichment(company)
     max_drawdown = perf.get("max_drawdown")
     volatility = perf.get("volatility")
     if max_drawdown is not None:
@@ -168,7 +198,7 @@ def risk_agent(company: dict) -> AgentVote:
 
 def forecast_agent(company: dict) -> AgentVote:
     market = company["market"]
-    perf = market.get("tindex_performance") or {}
+    perf, _ = _verified_market_enrichment(company)
     vote = 0.0
     reasons = []
     signals = 0
@@ -239,7 +269,7 @@ def comparison_agent(company: dict) -> AgentVote:
 
 
 def technical_agent(company: dict) -> AgentVote:
-    perf = (company.get("market") or {}).get("tindex_performance") or {}
+    perf, _ = _verified_market_enrichment(company)
     values = [perf.get("return_1w"), perf.get("return_1m"), perf.get("return_3m"), perf.get("return_1y")]
     if all(v is None for v in values):
         return AgentVote("technical", 0.0, 0.0, "verified multi-horizon performance unavailable")
@@ -270,7 +300,7 @@ def technical_agent(company: dict) -> AgentVote:
 
 
 def flow_agent(company: dict) -> AgentVote:
-    flow = (company.get("market") or {}).get("tindex_flow") or {}
+    _, flow = _verified_market_enrichment(company)
     retail_net = flow.get("retail_net")
     buy_pc = flow.get("buy_per_capita")
     sell_pc = flow.get("sell_per_capita")

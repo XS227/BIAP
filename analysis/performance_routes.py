@@ -45,6 +45,17 @@ def _agent_payload(agent: str) -> dict:
         return {"agent": agent,"evaluatedCalls": 0,"directionalAccuracy": None,"averageSignedReturn": None,"returnStd": None,"lastUpdated": None,"trustReady": False,"minimumObservedSamples": MIN_OBSERVED_SAMPLES}
     return {"agent": stats.agent,"evaluatedCalls": stats.evaluated_calls,"directionalAccuracy": stats.directional_accuracy,"averageSignedReturn": stats.average_realized_return,"returnStd": stats.return_std,"lastUpdated": stats.last_updated,"trustReady": stats.evaluated_calls >= MIN_OBSERVED_SAMPLES,"minimumObservedSamples": MIN_OBSERVED_SAMPLES}
 
+def _scan_agent_coverage(scan: dict, agent: str) -> int:
+    count = 0
+    for item in scan.get("top10") or []:
+        if not isinstance(item, dict):
+            continue
+        for row in item.get("agentBreakdown") or []:
+            if isinstance(row, dict) and row.get("agent") == agent and float(row.get("confidence") or 0) > 0:
+                count += 1
+                break
+    return count
+
 def _server_paper_account(user_id: str) -> dict:
     return AUDIT_STORE.ensure_paper_account(user_id=str(user_id), initial_cash=DEFAULT_PAPER_INITIAL_CASH)
 
@@ -97,6 +108,11 @@ def kiasha_readiness():
     ai = kiasha_ai_status()
     paper = _paper_execution_enabled()
     runner = _auto_invest_runner_enabled()
+    technical_coverage = _scan_agent_coverage(scan, "technical")
+    flow_coverage = _scan_agent_coverage(scan, "flow")
+    pending = len(STORE.pending_observations(limit=5000))
+    observed_ready = any(item["trustReady"] for item in agents)
+    technical_flow_ready = technical_coverage > 0 and flow_coverage > 0
     return {
         "chain": "kiasha-v2",
         "marketScanReady": scan.get("status") == "OK" and bool(scan.get("top10")),
@@ -106,12 +122,19 @@ def kiasha_readiness():
         "autoInvestRunnerReady": runner,
         "liveExecution": False,
         "sonnetFinalistGateReady": bool(ai.get("configured") or ai.get("enabled") or os.getenv("ANTHROPIC_API_KEY")),
-        "technicalFlowSource": "tindex" if tindex_configured else None,
-        "technicalFlowReady": tindex_configured and int(coverage.get("tindex") or 0) > 0,
-        "technicalFlowBlocker": None if tindex_configured else "TINDEX_API_TOKEN is not configured; technical/flow remain neutral rather than fabricated.",
+        "technicalFlowSource": "tindex+tsetmc-fallback" if tindex_configured else "tsetmc-history+client-type",
+        "technicalFlowReady": technical_flow_ready,
+        "technicalFlowCoverage": {"technical": technical_coverage, "flow": flow_coverage, "top10": len(scan.get("top10") or [])},
+        "technicalFlowBlocker": None if technical_flow_ready else "No verified technical/flow rows reached the cached Top 10 yet; refresh the market scan after deployment.",
+        "tindexConfigured": tindex_configured,
+        "tindexCoverage": int(coverage.get("tindex") or 0),
         "codalCoverage": int(coverage.get("codal") or 0),
+        "codalDiagnostics": scan.get("codalDiagnostics") or [],
         "marketExtendedCoverage": int(coverage.get("marketExtended") or 0),
-        "observedTrustActive": any(item["trustReady"] for item in agents),
+        "observedTrustActive": observed_ready,
+        "observedTrustState": "active" if observed_ready else "learning",
+        "pendingObservations": pending,
+        "minimumObservedSamples": MIN_OBSERVED_SAMPLES,
         "agents": agents,
         "scan": {"createdAt": scan.get("createdAt"), "deepAnalyzedCount": scan.get("deepAnalyzedCount"), "top10Count": len(scan.get("top10") or [])},
     }

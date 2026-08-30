@@ -3,36 +3,22 @@
 BIAP must not silently mix consolidated and standalone statements. This module
 classifies CODAL report titles, selects one scope deterministically, and parses
 fundamentals only from filings in that selected scope.
-
-Policy:
-- if recent consolidated statements exist, use consolidated statements;
-- otherwise use standalone statements;
-- preserve CODAL recency order within the selected scope;
-- ambiguous/unclassified titles are never used for fundamentals.
 """
-
 from __future__ import annotations
 
 import os
+import re
 import time
 from typing import Optional
 
-from codal_data import (
-    CodalDataUnavailable,
-    CodalFiling,
-    CodalFundamentals,
-    _fetch_filing_html,
-    _parse_fundamentals,
-    latest_financial_filings,
-)
-
+from codal_data import CodalDataUnavailable, CodalFiling, CodalFundamentals, _fetch_filing_html, latest_financial_filings
+from codal_parser_v2 import parse_fundamentals
 
 CONSOLIDATED = "consolidated"
 STANDALONE = "standalone"
 
 
 def report_scope_from_title(title: Optional[str]) -> Optional[str]:
-    """Classify a CODAL financial-statement title without guessing."""
     text = (title or "").replace("\u200c", " ").strip()
     if not text:
         return None
@@ -44,7 +30,6 @@ def report_scope_from_title(title: Optional[str]) -> Optional[str]:
 
 
 def select_scope_filings(filings: list[CodalFiling]) -> tuple[Optional[str], list[CodalFiling]]:
-    """Select one report scope and return only filings in that scope."""
     consolidated = [f for f in filings if report_scope_from_title(f.title) == CONSOLIDATED]
     if consolidated:
         return CONSOLIDATED, consolidated
@@ -54,15 +39,26 @@ def select_scope_filings(filings: list[CodalFiling]) -> tuple[Optional[str], lis
     return None, []
 
 
+def _symbol_variants(symbol: str) -> list[str]:
+    original = symbol.strip()
+    canonical = original.translate(str.maketrans({"ي": "ی", "ى": "ی", "ك": "ک", "\u200c": ""})).strip()
+    stripped = re.sub(r"[0-9۰-۹]+$", "", canonical).strip()
+    values: list[str] = []
+    for value in (canonical, stripped, original):
+        if len(value) >= 2 and value not in values:
+            values.append(value)
+    return values
+
+
 def scoped_fundamentals_for_symbol(symbol: str) -> tuple[Optional[CodalFundamentals], Optional[str]]:
-    """Parse fundamentals from exactly one explicit financial-report scope."""
+    """Parse fundamentals from exactly one explicit financial-report scope.
+
+    TSETMC can expose board/class tickers with a terminal digit (for example
+    دعبید3) while CODAL uses the base issuer ticker. The stripped variant is
+    used only for CODAL lookup; the market ticker itself is never rewritten.
+    """
     wanted = symbol.strip()
     if not wanted:
-        return None, None
-
-    filings = latest_financial_filings(wanted, limit=8)
-    scope, scoped_filings = select_scope_filings(filings)
-    if scope is None:
         return None, None
 
     try:
@@ -70,19 +66,21 @@ def scoped_fundamentals_for_symbol(symbol: str) -> tuple[Optional[CodalFundament
     except ValueError:
         report_delay = 1.25
 
-    for filing in scoped_filings:
-        if not filing.excel_url:
+    for lookup_symbol in _symbol_variants(wanted):
+        filings = latest_financial_filings(lookup_symbol, limit=8)
+        scope, scoped_filings = select_scope_filings(filings)
+        if scope is None:
             continue
-        try:
-            # The CODAL relay rate-limits bursts. Separate search and report
-            # requests so a single finalist does not trigger HTTP 429 by itself.
-            if report_delay:
-                time.sleep(report_delay)
-            report_html = _fetch_filing_html(filing)
-            result = _parse_fundamentals(wanted, filing, report_html)
-        except CodalDataUnavailable:
-            continue
-        if result is not None:
-            return result, scope
-
-    return None, scope
+        for filing in scoped_filings:
+            if not filing.excel_url:
+                continue
+            try:
+                if report_delay:
+                    time.sleep(report_delay)
+                report_html = _fetch_filing_html(filing)
+                result = parse_fundamentals(lookup_symbol, filing, report_html)
+            except CodalDataUnavailable:
+                continue
+            if result is not None:
+                return result, scope
+    return None, None
