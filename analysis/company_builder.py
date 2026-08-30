@@ -26,7 +26,24 @@ from tindex_data import fetch_symbol_snapshot
 FULL_AVAILABILITY = {"codal": True, "codal_metadata": True, "market_extended": True, "tindex": False, "market_memory": False}
 PRICE_ONLY_AVAILABILITY = {"codal": False, "codal_metadata": False, "market_extended": False, "tindex": False, "market_memory": False}
 _CODAL_PARTS_TTL_SECONDS = 5 * 60
-_codal_parts_cache: dict[str, tuple[float, tuple[dict | None, dict | None]]] = {}
+_codal_parts_cache: dict[str, tuple[float, tuple[dict | None, dict | None, dict]]] = {}
+
+
+def _canonical_symbol(symbol: str) -> str:
+    """Normalize TSETMC/CODAL Persian ticker variants without changing meaning."""
+    return " ".join(
+        symbol.translate(str.maketrans({"ي": "ی", "ى": "ی", "ك": "ک", "\u200c": "", "\u200f": "", "\u200e": ""})).split()
+    ).strip()
+
+
+def _symbol_variants(symbol: str) -> list[str]:
+    original = symbol.strip()
+    canonical = _canonical_symbol(original)
+    variants: list[str] = []
+    for value in (canonical, original):
+        if value and value not in variants:
+            variants.append(value)
+    return variants
 
 
 def _enrich_codal_risk_fields(symbol: str, fundamentals, report_scope: str | None):
@@ -59,37 +76,61 @@ def _enrich_codal_risk_fields(symbol: str, fundamentals, report_scope: str | Non
 
 
 def _codal_parts(symbol: str):
-    wanted = symbol.strip()
+    wanted = _canonical_symbol(symbol)
     if not wanted:
-        return None, None
+        return None, None, {"status": "skipped", "reason": "empty symbol"}
     now = time.monotonic()
     cached = _codal_parts_cache.get(wanted)
     if cached and now - cached[0] < _CODAL_PARTS_TTL_SECONDS:
         return cached[1]
+
     codal_metadata = None
     codal_fundamentals = None
+    diagnostic: dict = {"status": "unavailable", "symbol": wanted, "variantsTried": _symbol_variants(symbol)}
+    metadata_errors: list[str] = []
+    fundamentals_errors: list[str] = []
+
+    for variant in _symbol_variants(symbol):
+        try:
+            meta = metadata_for_symbol(variant)
+            if meta is not None:
+                codal_metadata = meta.to_dict()
+                diagnostic["metadataSymbol"] = variant
+                break
+        except CodalDataUnavailable as exc:
+            metadata_errors.append(str(exc)[:240])
+
     report_scope = None
-    try:
-        meta = metadata_for_symbol(wanted)
-        if meta is not None:
-            codal_metadata = meta.to_dict()
-    except CodalDataUnavailable:
-        pass
-    try:
-        fundamentals, report_scope = scoped_fundamentals_for_symbol(wanted)
-        fundamentals = _enrich_codal_risk_fields(wanted, fundamentals, report_scope)
-        if fundamentals is not None:
-            codal_fundamentals = fundamentals.to_dict()
-            codal_fundamentals["report_scope"] = report_scope
-    except CodalDataUnavailable:
-        pass
-    result = (codal_metadata, codal_fundamentals)
+    for variant in _symbol_variants(symbol):
+        try:
+            fundamentals, report_scope = scoped_fundamentals_for_symbol(variant)
+            fundamentals = _enrich_codal_risk_fields(variant, fundamentals, report_scope)
+            if fundamentals is not None:
+                codal_fundamentals = fundamentals.to_dict()
+                codal_fundamentals["report_scope"] = report_scope
+                diagnostic["fundamentalsSymbol"] = variant
+                break
+        except CodalDataUnavailable as exc:
+            fundamentals_errors.append(str(exc)[:240])
+
+    if codal_metadata is not None or codal_fundamentals is not None:
+        diagnostic["status"] = "ok" if codal_fundamentals is not None else "metadata_only"
+    if metadata_errors:
+        diagnostic["metadataError"] = metadata_errors[-1]
+    if fundamentals_errors:
+        diagnostic["fundamentalsError"] = fundamentals_errors[-1]
+    if not metadata_errors and codal_metadata is None:
+        diagnostic["metadataReason"] = "no matching CODAL company metadata"
+    if not fundamentals_errors and codal_fundamentals is None:
+        diagnostic["fundamentalsReason"] = "no parseable verified financial statement"
+
+    result = (codal_metadata, codal_fundamentals, diagnostic)
     _codal_parts_cache[wanted] = (now, result)
     return result
 
 
 def _tindex_dict(symbol: str) -> dict | None:
-    snapshot = fetch_symbol_snapshot(symbol)
+    snapshot = fetch_symbol_snapshot(_canonical_symbol(symbol))
     if snapshot is None:
         return None
     return dict(snapshot.__dict__)
@@ -152,69 +193,60 @@ def _company_from_memory(symbol: str) -> dict | None:
         quote = {}
     market = _empty_market()
     market.update({
-        "price": remembered.get("price"),
-        "last_price": remembered.get("price"),
-        "change_percent": remembered.get("change_percent"),
-        "pe": remembered.get("pe"),
-        "market_cap": remembered.get("market_cap"),
-        "market_title": remembered.get("market"),
+        "price": remembered.get("price"), "last_price": remembered.get("price"),
+        "change_percent": remembered.get("change_percent"), "pe": remembered.get("pe"),
+        "market_cap": remembered.get("market_cap"), "market_title": remembered.get("market"),
         "valuation_source": f"market_memory:{remembered.get('source')}",
-        "memory_observed_at": remembered.get("observed_at"),
-        "memory_source": remembered.get("source"),
+        "memory_observed_at": remembered.get("observed_at"), "memory_source": remembered.get("source"),
         "memory_is_live": False,
     })
-    # Preserve any normalized quote fields that were verified in the original payload.
     for key in ("closing_price", "day_high", "day_low", "volume", "value", "eps"):
         if quote.get(key) is not None:
             target = {"volume": "volume_today", "value": "trade_value_today", "eps": "eps_value"}.get(key, key)
             market[target] = quote.get(key)
     return {
-        "ticker": remembered.get("instrument_code") or symbol,
-        "name_fa": symbol,
-        "name_en": None,
+        "ticker": remembered.get("instrument_code") or symbol, "name_fa": symbol, "name_en": None,
         "data_available": {"codal": False, "codal_metadata": False, "market_extended": False, "tindex": False, "market_memory": True},
-        "codal": None,
-        "codal_metadata": None,
-        "tindex": None,
+        "data_diagnostics": {"codal": {"status": "not_checked_memory_fallback"}},
+        "codal": None, "codal_metadata": None, "tindex": None,
         "market_memory": {"observedAt": remembered.get("observed_at"), "source": remembered.get("source"), "market": remembered.get("market")},
         "market": market,
     }
 
 
 def build_company_from_symbol(symbol: str) -> dict | None:
-    wanted = symbol.strip()
+    wanted = _canonical_symbol(symbol)
     if not wanted:
         return None
     with ThreadPoolExecutor(max_workers=2, thread_name_prefix="biap-symbol") as pool:
         codal_future = pool.submit(_codal_parts, wanted)
         tindex_future = pool.submit(_tindex_dict, wanted)
-        codal_metadata, codal_fundamentals = codal_future.result()
+        codal_metadata, codal_fundamentals, codal_diagnostic = codal_future.result()
         tindex = tindex_future.result()
     if codal_metadata is None and codal_fundamentals is None and tindex is None:
-        return _company_from_memory(wanted)
+        remembered = _company_from_memory(wanted)
+        if remembered is not None:
+            remembered["data_diagnostics"] = {"codal": codal_diagnostic}
+        return remembered
     company_name = codal_metadata.get("company_name") if codal_metadata else None
     market = _merge_tindex_market(_empty_market(), tindex)
     return {
-        "ticker": wanted,
-        "name_fa": company_name or wanted,
-        "name_en": None,
+        "ticker": wanted, "name_fa": company_name or wanted, "name_en": None,
         "data_available": {"codal": codal_fundamentals is not None, "codal_metadata": codal_metadata is not None, "market_extended": False, "tindex": tindex is not None, "market_memory": False},
-        "codal": codal_fundamentals,
-        "codal_metadata": codal_metadata,
-        "tindex": tindex,
-        "market_memory": None,
-        "market": market,
+        "data_diagnostics": {"codal": codal_diagnostic},
+        "codal": codal_fundamentals, "codal_metadata": codal_metadata, "tindex": tindex,
+        "market_memory": None, "market": market,
     }
 
 
 def build_company_from_quote(quote: LiveQuote, *, codal_symbol: str | None = None) -> dict:
     price = quote.last_price if quote.last_price is not None else quote.closing_price
-    symbol_for_codal = (codal_symbol or quote.name).strip()
+    symbol_for_codal = _canonical_symbol(codal_symbol or quote.name)
     with ThreadPoolExecutor(max_workers=3, thread_name_prefix="biap-company") as pool:
         codal_future = pool.submit(_codal_parts, symbol_for_codal)
         extended_future = pool.submit(fetch_extended_market_data, quote.code)
         tindex_future = pool.submit(_tindex_dict, symbol_for_codal)
-        codal_metadata, codal_fundamentals = codal_future.result()
+        codal_metadata, codal_fundamentals, codal_diagnostic = codal_future.result()
         extended = extended_future.result()
         tindex = tindex_future.result()
     data_available = dict(PRICE_ONLY_AVAILABILITY)
@@ -239,8 +271,10 @@ def build_company_from_quote(quote: LiveQuote, *, codal_symbol: str | None = Non
     }
     market = _merge_tindex_market(market, tindex)
     return {
-        "ticker": quote.code, "name_fa": quote.name, "name_en": None, "data_available": data_available,
-        "codal": codal_fundamentals, "codal_metadata": codal_metadata, "tindex": tindex, "market_memory": None, "market": market,
+        "ticker": quote.code, "name_fa": quote.name, "name_en": None,
+        "data_available": data_available, "data_diagnostics": {"codal": codal_diagnostic},
+        "codal": codal_fundamentals, "codal_metadata": codal_metadata, "tindex": tindex,
+        "market_memory": None, "market": market,
     }
 
 
