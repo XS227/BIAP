@@ -1,0 +1,12 @@
+[Unit]
+Description=BIAP Kiasha performance evaluator
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/biap-kiasha/XS227-BIAP/analysis
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/ubuntu/biap-kiasha/XS227-BIAP/analysis/.venv/bin/python /home/ubuntu/biap-kiasha/XS227-BIAP/analysis/performance_evaluator.py --limit 500
+Nice=10
