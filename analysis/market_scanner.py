@@ -30,6 +30,7 @@ DEFAULT_TTL_SECONDS = 15 * 60
 DEFAULT_PREFILTER_LIMIT = 60
 DEFAULT_DEEP_LIMIT = 24
 DEFAULT_TOP_LIMIT = 10
+DEFAULT_CODAL_DELAY_SECONDS = 0.35
 
 
 @dataclass(frozen=True)
@@ -72,6 +73,14 @@ def _int_env(name: str, default: int, minimum: int, maximum: int) -> int:
     return max(minimum, min(maximum, value))
 
 
+def _float_env(name: str, default: float, minimum: float, maximum: float) -> float:
+    try:
+        value = float(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        value = default
+    return max(minimum, min(maximum, value))
+
+
 def _cache_path() -> Path:
     configured = os.getenv(CACHE_ENV)
     return Path(configured).expanduser() if configured else DEFAULT_CACHE_PATH
@@ -99,7 +108,6 @@ def _normalize_symbol(raw: dict[str, Any]) -> tuple[str, str, str]:
 
 
 def _ordinary_equity(raw: dict[str, Any], symbol: str, name: str) -> bool:
-    """Keep ordinary Iranian company shares and reject derivatives/funds/debt/rights."""
     isin = str(_first(raw, "insID", "insId", "isin") or "").strip().upper()
     if isin and not isin.startswith("IRO1"):
         return False
@@ -147,7 +155,9 @@ def _bulk_candidate(raw: dict[str, Any]) -> Optional[BulkCandidate]:
     return BulkCandidate(code, symbol, name or symbol, last_price, closing_price, yesterday, change_pct, volume, trade_value, trade_count, round(score, 6))
 
 
-def _deep_analyze(candidate: BulkCandidate) -> dict[str, Any]:
+def _deep_analyze(candidate: BulkCandidate, delay_seconds: float) -> dict[str, Any]:
+    if delay_seconds > 0:
+        time.sleep(delay_seconds)
     quote = LiveQuote(
         code=candidate.code, name=candidate.symbol, last_price=candidate.last_price,
         closing_price=candidate.closing_price, yesterday_price=candidate.yesterday_price,
@@ -199,7 +209,8 @@ def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[s
     prefilter_limit = _int_env("BIAP_MARKET_SCAN_PREFILTER", DEFAULT_PREFILTER_LIMIT, 10, 300)
     deep_limit = _int_env("BIAP_MARKET_SCAN_DEEP_LIMIT", DEFAULT_DEEP_LIMIT, 10, prefilter_limit)
     top_limit = _int_env("BIAP_MARKET_SCAN_TOP", DEFAULT_TOP_LIMIT, 1, min(25, deep_limit))
-    workers = _int_env("BIAP_MARKET_SCAN_WORKERS", 6, 1, 12)
+    workers = 1
+    codal_delay = _float_env("BIAP_MARKET_SCAN_CODAL_DELAY_SECONDS", DEFAULT_CODAL_DELAY_SECONDS, 0.0, 2.0)
     rows: list[dict[str, Any]] = []
     source = "tsetmc-marketwatch"
     errors: list[str] = []
@@ -228,7 +239,7 @@ def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[s
     deep_results: list[dict[str, Any]] = []
     deep_errors: list[dict[str, str]] = []
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        jobs = {pool.submit(_deep_analyze, item): item for item in deep_input}
+        jobs = {pool.submit(_deep_analyze, item, codal_delay): item for item in deep_input}
         for job in as_completed(jobs):
             item = jobs[job]
             try:
@@ -255,10 +266,11 @@ def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[s
         "eligibleCount": len(candidates), "prefilteredCount": len(shortlist), "deepAnalyzedCount": len(deep_results),
         "deepDataCoverage": {"codal": codal_ready, "codalMetadata": codal_metadata_ready, "marketExtended": market_extended_ready, "tindex": tindex_ready, "total": len(deep_results)},
         "codalDiagnostics": codal_diagnostics,
+        "codalThrottle": {"workers": workers, "delaySeconds": codal_delay},
         "tindexConfigured": bool(os.getenv("TINDEX_API_TOKEN")),
         "top10": top, "deepErrors": deep_errors[:20], "errors": errors[-3:], "cacheHit": False,
         "claudeCallsUsedForScan": 0,
-        "note": "Discovery is restricted to ordinary IRO1 company shares; derivatives, rights, funds and debt instruments are excluded before Kiasha deep analysis.",
+        "note": "Discovery is restricted to ordinary IRO1 shares; CODAL enrichment is serialized to respect relay rate limits.",
     }
     _save_cache(payload)
     return payload
