@@ -1,8 +1,8 @@
 """Whole-market discovery layer for Kiasha.
 
-Scans the live TSETMC market-watch payload once, cheaply ranks verified rows,
-then sends only the strongest shortlist through the existing Kiasha agent team.
-Claude/Sonnet is intentionally not used during the market-wide scan.
+Scans the live TSETMC market-watch payload once, cheaply ranks verified ordinary
+equities, then sends only the strongest shortlist through the existing Kiasha
+agent team. Claude/Sonnet is intentionally not used during the market-wide scan.
 """
 from __future__ import annotations
 
@@ -84,10 +84,7 @@ def _market_watch_url() -> str:
 
 
 def _read_market_watch(timeout: float) -> list[dict[str, Any]]:
-    req = urllib.request.Request(
-        _market_watch_url(),
-        headers={"User-Agent": "Mozilla/5.0 BIAP/1.0", "Accept": "application/json"},
-    )
+    req = urllib.request.Request(_market_watch_url(), headers={"User-Agent": "Mozilla/5.0 BIAP/1.0", "Accept": "application/json"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         payload = json.loads(resp.read().decode("utf-8"))
     rows = payload.get("marketwatch") if isinstance(payload, dict) else None
@@ -96,50 +93,60 @@ def _read_market_watch(timeout: float) -> list[dict[str, Any]]:
 
 def _normalize_symbol(raw: dict[str, Any]) -> tuple[str, str, str]:
     code = str(_first(raw, "insCode", "ins_code") or "").strip()
-    # TSETMC currently uses compact lva/lvc names in GetMarketWatch.
     symbol = str(_first(raw, "lva", "lVal18AFC", "l18", "symbol") or "").strip()
     name = str(_first(raw, "lvc", "lVal30", "l30", "name") or symbol).strip()
     return code, symbol, name
 
 
+def _ordinary_equity(raw: dict[str, Any], symbol: str, name: str) -> bool:
+    """Keep ordinary Iranian company shares and reject derivatives/funds/debt/rights."""
+    isin = str(_first(raw, "insID", "insId", "isin") or "").strip().upper()
+    # TSETMC ordinary shares use IRO1 instrument identifiers. Options observed in
+    # production use IRO9; this gate removes the large derivative universe early.
+    if isin and not isin.startswith("IRO1"):
+        return False
+
+    text = f"{symbol} {name}".replace("ي", "ی").replace("ك", "ک").replace("‌", " ")
+    compact = " ".join(text.split())
+    rejected_terms = (
+        "اختیار", "اختيار", "اختیارخ", "اختیارف", "اختيارخ", "اختيارف",
+        "حق تقدم", "صندوق", "اوراق", "مرابحه", "اجاره", "مشارکت", "مشاركت",
+        "اسناد خزانه", "اخزا", "گواهی", "گواهي", "سپرده", "سلف", "آتی", "آتي",
+    )
+    if any(term in compact for term in rejected_terms):
+        return False
+    # Iranian rights tickers conventionally append ح; their company names often
+    # also start with ح . / حق تقدم. Exclude them from investment candidates.
+    if symbol.endswith("ح") or compact.startswith("ح .") or compact.startswith("ح."):
+        return False
+    return True
+
+
 def _bulk_candidate(raw: dict[str, Any]) -> Optional[BulkCandidate]:
     code, symbol, name = _normalize_symbol(raw)
-    if not code or not symbol:
+    if not code or not symbol or not _ordinary_equity(raw, symbol, name):
         return None
 
-    # Older TSETMC payloads exposed flow; the current compact GetMarketWatch
-    # payload does not. Only reject a row when flow is explicitly present and
-    # explicitly outside the supported exchange flows.
     flow_raw = _first(raw, "flow")
     if flow_raw not in (None, ""):
         flow = _float(flow_raw)
         if flow not in (1.0, 2.0, 4.0):
             return None
 
-    # The relay payload can contain both compact live fields with real values
-    # and legacy descriptive fields set to zero. Prefer the compact live fields
-    # first so a placeholder zero never shadows a valid market value.
-    # pdv=last trade, pcl=closing, py=yesterday, qtj=volume,
-    # qtc=trade value, ztt=trade count.
+    # Compact TSETMC fields contain the live values; relay payloads can also carry
+    # zero-filled legacy aliases, so compact fields deliberately take priority.
     last_price = _float(_first(raw, "pdv", "pDrCotVal"))
     closing_price = _float(_first(raw, "pcl", "pClosing"))
     yesterday = _float(_first(raw, "py", "priceYesterday"))
-
     if not last_price or last_price <= 0:
         last_price = closing_price
     if last_price is None or last_price <= 0:
         return None
 
-    change_pct = 0.0
-    if yesterday not in (None, 0):
-        change_pct = ((last_price - float(yesterday)) / float(yesterday)) * 100.0
-
+    change_pct = ((last_price - float(yesterday)) / float(yesterday) * 100.0) if yesterday not in (None, 0) else 0.0
     volume = max(0.0, _float(_first(raw, "qtj", "qTotTran5J")) or 0.0)
     trade_value = max(0.0, _float(_first(raw, "qtc", "qTotCap")) or 0.0)
     trade_count = max(0.0, _float(_first(raw, "ztt", "zTotTran")) or 0.0)
-
-    # Ignore rows that are present in the market-watch directory but have no
-    # meaningful live/last-known trading activity at all.
     if trade_value <= 0 and volume <= 0 and trade_count <= 0:
         return None
 
@@ -148,46 +155,26 @@ def _bulk_candidate(raw: dict[str, Any]) -> Optional[BulkCandidate]:
     volume_signal = min(1.0, math.log1p(volume) / math.log1p(1e9)) if volume > 0 else 0.0
     activity = min(1.0, math.log1p(trade_count) / math.log1p(1e5)) if trade_count > 0 else 0.0
     score = 0.38 * momentum + 0.30 * liquidity + 0.20 * volume_signal + 0.12 * activity
-
-    return BulkCandidate(
-        code=code,
-        symbol=symbol,
-        name=name or symbol,
-        last_price=last_price,
-        closing_price=closing_price,
-        yesterday_price=yesterday,
-        change_percent=change_pct,
-        volume=volume,
-        trade_value=trade_value,
-        trade_count=trade_count,
-        discovery_score=round(score, 6),
-    )
+    return BulkCandidate(code, symbol, name or symbol, last_price, closing_price, yesterday, change_pct, volume, trade_value, trade_count, round(score, 6))
 
 
 def _deep_analyze(candidate: BulkCandidate) -> dict[str, Any]:
     quote = LiveQuote(
-        code=candidate.code,
-        name=candidate.symbol,
-        last_price=candidate.last_price,
-        closing_price=candidate.closing_price,
-        yesterday_price=candidate.yesterday_price,
+        code=candidate.code, name=candidate.symbol, last_price=candidate.last_price,
+        closing_price=candidate.closing_price, yesterday_price=candidate.yesterday_price,
         change=(candidate.last_price - candidate.yesterday_price) if candidate.yesterday_price not in (None, 0) else None,
         change_percent=candidate.change_percent,
     )
     company = build_company_from_quote(quote, codal_symbol=candidate.symbol)
     decision = decide(company)
+    availability = company.get("data_available") or {}
     return {
-        "code": candidate.code,
-        "symbol": candidate.symbol,
-        "name": candidate.name,
-        "discoveryScore": candidate.discovery_score,
-        "kiashaCall": decision.call,
-        "kiashaScore": float(decision.weighted_score),
-        "explanation": decision.explanation,
-        "agentBreakdown": decision.breakdown,
-        "changePercent": round(candidate.change_percent, 4),
-        "tradeValue": candidate.trade_value,
-        "volume": candidate.volume,
+        "code": candidate.code, "symbol": candidate.symbol, "name": candidate.name,
+        "discoveryScore": candidate.discovery_score, "kiashaCall": decision.call,
+        "kiashaScore": float(decision.weighted_score), "explanation": decision.explanation,
+        "agentBreakdown": decision.breakdown, "changePercent": round(candidate.change_percent, 4),
+        "tradeValue": candidate.trade_value, "volume": candidate.volume,
+        "dataAvailability": availability,
     }
 
 
@@ -242,18 +229,10 @@ def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[s
             universe = []
             errors.append(str(exc))
         payload = {
-            "status": "DEGRADED",
-            "source": source,
-            "createdAt": datetime.now(timezone.utc).isoformat(),
-            "createdEpoch": time.time(),
-            "universeCount": len(universe),
-            "marketRowsScanned": len(rows),
-            "eligibleCount": 0,
-            "prefilteredCount": 0,
-            "deepAnalyzedCount": 0,
-            "top10": [],
-            "errors": errors[-3:],
-            "cacheHit": False,
+            "status": "DEGRADED", "source": source, "createdAt": datetime.now(timezone.utc).isoformat(),
+            "createdEpoch": time.time(), "universeCount": len(universe), "marketRowsScanned": len(rows),
+            "ordinaryEquityCount": 0, "eligibleCount": 0, "prefilteredCount": 0,
+            "deepAnalyzedCount": 0, "top10": [], "errors": errors[-3:], "cacheHit": False,
         }
         _save_cache(payload)
         return payload
@@ -263,7 +242,6 @@ def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[s
     deep_input = shortlist[:deep_limit]
     deep_results: list[dict[str, Any]] = []
     deep_errors: list[dict[str, str]] = []
-
     with ThreadPoolExecutor(max_workers=workers) as pool:
         jobs = {pool.submit(_deep_analyze, item): item for item in deep_input}
         for job in as_completed(jobs):
@@ -273,31 +251,20 @@ def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[s
             except Exception as exc:
                 deep_errors.append({"code": item.code, "symbol": item.symbol, "reason": str(exc)[:240]})
 
-    deep_results.sort(
-        key=lambda item: (
-            1 if item.get("kiashaCall") == "BUY" else 0,
-            float(item.get("kiashaScore") or -999),
-            float(item.get("discoveryScore") or -999),
-        ),
-        reverse=True,
-    )
+    deep_results.sort(key=lambda item: (1 if item.get("kiashaCall") == "BUY" else 0, float(item.get("kiashaScore") or -999), float(item.get("discoveryScore") or -999)), reverse=True)
     top = deep_results[:top_limit]
+    codal_ready = sum(1 for item in deep_results if (item.get("dataAvailability") or {}).get("codal"))
+    market_extended_ready = sum(1 for item in deep_results if (item.get("dataAvailability") or {}).get("market_extended"))
+    tindex_ready = sum(1 for item in deep_results if (item.get("dataAvailability") or {}).get("tindex"))
     payload = {
-        "status": "OK" if deep_results else "DEGRADED",
-        "source": source,
-        "createdAt": datetime.now(timezone.utc).isoformat(),
-        "createdEpoch": time.time(),
-        "universeCount": len(rows),
-        "marketRowsScanned": len(rows),
-        "eligibleCount": len(candidates),
-        "prefilteredCount": len(shortlist),
-        "deepAnalyzedCount": len(deep_results),
-        "top10": top,
-        "deepErrors": deep_errors[:20],
-        "errors": errors[-3:],
-        "cacheHit": False,
+        "status": "OK" if deep_results else "DEGRADED", "source": source,
+        "createdAt": datetime.now(timezone.utc).isoformat(), "createdEpoch": time.time(),
+        "universeCount": len(rows), "marketRowsScanned": len(rows), "ordinaryEquityCount": len(candidates),
+        "eligibleCount": len(candidates), "prefilteredCount": len(shortlist), "deepAnalyzedCount": len(deep_results),
+        "deepDataCoverage": {"codal": codal_ready, "marketExtended": market_extended_ready, "tindex": tindex_ready, "total": len(deep_results)},
+        "top10": top, "deepErrors": deep_errors[:20], "errors": errors[-3:], "cacheHit": False,
         "claudeCallsUsedForScan": 0,
-        "note": "Full market discovery is deterministic; Claude/Sonnet is reserved for the final Kiasha candidates.",
+        "note": "Discovery is restricted to ordinary IRO1 company shares; derivatives, rights, funds and debt instruments are excluded before Kiasha deep analysis.",
     }
     _save_cache(payload)
     return payload
