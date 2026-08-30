@@ -10,7 +10,7 @@ from audit_store import AuditStore
 from auth import require_user_id
 from execution import submit_order_intent
 from kiasha_ai import analyze as analyze_with_ai, status as kiasha_ai_status
-from kiasha_auto_invest import auto_status, run_user_auto_invest, update_auto_settings
+from kiasha_auto_invest_v2 import auto_status, refresh_market_scan, run_user_auto_invest, scan_status, update_auto_settings
 from kiasha_paper import evaluate_ai_paper_proposal
 from manual_paper_routes import router as manual_paper_router
 from market_data import MarketDataUnavailable, find_quote
@@ -82,6 +82,39 @@ def performance_summary():
     agents = [_agent_payload(agent) for agent in AGENTS]
     evaluated_counts = [item["evaluatedCalls"] for item in agents]
     return {"pendingRecommendations": len(pending),"evaluatedRecommendationsLowerBound": max(evaluated_counts, default=0),"minimumObservedSamples": MIN_OBSERVED_SAMPLES,"observedTrustActive": any(item["trustReady"] for item in agents),"agents": agents,"note": "evaluatedRecommendationsLowerBound is derived from agent observations; neutral votes may make per-agent counts differ."}
+
+@router.get("/market-scan")
+def market_scan(force: bool = Query(default=False)):
+    """Authoritative Kiasha whole-market scan shared by web, mobile and Auto Invest."""
+    return refresh_market_scan(force=force) if force else scan_status()
+
+@router.get("/readiness")
+def kiasha_readiness():
+    scan = scan_status()
+    coverage = scan.get("deepDataCoverage") or {}
+    agents = [_agent_payload(agent) for agent in AGENTS]
+    tindex_configured = bool(os.getenv("TINDEX_API_TOKEN"))
+    ai = kiasha_ai_status()
+    paper = _paper_execution_enabled()
+    runner = _auto_invest_runner_enabled()
+    return {
+        "chain": "kiasha-v2",
+        "marketScanReady": scan.get("status") == "OK" and bool(scan.get("top10")),
+        "ordinaryEquityFilterReady": int(scan.get("ordinaryEquityCount") or 0) > 0,
+        "sharedTop10Ready": True,
+        "paperExecutionReady": paper,
+        "autoInvestRunnerReady": runner,
+        "liveExecution": False,
+        "sonnetFinalistGateReady": bool(ai.get("configured") or ai.get("enabled") or os.getenv("ANTHROPIC_API_KEY")),
+        "technicalFlowSource": "tindex" if tindex_configured else None,
+        "technicalFlowReady": tindex_configured and int(coverage.get("tindex") or 0) > 0,
+        "technicalFlowBlocker": None if tindex_configured else "TINDEX_API_TOKEN is not configured; technical/flow remain neutral rather than fabricated.",
+        "codalCoverage": int(coverage.get("codal") or 0),
+        "marketExtendedCoverage": int(coverage.get("marketExtended") or 0),
+        "observedTrustActive": any(item["trustReady"] for item in agents),
+        "agents": agents,
+        "scan": {"createdAt": scan.get("createdAt"), "deepAnalyzedCount": scan.get("deepAnalyzedCount"), "top10Count": len(scan.get("top10") or [])},
+    }
 
 @router.get("/ai/status")
 def ai_status():
