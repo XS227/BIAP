@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Recommendation } from '@/lib/api';
-import { fetchKiashaMarketScan } from '@/lib/kiasha-market-scan';
+import { fetchKiashaMarketScan, KiashaMarketScanItem } from '@/lib/kiasha-market-scan';
 
 export type InvestmentHorizon = 'short' | 'long';
 
@@ -54,8 +54,7 @@ async function writePersisted(result: KiashaPicksResult): Promise<void> {
   try { await AsyncStorage.setItem(storageKey(result.horizon), JSON.stringify(result)); } catch { /* best effort */ }
 }
 
-function pickFromScan(item: Awaited<ReturnType<typeof fetchKiashaMarketScan>> extends infer R ? R extends { top10: (infer I)[] } ? I : never : never, horizon: InvestmentHorizon): KiashaPick {
-  const row = item as any;
+function pickFromScan(row: KiashaMarketScanItem, horizon: InvestmentHorizon): KiashaPick {
   const breakdown = Array.isArray(row.agentBreakdown) ? row.agentBreakdown : [];
   const recommendation: Recommendation = {
     code: row.code,
@@ -107,7 +106,7 @@ export async function fetchKiashaTopPicks(
   const rows = scan?.top10 ?? [];
   const ranked = rows
     .filter((x) => x.kiashaCall === 'BUY' && Number(x.kiashaScore) > 0)
-    .map((x) => pickFromScan(x as any, horizon))
+    .map((x) => pickFromScan(x, horizon))
     .sort((a, b) => b.score - a.score)
     .slice(0, 10);
 
