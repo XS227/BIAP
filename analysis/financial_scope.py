@@ -1,6 +1,6 @@
 """Financial-statement scope policy for CODAL fundamentals.
 
-BIAP must not silently mix consolidated and standalone statements.  This module
+BIAP must not silently mix consolidated and standalone statements. This module
 classifies CODAL report titles, selects one scope deterministically, and parses
 fundamentals only from filings in that selected scope.
 
@@ -13,6 +13,8 @@ Policy:
 
 from __future__ import annotations
 
+import os
+import time
 from typing import Optional
 
 from codal_data import (
@@ -34,15 +36,10 @@ def report_scope_from_title(title: Optional[str]) -> Optional[str]:
     text = (title or "").replace("\u200c", " ").strip()
     if not text:
         return None
-
     if "صورت" not in text or "مالی" not in text:
         return None
-
     if "تلفیقی" in text:
         return CONSOLIDATED
-
-    # CODAL standalone statements normally omit the word "تلفیقی".  We only
-    # classify titles that explicitly identify themselves as financial statements.
     return STANDALONE
 
 
@@ -51,17 +48,13 @@ def select_scope_filings(filings: list[CodalFiling]) -> tuple[Optional[str], lis
     consolidated = [f for f in filings if report_scope_from_title(f.title) == CONSOLIDATED]
     if consolidated:
         return CONSOLIDATED, consolidated
-
     standalone = [f for f in filings if report_scope_from_title(f.title) == STANDALONE]
     if standalone:
         return STANDALONE, standalone
-
     return None, []
 
 
-def scoped_fundamentals_for_symbol(
-    symbol: str,
-) -> tuple[Optional[CodalFundamentals], Optional[str]]:
+def scoped_fundamentals_for_symbol(symbol: str) -> tuple[Optional[CodalFundamentals], Optional[str]]:
     """Parse fundamentals from exactly one explicit financial-report scope."""
     wanted = symbol.strip()
     if not wanted:
@@ -72,10 +65,19 @@ def scoped_fundamentals_for_symbol(
     if scope is None:
         return None, None
 
+    try:
+        report_delay = max(0.0, min(5.0, float(os.getenv("BIAP_CODAL_REPORT_DELAY_SECONDS", "1.25"))))
+    except ValueError:
+        report_delay = 1.25
+
     for filing in scoped_filings:
         if not filing.excel_url:
             continue
         try:
+            # The CODAL relay rate-limits bursts. Separate search and report
+            # requests so a single finalist does not trigger HTTP 429 by itself.
+            if report_delay:
+                time.sleep(report_delay)
             report_html = _fetch_filing_html(filing)
             result = _parse_fundamentals(wanted, filing, report_html)
         except CodalDataUnavailable:
