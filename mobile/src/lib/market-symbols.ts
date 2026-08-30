@@ -11,7 +11,12 @@ export async function fetchMarketSymbols(
     if (params.q) query.set('q', params.q);
     if (params.market) query.set('market', params.market);
     if (params.limit) query.set('limit', String(params.limit));
-    const res = await fetch(`${KIASHA_API_BASE}/performance/market-symbols?${query.toString()}`, {
+
+    // Use the stable stock-symbols route. It is available on the production
+    // backend and returns the same MarketSymbolResult shape as the newer
+    // performance alias. Keeping the Android client on this route avoids an
+    // empty market when the app is newer than the currently deployed VPS API.
+    const res = await fetch(`${KIASHA_API_BASE}/stock/symbols?${query.toString()}`, {
       signal: controller.signal,
       headers: { Accept: 'application/json' },
     });
