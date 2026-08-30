@@ -97,8 +97,8 @@ def _read_market_watch(timeout: float) -> list[dict[str, Any]]:
 def _normalize_symbol(raw: dict[str, Any]) -> tuple[str, str, str]:
     code = str(_first(raw, "insCode", "ins_code") or "").strip()
     # TSETMC currently uses compact lva/lvc names in GetMarketWatch.
-    symbol = str(_first(raw, "lVal18AFC", "l18", "symbol", "lva") or "").strip()
-    name = str(_first(raw, "lVal30", "l30", "name", "lvc") or symbol).strip()
+    symbol = str(_first(raw, "lva", "lVal18AFC", "l18", "symbol") or "").strip()
+    name = str(_first(raw, "lvc", "lVal30", "l30", "name") or symbol).strip()
     return code, symbol, name
 
 
@@ -116,12 +116,14 @@ def _bulk_candidate(raw: dict[str, Any]) -> Optional[BulkCandidate]:
         if flow not in (1.0, 2.0, 4.0):
             return None
 
-    # Support both legacy descriptive names and the compact live payload:
+    # The relay payload can contain both compact live fields with real values
+    # and legacy descriptive fields set to zero. Prefer the compact live fields
+    # first so a placeholder zero never shadows a valid market value.
     # pdv=last trade, pcl=closing, py=yesterday, qtj=volume,
     # qtc=trade value, ztt=trade count.
-    last_price = _float(_first(raw, "pDrCotVal", "pdv"))
-    closing_price = _float(_first(raw, "pClosing", "pcl"))
-    yesterday = _float(_first(raw, "priceYesterday", "py"))
+    last_price = _float(_first(raw, "pdv", "pDrCotVal"))
+    closing_price = _float(_first(raw, "pcl", "pClosing"))
+    yesterday = _float(_first(raw, "py", "priceYesterday"))
 
     if not last_price or last_price <= 0:
         last_price = closing_price
@@ -132,9 +134,9 @@ def _bulk_candidate(raw: dict[str, Any]) -> Optional[BulkCandidate]:
     if yesterday not in (None, 0):
         change_pct = ((last_price - float(yesterday)) / float(yesterday)) * 100.0
 
-    volume = max(0.0, _float(_first(raw, "qTotTran5J", "qtj")) or 0.0)
-    trade_value = max(0.0, _float(_first(raw, "qTotCap", "qtc")) or 0.0)
-    trade_count = max(0.0, _float(_first(raw, "zTotTran", "ztt")) or 0.0)
+    volume = max(0.0, _float(_first(raw, "qtj", "qTotTran5J")) or 0.0)
+    trade_value = max(0.0, _float(_first(raw, "qtc", "qTotCap")) or 0.0)
+    trade_count = max(0.0, _float(_first(raw, "ztt", "zTotTran")) or 0.0)
 
     # Ignore rows that are present in the market-watch directory but have no
     # meaningful live/last-known trading activity at all.
