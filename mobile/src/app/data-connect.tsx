@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View, Pressable, useColorScheme } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { clearBusinessDataset, getBusinessDataset, importExcelBusinessDataset, parseBusinessData, saveBusinessDataset } from '@/lib/business-data';
+import { requirementFor, sourceLabel } from '@/lib/module-data-requirements';
 
 const SOURCES = [
   { key: 'sql', icon: '🗄️', title: 'SQL / Database', body: 'کانکتور Read-only سمت سرور؛ رمز دیتابیس داخل موبایل ذخیره نمی‌شود.', state: 'نیازمند مشخصات دیتابیس' },
@@ -13,9 +14,14 @@ const SOURCES = [
 ] as const;
 
 export default function DataConnectScreen() {
+  const params = useLocalSearchParams<{ key?: string; companyMode?: string; code?: string }>();
   const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
+  const moduleKey = typeof params.key === 'string' ? params.key : '';
+  const companyMode = params.companyMode === 'listed' ? 'listed' : params.companyMode === 'hybrid' ? 'hybrid' : 'private';
+  const code = typeof params.code === 'string' ? params.code : '';
+  const requirement = useMemo(() => requirementFor(moduleKey), [moduleKey]);
   const [raw, setRaw] = useState('');
-  const [name, setName] = useState('Company data');
+  const [name, setName] = useState(code ? `${code} • company data` : 'Company data');
   const [status, setStatus] = useState('');
   const [datasetInfo, setDatasetInfo] = useState('');
   const [importingFile, setImportingFile] = useState(false);
@@ -25,13 +31,16 @@ export default function DataConnectScreen() {
     setDatasetInfo(d ? `${d.name} • ${d.rows.length} ردیف • ${d.columns.length} ستون • ${d.source === 'xlsx-file' ? 'Excel' : d.source === 'json-paste' ? 'JSON' : 'CSV'}` : 'هنوز داده شرکت وارد نشده است');
   };
   useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    if (requirement && !raw.trim()) setRaw(requirement.csvTemplate);
+  }, [requirement]);
 
   const importData = async () => {
     try {
       const dataset = parseBusinessData(raw, name.trim() || 'Company data');
       await saveBusinessDataset(dataset);
       setStatus(`✓ متصل و همگام شد: ${dataset.rows.length} ردیف و ${dataset.columns.length} ستون`);
-      setRaw('');
+      setRaw(requirement?.csvTemplate ?? '');
       await refresh();
     } catch (e) {
       setStatus(e instanceof Error ? e.message : 'خطا در خواندن یا همگام‌سازی داده');
@@ -80,6 +89,19 @@ export default function DataConnectScreen() {
           <View style={styles.headerCopy}><Text style={[styles.title, { color: colors.text }]}>اتصال داده</Text><Text style={[styles.sub, { color: colors.textSecondary }]}>Data Connections • منابع واقعی برای تحلیل</Text></View>
         </View>
 
+        {requirement ? <View style={[styles.requirementCard,{backgroundColor:colors.backgroundElement,borderColor:companyMode==='listed'?'#166534':'#2563eb55'}]}>
+          <View style={styles.activeHead}><View style={[styles.modeBadge,{backgroundColor:companyMode==='listed'?'#14532d':'#1e3a8a'}]}><Text style={styles.modeBadgeText}>{companyMode==='listed'?'بورسی':'خصوصی / خدماتی'}</Text></View><Text style={[styles.activeTitle,{color:colors.text}]}>{requirement.title}</Text></View>
+          {code ? <Text style={[styles.codeText,{color:Brand.positive}]}>نماد: {code}</Text> : null}
+          <Text style={[styles.body,{color:colors.textSecondary}]}>{requirement.description}</Text>
+          {companyMode==='listed' ? <>
+            <Text style={[styles.reqTitle,{color:colors.text}]}>ابتدا خودکار از این منابع بررسی می‌شود:</Text>
+            <View style={styles.chips}>{requirement.listedAutoSources.length ? requirement.listedAutoSources.map(s=><View key={s} style={styles.greenChip}><Text style={styles.greenChipText}>{sourceLabel(s)}</Text></View>) : <Text style={[styles.body,{color:Brand.warning}]}>برای این تحلیل منبع بورسی کافی نیست و داده داخلی لازم است.</Text>}</View>
+          </> : <Text style={[styles.reqTitle,{color:colors.text}]}>قالب زیر دقیقاً برای همین ماژول آماده شده است.</Text>}
+          <Text style={[styles.reqTitle,{color:colors.text}]}>فیلدهای مورد نیاز</Text>
+          {requirement.fields.map(field=><View key={field.key} style={styles.fieldRow}><Text style={[styles.fieldState,{color:field.required?Brand.warning:colors.textSecondary}]}>{field.required?'لازم':'اختیاری'}</Text><Text style={[styles.fieldName,{color:colors.text}]}>{field.label}</Text></View>)}
+          {companyMode==='listed' ? <Text style={[styles.helpText,{color:colors.textSecondary}]}>BIAP داده‌های قابل دریافت از TSETMC/Tindex/CODAL را خودش می‌گیرد. فقط فیلدهایی که در منابع عمومی وجود ندارند باید با Excel/CSV/CRM تکمیل شوند.</Text> : null}
+        </View> : null}
+
         <View style={[styles.activeCard, { backgroundColor: colors.backgroundElement }]}>
           <View style={styles.activeHead}><View style={styles.liveBadge}><Text style={styles.liveBadgeText}>SYNC</Text></View><Text style={[styles.activeTitle, { color: colors.text }]}>منابع فعال BIAP</Text></View>
           <Text style={[styles.body, { color: colors.textSecondary }]}>Market/CODAL/Kiasha فعال هستند. داده اختصاصی شرکت به حساب کاربر همگام می‌شود و روی دستگاه نیز cache محلی دارد.</Text>
@@ -92,6 +114,7 @@ export default function DataConnectScreen() {
           <TextInput value={name} onChangeText={setName} placeholder="نام منبع داده" placeholderTextColor={colors.textSecondary} style={[styles.input, { color: colors.text, borderColor: colors.backgroundSelected }]} />
           <Pressable disabled={importingFile} onPress={importExcel} style={[styles.excelButton, { borderColor: Brand.primary, opacity: importingFile ? .6 : 1 }]}><Text style={[styles.excelButtonText, { color: Brand.primary }]}>{importingFile ? 'در حال خواندن Excel…' : 'انتخاب فایل Excel (.xlsx)'}</Text></Pressable>
           <TextInput value={raw} onChangeText={setRaw} multiline textAlignVertical="top" placeholder={'یا paste کنید:\nmonth,revenue,cost,customers\n1405-01,1200000,700000,240'} placeholderTextColor={colors.textSecondary} style={[styles.area, { color: colors.text, borderColor: colors.backgroundSelected }]} />
+          {requirement ? <Pressable onPress={()=>setRaw(requirement.csvTemplate)} style={[styles.templateBtn,{borderColor:colors.backgroundSelected}]}><Text style={[styles.templateText,{color:colors.textSecondary}]}>بازگرداندن قالب پیشنهادی {requirement.title}</Text></Pressable> : null}
           <Pressable onPress={importData} style={styles.primary}><Text style={styles.primaryText}>اتصال CSV / JSON</Text></Pressable>
           <Text style={[styles.dataset, { color: colors.textSecondary }]}>{datasetInfo}</Text>
           {status ? <Text style={[styles.status, { color: status.startsWith('✓') ? Brand.positive : Brand.warning }]}>{status}</Text> : null}
@@ -114,4 +137,5 @@ export default function DataConnectScreen() {
 
 const styles = StyleSheet.create({
   safe:{flex:1},content:{paddingHorizontal:Spacing.three,paddingTop:Spacing.three},wrap:{maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},headerRow:{flexDirection:'row-reverse',alignItems:'center',gap:Spacing.three,marginBottom:Spacing.three},headerCopy:{flex:1,alignItems:'flex-end'},back:{width:38,height:38,borderRadius:19,alignItems:'center',justifyContent:'center'},backText:{fontSize:19},title:{fontFamily:Fonts.sans,fontSize:23,fontWeight:'900'},sub:{fontFamily:Fonts.sans,fontSize:11,marginTop:3},activeCard:{borderRadius:Radius.lg,padding:Spacing.four,marginBottom:Spacing.three,borderWidth:1,borderColor:'#166534'},importCard:{borderRadius:Radius.lg,padding:Spacing.four,marginBottom:Spacing.four},activeHead:{width:'100%',flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center'},activeTitle:{fontFamily:Fonts.sans,fontSize:16,fontWeight:'900'},liveBadge:{backgroundColor:'#14532d',paddingHorizontal:9,paddingVertical:4,borderRadius:12},liveBadgeText:{color:'#86efac',fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},body:{fontFamily:Fonts.sans,fontSize:11.5,lineHeight:20,textAlign:'right',marginTop:6},liveRow:{flexDirection:'row-reverse',flexWrap:'wrap',gap:14,marginTop:12},liveItem:{fontFamily:Fonts.sans,fontSize:10.5,fontWeight:'800'},input:{borderWidth:1,borderRadius:Radius.sm,padding:10,marginTop:Spacing.three,fontFamily:Fonts.sans,textAlign:'right'},excelButton:{borderWidth:1,borderRadius:Radius.md,paddingVertical:12,alignItems:'center',marginTop:Spacing.two},excelButtonText:{fontFamily:Fonts.sans,fontSize:12,fontWeight:'900'},area:{borderWidth:1,borderRadius:Radius.sm,padding:10,marginTop:Spacing.two,minHeight:150,fontFamily:Fonts.mono,fontSize:11},dataset:{fontFamily:Fonts.sans,fontSize:10.5,textAlign:'right',marginTop:10},status:{fontFamily:Fonts.sans,fontSize:11,fontWeight:'800',textAlign:'right',marginTop:6},clearBtn:{alignSelf:'flex-end',paddingVertical:8},clearText:{color:Brand.negative,fontFamily:Fonts.sans,fontSize:10.5,fontWeight:'800'},section:{fontFamily:Fonts.sans,fontSize:17,fontWeight:'900',textAlign:'right'},sectionNote:{fontFamily:Fonts.sans,fontSize:11,lineHeight:19,textAlign:'right',marginTop:4,marginBottom:Spacing.three},sourceCard:{borderRadius:Radius.md,padding:Spacing.three,marginBottom:Spacing.two},sourceTop:{flexDirection:'row-reverse',gap:Spacing.three,alignItems:'flex-start'},sourceIcon:{width:44,height:44,borderRadius:22,alignItems:'center',justifyContent:'center'},sourceIconText:{fontSize:20},sourceCopy:{flex:1,alignItems:'flex-end'},sourceTitle:{fontFamily:Fonts.sans,fontSize:14,fontWeight:'900'},soonRow:{marginTop:Spacing.three,paddingTop:Spacing.two,borderTopWidth:StyleSheet.hairlineWidth,flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center'},soonText:{fontFamily:Fonts.sans,fontSize:10},soonBadge:{backgroundColor:'#1e3a8a',borderRadius:10,paddingHorizontal:8,paddingVertical:4},soonBadgeText:{color:'#bfdbfe',fontFamily:Fonts.mono,fontSize:8.5,fontWeight:'900'},security:{borderRadius:Radius.md,padding:Spacing.three,marginTop:Spacing.two,alignItems:'flex-end'},securityTitle:{fontFamily:Fonts.sans,fontSize:14,fontWeight:'900'},primary:{backgroundColor:Brand.primary,borderRadius:Radius.md,paddingVertical:13,alignItems:'center',marginTop:Spacing.three},primaryText:{color:'#fff',fontFamily:Fonts.sans,fontSize:13,fontWeight:'900'},
+  requirementCard:{borderWidth:1,borderRadius:Radius.lg,padding:Spacing.four,marginBottom:Spacing.three},modeBadge:{borderRadius:12,paddingHorizontal:8,paddingVertical:4},modeBadgeText:{color:'#dbeafe',fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},codeText:{fontFamily:Fonts.sans,fontSize:11,fontWeight:'900',textAlign:'right',marginTop:8},reqTitle:{fontFamily:Fonts.sans,fontSize:11.5,fontWeight:'900',textAlign:'right',marginTop:12},chips:{flexDirection:'row-reverse',flexWrap:'wrap',gap:6,marginTop:7},greenChip:{backgroundColor:'#14532d22',borderWidth:1,borderColor:'#16a34a66',borderRadius:12,paddingHorizontal:8,paddingVertical:5},greenChipText:{color:Brand.positive,fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},fieldRow:{flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center',paddingVertical:7,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:'#94a3b833'},fieldName:{fontFamily:Fonts.sans,fontSize:10.5,fontWeight:'700'},fieldState:{fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},helpText:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:18,textAlign:'right',marginTop:10},templateBtn:{borderWidth:1,borderRadius:Radius.sm,paddingVertical:9,alignItems:'center',marginTop:8},templateText:{fontFamily:Fonts.sans,fontSize:10.5,fontWeight:'800'}
 });
