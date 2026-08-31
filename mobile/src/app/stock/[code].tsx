@@ -17,7 +17,7 @@ const COMPANY_ANALYSES = [
   { key:'pricing', title:'قیمت‌گذاری', icon:'💰' },
   { key:'sql', title:'SQL / داده', icon:'🗄️' },
   { key:'swot', title:'SWOT', icon:'⚔️' },
-  { key:'management-report', title:'گزارش مدیریتی', icon:'📋' },
+  { key:'executive-report', title:'گزارش مدیریتی', icon:'📋' },
 ] as const;
 
 function MiniChart({points,colors}:{points:PricePoint[];colors:ThemeColors}){const sample=useMemo(()=>points.length<=24?points:points.filter((_,i)=>i%Math.ceil(points.length/24)===0).slice(-24),[points]);if(sample.length<2)return null;const values=sample.map(p=>p.close),min=Math.min(...values),max=Math.max(...values),range=Math.max(1,max-min),up=values.at(-1)!>=values[0],accent=up?Brand.stockGreen:Brand.negative;return <View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><View style={styles.head}><Text style={[styles.meta,{color:accent}]}>{up?'▲':'▼'} {(((values.at(-1)!-values[0])/values[0])*100).toFixed(2)}٪</Text><Text style={[styles.cardTitle,{color:colors.text}]}>روند ۶۰ روز</Text></View><View style={styles.bars}>{sample.map((p,i)=><View key={`${p.date}-${i}`} style={[styles.bar,{height:18+((p.close-min)/range)*90,backgroundColor:accent,opacity:.35+i/sample.length*.65}]}/>)}</View></View>}
