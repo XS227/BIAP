@@ -26,6 +26,8 @@ export type KiashaPicksResult = {
   eligible: number;
   verified: number;
   generatedAt: string;
+  error?: string;
+  httpStatus?: number;
 };
 
 const CACHE_TTL_MS = 15 * 60_000;
@@ -113,7 +115,7 @@ export async function fetchKiashaTopPicks(
   }
 
   const scan = await fetchKiashaMarketScan(Boolean(options.force));
-  const rows = scan?.top10 ?? [];
+  const rows = scan.top10 ?? [];
   const rankedRows = rows
     .filter((x) => x.kiashaCall === 'BUY' && Number(x.kiashaScore) > 0)
     .sort((a, b) => Number(b.kiashaScore || 0) - Number(a.kiashaScore || 0))
@@ -123,12 +125,15 @@ export async function fetchKiashaTopPicks(
   const result: KiashaPicksResult = {
     horizon,
     picks: ranked,
-    scanned: Number(scan?.marketRowsScanned ?? 0),
-    eligible: Number(scan?.ordinaryEquityCount ?? 0),
-    verified: Number(scan?.deepAnalyzedCount ?? 0),
-    generatedAt: scan?.createdAt ?? new Date().toISOString(),
+    scanned: Number(scan.marketRowsScanned ?? 0),
+    eligible: Number(scan.ordinaryEquityCount ?? 0),
+    verified: Number(scan.deepAnalyzedCount ?? 0),
+    generatedAt: scan.createdAt ?? new Date().toISOString(),
+    error: scan.error,
+    httpStatus: scan.httpStatus,
   };
   cache.set(horizon, { at: Date.now(), value: result });
-  await writePersisted(result);
+  // Do not persist transient server/auth errors as if they were valid empty picks.
+  if (!result.error) await writePersisted(result);
   return result;
 }
