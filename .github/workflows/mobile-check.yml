@@ -48,10 +48,15 @@ jobs:
       - run: npm ci
       - run: npx expo prebuild --platform android --non-interactive
       - run: chmod +x android/gradlew
-      - run: ./gradlew assembleDebug
+      # The debug build type does not bundle JS (RN's default debuggableVariants
+      # expects a live Metro dev server), so an installed debug APK gets stuck on
+      # the splash screen with no dev server reachable. Build release instead —
+      # Expo's generated build.gradle signs it with the debug keystore by default,
+      # so this still installs directly without a separate signing setup.
+      - run: ./gradlew assembleRelease
         working-directory: mobile/android
       - uses: actions/upload-artifact@v4
         with:
           name: biap-latest-apk
-          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          path: mobile/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
