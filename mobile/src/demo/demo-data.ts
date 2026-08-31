@@ -155,6 +155,36 @@ export const DEMO_MODULES: Record<string, DemoModule> = {
     ],
     bullets: ['مدل درآمد اشتراکی + خدمات سازمانی', 'تمرکز ۱۲ ماهه روی بازار داخلی', 'Milestone بعدی: ۱۰ هزار کاربر فعال'],
   },
+  'business-kpi': {
+    key: 'business-kpi', title: 'داشبورد KPI کسب‌وکار', icon: '🎯',
+    summary: 'نمونه داشبورد KPI فروش، هزینه، رشد و مشتری برای مدیریت.',
+    metrics: [{ label: 'رشد ماهانه', value: '+9.4٪', tone: 'positive' },{ label: 'حاشیه', value: '28٪', tone: 'positive' },{ label: 'Conversion', value: '23٪' }],
+    bullets: ['فروش بالاتر از دوره قبل', 'هزینه نیازمند کنترل', 'تمرکز بعدی روی مشتری بازگشتی'],
+  },
+  'market-entry': {
+    key: 'market-entry', title: 'ورود به بازار جدید', icon: '🌍',
+    summary: 'نمونه تحلیل ورود به یک بازار جدید با بخش‌بندی، کانال و اولویت.',
+    metrics: [{ label: 'Segment', value: '4' },{ label: 'Channel', value: '3' },{ label: 'ریسک کلیدی', value: '2', tone: 'negative' }],
+    bullets: ['اولویت با مشتری سازمانی متوسط', 'کانال شریک فروش + دیجیتال', 'اعتبارسنجی بازار قبل از توسعه بودجه'],
+  },
+  'executive-report': {
+    key: 'executive-report', title: 'گزارش مدیریتی', icon: '🧾',
+    summary: 'نمونه گزارش مدیریتی آماده مرور مدیر ارشد یا هیئت‌مدیره.',
+    metrics: [{ label: 'KPI', value: '8' },{ label: 'انحراف', value: '3' },{ label: 'Action', value: '5' }],
+    bullets: ['عملکرد فروش مثبت', 'یک انحراف هزینه‌ای مهم', 'اقدامات ماه بعد اولویت‌بندی شده‌اند'],
+  },
+  voc: {
+    key: 'voc', title: 'VOC + Friction Points', icon: '💬',
+    summary: 'نمونه تحلیل صدای مشتری و نقاط اصطکاک تجربه.',
+    metrics: [{ label: 'NPS', value: '54', tone: 'positive' },{ label: 'Friction', value: '4', tone: 'negative' },{ label: 'Feedback', value: '318' }],
+    bullets: ['کندی تحویل پرتکرارترین موضوع', 'اصطکاک پرداخت در رتبه دوم', 'پیگیری پس از خرید رضایت را بالا می‌برد'],
+  },
+  behavior: {
+    key: 'behavior', title: 'رفتار کاربر', icon: '🧭',
+    summary: 'نمونه Funnel رفتاری از بازدید تا خرید و بازگشت.',
+    metrics: [{ label: 'Conversion', value: '4.7٪' },{ label: 'Churn', value: '2.6٪', tone: 'negative' },{ label: 'Stage', value: '5' }],
+    bullets: ['بیشترین ریزش قبل از پرداخت', 'کاربران بازگشتی تبدیل بالاتری دارند', 'کاهش مراحل onboarding پیشنهاد می‌شود'],
+  },
   'financial-model': {
     key: 'financial-model', title: 'Financial Modeling', icon: '📈',
     summary: 'مدل مالی نمونه سه‌ساله با درآمد، هزینه و سود عملیاتی.',
