@@ -114,7 +114,7 @@ export default function OrdersScreen(){
     let cancelled=false;
     const numeric=[...new Set(orders.map(o=>o.code).filter(c=>/^\d+$/.test(c)))].filter(c=>!names[c]);
     if(!numeric.length)return;
-    Promise.all(numeric.map(async code=>[code,await fetchTsetmcInstrumentLabel(code,2200)] as const)).then(rows=>{
+    Promise.all(numeric.map(async code=>[code,await fetchTsetmcInstrumentLabel(code)] as const)).then(rows=>{
       if(cancelled)return;
       setNames(cur=>{const next={...cur};for(const[code,label]of rows)if(label)next[code]=label;return next});
     });
