@@ -19,6 +19,9 @@ const GROUPS: ModuleGroup[] = [
     { key: 'sql', title: 'SQL Query', subtitle: 'کوئری و تحلیل داده', icon: '🗄️' },
     { key: 'anomaly', title: 'تشخیص ناهنجاری', subtitle: 'Outlier و رفتار غیرعادی', icon: '🚨' },
     { key: 'forecast', title: 'پیش‌بینی آماری', subtitle: 'روند و سری زمانی', icon: '📉' },
+    { key: 'journey', title: 'Journey Map', subtitle: 'مسیر مشتری و نقاط اصطکاک', icon: '🗺️' },
+    { key: 'voc', title: 'VOC + Friction Points', subtitle: 'صدای مشتری و ریشه اصطکاک', icon: '💬' },
+    { key: 'behavior', title: 'رفتار کاربر', subtitle: 'Funnel، Churn و الگوی استفاده', icon: '🧭' },
   ]},
   { key: 'kpi', title: 'KPI و داشبورد', accent: Brand.primary, items: [
     { key: 'kpi-extract', title: 'استخراج KPI', subtitle: 'شاخص‌های کلیدی و RAG', icon: '🎯' },
@@ -27,12 +30,14 @@ const GROUPS: ModuleGroup[] = [
     { key: 'report', title: 'گزارش تحلیلی', subtitle: 'خلاصه قابل ارائه', icon: '📋' },
   ]},
   { key: 'business', title: 'توسعه کسب‌وکار', accent: Brand.secondary, items: [
+    { key: 'business-kpi', title: 'داشبورد KPI کسب‌وکار', subtitle: 'فروش، هزینه، رشد و مشتری', icon: '🎯' },
     { key: 'swot', title: 'SWOT + رقبا', subtitle: 'رقبا و موقعیت بازار', icon: '⚔️' },
-    { key: 'journey', title: 'Journey Map', subtitle: 'نقاط تماس و درد مشتری', icon: '🗺️' },
-    { key: 'crm', title: 'CRM + Pipeline', subtitle: 'قیف فروش و فرصت‌ها', icon: '👥' },
+    { key: 'market-entry', title: 'ورود به بازار جدید', subtitle: 'Segment، کانال و اولویت ورود', icon: '🌍' },
+    { key: 'crm', title: 'CRM + Pipeline', subtitle: 'Lead Scoring، Pipeline و پیگیری', icon: '👥' },
     { key: 'campaign', title: 'کمپین بازاریابی', subtitle: 'هدف، کانال و پیام', icon: '📣' },
     { key: 'pricing', title: 'قیمت‌گذاری هوشمند', subtitle: 'سناریوهای قیمت', icon: '💰' },
     { key: 'plan', title: 'Business Plan', subtitle: 'طرح کسب‌وکار', icon: '📄' },
+    { key: 'executive-report', title: 'گزارش مدیریتی', subtitle: 'KPI، انحراف و اقدام بعدی', icon: '🧾' },
   ]},
   { key: 'finance', title: 'مدل مالی', accent: '#4b8cff', items: [
     { key: 'financial-model', title: 'Financial Modeling', subtitle: 'مدل مالی و سناریو', icon: '📈' },
