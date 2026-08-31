@@ -38,7 +38,7 @@ async function enrichPosition(p: { code: string; quantity: number; averageCost: 
   // Price and display-name resolution run independently. A slow recommendation
   // must never hold the whole portfolio hostage just to replace a numeric ID.
   const quotePromise = fetchTsetmcQuote(symbol, 2_500, false).catch(() => null);
-  const labelPromise = fetchTsetmcInstrumentLabel(p.code, 2_000).catch(() => null);
+  const labelPromise = fetchTsetmcInstrumentLabel(p.code).catch(() => null);
   const recPromise = fetchRecommendation(p.code, 5_000).catch(() => null);
   const [quote, directLabel, rec] = await Promise.all([quotePromise, labelPromise, recPromise]);
   const directPrice = quote && !quote.error ? (quote.lastPrice ?? quote.closingPrice ?? null) : null;
