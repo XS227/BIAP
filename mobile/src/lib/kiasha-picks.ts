@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Recommendation } from '@/lib/api';
+import { Recommendation, type MarketSymbolResult } from '@/lib/api';
 import { fetchKiashaMarketScan, KiashaMarketScanItem } from '@/lib/kiasha-market-scan';
+import { fetchTsetmcQuote } from '@/lib/market-quote';
 
 export type InvestmentHorizon = 'short' | 'long';
 
@@ -99,6 +100,28 @@ function pickFromScan(row: KiashaMarketScanItem, horizon: InvestmentHorizon, ran
   };
 }
 
+async function enrichPickPrice(pick: KiashaPick): Promise<KiashaPick> {
+  const symbol: MarketSymbolResult = { code: pick.code, symbol: pick.symbol, name: pick.name };
+  const quote = await fetchTsetmcQuote(symbol, 6_500, true);
+  if (quote.error) return pick;
+  const price = quote.lastPrice ?? quote.closingPrice ?? null;
+  const changePercent = Number.isFinite(Number(quote.changePercent)) ? Number(quote.changePercent) : pick.changePercent;
+  return {
+    ...pick,
+    price,
+    changePercent,
+    recommendation: {
+      ...pick.recommendation,
+      livePrice: {
+        lastPrice: quote.lastPrice ?? null,
+        closingPrice: quote.closingPrice ?? null,
+        yesterdayPrice: quote.yesterdayPrice ?? null,
+        changePercent,
+      },
+    },
+  };
+}
+
 export async function fetchKiashaTopPicks(
   horizon: InvestmentHorizon,
   options: { force?: boolean; scanLimit?: number } = {}
@@ -120,7 +143,8 @@ export async function fetchKiashaTopPicks(
     .filter((x) => x.kiashaCall === 'BUY' && Number(x.kiashaScore) > 0)
     .sort((a, b) => Number(b.kiashaScore || 0) - Number(a.kiashaScore || 0))
     .slice(0, 10);
-  const ranked = rankedRows.map((x, index) => pickFromScan(x, horizon, index + 1));
+  const basePicks = rankedRows.map((x, index) => pickFromScan(x, horizon, index + 1));
+  const ranked = await Promise.all(basePicks.map(enrichPickPrice));
 
   const result: KiashaPicksResult = {
     horizon,
@@ -133,7 +157,6 @@ export async function fetchKiashaTopPicks(
     httpStatus: scan.httpStatus,
   };
   cache.set(horizon, { at: Date.now(), value: result });
-  // Do not persist transient server/auth errors as if they were valid empty picks.
   if (!result.error) await writePersisted(result);
   return result;
 }
