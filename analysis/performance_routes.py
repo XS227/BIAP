@@ -13,7 +13,7 @@ from kiasha_ai import analyze as analyze_with_ai, status as kiasha_ai_status
 from kiasha_auto_invest_v2 import auto_status, refresh_market_scan, run_user_auto_invest, scan_status, update_auto_settings
 from kiasha_paper import evaluate_ai_paper_proposal
 from manual_paper_routes import router as manual_paper_router
-from market_data import MarketDataUnavailable, find_quote
+from market_data import MarketDataUnavailable, _read_json, _resolve_tsetmc_instrument_code, find_quote, tsetmc_api_base
 from paper_execution_store import PaperExecutionStore
 from paper_sell_store import PaperSellStore
 from performance_store import MIN_OBSERVED_SAMPLES, PerformanceStore
@@ -98,6 +98,55 @@ def performance_summary():
 def market_scan(force: bool = Query(default=False)):
     """Authoritative Kiasha whole-market scan shared by web, mobile and Auto Invest."""
     return refresh_market_scan(force=force) if force else scan_status()
+
+@router.get("/market-quote/{code}")
+def market_quote(code: str):
+    """Verified mobile-safe quote route. The device never needs direct TSETMC access."""
+    try:
+        quote = find_quote(code)
+    except MarketDataUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    if quote is None:
+        raise HTTPException(status_code=404, detail=f"no verified market quote for {code}")
+    return {
+        "code": quote.code,
+        "name": quote.name,
+        "lastPrice": quote.last_price,
+        "closingPrice": quote.closing_price,
+        "yesterdayPrice": quote.yesterday_price,
+        "change": quote.change,
+        "changePercent": quote.change_percent,
+        "source": "verified-market-quote",
+    }
+
+@router.get("/market-history/{code}")
+def market_history(code: str, days: int = Query(default=90, ge=5, le=400)):
+    """Verified daily close history through the BIAP server/relay."""
+    instrument_code = _resolve_tsetmc_instrument_code(code, timeout=12.0)
+    if instrument_code is None:
+        raise HTTPException(status_code=404, detail=f"could not resolve market instrument for {code}")
+    try:
+        payload = _read_json(f"{tsetmc_api_base()}/ClosingPrice/GetClosingPriceDailyList/{instrument_code}/{days}", timeout=12.0)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="verified market history is temporarily unavailable") from exc
+    rows = payload.get("closingPriceDaily")
+    if not isinstance(rows, list):
+        raise HTTPException(status_code=503, detail="market history response is invalid")
+    points = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        raw_close = row.get("pClosing") or row.get("pDrCotVal")
+        raw_date = row.get("dEven")
+        try:
+            close = float(raw_close)
+        except (TypeError, ValueError):
+            continue
+        if close <= 0 or raw_date in (None, ""):
+            continue
+        points.append({"date": str(raw_date), "close": close})
+    points.sort(key=lambda item: item["date"])
+    return {"code": instrument_code, "count": len(points), "source": "tsetmc-history-via-biap", "items": points}
 
 @router.get("/readiness")
 def kiasha_readiness():

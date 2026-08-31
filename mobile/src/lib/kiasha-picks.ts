@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Recommendation } from '@/lib/api';
+import { Recommendation, type MarketSymbolResult } from '@/lib/api';
 import { fetchKiashaMarketScan, KiashaMarketScanItem } from '@/lib/kiasha-market-scan';
+import { fetchTsetmcQuote } from '@/lib/market-quote';
 
 export type InvestmentHorizon = 'short' | 'long';
 
@@ -26,6 +27,8 @@ export type KiashaPicksResult = {
   eligible: number;
   verified: number;
   generatedAt: string;
+  error?: string;
+  httpStatus?: number;
 };
 
 const CACHE_TTL_MS = 15 * 60_000;
@@ -97,6 +100,28 @@ function pickFromScan(row: KiashaMarketScanItem, horizon: InvestmentHorizon, ran
   };
 }
 
+async function enrichPickPrice(pick: KiashaPick): Promise<KiashaPick> {
+  const symbol: MarketSymbolResult = { code: pick.code, symbol: pick.symbol, name: pick.name };
+  const quote = await fetchTsetmcQuote(symbol, 6_500, true);
+  if (quote.error) return pick;
+  const price = quote.lastPrice ?? quote.closingPrice ?? null;
+  const changePercent = Number.isFinite(Number(quote.changePercent)) ? Number(quote.changePercent) : pick.changePercent;
+  return {
+    ...pick,
+    price,
+    changePercent,
+    recommendation: {
+      ...pick.recommendation,
+      livePrice: {
+        lastPrice: quote.lastPrice ?? null,
+        closingPrice: quote.closingPrice ?? null,
+        yesterdayPrice: quote.yesterdayPrice ?? null,
+        changePercent,
+      },
+    },
+  };
+}
+
 export async function fetchKiashaTopPicks(
   horizon: InvestmentHorizon,
   options: { force?: boolean; scanLimit?: number } = {}
@@ -113,22 +138,25 @@ export async function fetchKiashaTopPicks(
   }
 
   const scan = await fetchKiashaMarketScan(Boolean(options.force));
-  const rows = scan?.top10 ?? [];
+  const rows = scan.top10 ?? [];
   const rankedRows = rows
     .filter((x) => x.kiashaCall === 'BUY' && Number(x.kiashaScore) > 0)
     .sort((a, b) => Number(b.kiashaScore || 0) - Number(a.kiashaScore || 0))
     .slice(0, 10);
-  const ranked = rankedRows.map((x, index) => pickFromScan(x, horizon, index + 1));
+  const basePicks = rankedRows.map((x, index) => pickFromScan(x, horizon, index + 1));
+  const ranked = await Promise.all(basePicks.map(enrichPickPrice));
 
   const result: KiashaPicksResult = {
     horizon,
     picks: ranked,
-    scanned: Number(scan?.marketRowsScanned ?? 0),
-    eligible: Number(scan?.ordinaryEquityCount ?? 0),
-    verified: Number(scan?.deepAnalyzedCount ?? 0),
-    generatedAt: scan?.createdAt ?? new Date().toISOString(),
+    scanned: Number(scan.marketRowsScanned ?? 0),
+    eligible: Number(scan.ordinaryEquityCount ?? 0),
+    verified: Number(scan.deepAnalyzedCount ?? 0),
+    generatedAt: scan.createdAt ?? new Date().toISOString(),
+    error: scan.error,
+    httpStatus: scan.httpStatus,
   };
   cache.set(horizon, { at: Date.now(), value: result });
-  await writePersisted(result);
+  if (!result.error) await writePersisted(result);
   return result;
 }
