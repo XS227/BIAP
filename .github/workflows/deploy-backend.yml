@@ -1,0 +1,121 @@
+name: Deploy backend
+
+on:
+  workflow_run:
+    workflows: ["Release candidate check"]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: >-
+      ${{
+        (github.event_name == 'workflow_dispatch') ||
+        (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+      }}
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      VPS_PORT: ${{ secrets.VPS_PORT }}
+      VPS_APP_DIR: ${{ vars.VPS_APP_DIR }}
+      VPS_BACKEND_RESTART_CMD: ${{ vars.VPS_BACKEND_RESTART_CMD }}
+      VPS_HEALTH_URL: ${{ vars.VPS_HEALTH_URL }}
+
+    steps:
+      - name: Check deploy configuration
+        id: config
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${VPS_HOST}" || -z "${VPS_USER}" || -z "${VPS_SSH_KEY}" ]]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Backend deploy skipped: configure production secrets VPS_HOST, VPS_USER and VPS_SSH_KEY."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure SSH
+        if: steps.config.outputs.configured == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_deploy_key
+          chmod 600 ~/.ssh/biap_deploy_key
+          PORT="${VPS_PORT:-22}"
+          ssh-keyscan -p "$PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy main to VPS
+        if: steps.config.outputs.configured == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          APP_DIR="${VPS_APP_DIR:-/home/ubuntu/BIAP}"
+          RESTART_CMD="${VPS_BACKEND_RESTART_CMD:-pm2 restart biap-backend --update-env}"
+          HEALTH_URL="${VPS_HEALTH_URL:-https://biap.dadashi.no/api/health}"
+
+          ssh -i ~/.ssh/biap_deploy_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" \
+            "APP_DIR='$APP_DIR' RESTART_CMD='$RESTART_CMD' HEALTH_URL='$HEALTH_URL' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd "$APP_DIR"
+
+          test -d .git || { echo "Not a git checkout: $APP_DIR" >&2; exit 1; }
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "Refusing deploy: VPS working tree has local changes." >&2
+            git status --short
+            exit 1
+          fi
+
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
+
+          if [[ -x .venv/bin/python ]]; then
+            .venv/bin/python -m pip install -r analysis/requirements.txt
+          elif [[ -x venv/bin/python ]]; then
+            venv/bin/python -m pip install -r analysis/requirements.txt
+          else
+            python3 -m pip install --user -r analysis/requirements.txt
+          fi
+
+          bash -lc "$RESTART_CMD"
+
+          for attempt in 1 2 3 4 5 6; do
+            if curl --fail --silent --show-error --max-time 10 "$HEALTH_URL" >/tmp/biap-health.json; then
+              cat /tmp/biap-health.json
+              echo
+              echo "Backend deploy healthy at $(git rev-parse --short HEAD)"
+              exit 0
+            fi
+            sleep 5
+          done
+
+          echo "Health check failed after backend restart." >&2
+          bash -lc "pm2 status || true"
+          exit 1
+          REMOTE
+
+      - name: Deployment summary
+        shell: bash
+        run: |
+          if [[ "${{ steps.config.outputs.configured }}" == "true" ]]; then
+            echo "### Backend deploy" >> "$GITHUB_STEP_SUMMARY"
+            echo "Production deploy attempted after validated main build." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### Backend deploy not configured yet" >> "$GITHUB_STEP_SUMMARY"
+            echo "Add production secrets: VPS_HOST, VPS_USER, VPS_SSH_KEY." >> "$GITHUB_STEP_SUMMARY"
+            echo "Optional secret: VPS_PORT. Optional variables: VPS_APP_DIR, VPS_BACKEND_RESTART_CMD, VPS_HEALTH_URL." >> "$GITHUB_STEP_SUMMARY"
+          fi
