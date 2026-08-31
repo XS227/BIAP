@@ -79,31 +79,47 @@ jobs:
             exit 1
           fi
 
+          OLD_SHA="$(git rev-parse HEAD)"
           git fetch origin main
           git checkout main
           git pull --ff-only origin main
+          NEW_SHA="$(git rev-parse HEAD)"
 
-          if [[ -x .venv/bin/python ]]; then
-            .venv/bin/python -m pip install -r analysis/requirements.txt
-          elif [[ -x venv/bin/python ]]; then
-            venv/bin/python -m pip install -r analysis/requirements.txt
+          if ! git diff --quiet "$OLD_SHA" "$NEW_SHA" -- analysis/requirements.txt; then
+            echo "Python requirements changed; updating dependencies."
+            if [[ -x .venv/bin/python ]]; then
+              .venv/bin/python -m pip install -r analysis/requirements.txt
+            elif [[ -x venv/bin/python ]]; then
+              venv/bin/python -m pip install -r analysis/requirements.txt
+            else
+              python3 -m pip install --user -r analysis/requirements.txt
+            fi
           else
-            python3 -m pip install --user -r analysis/requirements.txt
+            echo "Python requirements unchanged; skipping dependency install."
           fi
 
           bash -lc "$RESTART_CMD"
 
-          for attempt in 1 2 3 4 5 6; do
+          for attempt in 1 2 3 4 5 6 7 8; do
             if curl --fail --silent --show-error --max-time 10 "$HEALTH_URL" >/tmp/biap-health.json; then
-              cat /tmp/biap-health.json
-              echo
-              echo "Backend deploy healthy at $(git rev-parse --short HEAD)"
-              exit 0
+              if python3 - <<'PY'
+import json
+with open('/tmp/biap-health.json', 'r', encoding='utf-8') as fh:
+    payload = json.load(fh)
+raise SystemExit(0 if payload.get('ready') is True else 1)
+PY
+              then
+                cat /tmp/biap-health.json
+                echo
+                echo "Backend deploy healthy at $(git rev-parse --short HEAD)"
+                exit 0
+              fi
             fi
             sleep 5
           done
 
-          echo "Health check failed after backend restart." >&2
+          echo "Health check failed or API never reported ready=true." >&2
+          cat /tmp/biap-health.json 2>/dev/null || true
           bash -lc "pm2 status || true"
           exit 1
           REMOTE
