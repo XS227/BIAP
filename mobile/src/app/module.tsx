@@ -25,12 +25,12 @@ export default function ModuleDetailScreen() {
 
   const reload = useCallback(async () => {
     setLoadingReal(true);
-    const [demo, payload, dataset] = await Promise.all([getDemoMode(), fetchRealModuleData(key), getBusinessDataset()]);
+    const [demo, payload, dataset] = await Promise.all([getDemoMode(), fetchRealModuleData(key, { code, companyMode }), getBusinessDataset()]);
     setDemoModeState(demo);
     setReal(payload);
     setDatasetColumns(dataset?.columns ?? []);
     setLoadingReal(false);
-  }, [key]);
+  }, [key, code, companyMode]);
 
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
 
