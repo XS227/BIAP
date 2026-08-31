@@ -31,6 +31,8 @@ export default function AppTabs({ onLogout }: Props) {
         {/* Reachable by navigation, hidden from the footer */}
         <Tabs.Screen name="orders" options={{ href: null }} />
         <Tabs.Screen name="portfolio" options={{ href: null }} />
+        <Tabs.Screen name="favorites" options={{ href: null }} />
+        <Tabs.Screen name="data-connect" options={{ href: null }} />
         <Tabs.Screen name="how-to" options={{ href: null }} />
         <Tabs.Screen name="kiasha-profile" options={{ href: null }} />
         <Tabs.Screen name="stock/[code]" options={{ href: null }} />
