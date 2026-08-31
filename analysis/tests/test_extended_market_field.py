@@ -5,6 +5,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from fastapi.testclient import TestClient
 
+import agents
 import api_server
 from market_data import LiveQuote
 
@@ -39,7 +40,13 @@ _FULL_MARKET = {
 }
 
 
+def _disable_external_enrichment(monkeypatch):
+    """Endpoint contract tests must never depend on TSETMC/network availability."""
+    monkeypatch.setattr(agents, "fetch_verified_enrichment", lambda _symbol: {})
+
+
 def test_recommendation_endpoint_exposes_extended_market_fields(monkeypatch):
+    _disable_external_enrichment(monkeypatch)
     quote = LiveQuote(
         code="46348559193224090", name="فولاد", last_price=2698.0,
         closing_price=2697.0, yesterday_price=2620.0, change=78.0, change_percent=2.94,
@@ -83,7 +90,8 @@ def test_recommendation_endpoint_exposes_extended_market_fields(monkeypatch):
     }
 
 
-def test_extended_market_is_none_for_non_live_sources():
+def test_extended_market_is_none_for_non_live_sources(monkeypatch):
+    _disable_external_enrichment(monkeypatch)
     client = TestClient(api_server.app)
     response = client.get("/stock/recommendation/SAMPLE1")
     assert response.status_code == 200
