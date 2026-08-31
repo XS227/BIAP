@@ -8,12 +8,14 @@ import { getBusinessDataset } from '@/lib/business-data';
 import { getDemoMode } from '@/lib/demo-mode';
 
 const BUSINESS_MODULES = [
-  { key: 'swot', icon: '⚔️', title: 'SWOT + رقبا', sub: 'جایگاه، نقاط قوت/ضعف و رقبا' },
-  { key: 'crm', icon: '👥', title: 'CRM + Pipeline', sub: 'قیف فروش، فرصت‌ها و نرخ برد' },
-  { key: 'journey', icon: '🗺️', title: 'Journey Map', sub: 'مسیر مشتری و نقاط اصطکاک' },
-  { key: 'pricing', icon: '💰', title: 'قیمت‌گذاری', sub: 'سناریوهای قیمت و اثر روی درآمد' },
-  { key: 'financial-model', icon: '📈', title: 'مدل مالی', sub: 'درآمد، هزینه، سود و سناریو' },
-  { key: 'unit', icon: '⚙️', title: 'Unit Economics', sub: 'CAC، LTV و کیفیت رشد' },
+  { key: 'business-kpi', icon: '🎯', title: 'داشبورد KPI', sub: 'فروش، هزینه، رشد، مشتری و وضعیت مدیریتی' },
+  { key: 'swot', icon: '⚔️', title: 'رقبا + SWOT', sub: 'جایگاه، قوت/ضعف و شواهد بازار' },
+  { key: 'market-entry', icon: '🌍', title: 'ورود به بازار جدید', sub: 'بخش‌بندی، کانال و اولویت ورود' },
+  { key: 'crm', icon: '👥', title: 'CRM + Pipeline', sub: 'Lead Scoring، ارزش Pipeline و پیگیری' },
+  { key: 'campaign', icon: '📣', title: 'کمپین بازاریابی', sub: 'هدف، کانال، پیام و KPI کمپین' },
+  { key: 'pricing', icon: '💰', title: 'قیمت‌گذاری هوشمند', sub: 'قیمت، حاشیه و سناریوهای مشاهده‌شده' },
+  { key: 'plan', icon: '📄', title: 'Business Plan', sub: 'بازار، مدل درآمد و نقشه راه داده‌محور' },
+  { key: 'executive-report', icon: '🧾', title: 'گزارش مدیریتی', sub: 'KPI، انحراف‌ها و اقدام بعدی' },
 ] as const;
 
 export default function BizDevScreen() {
@@ -56,21 +58,21 @@ export default function BizDevScreen() {
 
           <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}>
             <Text style={styles.heroTag}>BUSINESS AI</Text>
-            <Text style={[styles.heroTitle, { color: colors.text }]}>داده شرکت → تحلیل → تصمیم مدیریتی</Text>
-            <Text style={[styles.heroBody, { color: colors.textSecondary }]}>{companyConnected ? 'داده اختصاصی شرکت متصل است و ماژول‌های کسب‌وکار می‌توانند در Real Mode روی همان dataset اجرا شوند.' : 'برای تحلیل واقعی کسب‌وکار، داده شرکت را از CSV/JSON/Excel وارد کنید. بدون داده واقعی، نتیجه ساختگی به‌عنوان LIVE نمایش داده نمی‌شود.'}</Text>
+            <Text style={[styles.heroTitle, { color: colors.text }]}>مرکز داده شرکت → تحلیل → تصمیم مدیریتی</Text>
+            <Text style={[styles.heroBody, { color: colors.textSecondary }]}>{companyConnected ? 'داده اختصاصی شرکت از مرکز داده BIAP همگام است و ۸ ماژول توسعه کسب‌وکار در Real Mode روی همان dataset اجرا می‌شوند.' : 'برای تحلیل واقعی کسب‌وکار، داده شرکت را از CSV/JSON/Excel وارد کنید. بدون داده واقعی، نتیجه ساختگی به‌عنوان LIVE نمایش داده نمی‌شود.'}</Text>
             <Pressable onPress={() => router.push('/data-connect' as never)} style={styles.primaryBtn}><Text style={styles.primaryBtnText}>{companyConnected ? 'مدیریت داده متصل' : 'اتصال داده شرکت'}</Text></Pressable>
           </View>
 
           <View style={styles.statusRow}>
             <View style={[styles.statusCard, { backgroundColor: colors.backgroundElement }]}><Text style={styles.live}>LIVE</Text><Text style={[styles.statusTitle, { color: colors.text }]}>بازار / CODAL / Kiasha</Text><Text style={[styles.statusText, { color: colors.textSecondary }]}>منابع مالی متصل BIAP</Text></View>
-            <View style={[styles.statusCard, { backgroundColor: colors.backgroundElement }]}><Text style={{fontFamily:Fonts.mono,fontSize:9,fontWeight:'900',color:companyConnected?Brand.stockGreen:'#f59e0b'}}>{companyConnected ? 'CONNECTED' : 'NEEDS DATA'}</Text><Text style={[styles.statusTitle, { color: colors.text }]}>داده اختصاصی شرکت</Text><Text style={[styles.statusText, { color: colors.textSecondary }]}>{companyConnected ? 'CSV / JSON / Excel متصل' : 'برای Real Mode وارد کنید'}</Text></View>
+            <View style={[styles.statusCard, { backgroundColor: colors.backgroundElement }]}><Text style={{fontFamily:Fonts.mono,fontSize:9,fontWeight:'900',color:companyConnected?Brand.stockGreen:'#f59e0b'}}>{companyConnected ? 'CONNECTED' : 'NEEDS DATA'}</Text><Text style={[styles.statusTitle, { color: colors.text }]}>مرکز داده شرکت</Text><Text style={[styles.statusText, { color: colors.textSecondary }]}>{companyConnected ? 'CSV / JSON / Excel همگام' : 'برای Real Mode وارد کنید'}</Text></View>
           </View>
           <View style={[styles.modeStrip,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.modeText,{color:colors.textSecondary}]}>حالت فعلی ماژول‌ها</Text><Text style={[styles.modeValue,{color:demoMode?'#a78bfa':Brand.stockGreen}]}>{demoMode?'DEMO • داده نمونه':'REAL • فقط داده واقعی'}</Text></View>
 
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>ابزارهای تحلیل کسب‌وکار</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>۸ ماژول توسعه کسب‌وکار</Text>
           <View style={styles.grid}>{BUSINESS_MODULES.map((m) => (
             <Pressable key={m.key} onPress={() => openModule(m.key)} style={[styles.module, { backgroundColor: colors.backgroundElement }]}>
-              <Text style={styles.icon}>{m.icon}</Text><Text style={[styles.moduleTitle, { color: colors.text }]}>{m.title}</Text><Text style={[styles.moduleSub, { color: colors.textSecondary }]}>{m.sub}</Text><Text style={[styles.moduleState,{color:demoMode?'#a78bfa':companyConnected?Brand.stockGreen:colors.textSecondary}]}>{demoMode?'DEMO':companyConnected?'LIVE DATA':'نیازمند داده'}</Text>
+              <Text style={styles.icon}>{m.icon}</Text><Text style={[styles.moduleTitle, { color: colors.text }]}>{m.title}</Text><Text style={[styles.moduleSub, { color: colors.textSecondary }]}>{m.sub}</Text><Text style={[styles.moduleState,{color:demoMode?'#a78bfa':companyConnected?Brand.stockGreen:colors.textSecondary}]}>{demoMode?'DEMO':companyConnected?'DATA CENTER LIVE':'نیازمند داده'}</Text>
             </Pressable>
           ))}</View>
 
@@ -81,7 +83,7 @@ export default function BizDevScreen() {
             <Text style={[styles.marketNote, { color: colors.textSecondary }]}>این بخش snapshot واقعی بازار است و از داده Demo برای پر کردن مقادیر استفاده نمی‌کند.</Text>
           </View>}
 
-          <Pressable onPress={() => router.push('/modules' as never)} style={[styles.allModules, { borderColor: colors.backgroundSelected }]}><Text style={[styles.allModulesText, { color: colors.text }]}>مشاهده همه ماژول‌های BIAP</Text></Pressable>
+          <Pressable onPress={() => router.push('/modules' as never)} style={[styles.allModules, { borderColor: colors.backgroundSelected }]}><Text style={[styles.allModulesText, { color: colors.text }]}>مشاهده همه ۲۳ ماژول غیر‌بورسی BIAP</Text></Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
