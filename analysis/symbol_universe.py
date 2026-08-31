@@ -28,11 +28,17 @@ def _first(raw:dict,*keys:str):
         if key in raw and raw[key] not in(None,""):return raw[key]
     return None
 def _parse_symbol(raw:dict)->Optional[MarketSymbol]:
-    code=_first(raw,"insCode","ins_code");symbol=_first(raw,"lVal18AFC","l18","symbol");name=_first(raw,"lVal30","l30","name")
-    try:flow=int(_first(raw,"flow"))
-    except(TypeError,ValueError):return None
-    market=_market_from_flow(flow)
-    if market is None or not code or not symbol:return None
+    # GetMarketWatch has shipped two schemas: the older one keys symbol/name as
+    # lVal18AFC/lVal30 and includes a flow int (1/2/4) for market classification;
+    # the current live one keys them lva/lvc and omits flow entirely. Accept both,
+    # and degrade to market=None (rather than dropping the row) when flow is absent
+    # — losing TSE/IFB/IFB_BASE grouping is better than losing all quote data.
+    code=_first(raw,"insCode","ins_code");symbol=_first(raw,"lVal18AFC","l18","symbol","lva");name=_first(raw,"lVal30","l30","name","lvc")
+    if not code or not symbol:return None
+    flow_raw=_first(raw,"flow")
+    try:flow=int(flow_raw) if flow_raw is not None else None
+    except(TypeError,ValueError):flow=None
+    market=_market_from_flow(flow) if flow is not None else None
     industry=_first(raw,"cs","cSecVal","sectorCode");paper_type=_first(raw,"yVal","yval","paperType")
     return MarketSymbol(code=str(code),symbol=str(symbol).strip(),name=str(name or symbol).strip(),market=market,flow=flow,industry_code=str(industry) if industry not in(None,"") else None,paper_type=str(paper_type) if paper_type not in(None,"") else None)
 def _market_watch_url()->str:
@@ -40,7 +46,12 @@ def _market_watch_url()->str:
 def _read_url(url:str,*,timeout:float,accept:str="*/*")->bytes:
     req=urllib.request.Request(url,headers={"User-Agent":"Mozilla/5.0 BIAP/1.0","Accept":accept,"Accept-Encoding":"gzip"})
     with urllib.request.urlopen(req,timeout=timeout) as resp:body=resp.read();encoding=(resp.headers.get("Content-Encoding") or "").lower()
-    if encoding=="gzip" or body[:2]==b"\x1f\x8b":body=gzip.decompress(body)
+    # The .20 relay double-gzips some responses (it re-compresses an already
+    # gzip-encoded upstream body), so a single decompress can still leave gzip
+    # magic bytes at the front. Peel layers until the body stops looking like gzip.
+    for _ in range(3):
+        if encoding=="gzip" or body[:2]==b"\x1f\x8b":body=gzip.decompress(body);encoding=""
+        else:break
     return body
 def _dedupe_sort(items:list[MarketSymbol])->list[MarketSymbol]:
     seen=set();result=[]
@@ -110,12 +121,33 @@ def _fetch_codal_universe()->list[MarketSymbol]:
         if _looks_like_ticker(item.symbol):strict.append(item)
         elif _relaxed_codal_symbol(item.symbol):relaxed.append(item)
     return _dedupe_sort(strict if len(strict)>=100 else strict+relaxed)
+def _enrich_markets(items:list[MarketSymbol],*,timeout:float)->list[MarketSymbol]:
+    # GetMarketWatch (the primary, full-breadth source) no longer carries a flow
+    # field, so every item comes back with market=None. The legacy dump still has
+    # flow but covers fewer instruments (no options/warrants) — use it purely to
+    # backfill market/flow/industry onto the primary items by insCode, keeping the
+    # primary source's breadth and live price data. Best-effort: any failure here
+    # just leaves items as market=None, same as before this enrichment existed.
+    try:
+        legacy=_fetch_legacy_universe(timeout=timeout)
+    except(urllib.error.URLError,TimeoutError,OSError,ValueError):
+        return items
+    if not legacy:return items
+    by_code={i.code:i for i in legacy}
+    enriched=[]
+    for item in items:
+        ref=by_code.get(item.code)
+        if ref is None:enriched.append(item)
+        else:enriched.append(MarketSymbol(code=item.code,symbol=item.symbol,name=item.name,market=ref.market,flow=ref.flow,industry_code=ref.industry_code or item.industry_code,paper_type=ref.paper_type or item.paper_type,is_active=item.is_active,source=item.source))
+    return enriched
 _cache_items:list[MarketSymbol]=[];_cache_expires_at=0.0
 def _live_or_snapshot_universe(*,timeout:float=6.0)->list[MarketSymbol]:
     errors=[]
     try:
         items=_fetch_json_universe(timeout=timeout)
-        if items:_save_snapshot(items);return items
+        if items:
+            items=_enrich_markets(items,timeout=timeout)
+            _save_snapshot(items);return items
     except(urllib.error.URLError,TimeoutError,OSError,ValueError) as exc:errors.append(str(exc))
     try:
         items=_fetch_legacy_universe(timeout=timeout)
