@@ -246,6 +246,13 @@ export type MarketSymbolResult = {
   symbol: string;
   name: string;
   market?: string | null;
+  // Bulk price fields from the same GetMarketWatch call that builds the
+  // universe — present for every symbol, so ranking (top gainers/losers)
+  // doesn't need a per-symbol quote fetch. See market.tsx.
+  last_price?: number | null;
+  closing_price?: number | null;
+  yesterday_price?: number | null;
+  change_percent?: number | null;
 };
 
 export async function fetchSymbols(

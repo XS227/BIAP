@@ -19,6 +19,10 @@ class SymbolUniverseUnavailable(RuntimeError):pass
 @dataclass(frozen=True)
 class MarketSymbol:
     code:str;symbol:str;name:str;market:Optional[str];flow:Optional[int];industry_code:Optional[str];paper_type:Optional[str];is_active:bool=True;source:str="tsetmc"
+    # Bulk price fields, populated only from GetMarketWatch (the same call that
+    # builds the universe) so ranking (top gainers/losers) never needs a
+    # per-symbol quote request — see _enrich_markets and mobile market.tsx.
+    last_price:Optional[float]=None;closing_price:Optional[float]=None;yesterday_price:Optional[float]=None;change_percent:Optional[float]=None
     def to_dict(self)->dict:return asdict(self)
 def tsetmc_base()->str:return os.getenv("BIAP_TSETMC_API_BASE",DEFAULT_TSETMC_BASE).rstrip("/")
 def tsetmc_legacy_url()->str:return os.getenv("BIAP_TSETMC_LEGACY_URL",DEFAULT_TSETMC_LEGACY_URL)
@@ -40,7 +44,23 @@ def _parse_symbol(raw:dict)->Optional[MarketSymbol]:
     except(TypeError,ValueError):flow=None
     market=_market_from_flow(flow) if flow is not None else None
     industry=_first(raw,"cs","cSecVal","sectorCode");paper_type=_first(raw,"yVal","yval","paperType")
-    return MarketSymbol(code=str(code),symbol=str(symbol).strip(),name=str(name or symbol).strip(),market=market,flow=flow,industry_code=str(industry) if industry not in(None,"") else None,paper_type=str(paper_type) if paper_type not in(None,"") else None)
+    def _f(*keys:str)->Optional[float]:
+        val=_first(raw,*keys)
+        try:return float(val) if val not in(None,"") else None
+        except(TypeError,ValueError):return None
+    last_price=_f("pf","pDrCotVal");closing_price=_f("pcl","pClosing");yesterday_price=_f("py","priceYesterday")
+    # Always derive change_percent ourselves — GetMarketWatch's own pcpc field is
+    # unreliable for some instrument classes (verified: for bond-type rows it
+    # carries the absolute rial change, not a percentage). This matches the
+    # formula already used and verified correct by the recommendation endpoint.
+    # last_price is 0 (not a missing key) for symbols with no trade yet today —
+    # treat that as "no fresh price" and fall back to closing_price instead of
+    # letting 0 masquerade as a -100% loss.
+    effective_price=last_price if last_price not in(None,0) else closing_price
+    change_percent=None
+    if effective_price not in(None,0) and yesterday_price not in(None,0):
+        change_percent=(effective_price-yesterday_price)/yesterday_price*100.0
+    return MarketSymbol(code=str(code),symbol=str(symbol).strip(),name=str(name or symbol).strip(),market=market,flow=flow,industry_code=str(industry) if industry not in(None,"") else None,paper_type=str(paper_type) if paper_type not in(None,"") else None,last_price=last_price,closing_price=closing_price,yesterday_price=yesterday_price,change_percent=change_percent)
 def _market_watch_url()->str:
     params=[("market","0"),("withBestLimits","false"),("showTraded","false"),("hEven","0"),("RefID","0")];params.extend((f"paperTypes[{i}]",str(i+1)) for i in range(9));return f"{tsetmc_base()}/ClosingPrice/GetMarketWatch?{urllib.parse.urlencode(params)}"
 def _read_url(url:str,*,timeout:float,accept:str="*/*")->bytes:
@@ -71,7 +91,12 @@ def _load_snapshot()->list[MarketSymbol]:
     items=[]
     for raw in rows:
         if not isinstance(raw,dict):continue
-        try:item=MarketSymbol(code=str(raw["code"]),symbol=str(raw["symbol"]),name=str(raw.get("name") or raw["symbol"]),market=raw.get("market"),flow=int(raw["flow"]) if raw.get("flow") is not None else None,industry_code=str(raw["industry_code"]) if raw.get("industry_code") not in(None,"") else None,paper_type=str(raw["paper_type"]) if raw.get("paper_type") not in(None,"") else None,is_active=bool(raw.get("is_active",True)),source=str(raw.get("source") or "snapshot"))
+        try:
+            def _sf(key:str)->Optional[float]:
+                v=raw.get(key)
+                try:return float(v) if v is not None else None
+                except(TypeError,ValueError):return None
+            item=MarketSymbol(code=str(raw["code"]),symbol=str(raw["symbol"]),name=str(raw.get("name") or raw["symbol"]),market=raw.get("market"),flow=int(raw["flow"]) if raw.get("flow") is not None else None,industry_code=str(raw["industry_code"]) if raw.get("industry_code") not in(None,"") else None,paper_type=str(raw["paper_type"]) if raw.get("paper_type") not in(None,"") else None,is_active=bool(raw.get("is_active",True)),source=str(raw.get("source") or "snapshot"),last_price=_sf("last_price"),closing_price=_sf("closing_price"),yesterday_price=_sf("yesterday_price"),change_percent=_sf("change_percent"))
         except(KeyError,TypeError,ValueError):continue
         if item.code and item.symbol:items.append(item)
     return _dedupe_sort(items)
@@ -138,7 +163,7 @@ def _enrich_markets(items:list[MarketSymbol],*,timeout:float)->list[MarketSymbol
     for item in items:
         ref=by_code.get(item.code)
         if ref is None:enriched.append(item)
-        else:enriched.append(MarketSymbol(code=item.code,symbol=item.symbol,name=item.name,market=ref.market,flow=ref.flow,industry_code=ref.industry_code or item.industry_code,paper_type=ref.paper_type or item.paper_type,is_active=item.is_active,source=item.source))
+        else:enriched.append(MarketSymbol(code=item.code,symbol=item.symbol,name=item.name,market=ref.market,flow=ref.flow,industry_code=ref.industry_code or item.industry_code,paper_type=ref.paper_type or item.paper_type,is_active=item.is_active,source=item.source,last_price=item.last_price,closing_price=item.closing_price,yesterday_price=item.yesterday_price,change_percent=item.change_percent))
     return enriched
 _cache_items:list[MarketSymbol]=[];_cache_expires_at=0.0
 def _live_or_snapshot_universe(*,timeout:float=6.0)->list[MarketSymbol]:
