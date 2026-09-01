@@ -30,6 +30,7 @@ class RiskPolicy:
     max_order_notional: float
     max_daily_notional: float
     max_symbol_position: float
+    max_daily_realized_loss: float
     max_limit_deviation_pct: float
     min_buy_score: float
     max_sell_score: float
@@ -86,6 +87,11 @@ def load_policy() -> RiskPolicy:
         max_order_notional=max(0.0, _env_float("BIAP_MAX_ORDER_NOTIONAL", 2_000_000_000.0)),
         max_daily_notional=max(0.0, _env_float("BIAP_MAX_DAILY_NOTIONAL", 5_000_000_000.0)),
         max_symbol_position=max(0.0, _env_float("BIAP_MAX_SYMBOL_POSITION", 200_000.0)),
+        # 5% of the default Paper account (KIASHA_PAPER_INITIAL_CASH, 100,000,000
+        # rial) -- a circuit breaker sized to this project's only real user of
+        # this limit today (server-owned Paper accounts), not a live-trading
+        # figure. Tune alongside KIASHA_PAPER_INITIAL_CASH if that default changes.
+        max_daily_realized_loss=max(0.0, _env_float("BIAP_MAX_DAILY_REALIZED_LOSS", 5_000_000.0)),
         max_limit_deviation_pct=max(0.0, _env_float("BIAP_MAX_LIMIT_DEVIATION_PCT", 5.0)),
         min_buy_score=max(-1.0, min(1.0, _env_float("BIAP_MIN_BUY_SCORE", 0.10))),
         max_sell_score=max(-1.0, min(1.0, _env_float("BIAP_MAX_SELL_SCORE", -0.10))),

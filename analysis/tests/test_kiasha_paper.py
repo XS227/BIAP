@@ -12,6 +12,7 @@ def _policy(**overrides):
         max_order_notional=2_000_000_000.0,
         max_daily_notional=5_000_000_000.0,
         max_symbol_position=200_000.0,
+        max_daily_realized_loss=5_000_000.0,
         max_limit_deviation_pct=5.0,
         min_buy_score=0.10,
         max_sell_score=-0.10,

@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime, time, timedelta, timezone
 import json
 import sqlite3
-from typing import Any
+from typing import Any, Optional
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
@@ -72,6 +72,48 @@ class PaperExecutionStore:
                 # cannot prove remaining daily capacity safely.
                 return float("inf")
         return total
+
+    @staticmethod
+    def _user_daily_realized_loss(conn: sqlite3.Connection, *, user_id: str, now_utc: datetime) -> float:
+        """Sum today's realized Paper losses (positive magnitude) for one owner.
+
+        Reads the same `realizedPnL` figure `PaperSellStore.commit_sell_fill`
+        already computes and persists on every `KIASHA_AI_PAPER_SOLD` event --
+        no new accounting model, just aggregating figures that already exist.
+        A profitable SELL contributes 0, never offsetting an earlier loss
+        within the same day (this is a loss circuit breaker, not a net-P&L
+        gate: two big wins should not buy back the right to keep losing).
+        """
+        start_utc, end_utc = _tehran_day_bounds_utc(now_utc)
+        rows = conn.execute(
+            """
+            SELECT payload_json
+            FROM audit_events
+            WHERE user_id = ?
+              AND event_type = 'KIASHA_AI_PAPER_SOLD'
+              AND created_at >= ?
+              AND created_at < ?
+            """,
+            (user_id, start_utc, end_utc),
+        ).fetchall()
+        total = 0.0
+        for row in rows:
+            try:
+                payload = json.loads(row["payload_json"])
+                total += max(0.0, -float(payload.get("realizedPnL") or 0.0))
+            except (TypeError, ValueError, json.JSONDecodeError):
+                # Fail closed: an unreadable sell record means we cannot prove
+                # today's realized loss is actually within limit.
+                return float("inf")
+        return total
+
+    def daily_realized_loss_used(self, *, user_id: str, now_utc: Optional[datetime] = None) -> float:
+        """Read-only helper for status endpoints (opens its own short-lived connection)."""
+        conn = self._connect()
+        try:
+            return self._user_daily_realized_loss(conn, user_id=user_id, now_utc=now_utc or datetime.now(timezone.utc))
+        finally:
+            conn.close()
 
     def commit_buy_fill(
         self,
@@ -139,6 +181,23 @@ class PaperExecutionStore:
             if daily_notional_before + cost > policy.max_daily_notional + 1e-9:
                 raise ValueError(
                     f"projected user Paper daily notional exceeds max {policy.max_daily_notional:.0f}"
+                )
+
+            # Realized-loss circuit breaker: only gates new BUYs. A SELL is
+            # risk-reducing (closing/trimming an existing position), so it is
+            # deliberately never blocked here -- stopping a user from cutting
+            # a loss once the daily limit is already hit would make the
+            # situation worse, not safer. This checks losses already realized
+            # *before* this order (this BUY cannot itself realize a loss), so
+            # nothing from `cost` is added to it.
+            daily_realized_loss_before = self._user_daily_realized_loss(
+                conn, user_id=user_id, now_utc=now_utc
+            )
+            if daily_realized_loss_before >= policy.max_daily_realized_loss:
+                raise ValueError(
+                    f"today's realized Paper losses of {daily_realized_loss_before:.0f} have "
+                    f"reached the max daily realized loss {policy.max_daily_realized_loss:.0f} "
+                    "-- new Paper BUYs are paused until the next session"
                 )
 
             prior = conn.execute(
@@ -214,6 +273,8 @@ class PaperExecutionStore:
                 "dailyNotionalBefore": daily_notional_before,
                 "dailyNotionalAfter": daily_notional_before + cost,
                 "dailyNotionalLimit": policy.max_daily_notional,
+                "dailyRealizedLoss": daily_realized_loss_before,
+                "dailyRealizedLossLimit": policy.max_daily_realized_loss,
                 "accountAfter": account_after,
             }
             conn.execute(

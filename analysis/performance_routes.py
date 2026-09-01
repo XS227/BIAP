@@ -17,6 +17,7 @@ from market_data import MarketDataUnavailable, _read_json, _resolve_tsetmc_instr
 from paper_execution_store import PaperExecutionStore
 from paper_sell_store import PaperSellStore
 from performance_store import MIN_OBSERVED_SAMPLES, PerformanceStore
+from risk import load_policy
 from symbol_universe import SymbolUniverseUnavailable, query_symbols
 
 router = APIRouter(prefix="/performance", tags=["performance"])
@@ -226,7 +227,20 @@ def ai_analyze(code: str,horizon: Literal["short", "long"] = Query(default="shor
 @router.get("/ai/paper-account")
 def ai_paper_account(user_id: str = Depends(require_user_id)):
     account = _server_paper_account(user_id)
-    return {"account": account,"sizingCapital": _paper_sizing_capital(account),"serverOwned": True,"paperExecutionEnabled": _paper_execution_enabled(),"liveExecution": False}
+    policy = load_policy()
+    loss_used = PAPER_EXECUTION_STORE.daily_realized_loss_used(user_id=str(user_id))
+    return {
+        "account": account,
+        "sizingCapital": _paper_sizing_capital(account),
+        "serverOwned": True,
+        "paperExecutionEnabled": _paper_execution_enabled(),
+        "liveExecution": False,
+        "dailyRealizedLoss": {
+            "used": loss_used,
+            "limit": policy.max_daily_realized_loss,
+            "buysPaused": loss_used >= policy.max_daily_realized_loss,
+        },
+    }
 
 @router.get("/ai/paper-equity-history")
 def ai_paper_equity_history(limit: int = Query(default=400, ge=1, le=2000), user_id: str = Depends(require_user_id)):
