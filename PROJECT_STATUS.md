@@ -1,32 +1,61 @@
 # BIAP — Project Status
 
-_Last updated: 2026-09-01 (realized daily-loss circuit breaker for Paper accounts, deployed live)_
+_Last updated: 2026-09-01 (correction: nginx sites-enabled/sites-available had silently diverged since 2026-08-31; fixed, symlink restored)_
 
 ## Production status
 
-**As of 2026-09-01, `https://biap.dadashi.no/api/` traffic is split across two
-hosts** -- see "New VPS migration -- Kiasha recommendation cutover" and
-"Orders/audit/risk cutover" below for the full picture. Summary:
+**Correction (2026-09-01, later the same day):** everything below this box,
+and the "Orders/audit/risk cutover" section, describes a "split traffic
+between two hosts" picture that turned out to be wrong. The real situation,
+confirmed by finally getting SSH access to `89.42.199.20` (key
+`~/.ssh/biap_iran` on `5.249.252.88` already worked, `root@89.42.199.20:2222`
+-- no new access was needed, it was findable on this host the whole time):
 
-- `/api/stock/recommendation/{code}`, `/api/performance/*`, `/api/orders/*`,
-  `/api/audit/*`, `/api/risk/*` -> `biap-fin.service` on the **new** VPS
-  (`5.249.252.88`, `127.0.0.1:8088`).
-- `/api/auth/*` and `/api/stock/watchlist` -> still routed to `89.42.199.20`
-  via the generic `/api/` nginx block (unchanged) -- **but as of 2026-09-01
-  these now appear to be answered by FastAPI-style JSON there too**, not the
-  Express `:4000` backend this document previously assumed (see the flag at
-  the end of "Orders/audit/risk cutover" below). Not investigated further;
-  treat the auth/watchlist ownership statements elsewhere in this doc as
-  unverified until someone checks `89.42.199.20` directly.
+- `/etc/nginx/sites-enabled/biap-dadashi` on `5.249.252.88` was **not a
+  symlink** to `sites-available/biap-dadashi` (the normal Debian/Ubuntu nginx
+  convention, and what every session including this one assumed while
+  reading/editing `sites-available`). It was an independent real file that
+  had already diverged, last edited 2026-08-31 21:12 by parties/reasons
+  unknown -- and it, not `sites-available`, is what nginx actually served.
+- The live (`sites-enabled`) file already routed the **entire** `/api/`
+  path -- including `/api/auth/`, `/api/stock/watchlist`, and everything
+  else -- to `5.249.252.88`'s own local `biap-fin` (`127.0.0.1:8088`), not
+  `89.42.199.20`, since 2026-08-31. This fully explains the "auth/watchlist
+  returns FastAPI JSON" anomaly flagged earlier the same day: it was never
+  `89.42.199.20` gaining new routes, it was this host's own catch-all.
+- Confirmed directly on `89.42.199.20`: `/root/BIAP` is checked out at
+  `be59dbd` (well behind `main`), its `biap-fin.service` is still `active`
+  but its `biap_audit.sqlite3` has not been written since 2026-08-28 (3
+  `order_intents`, 7 `audit_events` total) -- consistent with it having
+  stopped receiving `/api/` traffic before 2026-08-31, not after this
+  session's earlier "orders/audit/risk cutover" edit.
+- **This means the "Orders/audit/risk cutover (2026-09-01)" section below
+  describes editing a file nginx never read.** The verification in that
+  section (order/audit/risk requests landing on the local instance,
+  confirmed via `journalctl`) was real and accurate as an *observation* of
+  live behavior, but the *causal claim* -- that this session's nginx edit
+  produced that behavior -- was wrong. The behavior already existed via
+  `sites-enabled`'s pre-existing, undocumented, unauthored-by-anyone-in-this-
+  doc catch-all.
+- **Fixed the same session, once found:** copied `sites-enabled`'s real
+  (live) content into `sites-available` (backup:
+  `sites-available/biap-dadashi.bak-superseded-20260901-*`, and the old
+  real `sites-enabled` file preserved at
+  `/etc/nginx/backups/biap-dadashi.bak-live-was-real-file-20260901-*`),
+  then replaced `sites-enabled/biap-dadashi` with a proper symlink to
+  `sites-available/biap-dadashi`. `nginx -t` passed, reloaded, verified
+  identical live behavior before/after (watchlist `404`, recommendation
+  `200`, APK download `200`, homepage `200` -- all unchanged). Going
+  forward, editing `sites-available/biap-dadashi` actually affects live
+  traffic again.
 
-This means **there are still two live `biap-fin` instances** (old on
-`89.42.199.20`, new on `5.249.252.88`), each with its own separate
-`biap_audit.sqlite3`. As of 2026-09-01 the *new* instance is authoritative for
-all order/audit/risk traffic going forward; `89.42.199.20`'s copy is frozen
-(no longer receiving `/orders/*`/`/audit/*` traffic) but its pre-cutover rows
-were deliberately **not** merged in -- see "Orders/audit/risk cutover" below.
-Do not assume the two instances' historical order data ever gets reconciled
-without a further explicit action.
+**Current real picture:** all public `/api/` traffic for `biap.dadashi.no`
+goes to `5.249.252.88`'s `biap-fin` (`127.0.0.1:8088`). `89.42.199.20` still
+runs its own `biap-fin.service` and has its own separate, now long-frozen
+`biap_audit.sqlite3` (3 `order_intents`, 7 `audit_events`, last written
+2026-08-28) -- small enough that a historical merge, if still wanted, would
+be a trivial, low-risk operation whenever someone wants to do it (SSH access
+is confirmed working via `~/.ssh/biap_iran` on `5.249.252.88`).
 
 - systemd service: `biap-fin.service` (exists independently on both hosts)
 - internal listener on both hosts: `127.0.0.1:8088`
@@ -1230,6 +1259,16 @@ running service to restart for.
 
 ## Orders/audit/risk cutover (2026-09-01)
 
+**Correction, same day, see "Production status" above:** the nginx edit
+described in this section was made to `sites-available/biap-dadashi`, which
+turned out not to be the file nginx was actually serving
+(`sites-enabled/biap-dadashi` had silently diverged into its own real file
+since 2026-08-31 and already routed everything, including these three
+paths, locally). The verification below is accurate as an observation but
+this session's edit was not what caused it. Left as-is below for the
+historical record of what was believed at the time; see "Production status"
+for the corrected picture and the actual fix (symlink restored).
+
 Roadmap item 4's remaining half, done differently than originally planned.
 The original plan (see "New VPS migration" above) was: migrate
 `89.42.199.20`'s historical `order_intents`/`audit_events`/`idempotency_keys`
@@ -1299,22 +1338,17 @@ set `BIAP_APPROVER_TOKEN` here (matching whatever value, if any, was used on
 `89.42.199.20`) if that specific API path is actually relied on by anything.
 
 **Unrelated flag, found while sanity-checking this change didn't break
-anything else:** `curl`-ing `https://biap.dadashi.no/api/auth/login` (empty
-body) and `.../api/stock/watchlist` returned byte-identical FastAPI
-validation-error/`404` JSON to hitting `5.249.252.88`'s own `biap-fin`
-directly on `127.0.0.1:8088` -- even though nginx's generic `/api/` block
-(unchanged by this session, confirmed via diff against the pre-edit backup)
-still points at `89.42.199.20`. The simplest explanation is that
-`89.42.199.20`'s own `biap-fin` has, at some point, also gained `/auth/*` and
-`/stock/watchlist` routes (its own `git pull` to a `main` that now includes
-them, per the existing "pull + restart" production-operations routine below)
-and is answering with the same FastAPI shapes independently -- not something
-this session's nginx edit could have caused, since that block was never
-touched. This directly conflicts with `TASKS.md`'s architecture note "Auth/
-signup/login remain on the Express backend." Not investigated further here
-(out of scope for the orders/audit task, and would need SSH access to
-`89.42.199.20` to confirm properly) -- flagging so the next agent doesn't
-assume that architecture note is still accurate without checking.
+anything else -- RESOLVED same day, see "Production status" above:** this
+auth/watchlist anomaly was correctly observed but wrongly explained here.
+The real cause was `sites-enabled/biap-dadashi` having silently diverged
+from `sites-available/biap-dadashi` since 2026-08-31 (not a symlink, an
+independent file) and already routing everything -- including
+`/api/auth/*` and the generic `/api/` catch-all covering `/stock/watchlist`
+-- to this host's own local `biap-fin`. `89.42.199.20` had not gained new
+routes; this host's nginx had stopped sending it traffic days earlier. Fixed:
+symlink restored. `TASKS.md`'s "Auth/signup/login remain on the Express
+backend" note is now confirmed **inaccurate for production** (that backend
+is no longer in the live path for auth) and should be corrected there.
 
 ## Realized daily-loss circuit breaker for Paper accounts (2026-09-01)
 
@@ -1462,18 +1496,21 @@ precedence and this file must be corrected in the same change.
    (`analysis/tests/test_codal_pdf_cache.py`), including one proving the
    audit-opinion and related-party parsers now share a single download for
    the same filing. 68/68 tests pass.
-4. ~~**New external data server:**~~ mostly done (2026-09-01) -- `biap-fin`
-   is deployed and durable on `5.249.252.88` (systemd), and
-   `/api/stock/recommendation/`, `/api/performance/*`, `/api/orders/*`,
-   `/api/audit/*` and `/api/risk/*` are all cut over to it in production (see
-   "Orders/audit/risk cutover" above). Explicit decision: cut over without
-   migrating `89.42.199.20`'s pre-cutover order/audit rows (no SSH access to
-   that host this session) -- those historical rows are stranded there, not
-   lost, revisit if/when access is available and they're still wanted. Still
-   open: decide whether to also expose `/stock/symbols`/`/health` publicly
-   (currently unrouted on both hosts, zero risk either way since nothing
-   depends on them yet), and set `BIAP_APPROVER_TOKEN` on `5.249.252.88` if
-   the shared-secret JSON approve/reject API is actually used (currently
+4. ~~**New external data server:**~~ done (2026-09-01, corrected same day --
+   see "Production status" above) -- `biap-fin` is deployed and durable on
+   `5.249.252.88` (systemd) and **all** public `/api/` traffic (not just
+   orders/audit/risk) has actually been routed to it since 2026-08-31, via
+   `sites-enabled/biap-dadashi` (a divergent real file, not this session's
+   `sites-available` edit as first believed -- symlink now restored so future
+   edits are honest). `89.42.199.20`'s copy of `biap_audit.sqlite3` is small
+   and frozen (3 `order_intents`, 7 `audit_events`, last written 2026-08-28)
+   -- SSH access is confirmed working (`~/.ssh/biap_iran` on `5.249.252.88`,
+   `root@89.42.199.20:2222`), so a historical merge, if still wanted, is now
+   a low-risk task rather than a blocked one. Still open: decide whether to
+   also expose `/stock/symbols`/`/health` publicly (currently unrouted,
+   zero risk either way since nothing depends on them yet), and set
+   `BIAP_APPROVER_TOKEN` on `5.249.252.88` if the shared-secret JSON
+   approve/reject API is actually used (currently
    fails closed there; the admin panel's approve/reject is unaffected).
 5. ~~**Broad-market regression tests:**~~ partially done (2026-08-26) —
    see "Broad-market regression tests" below. Still open: doing this against
