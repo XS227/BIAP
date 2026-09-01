@@ -1,6 +1,6 @@
 # BIAP — Project Status
 
-_Last updated: 2026-09-01 (orders/audit/risk cut over to 5.249.252.88; historical rows on 89.42.199.20 NOT merged)_
+_Last updated: 2026-09-01 (realized daily-loss circuit breaker for Paper accounts, deployed live)_
 
 ## Production status
 
@@ -1316,6 +1316,65 @@ signup/login remain on the Express backend." Not investigated further here
 `89.42.199.20` to confirm properly) -- flagging so the next agent doesn't
 assume that architecture note is still accurate without checking.
 
+## Realized daily-loss circuit breaker for Paper accounts (2026-09-01)
+
+Closes roadmap item 9's remaining gap. The 2026-08-27 note that a realized
+daily-loss limit "needs a real portfolio/PnL model... that does not exist
+anywhere in BIAP yet" was **stale by the time this was checked**: the
+Paper/Kiasha-AI bridge (`PaperSellStore.commit_sell_fill`, live since
+2026-08-28 -- see "Kiasha decision audit + server-owned Paper state" in
+`TASKS.md`'s work log) already computes `realizedPnL = quantity * (price -
+avg_cost)` on every SELL and persists it on the `KIASHA_AI_PAPER_SOLD` audit
+event. No new accounting model was needed, only aggregating a figure that
+already existed.
+
+Added `PaperExecutionStore._user_daily_realized_loss` (same Tehran
+day-bounded `audit_events` aggregation pattern as the existing
+`_user_daily_paper_notional`, same fail-closed-to-`inf` behavior on an
+unreadable row) and a new `RiskPolicy.max_daily_realized_loss` field
+(`BIAP_MAX_DAILY_REALIZED_LOSS`, default 5,000,000 rial -- 5% of the default
+100,000,000 rial Paper account; tune alongside `KIASHA_PAPER_INITIAL_CASH` if
+that default changes). `commit_buy_fill` now checks this atomically, inside
+the same transaction as the existing daily-notional check, and blocks a new
+BUY once today's realized losses reach the limit.
+
+**Deliberate design choices:**
+- Only BUYs are blocked. A SELL is risk-reducing (closing or trimming a
+  position), so it is never gated by this -- stopping someone from cutting a
+  loss once the daily limit is already hit would make things worse, not
+  safer.
+- A same-day profitable SELL never offsets an earlier loss (only negative
+  `realizedPnL` contributes to the running total). This is a loss circuit
+  breaker, not a net-P&L gate -- two big wins should not buy back the right
+  to keep losing.
+
+Surfaced for transparency: `GET /performance/ai/paper-account` now returns
+`dailyRealizedLoss: {used, limit, buysPaused}`, and the limit itself appears
+automatically on `GET /risk/status` via the existing `policy_snapshot()`. 3
+new regression tests (`analysis/tests/test_paper_execution_store.py`):
+BUYs pause once the limit is reached (other users unaffected), a SELL is
+never blocked even after the limit is breached, and a profitable SELL does
+not offset a prior loss.
+
+**Found and fixed in the same pass, unrelated but directly in the way of
+verifying this change:** 7 `test_*.py` files (`test_paper_execution_store.py`,
+`test_kiasha_paper.py`, `test_paper_roundtrip.py`, `test_kiasha_paper_state.py`,
+`test_kiasha_auto_invest.py`, `test_kiasha_ai.py`, `test_broker_runtime.py`)
+were sitting directly in `analysis/`, not `analysis/tests/`. `pytest tests/
+-q` -- the command this document's own "Production operations" section has
+told every session to run -- was silently never collecting them (confirmed
+with `--collect-only`). This means real regression coverage for Paper
+execution, the Kiasha-AI paper gate and broker-runtime config had been
+absent from every session's "N/N tests pass" verification since these files
+were added, undetected until now. Moved into `analysis/tests/`; all 23 tests
+pass unchanged from the new location. Suite is now 165/165 (up from 139
+before this session, 162 immediately after the move, 165 after the 3 new
+tests here).
+
+Deployed live on `5.249.252.88`: `biap-fin.service` restarted, `/health` and
+`/risk/status` verified post-restart (`max_daily_realized_loss: 5000000.0`
+present in the policy snapshot).
+
 ## Production operations
 
 Update the running FIN service after a reviewed GitHub change:
@@ -1432,21 +1491,19 @@ precedence and this file must be corrected in the same change.
    shared secret, not a real user/role system, which doesn't exist anywhere
    in BIAP yet).
 8. ~~**PaperBroker:**~~ done (2026-08-26) — see "PaperBroker adapter" below.
-9. ~~**Risk hardening:**~~ partially done (2026-08-27) -- position/exposure
-   checks and market-session rules landed, see "Risk hardening: position
-   limits + market session" below. Still open: a **realized daily-loss
-   limit** needs a real portfolio/PnL model (which entry price matured into
-   which exit, per symbol) that does not exist anywhere in BIAP yet --
-   `PaperBroker` only simulates a single fill receipt per intent, it does
-   not track a position's lifecycle from entry to exit, so a "loss" cannot
-   be honestly computed today. Not attempted rather than faked; needs that
-   model built first. **Stale-quote detection** (a literal tick-age check)
-   also stays open for the same kind of reason: `LiveQuote` carries no
-   fetched-at timestamp, so there is no real staleness signal to check
-   beyond the existing 30s market-data cache TTL already bounding it by
-   construction -- the market-session check below is the honest
-   substitute for the risk that "stale quote" was actually protecting
-   against here (a closed market's last price being treated as live).
+9. ~~**Risk hardening:**~~ mostly done (2026-09-01) -- position/exposure
+   checks and market-session rules landed 2026-08-27 (see "Risk hardening:
+   position limits + market session" below); **realized daily-loss limit**
+   done 2026-09-01 (see "Realized daily-loss circuit breaker for Paper
+   accounts" above) -- the PnL model this previously waited on turned out to
+   already exist (`PaperSellStore` computes `realizedPnL` per SELL), the
+   blocker note above was stale by the time it was checked. Still open:
+   **stale-quote detection** (a literal tick-age check) -- `LiveQuote`
+   carries no fetched-at timestamp, so there is no real staleness signal to
+   check beyond the existing 30s market-data cache TTL already bounding it
+   by construction; the market-session check is the honest substitute for
+   the risk that "stale quote" was actually protecting against here (a
+   closed market's last price being treated as live).
 10. **Mobile integration:** `codalFundamentals` (incl. `report_scope`, and as
     of 2026-08-27 balance-sheet totals) and `extendedMarket` (as of
     2026-08-27, EPS) are now on the wire (see Recommendation API section
