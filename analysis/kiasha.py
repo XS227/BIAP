@@ -4,6 +4,14 @@ Kiasha decision layer for BIAP.
 Kiasha weights the BIAP analyst-agent team by observed track record. Until an
 agent has enough genuinely evaluated observations, Kiasha uses a transparent,
 non-historical experiment prior instead of invented performance history.
+
+IPO/new-listing policy:
+- Detect IPOs only from explicit verified company/CODAL metadata hints.
+- When an IPO has no usable price history, technical/flow/forecast voices are
+  excluded from the blend instead of receiving artificial normalized weight.
+- If verified fundamental/valuation evidence is still insufficient, Kiasha
+  returns HOLD and exposes the missing evidence. It never manufactures an IPO
+  BUY from absence of history.
 """
 
 from datetime import datetime, timezone
@@ -19,6 +27,18 @@ from scenario_engine import build_scenarios
 MATURITY_CAPS = {"experiment": 0.10, "observed": 0.20, "production": 0.35, "core": 0.50}
 UNTRAINED_PRIOR_TRUST = 0.35
 SCENARIO_MAX_BLEND_WEIGHT = 0.25
+IPO_HISTORY_DEPENDENT_AGENTS = {"technical", "flow", "forecast"}
+IPO_HINTS = (
+    "عرضه اولیه",
+    "عرضه‌ اولیه",
+    "عرضه‌اولیه",
+    "پذیره نویسی",
+    "پذیره‌نویسی",
+    "ارزش گذاری سهام",
+    "ارزش‌گذاری سهام",
+    "initial public offering",
+    "ipo",
+)
 
 
 def maturity_tier(n_calls: int, accuracy: float) -> str:
@@ -77,12 +97,90 @@ class Decision:
     breakdown: list[dict]
     explanation: str
     scenario: dict | None = None
+    analysis_mode: str = "standard"
+    ipo_review: dict | None = None
 
 
 def _memory_symbol(company: dict) -> str:
     ticker = str(company.get("ticker") or "").strip()
     name = str(company.get("name_fa") or "").strip()
     return ticker if ticker and not ticker.isdigit() else name or ticker
+
+
+def _iter_text(value):
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for item in value.values():
+            yield from _iter_text(item)
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            yield from _iter_text(item)
+
+
+def _ipo_evidence(company: dict) -> list[str]:
+    """Return explicit IPO/new-listing evidence; never infer IPO from missing history alone."""
+    evidence: list[str] = []
+    if company.get("ipo") is True or company.get("is_ipo") is True:
+        evidence.append("explicit company IPO flag")
+
+    searchable = {
+        "codal_metadata": company.get("codal_metadata"),
+        "codal": company.get("codal"),
+        "market_title": (company.get("market") or {}).get("market_title"),
+        "name": company.get("name_fa"),
+    }
+    for source, payload in searchable.items():
+        for text in _iter_text(payload):
+            normalized = " ".join(text.lower().replace("\u200c", " ").split())
+            for hint in IPO_HINTS:
+                normalized_hint = " ".join(hint.lower().replace("\u200c", " ").split())
+                if normalized_hint in normalized:
+                    marker = f"{source}: {text[:160]}"
+                    if marker not in evidence:
+                        evidence.append(marker)
+                    break
+    return evidence[:8]
+
+
+def _ipo_fundamental_review(company: dict, evidence: list[str], history_observations: int) -> dict:
+    codal = company.get("codal") or {}
+    market = company.get("market") or {}
+    checks = {
+        "revenueGrowth": codal.get("revenue_yoy_pct") is not None,
+        "netMargin": codal.get("net_margin_pct") is not None,
+        "profit": codal.get("net_profit_current") is not None,
+        "balanceSheet": any(codal.get(k) is not None for k in ("total_assets_current", "total_liabilities_current", "total_equity_current")),
+        "valuation": any(market.get(k) is not None for k in ("pe", "market_cap", "eps_value")),
+        "offeringEvidence": bool(evidence),
+    }
+    missing = []
+    if not checks["revenueGrowth"]:
+        missing.append("CODAL revenue growth")
+    if not checks["netMargin"]:
+        missing.append("CODAL net margin")
+    if not checks["profit"]:
+        missing.append("CODAL net profit")
+    if not checks["balanceSheet"]:
+        missing.append("CODAL balance-sheet fields")
+    if not checks["valuation"]:
+        missing.append("verified IPO/market valuation fields")
+
+    # IPOs do not need trading history to be analyzed, but they do need a
+    # minimum amount of verified fundamental/valuation evidence before Kiasha
+    # is allowed to turn a generic agent blend into an actionable BUY/SELL.
+    fundamental_count = sum(1 for key in ("revenueGrowth", "netMargin", "profit", "balanceSheet") if checks[key])
+    sufficient = checks["offeringEvidence"] and fundamental_count >= 2 and (checks["valuation"] or fundamental_count >= 3)
+    return {
+        "detected": True,
+        "historyObservations": int(history_observations),
+        "historyDependentAgentsSuppressed": history_observations == 0,
+        "checks": checks,
+        "missingData": missing,
+        "evidence": evidence,
+        "status": "ready" if sufficient else "insufficient",
+        "policy": "IPO decisions require verified offering/fundamental evidence; absence of trading history is not treated as negative or positive evidence.",
+    }
 
 
 def _record_observation(company: dict, decision: Decision) -> None:
@@ -143,6 +241,7 @@ def _record_observation(company: dict, decision: Decision) -> None:
                 "weightedScore": decision.weighted_score, "explanation": decision.explanation,
                 "breakdown": decision.breakdown, "referencePrice": price,
                 "dataAvailability": availability, "scenario": decision.scenario,
+                "analysisMode": decision.analysis_mode, "ipoReview": decision.ipo_review,
             },
         )
     except Exception:
@@ -167,6 +266,15 @@ def _scenario_signal(company: dict) -> tuple[dict | None, float | None, float]:
 
 
 def decide(company: dict) -> Decision:
+    # Build the grounded scenario first because its observation count tells the
+    # IPO policy whether history-dependent agents should participate.
+    scenario, scenario_score, scenario_weight = _scenario_signal(company)
+    history_observations = int((scenario or {}).get("historyObservations") or 0)
+    ipo_evidence = _ipo_evidence(company)
+    is_ipo = bool(ipo_evidence)
+    ipo_review = _ipo_fundamental_review(company, ipo_evidence, history_observations) if is_ipo else None
+    suppress_history_agents = bool(is_ipo and history_observations == 0)
+
     votes = run_team(company)
     raw_weights = []
     breakdown = []
@@ -178,27 +286,31 @@ def decide(company: dict) -> Decision:
             score, tier, n_factor = UNTRAINED_PRIOR_TRUST, "experiment", 0.0
         cap = MATURITY_CAPS[tier]
         weight = min(v.confidence * score, cap)
+        excluded_for_ipo = suppress_history_agents and v.agent in IPO_HISTORY_DEPENDENT_AGENTS
+        if excluded_for_ipo:
+            weight = 0.0
         raw_weights.append(weight)
         breakdown.append({
             "agent": v.agent, "vote": round(v.vote, 2), "confidence": v.confidence,
             "trust_score": round(score, 3), "trust_source": trust_source,
             "observed_samples": observed_samples, "maturity": tier,
-            "weight_pre_norm": round(weight, 3), "reasoning": v.reasoning,
+            "weight_pre_norm": round(weight, 3),
+            "reasoning": (f"IPO without verified trading history: {v.agent} excluded from decision blend. " + v.reasoning) if excluded_for_ipo else v.reasoning,
+            "excluded_for_ipo": excluded_for_ipo,
         })
 
-    total_weight = sum(raw_weights) or 1e-9
-    agent_score = sum(v.vote * w / total_weight for v, w in zip(votes, raw_weights))
+    total_weight = sum(raw_weights)
+    agent_score = 0.0 if total_weight <= 0 else sum(v.vote * w / total_weight for v, w in zip(votes, raw_weights))
     for entry, w in zip(breakdown, raw_weights):
-        entry["weight_normalized"] = round(w / total_weight, 3)
+        entry["weight_normalized"] = round(w / total_weight, 3) if total_weight > 0 else 0.0
 
-    scenario, scenario_score, scenario_weight = _scenario_signal(company)
     weighted_score = agent_score
-    if scenario_score is not None and scenario_weight > 0:
-        weighted_score = agent_score * (1.0 - scenario_weight) + scenario_score * scenario_weight
+    # A history-free IPO scenario is structurally neutral and should not regain
+    # weight that we deliberately removed from history-dependent agents.
+    effective_scenario_weight = 0.0 if suppress_history_agents and history_observations == 0 else scenario_weight
+    if scenario_score is not None and effective_scenario_weight > 0:
+        weighted_score = agent_score * (1.0 - effective_scenario_weight) + scenario_score * effective_scenario_weight
 
-    # Expose scenario details through the existing breakdown contract so old
-    # clients remain compatible while newer mobile builds can render all three
-    # grounded scenarios without requiring a breaking API response change.
     if scenario is not None:
         breakdown.append({
             "agent": "scenario",
@@ -206,34 +318,61 @@ def decide(company: dict) -> Decision:
             "confidence": float(scenario.get("confidence") or 0.0),
             "trust_score": None,
             "trust_source": "verified-scenario-engine",
-            "observed_samples": int(scenario.get("historyObservations") or 0),
+            "observed_samples": history_observations,
             "maturity": "grounded" if scenario.get("status") == "ok" else "insufficient",
-            "weight_pre_norm": round(scenario_weight, 3),
-            "weight_normalized": round(scenario_weight, 3),
+            "weight_pre_norm": round(effective_scenario_weight, 3),
+            "weight_normalized": round(effective_scenario_weight, 3),
             "reasoning": "سناریو بر پایه داده‌های معتبر موجود ساخته شده و قیمت آینده دقیق جعل نمی‌شود.",
             "scenario": scenario,
         })
 
-    if weighted_score > 0.25:
+    if ipo_review is not None:
+        breakdown.append({
+            "agent": "ipo",
+            "vote": 0.0,
+            "confidence": 1.0 if ipo_review["status"] == "ready" else 0.0,
+            "trust_score": None,
+            "trust_source": "verified-ipo-policy",
+            "observed_samples": history_observations,
+            "maturity": ipo_review["status"],
+            "weight_pre_norm": 0.0,
+            "weight_normalized": 0.0,
+            "reasoning": "IPO gate: " + ("verified fundamental evidence is sufficient for the remaining agents to be considered." if ipo_review["status"] == "ready" else "verified IPO fundamentals/valuation are insufficient; actionable BUY/SELL is blocked."),
+            "ipo": ipo_review,
+        })
+
+    if ipo_review is not None and ipo_review["status"] != "ready":
+        call = "HOLD"
+        # Score stays descriptive of available non-history voices but cannot be
+        # interpreted as an actionable recommendation while the gate is closed.
+    elif weighted_score > 0.25:
         call = "BUY"
     elif weighted_score < -0.25:
         call = "SELL"
     else:
         call = "HOLD"
 
-    agent_entries = [entry for entry in breakdown if entry.get("agent") != "scenario"]
-    top = max(agent_entries, key=lambda e: e["weight_normalized"])
+    agent_entries = [entry for entry in breakdown if entry.get("agent") not in {"scenario", "ipo"} and not entry.get("excluded_for_ipo")]
+    top = max(agent_entries, key=lambda e: e["weight_normalized"], default=None)
     scenario_note = ""
     if scenario is not None:
         if scenario_score is not None:
-            scenario_note = f" Scenario base={scenario_score:+.2f}, confidence={scenario.get('confidence', 0):.0%}, blend={scenario_weight:.0%}."
+            scenario_note = f" Scenario base={scenario_score:+.2f}, confidence={scenario.get('confidence', 0):.0%}, blend={effective_scenario_weight:.0%}."
         else:
             scenario_note = " Scenario evidence insufficient; no scenario weight applied."
-    explanation = (
-        f"Kiasha blend = {weighted_score:+.2f} -> {call}. "
-        f"Heaviest voice: {top['agent']} (weight {top['weight_normalized']:.0%}, "
-        f"maturity={top['maturity']}, trust={top['trust_source']}) - {top['reasoning']}." + scenario_note
+    ipo_note = ""
+    if ipo_review is not None:
+        ipo_note = f" IPO mode={ipo_review['status']}; history={history_observations}; missing={', '.join(ipo_review['missingData']) or 'none'}."
+    if top is None:
+        voice_note = "No eligible agent voice had verified weight."
+    else:
+        voice_note = f"Heaviest voice: {top['agent']} (weight {top['weight_normalized']:.0%}, maturity={top['maturity']}, trust={top['trust_source']}) - {top['reasoning']}."
+    explanation = f"Kiasha blend = {weighted_score:+.2f} -> {call}. {voice_note}" + scenario_note + ipo_note
+
+    decision = Decision(
+        call, round(weighted_score, 3), breakdown, explanation, scenario,
+        analysis_mode="ipo" if is_ipo else "standard",
+        ipo_review=ipo_review,
     )
-    decision = Decision(call, round(weighted_score, 3), breakdown, explanation, scenario)
     _record_observation(company, decision)
     return decision
