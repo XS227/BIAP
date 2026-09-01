@@ -1,6 +1,6 @@
 # BIAP — Project Status
 
-_Last updated: 2026-09-01 (correction: nginx sites-enabled/sites-available had silently diverged since 2026-08-31; fixed, symlink restored)_
+_Last updated: 2026-09-01 (confirmed 89.42.199.20's 3 historical orders were already merged into 5.249.252.88 on 2026-08-31; nothing left to do there)_
 
 ## Production status
 
@@ -53,9 +53,18 @@ confirmed by finally getting SSH access to `89.42.199.20` (key
 goes to `5.249.252.88`'s `biap-fin` (`127.0.0.1:8088`). `89.42.199.20` still
 runs its own `biap-fin.service` and has its own separate, now long-frozen
 `biap_audit.sqlite3` (3 `order_intents`, 7 `audit_events`, last written
-2026-08-28) -- small enough that a historical merge, if still wanted, would
-be a trivial, low-risk operation whenever someone wants to do it (SSH access
-is confirmed working via `~/.ssh/biap_iran` on `5.249.252.88`).
+2026-08-28).
+
+**Historical merge: already done, verified 2026-09-01.** Checked before
+attempting anything: all 3 `order_intents` and all 7 `audit_events` from
+`89.42.199.20` already exist on `5.249.252.88`, byte-identical (same ids,
+`event_id`s, timestamps, payloads). Someone already ran this merge on
+2026-08-31 -- `89.42.199.20:/root/BIAP/analysis/biap_audit.sqlite3.bak-pre-
+merge-20260831` (3/7 rows, matching the live old-host counts exactly) is that
+merge's leftover pre-merge snapshot, taken the same day
+`sites-enabled/biap-dadashi` diverged into a fully-local config. No insert
+was needed or performed; both hosts' historical order data has been
+reconciled since before this session started investigating it.
 
 - systemd service: `biap-fin.service` (exists independently on both hosts)
 - internal listener on both hosts: `127.0.0.1:8088`
@@ -1504,9 +1513,11 @@ precedence and this file must be corrected in the same change.
    `sites-available` edit as first believed -- symlink now restored so future
    edits are honest). `89.42.199.20`'s copy of `biap_audit.sqlite3` is small
    and frozen (3 `order_intents`, 7 `audit_events`, last written 2026-08-28)
-   -- SSH access is confirmed working (`~/.ssh/biap_iran` on `5.249.252.88`,
-   `root@89.42.199.20:2222`), so a historical merge, if still wanted, is now
-   a low-risk task rather than a blocked one. Still open: decide whether to
+   -- **the historical merge is already done**, verified 2026-09-01 (all 7
+   rows byte-identical on both hosts, merged 2026-08-31 by whoever cut
+   `sites-enabled` over that day; see "Production status" above). SSH access
+   to `89.42.199.20` is confirmed working (`~/.ssh/biap_iran` on
+   `5.249.252.88`, `root@89.42.199.20:2222`) if ever needed again. Still open: decide whether to
    also expose `/stock/symbols`/`/health` publicly (currently unrouted,
    zero risk either way since nothing depends on them yet), and set
    `BIAP_APPROVER_TOKEN` on `5.249.252.88` if the shared-secret JSON
