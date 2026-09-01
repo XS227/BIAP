@@ -4,8 +4,9 @@ from market_scanner import _bulk_candidate
 def test_compact_fields_win_over_zero_legacy_fields():
     raw = {
         "insCode": "52724381011699987",
-        "lva": "ضهرم6040",
-        "lvc": "اختيارخ اهرم-26000-1405/06/25",
+        "insID": "IRO1IKCO0001",
+        "lva": "خودرو",
+        "lvc": "ایران خودرو",
         "pdv": 33110.0,
         "pcl": 33006.0,
         "py": 32346.0,
@@ -20,7 +21,7 @@ def test_compact_fields_win_over_zero_legacy_fields():
     }
     candidate = _bulk_candidate(raw)
     assert candidate is not None
-    assert candidate.symbol == "ضهرم6040"
+    assert candidate.symbol == "خودرو"
     assert candidate.last_price == 33110.0
     assert candidate.closing_price == 33006.0
     assert candidate.yesterday_price == 32346.0

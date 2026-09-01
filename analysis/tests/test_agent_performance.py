@@ -83,5 +83,11 @@ def test_decision_breakdown_labels_untrained_prior_without_fake_history(tmp_path
     monkeypatch.setattr(kiasha, "run_team", lambda _company: [AgentVote("fundamental", 0.4, 0.75, "test"), AgentVote("risk", -0.2, 0.6, "test"), AgentVote("forecast", 0.2, 0.5, "test"), AgentVote("comparison", 1.0, 0.65, "test")])
     decision = kiasha.decide({"ticker": "TEST", "name_fa": "تست", "market": {"price": None}})
     assert decision.call in {"BUY", "HOLD", "SELL"}
-    assert all(item["trust_source"] == "untrained-prior" for item in decision.breakdown)
+    # decision.breakdown also carries non-agent meta-entries (scenario/ipo) with
+    # their own trust_source labels (e.g. "verified-scenario-engine") -- this
+    # assertion is about agent voices specifically, same filter kiasha.decide()
+    # itself uses to find the heaviest agent voice.
+    agent_items = [item for item in decision.breakdown if item["agent"] not in {"scenario", "ipo"}]
+    assert agent_items
+    assert all(item["trust_source"] == "untrained-prior" for item in agent_items)
     assert all(item["observed_samples"] == 0 for item in decision.breakdown)

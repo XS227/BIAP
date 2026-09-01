@@ -39,10 +39,18 @@ def _parse_symbol(raw:dict)->Optional[MarketSymbol]:
     # — losing TSE/IFB/IFB_BASE grouping is better than losing all quote data.
     code=_first(raw,"insCode","ins_code");symbol=_first(raw,"lVal18AFC","l18","symbol","lva");name=_first(raw,"lVal30","l30","name","lvc")
     if not code or not symbol:return None
-    flow_raw=_first(raw,"flow")
+    flow_raw=_first(raw,"flow");flow_present=flow_raw is not None
     try:flow=int(flow_raw) if flow_raw is not None else None
     except(TypeError,ValueError):flow=None
-    market=_market_from_flow(flow) if flow is not None else None
+    # flow key entirely absent = schema drift (the current live GetMarketWatch
+    # payload) -- keep the row with market=None rather than lose its quote data.
+    # flow key present but not one of {1,2,4} (or unparseable) is a genuinely
+    # unrecognized/corrupt value, not schema drift -- reject the row rather than
+    # silently mapping it to no market or the wrong one.
+    if not flow_present:market=None
+    else:
+        market=_market_from_flow(flow)
+        if market is None:return None
     industry=_first(raw,"cs","cSecVal","sectorCode");paper_type=_first(raw,"yVal","yval","paperType")
     def _f(*keys:str)->Optional[float]:
         val=_first(raw,*keys)

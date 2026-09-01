@@ -9,8 +9,28 @@ ANALYSIS_DIR = Path(__file__).resolve().parents[1]
 if str(ANALYSIS_DIR) not in sys.path:
     sys.path.insert(0, str(ANALYSIS_DIR))
 
+import agents
 import kiasha
 from performance_store import PerformanceStore
+
+
+@pytest.fixture(autouse=True)
+def _external_tsetmc_enrichment_disabled_by_default(monkeypatch):
+    """Prevent any test from making a real, slow TSETMC network call.
+
+    agents.risk_agent() -> _verified_market_enrichment() calls
+    fetch_verified_enrichment() (a real HTTP request, min 12s timeout, tried
+    twice = up to ~24s) for any company without pre-populated Tindex data --
+    which includes every mock/test company. Any test that reaches
+    kiasha.decide()/agents.run_team() without disabling this (order-flow,
+    admin, regression tests -- none of which are testing TSETMC enrichment
+    itself) would otherwise hang for tens of seconds per call, and the whole
+    suite for many minutes, whenever the live upstream is unreachable from
+    this host. test_extended_market_field.py already isolated itself this
+    exact way per-test; this makes that the default everywhere. Tests that
+    actually exercise real enrichment override this via monkeypatch.
+    """
+    monkeypatch.setattr(agents, "fetch_verified_enrichment", lambda _symbol: {})
 
 
 @pytest.fixture(autouse=True)
