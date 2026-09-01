@@ -1517,12 +1517,30 @@ precedence and this file must be corrected in the same change.
    rows byte-identical on both hosts, merged 2026-08-31 by whoever cut
    `sites-enabled` over that day; see "Production status" above). SSH access
    to `89.42.199.20` is confirmed working (`~/.ssh/biap_iran` on
-   `5.249.252.88`, `root@89.42.199.20:2222`) if ever needed again. Still open: decide whether to
-   also expose `/stock/symbols`/`/health` publicly (currently unrouted,
-   zero risk either way since nothing depends on them yet), and set
-   `BIAP_APPROVER_TOKEN` on `5.249.252.88` if the shared-secret JSON
-   approve/reject API is actually used (currently
-   fails closed there; the admin panel's approve/reject is unaffected).
+   `5.249.252.88`, `root@89.42.199.20:2222`) if ever needed again. Both
+   remaining sub-points verified closed (2026-09-01, this session): (a)
+   `/stock/symbols` and `/health` are **not** unrouted -- that note was stale.
+   The vhost's generic `location /api/ { proxy_pass http://127.0.0.1:8088/; }`
+   block (below the more specific `/api/stock/recommendation/`, `/api/performance/`,
+   `/api/auth/` blocks) already catches everything else, including these two,
+   by longest-prefix nginx matching. Confirmed live:
+   `curl https://biap.dadashi.no/api/health` and
+   `.../api/stock/symbols?limit=1` both return real 200 responses today. No
+   nginx change needed -- the file's own inline comment above these blocks
+   ("only the Kiasha recommendation endpoint is served locally... everything
+   else still goes to 89.42.199.20") is *also* stale and should be read as
+   historical, not current routing. (b) `BIAP_APPROVER_TOKEN` is correctly
+   left unset: the JSON API it gates (`POST /orders/{id}/approve|reject` in
+   `analysis/api_server.py`, via `auth.require_approver`) has **zero real
+   callers** -- grepped the mobile repo (`/home/nasrin/Biap/mobile/src`) and
+   found no call to that path; the only "approve/reject" hits there are an
+   unrelated risk-preview `status: 'rejected'` UI state in
+   `recommendation-card.tsx`. The admin panel's own approve/reject
+   (`analysis/admin_routes.py`, `/admindir/orders/{id}/approve|reject`) uses
+   a completely separate cookie-JWT session (`admin_auth.py`), not this
+   token. Fail-closed-with-no-caller is the correct, safe state; setting the
+   token now would just arm an endpoint nothing uses. Revisit only if a real
+   caller for the shared-secret JSON path is ever built.
 5. ~~**Broad-market regression tests:**~~ partially done (2026-08-26) —
    see "Broad-market regression tests" below. Still open: doing this against
    real, live-fetched TSE/IFB/IFB_BASE symbols instead of synthetic
