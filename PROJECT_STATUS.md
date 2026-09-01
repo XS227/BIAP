@@ -1,6 +1,6 @@
 # BIAP — Project Status
 
-_Last updated: 2026-08-27 (admin/ops panel deployed and verified live)_
+_Last updated: 2026-09-01 (symbol-universe flow validation + test isolation from real TSETMC calls)_
 
 ## Production status
 
@@ -1174,6 +1174,54 @@ file.
 **Still open:** no user data ("wallet") from the port-4000 backend is
 shown here yet -- that backend's code isn't in this repo and there's no
 read access to it confirmed from this VPS (see TASKS.md item 4).
+
+## Symbol-universe flow validation + test isolation from real TSETMC calls (2026-09-01)
+
+Two independent findings fixed on `main` (commit `497b2cb`), plus one
+pre-existing, unrelated test regression found while verifying the full suite
+still passes.
+
+**1. `symbol_universe.py` — corrupt `flow` values were being silently
+accepted as schema drift.** `_parse_symbol` already had to handle
+GetMarketWatch's live schema shipping *without* a `flow` key at all (see
+"Resilient symbol universe" docstring at the top of the file) by degrading
+to `market=None` rather than dropping the row. That same code path was also
+catching the case where `flow` *is present* but isn't one of the recognized
+values `{1,2,4}` (or fails to parse as an int) — a genuinely corrupt/
+unrecognized value, not schema drift — and was mapping it to `market=None`
+too instead of rejecting the row. Fixed: a present-but-invalid `flow` now
+rejects the row; only a fully absent `flow` key degrades to `market=None`.
+
+**2. Tests could make real, slow TSETMC network calls.** `agents.risk_agent()`
+→ `_verified_market_enrichment()` calls `fetch_verified_enrichment()` (a real
+HTTP request, ~12s timeout, tried twice) for any company without
+pre-populated Tindex data — true of every mock/test company. Only
+`test_extended_market_field.py` was disabling this per-test; every other test
+reaching `kiasha.decide()`/`agents.run_team()` could hang for up to ~24s per
+call, minutes across the suite, whenever the live upstream was unreachable
+from this host. Fixed with a new autouse fixture in `tests/conftest.py` that
+stubs `fetch_verified_enrichment` to `{}` by default; tests that actually
+exercise real enrichment override it explicitly. `test_agent_performance.py`'s
+breakdown assertion was adjusted to filter to agent entries only, since
+`decision.breakdown` also carries `scenario`/`ipo` meta-entries with their
+own `trust_source` label, unrelated to what that test checks.
+
+**3. Unrelated pre-existing failure, found and fixed in the same pass:**
+`test_market_scanner_zero_shadow.py`'s sample fixture (`insCode
+52724381011699987`, symbol `ضهرم6040`, an اختيارخ/option contract on اهرم)
+predates PR #13's ordinary-equity filter (`_ordinary_equity()` in
+`market_scanner.py`), which now correctly rejects that exact instrument
+before the zero-shadow price-field logic under test is ever reached
+(confirmed: `test_market_scanner_equity_filter.py` already asserts this same
+symbol/name pair returns `None`). The zero-shadow test was never updated
+when the equity filter landed, so it started failing for a reason unrelated
+to what it actually tests. Fixed by swapping in a plain ordinary-equity
+fixture (خودرو) with the same zero-vs-compact price-field shape.
+
+Verified: 139/139 tests pass (up from 138 passing / 1 failing before this
+pass). Not yet deployed to either `biap-fin` instance (`89.42.199.20` or
+`5.249.252.88`) — this was a code/test-only fix, no behavior change to a
+running service to restart for.
 
 ## Production operations
 
