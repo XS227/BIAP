@@ -7,11 +7,14 @@ import { fetchManualPaperOrders, ManualPaperOrder } from '@/lib/kiasha-paper-tra
 import { fetchTsetmcInstrumentLabel } from '@/lib/market-quote';
 import { getDemoMode } from '@/lib/demo-mode';
 import { getDemoWallet, DemoTrade } from '@/lib/demo-trading';
+import { listManualInvestments, ManualInvestment } from '@/lib/manual-investments';
 
 const SIDE_LABEL: Record<string, string> = { BUY: 'خرید', SELL: 'فروش' };
 const STATUS_LABEL: Record<string, string> = {
   PAPER_FILLED: 'اجرا شد (Paper)',
   DEMO_FILLED: 'اجرا شد (Demo)',
+  MANUAL_TRACKED: 'ثبت شد (دستی)',
+  MANUAL_SOLD: 'فروش ثبت شد (دستی)',
   PENDING_APPROVAL: 'در انتظار تأیید',
   PENDING_MARKET_OPEN: 'در صف بازگشایی بازار',
   CANCELLED_SIGNAL: 'لغو شد — سیگنال تغییر کرد',
@@ -31,7 +34,19 @@ type DemoDisplayOrder = {
   price: number;
   mode: 'demo';
 };
-type DisplayOrder = OrderReceipt | ManualPaperOrder | DemoDisplayOrder;
+type ManualBrokerDisplayOrder = {
+  id: string;
+  code: string;
+  side: 'BUY' | 'SELL';
+  quantity: number;
+  status: 'MANUAL_TRACKED' | 'MANUAL_SOLD';
+  created_at: string;
+  submittedAt: string;
+  note: string;
+  price: number;
+  mode: 'manual';
+};
+type DisplayOrder = OrderReceipt | ManualPaperOrder | DemoDisplayOrder | ManualBrokerDisplayOrder;
 
 function demoOrder(trade: DemoTrade): DemoDisplayOrder {
   return {
@@ -47,7 +62,28 @@ function demoOrder(trade: DemoTrade): DemoDisplayOrder {
     mode: 'demo',
   };
 }
+// A manual investment is self-reported (bought at a real broker, outside
+// BIAP); shown here so tapping "خریدم" on a stock is visible in Orders too,
+// not just silently written to on-device storage — see manual-investments.ts.
+function manualOrder(inv: ManualInvestment): ManualBrokerDisplayOrder {
+  const sold = inv.status === 'SOLD';
+  return {
+    id: inv.id,
+    code: inv.code,
+    side: sold ? 'SELL' : 'BUY',
+    quantity: inv.quantity,
+    status: sold ? 'MANUAL_SOLD' : 'MANUAL_TRACKED',
+    created_at: sold ? inv.soldAt! : inv.boughtAt,
+    submittedAt: sold ? inv.soldAt! : inv.boughtAt,
+    note: sold
+      ? `فروش کل موقعیت با قیمت ${Math.round(inv.sellPrice ?? 0).toLocaleString('fa-IR')} ریال ثبت شد.`
+      : `خرید واقعی خارج از BIAP با قیمت ${Math.round(inv.buyPrice).toLocaleString('fa-IR')} ریال ثبت شد.`,
+    price: sold ? (inv.sellPrice ?? 0) : inv.buyPrice,
+    mode: 'manual',
+  };
+}
 function isDemoOrder(order: DisplayOrder): order is DemoDisplayOrder { return (order as DemoDisplayOrder).mode === 'demo'; }
+function isManualOrder(order: DisplayOrder): order is ManualBrokerDisplayOrder { return (order as ManualBrokerDisplayOrder).mode === 'manual'; }
 function statusColor(status: string) {
   if (status === 'PAPER_FILLED' || status === 'DEMO_FILLED') return Brand.positive;
   if (status === 'PENDING_APPROVAL' || status === 'PENDING_MARKET_OPEN') return Brand.warning;
@@ -59,7 +95,7 @@ function OrderCard({ order, colors, label }: { order: DisplayOrder; colors: Them
   const rawDate = order.submittedAt || order.created_at;
   const date = rawDate ? new Date(rawDate) : null;
   const dateLabel = date && !Number.isNaN(date.getTime()) ? date.toLocaleString('fa-IR') : '';
-  const source = isDemoOrder(order) ? 'Demo — فقط روی همین دستگاه' : 'Paper — حساب سرور';
+  const source = isDemoOrder(order) ? 'Demo — فقط روی همین دستگاه' : isManualOrder(order) ? 'دستی — گزارش خرید واقعی شما' : 'Paper — حساب سرور';
   return <Pressable onPress={() => router.push(`/stock/${order.code}`)} style={({ pressed }) => [orderStyles.card, { backgroundColor: colors.backgroundElement, opacity: pressed ? 0.8 : 1 }]}>
     <View style={orderStyles.topRow}><View style={[orderStyles.statusBadge, { backgroundColor: `${statusColor(order.status)}22` }]}><Text style={[orderStyles.statusText, { color: statusColor(order.status) }]}>{STATUS_LABEL[order.status] ?? order.status}</Text></View><View style={[orderStyles.sideBadge, { backgroundColor: `${sideColor}22` }]}><Text style={[orderStyles.sideText, { color: sideColor }]}>{SIDE_LABEL[order.side] ?? order.side}</Text></View></View>
     <Text style={[orderStyles.code, { color: colors.text }]}>{label || (/^\d+$/.test(order.code) ? 'در حال دریافت نام نماد…' : order.code)}</Text>
@@ -96,11 +132,11 @@ export default function OrdersScreen(){
       setRefreshing(false);
       return;
     }
-    const [legacy,queued]=await Promise.all([fetchOrderHistory(),fetchManualPaperOrders()]);
-    if(legacy===null&&queued===null) setError(true);
+    const [legacy,queued,manual]=await Promise.all([fetchOrderHistory(),fetchManualPaperOrders(),listManualInvestments().catch(()=>[])]);
+    if(legacy===null&&queued===null&&!manual.length) setError(true);
     else {
       setError(false);
-      const combined: DisplayOrder[]=[...(queued??[]),...(legacy??[])];
+      const combined: DisplayOrder[]=[...manual.map(manualOrder),...(queued??[]),...(legacy??[])];
       const seen=new Set<string>();
       const unique=combined.filter(item=>{if(seen.has(item.id))return false;seen.add(item.id);return true});
       unique.sort((a,b)=>String(b.submittedAt||b.created_at).localeCompare(String(a.submittedAt||a.created_at)));
