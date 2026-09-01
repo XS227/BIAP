@@ -1,27 +1,32 @@
 # BIAP — Project Status
 
-_Last updated: 2026-09-01 (symbol-universe flow validation + test isolation from real TSETMC calls)_
+_Last updated: 2026-09-01 (orders/audit/risk cut over to 5.249.252.88; historical rows on 89.42.199.20 NOT merged)_
 
 ## Production status
 
-**As of 2026-08-27, `https://biap.dadashi.no/api/` traffic is split across two
-hosts** -- see "New VPS migration -- Kiasha recommendation cutover" below for
-the full picture. Summary:
+**As of 2026-09-01, `https://biap.dadashi.no/api/` traffic is split across two
+hosts** -- see "New VPS migration -- Kiasha recommendation cutover" and
+"Orders/audit/risk cutover" below for the full picture. Summary:
 
-- `/api/stock/recommendation/{code}` -> `biap-fin.service` on the **new** VPS
+- `/api/stock/recommendation/{code}`, `/api/performance/*`, `/api/orders/*`,
+  `/api/audit/*`, `/api/risk/*` -> `biap-fin.service` on the **new** VPS
   (`5.249.252.88`, `127.0.0.1:8088`).
-- Every other `/api/` path (`auth/*`, `stock/watchlist`, `orders/*`,
-  `audit/*`, `risk/*`) -> unchanged, still `89.42.199.20`, which itself runs
-  its own `biap-fin.service` (the original one) for `orders/*`/`audit/*`/
-  `risk/*` and the existing Express backend on `127.0.0.1:4000` for
-  `auth/*`/`stock/watchlist`.
+- `/api/auth/*` and `/api/stock/watchlist` -> still routed to `89.42.199.20`
+  via the generic `/api/` nginx block (unchanged) -- **but as of 2026-09-01
+  these now appear to be answered by FastAPI-style JSON there too**, not the
+  Express `:4000` backend this document previously assumed (see the flag at
+  the end of "Orders/audit/risk cutover" below). Not investigated further;
+  treat the auth/watchlist ownership statements elsewhere in this doc as
+  unverified until someone checks `89.42.199.20` directly.
 
-This means **there are now two live `biap-fin` instances** (old on
+This means **there are still two live `biap-fin` instances** (old on
 `89.42.199.20`, new on `5.249.252.88`), each with its own separate
-`biap_audit.sqlite3` -- the new instance's order/audit tables are currently
-empty (no data migrated yet, and `/orders/*`/`/audit/*` still route to the old
-instance's DB, so this is safe for now). Do not assume both instances see the
-same order history.
+`biap_audit.sqlite3`. As of 2026-09-01 the *new* instance is authoritative for
+all order/audit/risk traffic going forward; `89.42.199.20`'s copy is frozen
+(no longer receiving `/orders/*`/`/audit/*` traffic) but its pre-cutover rows
+were deliberately **not** merged in -- see "Orders/audit/risk cutover" below.
+Do not assume the two instances' historical order data ever gets reconciled
+without a further explicit action.
 
 - systemd service: `biap-fin.service` (exists independently on both hosts)
 - internal listener on both hosts: `127.0.0.1:8088`
@@ -1223,6 +1228,94 @@ pass). Not yet deployed to either `biap-fin` instance (`89.42.199.20` or
 `5.249.252.88`) — this was a code/test-only fix, no behavior change to a
 running service to restart for.
 
+## Orders/audit/risk cutover (2026-09-01)
+
+Roadmap item 4's remaining half, done differently than originally planned.
+The original plan (see "New VPS migration" above) was: migrate
+`89.42.199.20`'s historical `order_intents`/`audit_events`/`idempotency_keys`
+rows into `5.249.252.88`'s audit DB first, *then* cut `/orders/*`, `/audit/*`,
+`/risk/*` over. That plan assumed the new instance's order/audit tables were
+still empty, true as of 2026-08-27.
+
+**What was actually found, live, before touching anything:** they were not
+empty. `5.249.252.88`'s own `biap_audit.sqlite3` already had 12 real
+`order_intents` rows (all `mode=paper`) and 44 `audit_events`, dated
+2026-08-26 through 2026-08-30 -- written there because the newer
+authenticated Paper/Kiasha-AI bridge (`/performance/ai/paper-dry-run`, Auto
+Invest, etc. -- see "Kiasha decision audit + server-owned Paper state" and
+"Kiasha daily Paper Auto Invest" in `TASKS.md`'s work log) calls
+`execution.submit_order_intent()` **in-process** on this host, bypassing
+nginx entirely. Meanwhile the JSON `/orders/preview`/`/orders/submit`/
+`/audit/orders` API (what the mobile app's `src/lib/api.ts` actually calls)
+was still routed by nginx to `89.42.199.20`'s separate, independently-growing
+`biap_audit.sqlite3`. **This means real users' order history had already been
+silently split across two unsynced databases since 2026-08-27** -- not a
+future risk, an active data-correctness bug discovered mid-investigation.
+
+No SSH access to `89.42.199.20` was available in this session (`root@
+89.42.199.20:2222` refused the key that a previous session used -- likely
+closed again after that session, or the key isn't present on this host), so
+a proper historical merge (backup + schema-diff + `INSERT OR IGNORE`, as
+originally designed) could not be done here. **Explicit decision, made by
+Khabat when asked:** cut over going forward without merging old history.
+`89.42.199.20`'s pre-cutover `order_intents`/`audit_events`/
+`idempotency_keys` rows are not lost (still sit in that host's own DB file)
+but are no longer reachable through the live API and were not brought over.
+Revisit if/when SSH access to `89.42.199.20` is available again and the old
+rows are still wanted.
+
+**Change made:** `/etc/nginx/sites-available/biap-dadashi` on `5.249.252.88`
+(backup: `biap-dadashi.bak-20260901-201949`) gained three new locations,
+same pattern as the existing `/api/stock/recommendation/`/`/api/performance/`
+blocks, all before the generic `/api/` catch-all:
+
+```nginx
+location /api/orders/ { proxy_pass http://127.0.0.1:8088/orders/; ... }
+location /api/audit/  { proxy_pass http://127.0.0.1:8088/audit/;  ... }
+location /api/risk/   { proxy_pass http://127.0.0.1:8088/risk/;   ... }
+```
+
+`nginx -t` passed before reload. Verified post-reload via `journalctl -u
+biap-fin` (request timestamps matching local log lines, not just
+plausible-looking responses, same verification standard as the original
+cutover): unauthenticated `POST /api/orders/preview` -> `401` from the local
+instance; `GET /api/risk/status` -> `200` with the local instance's real
+policy JSON; `GET /api/audit/orders` with a bogus bearer token -> `401
+"invalid or expired token"` (real JWT verification, not the old opaque-hash
+fallback -- confirms `BIAP_AUTH_JWT_SECRET` is live on this host). The
+old local-only `127.0.0.1:8089` test vhost (see its own comment, "remove or
+fold in once cutover happens") is now fully redundant but was left in place
+-- harmless, not reachable externally.
+
+**Known gap, not fixed here:** `BIAP_APPROVER_TOKEN` is not set in this
+host's `biap-fin.service` (checked via `systemctl cat`), so the shared-secret
+JSON API (`POST /orders/{id}/approve`/`/reject`) fails closed (`503`) on this
+host, per `auth.require_approver`'s fail-closed-when-unconfigured design (see
+"Order approval gate" above). **Not a new regression for the admin panel**:
+`/admindir/orders/{id}/approve` authenticates via `BIAP_ADMIN_JWT_SECRET`/
+admin session (already fully configured here), not `BIAP_APPROVER_TOKEN`, and
+is unaffected. Only the standalone shared-secret JSON endpoint is affected;
+set `BIAP_APPROVER_TOKEN` here (matching whatever value, if any, was used on
+`89.42.199.20`) if that specific API path is actually relied on by anything.
+
+**Unrelated flag, found while sanity-checking this change didn't break
+anything else:** `curl`-ing `https://biap.dadashi.no/api/auth/login` (empty
+body) and `.../api/stock/watchlist` returned byte-identical FastAPI
+validation-error/`404` JSON to hitting `5.249.252.88`'s own `biap-fin`
+directly on `127.0.0.1:8088` -- even though nginx's generic `/api/` block
+(unchanged by this session, confirmed via diff against the pre-edit backup)
+still points at `89.42.199.20`. The simplest explanation is that
+`89.42.199.20`'s own `biap-fin` has, at some point, also gained `/auth/*` and
+`/stock/watchlist` routes (its own `git pull` to a `main` that now includes
+them, per the existing "pull + restart" production-operations routine below)
+and is answering with the same FastAPI shapes independently -- not something
+this session's nginx edit could have caused, since that block was never
+touched. This directly conflicts with `TASKS.md`'s architecture note "Auth/
+signup/login remain on the Express backend." Not investigated further here
+(out of scope for the orders/audit task, and would need SSH access to
+`89.42.199.20` to confirm properly) -- flagging so the next agent doesn't
+assume that architecture note is still accurate without checking.
+
 ## Production operations
 
 Update the running FIN service after a reviewed GitHub change:
@@ -1310,16 +1403,19 @@ precedence and this file must be corrected in the same change.
    (`analysis/tests/test_codal_pdf_cache.py`), including one proving the
    audit-opinion and related-party parsers now share a single download for
    the same filing. 68/68 tests pass.
-4. ~~**New external data server:**~~ partially done (2026-08-27) -- `biap-fin`
-   is deployed and durable on `5.249.252.88` (systemd), and the
-   `/api/stock/recommendation/` path is cut over to it in production, with
-   verified rollback available (see "New VPS migration" above). Still open:
-   migrate `/orders/*`/`/audit/*` SQLite state from `89.42.199.20` before
-   cutting those paths over too (design done, not executed -- two live
-   `biap-fin` instances currently have separate, unsynced audit DBs), then
-   cut over `/orders/*`, `/audit/*`, `/risk/*`, and decide whether to also
-   expose `/stock/symbols`/`/health` publicly (currently unrouted on both
-   hosts, zero risk either way since nothing depends on them yet).
+4. ~~**New external data server:**~~ mostly done (2026-09-01) -- `biap-fin`
+   is deployed and durable on `5.249.252.88` (systemd), and
+   `/api/stock/recommendation/`, `/api/performance/*`, `/api/orders/*`,
+   `/api/audit/*` and `/api/risk/*` are all cut over to it in production (see
+   "Orders/audit/risk cutover" above). Explicit decision: cut over without
+   migrating `89.42.199.20`'s pre-cutover order/audit rows (no SSH access to
+   that host this session) -- those historical rows are stranded there, not
+   lost, revisit if/when access is available and they're still wanted. Still
+   open: decide whether to also expose `/stock/symbols`/`/health` publicly
+   (currently unrouted on both hosts, zero risk either way since nothing
+   depends on them yet), and set `BIAP_APPROVER_TOKEN` on `5.249.252.88` if
+   the shared-secret JSON approve/reject API is actually used (currently
+   fails closed there; the admin panel's approve/reject is unaffected).
 5. ~~**Broad-market regression tests:**~~ partially done (2026-08-26) —
    see "Broad-market regression tests" below. Still open: doing this against
    real, live-fetched TSE/IFB/IFB_BASE symbols instead of synthetic
