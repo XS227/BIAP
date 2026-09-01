@@ -1215,8 +1215,25 @@ over anchored inserts when the anchor text isn't guaranteed unique in the
 file.
 
 **Still open:** no user data ("wallet") from the port-4000 backend is
-shown here yet -- that backend's code isn't in this repo and there's no
-read access to it confirmed from this VPS (see TASKS.md item 4).
+shown here yet. **Re-confirmed 2026-09-01** (the earlier "TASKS.md item 4"
+pointer here is now stale after that file was renumbered -- there is no
+current item 4 about this; this note is now self-contained). SSH access to
+`89.42.199.20` (`~/.ssh/biap_iran`, confirmed working since the 2026-09-01
+nginx-divergence investigation) was used to read the actual running
+backend's code, not the `XS227/BIAP` repo (it isn't in this repo, confirmed
+again -- lives at `/root/biap-backend/biap-backend` on that host, no
+`.git`). `src/routes/auth.routes.js` has exactly `signup`, `login`,
+`refresh`, `logout` -- no `/me`, no user-by-id lookup, no admin/read route
+of any kind. `src/config/db.js` connects directly to Postgres via
+`DATABASE_URL`. So the blocker is real, not just unconfirmed: getting real
+wallet data into the admin panel needs one of (a) a new authenticated
+internal endpoint added to the Node backend itself, (b) a dedicated
+read-only Postgres role handed to `biap-fin` so it queries the `users`
+table directly, or (c) leaving this deferred as low priority since the
+admin panel is otherwise fully functional (orders/audit/risk) without it.
+This is a production-auth-database architecture choice, not a code
+question -- deliberately not decided or implemented here; needs Khabat's
+call before any of (a)/(b) is built.
 
 ## Symbol-universe flow validation + test isolation from real TSETMC calls (2026-09-01)
 
