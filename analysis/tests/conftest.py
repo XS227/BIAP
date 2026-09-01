@@ -1,4 +1,13 @@
+import sys
+from pathlib import Path
+
 import pytest
+
+# Keep analysis modules importable whether pytest is launched from the repo
+# root or from the analysis directory.
+ANALYSIS_DIR = Path(__file__).resolve().parents[1]
+if str(ANALYSIS_DIR) not in sys.path:
+    sys.path.insert(0, str(ANALYSIS_DIR))
 
 import kiasha
 from performance_store import PerformanceStore
