@@ -1231,9 +1231,13 @@ internal endpoint added to the Node backend itself, (b) a dedicated
 read-only Postgres role handed to `biap-fin` so it queries the `users`
 table directly, or (c) leaving this deferred as low priority since the
 admin panel is otherwise fully functional (orders/audit/risk) without it.
-This is a production-auth-database architecture choice, not a code
-question -- deliberately not decided or implemented here; needs Khabat's
-call before any of (a)/(b) is built.
+**Decided 2026-09-01 (Khabat): (c), deferred.** Also clarified: this was
+never about backfilling historical wallet data (no migration/import is
+wanted at all, old data is being left to age out as new registrations
+happen going forward) -- the actual open question was whether the admin
+panel should read *any* live user/wallet data from the port-4000 backend,
+past or present, and the answer is not now. No endpoint or DB role will be
+built for this until Khabat asks for it again.
 
 ## Symbol-universe flow validation + test isolation from real TSETMC calls (2026-09-01)
 
