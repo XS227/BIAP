@@ -1,0 +1,11 @@
+[Unit]
+Description=Run BIAP Kiasha Paper daily equity snapshot after TSE close
+
+[Timer]
+OnCalendar=Sat,Sun,Mon,Tue,Wed *-*-* 13:15:00 Asia/Tehran
+Persistent=true
+RandomizedDelaySec=5m
+Unit=biap-paper-equity-snapshot.service
+
+[Install]
+WantedBy=timers.target

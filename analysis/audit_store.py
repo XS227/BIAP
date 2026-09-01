@@ -113,6 +113,18 @@ class AuditStore:
                     FOREIGN KEY(user_id) REFERENCES paper_accounts(user_id)
                 );
 
+                CREATE TABLE IF NOT EXISTS paper_equity_snapshots (
+                    user_id TEXT NOT NULL,
+                    snapshot_date TEXT NOT NULL,
+                    cash_balance REAL NOT NULL,
+                    positions_value REAL NOT NULL,
+                    total_equity REAL NOT NULL,
+                    initial_cash REAL NOT NULL,
+                    created_at TEXT NOT NULL,
+                    PRIMARY KEY (user_id, snapshot_date),
+                    FOREIGN KEY(user_id) REFERENCES paper_accounts(user_id)
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_audit_events_intent
                     ON audit_events(intent_id, seq);
                 CREATE INDEX IF NOT EXISTS idx_order_intents_created
@@ -388,6 +400,74 @@ class AuditStore:
             "createdAt": row["created_at"],
             "updatedAt": row["updated_at"],
         }
+
+    def list_paper_account_user_ids(self) -> list[str]:
+        with self._connect() as conn:
+            rows = conn.execute("SELECT user_id FROM paper_accounts ORDER BY user_id").fetchall()
+        return [row["user_id"] for row in rows]
+
+    def record_paper_equity_snapshot(
+        self,
+        *,
+        user_id: str,
+        snapshot_date: str,
+        cash_balance: float,
+        positions_value: float,
+        initial_cash: float,
+    ) -> dict[str, Any]:
+        """Upsert one snapshot per (user, day) — never duplicates a re-run for the same day."""
+        total_equity = float(cash_balance) + float(positions_value)
+        now = _now_iso()
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO paper_equity_snapshots
+                    (user_id, snapshot_date, cash_balance, positions_value, total_equity, initial_cash, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(user_id, snapshot_date) DO UPDATE SET
+                    cash_balance = excluded.cash_balance,
+                    positions_value = excluded.positions_value,
+                    total_equity = excluded.total_equity,
+                    initial_cash = excluded.initial_cash,
+                    created_at = excluded.created_at
+                """,
+                (user_id, snapshot_date, float(cash_balance), float(positions_value), total_equity, float(initial_cash), now),
+            )
+        return {
+            "userId": user_id,
+            "snapshotDate": snapshot_date,
+            "cashBalance": float(cash_balance),
+            "positionsValue": float(positions_value),
+            "totalEquity": total_equity,
+            "initialCash": float(initial_cash),
+            "createdAt": now,
+        }
+
+    def list_paper_equity_snapshots(self, *, user_id: str, limit: int = 400) -> list[dict[str, Any]]:
+        limit = max(1, min(limit, 2000))
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT user_id, snapshot_date, cash_balance, positions_value, total_equity, initial_cash, created_at
+                FROM paper_equity_snapshots
+                WHERE user_id = ?
+                ORDER BY snapshot_date ASC
+                LIMIT ?
+                """,
+                (user_id, limit),
+            ).fetchall()
+        return [
+            {
+                "userId": row["user_id"],
+                "snapshotDate": row["snapshot_date"],
+                "cashBalance": float(row["cash_balance"]),
+                "positionsValue": float(row["positions_value"]),
+                "totalEquity": float(row["total_equity"]),
+                "initialCash": float(row["initial_cash"]),
+                "createdAt": row["created_at"],
+            }
+            for row in rows
+        ]
 
     def list_all_intents(self, *, status: Optional[str] = None, limit: int = 200) -> list[dict[str, Any]]:
         limit = max(1, min(limit, 1000))

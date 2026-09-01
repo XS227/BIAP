@@ -228,6 +228,11 @@ def ai_paper_account(user_id: str = Depends(require_user_id)):
     account = _server_paper_account(user_id)
     return {"account": account,"sizingCapital": _paper_sizing_capital(account),"serverOwned": True,"paperExecutionEnabled": _paper_execution_enabled(),"liveExecution": False}
 
+@router.get("/ai/paper-equity-history")
+def ai_paper_equity_history(limit: int = Query(default=400, ge=1, le=2000), user_id: str = Depends(require_user_id)):
+    items = AUDIT_STORE.list_paper_equity_snapshots(user_id=str(user_id), limit=limit)
+    return {"items": items, "count": len(items)}
+
 @router.get("/ai/paper-decisions")
 def ai_paper_decisions(limit: int = Query(default=50, ge=1, le=200),user_id: str = Depends(require_user_id)):
     return {"items": AUDIT_STORE.list_kiasha_ai_decisions(user_id=str(user_id), limit=limit),"paperExecutionEnabled": _paper_execution_enabled(),"liveExecution": False}
