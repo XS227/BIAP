@@ -3,8 +3,8 @@ import manual_trade_routes as routes
 
 def test_manual_trade_routes_registered():
     paths = {getattr(route, "path", None) for route in routes.router.routes}
-    assert "/manual-trades/{code}" in paths
-    assert "/manual-trades" in paths
+    assert "/ai/manual-trades/{code}" in paths
+    assert "/ai/manual-trades" in paths
 
 
 def test_manual_trade_positions_aggregate_buys_and_sell():
