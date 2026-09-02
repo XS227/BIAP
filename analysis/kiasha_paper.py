@@ -16,6 +16,11 @@ from execution import ExecutionMode, ExecutionPolicyError, build_order_intent, s
 from kiasha_ai import KiashaAIProposal
 from risk import RiskDecision, RiskPolicy, evaluate_order_risk
 
+# Registers authenticated, server-backed bookkeeping endpoints on the existing
+# manual Paper router. This remains bookkeeping-only and never enables live
+# broker execution.
+import manual_trade_routes  # noqa: F401,E402
+
 
 @dataclass(frozen=True)
 class PaperGateResult:
