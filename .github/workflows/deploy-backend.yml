@@ -1,6 +1,11 @@
 name: Deploy backend
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'analysis/**'
+      - '.github/workflows/deploy-backend.yml'
   workflow_run:
     workflows: ["Release candidate check"]
     types: [completed]
@@ -14,8 +19,30 @@ permissions:
   contents: read
 
 jobs:
+  validate-backend:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: analysis
+    env:
+      PYTHONPATH: .
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements.txt
+      - name: Run backend tests with diagnostics
+        run: timeout --signal=TERM 12m pytest -vv --durations=25
+
   deploy:
-    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    needs: validate-backend
+    if: needs.validate-backend.result == 'success'
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -125,7 +152,7 @@ jobs:
         run: |
           if [[ "${{ steps.config.outputs.configured }}" == "true" ]]; then
             echo "### Backend deploy" >> "$GITHUB_STEP_SUMMARY"
-            echo "Production deploy attempted after validated main build." >> "$GITHUB_STEP_SUMMARY"
+            echo "Production deploy attempted after backend validation." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "### Backend deploy not configured yet" >> "$GITHUB_STEP_SUMMARY"
             echo "Add production secrets: VPS_HOST, VPS_USER, VPS_SSH_KEY." >> "$GITHUB_STEP_SUMMARY"
