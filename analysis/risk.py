@@ -37,6 +37,7 @@ class RiskPolicy:
     enforce_market_session: bool
     market_session_open: time
     market_session_close: time
+    max_quote_age_seconds: float = 60.0
 
 
 @dataclass(frozen=True)
@@ -98,19 +99,21 @@ def load_policy() -> RiskPolicy:
         enforce_market_session=_env_bool("BIAP_ENFORCE_MARKET_SESSION", True),
         market_session_open=_env_time("BIAP_MARKET_SESSION_OPEN", "09:00"),
         market_session_close=_env_time("BIAP_MARKET_SESSION_CLOSE", "12:30"),
+        max_quote_age_seconds=max(0.0, _env_float("BIAP_MAX_QUOTE_AGE_SECONDS", 60.0)),
     )
 
 
 def _is_within_market_session(policy: RiskPolicy, now_utc: datetime) -> tuple[bool, Optional[str]]:
     """Approximate whether TSE is currently open.
 
-    BIAP has no live TSE trading-calendar feed (holidays, ad-hoc closures)
-    and no fetched-at timestamp on a quote to detect genuine tick staleness
-    -- this checks the one thing that actually is a verifiable, non-fabricated
+    BIAP has no live TSE trading-calendar feed (holidays, ad-hoc closures), so
+    this checks the one thing that actually is a verifiable, non-fabricated
     fact: TSE's ordinary weekly trading days and hours in Asia/Tehran. It will
     not catch an official holiday that falls on an ordinary trading weekday;
     it exists to stop the far more common case of ordinary-hours mistakes
     (weekend, evening, before open) rather than to be a perfect calendar.
+    Genuine tick staleness (is this specific quote too old) is a separate,
+    real check -- see `_is_quote_fresh` below.
     """
     local = now_utc.astimezone(_TSE_TZ)
     if local.weekday() not in _TSE_TRADING_WEEKDAYS:
@@ -124,6 +127,28 @@ def _is_within_market_session(policy: RiskPolicy, now_utc: datetime) -> tuple[bo
     return True, None
 
 
+def _is_quote_fresh(
+    policy: RiskPolicy, quote_fetched_at: Optional[float], now_ts: float
+) -> tuple[bool, Optional[str]]:
+    """Real tick-age check: is the quote this order is priced off still recent?
+
+    Only enforced when a genuine fetch timestamp is available. A company built
+    without a live quote (CODAL-only/IPO path) carries no `quote_fetched_at` at
+    all -- treating that absence as staleness would fabricate a signal BIAP
+    does not actually have, which is the one thing the "Key safety rule" (see
+    PROJECT_STATUS.md) forbids.
+    """
+    if quote_fetched_at is None:
+        return True, None
+    age_seconds = now_ts - quote_fetched_at
+    if age_seconds > policy.max_quote_age_seconds:
+        return False, (
+            f"quote is {age_seconds:.0f}s old, exceeds max age "
+            f"{policy.max_quote_age_seconds:.0f}s"
+        )
+    return True, None
+
+
 def evaluate_order_risk(
     *,
     side: str,
@@ -133,18 +158,25 @@ def evaluate_order_risk(
     recommendation_score: float,
     daily_notional_used: float,
     current_symbol_position: float = 0.0,
+    quote_fetched_at: Optional[float] = None,
     policy: Optional[RiskPolicy] = None,
     now: Optional[datetime] = None,
 ) -> RiskDecision:
     p = policy or load_policy()
     reasons: list[str] = []
     checks: dict[str, bool] = {}
+    now_dt = now or datetime.now(timezone.utc)
 
     if p.enforce_market_session:
-        session_ok, session_reason = _is_within_market_session(p, now or datetime.now(timezone.utc))
+        session_ok, session_reason = _is_within_market_session(p, now_dt)
         checks["marketSessionOpen"] = session_ok
         if not session_ok:
             reasons.append(session_reason)
+
+    fresh_ok, fresh_reason = _is_quote_fresh(p, quote_fetched_at, now_dt.timestamp())
+    checks["quoteFreshnessOk"] = fresh_ok
+    if not fresh_ok:
+        reasons.append(fresh_reason)
 
     checks["killSwitchOff"] = not p.kill_switch
     if p.kill_switch:

@@ -71,17 +71,17 @@ def _paper_symbol_position(account: dict, code: str) -> float:
             return float(position.get("quantity") or 0)
     return 0.0
 
-def _verified_reference_price(code: str) -> tuple[Optional[float], Optional[str]]:
+def _verified_reference_price(code: str) -> tuple[Optional[float], Optional[str], Optional[float]]:
     try:
         quote = find_quote(code)
     except MarketDataUnavailable:
         quote = None
     if quote is None:
-        return None, None
+        return None, None, None
     candidate = getattr(quote, "last_price", None) or getattr(quote, "closing_price", None)
     if candidate is None or float(candidate) <= 0:
-        return None, None
-    return float(candidate), "verified-market-quote"
+        return None, None, None
+    return float(candidate), "verified-market-quote", quote.fetched_at
 
 @router.get("/agents")
 def performance_agents():
@@ -257,8 +257,8 @@ def ai_paper_dry_run(code: str,horizon: Literal["short", "long"] = Query(default
     account = _server_paper_account(user_id)
     sizing_capital = _paper_sizing_capital(account)
     proposal = _run_ai_analysis(code, horizon)
-    reference_price, reference_source = _verified_reference_price(code)
-    result = evaluate_ai_paper_proposal(proposal,portfolio_value=sizing_capital,reference_price=reference_price,current_symbol_position=_paper_symbol_position(account, code),max_position_pct=5.0,execute=False)
+    reference_price, reference_source, quote_fetched_at = _verified_reference_price(code)
+    result = evaluate_ai_paper_proposal(proposal,portfolio_value=sizing_capital,reference_price=reference_price,current_symbol_position=_paper_symbol_position(account, code),max_position_pct=5.0,quote_fetched_at=quote_fetched_at,execute=False)
     payload = result.to_dict()
     payload.update({"dryRun": True,"serverPaperSizingCapital": sizing_capital,"referencePrice": reference_price,"referencePriceSource": reference_source,"paperExecution": False,"liveExecution": False})
     decision_id = AUDIT_STORE.save_kiasha_ai_decision(user_id=user_id,code=code,horizon=horizon,proposal=proposal.to_dict(),risk=result.risk,result=payload,reference_price=reference_price,reference_source=reference_source,dry_run=True)
@@ -277,9 +277,9 @@ def ai_paper_execute(code: str,horizon: Literal["short", "long"] = Query(default
     account = _server_paper_account(user_id)
     sizing_capital = _paper_sizing_capital(account)
     proposal = _run_ai_analysis(code, horizon)
-    reference_price, reference_source = _verified_reference_price(code)
+    reference_price, reference_source, quote_fetched_at = _verified_reference_price(code)
     owned = _paper_symbol_position(account, code)
-    result = evaluate_ai_paper_proposal(proposal,portfolio_value=sizing_capital,reference_price=reference_price,current_symbol_position=owned,max_position_pct=5.0,execute=False)
+    result = evaluate_ai_paper_proposal(proposal,portfolio_value=sizing_capital,reference_price=reference_price,current_symbol_position=owned,max_position_pct=5.0,quote_fetched_at=quote_fetched_at,execute=False)
     base_payload = result.to_dict()
     base_payload.update({"dryRun": False,"serverPaperSizingCapital": sizing_capital,"referencePrice": reference_price,"referencePriceSource": reference_source,"paperExecution": False,"liveExecution": False})
     if not result.allowed or result.intent is None or result.risk is None:

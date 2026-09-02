@@ -245,6 +245,7 @@ def _execute_checked(*, user_id: str, code: str, side: str, quantity: int, idemp
         recommendation_score=float(recommendation.weighted_score),
         daily_notional_used=0.0,
         current_symbol_position=float(owned),
+        quote_fetched_at=company.get("market", {}).get("quote_fetched_at"),
         policy=policy,
     )
     if not risk.allowed:

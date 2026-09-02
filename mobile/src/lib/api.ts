@@ -78,6 +78,9 @@ export type Recommendation = {
     revenue_yoy_pct?: number | null;
     net_margin_pct?: number | null;
     net_margin_prev_pct?: number | null;
+    total_assets_current?: number | null;
+    total_liabilities_current?: number | null;
+    total_equity_current?: number | null;
     audit_opinion?: string | null;
     related_party_flags?: number | null;
     report_title?: string | null;
@@ -88,6 +91,27 @@ export type Recommendation = {
     closingPrice?: number | null;
     yesterdayPrice?: number | null;
     changePercent?: number | null;
+  } | null;
+  // Real TSETMC instrument metrics, only populated when dataSource === 'live'
+  // (see api_server.py's `/stock/recommendation/{code}`). Never fabricated:
+  // any field CODAL/TSETMC didn't return comes through as null.
+  extendedMarket?: {
+    dayLow?: number | null;
+    dayHigh?: number | null;
+    volumeToday?: number | null;
+    tradeValueToday?: number | null;
+    tradeCountToday?: number | null;
+    avgVolume30d?: number | null;
+    price52wHigh?: number | null;
+    price52wLow?: number | null;
+    pe?: number | null;
+    sectorAvgPe?: number | null;
+    epsValue?: number | null;
+    estimatedEps?: number | null;
+    marketCap?: number | null;
+    marketCapBn?: number | null;
+    sharesOutstanding?: number | null;
+    sectorName?: string | null;
   } | null;
   breakdown: RecommendationBreakdownEntry[];
 };
@@ -332,4 +356,26 @@ export async function fetchKiashaPerformanceSummary(timeoutMs = 10_000): Promise
 
 export async function fetchKiashaPerformanceAgents(timeoutMs = 10_000): Promise<KiashaPerformanceAgentsResponse | null> {
   return fetchKiashaJson<KiashaPerformanceAgentsResponse>('/performance/agents', timeoutMs);
+}
+
+export type PaperEquitySnapshot = {
+  userId: string;
+  snapshotDate: string;
+  cashBalance: number;
+  positionsValue: number;
+  totalEquity: number;
+  initialCash: number;
+  createdAt: string;
+};
+
+export type PaperEquityHistoryResponse = {
+  items: PaperEquitySnapshot[];
+  count: number;
+};
+
+// Real persisted daily snapshots only (analysis/paper_equity_snapshot.py,
+// deployed 2026-09-01) -- never a fabricated/interpolated point. Requires
+// auth: the server resolves the snapshot owner from the caller's own token.
+export async function fetchPaperEquityHistory(limit = 400, timeoutMs = 10_000): Promise<PaperEquityHistoryResponse | null> {
+  return fetchKiashaJson<PaperEquityHistoryResponse>(`/performance/ai/paper-equity-history?limit=${limit}`, timeoutMs);
 }

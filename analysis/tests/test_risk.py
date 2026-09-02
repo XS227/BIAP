@@ -123,3 +123,38 @@ def test_short_side_can_also_breach_the_symmetric_position_cap():
     )
     assert decision.checks["symbolPositionWithinLimit"] is False
     assert decision.allowed is False
+
+
+def test_missing_quote_timestamp_does_not_fabricate_staleness():
+    # No quote_fetched_at at all (e.g. a CODAL-only/IPO company with no live
+    # quote) must not be treated as stale -- BIAP has no real signal there.
+    decision = evaluate_order_risk(
+        **_common_kwargs(), policy=_base_policy(), now=_TSE_SATURDAY_MID_SESSION_UTC
+    )
+    assert decision.checks["quoteFreshnessOk"] is True
+    assert decision.allowed is True
+
+
+def test_allows_order_with_fresh_quote():
+    now = _TSE_SATURDAY_MID_SESSION_UTC
+    decision = evaluate_order_risk(
+        **_common_kwargs(),
+        quote_fetched_at=now.timestamp() - 10.0,
+        policy=_base_policy(max_quote_age_seconds=60.0),
+        now=now,
+    )
+    assert decision.checks["quoteFreshnessOk"] is True
+    assert decision.allowed is True
+
+
+def test_rejects_order_with_stale_quote():
+    now = _TSE_SATURDAY_MID_SESSION_UTC
+    decision = evaluate_order_risk(
+        **_common_kwargs(),
+        quote_fetched_at=now.timestamp() - 90.0,
+        policy=_base_policy(max_quote_age_seconds=60.0),
+        now=now,
+    )
+    assert decision.checks["quoteFreshnessOk"] is False
+    assert decision.allowed is False
+    assert any("quote is" in reason and "old" in reason for reason in decision.reasons)

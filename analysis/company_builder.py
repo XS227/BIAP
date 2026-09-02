@@ -263,6 +263,7 @@ def build_company_from_quote(quote: LiveQuote, *, codal_symbol: str | None = Non
         "base_volume": extended.base_volume if extended else None, "sector_code": extended.sector_code if extended else None,
         "sector_name": extended.sector_name if extended else None, "market_flow": extended.market_flow if extended else None,
         "market_title": extended.market_title if extended else None, "valuation_source": "tsetmc_instrument_info" if extended else None,
+        "quote_fetched_at": quote.fetched_at,
     }
     market = _merge_tindex_market(market, tindex)
     return {

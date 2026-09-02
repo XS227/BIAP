@@ -168,6 +168,10 @@ def _reference_price(company: dict) -> Optional[float]:
     return price if price > 0 else None
 
 
+def _quote_fetched_at(company: dict) -> Optional[float]:
+    return company.get("market", {}).get("quote_fetched_at")
+
+
 @app.get("/stock/symbols")
 def symbols(market: Optional[str] = Query(default=None, description="TSE, IFB or IFB_BASE"), q: Optional[str] = Query(default=None, max_length=64), limit: int = Query(default=5000, ge=1, le=10000)):
     if market and market.upper() not in {"TSE", "IFB", "IFB_BASE"}:
@@ -259,7 +263,7 @@ def preview_order(req: OrderPreviewRequest, user_id: str = Depends(require_user_
     company, _source = _company_or_404(req.code)
     decision = decide(company)
     reference_price = _reference_price(company)
-    risk = evaluate_order_risk(side=req.side, quantity=req.quantity, limit_price=req.limitPrice, reference_price=reference_price, recommendation_score=decision.weighted_score, daily_notional_used=AUDIT.submitted_notional_today(), current_symbol_position=AUDIT.symbol_net_position_today(company["ticker"]))
+    risk = evaluate_order_risk(side=req.side, quantity=req.quantity, limit_price=req.limitPrice, reference_price=reference_price, recommendation_score=decision.weighted_score, daily_notional_used=AUDIT.submitted_notional_today(), current_symbol_position=AUDIT.symbol_net_position_today(company["ticker"]), quote_fetched_at=_quote_fetched_at(company))
     if not risk.allowed:
         AUDIT.record_event(event_id=str(uuid.uuid4()), user_id=user_id, event_type="RISK_REJECTED", payload={"code": company["ticker"], "side": req.side, "quantity": req.quantity, "limitPrice": req.limitPrice, "mode": req.mode, "recommendation": {"call": decision.call, "score": decision.weighted_score}, "referencePrice": reference_price, "risk": risk.to_dict()})
         raise HTTPException(status_code=400, detail={"message": "order rejected by risk policy", "risk": risk.to_dict()})

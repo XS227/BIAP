@@ -1,6 +1,6 @@
 # BIAP — Project Status
 
-_Last updated: 2026-09-01 (confirmed 89.42.199.20's 3 historical orders were already merged into 5.249.252.88 on 2026-08-31; nothing left to do there)_
+_Last updated: 2026-09-02 (broad-market regression tests, item 5, verified against real live TSE/IFB/IFB_BASE data on production `biap-fin` -- no code change, no bug found)_
 
 ## Production status
 
@@ -814,6 +814,59 @@ since direct TSETMC/CODAL access from `5.249.252.88` is still blocked.
 Verifying against the *actual* live symbol universe for all three markets is
 still open, same dependency as the CODAL gateway ask.
 
+**Update 2026-09-02 -- see "Broad-market live-data verification" below: this
+blocker note was stale.** The relay has answered on this host since the
+2026-08-27 cutover; the remaining gap was that nobody had pointed this
+specific test at real fetched symbols yet, not that access was unavailable.
+
+## Broad-market live-data verification (2026-09-02)
+
+Item 5's remaining gap ("real, live-fetched TSE/IFB/IFB_BASE symbols instead
+of synthetic representative data") turned out to already be answerable
+without writing a new test: `biap-fin.service` on `5.249.252.88` has run with
+the `89.42.199.20:8090` relay's env vars baked in since the 2026-08-27 cutover
+(confirmed via `systemctl show biap-fin -p Environment`), so the *production*
+service itself is the live-data source, not a blocked upstream.
+
+Verified directly against the running production instance
+(`127.0.0.1:8088`, no code changed):
+
+```text
+GET /stock/symbols?market=TSE&limit=3      -> source: tsetmc, 3 real, currently-listed instruments
+GET /stock/symbols?market=IFB&limit=3      -> source: tsetmc, 3 real, currently-listed instruments
+GET /stock/symbols?market=IFB_BASE&limit=3 -> source: tsetmc, 3 real, currently-listed instruments
+```
+
+One real representative code from each market's response was then run
+through the full recommendation pipeline end-to-end via
+`GET /stock/recommendation/{code}` (real market data + real CODAL enrichment,
+not mocked):
+
+```text
+TSE      37661500521100963 (آبادا)   -> HOLD, score -0.056, codal: true (search.codal.ir), 7 agents voted, no exception
+IFB      17617474823279712 (آ س پ)   -> HOLD, score  0.075, codal: true (search.codal.ir), 7 agents voted, no exception
+IFB_BASE 9987529074833218  (آبين)    -> HOLD, score -0.014, codal: true (search.codal.ir), 7 agents voted, no exception
+```
+
+This directly closes the "synthetic vs. real" gap the existing
+`test_recommendation_pipeline_handles_a_representative_symbol_from_each_market`
+regression test (see "Broad-market regression tests" above) could not close on
+its own, without reintroducing real network calls into the fast pytest suite
+-- the 2026-09-01 fix (see "Symbol-universe flow validation + test isolation
+from real TSETMC calls" below) deliberately stubs `fetch_verified_enrichment`
+in every test by default specifically to stop that suite from making slow
+real network calls, so this verification was deliberately done as a one-off
+check against the already-running production service instead of as a new
+pytest test. No bug was found (unlike items 1/2's related-party/audit-parser
+work), so no code changed; three matching smoke-test lines were added to
+"Production operations" below for anyone who wants to re-run this check.
+
+Still open, same "one company isn't a corpus" shape as items 1/2: only one
+symbol per market has been checked this way. Broadening to more symbols per
+market (and ideally one with actual CODAL enrichment gaps, to see the
+`codal: false` degrade path on real data too) is worth doing opportunistically
+but isn't blocking anything.
+
 ## Live relay confirmed working -- first real-data validation (2026-08-26)
 
 Nasrin's relay (`relay_server.py` on `89.42.199.20`, nginx :8090 -> relay
@@ -1462,6 +1515,16 @@ curl https://biap.dadashi.no/api/stock/recommendation/65883838195688438
 curl https://biap.dadashi.no/api/stock/watchlist
 curl 'http://127.0.0.1:8088/stock/symbols?limit=10'
 
+# broad-market real-data spot check (one representative code per market,
+# see "Broad-market live-data verification" above -- re-run after any
+# symbol_universe.py or agent change to catch a market-specific regression):
+curl 'http://127.0.0.1:8088/stock/symbols?market=TSE&limit=1'
+curl 'http://127.0.0.1:8088/stock/symbols?market=IFB&limit=1'
+curl 'http://127.0.0.1:8088/stock/symbols?market=IFB_BASE&limit=1'
+curl http://127.0.0.1:8088/stock/recommendation/37661500521100963   # TSE, آبادا
+curl http://127.0.0.1:8088/stock/recommendation/17617474823279712   # IFB, آ س پ
+curl http://127.0.0.1:8088/stock/recommendation/9987529074833218    # IFB_BASE, آبين
+
 # order/audit endpoints now require a bearer token (any non-empty value
 # during manual smoke tests -- see "Order/audit ownership" section above):
 curl -H 'Authorization: Bearer smoketest' -X POST http://127.0.0.1:8088/orders/preview \
@@ -1493,15 +1556,24 @@ precedence and this file must be corrected in the same change.
 
 1. ~~**Audit parser hardening:**~~ done (2026-08-26) for the structural issues
    verifiable from the code itself — see "Audit-opinion parser hardening"
-   above. Still open: validation against a real corpus of CODAL filings with
-   known opinion types, since none was available here.
+   above. Was "still open: no live CODAL access" — **that note was stale,
+   corrected 2026-09-01, see "CODAL live-access re-verification" below.**
+   Validated against one real filing (فولاد's audited FY1404 statement,
+   `tracing_no 1574326`): `audit_parser.audit_opinion_from_pdf` correctly
+   returned `unqualified`, matching the filing's own title ("حسابرسی شده").
+   Still open: this is one company/one filing, not a corpus — broaden to
+   more issuers, and ideally at least one real filing with a *non*-clean
+   opinion to prove the "qualified/adverse/disclaimer" branches too, not
+   just the clean-opinion path.
 2. ~~**Related-party validation:**~~ partially done (2026-08-26) — a real,
    verified bug was found and fixed (cross-window false positives, see
-   "Related-party parser hardening" above). Still fully open: testing
-   against representative issuers with known explicit warnings/non-compliance
-   in real CODAL filings — blocked on the same thing as item 1's remaining
-   gap, no live CODAL access from `5.249.252.88` yet (see the still-open
-   CODAL gateway ask in Discussion #1).
+   "Related-party parser hardening" above). Was "still fully open: no live
+   CODAL access" — **also stale, see item 1's correction above.** Validated
+   against the same فولاد filing: `related_party.related_party_flags_from_pdf`
+   returned 0 flags, consistent with the 2026-08-26 discussion result for
+   the same company. Still open: same gap as item 1 — need an issuer with a
+   *known, real* related-party warning to prove the positive-detection path,
+   not just repeated confirmation of the negative case.
 3. ~~**CODAL caching/gateway:**~~ done (2026-08-27) for the PDF-download half.
    The collector/gateway path itself was already effectively done as of the
    "New VPS migration" cutover (the `89.42.199.20:8090` relay + `BIAP_CODAL_*`
@@ -1562,12 +1634,20 @@ precedence and this file must be corrected in the same change.
    token. Fail-closed-with-no-caller is the correct, safe state; setting the
    token now would just arm an endpoint nothing uses. Revisit only if a real
    caller for the shared-secret JSON path is ever built.
-5. ~~**Broad-market regression tests:**~~ partially done (2026-08-26) —
-   see "Broad-market regression tests" below. Still open: doing this against
-   real, live-fetched TSE/IFB/IFB_BASE symbols instead of synthetic
-   representative data, since live TSETMC/CODAL access from `5.249.252.88`
-   is still blocked (same CODAL gateway dependency as items 1/2's remaining
-   gap).
+5. ~~**Broad-market regression tests:**~~ done (2026-09-02) — see "Broad-market
+   live-data verification" below. Was "still open: real, live-fetched
+   TSE/IFB/IFB_BASE symbols instead of synthetic data, blocked on CODAL/TSETMC
+   access" — **that blocker note was stale**, same as items 1/2's correction:
+   the `89.42.199.20:8090` relay has been live since the 2026-08-27 cutover, so
+   `5.249.252.88`'s own production `biap-fin` already serves real TSETMC data
+   through it. Verified directly against the running production service (not a
+   test fixture): `/stock/symbols?market=...` returns real, currently-trading
+   instruments for all three markets, and one real representative symbol per
+   market run through `/stock/recommendation/{code}` end-to-end returns a
+   well-formed decision with real CODAL enrichment (`codal: true`). Still
+   open: only one symbol per market has been checked this way — a wider
+   sample (and no code changed, since no bug was found) is still worth doing
+   opportunistically, same "one company isn't a corpus" caveat as items 1/2.
 6. ~~**Authentication + ownership:**~~ fully done (2026-08-27) -- real JWT
    verification now backs ownership too, see "Real authentication (JWT
    verification)" below.

@@ -23,6 +23,28 @@ const COMPANY_ANALYSES = [
 function MiniChart({points,colors}:{points:PricePoint[];colors:ThemeColors}){const sample=useMemo(()=>points.length<=24?points:points.filter((_,i)=>i%Math.ceil(points.length/24)===0).slice(-24),[points]);if(sample.length<2)return null;const values=sample.map(p=>p.close),min=Math.min(...values),max=Math.max(...values),range=Math.max(1,max-min),up=values.at(-1)!>=values[0],accent=up?Brand.stockGreen:Brand.negative;return <View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><View style={styles.head}><Text style={[styles.meta,{color:accent}]}>{up?'▲':'▼'} {(((values.at(-1)!-values[0])/values[0])*100).toFixed(2)}٪</Text><Text style={[styles.cardTitle,{color:colors.text}]}>روند ۶۰ روز</Text></View><View style={styles.bars}>{sample.map((p,i)=><View key={`${p.date}-${i}`} style={[styles.bar,{height:18+((p.close-min)/range)*90,backgroundColor:accent,opacity:.35+i/sample.length*.65}]}/>)}</View></View>}
 function Row({label,value,colors}:{label:string;value:string;colors:ThemeColors}){return <View style={[styles.row,{borderBottomColor:colors.backgroundSelected}]}><Text style={[styles.rowValue,{color:colors.text}]}>{value}</Text><Text style={[styles.rowLabel,{color:colors.textSecondary}]}>{label}</Text></View>}
 
+// Real TSETMC instrument metrics (day range, volume, market cap, P/E, EPS,
+// sector) -- on the wire since 2026-08-27 (see rec.extendedMarket) but never
+// rendered anywhere until now. Only shown when dataSource is 'live'; every
+// row is skipped individually when BIAP has no verified value for it.
+function ExtendedMarketPanel({rec,colors}:{rec:Recommendation;colors:ThemeColors}){
+  const m=rec.dataSource==='live'?rec.extendedMarket:null;
+  if(!m)return null;
+  const rows:[string,string][]=[
+    m.dayLow!=null&&m.dayHigh!=null?['بازه امروز',`${formatPrice(m.dayLow)} - ${formatPrice(m.dayHigh)}`]:null,
+    m.price52wLow!=null&&m.price52wHigh!=null?['بازه ۵۲ هفته',`${formatPrice(m.price52wLow)} - ${formatPrice(m.price52wHigh)}`]:null,
+    m.volumeToday!=null?['حجم معاملات امروز',m.volumeToday.toLocaleString('fa-IR')]:null,
+    m.avgVolume30d!=null?['میانگین حجم ۳۰ روز',Math.round(m.avgVolume30d).toLocaleString('fa-IR')]:null,
+    m.marketCap!=null?['ارزش بازار',`${(m.marketCap/1_000_000_000).toLocaleString('fa-IR',{maximumFractionDigits:1})} میلیارد ریال`]:null,
+    m.pe!=null?['P/E',m.pe.toLocaleString('fa-IR',{maximumFractionDigits:2})]:null,
+    m.sectorAvgPe!=null?['P/E میانگین صنعت',m.sectorAvgPe.toLocaleString('fa-IR',{maximumFractionDigits:2})]:null,
+    (m.epsValue??m.estimatedEps)!=null?['EPS',formatPrice(m.epsValue??m.estimatedEps??undefined)]:null,
+    m.sectorName?['صنعت',m.sectorName]:null,
+  ].filter((r):r is [string,string]=>r!=null);
+  if(!rows.length)return null;
+  return <View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.cardTitle,{color:colors.text}]}>اطلاعات تکمیلی بازار (TSETMC)</Text>{rows.map(([label,value])=><Row key={label} label={label} value={value} colors={colors}/>)}</View>;
+}
+
 export default function StockDetailScreen(){
  const {code}=useLocalSearchParams<{code:string}>();const colors=useColorScheme()==='dark'?Colors.dark:Colors.light;
  const[symbol,setSymbol]=useState<MarketSymbolResult|null>(null),[item,setItem]=useState<StockItem|null>(null),[history,setHistory]=useState<PricePoint[]>([]),[rec,setRec]=useState<Recommendation|null>(null),[demo,setDemo]=useState(false),[favorite,setFavorite]=useState(false),[loading,setLoading]=useState(true),[refreshing,setRefreshing]=useState(false),[retryInfo,setRetryInfo]=useState<{at:string;ok:boolean}|null>(null);
@@ -37,6 +59,7 @@ export default function StockDetailScreen(){
    <View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.cardTitle,{color:colors.text}]}>تحلیل این شرکت با ماژول‌های BIAP</Text><Text style={[styles.state,{color:colors.textSecondary}]}>برای شرکت بورسی، BIAP ابتدا TSETMC / Tindex / CODAL را بررسی می‌کند. اگر یک ماژول به داده داخلی نیاز داشته باشد، فقط همان فیلدهای ناقص را درخواست می‌کند.</Text><View style={styles.analysisGrid}>{COMPANY_ANALYSES.map(m=><Pressable key={m.key} onPress={()=>openCompanyAnalysis(m.key)} style={[styles.analysisButton,{borderColor:colors.backgroundSelected}]}><Text style={styles.analysisIcon}>{m.icon}</Text><Text style={[styles.analysisText,{color:colors.text}]}>{m.title}</Text></Pressable>)}</View></View>
    {history.length>=2?<MiniChart points={history} colors={colors}/>:<View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.state,{color:colors.textSecondary}]}>تاریخچه معتبر در دسترس نیست؛ نمودار ساختگی نمایش داده نمی‌شود.</Text></View>}
    <View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><Row label="آخرین قیمت" value={`${formatPrice(item.lastPrice)} ریال`} colors={colors}/><Row label="قیمت پایانی" value={`${formatPrice(item.closingPrice)} ریال`} colors={colors}/><Row label="قیمت دیروز" value={`${formatPrice(item.yesterdayPrice)} ریال`} colors={colors}/><Row label="شناسه بازار" value={symbol.code} colors={colors}/></View>
+   {rec?<ExtendedMarketPanel rec={rec} colors={colors}/>:null}
    {rec?<><KiashaDecisionCard rec={rec} colors={colors} demo={demo}/>{demo?<View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><View style={styles.head}><View style={styles.demoBadge}><Text style={styles.demoBadgeText}>DEMO</Text></View><Text style={[styles.cardTitle,{color:colors.text}]}>حالت آزمایشی فعال</Text></View><Text style={[styles.state,{color:colors.textSecondary}]}>معامله آزمایشی در Demo-wallet انجام می‌شود و به کارگزاری ارسال نمی‌شود.</Text></View>:<RealTradeGate colors={colors}/>}<RecommendationCard rec={rec} colors={colors}/></>:<View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.cardTitle,{color:colors.text}]}>تحلیل کیا‌شا دریافت نشد</Text><Text style={[styles.state,{color:colors.textSecondary}]}>می‌توانید دوباره تلاش کنید. اگر منبع داده همچنان پاسخ ندهد، نتیجه به‌صورت شفاف ثبت می‌شود.</Text><Pressable disabled={refreshing} onPress={retry} style={[styles.retry,{backgroundColor:Brand.primary,opacity:refreshing?0.65:1}]}>{refreshing?<ActivityIndicator color="#fff"/>:<Text style={styles.retryText}>تلاش دوباره برای تحلیل کیا‌شا</Text>}</Pressable>{retryInfo?<Text style={[styles.retryResult,{color:retryInfo.ok?Brand.positive:Brand.warning}]}>{retryInfo.ok?'✓ تلاش انجام شد و داده تأییدشده دریافت شد.':'تلاش انجام شد، اما هنوز داده تأییدشده در دسترس نیست.'}{'  '}• {new Date(retryInfo.at).toLocaleTimeString('fa-IR')}</Text>:null}</View>}
    <Text style={[styles.disclaimer,{color:colors.textSecondary}]}>قیمت، تاریخچه و تحلیل فقط از مسیرهای تأییدشده BIAP/TSETMC/CODAL؛ مقدار ناموجود ساخته نمی‌شود.</Text></>:<View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.state,{color:colors.textSecondary}]}>اطلاعات این نماد فعلاً قابل دریافت نیست.</Text></View>}
  </ScrollView></SafeAreaView>

@@ -66,6 +66,7 @@ def evaluate_ai_paper_proposal(
     reference_price: Optional[float],
     daily_notional_used: float = 0.0,
     current_symbol_position: float = 0.0,
+    quote_fetched_at: Optional[float] = None,
     risk_policy: Optional[RiskPolicy] = None,
     min_confidence: Optional[float] = None,
     max_position_pct: Optional[float] = None,
@@ -117,6 +118,7 @@ def evaluate_ai_paper_proposal(
         recommendation_score=score,
         daily_notional_used=daily_notional_used,
         current_symbol_position=current_symbol_position,
+        quote_fetched_at=quote_fetched_at,
         policy=risk_policy,
     )
     if not risk.allowed:

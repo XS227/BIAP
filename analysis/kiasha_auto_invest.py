@@ -403,6 +403,7 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
                     portfolio_value=sizing_capital,
                     reference_price=reference_price,
                     current_symbol_position=owned,
+                    quote_fetched_at=(company.get("market") or {}).get("quote_fetched_at"),
                     execute=False,
                 )
                 if not gate.allowed or gate.intent is None or gate.risk is None:
@@ -500,6 +501,7 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
                     reference_price=reference_price,
                     current_symbol_position=current_qty,
                     max_position_pct=remaining_symbol_pct,
+                    quote_fetched_at=(company.get("market") or {}).get("quote_fetched_at"),
                     execute=False,
                 )
                 if not gate.allowed or gate.intent is None or gate.risk is None:

@@ -14,7 +14,7 @@ unavailable; no values are fabricated.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 import os
 import time
@@ -44,6 +44,12 @@ class LiveQuote:
     yesterday_price: Optional[float]
     change: Optional[float]
     change_percent: Optional[float]
+    # Wall-clock time this quote was actually fetched, not an exchange-side
+    # tick time (neither the watchlist backend nor TSETMC's ClosingPrice
+    # endpoint exposes one) -- but it's a real signal: a cached quote object
+    # keeps its original fetch time, so age = now - fetched_at reflects how
+    # long ago BIAP last talked to the source for this price.
+    fetched_at: float = field(default_factory=time.time)
 
 
 @dataclass(frozen=True)
