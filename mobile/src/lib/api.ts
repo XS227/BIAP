@@ -92,6 +92,38 @@ export type Recommendation = {
   breakdown: RecommendationBreakdownEntry[];
 };
 
+export type UnifiedCompanyDataset = {
+  code: string | null;
+  name: string | null;
+  generatedAt: string;
+  dataSource: 'mock' | 'live' | 'codal' | string;
+  dataAvailability: {
+    codal?: boolean;
+    codal_metadata?: boolean;
+    market_extended?: boolean;
+    tindex?: boolean;
+    market_memory?: boolean;
+  };
+  identity: {
+    ticker: string | null;
+    nameFa: string | null;
+    nameEn: string | null;
+  };
+  market: Record<string, unknown>;
+  financials: Record<string, unknown> | null;
+  codalMetadata: Record<string, unknown> | null;
+  performance: Record<string, unknown> | null;
+  flow: Record<string, unknown> | null;
+  tindex: Record<string, unknown> | null;
+  marketMemory: Record<string, unknown> | null;
+  provenance: {
+    sources: string[];
+    primary: string;
+    isLive: boolean;
+    syntheticValues: false;
+  };
+};
+
 async function sleep(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -116,6 +148,31 @@ export async function fetchRecommendation(code: string, timeoutMs = 15_000): Pro
       }
       if (!res.ok) return null;
       return (await res.json()) as Recommendation;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return null;
+}
+
+export async function fetchCompanyDataset(code: string, timeoutMs = 15_000): Promise<UnifiedCompanyDataset | null> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const headers = await getHeaders();
+      const res = await authFetch(`${KIASHA_API_BASE}/stock/company/${encodeURIComponent(code)}`, {
+        headers,
+        signal: controller.signal,
+      });
+      if (res.status === 503 && attempt === 0) {
+        await sleep(1200);
+        continue;
+      }
+      if (!res.ok) return null;
+      return (await res.json()) as UnifiedCompanyDataset;
     } catch {
       return null;
     } finally {
