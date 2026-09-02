@@ -8,7 +8,10 @@ Type=oneshot
 User=ubuntu
 WorkingDirectory=/home/ubuntu/biap-kiasha/XS227-BIAP/analysis
 EnvironmentFile=/home/ubuntu/biap-kiasha/XS227-BIAP/analysis/.env.ai
-EnvironmentFile=/home/ubuntu/BIAP/analysis/.env.broker
+# Legacy broker credentials are optional. Paper Auto Invest must not fail to
+# start merely because the old broker env file is absent; live execution is
+# disabled by design and the Paper runtime flags below are authoritative.
+EnvironmentFile=-/home/ubuntu/BIAP/analysis/.env.broker
 # Runtime safety flags are intentionally loaded last so a stale value in .env.ai
 # cannot silently disable Paper execution. The deployment helper creates this file.
 EnvironmentFile=/etc/biap/kiasha-paper-runtime.env
