@@ -8,6 +8,29 @@ export type ServerPaperPosition = {
   updatedAt?: string;
 };
 
+export type KiashaCapitalMandate = {
+  mandateId: string;
+  userId: string;
+  accountType?: 'PAPER' | 'REAL' | string;
+  allocatedCash: number;
+  mandateCash: number;
+  investedCost: number;
+  accountingEquityAtCost: number;
+  realizedPnL: number;
+  horizon: 'week' | 'month' | string;
+  status: 'ACTIVE' | 'STOPPING' | 'COMPLETED' | string;
+  startsAt: string;
+  endsAt: string;
+  positions: Array<{
+    code: string;
+    quantity: number;
+    avgCost: number;
+    costBasis: number;
+    realizedPnL: number;
+    updatedAt?: string;
+  }>;
+};
+
 export type ServerPaperAccount = {
   userId: string;
   initialCash: number;
@@ -18,6 +41,8 @@ export type ServerPaperAccount = {
 export type ServerPaperAccountResponse = {
   account: ServerPaperAccount;
   sizingCapital: number;
+  manualAvailableCash?: number;
+  kiashaCapitalMandate?: KiashaCapitalMandate | null;
   serverOwned: boolean;
   paperExecutionEnabled: boolean;
   liveExecution: boolean;
