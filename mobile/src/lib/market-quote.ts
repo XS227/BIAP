@@ -4,12 +4,15 @@ import { KIASHA_API_BASE, type MarketSymbolResult, type StockItem } from '@/lib/
 // resolved through BIAP so Android users do not depend on direct access to
 // Iranian market-data hosts or a VPN.
 const quoteCache = new Map<string, { at: number; value: StockItem }>();
+const identityCache = new Map<string, { at: number; value: string | null }>();
 const QUOTE_CACHE_MS = 25_000;
+const IDENTITY_CACHE_MS = 30 * 60_000;
 
 export type PricePoint = { date: string; close: number };
 
 type MarketQuotePayload = StockItem & { source?: string };
 type MarketHistoryPayload = { items?: PricePoint[] };
+type SymbolUniversePayload = { items?: MarketSymbolResult[] };
 
 function usable(item: StockItem | null | undefined): item is StockItem {
   return Boolean(item && !item.error && (item.lastPrice !== undefined || item.closingPrice !== undefined));
@@ -36,9 +39,35 @@ export async function fetchTsetmcInstrumentLabel(code: string, timeoutMs = 5_500
   const raw = String(code || '').trim();
   if (!raw) return null;
   if (!/^\d+$/.test(raw)) return raw;
+
+  const cached = identityCache.get(raw);
+  if (cached && Date.now() - cached.at < IDENTITY_CACHE_MS) return cached.value;
+
+  // The symbol-universe route is the authoritative identity source: it keeps
+  // numeric TSETMC insCode, short Persian ticker and long company name together.
+  // Resolve by exact code first so list views display a ticker/company identity
+  // rather than a 15–20 digit instrument id. This also gives SymbolLogo a stable
+  // ticker key instead of forcing it to build a placeholder from the raw id.
+  const universe = await fetchJson<SymbolUniversePayload>(
+    `/stock/symbols?q=${encodeURIComponent(raw)}&limit=12`,
+    Math.min(timeoutMs, 4_500)
+  );
+  const exact = Array.isArray(universe?.items)
+    ? universe!.items!.find((item) => String(item.code || '').trim() === raw)
+    : undefined;
+  const universeLabel = String(exact?.symbol || exact?.name || '').trim();
+  if (universeLabel && universeLabel !== raw) {
+    identityCache.set(raw, { at: Date.now(), value: universeLabel });
+    return universeLabel;
+  }
+
+  // Quote is a verified fallback for older/degraded backend snapshots where the
+  // full universe lookup cannot resolve the id. Never manufacture a company name.
   const quote = await fetchJson<MarketQuotePayload>(`/performance/market-quote/${encodeURIComponent(raw)}`, timeoutMs);
   const name = String(quote?.name || '').trim();
-  return name && name !== raw ? name : null;
+  const value = name && name !== raw ? name : null;
+  identityCache.set(raw, { at: Date.now(), value });
+  return value;
 }
 
 async function backendQuote(symbol: MarketSymbolResult, timeoutMs = 5_500): Promise<StockItem | null> {
