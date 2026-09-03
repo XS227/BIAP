@@ -35,16 +35,30 @@ def _legacy_module():
 
 
 def auto_status(user_id: str) -> dict[str, Any]:
-    return _legacy_module().auto_status(user_id)
+    payload = _legacy_module().auto_status(user_id)
+    # Capital/accounting is deliberately surfaced before it is allowed to drive
+    # execution. This lets mobile/API consumers distinguish delegated Kiasha
+    # capital from ordinary Paper cash without silently changing legacy users'
+    # trading behaviour during the migration.
+    from kiasha_capital_mandate import STORE as CAPITAL_STORE
+
+    payload["capitalMandate"] = CAPITAL_STORE.active_mandate(user_id=user_id)
+    payload["capitalMandateRequiredForNewModel"] = True
+    return payload
 
 
 def update_auto_settings(user_id: str, *, enabled: bool, horizon: str, max_daily_trades: int) -> dict[str, Any]:
-    return _legacy_module().update_auto_settings(
+    result = _legacy_module().update_auto_settings(
         user_id,
         enabled=enabled,
         horizon=horizon,
         max_daily_trades=max_daily_trades,
     )
+    from kiasha_capital_mandate import STORE as CAPITAL_STORE
+
+    result["capitalMandate"] = CAPITAL_STORE.active_mandate(user_id=user_id)
+    result["capitalMandateRequiredForNewModel"] = True
+    return result
 
 
 def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]:
