@@ -1564,7 +1564,20 @@ precedence and this file must be corrected in the same change.
    Still open: this is one company/one filing, not a corpus — broaden to
    more issuers, and ideally at least one real filing with a *non*-clean
    opinion to prove the "qualified/adverse/disclaimer" branches too, not
-   just the clean-opinion path.
+   just the clean-opinion path. **2026-09-03/04 update: still open, not yet
+   verified** — see `docs/CODAL_REAL_VALIDATION_CORPUS_2026-09-04.md` for
+   the current state: a ChatGPT session identified 5 real external-mirror
+   candidates (قualified/adverse/disclaimer/2×related-party) and a Claude
+   session independently found 13 real `SuperVision`-flagged distressed
+   issuers via CODAL's own search API (a genuine, reusable discovery method)
+   and confirmed one of them (خمهر, tracing_no `1553054`) has a CODAL-side
+   PDF export failure (`pdftotext` extracts the literal word `ERROR`, not a
+   parser bug — verified by hand). None of the non-clean candidates have
+   been run through the real production parser yet — blocked by a sustained
+   `429` from the CODAL relay/upstream starting during the discovery scan
+   and still active as of 2026-09-03 23:25 UTC. Do not mark this item done
+   until a real qualified/adverse/disclaimer PASS or FAIL is recorded from
+   an actual extracted PDF.
 2. ~~**Related-party validation:**~~ partially done (2026-08-26) — a real,
    verified bug was found and fixed (cross-window false positives, see
    "Related-party parser hardening" above). Was "still fully open: no live
@@ -1573,7 +1586,14 @@ precedence and this file must be corrected in the same change.
    returned 0 flags, consistent with the 2026-08-26 discussion result for
    the same company. Still open: same gap as item 1 — need an issuer with a
    *known, real* related-party warning to prove the positive-detection path,
-   not just repeated confirmation of the negative case.
+   not just repeated confirmation of the negative case. **2026-09-03/04
+   update: still open** — same doc as item 1 above; real Article-129 notice
+   candidates identified (دیران tracing_no `1080345`; لطیف tracing_no
+   `1000501`/`1002444`/`1002308`) but not yet run through
+   `related_party_flags_from_pdf`, and a notice's mere existence is not
+   itself a positive case (ordinary disclosure ≠ warning) — still need to
+   read the actual filing text for explicit non-compliance wording before
+   claiming a real positive.
 3. ~~**CODAL caching/gateway:**~~ done (2026-08-27) for the PDF-download half.
    The collector/gateway path itself was already effectively done as of the
    "New VPS migration" cutover (the `89.42.199.20:8090` relay + `BIAP_CODAL_*`
