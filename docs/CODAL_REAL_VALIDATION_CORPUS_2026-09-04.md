@@ -129,33 +129,80 @@ against. The other 12 candidates above were not yet inspected.
 that section's acceptance criterion 1:** `codal-search` on the
 `89.42.199.20:8090` relay started returning `HTTP 429 Too Many Requests`
 partway through the discovery scan above (a ~40-page paging loop, each page
-one request, run with only a 0.15s gap -- almost certainly what triggered
-it). Confirmed this is a real, live condition, not a client-side artifact:
-production's own `GET /stock/recommendation/46348559193224090` (فولاد, the
-one symbol with an existing verified live PASS) itself degraded from its
-previously-verified `codal: true` to `codal: false` /
+one request, run with only a 0.15s gap -- suspected at the time as the
+trigger). Confirmed this is a real, live condition, not a client-side
+artifact: production's own `GET /stock/recommendation/46348559193224090`
+(فولاد, the one symbol with an existing verified live PASS) itself degraded
+from its previously-verified `codal: true` to `codal: false` /
 `codalFundamentals: null` during this window -- checked directly against
-`127.0.0.1:8088`, not inferred. Re-checked with spaced-out retries (8x20s,
-then later 3x45s, ~23 real minutes of intermittent checking total from
-first hit to last check at 23:25 UTC) -- still `429` at every check, and
-production فولاد still showing `codal: false` at the final check. Given the
-project's own "no forcing/no fabricating" rule applies to this session's
-own process too, not just the parser: stopped retrying rather than keep
-hammering a shared resource that production itself depends on. No PASS/FAIL
-was recorded for any of the 5 candidates above or the 12 unexamined
-`SuperVision`-flagged ones -- none were run through the real parser this
-session.
+`127.0.0.1:8088`, not inferred.
+
+**Root-caused via SSH to the relay host itself (2026-09-03, ~23:30-23:55
+UTC), correcting the "this session caused it" assumption above:** read
+`/root/BIAP/analysis/relay_server.py` (no rate-limiting/backoff logic of its
+own -- it's a bare proxy) and `/etc/nginx/sites-available/biap-codal-gateway`
+(no `limit_req`, just an IP allowlist + `proxy_pass`), then
+`/root/BIAP/analysis/relay.log` (150,150 lines, uvicorn access log, covers
+the relay's full uptime since it started 2026-08-26). The `429` responses
+carry `Server: nginx/1.24.0 (Ubuntu)` -- CODAL's own server signature, not
+the relay's -- confirming the 429 is genuinely coming from upstream CODAL,
+not anything the relay or this host's nginx imposes. Critically: **the
+first `codal-search` 429 in the log is at line 1029 of 150,150** -- i.e.
+essentially from very early in the relay's multi-day production life, long
+before this session existed. Of the last 300 `codal-search` log lines
+checked at the time, 44 were `429` and only 2 were `200` (~4% success). This
+is a **chronic, high-failure-rate condition on CODAL's `search.codal.ir`
+specifically** (`tsetmc-cdn`, `codal-excel` and `tsetmc-old` in the same log
+are essentially all `200 OK` throughout -- only the search endpoint is
+affected), not something this session's scan freshly triggered, and not a
+fixed-duration block that will simply "clear" -- it is probabilistic, with
+a real but small chance of success on any given request. This explains why
+every earlier session's "still need a real non-clean example" gap was never
+closed: not for lack of trying, but because the access channel itself has
+been failing most of the time all along, until now nobody had traced it to
+the relay's own logs to see this shape.
+
+Given that corrected picture, retried with modest backoff (5 attempts per
+symbol, 6s apart, `search/v2/q` with `Symbol=`, the shape that showed
+occasional `200`s in the tail of the log) against all 5 of the ChatGPT
+corpus's candidates -- **0/25 succeeded in this window** (all `429`).
+Re-checked with spaced-out retries before and after that batch (8x20s, then
+3x45s, then the 6x8s/5x6s batches above -- roughly 40 real minutes of
+intermittent, deliberately non-abusive checking total, well under the
+volume production itself generates) -- still failing at the last check.
+Stopped rather than push further: the success rate right now appears to be
+near 0%, and continuing to add load to a chronically-struggling shared
+upstream endpoint is not proportionate to the marginal chance of a hit. No
+PASS/FAIL was recorded for any of the 5 candidates above or the 12
+unexamined `SuperVision`-flagged ones -- none were run through the real
+parser this session.
+
+**Recommended follow-up, separate from the CODAL-validation task itself:**
+this chronic `search.codal.ir` failure rate for the relay's outbound IP
+(`89.42.199.20`) looks like a real, standing infrastructure problem worth
+its own investigation/ask (e.g. whether that IP is specifically
+rate-limited by CODAL, whether request volume from `biap-fin` itself needs
+throttling, or whether a different source IP/access pattern would fare
+better) -- flagged in `TASKS.md` rather than attempted here, since fixing it
+is infrastructure work, not audit-parser validation.
 
 **Handoff, for whoever continues (GPT session or a later Claude session):**
-before resuming any CODAL work, check `curl http://89.42.199.20:8090/health`
-(relay's own liveness, was `200` throughout the block) *and* a real
-`codal-search` call (e.g. `GET .../codal-search/api/search/v1/companies`) --
-the relay itself can report healthy while upstream CODAL is still
-rate-limiting it. Confirm production's own
-`GET http://127.0.0.1:8088/stock/recommendation/46348559193224090` shows
-`codal: true` again as a second independent signal before resuming. Once
-clear, space individual requests by several seconds and avoid unthrottled
-multi-page search loops (the discovery method above is genuinely useful --
+this is not a "wait for it to clear" condition -- treat every `codal-search`
+call as having a real but low (roughly single-digit-percent, observed 2/46
+in one sample, 0/25 in another) chance of success at any given moment, not a
+binary up/down state. `curl http://89.42.199.20:8090/health` being `200`
+proves only the relay process is alive, not that `codal-search` will
+succeed -- always test with a real `codal-search` call (e.g.
+`GET .../codal-search/api/search/v1/companies`) before trusting an empty
+result from `codal_data.py` as "no data" rather than "rate-limited this
+try." A retry loop (~5 attempts, several seconds apart, on the specific
+`search/v2/q?Symbol=...` call needed) is the right pattern, same as used
+above -- not a long wait-then-single-retry. Once a candidate's filing list
+comes back, immediately cache/save the result (e.g. to a local JSON, as
+`codal_flagged.json`/`candidate_filings.json` were this session) so a
+later PDF-fetch/parse step doesn't need to re-win the same low-probability
+draw. Avoid unthrottled multi-page search loops for new discovery scans
+specifically (the discovery method above is genuinely useful --
 just needs a real per-request delay, e.g. 3-5s, if repeated or extended past
 these 13 candidates). No code was changed this session (no parser bug was
 proven against real data yet), so there is nothing to revert.
