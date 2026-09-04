@@ -30,6 +30,8 @@ from execution import (
 from kiasha import decide
 from local_auth import router as auth_router
 from market_data import MarketDataUnavailable, base_url as market_base_url, find_quote
+from paper_execution_store import PaperExecutionStore
+from paper_sell_store import PaperSellStore
 from performance_routes import router as performance_router
 from risk import evaluate_order_risk, policy_snapshot
 from scenario_engine import build_business_scenarios
@@ -98,6 +100,9 @@ def _admin_auth_required(_request: Request, _exc: AdminAuthRequired) -> Redirect
 
 MOCK_COMPANIES = {SAMPLE_COMPANY["ticker"]: SAMPLE_COMPANY}
 AUDIT = AuditStore()
+PAPER_BUY_STORE = PaperExecutionStore()
+PAPER_SELL_STORE = PaperSellStore()
+DEFAULT_PAPER_INITIAL_CASH = float(os.getenv("KIASHA_PAPER_INITIAL_CASH", "100000000"))
 
 
 class OrderPreviewRequest(BaseModel):
@@ -294,6 +299,45 @@ def submit_order(req: OrderSubmitRequest, user_id: str = Depends(require_user_id
     except ExecutionPolicyError as exc:
         AUDIT.record_event(event_id=str(uuid.uuid4()), user_id=user_id, intent_id=req.intentId, event_type="SUBMIT_REJECTED", payload={"error": str(exc), "intent": intent})
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if receipt.get("status") == "PAPER_FILLED":
+        raw_reference_price = intent.get("referencePrice") or intent.get("limit_price")
+        try:
+            reference_price = float(raw_reference_price)
+        except (TypeError, ValueError):
+            reference_price = 0.0
+        if reference_price <= 0:
+            AUDIT.record_event(event_id=str(uuid.uuid4()), user_id=user_id, intent_id=req.intentId, event_type="SUBMIT_REJECTED", payload={"error": "verified reference price is required for Paper fill persistence", "intent": intent})
+            raise HTTPException(status_code=409, detail="verified reference price is required for Paper fill persistence")
+
+        AUDIT.ensure_paper_account(user_id=user_id, initial_cash=DEFAULT_PAPER_INITIAL_CASH)
+        proposal = {
+            "source": "orders-submit",
+            "code": str(intent.get("code") or "").upper(),
+            "action": intent.get("side"),
+            "executionAllowed": False,
+        }
+        kwargs = dict(
+            user_id=user_id,
+            code=str(intent["code"]),
+            horizon="manual",
+            proposal=proposal,
+            risk=intent.get("risk") or {},
+            intent=intent,
+            receipt=receipt,
+            reference_price=reference_price,
+            reference_source="orders-preview",
+            idempotency_key=f"orders-submit:{intent['id']}",
+        )
+        try:
+            result = PAPER_SELL_STORE.commit_sell_fill(**kwargs) if intent.get("side") == "SELL" else PAPER_BUY_STORE.commit_buy_fill(**kwargs)
+        except ValueError as exc:
+            AUDIT.record_event(event_id=str(uuid.uuid4()), user_id=user_id, intent_id=req.intentId, event_type="SUBMIT_REJECTED", payload={"error": str(exc), "intent": intent})
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        persisted_receipt = result["receipt"]
+        AUDIT.record_event(event_id=str(uuid.uuid4()), user_id=user_id, intent_id=req.intentId, event_type="ORDER_SUBMITTED", payload={"receipt": persisted_receipt})
+        return persisted_receipt
+
     AUDIT.save_intent(receipt, user_id=user_id)
     AUDIT.record_event(event_id=str(uuid.uuid4()), user_id=user_id, intent_id=req.intentId, event_type="ORDER_SUBMITTED", payload={"receipt": receipt})
     return receipt
