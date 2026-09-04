@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing, ThemeColors } from '@/constants/theme';
 import { getBusinessDataset } from '@/lib/business-data';
 import { getDemoMode, setDemoMode } from '@/lib/demo-mode';
@@ -66,11 +66,11 @@ export default function ModulesScreen() {
   const [companyConnected, setCompanyConnected] = useState(false);
   const [selected, setSelected] = useState<ListedCompanySummary | null>(null);
 
-  const refreshStatus = async () => {
+  const refreshStatus = useCallback(async () => {
     const [d, dataset, listed] = await Promise.all([getDemoMode(), getBusinessDataset(), getSelectedListedCompany()]);
     setDemo(d); setCompanyConnected(Boolean(dataset?.rows.length)); setSelected(listed);
-  };
-  useEffect(() => { refreshStatus(); }, []);
+  }, []);
+  useFocusEffect(useCallback(() => { refreshStatus(); }, [refreshStatus]));
   const toggle = async () => { const next = !demo; await setDemoMode(next); setDemo(next); };
 
   const stateFor = (group: string) => {
