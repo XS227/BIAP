@@ -44,5 +44,14 @@
     "web": "expo start --web",
     "lint": "expo lint"
   },
+  "expo": {
+    "install": {
+      "exclude": [
+        "expo",
+        "expo-router",
+        "expo-sharing"
+      ]
+    }
+  },
   "private": true
 }
