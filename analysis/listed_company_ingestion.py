@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import os
+import time
 from typing import Any
 
 from company_builder import build_company_from_quote, build_company_from_symbol
@@ -11,7 +12,7 @@ from market_data import MarketDataUnavailable, find_quote
 from symbol_universe import SymbolUniverseUnavailable, query_symbols
 
 WORKER_NAME = "listed-company-enrichment-v1"
-DAILY_BATCH_SIZE = 500
+DAILY_BATCH_SIZE = 500  # hard safety ceiling per invocation; production runner uses a smaller rolling slice
 
 
 def _now_iso() -> str:
@@ -40,12 +41,18 @@ def _build_verified_company(code: str) -> tuple[dict[str, Any] | None, str]:
     return build_company_from_symbol(code), "tindex+codal+company_builder-fallback"
 
 
-def run_batch(*, store: ListedCompanyStore | None = None, batch_size: int = DAILY_BATCH_SIZE, reset: bool = False) -> dict[str, Any]:
+def run_batch(
+    *,
+    store: ListedCompanyStore | None = None,
+    batch_size: int = DAILY_BATCH_SIZE,
+    reset: bool = False,
+    interval_seconds: float = 0.0,
+) -> dict[str, Any]:
     """Enrich the next resumable slice of the listed-company universe.
 
-    Production cadence is intentionally 500 companies per invocation. The
-    worker persists its cursor after every company, so tomorrow's invocation
-    continues with the next 500 rather than starting over.
+    The cursor is persisted after every company. Production intentionally runs
+    a smaller slice each day and can pause between issuers to avoid creating a
+    CODAL/Tindex burst. Unit tests keep ``interval_seconds=0``.
     """
     target = store or ListedCompanyStore()
     universe = refresh_universe(target)
@@ -56,11 +63,14 @@ def run_batch(*, store: ListedCompanyStore | None = None, batch_size: int = DAIL
     succeeded = 0 if reset or not previous or previous.get("status") == "completed" else int(previous.get("succeeded") or 0)
     failed = 0 if reset or not previous or previous.get("status") == "completed" else int(previous.get("failed") or 0)
     started_at = _now_iso() if reset or not previous or previous.get("status") == "completed" else previous.get("startedAt")
+    safe_interval = max(0.0, float(interval_seconds or 0.0))
     metadata = {
         "universe": universe,
         "sources": ["TSETMC", "CODAL", "Tindex", "company_builder"],
         "markets": ["TSE", "IFB", "IFB_BASE"],
-        "dailyBatchSize": DAILY_BATCH_SIZE,
+        "maxBatchSize": DAILY_BATCH_SIZE,
+        "requestedBatchSize": max(1, min(int(batch_size), DAILY_BATCH_SIZE)),
+        "intervalSeconds": safe_interval,
         "moduleTargets": ["kpi", "sql", "financial-model"],
         "tindexConfigured": bool(os.getenv("TINDEX_API_TOKEN")),
         "externalBlockers": [] if os.getenv("TINDEX_API_TOKEN") else ["TINDEX_API_TOKEN missing in production environment"],
@@ -70,7 +80,7 @@ def run_batch(*, store: ListedCompanyStore | None = None, batch_size: int = DAIL
     codes = target.pending_codes(start=cursor, limit=max(1, min(int(batch_size), DAILY_BATCH_SIZE)))
     last_code = None
     last_error = None
-    for code in codes:
+    for index, code in enumerate(codes):
         last_code = code
         try:
             company, source = _build_verified_company(code)
@@ -97,6 +107,8 @@ def run_batch(*, store: ListedCompanyStore | None = None, batch_size: int = DAIL
             cursor += 1
             processed += 1
             target.save_state(WORKER_NAME, status="running", cursor=cursor, total=total, processed=processed, succeeded=succeeded, failed=failed, started_at=started_at, last_code=last_code, last_error=last_error, metadata=metadata)
+        if safe_interval and index + 1 < len(codes):
+            time.sleep(safe_interval)
 
     completed = cursor >= total
     return target.save_state(
@@ -118,7 +130,7 @@ def run_batch(*, store: ListedCompanyStore | None = None, batch_size: int = DAIL
 def status(store: ListedCompanyStore | None = None) -> dict[str, Any]:
     target = store or ListedCompanyStore()
     result = target.status()
-    result["dailyBatchSize"] = DAILY_BATCH_SIZE
+    result["maxBatchSize"] = DAILY_BATCH_SIZE
     result["moduleTargets"] = ["kpi", "sql", "financial-model"]
     result["tindexConfigured"] = bool(os.getenv("TINDEX_API_TOKEN"))
     if not result["tindexConfigured"]:
