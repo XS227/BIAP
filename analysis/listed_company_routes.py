@@ -1,5 +1,14 @@
-"""Authenticated listed-company search/detail/status endpoints on the existing FIN API."""
+"""Authenticated listed-company search/detail/status endpoints on the existing FIN API.
+
+The detail response overlays the newest persisted Market Memory observation on
+top of the slower listed-company baseline. Market Memory is populated from
+verified Tindex observations, so KPI/SQL/Financial Model can keep a recent
+public-market minimum dataset even when CODAL/TSETMC refreshes are slower or an
+upstream is temporarily unavailable. Missing fields remain missing.
+"""
 from __future__ import annotations
+
+from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, HTTPException, Query
 
@@ -7,13 +16,99 @@ from auth import require_user_id
 from listed_company_ingestion import refresh_universe, status as ingestion_status
 from listed_company_store import ListedCompanyStore
 from manual_paper_routes import router
+from market_memory import latest_symbol_snapshot, save_symbol_snapshot
+from tindex_data import fetch_symbol_overview
 
 STORE = ListedCompanyStore()
+DAILY_MEMORY_MAX_AGE = timedelta(hours=26)
 
 
 def _ensure_universe() -> None:
     if STORE.count() == 0:
         refresh_universe(STORE)
+
+
+def _memory_is_daily_fresh(memory: dict | None, *, now: datetime | None = None) -> bool:
+    if not memory or not memory.get("observed_at"):
+        return False
+    try:
+        observed = datetime.fromisoformat(str(memory["observed_at"]))
+        if observed.tzinfo is None:
+            observed = observed.replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return False
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    age = current.astimezone(timezone.utc) - observed.astimezone(timezone.utc)
+    return timedelta(0) <= age <= DAILY_MEMORY_MAX_AGE
+
+
+def _daily_memory_for(item: dict) -> dict | None:
+    """Return recent persisted Tindex memory, lazily refreshing one selected symbol.
+
+    The background collector rotates through the market. A user-selected company
+    should not have to wait for its turn, so a stale/missing selected symbol gets
+    one bounded Tindex overview request. Failure is fail-soft and the newest older
+    persisted observation is still returned.
+    """
+    symbol = str(item.get("symbol") or "").strip()
+    if not symbol:
+        return None
+    newest = latest_symbol_snapshot(symbol)
+    if _memory_is_daily_fresh(newest):
+        return newest
+    try:
+        payload = fetch_symbol_overview(symbol)
+    except Exception:
+        payload = None
+    if payload:
+        try:
+            save_symbol_snapshot(
+                symbol=symbol,
+                source="tindex",
+                payload=payload,
+                instrument_code=str(item.get("code") or "") or None,
+                market=str(item.get("market") or "") or None,
+            )
+        except Exception:
+            pass
+        refreshed = latest_symbol_snapshot(symbol)
+        if refreshed is not None:
+            return refreshed
+    return newest
+
+
+def _merge_daily_memory(company: dict, memory: dict | None) -> tuple[dict, dict, dict]:
+    market = dict(company.get("market") or {})
+    tindex = dict(company.get("tindex") or {})
+    availability = dict(company.get("data_available") or {})
+    if not memory:
+        return market, tindex, availability
+
+    # Daily persisted values are allowed to replace older baseline values only
+    # when the daily observation actually contains a verified number.
+    for target, source in (
+        ("price", "price"),
+        ("last_price", "price"),
+        ("change_percent", "change_percent"),
+        ("pe", "pe"),
+        ("market_cap", "market_cap"),
+    ):
+        value = memory.get(source)
+        if value is not None:
+            market[target] = value
+            tindex[source] = value
+
+    market["memory_observed_at"] = memory.get("observed_at")
+    market["memory_source"] = memory.get("source")
+    market["memory_is_live"] = False
+    tindex["source"] = memory.get("source") or tindex.get("source") or "tindex"
+    tindex["observed_at"] = memory.get("observed_at")
+    if memory.get("source") == "tindex":
+        availability["tindex"] = True
+    availability["market_memory"] = True
+    return market, tindex, availability
 
 
 @router.get("/listed-companies")
@@ -32,7 +127,13 @@ def listed_company_search(
 @router.get("/listed-companies/status")
 def listed_company_status(_user_id: str = Depends(require_user_id)):
     _ensure_universe()
-    return ingestion_status(STORE)
+    result = ingestion_status(STORE)
+    result["freshnessPolicy"] = {
+        "daily": "Tindex overview -> persistent Market Memory; selected companies refresh when older than 26h",
+        "baseline": "rolling TSETMC/CODAL/Tindex enrichment; target full-market cycle within seven days",
+        "moduleTargets": ["kpi", "sql", "financial-model"],
+    }
+    return result
 
 
 @router.get("/listed-companies/{code}")
@@ -42,12 +143,26 @@ def listed_company_detail(code: str, _user_id: str = Depends(require_user_id)):
     if item is None:
         raise HTTPException(status_code=404, detail="listed company not found")
     company = item.get("company") or {}
+    memory = _daily_memory_for(item)
+    market, tindex, data_availability = _merge_daily_memory(company, memory)
     return {
         **item,
-        "dataAvailability": company.get("data_available") or {},
+        "dataAvailability": data_availability,
         "dataDiagnostics": company.get("data_diagnostics") or {},
-        "marketData": company.get("market") if company else None,
+        "marketData": market or None,
         "codalMetadata": company.get("codal_metadata") if company else None,
         "codalFundamentals": company.get("codal") if company else None,
-        "tindex": company.get("tindex") if company else None,
+        "tindex": tindex or None,
+        "marketMemory": {
+            "source": memory.get("source"),
+            "observedAt": memory.get("observed_at"),
+            "observedDate": memory.get("observed_date"),
+            "market": memory.get("market"),
+        } if memory else None,
+        "freshness": {
+            "baselineEnrichedAt": item.get("enrichedAt"),
+            "dailyObservedAt": memory.get("observed_at") if memory else None,
+            "dailySource": memory.get("source") if memory else None,
+            "dailyFresh": _memory_is_daily_fresh(memory),
+        },
     }

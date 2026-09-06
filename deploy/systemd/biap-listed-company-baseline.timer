@@ -1,0 +1,11 @@
+[Unit]
+Description=Advance BIAP listed-company baseline every day
+
+[Timer]
+OnCalendar=*-*-* 03:20:00 Asia/Tehran
+Persistent=true
+RandomizedDelaySec=20m
+Unit=biap-listed-company-baseline.service
+
+[Install]
+WantedBy=timers.target

@@ -72,8 +72,15 @@ export default function DataConnectScreen() {
     await setSelectedListedCompany(company);
     setSelectedCompanyState(company);
     setName(`${company.code} • company data`);
-    router.setParams({ code: company.code, companyMode: 'listed' } as never);
     setStatus(`✓ شرکت بورسی انتخاب شد: ${company.symbol}${company.name ? ` • ${company.name}` : ''}`);
+
+    // When a module sent the user here only to choose a listed company, continue
+    // directly to that module. Do not make the user pass through CSV/Excel first.
+    if (moduleKey) {
+      router.replace({ pathname: '/module', params: { key: moduleKey, companyMode: 'listed', code: company.code } } as never);
+      return;
+    }
+    router.setParams({ code: company.code, companyMode: 'listed' } as never);
   };
 
   const importData = async () => {
@@ -131,8 +138,8 @@ export default function DataConnectScreen() {
         </View>
 
         {companyMode === 'listed' ? <View style={[styles.companyCard, { backgroundColor: colors.backgroundElement, borderColor: '#16a34a66' }]}>
-          <View style={styles.activeHead}><View style={styles.liveBadge}><Text style={styles.liveBadgeText}>LISTED</Text></View><Text style={[styles.activeTitle, { color: colors.text }]}>انتخاب شرکت بورسی</Text></View>
-          <Text style={[styles.body, { color: colors.textSecondary }]}>شرکت انتخاب‌شده برای ماژول‌های تحلیل و توسعه کسب‌وکار ذخیره می‌شود. جست‌وجو از دیتابیس پایدار BIAP انجام می‌شود.</Text>
+          <View style={styles.activeHead}><View style={styles.liveBadge}><Text style={styles.liveBadgeText}>LISTED</Text></View><Text style={[styles.activeTitle, { color: colors.text }]}>انتخاب شرکت بورسی / فرابورسی</Text></View>
+          <Text style={[styles.body, { color: colors.textSecondary }]}>شرکت انتخاب‌شده برای ماژول‌های تحلیل و توسعه کسب‌وکار ذخیره می‌شود. داده عمومی آن از دیتابیس پایدار BIAP و Tindex/TSETMC/CODAL خوانده می‌شود.</Text>
           {selectedCompany ? <View style={[styles.selectedBox, { borderColor: Brand.positive }]}><Text style={[styles.selectedName, { color: colors.text }]}>{selectedCompany.symbol} • {selectedCompany.name || selectedCompany.code}</Text><Text style={[styles.selectedMeta, { color: colors.textSecondary }]}>{selectedCompany.market || 'بازار نامشخص'} • {selectedCompany.sourceUniverse || 'منبع ثبت نشده'}</Text></View> : null}
           <View style={styles.searchRow}>
             <Pressable onPress={() => refreshListedCompanies()} style={styles.searchButton}><Text style={styles.searchButtonText}>{companyLoading ? '…' : 'جست‌وجو'}</Text></Pressable>
@@ -158,13 +165,13 @@ export default function DataConnectScreen() {
 
         <View style={[styles.activeCard, { backgroundColor: colors.backgroundElement }]}>
           <View style={styles.activeHead}><View style={styles.liveBadge}><Text style={styles.liveBadgeText}>SYNC</Text></View><Text style={[styles.activeTitle, { color: colors.text }]}>منابع فعال BIAP</Text></View>
-          <Text style={[styles.body, { color: colors.textSecondary }]}>Market/CODAL/Kiasha فعال هستند. داده اختصاصی شرکت به حساب کاربر همگام می‌شود و روی دستگاه نیز cache محلی دارد.</Text>
-          <View style={styles.liveRow}><Text style={[styles.liveItem, { color: Brand.positive }]}>● Company Dataset Sync</Text><Text style={[styles.liveItem, { color: Brand.positive }]}>● Market / CODAL / Kiasha</Text></View>
+          <Text style={[styles.body, { color: colors.textSecondary }]}>Market/CODAL/Kiasha فعال هستند. داده عمومی شرکت بورسی از backend خوانده می‌شود؛ dataset اختصاصی فقط مکمل فیلدهای داخلی است.</Text>
+          <View style={styles.liveRow}><Text style={[styles.liveItem, { color: Brand.positive }]}>● Listed Company DB</Text><Text style={[styles.liveItem, { color: Brand.positive }]}>● Tindex / TSETMC / CODAL</Text></View>
         </View>
 
         <View style={[styles.importCard, { backgroundColor: colors.backgroundElement }]}>
-          <View style={styles.activeHead}><View style={styles.liveBadge}><Text style={styles.liveBadgeText}>READY</Text></View><Text style={[styles.activeTitle, { color: colors.text }]}>CSV / JSON / Excel</Text></View>
-          <Text style={[styles.body, { color: colors.textSecondary }]}>CSV یا JSON را paste کنید، یا فایل واقعی Excel با پسوند .xlsx انتخاب کنید. فایل Excel در backend امن خوانده می‌شود و dataset نرمال‌شده در حساب شما ذخیره می‌شود.</Text>
+          <View style={styles.activeHead}><View style={[styles.modeBadge, { backgroundColor: companyMode === 'listed' ? '#374151' : '#14532d' }]}><Text style={styles.modeBadgeText}>{companyMode === 'listed' ? 'OPTIONAL' : 'READY'}</Text></View><Text style={[styles.activeTitle, { color: colors.text }]}>{companyMode === 'listed' ? 'تکمیل داده داخلی (اختیاری)' : 'CSV / JSON / Excel'}</Text></View>
+          <Text style={[styles.body, { color: colors.textSecondary }]}>{companyMode === 'listed' ? 'برای KPI/SQL/Financial Model بورسی، انتخاب شرکت کافی است. فقط اگر تحلیل به داده خصوصی مثل مشتری، قیمت محصول، هزینه، CRM یا Pipeline نیاز دارد این بخش را تکمیل کنید.' : 'CSV یا JSON را paste کنید، یا فایل واقعی Excel با پسوند .xlsx انتخاب کنید. فایل Excel در backend امن خوانده می‌شود و dataset نرمال‌شده در حساب شما ذخیره می‌شود.'}</Text>
           <TextInput value={name} onChangeText={setName} placeholder="نام منبع داده" placeholderTextColor={colors.textSecondary} style={[styles.input, { color: colors.text, borderColor: colors.backgroundSelected }]} />
           <Pressable disabled={importingFile} onPress={importExcel} style={[styles.excelButton, { borderColor: Brand.primary, opacity: importingFile ? .6 : 1 }]}><Text style={[styles.excelButtonText, { color: Brand.primary }]}>{importingFile ? 'در حال خواندن Excel…' : 'انتخاب فایل Excel (.xlsx)'}</Text></Pressable>
           <TextInput value={raw} onChangeText={setRaw} multiline textAlignVertical="top" placeholder={'یا paste کنید:\nmonth,revenue,cost,customers\n1405-01,1200000,700000,240'} placeholderTextColor={colors.textSecondary} style={[styles.area, { color: colors.text, borderColor: colors.backgroundSelected }]} />

@@ -3,6 +3,12 @@ name: Release candidate check
 on:
   push:
     branches: [main]
+  pull_request:
+    paths:
+      - 'analysis/**'
+      - 'mobile/**'
+      - 'deploy/**'
+      - '.github/workflows/release-candidate-check.yml'
   workflow_dispatch:
 
 jobs:
