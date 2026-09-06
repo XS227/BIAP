@@ -6,6 +6,7 @@ import { DEMO_MODULES } from '@/demo/demo-data';
 import { getDemoMode, setDemoMode } from '@/lib/demo-mode';
 import { fetchRealModuleData, RealModulePayload } from '@/lib/real-module-data';
 import { getBusinessDataset } from '@/lib/business-data';
+import { getSelectedListedCompany } from '@/lib/listed-company-selection';
 import { matchRequirementColumns, requirementFor, sourceLabel } from '@/lib/module-data-requirements';
 
 export default function ModuleDetailScreen() {
@@ -17,20 +18,27 @@ export default function ModuleDetailScreen() {
   const [loadingReal, setLoadingReal] = useState(true);
   const [datasetColumns, setDatasetColumns] = useState<string[]>([]);
   const key = typeof params.key === 'string' ? params.key : '';
-  const code = typeof params.code === 'string' ? params.code : '';
-  const companyMode = params.companyMode === 'listed' ? 'listed' : params.companyMode === 'hybrid' ? 'hybrid' : 'private';
+  const paramCode = typeof params.code === 'string' ? params.code : '';
+  const paramCompanyMode = typeof params.companyMode === 'string' ? params.companyMode : '';
+  const [code, setCode] = useState(paramCode);
+  const [companyMode, setCompanyMode] = useState<'listed' | 'private' | 'hybrid'>(paramCompanyMode === 'listed' ? 'listed' : paramCompanyMode === 'hybrid' ? 'hybrid' : 'private');
   const module = DEMO_MODULES[key];
   const requirement = requirementFor(key);
   const readiness = requirement ? matchRequirementColumns(key, datasetColumns) : { matched: [], missing: [] };
 
   const reload = useCallback(async () => {
     setLoadingReal(true);
-    const [demo, payload, dataset] = await Promise.all([getDemoMode(), fetchRealModuleData(key, { code, companyMode }), getBusinessDataset()]);
+    const selected = !paramCode && !paramCompanyMode ? await getSelectedListedCompany() : null;
+    const effectiveCode = paramCode || selected?.code || '';
+    const effectiveMode: 'listed' | 'private' | 'hybrid' = paramCompanyMode === 'listed' ? 'listed' : paramCompanyMode === 'hybrid' ? 'hybrid' : selected ? 'listed' : 'private';
+    setCode(effectiveCode);
+    setCompanyMode(effectiveMode);
+    const [demo, payload, dataset] = await Promise.all([getDemoMode(), fetchRealModuleData(key, { code: effectiveCode, companyMode: effectiveMode }), getBusinessDataset()]);
     setDemoModeState(demo);
     setReal(payload);
     setDatasetColumns(dataset?.columns ?? []);
     setLoadingReal(false);
-  }, [key, code, companyMode]);
+  }, [key, paramCode, paramCompanyMode]);
 
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
 
@@ -42,7 +50,6 @@ export default function ModuleDetailScreen() {
   };
 
   const openDataConnect = () => router.push({ pathname: '/data-connect', params: { key, companyMode, code } } as never);
-
   const renderMetrics = (metrics: { label: string; value: string; delta?: string; tone?: 'positive' | 'negative' | 'neutral' }[]) => (
     <View style={styles.metricsRow}>{metrics.map((metric) => {
       const tone = metric.tone === 'positive' ? Brand.positive : metric.tone === 'negative' ? Brand.negative : colors.text;
