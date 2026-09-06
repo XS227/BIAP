@@ -7,13 +7,17 @@ import { useFonts, Vazirmatn_400Regular, Vazirmatn_700Bold } from '@expo-google-
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
 import LoginScreen from '@/components/login-screen';
+import RegisterScreen from '@/app/register';
 import { getValidAccessToken } from '@/lib/auth-session';
 
 SplashScreen.preventAutoHideAsync();
 
+type AuthScreen = 'login' | 'register';
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
   const [checking, setChecking] = useState(true);
   const [fontsLoaded] = useFonts({ Vazirmatn_400Regular, Vazirmatn_700Bold });
 
@@ -25,10 +29,27 @@ export default function RootLayout() {
   }, []);
 
   if (checking || !fontsLoaded) return null;
+
+  const handleLoggedIn = () => {
+    setAuthScreen('login');
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    setAuthScreen('login');
+    setIsLoggedIn(false);
+  };
+
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
-      {isLoggedIn ? <AppTabs onLogout={() => setIsLoggedIn(false)} /> : <LoginScreen onLogin={() => setIsLoggedIn(true)} />}
+      {isLoggedIn ? (
+        <AppTabs onLogout={handleLogout} />
+      ) : authScreen === 'register' ? (
+        <RegisterScreen onLogin={handleLoggedIn} onBack={() => setAuthScreen('login')} />
+      ) : (
+        <LoginScreen onLogin={handleLoggedIn} onRegister={() => setAuthScreen('register')} />
+      )}
     </ThemeProvider>
   );
 }
