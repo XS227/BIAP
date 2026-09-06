@@ -1,15 +1,14 @@
 import { useState } from 'react';
 import { View, Text, Image, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, useColorScheme } from 'react-native';
-import { router } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, Radius, BiapLogo } from '@/constants/theme';
 import { API_BASE } from '@/lib/api';
 import { setDemoMode } from '@/lib/demo-mode';
 import { storeAuthPayload } from '@/lib/auth-session';
 
-type Props = { onLogin: () => void };
+type Props = { onLogin: () => void; onRegister: () => void };
 const DEMO_EMAIL = 'demo@biap.app';
 
-export default function LoginScreen({ onLogin }: Props) {
+export default function LoginScreen({ onLogin, onRegister }: Props) {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const [email, setEmail] = useState('');
@@ -59,7 +58,7 @@ export default function LoginScreen({ onLogin }: Props) {
       <Pressable style={[styles.button, { backgroundColor: Brand.primary, opacity: loading ? 0.7 : 1 }]} onPress={handleLogin} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>ورود</Text>}
       </Pressable>
-      <Pressable onPress={() => router.push('/register')} style={[styles.buttonOutline, { borderColor: colors.backgroundSelected }]}>
+      <Pressable onPress={onRegister} style={[styles.buttonOutline, { borderColor: colors.backgroundSelected }]}>
         <Text style={[styles.buttonOutlineText, { color: colors.text }]}>ثبت‌نام</Text>
       </Pressable>
     </KeyboardAvoidingView>
