@@ -9,6 +9,7 @@ User=ubuntu
 WorkingDirectory=/home/ubuntu/biap-kiasha/XS227-BIAP/analysis
 Environment=PYTHONUNBUFFERED=1
 Environment=BIAP_LISTED_COMPANY_DAILY_BASELINE_BATCH=100
+Environment=BIAP_LISTED_COMPANY_INTERVAL_SECONDS=2.5
 Environment=TINDEX_FULL_ENRICHMENT=false
 EnvironmentFile=-/etc/biap/market-memory.env
 EnvironmentFile=-/etc/biap/listed-company.env
