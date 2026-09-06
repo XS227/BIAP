@@ -1,9 +1,10 @@
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from listed_company_routes import _merge_daily_memory
+from listed_company_routes import _memory_is_daily_fresh, _merge_daily_memory
 
 
 def test_daily_tindex_memory_overlays_only_verified_values():
@@ -46,3 +47,14 @@ def test_no_memory_keeps_baseline_unchanged():
     assert market == {"price": 100.0}
     assert tindex == {"price": 100.0}
     assert availability == {"codal": True, "tindex": True}
+
+
+def test_daily_freshness_is_time_bounded_not_calendar_day_only():
+    now = datetime(2026, 9, 6, 12, 0, tzinfo=timezone.utc)
+    recent = {"observed_at": (now - timedelta(hours=25)).isoformat()}
+    stale = {"observed_at": (now - timedelta(hours=27)).isoformat()}
+    future = {"observed_at": (now + timedelta(minutes=1)).isoformat()}
+
+    assert _memory_is_daily_fresh(recent, now=now) is True
+    assert _memory_is_daily_fresh(stale, now=now) is False
+    assert _memory_is_daily_fresh(future, now=now) is False
