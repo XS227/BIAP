@@ -8,6 +8,8 @@ upstream is temporarily unavailable. Missing fields remain missing.
 """
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 from fastapi import Depends, HTTPException, Query
 
 from auth import require_user_id
@@ -18,6 +20,7 @@ from market_memory import latest_symbol_snapshot, save_symbol_snapshot
 from tindex_data import fetch_symbol_overview
 
 STORE = ListedCompanyStore()
+DAILY_MEMORY_MAX_AGE = timedelta(hours=26)
 
 
 def _ensure_universe() -> None:
@@ -25,8 +28,24 @@ def _ensure_universe() -> None:
         refresh_universe(STORE)
 
 
+def _memory_is_daily_fresh(memory: dict | None, *, now: datetime | None = None) -> bool:
+    if not memory or not memory.get("observed_at"):
+        return False
+    try:
+        observed = datetime.fromisoformat(str(memory["observed_at"]))
+        if observed.tzinfo is None:
+            observed = observed.replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return False
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    age = current.astimezone(timezone.utc) - observed.astimezone(timezone.utc)
+    return timedelta(0) <= age <= DAILY_MEMORY_MAX_AGE
+
+
 def _daily_memory_for(item: dict) -> dict | None:
-    """Return today's persisted Tindex memory, lazily refreshing one selected symbol.
+    """Return recent persisted Tindex memory, lazily refreshing one selected symbol.
 
     The background collector rotates through the market. A user-selected company
     should not have to wait for its turn, so a stale/missing selected symbol gets
@@ -36,9 +55,9 @@ def _daily_memory_for(item: dict) -> dict | None:
     symbol = str(item.get("symbol") or "").strip()
     if not symbol:
         return None
-    fresh = latest_symbol_snapshot(symbol, max_age_days=1)
-    if fresh is not None:
-        return fresh
+    newest = latest_symbol_snapshot(symbol)
+    if _memory_is_daily_fresh(newest):
+        return newest
     try:
         payload = fetch_symbol_overview(symbol)
     except Exception:
@@ -54,10 +73,10 @@ def _daily_memory_for(item: dict) -> dict | None:
             )
         except Exception:
             pass
-        fresh = latest_symbol_snapshot(symbol, max_age_days=1)
-        if fresh is not None:
-            return fresh
-    return latest_symbol_snapshot(symbol)
+        refreshed = latest_symbol_snapshot(symbol)
+        if refreshed is not None:
+            return refreshed
+    return newest
 
 
 def _merge_daily_memory(company: dict, memory: dict | None) -> tuple[dict, dict, dict]:
@@ -110,7 +129,7 @@ def listed_company_status(_user_id: str = Depends(require_user_id)):
     _ensure_universe()
     result = ingestion_status(STORE)
     result["freshnessPolicy"] = {
-        "daily": "Tindex overview -> persistent Market Memory; selected companies refresh lazily when stale",
+        "daily": "Tindex overview -> persistent Market Memory; selected companies refresh when older than 26h",
         "baseline": "rolling TSETMC/CODAL/Tindex enrichment; target full-market cycle within seven days",
         "moduleTargets": ["kpi", "sql", "financial-model"],
     }
@@ -144,5 +163,6 @@ def listed_company_detail(code: str, _user_id: str = Depends(require_user_id)):
             "baselineEnrichedAt": item.get("enrichedAt"),
             "dailyObservedAt": memory.get("observed_at") if memory else None,
             "dailySource": memory.get("source") if memory else None,
+            "dailyFresh": _memory_is_daily_fresh(memory),
         },
     }
