@@ -11,6 +11,7 @@ from market_data import MarketDataUnavailable, find_quote
 from symbol_universe import SymbolUniverseUnavailable, query_symbols
 
 WORKER_NAME = "listed-company-enrichment-v1"
+DAILY_BATCH_SIZE = 500
 
 
 def _now_iso() -> str:
@@ -20,6 +21,7 @@ def _now_iso() -> str:
 def refresh_universe(store: ListedCompanyStore | None = None) -> dict[str, Any]:
     target = store or ListedCompanyStore()
     try:
+        # Keep both TSE and IFB/Fara Bourse instruments in the persistent universe.
         items = query_symbols(limit=10000)
     except SymbolUniverseUnavailable as exc:
         return {"ok": False, "count": target.count(), "error": str(exc), "source": "existing-store"}
@@ -34,11 +36,17 @@ def _build_verified_company(code: str) -> tuple[dict[str, Any] | None, str]:
     except MarketDataUnavailable:
         quote = None
     if quote is not None:
-        return build_company_from_quote(quote, codal_symbol=quote.name), "tsetmc+company_builder"
-    return build_company_from_symbol(code), "company_builder-fallback"
+        return build_company_from_quote(quote, codal_symbol=quote.name), "tsetmc+tindex+codal+company_builder"
+    return build_company_from_symbol(code), "tindex+codal+company_builder-fallback"
 
 
-def run_batch(*, store: ListedCompanyStore | None = None, batch_size: int = 25, reset: bool = False) -> dict[str, Any]:
+def run_batch(*, store: ListedCompanyStore | None = None, batch_size: int = DAILY_BATCH_SIZE, reset: bool = False) -> dict[str, Any]:
+    """Enrich the next resumable slice of the listed-company universe.
+
+    Production cadence is intentionally 500 companies per invocation. The
+    worker persists its cursor after every company, so tomorrow's invocation
+    continues with the next 500 rather than starting over.
+    """
     target = store or ListedCompanyStore()
     universe = refresh_universe(target)
     total = target.count()
@@ -51,12 +59,15 @@ def run_batch(*, store: ListedCompanyStore | None = None, batch_size: int = 25, 
     metadata = {
         "universe": universe,
         "sources": ["TSETMC", "CODAL", "Tindex", "company_builder"],
+        "markets": ["TSE", "IFB", "IFB_BASE"],
+        "dailyBatchSize": DAILY_BATCH_SIZE,
+        "moduleTargets": ["kpi", "sql", "financial-model"],
         "tindexConfigured": bool(os.getenv("TINDEX_API_TOKEN")),
         "externalBlockers": [] if os.getenv("TINDEX_API_TOKEN") else ["TINDEX_API_TOKEN missing in production environment"],
     }
     target.save_state(WORKER_NAME, status="running", cursor=cursor, total=total, processed=processed, succeeded=succeeded, failed=failed, started_at=started_at, metadata=metadata)
 
-    codes = target.pending_codes(start=cursor, limit=max(1, min(int(batch_size), 500)))
+    codes = target.pending_codes(start=cursor, limit=max(1, min(int(batch_size), DAILY_BATCH_SIZE)))
     last_code = None
     last_error = None
     for code in codes:
@@ -73,6 +84,7 @@ def run_batch(*, store: ListedCompanyStore | None = None, batch_size: int = 25, 
                     "builder": source,
                     "ingestedAt": _now_iso(),
                     "dataAvailability": availability,
+                    "moduleTargets": ["kpi", "sql", "financial-model"],
                     "tindexConfigured": bool(os.getenv("TINDEX_API_TOKEN")),
                 },
             )
@@ -106,6 +118,8 @@ def run_batch(*, store: ListedCompanyStore | None = None, batch_size: int = 25, 
 def status(store: ListedCompanyStore | None = None) -> dict[str, Any]:
     target = store or ListedCompanyStore()
     result = target.status()
+    result["dailyBatchSize"] = DAILY_BATCH_SIZE
+    result["moduleTargets"] = ["kpi", "sql", "financial-model"]
     result["tindexConfigured"] = bool(os.getenv("TINDEX_API_TOKEN"))
     if not result["tindexConfigured"]:
         result["externalBlockers"] = ["TINDEX_API_TOKEN missing in production environment"]
