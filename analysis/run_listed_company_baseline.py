@@ -26,10 +26,24 @@ def _env_int(name: str, default: int, minimum: int = 1, maximum: int = 500) -> i
     return max(minimum, min(value, maximum))
 
 
+def _env_float(name: str, default: float, minimum: float = 0.0, maximum: float = 30.0) -> float:
+    try:
+        value = float(os.getenv(name, str(default)))
+    except ValueError:
+        value = default
+    return max(minimum, min(value, maximum))
+
+
 def main() -> int:
     batch_size = _env_int("BIAP_LISTED_COMPANY_DAILY_BASELINE_BATCH", 100)
-    result = run_batch(batch_size=batch_size)
-    result = {**result, "requestedBatchSize": batch_size, "policy": "rolling weekly baseline; no fabricated values"}
+    interval = _env_float("BIAP_LISTED_COMPANY_INTERVAL_SECONDS", 2.5)
+    result = run_batch(batch_size=batch_size, interval_seconds=interval)
+    result = {
+        **result,
+        "requestedBatchSize": batch_size,
+        "intervalSeconds": interval,
+        "policy": "rolling weekly baseline; throttled upstream access; no fabricated values",
+    }
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
 
     # Individual upstream misses are persisted in the worker state and should
