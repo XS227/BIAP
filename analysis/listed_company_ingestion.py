@@ -19,6 +19,14 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _is_rate_limit_error(exc: BaseException) -> bool:
+    """Return True for HTTP/upstream rate-limit failures without binding to one client."""
+    if getattr(exc, "code", None) == 429 or getattr(exc, "status", None) == 429:
+        return True
+    text = str(exc).lower()
+    return any(marker in text for marker in ("429", "too many requests", "rate limit", "rate-limit", "ratelimit"))
+
+
 def refresh_universe(store: ListedCompanyStore | None = None) -> dict[str, Any]:
     target = store or ListedCompanyStore()
     try:
@@ -50,9 +58,12 @@ def run_batch(
 ) -> dict[str, Any]:
     """Enrich the next resumable slice of the listed-company universe.
 
-    The cursor is persisted after every company. Production intentionally runs
-    a smaller slice each day and can pause between issuers to avoid creating a
-    CODAL/Tindex burst. Unit tests keep ``interval_seconds=0``.
+    The cursor is persisted after every completed company. Production advances
+    a bounded daily slice and can pause between issuers to avoid creating a
+    CODAL/Tindex burst. If an upstream explicitly rate-limits the worker, the
+    current company is left at the cursor and the batch stops immediately so the
+    next scheduled run can retry it safely. Unit tests keep
+    ``interval_seconds=0``.
     """
     target = store or ListedCompanyStore()
     universe = refresh_universe(target)
@@ -74,6 +85,7 @@ def run_batch(
         "moduleTargets": ["kpi", "sql", "financial-model"],
         "tindexConfigured": bool(os.getenv("TINDEX_API_TOKEN")),
         "externalBlockers": [] if os.getenv("TINDEX_API_TOKEN") else ["TINDEX_API_TOKEN missing in production environment"],
+        "rateLimitPolicy": "stop-current-batch-and-retry-same-company-next-run",
     }
     target.save_state(WORKER_NAME, status="running", cursor=cursor, total=total, processed=processed, succeeded=succeeded, failed=failed, started_at=started_at, metadata=metadata)
 
@@ -82,6 +94,7 @@ def run_batch(
     last_error = None
     for index, code in enumerate(codes):
         last_code = code
+        advance_cursor = True
         try:
             company, source = _build_verified_company(code)
             if company is None:
@@ -102,11 +115,34 @@ def run_batch(
         except Exception as exc:
             last_error = str(exc)[:1000]
             target.record_error(code, last_error)
-            failed += 1
+            if _is_rate_limit_error(exc):
+                advance_cursor = False
+                metadata["rateLimitedAt"] = _now_iso()
+                metadata["rateLimitedCode"] = code
+                metadata["rateLimitError"] = last_error
+            else:
+                failed += 1
         finally:
-            cursor += 1
-            processed += 1
-            target.save_state(WORKER_NAME, status="running", cursor=cursor, total=total, processed=processed, succeeded=succeeded, failed=failed, started_at=started_at, last_code=last_code, last_error=last_error, metadata=metadata)
+            if advance_cursor:
+                cursor += 1
+                processed += 1
+            target.save_state(
+                WORKER_NAME,
+                status="rate_limited" if not advance_cursor else "running",
+                cursor=cursor,
+                total=total,
+                processed=processed,
+                succeeded=succeeded,
+                failed=failed,
+                started_at=started_at,
+                last_code=last_code,
+                last_error=last_error,
+                metadata=metadata,
+            )
+
+        if not advance_cursor:
+            return target.get_state(WORKER_NAME) or {}
+
         if safe_interval and index + 1 < len(codes):
             time.sleep(safe_interval)
 
