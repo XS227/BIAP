@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authFetch, authHeaders } from '@/lib/auth-session';
 import { KIASHA_API_BASE } from '@/lib/api';
+import { trackActivity } from '@/lib/activity';
 
 const KEY = 'biap:business-dataset:v1';
 
@@ -37,6 +38,15 @@ function asRecordArray(value: unknown): Record<string, unknown>[] {
   return candidate.filter((row): row is Record<string, unknown> => Boolean(row) && typeof row === 'object' && !Array.isArray(row));
 }
 
+function trackDatasetImport(dataset: BusinessDataset) {
+  void trackActivity('data_import', {
+    source: dataset.source,
+    name: dataset.name.slice(0, 120),
+    rowCount: dataset.rows.length,
+    columnCount: dataset.columns.length,
+  });
+}
+
 export function parseBusinessData(input: string, name = 'Company data'): BusinessDataset {
   const text = input.trim();
   if (!text) throw new Error('داده خالی است');
@@ -70,6 +80,7 @@ export async function saveBusinessDataset(dataset: BusinessDataset): Promise<voi
   const headers = await authHeaders();
   const res = await authFetch(`${KIASHA_API_BASE}/business/dataset`, { method: 'PUT', headers, body: JSON.stringify(dataset) });
   if (!res.ok) throw new Error(`sync failed: HTTP ${res.status}`);
+  trackDatasetImport(dataset);
 }
 
 export async function importExcelBusinessDataset(params: { filename: string; name?: string; base64Data: string }): Promise<BusinessDataset> {
@@ -85,6 +96,7 @@ export async function importExcelBusinessDataset(params: { filename: string; nam
     throw new Error(`Excel import failed: ${detail}`);
   }
   await writeLocal(body.dataset);
+  trackDatasetImport(body.dataset);
   return body.dataset;
 }
 
