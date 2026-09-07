@@ -14,12 +14,20 @@ import hmac
 import os
 import secrets
 import sqlite3
+from typing import Any, Optional
 from uuid import uuid4
 
 import jwt as pyjwt
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 
+from account_ops_local import (
+    consume_password_reset_token,
+    ensure_schema as ensure_account_ops_schema,
+    issue_password_reset_token,
+    record_activity,
+    send_password_reset_email,
+)
 from auth import require_user_id
 from business_dataset_store import delete_dataset, get_dataset, save_dataset
 from company_builder import build_company_from_quote, build_company_from_symbol
@@ -38,20 +46,49 @@ ACCESS_TOKEN_TTL_MINUTES = max(15, int(os.environ.get("BIAP_ACCESS_TOKEN_TTL_MIN
 REFRESH_TOKEN_TTL_DAYS = max(1, int(os.environ.get("BIAP_REFRESH_TOKEN_TTL_DAYS", "30")))
 
 
-class SignupRequest(BaseModel):
+class ClientContext(BaseModel):
+    installationId: str | None = Field(default=None, max_length=160)
+    platform: str | None = Field(default=None, max_length=32)
+    appVersion: str | None = Field(default=None, max_length=64)
+
+
+class SignupRequest(ClientContext):
     email: str = Field(min_length=3, max_length=254)
     password: str = Field(min_length=8, max_length=512)
     fullName: str = Field(min_length=1, max_length=120)
     companyName: str | None = Field(default=None, max_length=160)
 
 
-class LoginRequest(BaseModel):
+class LoginRequest(ClientContext):
     email: str = Field(min_length=3, max_length=254)
     password: str = Field(min_length=1, max_length=512)
 
 
 class RefreshRequest(BaseModel):
     refreshToken: str = Field(min_length=32, max_length=512)
+
+
+class LogoutRequest(ClientContext):
+    refreshToken: str | None = Field(default=None, max_length=512)
+
+
+class ForgotPasswordRequest(ClientContext):
+    email: str = Field(min_length=3, max_length=254)
+
+
+class ResetPasswordRequest(ClientContext):
+    token: str = Field(min_length=6, max_length=128)
+    newPassword: str = Field(min_length=8, max_length=512)
+
+
+class ChangePasswordRequest(ClientContext):
+    currentPassword: str = Field(min_length=1, max_length=512)
+    newPassword: str = Field(min_length=8, max_length=512)
+
+
+class ActivityRequest(ClientContext):
+    eventType: str = Field(min_length=1, max_length=64)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class BusinessDatasetRequest(BaseModel):
@@ -109,6 +146,7 @@ def init_auth_db(db_path: str = DEFAULT_AUTH_DB) -> None:
                 ON refresh_sessions(user_id, expires_at);
             """
         )
+    ensure_account_ops_schema()
 
 
 def _hash_password(password: str) -> str:
@@ -148,6 +186,20 @@ def _issue_access_token(user_id: str) -> tuple[str, int]:
     return pyjwt.encode(payload, _jwt_secret(), algorithm="HS256"), int(expires.timestamp())
 
 
+def _optional_user_id(authorization: Optional[str]) -> str | None:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return None
+    token = authorization.split(" ", 1)[1].strip()
+    if not token:
+        return None
+    try:
+        payload = pyjwt.decode(token, _jwt_secret(), algorithms=["HS256"])
+    except Exception:
+        return None
+    user_id = payload.get("userId") or payload.get("sub")
+    return str(user_id) if user_id else None
+
+
 def _refresh_hash(raw: str) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
@@ -174,6 +226,24 @@ def _auth_response(row: sqlite3.Row, conn: sqlite3.Connection) -> dict:
     }
 
 
+def _track_context(event_type: str, user_id: str | None, req: ClientContext, metadata: dict[str, Any] | None = None) -> None:
+    try:
+        record_activity(
+            event_type,
+            user_id=user_id,
+            installation_id=req.installationId,
+            platform=req.platform,
+            app_version=req.appVersion,
+            metadata=metadata or {},
+        )
+    except (OSError, sqlite3.Error):
+        pass
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
 @router.post("/signup", status_code=201)
 def signup(req: SignupRequest):
     _jwt_secret()
@@ -191,9 +261,11 @@ def signup(req: SignupRequest):
                 (user_id, email, req.fullName.strip(), req.companyName.strip() if req.companyName else None, encoded, now, now),
             )
             row = conn.execute("SELECT * FROM users WHERE user_id = ?", (user_id,)).fetchone()
-            return _auth_response(row, conn)
+            payload = _auth_response(row, conn)
     except sqlite3.IntegrityError as exc:
         raise HTTPException(status_code=409, detail={"error": "این ایمیل قبلاً ثبت شده است"}) from exc
+    _track_context("signup", user_id, req)
+    return payload
 
 
 @router.post("/login")
@@ -205,7 +277,10 @@ def login(req: LoginRequest):
         row = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
         if row is None or not _verify_password(req.password, row["password_hash"]):
             raise HTTPException(status_code=401, detail={"error": "ایمیل یا رمز عبور نادرست است"})
-        return _auth_response(row, conn)
+        user_id = str(row["user_id"])
+        payload = _auth_response(row, conn)
+    _track_context("login", user_id, req)
+    return payload
 
 
 @router.post("/refresh")
@@ -250,6 +325,94 @@ def refresh(req: RefreshRequest):
             "refreshTokenTtlDays": REFRESH_TOKEN_TTL_DAYS,
             "user": _public_user(row),
         }
+
+
+@router.post("/logout")
+def logout(req: LogoutRequest, authorization: Optional[str] = Header(default=None)):
+    init_auth_db()
+    user_id = _optional_user_id(authorization)
+    if req.refreshToken:
+        with _connect() as conn:
+            row = conn.execute(
+                "SELECT user_id FROM refresh_sessions WHERE token_hash = ?",
+                (_refresh_hash(req.refreshToken),),
+            ).fetchone()
+            if row is not None and user_id is None:
+                user_id = str(row["user_id"])
+            conn.execute(
+                "UPDATE refresh_sessions SET revoked_at = COALESCE(revoked_at, ?) WHERE token_hash = ?",
+                (_now_iso(), _refresh_hash(req.refreshToken)),
+            )
+    _track_context("logout", user_id, req)
+    return {"ok": True}
+
+
+@router.post("/forgot-password")
+def forgot_password(req: ForgotPasswordRequest):
+    _jwt_secret()
+    init_auth_db()
+    email = _normalize_email(req.email)
+    generic = {"message": "اگر ایمیل ثبت شده باشد، کد بازیابی ارسال می‌شود."}
+    with _connect() as conn:
+        row = conn.execute("SELECT user_id, email FROM users WHERE email = ?", (email,)).fetchone()
+    if row is None:
+        return generic
+    user_id = str(row["user_id"])
+    token = issue_password_reset_token(user_id)
+    send_password_reset_email(str(row["email"]), token)
+    _track_context("password_reset_request", user_id, req)
+    return generic
+
+
+@router.post("/reset-password")
+def reset_password(req: ResetPasswordRequest):
+    _jwt_secret()
+    init_auth_db()
+    user_id = consume_password_reset_token(req.token, _hash_password(req.newPassword))
+    if not user_id:
+        raise HTTPException(status_code=400, detail={"error": "کد بازیابی نامعتبر یا منقضی شده است"})
+    _track_context("password_reset_completed", user_id, req)
+    return {"message": "رمز عبور تغییر کرد. اکنون وارد شوید."}
+
+
+@router.post("/change-password")
+def change_password(req: ChangePasswordRequest, user_id: str = Depends(require_user_id)):
+    _jwt_secret()
+    init_auth_db()
+    now = _now_iso()
+    with _connect() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("SELECT * FROM users WHERE user_id = ?", (user_id,)).fetchone()
+        if row is None or not _verify_password(req.currentPassword, row["password_hash"]):
+            raise HTTPException(status_code=401, detail={"error": "رمز فعلی نادرست است"})
+        conn.execute(
+            "UPDATE users SET password_hash = ?, updated_at = ? WHERE user_id = ?",
+            (_hash_password(req.newPassword), now, user_id),
+        )
+        conn.execute(
+            "UPDATE refresh_sessions SET revoked_at = COALESCE(revoked_at, ?) WHERE user_id = ?",
+            (now, user_id),
+        )
+        row = conn.execute("SELECT * FROM users WHERE user_id = ?", (user_id,)).fetchone()
+        payload = _auth_response(row, conn)
+    _track_context("password_changed", user_id, req)
+    return payload
+
+
+@router.post("/activity/event")
+def activity_event(req: ActivityRequest, authorization: Optional[str] = Header(default=None)):
+    _jwt_secret()
+    init_auth_db()
+    user_id = _optional_user_id(authorization)
+    accepted = record_activity(
+        req.eventType,
+        user_id=user_id,
+        installation_id=req.installationId,
+        platform=req.platform,
+        app_version=req.appVersion,
+        metadata=req.metadata,
+    )
+    return {"accepted": bool(accepted)}
 
 
 @router.get("/business-dataset")
