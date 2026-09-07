@@ -86,8 +86,8 @@ jobs:
         run: |
           set -euo pipefail
           PORT="${VPS_PORT:-22}"
-          APP_DIR="${VPS_APP_DIR:-/home/ubuntu/BIAP}"
-          RESTART_CMD="${VPS_BACKEND_RESTART_CMD:-pm2 restart biap-backend --update-env}"
+          APP_DIR="${VPS_APP_DIR:-/root/BIAP}"
+          RESTART_CMD="${VPS_BACKEND_RESTART_CMD:-systemctl restart biap-fin}"
           HEALTH_URL="${VPS_HEALTH_URL:-https://biap.dadashi.no/api/health}"
 
           ssh -i ~/.ssh/biap_deploy_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" \
@@ -110,7 +110,9 @@ jobs:
 
           if ! git diff --quiet "$OLD_SHA" "$NEW_SHA" -- analysis/requirements.txt; then
             echo "Python requirements changed; updating dependencies."
-            if [[ -x .venv/bin/python ]]; then
+            if [[ -x analysis/.venv/bin/python ]]; then
+              analysis/.venv/bin/python -m pip install -r analysis/requirements.txt
+            elif [[ -x .venv/bin/python ]]; then
               .venv/bin/python -m pip install -r analysis/requirements.txt
             elif [[ -x venv/bin/python ]]; then
               venv/bin/python -m pip install -r analysis/requirements.txt
@@ -143,7 +145,7 @@ jobs:
 
           echo "Health check failed or API never reported ready=true." >&2
           cat /tmp/biap-health.json 2>/dev/null || true
-          bash -lc "pm2 status || true"
+          systemctl status biap-fin --no-pager || true
           exit 1
           REMOTE
 
