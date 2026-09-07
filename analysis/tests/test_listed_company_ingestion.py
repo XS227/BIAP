@@ -114,3 +114,44 @@ def test_worker_stops_on_rate_limit_and_retries_same_company(tmp_path, monkeypat
     assert second["processed"] == 1
     assert second["succeeded"] == 1
     assert calls == ["1", "1"]
+
+
+def test_refresh_universe_uses_tsetmc_yval_when_flow_missing(tmp_path, monkeypatch):
+    """Modern GetMarketWatch can omit flow/market; ordinary-share yVal must keep issuers eligible."""
+    store = ListedCompanyStore(str(tmp_path / "listed.sqlite3"))
+
+    def market_item(code, symbol, yval):
+        return SimpleNamespace(
+            code=code,
+            symbol=symbol,
+            name=symbol,
+            market=None,
+            source="tsetmc",
+            paper_type=yval,
+            to_dict=lambda: {
+                "code": code,
+                "symbol": symbol,
+                "name": symbol,
+                "market": None,
+                "source": "tsetmc",
+                "paper_type": yval,
+            },
+        )
+
+    stock = market_item("100", "فولاد", "300")
+    farabourse_stock = market_item("200", "آریا", "303")
+    rights = market_item("300", "فولادح", "400")
+    monkeypatch.setattr(ingestion, "query_symbols", lambda limit=10000: [stock, farabourse_stock, rights])
+    monkeypatch.setattr(ingestion, "list_companies", lambda: (_ for _ in ()).throw(ingestion.CodalDataUnavailable("timeout")))
+
+    result = ingestion.refresh_universe(store)
+
+    assert result["ok"] is True
+    assert result["strategy"] == "tsetmc-equity-fallback"
+    assert result["selectedThisRefresh"] == 2
+    assert result["filteredOutThisRefresh"] == 1
+    assert result["count"] == 2
+    assert set(result["_codes"]) == {"100", "200"}
+    assert store.get("100")["market"] is None
+    assert store.get("200")["market"] is None
+    assert store.get("300") is None
