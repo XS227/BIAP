@@ -30,7 +30,7 @@ export async function getClientContext() {
 async function postEvent(eventType: string, metadata?: Record<string, string | number | boolean | null>) {
   const context = await getClientContext();
   const token = await getValidAccessToken().catch(() => null);
-  await fetch(`${API_BASE}/activity/event`, {
+  await fetch(`${API_BASE}/auth/activity/event`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
