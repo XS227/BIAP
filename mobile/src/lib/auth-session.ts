@@ -85,3 +85,22 @@ export async function authFetch(input: string, init: RequestInit = {}): Promise<
   response = await fetch(input, { ...init, headers: retryHeaders });
   return response;
 }
+
+export async function logoutAndClearAuthSession(): Promise<void> {
+  const refreshToken = await AsyncStorage.getItem('refreshToken');
+  const accessToken = await getValidAccessToken().catch(() => null);
+  try {
+    await fetch(`${AUTH_API_BASE}/auth/logout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+  } catch {
+    // Local logout must still succeed when the server is temporarily unavailable.
+  } finally {
+    await clearAuthSession();
+  }
+}
