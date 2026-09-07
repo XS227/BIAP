@@ -200,6 +200,13 @@ def _optional_user_id(authorization: Optional[str]) -> str | None:
     return str(user_id) if user_id else None
 
 
+def _require_local_user_id(authorization: Optional[str] = Header(default=None)) -> str:
+    user_id = _optional_user_id(authorization)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="invalid or expired token")
+    return user_id
+
+
 def _refresh_hash(raw: str) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
@@ -237,6 +244,7 @@ def _track_context(event_type: str, user_id: str | None, req: ClientContext, met
             metadata=metadata or {},
         )
     except (OSError, sqlite3.Error):
+        # Analytics must never turn a valid auth action into a failed request.
         pass
 
 
@@ -376,7 +384,7 @@ def reset_password(req: ResetPasswordRequest):
 
 
 @router.post("/change-password")
-def change_password(req: ChangePasswordRequest, user_id: str = Depends(require_user_id)):
+def change_password(req: ChangePasswordRequest, user_id: str = Depends(_require_local_user_id)):
     _jwt_secret()
     init_auth_db()
     now = _now_iso()
