@@ -46,7 +46,7 @@ def test_refresh_universe_uses_codal_issuer_whitelist(tmp_path, monkeypatch):
     assert store.get("0")["sourceUniverse"] == "listed-company-tsetmc-codal"
 
 
-def test_refresh_universe_falls_back_to_market_classification(tmp_path, monkeypatch):
+def test_refresh_universe_falls_back_to_verified_tsetmc_equity_classification(tmp_path, monkeypatch):
     store = ListedCompanyStore(str(tmp_path / "listed.sqlite3"))
     market_company = _item("1", "COMPANY", market="TSE")
     unknown_instrument = _item("2", "OPTION", market=None)
@@ -60,8 +60,8 @@ def test_refresh_universe_falls_back_to_market_classification(tmp_path, monkeypa
 
     result = ingestion.refresh_universe(store)
 
-    assert result["strategy"] == "tsetmc-market-fallback"
+    assert result["strategy"] == "tsetmc-equity-fallback"
     assert result["count"] == 1
     assert result["_codes"] == ["1"]
-    assert store.get("1")["sourceUniverse"] == "listed-company-tsetmc-market"
+    assert store.get("1")["sourceUniverse"] == "listed-company-tsetmc-equity"
     assert store.get("2") is None
