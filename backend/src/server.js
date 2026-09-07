@@ -15,6 +15,8 @@ const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 
 const authRoutes = require('./routes/auth.routes');
+const activityRoutes = require('./routes/activity.routes');
+const adminRoutes = require('./routes/admin.routes');
 const projectRoutes = require('./routes/projects.routes');
 const analysisRoutes = require('./routes/analysis.routes');
 const integrationRoutes = require('./routes/integrations.routes');
@@ -38,20 +40,22 @@ app.use(cookieParser());
 
 // ── محدودیت نرخ درخواست (جلوگیری از سوءاستفاده از API هوش مصنوعی) ──
 const aiLimiter = rateLimit({
-  windowMs: 60 * 1000,        // ۱ دقیقه
-  max: 15,                    // حداکثر ۱۵ درخواست تحلیل در دقیقه برای هر کاربر
+  windowMs: 60 * 1000,
+  max: 15,
   message: { error: 'تعداد درخواست‌های شما بیش از حد مجاز است. کمی صبر کنید.' },
   keyGenerator: (req) => req.user?.id || req.ip,
 });
 
 const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,   // ۱۵ دقیقه
+  windowMs: 15 * 60 * 1000,
   max: 300,
 });
 app.use(generalLimiter);
 
 // ── مسیرهای API ──
 app.use('/api/auth', authRoutes);
+app.use('/api/activity', activityRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/analysis', aiLimiter, analysisRoutes);
 app.use('/api/integrations', integrationRoutes);
