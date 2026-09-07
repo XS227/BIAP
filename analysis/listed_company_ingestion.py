@@ -15,6 +15,12 @@ from symbol_universe import SymbolUniverseUnavailable, query_symbols
 WORKER_NAME = "listed-company-enrichment-v1"
 DAILY_BATCH_SIZE = 500  # hard safety ceiling per invocation; production runner uses a smaller rolling slice
 ALLOWED_MARKETS = {"TSE", "IFB", "IFB_BASE"}
+# TSETMC yVal values for ordinary shares. These remain available in the modern
+# GetMarketWatch payload even when the legacy ``flow`` field is absent, which is
+# exactly the production schema seen on the VPS. Market metadata is never
+# invented: rows selected through this fallback keep market=None until a verified
+# upstream later supplies the exchange/board.
+ORDINARY_SHARE_YVALS = {"300", "303", "307", "309", "313"}
 
 
 def _now_iso() -> str:
@@ -35,6 +41,21 @@ def _is_rate_limit_error(exc: BaseException) -> bool:
         return True
     text = str(exc).lower()
     return any(marker in text for marker in ("429", "too many requests", "rate limit", "rate-limit", "ratelimit"))
+
+
+def _is_verified_equity_item(item: Any) -> bool:
+    """Accept a TSETMC row when either market flow or yVal proves it is equity.
+
+    The current GetMarketWatch schema may omit ``flow`` for every instrument,
+    leaving ``market`` unset. In that case TSETMC's own yVal asset type is the
+    verified discriminator; ordinary-share yVals are accepted without assigning
+    a synthetic market value.
+    """
+    market = str(getattr(item, "market", "") or "").upper()
+    if market in ALLOWED_MARKETS:
+        return True
+    paper_type = str(getattr(item, "paper_type", "") or "").strip()
+    return paper_type in ORDINARY_SHARE_YVALS
 
 
 def _stored_listed_codes(target: ListedCompanyStore) -> list[str]:
@@ -59,6 +80,10 @@ def _tag_item(item: Any, source: str) -> dict[str, Any]:
     return data
 
 
+def _verified_tsetmc_equities(raw_items: list[Any], source: str) -> list[dict[str, Any]]:
+    return [_tag_item(item, source) for item in raw_items if _is_verified_equity_item(item)]
+
+
 def refresh_universe(store: ListedCompanyStore | None = None) -> dict[str, Any]:
     """Refresh a company-only universe, not the full TSETMC instrument tape.
 
@@ -66,9 +91,10 @@ def refresh_universe(store: ListedCompanyStore | None = None) -> dict[str, Any]:
     When CODAL's issuer directory is reachable, use it as a whitelist over the
     TSETMC symbols. That keeps real TSETMC instrument codes/prices while excluding
     option/warrant/bond rows whose symbols have no issuer in CODAL. If CODAL is
-    temporarily unavailable, fall back to rows that TSETMC/legacy explicitly
-    classified as TSE/IFB/IFB_BASE. If TSETMC itself fell back to CODAL, accept
-    that issuer list rather than inventing market metadata.
+    temporarily unavailable, use TSETMC's verified market flow or ordinary-share
+    yVal asset type. The latter is required by the current production schema,
+    where GetMarketWatch can omit flow for all rows. If TSETMC itself fell back to
+    CODAL, accept that issuer list rather than inventing market metadata.
     """
     target = store or ListedCompanyStore()
     try:
@@ -125,25 +151,17 @@ def refresh_universe(store: ListedCompanyStore | None = None) -> dict[str, Any]:
                 if _normalize_symbol(getattr(item, "symbol", "")) in codal_symbols
             ]
             # A very small intersection signals upstream/schema trouble. In that
-            # case prefer the conservative market-classified fallback instead of
-            # silently shrinking the universe to a handful of names.
+            # case use TSETMC's own verified equity metadata instead of silently
+            # shrinking the universe to a handful of names.
             if len(whitelisted) >= 100:
                 selected = whitelisted
                 strategy = "tsetmc-codal-issuer-whitelist"
             else:
-                selected = [
-                    _tag_item(item, "listed-company-tsetmc-market")
-                    for item in raw_items
-                    if str(getattr(item, "market", "") or "").upper() in ALLOWED_MARKETS
-                ]
-                strategy = "tsetmc-market-fallback-after-small-codal-match"
+                selected = _verified_tsetmc_equities(raw_items, "listed-company-tsetmc-equity")
+                strategy = "tsetmc-equity-fallback-after-small-codal-match"
         else:
-            selected = [
-                _tag_item(item, "listed-company-tsetmc-market")
-                for item in raw_items
-                if str(getattr(item, "market", "") or "").upper() in ALLOWED_MARKETS
-            ]
-            strategy = "tsetmc-market-fallback"
+            selected = _verified_tsetmc_equities(raw_items, "listed-company-tsetmc-equity")
+            strategy = "tsetmc-equity-fallback"
 
     # De-duplicate by instrument code before writing. The store retains older
     # untagged rows for audit/history, but only tagged rows are eligible to run.
@@ -228,7 +246,7 @@ def run_batch(
         "tindexConfigured": bool(os.getenv("TINDEX_API_TOKEN")),
         "externalBlockers": [] if os.getenv("TINDEX_API_TOKEN") else ["TINDEX_API_TOKEN missing in production environment"],
         "rateLimitPolicy": "stop-current-batch-and-retry-same-company-next-run",
-        "companyUniversePolicy": "CODAL issuer whitelist over TSETMC; non-company instruments excluded",
+        "companyUniversePolicy": "CODAL issuer whitelist over TSETMC; fallback to verified TSETMC market/yVal equity metadata",
         "universeChangedSincePreviousRun": universe_changed,
     }
     target.save_state(WORKER_NAME, status="running", cursor=cursor, total=total, processed=processed, succeeded=succeeded, failed=failed, started_at=started_at, metadata=metadata)
