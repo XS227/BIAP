@@ -17,6 +17,7 @@ import { BiapLogo, Brand, Colors, Fonts, Radius, Spacing } from '@/constants/the
 import { API_BASE } from '@/lib/api';
 import { storeAuthPayload } from '@/lib/auth-session';
 import { setDemoMode } from '@/lib/demo-mode';
+import { getClientContext } from '@/lib/activity';
 
 function FreeAnalysisCard() {
   return (
@@ -81,10 +82,11 @@ export default function RegisterScreen({ onLogin, onBack }: Props) {
     setLoading(true);
     try {
       const normalizedEmail = email.trim().toLowerCase();
+      const context = await getClientContext();
       const res = await fetch(`${API_BASE}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName: name.trim(), email: normalizedEmail, password }),
+        body: JSON.stringify({ fullName: name.trim(), email: normalizedEmail, password, ...context }),
       });
       let data: any = null;
       try {
@@ -101,9 +103,6 @@ export default function RegisterScreen({ onLogin, onBack }: Props) {
         return;
       }
 
-      // Signup and login must persist the exact same access/refresh session.
-      // Previously signup stored only accessToken, so a newly registered user
-      // could lose authenticated access after the first token expired.
       await storeAuthPayload(data);
       await setDemoMode(false);
       onLogin?.();
