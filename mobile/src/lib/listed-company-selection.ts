@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { KIASHA_API_BASE } from '@/lib/api';
 import { authFetch } from '@/lib/auth-session';
+import { trackActivity } from '@/lib/activity';
 
 export type ListedCompanySummary = {
   code: string;
@@ -65,6 +66,11 @@ export async function setSelectedListedCompany(company: ListedCompanySummary | n
     return;
   }
   await AsyncStorage.setItem(key, JSON.stringify(company));
+  void trackActivity('company_selected', {
+    code: company.code,
+    symbol: company.symbol,
+    market: company.market ?? '',
+  });
 }
 
 export async function searchListedCompanies(q = '', limit = 80): Promise<ListedCompanySummary[]> {
