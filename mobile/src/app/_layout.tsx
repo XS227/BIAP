@@ -9,6 +9,7 @@ import AppTabs from '@/components/app-tabs';
 import LoginScreen from '@/components/login-screen';
 import RegisterScreen from '@/app/register';
 import { getValidAccessToken } from '@/lib/auth-session';
+import { trackAppOpen } from '@/lib/activity';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -22,6 +23,7 @@ export default function RootLayout() {
   const [fontsLoaded] = useFonts({ Vazirmatn_400Regular, Vazirmatn_700Bold });
 
   useEffect(() => {
+    void trackAppOpen();
     getValidAccessToken().then((token) => {
       setIsLoggedIn(Boolean(token));
       setChecking(false);

@@ -1,5 +1,6 @@
 import { KIASHA_API_BASE } from '@/lib/api';
 import { authFetch } from '@/lib/auth-session';
+import { trackActivity } from '@/lib/activity';
 
 export type KiashaPaperExecution = {
   allowed?: boolean;
@@ -56,6 +57,12 @@ export async function executeKiashaPaper(
         message: detail || (res.status === 401 || res.status === 403 ? 'نشست ورود منقضی شده است؛ دوباره وارد شوید.' : 'اجرای Paper انجام نشد.'),
       };
     }
+    void trackActivity('paper_order', {
+      code,
+      side,
+      quantity,
+      status: data?.orderStatus ?? data?.order?.status ?? data?.receipt?.status ?? 'accepted',
+    });
     return { ok: true, data: data as KiashaPaperExecution };
   } catch {
     return { ok: false, auth: false, message: 'اتصال به سرور برقرار نشد' };
