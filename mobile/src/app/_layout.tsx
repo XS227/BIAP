@@ -7,6 +7,7 @@ import { useFonts, Vazirmatn_400Regular, Vazirmatn_700Bold } from '@expo-google-
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
 import LoginScreen from '@/components/login-screen';
+import { ModuleHelpOverlay } from '@/components/module-help-overlay';
 import RegisterScreen from '@/app/register';
 import { getValidAccessToken } from '@/lib/auth-session';
 import { trackAppOpen } from '@/lib/activity';
@@ -46,7 +47,10 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
       {isLoggedIn ? (
-        <AppTabs onLogout={handleLogout} />
+        <>
+          <AppTabs onLogout={handleLogout} />
+          <ModuleHelpOverlay />
+        </>
       ) : authScreen === 'register' ? (
         <RegisterScreen onLogin={handleLoggedIn} onBack={() => setAuthScreen('login')} />
       ) : (
