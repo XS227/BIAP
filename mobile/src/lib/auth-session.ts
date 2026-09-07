@@ -87,8 +87,10 @@ export async function authFetch(input: string, init: RequestInit = {}): Promise<
 }
 
 export async function logoutAndClearAuthSession(): Promise<void> {
+  // Do not call getValidAccessToken() here: it can rotate the refresh token
+  // immediately before logout and leave that replacement session alive.
+  const accessToken = await AsyncStorage.getItem('accessToken');
   const refreshToken = await AsyncStorage.getItem('refreshToken');
-  const accessToken = await getValidAccessToken().catch(() => null);
   try {
     await fetch(`${AUTH_API_BASE}/auth/logout`, {
       method: 'POST',
