@@ -75,3 +75,42 @@ def test_worker_resumes_from_saved_cursor(tmp_path, monkeypatch):
     assert second["succeeded"] == 3
     assert built == ["1", "2", "3"]
     assert store.status()["enriched"] == 3
+
+
+def test_worker_stops_on_rate_limit_and_retries_same_company(tmp_path, monkeypatch):
+    store = ListedCompanyStore(str(tmp_path / "listed.sqlite3"))
+    store.upsert_universe([
+        _item("1", "الف", "شرکت الف"),
+        _item("2", "ب", "شرکت ب"),
+    ])
+    monkeypatch.setattr(ingestion, "refresh_universe", lambda target: {"ok": True, "count": target.count(), "source": "test"})
+    monkeypatch.setenv("TINDEX_API_TOKEN", "configured-for-test")
+
+    calls = []
+
+    def rate_limited(code):
+        calls.append(code)
+        raise RuntimeError("HTTP 429 Too Many Requests")
+
+    monkeypatch.setattr(ingestion, "_build_verified_company", rate_limited)
+    first = ingestion.run_batch(store=store, batch_size=2, reset=True)
+    assert first["status"] == "rate_limited"
+    assert first["cursor"] == 0
+    assert first["processed"] == 0
+    assert first["succeeded"] == 0
+    assert first["failed"] == 0
+    assert first["lastCode"] == "1"
+    assert first["metadata"]["rateLimitedCode"] == "1"
+    assert calls == ["1"]
+
+    def success(code):
+        calls.append(code)
+        return ({"ticker": code, "name_fa": code, "data_available": {"codal": True}, "market": {}}, "test-builder")
+
+    monkeypatch.setattr(ingestion, "_build_verified_company", success)
+    second = ingestion.run_batch(store=store, batch_size=1)
+    assert second["status"] == "paused"
+    assert second["cursor"] == 1
+    assert second["processed"] == 1
+    assert second["succeeded"] == 1
+    assert calls == ["1", "1"]

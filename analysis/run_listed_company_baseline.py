@@ -4,9 +4,8 @@
 This is intentionally separate from the daily Tindex Market Memory collector:
 - Market Memory keeps a small, recent Tindex observation available every day.
 - This worker refreshes the heavier TSETMC/CODAL/Tindex company baseline on a
-  rolling cycle. With the production default of 100 companies/day, a normal
-  TSE/IFB universe is revisited roughly once per week without a single large
-  CODAL burst.
+  rolling cycle. Production advances 300 companies/day, then wraps to the
+  beginning after the full TSE/IFB/IFB_BASE universe has been visited.
 
 Missing upstream data is recorded; it is never imputed or fabricated.
 """
@@ -35,14 +34,14 @@ def _env_float(name: str, default: float, minimum: float = 0.0, maximum: float =
 
 
 def main() -> int:
-    batch_size = _env_int("BIAP_LISTED_COMPANY_DAILY_BASELINE_BATCH", 100)
+    batch_size = _env_int("BIAP_LISTED_COMPANY_DAILY_BASELINE_BATCH", 300)
     interval = _env_float("BIAP_LISTED_COMPANY_INTERVAL_SECONDS", 2.5)
     result = run_batch(batch_size=batch_size, interval_seconds=interval)
     result = {
         **result,
         "requestedBatchSize": batch_size,
         "intervalSeconds": interval,
-        "policy": "rolling weekly baseline; throttled upstream access; no fabricated values",
+        "policy": "rolling persistent baseline; throttled upstream access; no fabricated values",
     }
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
 
