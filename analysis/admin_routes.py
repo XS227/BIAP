@@ -18,11 +18,13 @@ from __future__ import annotations
 
 import html
 import json
+import os
 import uuid
+from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Form, Query
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Depends, Form, HTTPException, Query
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 from admin_auth import COOKIE_NAME, admin_panel_configured, create_session_token, require_admin
 from admin_store import AdminStore, bootstrap_from_env
@@ -39,8 +41,29 @@ router = APIRouter(prefix="/admindir", include_in_schema=False)
 _ADMIN_STORE = AdminStore()
 _AUDIT = AuditStore()
 _PERFORMANCE = PerformanceStore()
+_RELEASE_MANIFEST = Path(__file__).with_name("mobile_release.json")
+_MOBILE_APK_PATH = Path(
+    os.getenv("BIAP_MOBILE_APK_PATH")
+    or (Path(__file__).resolve().parent.parent / ".runtime" / "releases" / "biap-latest.apk")
+)
 
 bootstrap_from_env(_ADMIN_STORE)
+
+
+def _mobile_release() -> dict:
+    try:
+        payload = json.loads(_RELEASE_MANIFEST.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"version": "unknown", "versionCode": None, "releasedAt": None, "changes": []}
+    changes = payload.get("changes")
+    if not isinstance(changes, list):
+        changes = []
+    return {
+        "version": str(payload.get("version") or "unknown"),
+        "versionCode": payload.get("versionCode"),
+        "releasedAt": payload.get("releasedAt"),
+        "changes": [str(item) for item in changes],
+    }
 
 
 def _page(title: str, body: str, *, username: Optional[str] = None) -> str:
@@ -82,6 +105,11 @@ def _page(title: str, body: str, *, username: Optional[str] = None) -> str:
   .card {{ border: 1px solid color-mix(in srgb, CanvasText 15%, transparent); border-radius: 8px; padding: 0.9rem 1.1rem; min-width: 150px; }}
   .card .n {{ font-size: 1.6rem; font-weight: 600; }}
   .card .l {{ font-size: 0.8rem; opacity: 0.6; }}
+  .release {{ border: 1px solid color-mix(in srgb, seagreen 35%, CanvasText 12%); border-radius: 10px; padding: 1rem 1.1rem; margin: 0 0 1.5rem; }}
+  .release h2 {{ margin-top: 0; }}
+  .release ul {{ margin: 0.6rem 0 1rem; padding-inline-start: 1.3rem; }}
+  .btn {{ display: inline-block; padding: 0.55rem 0.85rem; border-radius: 7px; background: seagreen; color: white; text-decoration: none; font-weight: 600; }}
+  .btn:hover {{ filter: brightness(1.08); }}
   .badge {{ padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.75rem; }}
   .badge.pending {{ background: color-mix(in srgb, orange 25%, transparent); }}
   .badge.approved, .badge.filled {{ background: color-mix(in srgb, seagreen 25%, transparent); }}
@@ -155,6 +183,20 @@ def logout():
     return resp
 
 
+@router.get("/app/latest.apk")
+def download_latest_apk(username: str = Depends(require_admin)):
+    release = _mobile_release()
+    if not _MOBILE_APK_PATH.is_file():
+        raise HTTPException(status_code=404, detail="Latest BIAP APK is not published on this server yet")
+    version = release.get("version") or "latest"
+    return FileResponse(
+        _MOBILE_APK_PATH,
+        media_type="application/vnd.android.package-archive",
+        filename=f"BIAP-{version}.apk",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
 @router.get("", response_class=HTMLResponse)
 def dashboard(username: str = Depends(require_admin)):
     policy = policy_snapshot()
@@ -221,6 +263,23 @@ def users_list(username: str = Depends(require_admin)):
     except BackendAdminUnavailable as exc:
         return HTMLResponse(_page("Users", _backend_unavailable_body(exc), username=username), status_code=503)
 
+    release = _mobile_release()
+    latest_version = release["version"]
+    android_with_version = [
+        user for user in users
+        if str(user.get("platform") or "").lower() == "android" and user.get("app_version") not in (None, "")
+    ]
+    outdated_users = sum(1 for user in android_with_version if str(user.get("app_version")) != latest_version)
+    notes_html = "".join(f"<li>{html.escape(note)}</li>" for note in release["changes"])
+    if not notes_html:
+        notes_html = "<li class='muted'>Ingen release notes registrert.</li>"
+    if _MOBILE_APK_PATH.is_file():
+        download_html = '<a class="btn" href="/admindir/app/latest.apk">Last ned nyeste APK</a>'
+        apk_status = "APK klar på production-serveren."
+    else:
+        download_html = "<span class='muted'>APK bygges/publiseres. Last ned-knappen aktiveres automatisk når CI er ferdig.</span>"
+        apk_status = "APK ikke publisert ennå."
+
     rows = ""
     for user in users:
         user_id = str(user.get("id") or "")
@@ -239,6 +298,19 @@ def users_list(username: str = Depends(require_admin)):
         )
 
     body = f"""
+    <section class="release">
+      <h2>BIAP app update</h2>
+      <div class="cards">
+        <div class="card"><div class="n">{html.escape(latest_version)}</div><div class="l">Nyeste versjon</div></div>
+        <div class="card"><div class="n">{_safe(release.get('versionCode'))}</div><div class="l">Android versionCode</div></div>
+        <div class="card"><div class="n">{outdated_users}</div><div class="l">Android-brukere på eldre kjent versjon</div></div>
+      </div>
+      <p><strong>Endringer i denne versjonen</strong></p>
+      <ul dir="rtl">{notes_html}</ul>
+      <p class="muted">Publisert: {_safe(release.get('releasedAt'))} · {html.escape(apk_status)}</p>
+      {download_html}
+    </section>
+
     <div class="cards">
       <div class="card"><div class="n">{int(summary.get('registeredUsers') or 0)}</div><div class="l">Registered</div></div>
       <div class="card"><div class="n">{int(summary.get('activeUsers24h') or 0)}</div><div class="l">Active 24h</div></div>
