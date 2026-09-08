@@ -9,7 +9,7 @@ on:
       - 'deploy/publish-mobile-apk.sh'
       - '.github/workflows/deploy-backend.yml'
   workflow_run:
-    workflows: ["Release candidate check"]
+    workflows: ["Release candidate check", "Expo EAS build"]
     types: [completed]
   workflow_dispatch:
 
@@ -70,14 +70,24 @@ jobs:
             echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Download successful main-branch APK
-        if: steps.config.outputs.configured == 'true' && github.event_name == 'workflow_run'
+      - name: Download stable APK artifact
+        if: steps.config.outputs.configured == 'true' && github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Release candidate check'
         uses: actions/download-artifact@v4
         with:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
           pattern: biap-android-signed-*
-          path: /tmp/biap-apk
+          path: /tmp/biap-apk/stable
+          merge-multiple: true
+
+      - name: Download Expo EAS APK artifact
+        if: steps.config.outputs.configured == 'true' && github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Expo EAS build'
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          pattern: biap-android-eas-*
+          path: /tmp/biap-apk/expo
           merge-multiple: true
 
       - name: Configure SSH
@@ -99,7 +109,7 @@ jobs:
         run: |
           set -euo pipefail
           PORT="${VPS_PORT:-22}"
-          APP_DIR="${VPS_APP_DIR:-/root/BIAP}"
+          APP_DIR="${VPS_APP_DIR:-/home/ubuntu/biap-kiasha/XS227-BIAP}"
           RESTART_CMD="${VPS_BACKEND_RESTART_CMD:-systemctl restart biap-fin}"
           HEALTH_URL="${VPS_HEALTH_URL:-https://biap.dadashi.no/api/health}"
 
@@ -155,7 +165,11 @@ jobs:
           as_root systemctl is-active biap-listed-company-baseline.timer
           as_root systemctl status biap-listed-company-baseline.service --no-pager || true
 
-          bash -lc "$RESTART_CMD"
+          if [[ "$RESTART_CMD" == "systemctl restart biap-fin" ]]; then
+            as_root systemctl restart biap-fin
+          else
+            bash -lc "$RESTART_CMD"
+          fi
 
           for attempt in 1 2 3 4 5 6 7 8; do
             if curl --fail --silent --show-error --max-time 10 "$HEALTH_URL" >/tmp/biap-health.json; then
@@ -181,22 +195,40 @@ jobs:
           exit 1
           REMOTE
 
-      - name: Publish latest APK to VPS
-        if: steps.config.outputs.configured == 'true' && github.event_name == 'workflow_run'
+      - name: Publish stable APK to VPS
+        if: steps.config.outputs.configured == 'true' && github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Release candidate check'
         shell: bash
         run: |
           set -euo pipefail
           PORT="${VPS_PORT:-22}"
-          APP_DIR="${VPS_APP_DIR:-/root/BIAP}"
-          APK="$(find /tmp/biap-apk -type f -name '*.apk' | head -n 1)"
+          APP_DIR="${VPS_APP_DIR:-/home/ubuntu/biap-kiasha/XS227-BIAP}"
+          APK="$(find /tmp/biap-apk/stable -type f -name '*.apk' | head -n 1)"
           test -n "$APK" && test -f "$APK"
           scp -i ~/.ssh/biap_deploy_key -P "$PORT" -o BatchMode=yes "$APK" "$VPS_USER@$VPS_HOST:/tmp/biap-latest.apk"
           ssh -i ~/.ssh/biap_deploy_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" \
             "APP_DIR='$APP_DIR' bash -s" <<'REMOTE'
           set -euo pipefail
           cd "$APP_DIR"
-          bash deploy/publish-mobile-apk.sh /tmp/biap-latest.apk "$APP_DIR"
+          bash deploy/publish-mobile-apk.sh /tmp/biap-latest.apk "$APP_DIR" stable
           rm -f /tmp/biap-latest.apk
+          REMOTE
+
+      - name: Publish Expo EAS APK to VPS
+        if: steps.config.outputs.configured == 'true' && github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Expo EAS build'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          APP_DIR="${VPS_APP_DIR:-/home/ubuntu/biap-kiasha/XS227-BIAP}"
+          APK="$(find /tmp/biap-apk/expo -type f -name '*.apk' | head -n 1)"
+          test -n "$APK" && test -f "$APK"
+          scp -i ~/.ssh/biap_deploy_key -P "$PORT" -o BatchMode=yes "$APK" "$VPS_USER@$VPS_HOST:/tmp/biap-expo.apk"
+          ssh -i ~/.ssh/biap_deploy_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" \
+            "APP_DIR='$APP_DIR' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd "$APP_DIR"
+          bash deploy/publish-mobile-apk.sh /tmp/biap-expo.apk "$APP_DIR" expo
+          rm -f /tmp/biap-expo.apk
           REMOTE
 
       - name: Deployment summary
@@ -205,9 +237,8 @@ jobs:
           if [[ "${{ steps.config.outputs.configured }}" == "true" ]]; then
             echo "### Backend deploy" >> "$GITHUB_STEP_SUMMARY"
             echo "Production deploy attempted after backend validation." >> "$GITHUB_STEP_SUMMARY"
-            echo "Listed-company 300/day baseline timer was installed, enabled, and a manual run was started." >> "$GITHUB_STEP_SUMMARY"
             if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
-              echo "Latest successful signed Android APK and matching version marker were published to the VPS update center." >> "$GITHUB_STEP_SUMMARY"
+              echo "Published mobile channel from: ${{ github.event.workflow_run.name }}" >> "$GITHUB_STEP_SUMMARY"
             fi
           else
             echo "### Backend deploy not configured yet" >> "$GITHUB_STEP_SUMMARY"
