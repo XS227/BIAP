@@ -51,14 +51,13 @@ jobs:
   android-installable-apk:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 35
     defaults:
       run:
         working-directory: mobile
     env:
       CI: '1'
       NODE_ENV: production
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -71,37 +70,38 @@ jobs:
           distribution: temurin
           java-version: '17'
       - run: npm ci
-      - name: Require Expo authentication for the signing key
+      - name: Generate Android native project
+        run: npx expo prebuild --platform android --clean --no-install
+      - name: Sign release with the generated Android debug keystore
         run: |
-          if [ -z "$EXPO_TOKEN" ]; then
-            echo "::error::EXPO_TOKEN is not configured. A signed upgrade APK must be built by EAS with the project's existing Android signing credential."
-            exit 1
-          fi
-      - name: Install EAS CLI
-        run: npm install --global eas-cli@latest
-      - name: Build signed Android APK with the existing EAS credential
-        run: eas build --platform android --profile preview --non-interactive --wait --json > eas-build.json
-      - name: Download the signed APK
+          test -f android/app/debug.keystore
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('android/app/build.gradle')
+          text = path.read_text(encoding='utf-8')
+          marker = 'release {'
+          if marker not in text:
+              raise SystemExit('release build type not found')
+          head, tail = text.split(marker, 1)
+          block = tail.split('}', 1)[0]
+          if 'signingConfig signingConfigs.debug' not in block:
+              text = head + marker + '\n            signingConfig signingConfigs.debug' + tail
+              path.write_text(text, encoding='utf-8')
+          PY
+      - name: Build standalone signed release APK
         run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const parsed = JSON.parse(fs.readFileSync('eas-build.json', 'utf8'));
-          const build = Array.isArray(parsed) ? parsed[0] : parsed;
-          const url = build?.artifacts?.buildUrl || build?.artifacts?.applicationArchiveUrl;
-          if (!url) throw new Error('EAS did not return an Android APK URL');
-          fs.writeFileSync('eas-apk-url.txt', url);
-          NODE
-          VERSION=$(node -p "require('./app.json').expo.version")
-          curl --fail --location --retry 3 --retry-delay 3 "$(cat eas-apk-url.txt)" -o "BIAP-${VERSION}.apk"
-          test -s "BIAP-${VERSION}.apk"
+          chmod +x android/gradlew
+          cd android
+          ./gradlew :app:assembleRelease --no-daemon
       - name: Verify APK signature
         run: |
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
-          if [ -z "$APKSIGNER" ]; then
-            echo "::error::Android apksigner was not found on the runner"
-            exit 1
-          fi
-          "$APKSIGNER" verify --verbose --print-certs BIAP-*.apk
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk
+      - name: Prepare named APK
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          cp android/app/build/outputs/apk/release/app-release.apk "BIAP-${VERSION}.apk"
       - name: Upload signed installable APK
         uses: actions/upload-artifact@v4
         with:
