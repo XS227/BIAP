@@ -31,9 +31,13 @@ jobs:
   build-apk:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     defaults:
       run:
         working-directory: mobile
+    env:
+      CI: '1'
+      NODE_ENV: production
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -46,17 +50,42 @@ jobs:
           distribution: temurin
           java-version: '17'
       - run: npm ci
-      - run: npx expo prebuild --platform android --non-interactive
-      - run: chmod +x android/gradlew
-      # The debug build type does not bundle JS (RN's default debuggableVariants
-      # expects a live Metro dev server), so an installed debug APK gets stuck on
-      # the splash screen with no dev server reachable. Build release instead —
-      # Expo's generated build.gradle signs it with the debug keystore by default,
-      # so this still installs directly without a separate signing setup.
-      - run: ./gradlew assembleRelease
-        working-directory: mobile/android
-      - uses: actions/upload-artifact@v4
+      - name: Generate Android native project
+        run: npx expo prebuild --platform android --clean --no-install
+      - name: Sign release with the generated Android debug keystore
+        run: |
+          test -f android/app/debug.keystore
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('android/app/build.gradle')
+          text = path.read_text(encoding='utf-8')
+          marker = 'release {'
+          if marker not in text:
+              raise SystemExit('release build type not found')
+          head, tail = text.split(marker, 1)
+          block_prefix = marker + tail
+          if 'signingConfig signingConfigs.debug' not in block_prefix.split('}', 1)[0]:
+              text = head + marker + '\n            signingConfig signingConfigs.debug' + tail
+              path.write_text(text, encoding='utf-8')
+          PY
+      - name: Build standalone signed release APK
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew :app:assembleRelease --no-daemon
+      - name: Verify APK signature
+        run: |
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk
+      - name: Prepare named APK
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          cp android/app/build/outputs/apk/release/app-release.apk "BIAP-${VERSION}.apk"
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
         with:
-          name: biap-latest-apk
-          path: mobile/android/app/build/outputs/apk/release/app-release.apk
+          name: biap-android-signed-${{ github.sha }}
+          path: mobile/BIAP-*.apk
           if-no-files-found: error
+          retention-days: 14
