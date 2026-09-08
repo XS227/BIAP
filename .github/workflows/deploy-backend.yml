@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'analysis/**'
+      - 'deploy/systemd/**'
       - '.github/workflows/deploy-backend.yml'
   workflow_run:
     workflows: ["Release candidate check"]
@@ -134,6 +135,25 @@ jobs:
             echo "Python requirements unchanged; skipping dependency install."
           fi
 
+          as_root() {
+            if [[ "$(id -u)" -eq 0 ]]; then
+              "$@"
+            else
+              sudo -n "$@"
+            fi
+          }
+
+          for unit in biap-listed-company-baseline.service biap-listed-company-baseline.timer; do
+            test -f "deploy/systemd/$unit" || { echo "Missing systemd unit: $unit" >&2; exit 1; }
+            as_root install -m 0644 "deploy/systemd/$unit" "/etc/systemd/system/$unit"
+          done
+          as_root systemctl daemon-reload
+          as_root systemctl enable --now biap-listed-company-baseline.timer
+          as_root systemctl start --no-block biap-listed-company-baseline.service
+          as_root systemctl is-enabled biap-listed-company-baseline.timer
+          as_root systemctl is-active biap-listed-company-baseline.timer
+          as_root systemctl status biap-listed-company-baseline.service --no-pager || true
+
           bash -lc "$RESTART_CMD"
 
           for attempt in 1 2 3 4 5 6 7 8; do
@@ -185,6 +205,7 @@ jobs:
           if [[ "${{ steps.config.outputs.configured }}" == "true" ]]; then
             echo "### Backend deploy" >> "$GITHUB_STEP_SUMMARY"
             echo "Production deploy attempted after backend validation." >> "$GITHUB_STEP_SUMMARY"
+            echo "Listed-company 300/day baseline timer was installed, enabled, and a manual run was started." >> "$GITHUB_STEP_SUMMARY"
             if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
               echo "Latest successful Android APK was also published to the VPS update center." >> "$GITHUB_STEP_SUMMARY"
             fi
