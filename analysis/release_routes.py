@@ -16,6 +16,18 @@ _MOBILE_APK_PATH = Path(
     os.getenv("BIAP_MOBILE_APK_PATH")
     or (Path(__file__).resolve().parent.parent / ".runtime" / "releases" / "biap-latest.apk")
 )
+_MOBILE_APK_VERSION_PATH = Path(
+    os.getenv("BIAP_MOBILE_APK_VERSION_PATH")
+    or (_MOBILE_APK_PATH.parent / "biap-latest.version")
+)
+
+
+def _published_apk_version() -> str | None:
+    try:
+        value = _MOBILE_APK_VERSION_PATH.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    return value or None
 
 
 def mobile_release() -> dict:
@@ -28,12 +40,17 @@ def mobile_release() -> dict:
     if not isinstance(changes, list):
         changes = []
 
+    version = str(payload.get("version") or "unknown")
+    published_version = _published_apk_version()
+    apk_available = _MOBILE_APK_PATH.is_file() and published_version == version
+
     return {
-        "version": str(payload.get("version") or "unknown"),
+        "version": version,
         "versionCode": payload.get("versionCode"),
         "releasedAt": payload.get("releasedAt"),
         "changes": [str(item) for item in changes],
-        "apkAvailable": _MOBILE_APK_PATH.is_file(),
+        "apkAvailable": apk_available,
+        "apkPublishedVersion": published_version,
         "apkUrl": "/app/latest.apk",
     }
 
@@ -48,7 +65,7 @@ def release_metadata():
 def download_latest_apk():
     """Serve the latest published Android APK without requiring admin login."""
     release = mobile_release()
-    if not _MOBILE_APK_PATH.is_file():
+    if not release["apkAvailable"]:
         raise HTTPException(status_code=404, detail="Latest BIAP APK is not published on this server yet")
     version = release.get("version") or "latest"
     return FileResponse(
