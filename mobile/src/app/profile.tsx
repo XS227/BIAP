@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View, useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Colors, Brand, Fonts, Spacing, BottomTabInset, MaxContentWidth, Radius, ThemeColors } from '@/constants/theme';
@@ -8,7 +8,17 @@ import { authFetch, logoutAndClearAuthSession, storeAuthPayload } from '@/lib/au
 import { API_BASE } from '@/lib/api';
 import { getClientContext } from '@/lib/activity';
 
+const RELEASE_MANIFEST_URL = 'https://raw.githubusercontent.com/XS227/BIAP/main/analysis/mobile_release.json';
+const LATEST_APK_URL = 'https://github.com/XS227/BIAP/releases/latest/download/biap-latest.apk';
+
 type UserData = { name?: string; fullName?: string; email?: string; id?: string | number; userId?: string | number };
+type MobileRelease = {
+  version: string;
+  versionCode?: number | null;
+  releasedAt?: string | null;
+  changes?: string[];
+  downloadUrl?: string;
+};
 
 function Avatar({ name }: { name: string; colors: ThemeColors }) {
   const words = name.trim().split(/\s+/);
@@ -33,6 +43,41 @@ export default function ProfileScreen() {
   const [changing, setChanging] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [passwordMessage, setPasswordMessage] = useState('');
+  const [release, setRelease] = useState<MobileRelease | null>(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateError, setUpdateError] = useState('');
+
+  const appVersion = Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '—';
+  const rawBuildVersion = Constants.nativeBuildVersion ?? Constants.expoConfig?.android?.versionCode ?? 0;
+  const currentVersionCode = Number(rawBuildVersion) || 0;
+
+  const checkForUpdate = async (silent = false) => {
+    if (!silent) setCheckingUpdate(true);
+    setUpdateError('');
+    try {
+      const response = await fetch(`${RELEASE_MANIFEST_URL}?t=${Date.now()}`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = await response.json() as MobileRelease;
+      if (!payload?.version) throw new Error('invalid release manifest');
+      setRelease(payload);
+    } catch {
+      if (!silent) setUpdateError('بررسی نسخه جدید انجام نشد. اتصال اینترنت یا GitHub را بررسی کنید.');
+    } finally {
+      if (!silent) setCheckingUpdate(false);
+    }
+  };
+
+  const downloadUpdate = async () => {
+    const url = release?.downloadUrl || LATEST_APK_URL;
+    setUpdateError('');
+    try {
+      await Linking.openURL(url);
+    } catch {
+      setUpdateError('باز کردن لینک دانلود ممکن نشد.');
+    }
+  };
 
   useEffect(() => {
     AsyncStorage.getItem('user').then((raw) => {
@@ -40,6 +85,7 @@ export default function ProfileScreen() {
         try { setUser(JSON.parse(raw)); } catch { setUser(null); }
       }
     });
+    void checkForUpdate(true);
   }, []);
 
   const handleLogout = () => {
@@ -89,7 +135,11 @@ export default function ProfileScreen() {
 
   const displayName = user?.fullName ?? user?.name ?? user?.email?.split('@')[0] ?? 'کاربر';
   const id = user?.userId ?? user?.id;
-  const appVersion = Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '—';
+  const hasUpdate = Boolean(release && (
+    release.versionCode && currentVersionCode > 0
+      ? release.versionCode > currentVersionCode
+      : release.version !== appVersion
+  ));
 
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
     <ScrollView contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]} keyboardShouldPersistTaps="handled">
@@ -122,6 +172,18 @@ export default function ProfileScreen() {
         </View>
 
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>به‌روزرسانی اپ</Text>
+          <InfoCard label="نسخه نصب‌شده" value={currentVersionCode > 0 ? `${appVersion} (${currentVersionCode})` : appVersion} colors={colors} />
+          {release ? <InfoCard label="آخرین نسخه" value={release.versionCode ? `${release.version} (${release.versionCode})` : release.version} colors={colors} /> : null}
+          {release ? <Text style={[styles.updateStatus, { color: hasUpdate ? Brand.warning : Brand.positive }]}>{hasUpdate ? `نسخه ${release.version} آماده دانلود است.` : '✓ آخرین نسخه نصب است.'}</Text> : <Text style={[styles.cardHint, { color: colors.textSecondary }]}>برای دیدن نسخه جدید، دکمه بررسی را بزنید.</Text>}
+          {release?.changes?.length ? <View style={styles.releaseNotes}>{release.changes.slice(0, 5).map((item, index) => <Text key={`${index}-${item}`} style={[styles.releaseNote, { color: colors.textSecondary }]}>• {item}</Text>)}</View> : null}
+          {updateError ? <Text style={styles.error}>{updateError}</Text> : null}
+          {hasUpdate ? <Pressable onPress={downloadUpdate} style={[styles.updateButton, { backgroundColor: Brand.primary }]}><Text style={styles.updateButtonText}>دانلود و نصب نسخه {release?.version}</Text></Pressable> : <Pressable onPress={() => checkForUpdate(false)} disabled={checkingUpdate} style={[styles.updateButton, { backgroundColor: Brand.primary, opacity: checkingUpdate ? 0.65 : 1 }]}>{checkingUpdate ? <ActivityIndicator color="#fff" /> : <Text style={styles.updateButtonText}>بررسی برای به‌روزرسانی</Text>}</Pressable>}
+          {release && !hasUpdate ? <Pressable onPress={downloadUpdate} style={styles.downloadAgain}><Text style={[styles.downloadAgainText, { color: Brand.primary }]}>دانلود مجدد آخرین APK</Text></Pressable> : null}
+          <Text style={[styles.cardHint, { color: colors.textSecondary, marginTop: Spacing.two }]}>فایل APK از Release رسمی همین مخزن BIAP دریافت می‌شود. نصب نهایی توسط Android تأیید می‌شود.</Text>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>درباره اپ</Text>
           <InfoCard label="نام" value="BIAP Mobile" colors={colors} />
           <InfoCard label="نسخه" value={appVersion} colors={colors} />
@@ -150,6 +212,13 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderRadius: Radius.md, paddingHorizontal: Spacing.three, paddingVertical: 12, marginBottom: Spacing.two, fontSize: 14, fontFamily: Fonts.sans },
   passwordButton: { borderRadius: Radius.md, paddingVertical: 13, alignItems: 'center', marginTop: Spacing.one },
   passwordButtonText: { color: '#fff', fontFamily: Fonts.sans, fontWeight: '700', fontSize: 14 },
+  updateStatus: { fontFamily: Fonts.sans, fontSize: 12, textAlign: 'right', marginTop: Spacing.two, marginBottom: Spacing.two, fontWeight: '700' },
+  releaseNotes: { width: '100%', gap: 4, marginBottom: Spacing.two },
+  releaseNote: { fontFamily: Fonts.sans, fontSize: 11, lineHeight: 18, textAlign: 'right' },
+  updateButton: { borderRadius: Radius.md, paddingVertical: 13, alignItems: 'center', marginTop: Spacing.one },
+  updateButtonText: { color: '#fff', fontFamily: Fonts.sans, fontWeight: '700', fontSize: 14 },
+  downloadAgain: { alignItems: 'center', paddingVertical: Spacing.two },
+  downloadAgainText: { fontFamily: Fonts.sans, fontSize: 12, fontWeight: '700' },
   error: { color: Brand.negative, fontFamily: Fonts.sans, fontSize: 12, textAlign: 'right', marginBottom: 6 },
   success: { color: Brand.positive, fontFamily: Fonts.sans, fontSize: 12, textAlign: 'right', marginBottom: 6 },
   logoutBtn: { borderRadius: Spacing.two, paddingVertical: Spacing.three, alignItems: 'center', marginTop: Spacing.two },

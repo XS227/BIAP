@@ -11,6 +11,9 @@ on:
       - '.github/workflows/release-candidate-check.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -83,3 +86,68 @@ jobs:
           path: mobile/android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 14
+
+  publish-mobile-release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [backend, android-installable-apk]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download successful Android APK
+        uses: actions/download-artifact@v4
+        with:
+          pattern: biap-android-qa-*
+          path: /tmp/biap-apk
+          merge-multiple: true
+      - name: Prepare stable release asset and notes
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(python3 - <<'PY'
+          import json
+          with open('mobile/app.json', encoding='utf-8') as fh:
+              print(json.load(fh)['expo']['version'])
+          PY
+          )"
+          TAG="mobile-v${VERSION}"
+          APK="$(find /tmp/biap-apk -type f -name '*.apk' | head -n 1)"
+          test -n "$APK" && test -f "$APK"
+          cp "$APK" /tmp/biap-latest.apk
+          python3 - <<'PY' > /tmp/biap-release-notes.md
+          import json
+          with open('analysis/mobile_release.json', encoding='utf-8') as fh:
+              release = json.load(fh)
+          print(f"BIAP Mobile v{release['version']}\n")
+          for item in release.get('changes') or []:
+              print(f"- {item}")
+          print("\nAPK: biap-latest.apk")
+          PY
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+      - name: Publish stable APK on GitHub Releases
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.release.outputs.tag }}"
+          VERSION="${{ steps.release.outputs.version }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" /tmp/biap-latest.apk --clobber
+            gh release edit "$TAG" --title "BIAP Mobile v${VERSION}" --notes-file /tmp/biap-release-notes.md
+          else
+            gh release create "$TAG" /tmp/biap-latest.apk \
+              --target "$GITHUB_SHA" \
+              --title "BIAP Mobile v${VERSION}" \
+              --notes-file /tmp/biap-release-notes.md \
+              --latest
+          fi
+      - name: Release summary
+        run: |
+          echo "### BIAP Mobile ${{ steps.release.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Stable APK published as **biap-latest.apk** on GitHub Releases." >> "$GITHUB_STEP_SUMMARY"
+          echo "In-app updater can use the stable latest-release download URL." >> "$GITHUB_STEP_SUMMARY"
