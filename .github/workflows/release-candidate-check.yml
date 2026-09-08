@@ -49,14 +49,16 @@ jobs:
       - run: npx expo export --platform android --output-dir dist-android
 
   android-installable-apk:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     defaults:
       run:
         working-directory: mobile
     env:
       CI: '1'
       NODE_ENV: production
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -69,17 +71,41 @@ jobs:
           distribution: temurin
           java-version: '17'
       - run: npm ci
-      - name: Generate Android native project
-        run: npx expo prebuild --platform android --clean --no-install
-      - name: Build standalone release APK
+      - name: Require Expo authentication for the signing key
         run: |
-          chmod +x android/gradlew
-          cd android
-          ./gradlew :app:assembleRelease --no-daemon
-      - name: Upload installable QA APK
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::EXPO_TOKEN is not configured. A signed upgrade APK must be built by EAS with the project's existing Android signing credential."
+            exit 1
+          fi
+      - name: Install EAS CLI
+        run: npm install --global eas-cli@latest
+      - name: Build signed Android APK with the existing EAS credential
+        run: eas build --platform android --profile preview --non-interactive --wait --json > eas-build.json
+      - name: Download the signed APK
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const parsed = JSON.parse(fs.readFileSync('eas-build.json', 'utf8'));
+          const build = Array.isArray(parsed) ? parsed[0] : parsed;
+          const url = build?.artifacts?.buildUrl || build?.artifacts?.applicationArchiveUrl;
+          if (!url) throw new Error('EAS did not return an Android APK URL');
+          fs.writeFileSync('eas-apk-url.txt', url);
+          NODE
+          VERSION=$(node -p "require('./app.json').expo.version")
+          curl --fail --location --retry 3 --retry-delay 3 "$(cat eas-apk-url.txt)" -o "BIAP-${VERSION}.apk"
+          test -s "BIAP-${VERSION}.apk"
+      - name: Verify APK signature
+        run: |
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
+          if [ -z "$APKSIGNER" ]; then
+            echo "::error::Android apksigner was not found on the runner"
+            exit 1
+          fi
+          "$APKSIGNER" verify --verbose --print-certs BIAP-*.apk
+      - name: Upload signed installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: biap-android-qa-${{ github.sha }}
-          path: mobile/android/app/build/outputs/apk/release/*.apk
+          name: biap-android-signed-${{ github.sha }}
+          path: mobile/BIAP-*.apk
           if-no-files-found: error
           retention-days: 14
