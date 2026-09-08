@@ -76,7 +76,7 @@ jobs:
         with:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
-          pattern: biap-android-qa-*
+          pattern: biap-android-signed-*
           path: /tmp/biap-apk
           merge-multiple: true
 
@@ -207,7 +207,7 @@ jobs:
             echo "Production deploy attempted after backend validation." >> "$GITHUB_STEP_SUMMARY"
             echo "Listed-company 300/day baseline timer was installed, enabled, and a manual run was started." >> "$GITHUB_STEP_SUMMARY"
             if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
-              echo "Latest successful Android APK and matching version marker were published to the VPS update center." >> "$GITHUB_STEP_SUMMARY"
+              echo "Latest successful signed Android APK and matching version marker were published to the VPS update center." >> "$GITHUB_STEP_SUMMARY"
             fi
           else
             echo "### Backend deploy not configured yet" >> "$GITHUB_STEP_SUMMARY"
