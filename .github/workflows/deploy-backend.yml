@@ -17,6 +17,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   validate-backend:
@@ -67,6 +68,16 @@ jobs:
             echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Download successful main-branch APK
+        if: steps.config.outputs.configured == 'true' && github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          pattern: biap-android-qa-*
+          path: /tmp/biap-apk
+          merge-multiple: true
+
       - name: Configure SSH
         if: steps.config.outputs.configured == 'true'
         shell: bash
@@ -79,6 +90,25 @@ jobs:
           PORT="${VPS_PORT:-22}"
           ssh-keyscan -p "$PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
+
+      - name: Publish latest APK to VPS
+        if: steps.config.outputs.configured == 'true' && github.event_name == 'workflow_run'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          APP_DIR="${VPS_APP_DIR:-/root/BIAP}"
+          APK="$(find /tmp/biap-apk -type f -name '*.apk' | head -n 1)"
+          test -n "$APK" && test -f "$APK"
+          scp -i ~/.ssh/biap_deploy_key -P "$PORT" -o BatchMode=yes "$APK" "$VPS_USER@$VPS_HOST:/tmp/biap-latest.apk"
+          ssh -i ~/.ssh/biap_deploy_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" \
+            "APP_DIR='$APP_DIR' bash -s" <<'REMOTE'
+          set -euo pipefail
+          mkdir -p "$APP_DIR/.runtime/releases"
+          mv /tmp/biap-latest.apk "$APP_DIR/.runtime/releases/biap-latest.apk"
+          chmod 0644 "$APP_DIR/.runtime/releases/biap-latest.apk"
+          ls -lh "$APP_DIR/.runtime/releases/biap-latest.apk"
+          REMOTE
 
       - name: Deploy main to VPS
         if: steps.config.outputs.configured == 'true'
@@ -155,6 +185,9 @@ jobs:
           if [[ "${{ steps.config.outputs.configured }}" == "true" ]]; then
             echo "### Backend deploy" >> "$GITHUB_STEP_SUMMARY"
             echo "Production deploy attempted after backend validation." >> "$GITHUB_STEP_SUMMARY"
+            if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+              echo "Latest successful Android APK was also published to the VPS update center." >> "$GITHUB_STEP_SUMMARY"
+            fi
           else
             echo "### Backend deploy not configured yet" >> "$GITHUB_STEP_SUMMARY"
             echo "Add production secrets: VPS_HOST, VPS_USER, VPS_SSH_KEY." >> "$GITHUB_STEP_SUMMARY"
