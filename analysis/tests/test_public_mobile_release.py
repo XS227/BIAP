@@ -3,7 +3,7 @@ from release_routes import mobile_release
 
 
 def test_public_mobile_release_route_is_registered():
-    paths = {route.path for route in app.routes}
+    paths = {getattr(route, "path", None) for route in app.routes}
     assert "/app/release" in paths
     assert "/app/latest.apk" in paths
 
