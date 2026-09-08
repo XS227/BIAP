@@ -6,6 +6,7 @@ on:
     paths:
       - 'analysis/**'
       - 'deploy/systemd/**'
+      - 'deploy/publish-mobile-apk.sh'
       - '.github/workflows/deploy-backend.yml'
   workflow_run:
     workflows: ["Release candidate check"]
@@ -193,10 +194,9 @@ jobs:
           ssh -i ~/.ssh/biap_deploy_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" \
             "APP_DIR='$APP_DIR' bash -s" <<'REMOTE'
           set -euo pipefail
-          mkdir -p "$APP_DIR/.runtime/releases"
-          mv /tmp/biap-latest.apk "$APP_DIR/.runtime/releases/biap-latest.apk"
-          chmod 0644 "$APP_DIR/.runtime/releases/biap-latest.apk"
-          ls -lh "$APP_DIR/.runtime/releases/biap-latest.apk"
+          cd "$APP_DIR"
+          bash deploy/publish-mobile-apk.sh /tmp/biap-latest.apk "$APP_DIR"
+          rm -f /tmp/biap-latest.apk
           REMOTE
 
       - name: Deployment summary
@@ -207,7 +207,7 @@ jobs:
             echo "Production deploy attempted after backend validation." >> "$GITHUB_STEP_SUMMARY"
             echo "Listed-company 300/day baseline timer was installed, enabled, and a manual run was started." >> "$GITHUB_STEP_SUMMARY"
             if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
-              echo "Latest successful Android APK was also published to the VPS update center." >> "$GITHUB_STEP_SUMMARY"
+              echo "Latest successful Android APK and matching version marker were published to the VPS update center." >> "$GITHUB_STEP_SUMMARY"
             fi
           else
             echo "### Backend deploy not configured yet" >> "$GITHUB_STEP_SUMMARY"
