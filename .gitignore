@@ -9,3 +9,4 @@ codal_pdf_text_cache.json.tmp
 .env
 .env.*
 *.sqlite3.bak-*
+.runtime/
