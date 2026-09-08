@@ -49,7 +49,8 @@
       "exclude": [
         "expo",
         "expo-router",
-        "expo-sharing"
+        "expo-sharing",
+        "expo-glass-effect"
       ]
     }
   },
