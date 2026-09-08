@@ -1,0 +1,69 @@
+name: Patch stable admin download
+
+on:
+  push:
+    branches: [admin/stable-mobile-release]
+    paths:
+      - '.github/workflows/patch-stable-admin.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: admin/stable-mobile-release
+      - name: Switch admin update center to stable GitHub release
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('analysis/admin_routes.py')
+          s = p.read_text(encoding='utf-8')
+
+          old_route = '''@router.get("/app/latest.apk")
+          def download_latest_apk(username: str = Depends(require_admin)):
+              release = _mobile_release()
+              if not _MOBILE_APK_PATH.is_file():
+                  raise HTTPException(status_code=404, detail="Latest BIAP APK is not published on this server yet")
+              version = release.get("version") or "latest"
+              return FileResponse(
+                  _MOBILE_APK_PATH,
+                  media_type="application/vnd.android.package-archive",
+                  filename=f"BIAP-{version}.apk",
+                  headers={"Cache-Control": "no-store"},
+              )
+          '''
+          new_route = '''@router.get("/app/latest.apk")
+          def download_latest_apk(username: str = Depends(require_admin)):
+              return RedirectResponse(
+                  "https://github.com/XS227/BIAP/releases/latest/download/BIAP.apk",
+                  status_code=302,
+              )
+          '''
+          assert old_route in s, 'download route block not found'
+          s = s.replace(old_route, new_route)
+
+          old_button = '''    if _MOBILE_APK_PATH.is_file():
+                  download_html = '<a class="btn" href="/admindir/app/latest.apk">Last ned nyeste APK</a>'
+                  apk_status = "APK klar på production-serveren."
+              else:
+                  download_html = "<span class='muted'>APK bygges/publiseres. Last ned-knappen aktiveres automatisk når CI er ferdig.</span>"
+                  apk_status = "APK ikke publisert ennå."
+          '''
+          new_button = '''    download_html = '<a class="btn" href="/admindir/app/latest.apk">Last ned nyeste APK</a>'
+              apk_status = "Stabil APK publiseres automatisk fra siste vellykkede main-build."
+          '''
+          assert old_button in s, 'download button block not found'
+          s = s.replace(old_button, new_button)
+          p.write_text(s, encoding='utf-8')
+          PY
+          rm .github/workflows/patch-stable-admin.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add analysis/admin_routes.py .github/workflows/patch-stable-admin.yml
+          git commit -m "Use stable GitHub release for admin APK download"
+          git push origin HEAD:admin/stable-mobile-release
