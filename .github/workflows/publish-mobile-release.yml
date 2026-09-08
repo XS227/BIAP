@@ -1,0 +1,91 @@
+name: Publish mobile release
+
+on:
+  workflow_run:
+    workflows: ["Release candidate check"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: publish-mobile-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Resolve source run
+        id: source
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            RUN_ID="${{ github.event.workflow_run.id }}"
+          else
+            RUN_ID="$(gh run list --workflow 'Release candidate check' --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+          fi
+          test -n "$RUN_ID"
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Download installable APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ github.token }}
+          pattern: biap-android-qa-*
+          path: release-apk
+          merge-multiple: true
+
+      - name: Build release metadata
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(python3 -c 'import json; print(json.load(open("analysis/mobile_release.json", encoding="utf-8"))["version"])')"
+          TAG="mobile-v${VERSION}"
+          APK="$(find release-apk -type f -name '*.apk' | head -n 1)"
+          test -f "$APK"
+          cp "$APK" release-apk/BIAP.apk
+          python3 - <<'PY' > release-notes.md
+          import json
+          d=json.load(open('analysis/mobile_release.json', encoding='utf-8'))
+          print(f"# BIAP {d['version']}\n")
+          for item in d.get('changes', []):
+              print(f"- {item}")
+          PY
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update stable release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "BIAP $VERSION" --notes-file release-notes.md --latest
+            gh release upload "$TAG" release-apk/BIAP.apk --clobber
+          else
+            gh release create "$TAG" release-apk/BIAP.apk --title "BIAP $VERSION" --notes-file release-notes.md --latest --target main
+          fi
+
+      - name: Summary
+        run: |
+          echo "### Mobile release published" >> "$GITHUB_STEP_SUMMARY"
+          echo "Version: ${{ steps.meta.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Stable APK: https://github.com/XS227/BIAP/releases/latest/download/BIAP.apk" >> "$GITHUB_STEP_SUMMARY"
