@@ -1,0 +1,71 @@
+name: Expo EAS build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/expo-eas-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-expo-eas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      CI: '1'
+      NODE_ENV: production
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: npm ci
+      - name: Require Expo authentication
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::EXPO_TOKEN is not configured."
+            exit 1
+          fi
+      - name: Install EAS CLI
+        run: npm install --global eas-cli@latest
+      - name: Build signed Android APK with Expo EAS
+        run: eas build --platform android --profile preview --non-interactive --wait --json > eas-build.json
+      - name: Download Expo EAS APK
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const parsed = JSON.parse(fs.readFileSync('eas-build.json', 'utf8'));
+          const build = Array.isArray(parsed) ? parsed[0] : parsed;
+          const url = build?.artifacts?.buildUrl || build?.artifacts?.applicationArchiveUrl;
+          if (!url) throw new Error('EAS did not return an Android APK URL');
+          fs.writeFileSync('eas-apk-url.txt', url);
+          NODE
+          VERSION=$(node -p "require('./app.json').expo.version")
+          curl --fail --location --retry 3 --retry-delay 3 "$(cat eas-apk-url.txt)" -o "BIAP-${VERSION}-Expo-EAS.apk"
+          test -s "BIAP-${VERSION}-Expo-EAS.apk"
+      - name: Verify Expo APK signature
+        run: |
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs BIAP-*-Expo-EAS.apk
+      - name: Upload Expo EAS APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: biap-android-eas-${{ github.sha }}
+          path: mobile/BIAP-*-Expo-EAS.apk
+          if-no-files-found: error
+          retention-days: 14
