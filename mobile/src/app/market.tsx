@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, RefreshControl, useColorScheme, SafeA
 import { router, useFocusEffect } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, BottomTabInset, MaxContentWidth } from '@/constants/theme';
 import { fetchWatchlist, formatPrice, MarketSymbolResult, StockItem } from '@/lib/api';
-import { fetchMarketSymbols } from '@/lib/market-symbols';
+import { fetchMarketSymbols, rankMarketSymbols } from '@/lib/market-symbols';
 import { fetchTsetmcQuotes } from '@/lib/market-quote';
 import { listFavorites } from '@/lib/favorites';
 import { SymbolLogo } from '@/components/symbol-logo';
@@ -30,17 +30,8 @@ export default function MarketScreen(){
    if(category==='FAVORITES'){const fav=new Set(favoriteCodes);items=items.filter(s=>fav.has(s.code)||fav.has(s.symbol));}
    if(category==='TSE'||category==='IFB'||category==='IFB_BASE')items=items.filter(s=>(s.market??'').toUpperCase()===category);
    if(category==='PRICED')items=items.filter(s=>{const x=quotes[s.code];return Boolean(x&&!x.error&&(x.lastPrice!=null||x.closingPrice!=null))});
-   // Rank across the whole ~3500-symbol universe using the bulk change_percent
-   // that /stock/symbols already returns for every item (same source data as
-   // the market list itself), not the `quotes` cache — that cache is only ever
-   // populated for a small, alphabetically-first slice of symbols (the first
-   // page fetched on load), so ranking off it silently limited "top"/"losers"
-   // to names starting with آ/ا instead of the real best/worst of the market.
-   // Restricted to classified TSE/IFB/IFB_BASE equities: unclassified rows
-   // (options/rights contracts, market=null) can carry a change_percent in
-   // the thousands-of-percent range off a near-zero reference price, which
-   // would otherwise bury every real mover under contract-code noise.
    if(category==='TOP'||category==='LOSERS')items=[...items].filter(s=>s.change_percent!=null&&Boolean(s.market)).sort((a,b)=>{const pa=Number(a.change_percent??0),pb=Number(b.change_percent??0);return category==='TOP'?pb-pa:pa-pb});
+   else if(q)items=rankMarketSymbols(items,q);
    return items;
  },[symbols,query,category,quotes,favoriteCodes]);
  const visible=useMemo(()=>filtered.slice(0,visibleCount),[filtered,visibleCount]);
@@ -68,10 +59,6 @@ export default function MarketScreen(){
    {category==='FAVORITES'&&!favoriteCodes.length?<Text style={[styles.rankingNote,{color:colors.textSecondary}]}>هنوز نمادی به علاقه‌مندی‌ها اضافه نشده است.</Text>:null}
    {error?<Text style={[styles.errorText,{color:colors.textSecondary}]}>فهرست بازار فعلاً در دسترس نیست؛ دوباره پایین بکشید.</Text>:null}
    <FlatList data={visible} keyExtractor={i=>i.code} keyboardShouldPersistTaps="handled" onEndReached={loadMore} onEndReachedThreshold={.35} contentContainerStyle={{paddingHorizontal:Spacing.three,paddingBottom:BottomTabInset+Spacing.four,maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'}} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);setQuotes({});setCountdown(30);loadUniverse()}} tintColor={Brand.stockGreen}/>} ListEmptyComponent={loading?<View>{[1,2,3,4].map(i=><StockRowSkeleton key={i}/>)}</View>:pricing?<View style={styles.priceLoading}><ActivityIndicator color={Brand.primary}/><Text style={[styles.empty,{color:colors.textSecondary}]}>در حال پیدا کردن نمادهای دارای قیمت تأییدشده…</Text></View>:<Text style={[styles.empty,{color:colors.textSecondary}]}>نمادی با این فیلتر پیدا نشد</Text>} ListFooterComponent={loadingMore?<ActivityIndicator color={Brand.primary}/>:null} renderItem={({item,index})=>{
-   // Prefer the per-symbol "confirmed" live quote once it has loaded; until
-   // then, fall back to the bulk price/change already included in the market
-   // list itself, so TOP/LOSERS rows show a real number immediately instead
-   // of "no confirmed price" for everything past the first fetched page.
    const quote=quotes[item.code];
    const confirmedPrice=quote&&!quote.error&&(quote.lastPrice!=null||quote.closingPrice!=null);
    const lastPrice=(confirmedPrice?quote.lastPrice??quote.closingPrice:item.last_price??item.closing_price)??undefined;
