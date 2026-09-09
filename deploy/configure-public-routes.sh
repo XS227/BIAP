@@ -25,6 +25,7 @@ trap 'rm -f "$TMP"' EXIT
 
 python3 - "$TMP" <<'PY'
 from pathlib import Path
+import re
 import sys
 
 path = Path(sys.argv[1])
@@ -38,7 +39,8 @@ pos = text.find(needle)
 if pos < 0:
     raise SystemExit("Could not find the BIAP /api/ nginx location; refusing unsafe edit")
 
-block = '''    # BIAP_PUBLIC_APP_ROUTES
+parts = [
+'''    # BIAP_PUBLIC_APP_ROUTES
     # Public mobile download/update hub served by the local biap-fin backend.
     location ^~ /app/ {
         proxy_pass http://127.0.0.1:8088;
@@ -49,7 +51,12 @@ block = '''    # BIAP_PUBLIC_APP_ROUTES
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # Secure admin login/panel lives in the same backend; authentication remains app-side.
+'''
+]
+
+# Older production nginx already exposes /admindir. Only add it when genuinely absent.
+if not re.search(r"(?m)^\s*location\s+(?:\^~\s+)?/admindir(?:/|\s|\{)", text):
+    parts.append('''    # Secure admin login/panel lives in the same backend; authentication remains app-side.
     location ^~ /admindir {
         proxy_pass http://127.0.0.1:8088;
         proxy_http_version 1.1;
@@ -59,8 +66,9 @@ block = '''    # BIAP_PUBLIC_APP_ROUTES
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-'''
-text = text[:pos] + block + text[pos:]
+''')
+
+text = text[:pos] + ''.join(parts) + text[pos:]
 path.write_text(text, encoding="utf-8")
 PY
 
@@ -83,4 +91,4 @@ fi
 
 as_root systemctl reload nginx
 
-echo "BIAP public /app/ and /admindir routes are active. Backup: $BACKUP"
+echo "BIAP public /app/ route is active; existing /admindir routing was preserved. Backup: $BACKUP"
