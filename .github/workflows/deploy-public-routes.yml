@@ -1,0 +1,73 @@
+name: Deploy public BIAP routes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/configure-public-routes.sh'
+      - '.github/workflows/deploy-public-routes.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-public-biap-routes
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-routes:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+      VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
+      VPS_APP_DIR: ${{ vars.VPS_APP_DIR }}
+    steps:
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$VPS_SSH_KEY" || { echo 'Missing VPS_SSH_KEY' >&2; exit 1; }
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_deploy_key
+          chmod 600 ~/.ssh/biap_deploy_key
+          PORT="${VPS_PORT:-22}"
+          ssh-keyscan -p "$PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Install nginx routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          APP_DIR="${VPS_APP_DIR:-/home/ubuntu/biap-kiasha/XS227-BIAP}"
+          ssh -i ~/.ssh/biap_deploy_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" \
+            "APP_DIR='$APP_DIR' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd "$APP_DIR"
+          test -d .git
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "Refusing route deploy: working tree is dirty" >&2
+            git status --short
+            exit 1
+          fi
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
+          bash deploy/configure-public-routes.sh
+          REMOTE
+
+      - name: Verify downloads and admin hub
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 20 https://biap.dadashi.no/app/downloads >/tmp/downloads.html
+          grep -F 'BIAP Mobile Center' /tmp/downloads.html >/dev/null
+          grep -F 'action="/admindir/login"' /tmp/downloads.html >/dev/null
+          status="$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 20 https://biap.dadashi.no/admindir)"
+          case "$status" in 200|301|302|303|307|308) ;; *) echo "Unexpected /admindir status: $status" >&2; exit 1;; esac
+          echo "Public BIAP downloads/admin hub is live."
