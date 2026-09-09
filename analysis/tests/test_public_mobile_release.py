@@ -27,6 +27,11 @@ def test_public_mobile_release_route_is_registered():
     assert downloads.status_code == 200
     assert "APK مستقیم" in downloads.text
     assert "Expo / EAS" in downloads.text
+    assert "کنترل کاربران و ورود/خروج" in downloads.text
+    assert 'action="/admindir/login"' in downloads.text
+    assert 'name="username"' in downloads.text
+    assert 'name="password"' in downloads.text
+    assert "رمز ادمین هرگز در این صفحه" in downloads.text
 
 
 def test_public_mobile_release_matches_manifest():
@@ -38,3 +43,5 @@ def test_public_mobile_release_matches_manifest():
     assert release["expoApkUrl"] == "/app/expo.apk"
     assert isinstance(release["expoApkAvailable"], bool)
     assert release["downloadsUrl"] == "/app/downloads"
+    assert release["adminUrl"] == "/admindir"
+    assert release["adminLoginUrl"] == "/admindir/login"
