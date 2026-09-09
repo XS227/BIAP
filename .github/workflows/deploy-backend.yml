@@ -203,15 +203,18 @@ jobs:
           set -euo pipefail
           PORT="${VPS_PORT:-22}"
           APP_DIR="${VPS_APP_DIR:-/home/ubuntu/biap-kiasha/XS227-BIAP}"
+          REMOTE_UPLOAD="$APP_DIR/.runtime/incoming/biap-latest.apk"
           APK="$(find /tmp/biap-apk/stable -type f -name '*.apk' | head -n 1)"
           test -n "$APK" && test -f "$APK"
-          scp -i ~/.ssh/biap_deploy_key -P "$PORT" -o BatchMode=yes "$APK" "$VPS_USER@$VPS_HOST:/tmp/biap-latest.apk"
           ssh -i ~/.ssh/biap_deploy_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" \
-            "APP_DIR='$APP_DIR' bash -s" <<'REMOTE'
+            "mkdir -p '$APP_DIR/.runtime/incoming' && rm -f '$REMOTE_UPLOAD' && df -h '$APP_DIR' /tmp || true"
+          scp -i ~/.ssh/biap_deploy_key -P "$PORT" -o BatchMode=yes "$APK" "$VPS_USER@$VPS_HOST:$REMOTE_UPLOAD"
+          ssh -i ~/.ssh/biap_deploy_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" \
+            "APP_DIR='$APP_DIR' REMOTE_UPLOAD='$REMOTE_UPLOAD' bash -s" <<'REMOTE'
           set -euo pipefail
           cd "$APP_DIR"
-          bash deploy/publish-mobile-apk.sh /tmp/biap-latest.apk "$APP_DIR" stable
-          rm -f /tmp/biap-latest.apk
+          bash deploy/publish-mobile-apk.sh "$REMOTE_UPLOAD" "$APP_DIR" stable
+          rm -f "$REMOTE_UPLOAD"
           REMOTE
 
       - name: Publish Expo EAS APK to VPS
@@ -221,15 +224,18 @@ jobs:
           set -euo pipefail
           PORT="${VPS_PORT:-22}"
           APP_DIR="${VPS_APP_DIR:-/home/ubuntu/biap-kiasha/XS227-BIAP}"
+          REMOTE_UPLOAD="$APP_DIR/.runtime/incoming/biap-expo.apk"
           APK="$(find /tmp/biap-apk/expo -type f -name '*.apk' | head -n 1)"
           test -n "$APK" && test -f "$APK"
-          scp -i ~/.ssh/biap_deploy_key -P "$PORT" -o BatchMode=yes "$APK" "$VPS_USER@$VPS_HOST:/tmp/biap-expo.apk"
           ssh -i ~/.ssh/biap_deploy_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" \
-            "APP_DIR='$APP_DIR' bash -s" <<'REMOTE'
+            "mkdir -p '$APP_DIR/.runtime/incoming' && rm -f '$REMOTE_UPLOAD' && df -h '$APP_DIR' /tmp || true"
+          scp -i ~/.ssh/biap_deploy_key -P "$PORT" -o BatchMode=yes "$APK" "$VPS_USER@$VPS_HOST:$REMOTE_UPLOAD"
+          ssh -i ~/.ssh/biap_deploy_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" \
+            "APP_DIR='$APP_DIR' REMOTE_UPLOAD='$REMOTE_UPLOAD' bash -s" <<'REMOTE'
           set -euo pipefail
           cd "$APP_DIR"
-          bash deploy/publish-mobile-apk.sh /tmp/biap-expo.apk "$APP_DIR" expo
-          rm -f /tmp/biap-expo.apk
+          bash deploy/publish-mobile-apk.sh "$REMOTE_UPLOAD" "$APP_DIR" expo
+          rm -f "$REMOTE_UPLOAD"
           REMOTE
 
       - name: Verify public mobile update center
