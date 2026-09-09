@@ -14,10 +14,14 @@ as_root() {
 
 test -f "$NGINX_SITE" || { echo "Missing nginx site: $NGINX_SITE" >&2; exit 1; }
 
-TMP="$(mktemp)"
+# /tmp on this VPS can hit its quota. Keep deploy scratch data inside the app runtime instead.
+RUNTIME_TMP="${BIAP_RUNTIME_TMP:-$(pwd)/.runtime/deploy}"
+mkdir -p "$RUNTIME_TMP"
+TMP="$RUNTIME_TMP/biap-dadashi.nginx.$$"
 BACKUP="${NGINX_SITE}.bak-public-routes-$(date +%Y%m%d%H%M%S)"
 as_root cp "$NGINX_SITE" "$BACKUP"
 cp "$NGINX_SITE" "$TMP"
+trap 'rm -f "$TMP"' EXIT
 
 python3 - "$TMP" <<'PY'
 from pathlib import Path
@@ -62,6 +66,7 @@ PY
 
 as_root install -m 0644 "$TMP" "$NGINX_SITE"
 rm -f "$TMP"
+trap - EXIT
 
 # Keep sites-enabled tied to the canonical sites-available file.
 if [[ ! -L "$NGINX_ENABLED" || "$(readlink -f "$NGINX_ENABLED" 2>/dev/null || true)" != "$(readlink -f "$NGINX_SITE")" ]]; then
