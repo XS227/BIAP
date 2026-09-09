@@ -7,6 +7,7 @@ on:
       - 'analysis/**'
       - 'deploy/systemd/**'
       - 'deploy/publish-mobile-apk.sh'
+      - 'deploy/configure-public-routes.sh'
       - '.github/workflows/deploy-backend.yml'
   workflow_run:
     workflows: ["Release candidate check", "Expo EAS build"]
@@ -155,6 +156,8 @@ jobs:
             fi
           }
 
+          bash deploy/configure-public-routes.sh
+
           for unit in biap-listed-company-baseline.service biap-listed-company-baseline.timer; do
             test -f "deploy/systemd/$unit" || { echo "Missing systemd unit: $unit" >&2; exit 1; }
             as_root install -m 0644 "deploy/systemd/$unit" "/etc/systemd/system/$unit"
@@ -244,7 +247,11 @@ jobs:
         run: |
           set -euo pipefail
           RELEASE_URL="https://biap.dadashi.no/api/app/release"
+          DOWNLOADS_URL="https://biap.dadashi.no/app/downloads"
           curl --fail --silent --show-error --max-time 20 "$RELEASE_URL" >/tmp/biap-release.json
+          curl --fail --silent --show-error --max-time 20 "$DOWNLOADS_URL" >/tmp/biap-downloads.html
+          grep -F 'action="/admindir/login"' /tmp/biap-downloads.html >/dev/null
+          grep -F 'BIAP Mobile Center' /tmp/biap-downloads.html >/dev/null
           cat /tmp/biap-release.json
           echo
           python3 - <<'PY'
@@ -271,6 +278,7 @@ jobs:
           echo "Production deploy is mandatory; missing SSH credentials now fail the workflow instead of reporting a false green deploy." >> "$GITHUB_STEP_SUMMARY"
           echo "Target: ${VPS_USER}@${VPS_HOST}:${VPS_PORT:-22}" >> "$GITHUB_STEP_SUMMARY"
           echo "Update center: https://biap.dadashi.no/api/app/release" >> "$GITHUB_STEP_SUMMARY"
+          echo "Downloads/admin hub: https://biap.dadashi.no/app/downloads" >> "$GITHUB_STEP_SUMMARY"
           if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
             echo "Published mobile channel from: ${{ github.event.workflow_run.name }}" >> "$GITHUB_STEP_SUMMARY"
           fi
