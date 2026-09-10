@@ -59,6 +59,7 @@ async function openUrl(url: string, title: string) {
 export default function MoreScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light'; const colors = Colors[scheme]; const logout = useLogout();
   const currentVersion = Constants.expoConfig?.version || 'unknown';
+  const currentVersionCode = Constants.platform?.android?.versionCode ?? null;
   const openModules = () => router.push('/modules' as never);
   const handleLogout = () => { Alert.alert('خروج از حساب', 'آیا مطمئن هستید که می‌خواهید خارج شوید؟', [{ text: 'انصراف', style: 'cancel' }, { text: 'خروج', style: 'destructive', onPress: async () => { await logoutAndClearAuthSession(); logout(); } }]); };
 
@@ -69,8 +70,13 @@ export default function MoreScreen() {
       const release = await response.json() as MobileRelease;
       if (!release?.version) throw new Error('invalid release');
 
-      if (currentVersion !== 'unknown' && !isNewerVersion(release.version, currentVersion)) {
-        Alert.alert('BIAP به‌روز است', `نسخه نصب‌شده: ${currentVersion}\nآخرین نسخه: ${release.version}`);
+      const releaseVersionCode = typeof release.versionCode === 'number' ? release.versionCode : null;
+      const currentByNativeBuild = typeof currentVersionCode === 'number' && releaseVersionCode !== null && currentVersionCode >= releaseVersionCode;
+      const currentBySemanticVersion = currentVersion !== 'unknown' && !isNewerVersion(release.version, currentVersion);
+      if (currentByNativeBuild || currentBySemanticVersion) {
+        const installedDisplay = currentByNativeBuild && currentVersion !== release.version ? release.version : currentVersion;
+        const buildDisplay = typeof currentVersionCode === 'number' ? `\nBuild نصب‌شده: ${currentVersionCode}` : '';
+        Alert.alert('BIAP به‌روز است', `نسخه نصب‌شده: ${installedDisplay}${buildDisplay}\nآخرین نسخه: ${release.version}`);
         return;
       }
 
@@ -78,9 +84,10 @@ export default function MoreScreen() {
         ? `\n\nتغییرات:\n• ${release.changes.slice(0, 5).join('\n• ')}`
         : '';
       const unavailable = release.apkAvailable === false ? '\n\nفایل APK هنوز روی سرور انتشار قرار نگرفته است.' : '';
+      const currentBuild = typeof currentVersionCode === 'number' ? ` (build ${currentVersionCode})` : '';
       Alert.alert(
         'نسخه جدید BIAP',
-        `نسخه نصب‌شده: ${currentVersion}\nنسخه جدید: ${release.version}${notes}${unavailable}`,
+        `نسخه نصب‌شده: ${currentVersion}${currentBuild}\nنسخه جدید: ${release.version}${notes}${unavailable}`,
         [
           { text: 'بعداً', style: 'cancel' },
           ...(release.apkAvailable === false ? [] : [{ text: 'دانلود و نصب', onPress: () => { void openUrl(releaseDownloadUrl(release), 'به‌روزرسانی BIAP'); } }]),
