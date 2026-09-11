@@ -1,6 +1,12 @@
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 
-from performance_evaluator import DailyClose, evaluate_pending, parse_daily_history, select_horizon_close
+from performance_evaluator import (
+    DailyClose,
+    evaluate_pending,
+    parse_daily_history,
+    select_evaluable_horizon_close,
+    select_horizon_close,
+)
 from performance_store import PerformanceStore
 
 
@@ -38,7 +44,7 @@ def test_parse_daily_history_filters_invalid_rows_and_sorts():
 def test_horizon_counts_trading_sessions_not_calendar_days():
     generated = "2026-01-01T09:00:00+00:00"
     history = [
-        DailyClose(date(2026, 1, 1), 100),  # same day: deliberately excluded
+        DailyClose(date(2026, 1, 1), 100),
         DailyClose(date(2026, 1, 3), 101),
         DailyClose(date(2026, 1, 6), 102),
         DailyClose(date(2026, 1, 8), 103),
@@ -58,6 +64,55 @@ def test_horizon_waits_when_fewer_than_required_sessions_exist():
     ) is None
 
 
+def test_continuity_guard_accepts_normal_path():
+    history = [DailyClose(date(2026, 1, d), 99 + d) for d in (2, 3, 4, 5, 6)]
+    result = select_evaluable_horizon_close(
+        history,
+        generated_at="2026-01-01T09:00:00+00:00",
+        horizon_trading_days=5,
+        reference_price=100,
+    )
+    assert result.status == "ok"
+    assert result.target == DailyClose(date(2026, 1, 6), 105)
+
+
+def test_continuity_guard_rejects_reference_scale_mismatch():
+    history = [
+        DailyClose(date(2026, 1, 2), 850),
+        DailyClose(date(2026, 1, 3), 860),
+        DailyClose(date(2026, 1, 4), 870),
+        DailyClose(date(2026, 1, 5), 880),
+        DailyClose(date(2026, 1, 6), 890),
+    ]
+    result = select_evaluable_horizon_close(
+        history,
+        generated_at="2026-01-01T09:00:00+00:00",
+        horizon_trading_days=5,
+        reference_price=1,
+    )
+    assert result.status == "discontinuity"
+    assert result.target is None
+    assert "1->850" in result.reason
+
+
+def test_continuity_guard_rejects_mid_horizon_corporate_action_jump():
+    history = [
+        DailyClose(date(2026, 1, 2), 101),
+        DailyClose(date(2026, 1, 3), 102),
+        DailyClose(date(2026, 1, 4), 2200),
+        DailyClose(date(2026, 1, 5), 2250),
+        DailyClose(date(2026, 1, 6), 2300),
+    ]
+    result = select_evaluable_horizon_close(
+        history,
+        generated_at="2026-01-01T09:00:00+00:00",
+        horizon_trading_days=5,
+        reference_price=100,
+    )
+    assert result.status == "discontinuity"
+    assert result.target is None
+
+
 def test_evaluate_pending_uses_fifth_future_trading_close(tmp_path):
     store = PerformanceStore(str(tmp_path / "perf.sqlite3"))
     observation_id = _record(store, datetime(2026, 1, 1, 9, tzinfo=timezone.utc))
@@ -70,6 +125,7 @@ def test_evaluate_pending_uses_fifth_future_trading_close(tmp_path):
     ]
     summary = evaluate_pending(store, history_fetcher=lambda _code: history)
     assert summary["evaluated"] == 1
+    assert summary["discontinuities"] == 0
     assert summary["errors"] == 0
     assert store.pending_observations() == []
     stats = store.agent_stats("fundamental")
@@ -83,6 +139,24 @@ def test_evaluate_pending_uses_fifth_future_trading_close(tmp_path):
         ).fetchone()
     assert row["future_price"] == 110.0
     assert row["trading_days_elapsed"] == 5
+
+
+def test_evaluate_pending_leaves_discontinuous_history_unevaluated(tmp_path):
+    store = PerformanceStore(str(tmp_path / "perf.sqlite3"))
+    _record(store, datetime(2026, 1, 1, 9, tzinfo=timezone.utc), price=1.0)
+    history = [
+        DailyClose(date(2026, 1, 2), 850),
+        DailyClose(date(2026, 1, 3), 860),
+        DailyClose(date(2026, 1, 4), 870),
+        DailyClose(date(2026, 1, 5), 880),
+        DailyClose(date(2026, 1, 6), 890),
+    ]
+    summary = evaluate_pending(store, history_fetcher=lambda _code: history)
+    assert summary["evaluated"] == 0
+    assert summary["discontinuities"] == 1
+    assert summary["errors"] == 0
+    assert len(store.pending_observations()) == 1
+    assert store.agent_stats("fundamental") is None
 
 
 def test_evaluate_pending_leaves_missing_history_pending(tmp_path):
@@ -123,10 +197,7 @@ def test_same_code_history_fetched_once_for_multiple_pending_rows(tmp_path):
     _record(store, datetime(2026, 1, 1, 9, tzinfo=timezone.utc), code="123", symbol="فولاد")
     _record(store, datetime(2026, 1, 2, 9, tzinfo=timezone.utc), code="123", symbol="فولاد")
     calls = []
-    history = [
-        DailyClose(date(2026, 1, day), 100 + day)
-        for day in (3, 4, 5, 6, 7, 8, 9)
-    ]
+    history = [DailyClose(date(2026, 1, day), 100 + day) for day in (3, 4, 5, 6, 7, 8, 9)]
 
     def fetch(code):
         calls.append(code)
