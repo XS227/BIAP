@@ -3,10 +3,11 @@
 Dry-run by default. With --apply this tool:
 1. creates a byte-consistent SQLite backup;
 2. re-fetches verified TSETMC daily history for suspicious evaluated rows;
-3. revalidates the path with the same continuity guard used by the evaluator;
-4. recomputes a safe outcome when possible, or invalidates the contaminated
+3. retries transient failures and can fall back to the BIAP TSETMC relay;
+4. revalidates the path with the same continuity guard used by the evaluator;
+5. recomputes a safe outcome when possible, or invalidates the contaminated
    outcome so it no longer contributes to agent statistics;
-5. writes a JSON audit report next to the database.
+6. writes a JSON audit report next to the database.
 
 It never silently deletes recommendation rows.
 """
@@ -17,8 +18,8 @@ import argparse
 from datetime import datetime, timezone
 import json
 import os
-import shutil
 import sqlite3
+import time
 from typing import Any
 
 from performance_evaluator import (
@@ -27,6 +28,9 @@ from performance_evaluator import (
     select_evaluable_horizon_close,
 )
 from performance_store import DEFAULT_DB_PATH
+
+DEFAULT_RELAY_BASE = "http://89.42.199.20:8090/tsetmc-cdn/api"
+DEFAULT_PUBLIC_BASE = "https://cdn.tsetmc.com/api"
 
 
 def _iso_stamp() -> str:
@@ -43,6 +47,60 @@ def _backup_sqlite(db_path: str, backup_path: str) -> None:
             dst.close()
     finally:
         src.close()
+
+
+def _candidate_bases(extra_base: str | None = None) -> list[str]:
+    configured = os.environ.get("BIAP_TSETMC_API_BASE")
+    relay = os.environ.get("BIAP_TSETMC_RELAY_BASE", DEFAULT_RELAY_BASE)
+    values = [extra_base, configured, relay, DEFAULT_PUBLIC_BASE]
+    result: list[str] = []
+    for value in values:
+        if value:
+            normalized = value.rstrip("/")
+            if normalized not in result:
+                result.append(normalized)
+    return result
+
+
+def _fetch_history_resilient(
+    code: str,
+    *,
+    attempts_per_base: int = 3,
+    timeout: float = 20.0,
+    preferred_base: str | None = None,
+) -> tuple[list, str, list[str]]:
+    """Fetch verified history with retries and relay/public fallbacks.
+
+    The underlying market-data helpers read BIAP_TSETMC_API_BASE dynamically,
+    so we temporarily point them at each candidate. The original environment
+    value is restored before returning. Empty history is treated as a failed
+    candidate because it cannot verify or repair an evaluated observation.
+    """
+    attempts_per_base = max(1, attempts_per_base)
+    timeout = max(1.0, timeout)
+    errors: list[str] = []
+    original = os.environ.get("BIAP_TSETMC_API_BASE")
+    try:
+        for base in _candidate_bases(preferred_base):
+            os.environ["BIAP_TSETMC_API_BASE"] = base
+            for attempt in range(1, attempts_per_base + 1):
+                try:
+                    history = fetch_daily_history(code, timeout=timeout)
+                    if history:
+                        return history, base, errors
+                    errors.append(f"{base} attempt {attempt}: empty history")
+                except Exception as exc:
+                    errors.append(
+                        f"{base} attempt {attempt}: {type(exc).__name__}: {exc}"
+                    )
+                if attempt < attempts_per_base:
+                    time.sleep(min(1.5 * attempt, 4.0))
+    finally:
+        if original is None:
+            os.environ.pop("BIAP_TSETMC_API_BASE", None)
+        else:
+            os.environ["BIAP_TSETMC_API_BASE"] = original
+    raise RuntimeError("all TSETMC history sources failed: " + " | ".join(errors[-8:]))
 
 
 def _recompute_agents(conn: sqlite3.Connection, observation_id: int, realized_return: float) -> None:
@@ -86,6 +144,9 @@ def audit_and_repair(
     threshold: float = 5.0,
     max_single_session_ratio: float = DEFAULT_MAX_SINGLE_SESSION_RATIO,
     apply: bool = False,
+    attempts_per_base: int = 3,
+    timeout: float = 20.0,
+    preferred_base: str | None = None,
 ) -> dict[str, Any]:
     if not os.path.exists(db_path):
         raise FileNotFoundError(db_path)
@@ -112,6 +173,7 @@ def audit_and_repair(
         _backup_sqlite(db_path, backup_path)
 
     history_cache: dict[str, list] = {}
+    source_cache: dict[str, str] = {}
     items: list[dict[str, Any]] = []
     recomputed = invalidated = unchanged = errors = 0
 
@@ -129,7 +191,18 @@ def audit_and_repair(
             try:
                 code = str(row["code"])
                 if code not in history_cache:
-                    history_cache[code] = fetch_daily_history(code)
+                    history, source, fetch_notes = _fetch_history_resilient(
+                        code,
+                        attempts_per_base=attempts_per_base,
+                        timeout=timeout,
+                        preferred_base=preferred_base,
+                    )
+                    history_cache[code] = history
+                    source_cache[code] = source
+                    if fetch_notes:
+                        item["fetchNotes"] = fetch_notes[-6:]
+                item["historySource"] = source_cache[code]
+
                 selection = select_evaluable_horizon_close(
                     history_cache[code],
                     generated_at=str(row["generated_at"]),
@@ -212,6 +285,9 @@ def audit_and_repair(
         "backup": os.path.abspath(backup_path) if backup_path else None,
         "thresholdAbsReturn": threshold,
         "maxSingleSessionRatio": max_single_session_ratio,
+        "historyCandidates": _candidate_bases(preferred_base),
+        "attemptsPerBase": attempts_per_base,
+        "timeoutSeconds": timeout,
         "candidates": len(rows),
         "recomputed": recomputed,
         "invalidated": invalidated,
@@ -242,6 +318,13 @@ def main() -> int:
         type=float,
         default=DEFAULT_MAX_SINGLE_SESSION_RATIO,
     )
+    parser.add_argument("--attempts-per-base", type=int, default=3)
+    parser.add_argument("--timeout", type=float, default=20.0)
+    parser.add_argument(
+        "--preferred-base",
+        default=None,
+        help="optional first TSETMC-compatible API base; relay/public fallbacks are still tried",
+    )
     parser.add_argument(
         "--apply",
         action="store_true",
@@ -253,6 +336,9 @@ def main() -> int:
         threshold=max(0.0, args.threshold),
         max_single_session_ratio=args.max_single_session_ratio,
         apply=args.apply,
+        attempts_per_base=max(1, args.attempts_per_base),
+        timeout=max(1.0, args.timeout),
+        preferred_base=args.preferred_base,
     )
     print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
     return 0 if report["errors"] == 0 else 2
