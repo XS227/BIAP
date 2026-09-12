@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import datetime, time, timezone
 import json
+import logging
 import os
 import sqlite3
 import urllib.error
@@ -19,6 +20,7 @@ from zoneinfo import ZoneInfo
 
 from audit_store import AuditStore, DEFAULT_DB_PATH
 from company_builder import build_company_from_quote, build_company_from_symbol
+from deadline import DeadlineExceeded, run_with_deadline
 from execution import submit_order_intent
 from kiasha import decide
 from kiasha_ai import analyze as analyze_with_ai
@@ -26,6 +28,8 @@ from kiasha_paper import evaluate_ai_paper_proposal
 from market_data import MarketDataUnavailable, fetch_watchlist, find_quote, tsetmc_api_base
 from paper_execution_store import PaperExecutionStore
 from paper_sell_store import PaperSellStore
+
+logger = logging.getLogger("kiasha.auto_invest")
 
 _TZ = ZoneInfo("Asia/Tehran")
 _DEFAULT_SYMBOLS = (
@@ -73,6 +77,45 @@ def _max_symbol_pct() -> float:
 
 def _min_cash_reserve_pct() -> float:
     return max(0.0, min(99.0, _env_float("KIASHA_AUTO_MIN_CASH_RESERVE_PCT", 30.0)))
+
+
+def _stage_timeout() -> float:
+    """Wall-clock ceiling for one candidate's verified-price or AI-proposal fetch.
+
+    Each individual network call underneath (TSETMC, CODAL, Anthropic) already
+    carries its own connect/read timeout, but a compounding retry chain (CODAL
+    filing search across symbol variants, multiple filing PDFs, several AI tool
+    rounds) can still add up to far more than any single call's timeout. This
+    ceiling bounds that whole chain per candidate so one unavailable upstream
+    can never stall the rest of the run.
+    """
+    return max(5.0, _env_float("KIASHA_AUTO_STAGE_TIMEOUT_SECONDS", 60.0))
+
+
+def _verified_company_bounded(code: str) -> tuple[Optional[dict[str, Any]], Optional[float]]:
+    try:
+        return run_with_deadline(_verified_company, code, timeout=_stage_timeout())
+    except DeadlineExceeded as exc:
+        logger.warning("verified price FAILED code=%s reason=timeout %s", code, exc)
+        raise
+
+
+def _analyze_with_ai_bounded(code: str, *, horizon: str):
+    logger.info("AI request started code=%s horizon=%s", code, horizon)
+    try:
+        proposal = run_with_deadline(analyze_with_ai, code, horizon=horizon, timeout=_stage_timeout())
+    except DeadlineExceeded as exc:
+        logger.warning("AI request TIMEOUT code=%s horizon=%s: %s", code, horizon, exc)
+        raise
+    except Exception as exc:
+        logger.warning("AI request FAILED code=%s horizon=%s: %s", code, horizon, str(exc)[:200])
+        raise
+    else:
+        logger.info(
+            "AI request completed code=%s horizon=%s action=%s confidence=%.2f",
+            code, horizon, proposal.action, proposal.confidence,
+        )
+        return proposal
 
 
 def _candidate_symbols() -> list[str]:
@@ -303,9 +346,11 @@ def _rank_candidates() -> tuple[list[tuple[str, float]], list[dict[str, Any]]]:
     ranked: list[tuple[str, float]] = []
     diagnostics: list[dict[str, Any]] = []
     for code in _candidate_symbols():
+        logger.info("candidate selection started code=%s phase=DISCOVERY", code)
         try:
-            company, _ = _verified_company(code)
+            company, _ = _verified_company_bounded(code)
             if company is None:
+                logger.warning("verified price FAILED code=%s phase=DISCOVERY reason=unavailable", code)
                 diagnostics.append({
                     "code": code,
                     "status": "ERROR",
@@ -315,9 +360,23 @@ def _rank_candidates() -> tuple[list[tuple[str, float]], list[dict[str, Any]]]:
                 })
                 continue
             decision = decide(company)
+            logger.info(
+                "candidate ranked code=%s phase=DISCOVERY call=%s score=%.4f",
+                code, decision.call, float(decision.weighted_score),
+            )
             if decision.call == "BUY" and float(decision.weighted_score) > 0:
                 ranked.append((code, float(decision.weighted_score)))
+        except DeadlineExceeded as exc:
+            logger.warning("candidate TIMEOUT code=%s phase=DISCOVERY: %s", code, exc)
+            diagnostics.append({
+                "code": code,
+                "status": "ERROR",
+                "phase": "DISCOVERY",
+                "reason": f"timeout: {exc}",
+                "retryable": True,
+            })
         except Exception as exc:
+            logger.warning("candidate FAILED code=%s phase=DISCOVERY: %s", code, str(exc)[:300])
             diagnostics.append({
                 "code": code,
                 "status": "ERROR",
@@ -381,11 +440,13 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
             owned = int(position.get("quantity") or 0)
             if not code or owned <= 0:
                 continue
+            analysis_code = _analysis_code(code)
+            logger.info("candidate selection started code=%s phase=REBALANCE owned=%s", code, owned)
             try:
-                analysis_code = _analysis_code(code)
-                proposal = analyze_with_ai(analysis_code, horizon=horizon)
-                company, reference_price = _verified_company(code)
+                proposal = _analyze_with_ai_bounded(analysis_code, horizon=horizon)
+                company, reference_price = _verified_company_bounded(code)
                 if company is None or reference_price is None:
+                    logger.warning("verified price FAILED code=%s phase=REBALANCE reason=unavailable", code)
                     results.append({
                         "code": code,
                         "symbol": analysis_code,
@@ -395,6 +456,7 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
                         "retryable": True,
                     })
                     continue
+                logger.info("verified price OK code=%s phase=REBALANCE price=%s", code, reference_price)
                 if proposal.action != "SELL":
                     continue
                 sizing_capital = _paper_sizing_capital(account)
@@ -405,6 +467,10 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
                     current_symbol_position=owned,
                     quote_fetched_at=(company.get("market") or {}).get("quote_fetched_at"),
                     execute=False,
+                )
+                logger.info(
+                    "risk result code=%s phase=REBALANCE allowed=%s reasons=%s",
+                    code, gate.allowed, gate.reasons,
                 )
                 if not gate.allowed or gate.intent is None or gate.risk is None:
                     payload = gate.to_dict()
@@ -435,12 +501,24 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
                     idempotency_key=f"auto:{local.date().isoformat()}:SELL:{code}:{horizon}",
                 )
                 sold_codes.add(code.upper())
+                logger.info("execution result code=%s phase=REBALANCE status=FILLED", code)
                 results.append({"code": code, "symbol": analysis_code, "status": "FILLED", "phase": "REBALANCE", **fill})
                 account = AUDIT.get_paper_account(user_id=user_id) or account
-            except Exception as exc:
+            except DeadlineExceeded as exc:
+                logger.warning("candidate TIMEOUT code=%s phase=REBALANCE: %s", code, exc)
                 results.append({
                     "code": code,
-                    "symbol": _analysis_code(code),
+                    "symbol": analysis_code,
+                    "status": "ERROR",
+                    "phase": "REBALANCE",
+                    "reason": f"timeout: {exc}",
+                    "retryable": True,
+                })
+            except Exception as exc:
+                logger.warning("candidate FAILED code=%s phase=REBALANCE: %s", code, str(exc)[:300])
+                results.append({
+                    "code": code,
+                    "symbol": analysis_code,
                     "status": "ERROR",
                     "phase": "REBALANCE",
                     "reason": str(exc)[:300],
@@ -466,10 +544,12 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
             cash = float(account["cashBalance"])
             if cash <= reserve_cash + 1e-9 or spent_this_run >= daily_budget - 1e-9:
                 break
+            logger.info("candidate selection started code=%s phase=ENTRY baselineScore=%.4f", code, baseline_score)
             try:
-                proposal = analyze_with_ai(code, horizon=horizon)
-                company, reference_price = _verified_company(code)
+                proposal = _analyze_with_ai_bounded(code, horizon=horizon)
+                company, reference_price = _verified_company_bounded(code)
                 if company is None or reference_price is None:
+                    logger.warning("verified price FAILED code=%s phase=ENTRY reason=unavailable", code)
                     results.append({
                         "code": code,
                         "status": "ERROR",
@@ -479,6 +559,7 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
                         "retryable": True,
                     })
                     continue
+                logger.info("verified price OK code=%s phase=ENTRY price=%s", code, reference_price)
                 if proposal.action != "BUY":
                     results.append({
                         "code": code,
@@ -503,6 +584,10 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
                     max_position_pct=remaining_symbol_pct,
                     quote_fetched_at=(company.get("market") or {}).get("quote_fetched_at"),
                     execute=False,
+                )
+                logger.info(
+                    "risk result code=%s phase=ENTRY allowed=%s reasons=%s",
+                    code, gate.allowed, gate.reasons,
                 )
                 if not gate.allowed or gate.intent is None or gate.risk is None:
                     payload = gate.to_dict()
@@ -541,8 +626,20 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
                     idempotency_key=f"auto:{local.date().isoformat()}:BUY:{code}:{horizon}",
                 )
                 spent_this_run += float(fill.get("fillCost") or proposed_cost)
+                logger.info("execution result code=%s phase=ENTRY status=FILLED", code)
                 results.append({"code": code, "status": "FILLED", "phase": "ENTRY", "baselineScore": baseline_score, **fill})
+            except DeadlineExceeded as exc:
+                logger.warning("candidate TIMEOUT code=%s phase=ENTRY: %s", code, exc)
+                results.append({
+                    "code": code,
+                    "status": "ERROR",
+                    "phase": "ENTRY",
+                    "baselineScore": baseline_score,
+                    "reason": f"timeout: {exc}",
+                    "retryable": True,
+                })
             except Exception as exc:
+                logger.warning("candidate FAILED code=%s phase=ENTRY: %s", code, str(exc)[:300])
                 results.append({
                     "code": code,
                     "status": "ERROR",

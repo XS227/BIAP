@@ -6,10 +6,11 @@ agent team. Claude/Sonnet is intentionally not used during the market-wide scan.
 """
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError, as_completed
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
+import logging
 import math
 import os
 from pathlib import Path
@@ -23,6 +24,8 @@ from company_builder import build_company_from_quote
 from kiasha import decide
 from market_data import LiveQuote
 from symbol_universe import get_symbol_universe, tsetmc_base
+
+logger = logging.getLogger("kiasha.market_scanner")
 
 CACHE_ENV = "BIAP_MARKET_SCAN_CACHE"
 DEFAULT_CACHE_PATH = Path.home() / ".cache" / "biap" / "market_scan.json"
@@ -238,13 +241,19 @@ def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[s
     deep_input = shortlist[:deep_limit]
     deep_results: list[dict[str, Any]] = []
     deep_errors: list[dict[str, str]] = []
+    deep_job_timeout = _float_env("BIAP_MARKET_SCAN_DEEP_JOB_TIMEOUT_SECONDS", 45.0, 10.0, 120.0)
     with ThreadPoolExecutor(max_workers=workers) as pool:
         jobs = {pool.submit(_deep_analyze, item, codal_delay): item for item in deep_input}
         for job in as_completed(jobs):
             item = jobs[job]
+            logger.info("candidate selection started code=%s phase=SCAN symbol=%s", item.code, item.symbol)
             try:
-                deep_results.append(job.result())
+                deep_results.append(job.result(timeout=deep_job_timeout))
+            except FutureTimeoutError:
+                logger.warning("candidate TIMEOUT code=%s phase=SCAN symbol=%s", item.code, item.symbol)
+                deep_errors.append({"code": item.code, "symbol": item.symbol, "reason": f"timeout after {deep_job_timeout}s"})
             except Exception as exc:
+                logger.warning("candidate FAILED code=%s phase=SCAN symbol=%s: %s", item.code, item.symbol, str(exc)[:240])
                 deep_errors.append({"code": item.code, "symbol": item.symbol, "reason": str(exc)[:240]})
     deep_results.sort(key=lambda item: (1 if item.get("kiashaCall") == "BUY" else 0, float(item.get("kiashaScore") or -999), float(item.get("discoveryScore") or -999)), reverse=True)
     top = deep_results[:top_limit]

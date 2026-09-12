@@ -6,12 +6,13 @@ issuer symbol; market-only fields remain unavailable rather than fabricated.
 """
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
+import os
 import time
 
 from audit_parser import audit_opinion_from_pdf
 from codal_data import CodalDataUnavailable, latest_financial_filings, metadata_for_symbol
+from deadline import DeadlineExceeded, run_parallel_with_deadline
 from financial_scope import report_scope_from_title, scoped_fundamentals_for_symbol
 from market_data import LiveQuote, fetch_extended_market_data
 from market_memory import latest_symbol_snapshot
@@ -22,6 +23,22 @@ FULL_AVAILABILITY = {"codal": True, "codal_metadata": True, "market_extended": T
 PRICE_ONLY_AVAILABILITY = {"codal": False, "codal_metadata": False, "market_extended": False, "tindex": False, "market_memory": False}
 _CODAL_PARTS_TTL_SECONDS = 5 * 60
 _codal_parts_cache: dict[str, tuple[float, tuple[dict | None, dict | None, dict]]] = {}
+
+
+def _fanout_timeout() -> float:
+    """Ceiling for the parallel CODAL/TSETMC-extended/Tindex fan-out below.
+
+    Each individual HTTP call already carries its own connect/read timeout,
+    but a stalled DNS resolution (e.g. a broken resolver, or an endpoint that
+    accepts a TCP connection then never responds at the socket layer) can
+    bypass those timeouts entirely. This is an outer backstop so one
+    unreachable dependency (TSETMC, CODAL, or the separate Tindex host) can
+    never hang company-data assembly -- and, by extension, an Auto-Invest run.
+    """
+    try:
+        return max(5.0, float(os.getenv("BIAP_COMPANY_BUILD_TIMEOUT_SECONDS", "30")))
+    except (TypeError, ValueError):
+        return 30.0
 
 
 def _canonical_symbol(symbol: str) -> str:
@@ -213,11 +230,16 @@ def build_company_from_symbol(symbol: str) -> dict | None:
     wanted = _canonical_symbol(symbol)
     if not wanted:
         return None
-    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="biap-symbol") as pool:
-        codal_future = pool.submit(_codal_parts, wanted)
-        tindex_future = pool.submit(_tindex_dict, wanted)
-        codal_metadata, codal_fundamentals, codal_diagnostic = codal_future.result()
-        tindex = tindex_future.result()
+    codal_result, tindex_result = run_parallel_with_deadline(
+        [lambda: _codal_parts(wanted), lambda: _tindex_dict(wanted)],
+        timeout=_fanout_timeout(),
+    )
+    if isinstance(codal_result, BaseException):
+        codal_metadata, codal_fundamentals = None, None
+        codal_diagnostic = {"status": "timeout" if isinstance(codal_result, DeadlineExceeded) else "error", "symbol": wanted, "error": str(codal_result)[:240]}
+    else:
+        codal_metadata, codal_fundamentals, codal_diagnostic = codal_result
+    tindex = None if isinstance(tindex_result, BaseException) else tindex_result
     if codal_metadata is None and codal_fundamentals is None and tindex is None:
         remembered = _company_from_memory(wanted)
         if remembered is not None:
@@ -237,13 +259,21 @@ def build_company_from_symbol(symbol: str) -> dict | None:
 def build_company_from_quote(quote: LiveQuote, *, codal_symbol: str | None = None, scan_mode: bool = False) -> dict:
     price = quote.last_price if quote.last_price is not None else quote.closing_price
     symbol_for_codal = _canonical_symbol(codal_symbol or quote.name)
-    with ThreadPoolExecutor(max_workers=3, thread_name_prefix="biap-company") as pool:
-        codal_future = pool.submit(_codal_parts, symbol_for_codal, lightweight=scan_mode)
-        extended_future = pool.submit(fetch_extended_market_data, quote.code)
-        tindex_future = pool.submit(_tindex_dict, symbol_for_codal)
-        codal_metadata, codal_fundamentals, codal_diagnostic = codal_future.result()
-        extended = extended_future.result()
-        tindex = tindex_future.result()
+    codal_result, extended_result, tindex_result = run_parallel_with_deadline(
+        [
+            lambda: _codal_parts(symbol_for_codal, lightweight=scan_mode),
+            lambda: fetch_extended_market_data(quote.code),
+            lambda: _tindex_dict(symbol_for_codal),
+        ],
+        timeout=_fanout_timeout(),
+    )
+    if isinstance(codal_result, BaseException):
+        codal_metadata, codal_fundamentals = None, None
+        codal_diagnostic = {"status": "timeout" if isinstance(codal_result, DeadlineExceeded) else "error", "symbol": symbol_for_codal, "error": str(codal_result)[:240]}
+    else:
+        codal_metadata, codal_fundamentals, codal_diagnostic = codal_result
+    extended = None if isinstance(extended_result, BaseException) else extended_result
+    tindex = None if isinstance(tindex_result, BaseException) else tindex_result
     data_available = dict(PRICE_ONLY_AVAILABILITY)
     data_available["codal"] = codal_fundamentals is not None
     data_available["codal_metadata"] = codal_metadata is not None
