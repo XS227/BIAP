@@ -237,14 +237,14 @@ def run_batch(
     safe_interval = max(0.0, float(interval_seconds or 0.0))
     metadata = {
         "universe": universe,
-        "sources": ["TSETMC", "CODAL", "Tindex", "company_builder"],
+        "sources": ["TSETMC", "CODAL", "company_builder"],
         "markets": ["TSE", "IFB", "IFB_BASE"],
         "maxBatchSize": DAILY_BATCH_SIZE,
         "requestedBatchSize": max(1, min(int(batch_size), DAILY_BATCH_SIZE)),
         "intervalSeconds": safe_interval,
         "moduleTargets": ["kpi", "sql", "financial-model"],
         "tindexConfigured": tindex_configured(),
-        "externalBlockers": [] if tindex_configured() else ["TINDEX_API_TOKEN missing in production environment"],
+        "externalBlockers": [],
         "rateLimitPolicy": "stop-current-batch-and-retry-same-company-next-run",
         "companyUniversePolicy": "CODAL issuer whitelist over TSETMC; fallback to verified TSETMC market/yVal equity metadata",
         "universeChangedSincePreviousRun": universe_changed,
@@ -332,8 +332,7 @@ def status(store: ListedCompanyStore | None = None) -> dict[str, Any]:
     result["moduleTargets"] = ["kpi", "sql", "financial-model"]
     result["tindexConfigured"] = tindex_configured()
     result["eligibleCompanyCount"] = len(_stored_listed_codes(target))
-    if not result["tindexConfigured"]:
-        result["externalBlockers"] = ["TINDEX_API_TOKEN missing in production environment"]
-    else:
-        result["externalBlockers"] = []
+    # Tindex is intentionally disabled (see tindex_data.TINDEX_DISABLED) rather than
+    # misconfigured, so its absence is not something ops needs to remediate.
+    result["externalBlockers"] = []
     return result

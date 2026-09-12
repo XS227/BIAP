@@ -66,7 +66,9 @@ def test_worker_resumes_from_saved_cursor(tmp_path, monkeypatch):
     assert first["status"] == "paused"
     assert first["cursor"] == 1
     assert first["processed"] == 1
-    assert first["metadata"]["externalBlockers"] == ["TINDEX_API_TOKEN missing in production environment"]
+    # Tindex is intentionally disabled (not a misconfiguration), so it is never
+    # reported as an external blocker regardless of TINDEX_API_TOKEN.
+    assert first["metadata"]["externalBlockers"] == []
 
     second = ingestion.run_batch(store=store, batch_size=2)
     assert second["status"] == "completed"

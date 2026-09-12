@@ -1,10 +1,21 @@
-"""Optional Tindex enrichment for Kiasha.
+"""Optional Tindex enrichment for Kiasha -- DISABLED.
 
 Tindex is a secondary, token-authenticated data source. It must never become a
 hard dependency: when no token is configured or the API is unavailable, callers
 receive ``None`` and the existing TSETMC/CODAL path continues unchanged.
 
-Server configuration:
+Disabled 2026-09-12: Tindex permanently withdrew every
+/api/public/stock-market/symbol/{ticker}/* endpoint this module calls
+(verified: overview, profile, flow, and performance all return HTTP 410 with
+"withdrawn ... following repeated abuse by third parties"). Their replacement
+API needs an opaque slug looked up via a separate category-listing call and
+caps free accounts at 100 requests/day -- not enough to cover BIAP's symbol
+universe. Decision: rely on the reliable TSETMC/relay + CODAL path instead of
+requests to a dead endpoint or a rate-limited redesign. TINDEX_DISABLED below
+is the single switch; every caller already treats "not configured" as a
+normal, optional-source miss, so no other module needs to change.
+
+Server configuration (inert while disabled):
     TINDEX_API_TOKEN=<developer token>
     TINDEX_CACHE_TTL_SECONDS=900
     TINDEX_FULL_ENRICHMENT=true|false
@@ -22,6 +33,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+TINDEX_DISABLED = True
 BASE_URL = "https://tindex.app"
 TIMEOUT_SECONDS = 8
 _CACHE: dict[tuple[str, str], tuple[float, dict | None]] = {}
@@ -72,6 +84,8 @@ def _token() -> str:
 
 
 def configured() -> bool:
+    if TINDEX_DISABLED:
+        return False
     return bool(_token())
 
 

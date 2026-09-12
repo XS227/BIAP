@@ -43,8 +43,12 @@ def _market_from_overview(payload: dict, fallback: str | None) -> str | None:
 
 def main() -> int:
     if not tindex_configured():
-        print(json.dumps({"ok": False, "reason": "TINDEX_API_TOKEN missing"}, ensure_ascii=False))
-        return 2
+        # Tindex is intentionally disabled (see tindex_data.TINDEX_DISABLED): its
+        # symbol endpoints were permanently withdrawn upstream. This collector has
+        # no other data source, so it is a deliberate no-op, not a failure -- exit
+        # 0 so the systemd timer stops reporting it as a broken unit every run.
+        print(json.dumps({"ok": True, "reason": "tindex integration disabled; nothing to collect"}, ensure_ascii=False))
+        return 0
 
     universe = get_symbol_universe()
     if not universe:
