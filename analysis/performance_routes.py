@@ -17,6 +17,7 @@ from paper_sell_store import PaperSellStore
 from performance_store import MIN_OBSERVED_SAMPLES, PerformanceStore
 from risk import load_policy
 from symbol_universe import SymbolUniverseUnavailable, query_symbols
+from tindex_data import configured as tindex_configured
 router=APIRouter(prefix="/performance",tags=["performance"]);router.include_router(manual_paper_router)
 STORE=PerformanceStore();AUDIT_STORE=AuditStore();PAPER_EXECUTION_STORE=PaperExecutionStore();PAPER_SELL_STORE=PaperSellStore();AGENTS=("fundamental","risk","forecast","comparison","technical","flow");DEFAULT_PAPER_INITIAL_CASH=float(os.getenv("KIASHA_PAPER_INITIAL_CASH","100000000"))
 class AutoInvestSettingsRequest(BaseModel):
@@ -68,7 +69,7 @@ def market_history(code:str,days:int=Query(default=90,ge=5,le=400)):
     points.sort(key=lambda x:x["date"]);return {"code":instrument_code,"count":len(points),"source":"tsetmc-history-via-biap","items":points}
 @router.get("/readiness")
 def kiasha_readiness():
-    scan=scan_status();coverage=scan.get("deepDataCoverage") or {};agents=[_agent_payload(a) for a in AGENTS];tindex=bool(os.getenv("TINDEX_API_TOKEN"));ai=kiasha_ai_status();paper=_paper_execution_enabled();runner=_auto_invest_runner_enabled();tc=_scan_agent_coverage(scan,"technical");fc=_scan_agent_coverage(scan,"flow");pending=len(STORE.pending_observations(limit=5000));obs=any(x["trustReady"] for x in agents);tf=tc>0 and fc>0
+    scan=scan_status();coverage=scan.get("deepDataCoverage") or {};agents=[_agent_payload(a) for a in AGENTS];tindex=tindex_configured();ai=kiasha_ai_status();paper=_paper_execution_enabled();runner=_auto_invest_runner_enabled();tc=_scan_agent_coverage(scan,"technical");fc=_scan_agent_coverage(scan,"flow");pending=len(STORE.pending_observations(limit=5000));obs=any(x["trustReady"] for x in agents);tf=tc>0 and fc>0
     return {"chain":"kiasha-v2","marketScanReady":scan.get("status")=="OK" and bool(scan.get("top10")),"paperExecutionReady":paper,"autoInvestRunnerReady":runner,"liveExecution":False,"sonnetFinalistGateReady":bool(ai.get("configured") or ai.get("enabled") or os.getenv("ANTHROPIC_API_KEY")),"technicalFlowReady":tf,"technicalFlowCoverage":{"technical":tc,"flow":fc},"tindexConfigured":tindex,"tindexCoverage":int(coverage.get("tindex") or 0),"codalCoverage":int(coverage.get("codal") or 0),"codalDiagnostics":scan.get("codalDiagnostics") or [],"marketExtendedCoverage":int(coverage.get("marketExtended") or 0),"observedTrustActive":obs,"pendingObservations":pending,"agents":agents}
 @router.get("/ai/status")
 def ai_status():

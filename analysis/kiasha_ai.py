@@ -32,6 +32,21 @@ MAX_POSITION_PCT = float(os.getenv("KIASHA_AI_MAX_POSITION_PCT", "10"))
 Horizon = Literal["short", "long"]
 
 
+def _resolve_api_key() -> str:
+    """Return the Anthropic API key, however the deployment happens to name it.
+
+    The deploy-managed /etc/biap/kiasha-paper-runtime.env authoritatively sets
+    OPENAI_API_KEY to the Anthropic credential (a naming holdover from before
+    this module switched providers). Prefer ANTHROPIC_API_KEY when set, but
+    fall back to OPENAI_API_KEY so that file keeps working unchanged. Never
+    log either value.
+    """
+    key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+    if key:
+        return key
+    return os.getenv("OPENAI_API_KEY", "").strip()
+
+
 class KiashaAITimeout(RuntimeError):
     """Raised when an Anthropic request does not complete within the bounded timeout.
 
@@ -64,7 +79,7 @@ def status() -> dict[str, Any]:
     return {
         "provider": "anthropic",
         "model": DEFAULT_MODEL,
-        "configured": bool(os.getenv("ANTHROPIC_API_KEY")),
+        "configured": bool(_resolve_api_key()),
         "proposalOnly": True,
         "paperExecution": False,
         "liveExecution": False,
@@ -202,7 +217,7 @@ def _request(client: httpx.Client, *, api_key: str, model: str, messages: list[d
 
 
 def propose(code: str, *, horizon: Horizon = "short", max_rounds: int | None = None, client: httpx.Client | None = None) -> KiashaAIProposal:
-    api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+    api_key = _resolve_api_key()
     if not api_key:
         raise RuntimeError("ANTHROPIC_API_KEY is not configured")
     company, source = _verified_company(code)

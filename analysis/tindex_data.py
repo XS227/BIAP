@@ -56,8 +56,23 @@ class TindexSymbolSnapshot:
     source: str = "tindex"
 
 
+def _token() -> str:
+    """Return the configured Tindex token, or "" if it looks malformed.
+
+    A recurring deploy mistake pastes the whole "TINDEX_API_TOKEN=<value>" line
+    as the value itself (systemd's EnvironmentFile only splits on the first
+    "="), leaving the variable name duplicated inside its own value. Treat
+    that shape as unconfigured rather than sending a doomed Authorization
+    header to Tindex on every call.
+    """
+    token = os.getenv("TINDEX_API_TOKEN", "").strip()
+    if token.startswith("TINDEX_API_TOKEN="):
+        return ""
+    return token
+
+
 def configured() -> bool:
-    return bool(os.getenv("TINDEX_API_TOKEN", "").strip())
+    return bool(_token())
 
 
 def full_enrichment_enabled() -> bool:
@@ -79,7 +94,7 @@ def _num(value):
 
 
 def _get(path: str, *, cache_key: str | None = None) -> dict | None:
-    token = os.getenv("TINDEX_API_TOKEN", "").strip()
+    token = _token()
     if not token:
         return None
     key = (token[-8:], cache_key or path)

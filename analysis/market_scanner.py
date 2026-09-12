@@ -24,6 +24,7 @@ from deadline import DeadlineExceeded, run_with_deadline
 from kiasha import decide
 from market_data import LiveQuote
 from symbol_universe import get_symbol_universe, tsetmc_base
+from tindex_data import configured as tindex_configured
 
 logger = logging.getLogger("kiasha.market_scanner")
 
@@ -280,7 +281,7 @@ def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[s
         "deepDataCoverage": {"codal": codal_ready, "codalMetadata": codal_metadata_ready, "marketExtended": market_extended_ready, "tindex": tindex_ready, "total": len(deep_results)},
         "codalDiagnostics": codal_diagnostics,
         "codalThrottle": {"workers": workers, "delaySeconds": codal_delay, "mode": "lightweight-fundamentals-only"},
-        "tindexConfigured": bool(os.getenv("TINDEX_API_TOKEN")),
+        "tindexConfigured": tindex_configured(),
         "top10": top, "deepErrors": deep_errors[:20], "errors": errors[-3:], "cacheHit": False,
         "claudeCallsUsedForScan": 0,
         "note": "Discovery is restricted to ordinary IRO1 shares. The scan uses lightweight CODAL fundamentals only; heavy metadata/audit enrichment is deferred to final candidate analysis.",

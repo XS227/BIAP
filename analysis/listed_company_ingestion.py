@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-import os
 import time
 from typing import Any
 
@@ -11,6 +10,7 @@ from company_builder import build_company_from_quote, build_company_from_symbol
 from listed_company_store import ListedCompanyStore
 from market_data import MarketDataUnavailable, find_quote
 from symbol_universe import SymbolUniverseUnavailable, query_symbols
+from tindex_data import configured as tindex_configured
 
 WORKER_NAME = "listed-company-enrichment-v1"
 DAILY_BATCH_SIZE = 500  # hard safety ceiling per invocation; production runner uses a smaller rolling slice
@@ -243,8 +243,8 @@ def run_batch(
         "requestedBatchSize": max(1, min(int(batch_size), DAILY_BATCH_SIZE)),
         "intervalSeconds": safe_interval,
         "moduleTargets": ["kpi", "sql", "financial-model"],
-        "tindexConfigured": bool(os.getenv("TINDEX_API_TOKEN")),
-        "externalBlockers": [] if os.getenv("TINDEX_API_TOKEN") else ["TINDEX_API_TOKEN missing in production environment"],
+        "tindexConfigured": tindex_configured(),
+        "externalBlockers": [] if tindex_configured() else ["TINDEX_API_TOKEN missing in production environment"],
         "rateLimitPolicy": "stop-current-batch-and-retry-same-company-next-run",
         "companyUniversePolicy": "CODAL issuer whitelist over TSETMC; fallback to verified TSETMC market/yVal equity metadata",
         "universeChangedSincePreviousRun": universe_changed,
@@ -270,7 +270,7 @@ def run_batch(
                     "ingestedAt": _now_iso(),
                     "dataAvailability": availability,
                     "moduleTargets": ["kpi", "sql", "financial-model"],
-                    "tindexConfigured": bool(os.getenv("TINDEX_API_TOKEN")),
+                    "tindexConfigured": tindex_configured(),
                 },
             )
             succeeded += 1
@@ -330,7 +330,7 @@ def status(store: ListedCompanyStore | None = None) -> dict[str, Any]:
     result = target.status()
     result["maxBatchSize"] = DAILY_BATCH_SIZE
     result["moduleTargets"] = ["kpi", "sql", "financial-model"]
-    result["tindexConfigured"] = bool(os.getenv("TINDEX_API_TOKEN"))
+    result["tindexConfigured"] = tindex_configured()
     result["eligibleCompanyCount"] = len(_stored_listed_codes(target))
     if not result["tindexConfigured"]:
         result["externalBlockers"] = ["TINDEX_API_TOKEN missing in production environment"]
