@@ -14,6 +14,7 @@ sudo install -d -m 0755 "$RUNTIME_DIR" "$FIN_DROPIN_DIR"
 sudo tee "$RUNTIME_ENV" >/dev/null <<'EOF'
 KIASHA_PAPER_EXECUTION_ENABLED=true
 KIASHA_AUTO_INVEST_RUNNER_ENABLED=true
+KIASHA_PAPER_MIN_CONFIDENCE=0.40
 LIVE_TRADING_ENABLED=false
 EOF
 sudo chmod 0644 "$RUNTIME_ENV"
@@ -32,7 +33,7 @@ sudo systemctl enable --now biap-kiasha-auto-invest.timer
 
 PID=$(systemctl show biap-fin -p MainPID --value)
 printf 'biap-fin runtime flags:\n'
-sudo sh -c "tr '\\0' '\\n' < /proc/$PID/environ | grep -E '^(KIASHA_PAPER_EXECUTION_ENABLED|KIASHA_AUTO_INVEST_RUNNER_ENABLED|LIVE_TRADING_ENABLED)='"
+sudo sh -c "tr '\\0' '\\n' < /proc/$PID/environ | grep -E '^(KIASHA_PAPER_EXECUTION_ENABLED|KIASHA_AUTO_INVEST_RUNNER_ENABLED|KIASHA_PAPER_MIN_CONFIDENCE|LIVE_TRADING_ENABLED)='"
 printf '\ntimer: '
 systemctl is-active biap-kiasha-auto-invest.timer
 printf 'fin: '
