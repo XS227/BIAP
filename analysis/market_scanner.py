@@ -6,7 +6,6 @@ agent team. Claude/Sonnet is intentionally not used during the market-wide scan.
 """
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError, as_completed
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
@@ -21,6 +20,7 @@ import urllib.request
 from typing import Any, Optional
 
 from company_builder import build_company_from_quote
+from deadline import DeadlineExceeded, run_with_deadline
 from kiasha import decide
 from market_data import LiveQuote
 from symbol_universe import get_symbol_universe, tsetmc_base
@@ -242,19 +242,23 @@ def refresh_market_scan(*, force: bool = False, timeout: float = 10.0) -> dict[s
     deep_results: list[dict[str, Any]] = []
     deep_errors: list[dict[str, str]] = []
     deep_job_timeout = _float_env("BIAP_MARKET_SCAN_DEEP_JOB_TIMEOUT_SECONDS", 45.0, 10.0, 120.0)
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        jobs = {pool.submit(_deep_analyze, item, codal_delay): item for item in deep_input}
-        for job in as_completed(jobs):
-            item = jobs[job]
-            logger.info("candidate selection started code=%s phase=SCAN symbol=%s", item.code, item.symbol)
-            try:
-                deep_results.append(job.result(timeout=deep_job_timeout))
-            except FutureTimeoutError:
-                logger.warning("candidate TIMEOUT code=%s phase=SCAN symbol=%s", item.code, item.symbol)
-                deep_errors.append({"code": item.code, "symbol": item.symbol, "reason": f"timeout after {deep_job_timeout}s"})
-            except Exception as exc:
-                logger.warning("candidate FAILED code=%s phase=SCAN symbol=%s: %s", item.code, item.symbol, str(exc)[:240])
-                deep_errors.append({"code": item.code, "symbol": item.symbol, "reason": str(exc)[:240]})
+    # A ThreadPoolExecutor was used here previously, with `job.result(timeout=...)`
+    # inside a `for job in as_completed(jobs)` loop. as_completed() only ever
+    # yields a future once it has already finished, so that per-job timeout could
+    # never actually fire -- it was dead code. Worse, ThreadPoolExecutor threads
+    # are non-daemon, so a genuinely stuck candidate would have blocked process
+    # exit (see deadline.py). run_with_deadline enforces the timeout on a daemon
+    # thread per candidate, exactly like the rest of the Auto-Invest path.
+    for item in deep_input:
+        logger.info("candidate selection started code=%s phase=SCAN symbol=%s", item.code, item.symbol)
+        try:
+            deep_results.append(run_with_deadline(_deep_analyze, item, codal_delay, timeout=deep_job_timeout))
+        except DeadlineExceeded:
+            logger.warning("candidate TIMEOUT code=%s phase=SCAN symbol=%s", item.code, item.symbol)
+            deep_errors.append({"code": item.code, "symbol": item.symbol, "reason": f"timeout after {deep_job_timeout}s"})
+        except Exception as exc:
+            logger.warning("candidate FAILED code=%s phase=SCAN symbol=%s: %s", item.code, item.symbol, str(exc)[:240])
+            deep_errors.append({"code": item.code, "symbol": item.symbol, "reason": str(exc)[:240]})
     deep_results.sort(key=lambda item: (1 if item.get("kiashaCall") == "BUY" else 0, float(item.get("kiashaScore") or -999), float(item.get("discoveryScore") or -999)), reverse=True)
     top = deep_results[:top_limit]
     codal_ready = sum(1 for item in deep_results if (item.get("dataAvailability") or {}).get("codal"))

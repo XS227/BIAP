@@ -32,6 +32,15 @@ MAX_POSITION_PCT = float(os.getenv("KIASHA_AI_MAX_POSITION_PCT", "10"))
 Horizon = Literal["short", "long"]
 
 
+class KiashaAITimeout(RuntimeError):
+    """Raised when an Anthropic request does not complete within the bounded timeout.
+
+    Distinguished from other RuntimeErrors so callers (auto-invest's candidate
+    loop) can treat a stalled Anthropic connection the same as any other
+    per-candidate timeout instead of a generic failure.
+    """
+
+
 @dataclass(frozen=True)
 class KiashaAIProposal:
     code: str
@@ -181,7 +190,7 @@ def _request(client: httpx.Client, *, api_key: str, model: str, messages: list[d
         response.raise_for_status()
     except httpx.TimeoutException as exc:
         logger.warning("kiasha_ai timeout code=%s round=%s after=%.2fs", code, round_no, time.monotonic() - started)
-        raise RuntimeError(f"Kiasha AI timeout for {code} after {DEFAULT_TIMEOUT:.0f}s") from exc
+        raise KiashaAITimeout(f"Kiasha AI timeout for {code} after {DEFAULT_TIMEOUT:.0f}s") from exc
     except httpx.RequestError as exc:
         logger.warning("kiasha_ai network_error code=%s round=%s error=%s", code, round_no, type(exc).__name__)
         raise RuntimeError(f"Kiasha AI network error for {code}: {type(exc).__name__}") from exc
