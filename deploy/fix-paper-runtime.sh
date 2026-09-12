@@ -15,6 +15,8 @@ sudo tee "$RUNTIME_ENV" >/dev/null <<'EOF'
 KIASHA_PAPER_EXECUTION_ENABLED=true
 KIASHA_AUTO_INVEST_RUNNER_ENABLED=true
 KIASHA_PAPER_MIN_CONFIDENCE=0.40
+BIAP_TSETMC_API_BASE=http://89.42.199.20:8090/tsetmc-cdn/api
+BIAP_TSETMC_RELAY_BASE=http://89.42.199.20:8090/tsetmc-cdn/api
 LIVE_TRADING_ENABLED=false
 EOF
 sudo chmod 0644 "$RUNTIME_ENV"
@@ -33,7 +35,7 @@ sudo systemctl enable --now biap-kiasha-auto-invest.timer
 
 PID=$(systemctl show biap-fin -p MainPID --value)
 printf 'biap-fin runtime flags:\n'
-sudo sh -c "tr '\\0' '\\n' < /proc/$PID/environ | grep -E '^(KIASHA_PAPER_EXECUTION_ENABLED|KIASHA_AUTO_INVEST_RUNNER_ENABLED|KIASHA_PAPER_MIN_CONFIDENCE|LIVE_TRADING_ENABLED)='"
+sudo sh -c "tr '\\0' '\\n' < /proc/$PID/environ | grep -E '^(KIASHA_PAPER_EXECUTION_ENABLED|KIASHA_AUTO_INVEST_RUNNER_ENABLED|KIASHA_PAPER_MIN_CONFIDENCE|BIAP_TSETMC_API_BASE|BIAP_TSETMC_RELAY_BASE|LIVE_TRADING_ENABLED)='"
 printf '\ntimer: '
 systemctl is-active biap-kiasha-auto-invest.timer
 printf 'fin: '
