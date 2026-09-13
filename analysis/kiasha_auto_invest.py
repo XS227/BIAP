@@ -23,7 +23,12 @@ from company_builder import build_company_from_quote, build_company_from_symbol
 from deadline import DeadlineExceeded, run_with_deadline
 from execution import submit_order_intent
 from kiasha import decide
-from kiasha_ai import analyze as analyze_with_ai
+from kiasha_ai import (
+    DEFAULT_MAX_ROUNDS as _AI_MAX_ROUNDS,
+    DEFAULT_TIMEOUT as _AI_ROUND1_TIMEOUT,
+    FOLLOWUP_TIMEOUT as _AI_FOLLOWUP_TIMEOUT,
+    analyze as analyze_with_ai,
+)
 from kiasha_paper import evaluate_ai_paper_proposal
 from market_data import MarketDataUnavailable, fetch_watchlist, find_quote, tsetmc_api_base
 from paper_execution_store import PaperExecutionStore
@@ -88,8 +93,18 @@ def _stage_timeout() -> float:
     rounds) can still add up to far more than any single call's timeout. This
     ceiling bounds that whole chain per candidate so one unavailable upstream
     can never stall the rest of the run.
+
+    The floor must stay comfortably above the AI's own worst-case round budget
+    (round 1 + every follow-up round at FOLLOWUP_TIMEOUT) plus headroom for the
+    tool calls (market data, CODAL) that run between rounds -- a fixed 60s
+    default was tighter than that budget once follow-up rounds got their own
+    longer timeout, so well-behaved (not hung) AI calls were being cut off by
+    this coarser deadline before they could finish. An explicit env override
+    can still raise it further, never lower it below that safety floor.
     """
-    return max(5.0, _env_float("KIASHA_AUTO_STAGE_TIMEOUT_SECONDS", 60.0))
+    ai_worst_case = _AI_ROUND1_TIMEOUT + _AI_FOLLOWUP_TIMEOUT * max(0, _AI_MAX_ROUNDS - 1)
+    floor = ai_worst_case + 20.0
+    return max(5.0, floor, _env_float("KIASHA_AUTO_STAGE_TIMEOUT_SECONDS", 60.0))
 
 
 def _verified_company_bounded(code: str) -> tuple[Optional[dict[str, Any]], Optional[float]]:

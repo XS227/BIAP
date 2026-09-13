@@ -91,6 +91,35 @@ def test_one_candidate_timeout_does_not_stop_others(monkeypatch):
     assert "timeout" in timeout_entries[0]["reason"]
 
 
+def test_stage_timeout_floor_exceeds_ai_worst_case(monkeypatch):
+    """The per-candidate stage deadline must stay above the AI module's own
+    worst-case round budget (round 1 + every follow-up round) plus headroom
+    for the tool calls in between -- otherwise a well-behaved (not hung) AI
+    call that legitimately uses its full allowance gets cut off by this
+    coarser orchestration-level timeout before it can return, which is what
+    a fixed 60s default did once follow-up rounds got their own longer
+    timeout (12s round 1 + 20s x 2 follow-up rounds = 52s, an 8s margin)."""
+    monkeypatch.setattr(kai, "_AI_ROUND1_TIMEOUT", 12.0)
+    monkeypatch.setattr(kai, "_AI_FOLLOWUP_TIMEOUT", 20.0)
+    monkeypatch.setattr(kai, "_AI_MAX_ROUNDS", 3)
+    monkeypatch.delenv("KIASHA_AUTO_STAGE_TIMEOUT_SECONDS", raising=False)
+
+    timeout = kai._stage_timeout()
+
+    ai_worst_case = 12.0 + 20.0 * 2
+    assert timeout >= ai_worst_case + 20.0
+    assert timeout > 60.0  # the old fixed default was too tight for this budget
+
+
+def test_stage_timeout_env_override_can_still_raise_it_further(monkeypatch):
+    monkeypatch.setattr(kai, "_AI_ROUND1_TIMEOUT", 12.0)
+    monkeypatch.setattr(kai, "_AI_FOLLOWUP_TIMEOUT", 20.0)
+    monkeypatch.setattr(kai, "_AI_MAX_ROUNDS", 3)
+    monkeypatch.setenv("KIASHA_AUTO_STAGE_TIMEOUT_SECONDS", "500")
+
+    assert kai._stage_timeout() == 500.0
+
+
 def test_eligible_buy_reaches_paper_filled_and_live_trading_stays_disabled(tmp_path, monkeypatch):
     monkeypatch.setenv("BIAP_ENFORCE_MARKET_SESSION", "false")
     monkeypatch.setenv("KIASHA_PAPER_EXECUTION_ENABLED", "true")
