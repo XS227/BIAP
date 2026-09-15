@@ -29,6 +29,7 @@ def instrument_seed(
     name: Optional[str] = None,
     currency: Optional[str] = None,
     isin: Optional[str] = None,
+    lei: Optional[str] = None,
 ) -> GlobalCompany:
     spec = get_exchange(country, exchange)
     quote_currency = (currency or (spec.currencies[0] if spec.currencies else "")).strip().upper()
@@ -37,6 +38,9 @@ def instrument_seed(
     ticker = ticker.strip()
     if not ticker:
         raise ValueError("ticker is required")
+    normalized_lei = lei.strip().upper() if lei else None
+    if normalized_lei and (len(normalized_lei) != 20 or not normalized_lei.isalnum()):
+        raise ValueError("LEI must be a 20-character alphanumeric identifier")
     return GlobalCompany(
         country=country.strip().upper(),
         exchange=spec.code,
@@ -45,6 +49,7 @@ def instrument_seed(
         ticker=ticker,
         name=(name or ticker).strip(),
         isin=isin.strip().upper() if isin else None,
+        lei=normalized_lei,
     )
 
 
@@ -88,6 +93,8 @@ def _analysis_payload(enriched, diagnostics: ProviderDiagnostics, signals, evide
         "mic": enriched.mic_code,
         "ticker": enriched.ticker,
         "name": enriched.name,
+        "isin": enriched.isin,
+        "lei": enriched.lei,
         "currency": enriched.currency,
         "call": _call(score, confidence, evidence.blocked),
         "score": round(score, 6),
