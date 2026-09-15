@@ -9,7 +9,7 @@ import httpx
 
 from symbol_universe import SymbolUniverseUnavailable, query_symbols
 
-from .country_packs import get_exchange
+from .country_packs import ExchangeSpec, get_exchange
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
 
@@ -25,22 +25,10 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
         if not self.api_key:
             raise GlobalProviderError("BIAP_GLOBAL_MARKET_API_KEY is required for global instrument discovery")
 
-    def _get_page(self, *, country: str, exchange: str, page: int, outputsize: int) -> dict:
-        spec = get_exchange(country, exchange)
-        params = {
-            "country": country.upper(),
-            "page": page,
-            "outputsize": outputsize,
-            "format": "JSON",
-            "apikey": self.api_key,
-        }
-        if spec.mic:
-            params["mic_code"] = spec.mic
-        else:
-            params["exchange"] = spec.label
+    def _request(self, params: dict) -> dict:
         try:
             with httpx.Client(timeout=self.timeout, headers={"Accept": "application/json"}) as client:
-                response = client.get(f"{self.base_url}/stocks", params=params)
+                response = client.get(f"{self.base_url}/stocks", params={**params, "apikey": self.api_key})
             response.raise_for_status()
             payload = response.json()
         except (httpx.HTTPError, ValueError) as exc:
@@ -51,16 +39,31 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
             raise GlobalProviderError(str(payload.get("message") or "instrument universe provider error")[:300])
         return payload
 
+    def _get_page(self, *, country: str, spec: ExchangeSpec, page: int, outputsize: int) -> dict:
+        base = {"country": country.upper(), "page": page, "outputsize": outputsize, "format": "JSON", "type": "Common Stock"}
+        if spec.mic:
+            first = self._request({**base, "mic_code": spec.mic})
+            if isinstance(first.get("data"), list) and first.get("data"):
+                return first
+            # Some vendors catalog segment MICs while our selector stores the
+            # operating MIC. Retry with the human exchange label, then validate
+            # each returned MIC against accepted operating/segment aliases.
+            if spec.mic_aliases:
+                return self._request({**base, "exchange": spec.label})
+            return first
+        return self._request({**base, "exchange": spec.label})
+
     def list_instruments(self, *, country: Optional[str] = None, exchange: Optional[str] = None) -> Iterable[GlobalCompany]:
         if not country or not exchange:
             raise GlobalProviderError("country and exchange are required for bounded instrument discovery")
         spec = get_exchange(country, exchange)
+        accepted_mics = set(spec.accepted_mics)
         result: list[GlobalCompany] = []
         page = 1
         page_size = min(1000, self.max_rows)
 
         while len(result) < self.max_rows:
-            payload = self._get_page(country=country, exchange=exchange, page=page, outputsize=page_size)
+            payload = self._get_page(country=country, spec=spec, page=page, outputsize=page_size)
             rows = payload.get("data")
             if not isinstance(rows, list) or not rows:
                 break
@@ -71,15 +74,13 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
                 if not symbol:
                     continue
                 returned_mic = str(row.get("mic_code") or "").strip().upper() or None
-                if spec.mic and returned_mic and returned_mic != spec.mic.upper():
+                if accepted_mics and returned_mic and returned_mic not in accepted_mics:
                     continue
                 currency = str(row.get("currency") or (spec.currencies[0] if spec.currencies else "")).strip().upper()
                 if not currency:
                     continue
                 instrument_type = str(row.get("type") or "Common Stock").strip()
-                # Discovery is equity-first. ETFs/ETCs can be added later as a
-                # separate asset class with their own risk/comparison rules.
-                if instrument_type and "stock" not in instrument_type.lower() and "equity" not in instrument_type.lower():
+                if "stock" not in instrument_type.lower() and "equity" not in instrument_type.lower():
                     continue
                 result.append(GlobalCompany(
                     country=country.upper(),
@@ -90,6 +91,10 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
                     name=str(row.get("name") or symbol).strip(),
                     isin=str(row.get("isin") or "").strip().upper() or None,
                     instrument_type=instrument_type or "Common Stock",
+                    raw_provider_fields={
+                        "figi": str(row.get("figi_code") or "").strip() or None,
+                        "cfi": str(row.get("cfi_code") or "").strip() or None,
+                    },
                     sources=[SourceEvidence(
                         provider=self.provider_id,
                         source_type="instrument_reference",
@@ -99,8 +104,12 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
                 ))
                 if len(result) >= self.max_rows:
                     break
-            count = payload.get("count")
-            if len(rows) < page_size or (isinstance(count, int) and page * page_size >= count):
+            raw_count = payload.get("count")
+            try:
+                count = int(raw_count) if raw_count is not None else None
+            except (TypeError, ValueError):
+                count = None
+            if len(rows) < page_size or (count is not None and page * page_size >= count):
                 break
             page += 1
         return result
@@ -121,9 +130,12 @@ class IranUniverseProvider(InstrumentUniverseProvider):
             raise GlobalProviderError(str(exc)) from exc
         result: list[GlobalCompany] = []
         for item in rows:
+            resolved_market = market or item.market
+            if not resolved_market:
+                continue
             result.append(GlobalCompany(
                 country="IR",
-                exchange=market or str(item.market or "TSE"),
+                exchange=str(resolved_market),
                 currency="IRR",
                 ticker=item.symbol or item.code,
                 name=item.name or item.symbol or item.code,
