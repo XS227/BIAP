@@ -1,13 +1,12 @@
 """SEC EDGAR/XBRL fundamentals adapter for BIAP Global US instruments.
 
-Uses the SEC's public ticker mapping and `data.sec.gov/api/xbrl/companyfacts`
-endpoint. No SEC API key is required, but automated access must provide a
-responsible User-Agent; configure `BIAP_SEC_USER_AGENT` (for example an app
-name plus monitored contact address).
+Uses the SEC public ticker mapping and `data.sec.gov/api/xbrl/companyfacts`.
+No SEC API key is required, but responsible automated access must identify the
+caller through `BIAP_SEC_USER_AGENT`.
 
-The parser is intentionally conservative: it reads only standard US-GAAP facts,
-prefers filed 10-K/10-K-A fiscal-year facts, and leaves unsupported or ambiguous
-values unavailable instead of inventing them.
+The parser is conservative: it reads standard US-GAAP facts, prefers annual
+10-K/10-K-A facts, de-duplicates repeated comparative periods, and leaves
+unsupported values unavailable instead of guessing.
 """
 
 from __future__ import annotations
@@ -166,6 +165,11 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             return None
         return income / revenue * 100.0
 
+    @staticmethod
+    def _latest(gaap: dict, tags: tuple[str, ...]) -> Optional[dict]:
+        rows = SECEdgarFundamentalsProvider._annual_series(gaap, tags, count=1)
+        return rows[0] if rows else None
+
     def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
         if company.country.strip().upper() != "US":
             raise GlobalProviderError("SEC EDGAR fundamentals adapter only supports US issuers")
@@ -178,57 +182,82 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         if not gaap:
             raise GlobalProviderError(f"SEC returned no standard US-GAAP company facts for {company.identity()}")
 
-        revenues = self._annual_series(
-            gaap,
-            (
-                "RevenueFromContractWithCustomerExcludingAssessedTax",
-                "Revenues",
-                "SalesRevenueNet",
-            ),
-        )
+        revenues = self._annual_series(gaap, (
+            "RevenueFromContractWithCustomerExcludingAssessedTax", "Revenues", "SalesRevenueNet",
+        ))
         net_income = self._annual_series(gaap, ("NetIncomeLoss", "ProfitLoss"))
-        assets = self._annual_series(gaap, ("Assets",), count=1)
-        liabilities = self._annual_series(gaap, ("Liabilities",), count=1)
-        equity = self._annual_series(
-            gaap,
-            ("StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"),
-            count=1,
-        )
-        ocf = self._annual_series(gaap, ("NetCashProvidedByUsedInOperatingActivities",), count=1)
-        capex = self._annual_series(
-            gaap,
-            ("PaymentsToAcquirePropertyPlantAndEquipment", "PaymentsForAdditionsToPropertyPlantAndEquipment"),
-            count=1,
-        )
+        gross_profit = self._latest(gaap, ("GrossProfit",))
+        operating_income = self._latest(gaap, ("OperatingIncomeLoss",))
+        assets = self._latest(gaap, ("Assets",))
+        liabilities = self._latest(gaap, ("Liabilities",))
+        equity = self._latest(gaap, (
+            "StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+        ))
+        current_assets = self._latest(gaap, ("AssetsCurrent",))
+        current_liabilities = self._latest(gaap, ("LiabilitiesCurrent",))
+        cash = self._latest(gaap, (
+            "CashAndCashEquivalentsAtCarryingValue",
+            "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
+        ))
+        ocf = self._latest(gaap, ("NetCashProvidedByUsedInOperatingActivities",))
+        capex = self._latest(gaap, (
+            "PaymentsToAcquirePropertyPlantAndEquipment", "PaymentsForAdditionsToPropertyPlantAndEquipment",
+        ))
+        long_debt = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligationsCurrent", "LongTermDebtCurrent"))
+        long_debt_noncurrent = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligationsNoncurrent", "LongTermDebtNoncurrent"))
+        total_debt_direct = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligations", "LongTermDebt"))
+        interest = self._latest(gaap, ("InterestExpenseNonOperating", "InterestExpenseDebt"))
+        eps = self._latest(gaap, ("EarningsPerShareDiluted", "EarningsPerShareBasic"))
+        shares = self._latest(gaap, (
+            "CommonStocksIncludingAdditionalPaidInCapitalMember",
+            "EntityCommonStockSharesOutstanding",
+            "CommonStockSharesOutstanding",
+        ))
 
         revenue = self._value(revenues[0] if revenues else None)
         revenue_prev = self._value(revenues[1] if len(revenues) > 1 else None)
         income = self._value(net_income[0] if net_income else None)
         income_prev = self._value(net_income[1] if len(net_income) > 1 else None)
-        ocf_value = self._value(ocf[0] if ocf else None)
-        capex_value = self._value(capex[0] if capex else None)
+        ocf_value = self._value(ocf)
+        capex_value = self._value(capex)
         fcf = None if ocf_value is None or capex_value is None else ocf_value - abs(capex_value)
-        period_end = None
-        if revenues:
-            period_end = str(revenues[0].get("end") or "") or None
-        elif net_income:
-            period_end = str(net_income[0].get("end") or "") or None
+
+        debt_direct = self._value(total_debt_direct)
+        if debt_direct is None:
+            debt_parts = [self._value(long_debt), self._value(long_debt_noncurrent)]
+            debt_values = [value for value in debt_parts if value is not None]
+            debt_direct = sum(debt_values) if debt_values else None
+
+        period_row = revenues[0] if revenues else (net_income[0] if net_income else assets)
+        period_end = str(period_row.get("end") or "") or None if period_row else None
+        filed_at = str(period_row.get("filed") or "") or None if period_row else None
 
         enriched = replace(
             company,
             name=str(payload.get("entityName") or company.name),
+            reporting_currency=company.reporting_currency or "USD",
             revenue=revenue,
             revenue_prev=revenue_prev,
             revenue_yoy_pct=self._pct_change(revenue, revenue_prev),
+            gross_profit=self._value(gross_profit),
+            operating_income=self._value(operating_income),
             net_income=income,
             net_margin_pct=self._margin(income, revenue),
             net_margin_prev_pct=self._margin(income_prev, revenue_prev),
-            total_assets=self._value(assets[0] if assets else None),
-            total_liabilities=self._value(liabilities[0] if liabilities else None),
-            total_equity=self._value(equity[0] if equity else None),
+            total_assets=self._value(assets),
+            total_liabilities=self._value(liabilities),
+            total_equity=self._value(equity),
+            current_assets=self._value(current_assets),
+            current_liabilities=self._value(current_liabilities),
+            cash_and_equivalents=self._value(cash),
             operating_cash_flow=ocf_value,
             free_cash_flow=fcf,
+            total_debt=debt_direct,
+            interest_expense=self._value(interest),
+            eps=self._value(eps),
+            shares_outstanding=company.shares_outstanding or self._value(shares),
             filing_period_end=period_end,
+            filing_observed_at=filed_at,
             raw_provider_fields={**company.raw_provider_fields, "sec_cik": cik},
         )
         return append_source(
@@ -238,6 +267,7 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
                 source_type="official_regulatory_xbrl",
                 source_id=f"CIK{padded}",
                 source_url=source_url,
+                observed_at=filed_at,
                 period_end=period_end,
                 quality=1.0,
                 notes="standard US-GAAP facts from SEC companyfacts; annual 10-K/10-K-A preference",
