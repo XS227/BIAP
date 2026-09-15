@@ -10,12 +10,19 @@ from __future__ import annotations
 import os
 
 from .country_packs import COUNTRY_PACKS
+from .esef import ESEFFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
 from .opendart import OpenDARTFundamentalsProvider
 from .providers import ProviderRegistry
 from .sec_edgar import SECEdgarFundamentalsProvider
 from .twelve_data import TwelveDataMarketProvider
 from .universe import IranUniverseProvider, TwelveDataUniverseProvider
+
+
+# filings.xbrl.org/ESEF currently provides a common structured path for these
+# markets. Germany and Ireland are intentionally not assumed covered here; their
+# country packs remain configured but need dedicated OAM/issuer adapters.
+_ESEF_COUNTRIES = ("SE", "NO", "DK", "FI", "IS", "NL", "FR", "BE", "PT", "IT", "ES", "GB")
 
 
 def build_registry() -> ProviderRegistry:
@@ -41,11 +48,17 @@ def build_registry() -> ProviderRegistry:
                 registry.register_universe(country, exchange.code, universe)
                 registry.register_market(country, exchange.code, market)
 
-    # US official fundamentals are directly connected through SEC EDGAR/XBRL.
+    # US official fundamentals via SEC EDGAR/XBRL.
     if os.environ.get("BIAP_SEC_USER_AGENT"):
         sec = SECEdgarFundamentalsProvider()
         for exchange in COUNTRY_PACKS["US"].exchanges:
             registry.register_fundamentals("US", exchange.code, sec)
+
+    # Europe/UK structured annual-report fundamentals via ESEF/UKSEF index.
+    esef = ESEFFundamentalsProvider()
+    for country in _ESEF_COUNTRIES:
+        for exchange in COUNTRY_PACKS[country].exchanges:
+            registry.register_fundamentals(country, exchange.code, esef)
 
     # South Korea official fundamentals via Financial Supervisory Service DART.
     if os.environ.get("BIAP_OPENDART_API_KEY"):
