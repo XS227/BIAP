@@ -1,11 +1,9 @@
-"""New BIAP Global agents.
+"""BIAP Global verification and portfolio agents.
 
 EvidenceAgent is deliberately conservative: it can WARN or BLOCK when source
 coverage/freshness is insufficient or when high-confidence analysis signals
-materially disagree.
-
-PortfolioAgent only allocates candidates that survive the evidence gate. It is
-intended for research/paper portfolios first; it does not place orders.
+materially disagree. PortfolioAgent only allocates candidates that survive the
+evidence gate and have verified FX/price information. It never places orders.
 """
 
 from __future__ import annotations
@@ -40,10 +38,14 @@ _EVIDENCE_FIELDS = (
     "net_margin_pct",
     "total_assets",
     "total_liabilities",
+    "total_equity",
     "operating_cash_flow",
     "free_cash_flow",
     "total_debt",
 )
+
+_MARKET_SOURCE_TOKENS = ("market", "price", "quote", "history")
+_FUNDAMENTAL_SOURCE_TOKENS = ("filing", "regulatory", "xbrl", "fundamental", "financial_statement")
 
 
 def _parse_time(value: Optional[str]) -> Optional[datetime]:
@@ -61,16 +63,24 @@ def _parse_time(value: Optional[str]) -> Optional[datetime]:
 def _freshness(company: GlobalCompany, *, now: Optional[datetime] = None) -> tuple[float, Optional[float]]:
     observed = _parse_time(company.price_observed_at)
     if observed is None:
-        return 0.35, None
+        return 0.25, None
     now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     age_days = max(0.0, (now - observed).total_seconds() / 86400.0)
     if age_days <= 3:
         return 1.0, age_days
     if age_days <= 7:
-        return 0.75, age_days
+        return 0.65, age_days
     if age_days <= 30:
-        return 0.4, age_days
-    return 0.1, age_days
+        return 0.25, age_days
+    return 0.05, age_days
+
+
+def _has_source_type(company: GlobalCompany, tokens: tuple[str, ...]) -> bool:
+    for source in company.sources:
+        kind = source.source_type.lower().replace("-", "_")
+        if any(token in kind for token in tokens):
+            return True
+    return False
 
 
 def evidence_agent(
@@ -79,7 +89,12 @@ def evidence_agent(
     *,
     now: Optional[datetime] = None,
 ) -> EvidenceAssessment:
-    """Assess whether the evidence is strong enough to support a decision."""
+    """Assess whether evidence is strong enough to support a decision.
+
+    A verified price alone is insufficient for a directional investment call.
+    BIAP Global requires both market provenance and official/verified fundamental
+    provenance. Missing sources lead to BLOCK rather than model guesswork.
+    """
 
     missing_critical: list[str] = []
     if not company.country:
@@ -92,6 +107,10 @@ def evidence_agent(
         missing_critical.append("verified_price")
     if not company.sources:
         missing_critical.append("source_provenance")
+    if not _has_source_type(company, _MARKET_SOURCE_TOKENS):
+        missing_critical.append("market_source")
+    if not _has_source_type(company, _FUNDAMENTAL_SOURCE_TOKENS):
+        missing_critical.append("fundamental_source")
 
     available = sum(getattr(company, field) is not None for field in _EVIDENCE_FIELDS)
     coverage = available / len(_EVIDENCE_FIELDS)
@@ -115,7 +134,9 @@ def evidence_agent(
             + ",".join(sorted(confident_negative))
         )
 
-    if price_age_days is not None and price_age_days > 30:
+    # More than one trading week old is not acceptable as a current price for
+    # a new portfolio proposal. The analysis can still be shown as blocked.
+    if price_age_days is not None and price_age_days > 7:
         missing_critical.append("fresh_price")
 
     quality_scores = [max(0.0, min(1.0, source.quality)) for source in company.sources]
@@ -123,14 +144,16 @@ def evidence_agent(
 
     confidence_multiplier = max(
         0.0,
-        min(1.0, (0.50 * coverage) + (0.30 * freshness_score) + (0.20 * source_quality)),
+        min(1.0, (0.45 * coverage) + (0.30 * freshness_score) + (0.25 * source_quality)),
     )
     if contradictions:
-        confidence_multiplier *= 0.75
+        confidence_multiplier *= 0.70
+    if missing_critical:
+        confidence_multiplier = min(confidence_multiplier, 0.20)
 
     if missing_critical:
         status = "BLOCK"
-    elif coverage < 0.35 or freshness_score < 0.5 or contradictions:
+    elif coverage < 0.35 or freshness_score < 0.65 or contradictions:
         status = "WARN"
     else:
         status = "PASS"
@@ -145,7 +168,7 @@ def evidence_agent(
     else:
         reasons.append(f"priceAgeDays={price_age_days:.1f}")
     if missing_critical:
-        reasons.append("missing=" + ",".join(missing_critical))
+        reasons.append("missing=" + ",".join(dict.fromkeys(missing_critical)))
     if contradictions:
         reasons.extend(contradictions)
 
@@ -155,7 +178,7 @@ def evidence_agent(
         coverage=coverage,
         freshness_score=freshness_score,
         contradictions=tuple(contradictions),
-        missing_critical=tuple(missing_critical),
+        missing_critical=tuple(dict.fromkeys(missing_critical)),
         reasoning="; ".join(reasons),
     )
 
@@ -212,9 +235,9 @@ def portfolio_agent(
 ) -> PortfolioProposal:
     """Build a capped, diversified paper portfolio proposal.
 
-    `fx_to_base` maps one unit of an instrument's quote currency to the investor's
-    base currency. Missing FX does not fabricate a quantity; the allocation can
-    still be expressed in base-currency budget terms with quantity=None.
+    `fx_to_base` maps one unit of an instrument quote currency to the investor
+    base currency. A cross-currency candidate without verified FX is excluded.
+    Lot sizes are respected when known. No order is sent to a broker.
     """
 
     if profile.capital <= 0:
@@ -229,6 +252,9 @@ def portfolio_agent(
 
     allowed_countries = {x.upper() for x in profile.allowed_countries}
     allowed_exchanges = {x.upper() for x in profile.allowed_exchanges}
+    normalized_fx = {k.upper(): float(v) for k, v in (fx_to_base or {}).items() if float(v) > 0}
+    normalized_fx.setdefault(profile.base_currency.upper(), 1.0)
+
     scored: list[tuple[PortfolioCandidate, float, float]] = []
     excluded: list[str] = []
 
@@ -243,6 +269,12 @@ def portfolio_agent(
             continue
         if allowed_exchanges and company.exchange.upper() not in allowed_exchanges:
             excluded.append(f"{identity}: exchange outside investor scope")
+            continue
+        if company.currency.upper() not in normalized_fx:
+            excluded.append(f"{identity}: verified FX to {profile.base_currency.upper()} unavailable")
+            continue
+        if company.price is None or company.price <= 0:
+            excluded.append(f"{identity}: verified positive price unavailable")
             continue
 
         score, confidence = _candidate_score(candidate)
@@ -264,7 +296,7 @@ def portfolio_agent(
             cash_pct=100.0,
             allocations=(),
             excluded=tuple(excluded),
-            reasoning="no candidate cleared evidence, scope, risk and confidence gates",
+            reasoning="no candidate cleared evidence, scope, FX, risk and confidence gates",
         )
 
     investable_pct = max(0.0, min(100.0, 100.0 - profile.min_cash_reserve_pct))
@@ -275,8 +307,6 @@ def portfolio_agent(
     sector_used: defaultdict[str, float] = defaultdict(float)
     allocations: list[PortfolioAllocation] = []
     allocated_pct = 0.0
-    fx_to_base = {k.upper(): v for k, v in (fx_to_base or {}).items()}
-    fx_to_base.setdefault(profile.base_currency.upper(), 1.0)
 
     for (candidate, score, confidence), desirability in zip(scored, desirabilities):
         company = candidate.company
@@ -292,13 +322,17 @@ def portfolio_agent(
             continue
 
         amount_base = profile.capital * weight / 100.0
-        fx_rate = fx_to_base.get(company.currency.upper())
-        quantity: Optional[int] = None
-        if fx_rate is not None and fx_rate > 0 and company.price is not None and company.price > 0:
-            per_share_base = company.price * fx_rate
-            quantity = floor(amount_base / per_share_base)
-            if quantity <= 0:
-                quantity = None
+        fx_rate = normalized_fx[company.currency.upper()]
+        per_share_base = company.price * fx_rate
+        if per_share_base <= 0:
+            excluded.append(f"{company.identity()}: invalid converted share price")
+            continue
+        raw_quantity = floor(amount_base / per_share_base)
+        lot_size = max(1, int(company.lot_size or 1))
+        quantity = (raw_quantity // lot_size) * lot_size
+        if quantity <= 0:
+            excluded.append(f"{company.identity()}: allocation cannot buy one minimum lot")
+            continue
 
         allocation = PortfolioAllocation(
             identity=company.identity(),
@@ -315,7 +349,8 @@ def portfolio_agent(
             reasoning=(
                 f"evidence={candidate.evidence.status}; "
                 f"evidenceCoverage={candidate.evidence.coverage:.0%}; "
-                f"score={score:.3f}; confidence={confidence:.3f}"
+                f"score={score:.3f}; confidence={confidence:.3f}; "
+                f"fx={fx_rate:.8g}; lot={lot_size}"
             ),
         )
         allocations.append(allocation)
@@ -331,7 +366,7 @@ def portfolio_agent(
             cash_pct=100.0,
             allocations=(),
             excluded=tuple(excluded),
-            reasoning="eligible candidates could not be allocated within portfolio caps",
+            reasoning="eligible candidates could not be allocated within portfolio/lot constraints",
         )
 
     allocated_pct = min(100.0, allocated_pct)
