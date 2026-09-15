@@ -1,4 +1,8 @@
+import time
 from types import SimpleNamespace
+
+import httpx
+import pytest
 
 import market_data as md
 
@@ -108,3 +112,45 @@ def test_find_quote_degrades_to_none_when_symbol_cannot_resolve(monkeypatch):
     monkeypatch.setattr(md, "fetch_symbol_universe", lambda **kwargs: [])
     monkeypatch.setattr(md, "_search_tsetmc_instrument_code", lambda *args, **kwargs: None)
     assert md.find_quote("نماد-ناموجود", use_cache=False) is None
+
+
+class _StalledHttpClient:
+    """Simulates a TSETMC connection that never completes within its bound.
+
+    A real trickling/stalled connection would only raise after the full
+    connect/read timeout elapses; using httpx.TimeoutException directly here
+    keeps the test itself instant while still exercising the same exception
+    mapping _read_json performs on a genuine timeout.
+    """
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        return False
+
+    def get(self, url):
+        raise httpx.TimeoutException("simulated stalled TSETMC connection")
+
+
+def test_read_json_maps_httpx_timeout_to_bounded_timeout_error(monkeypatch):
+    """A stalled connect/read against TSETMC must surface as a bounded,
+    caught TimeoutError -- not hang the caller or leak an httpx-specific
+    exception type that callers don't already catch."""
+    monkeypatch.setattr(md.httpx, "Client", _StalledHttpClient)
+    started = time.monotonic()
+    with pytest.raises(TimeoutError):
+        md._read_json("http://relay.invalid/tsetmc-cdn/api/x", timeout=5.0)
+    assert time.monotonic() - started < 1.0
+
+
+def test_tsetmc_quote_degrades_to_none_on_network_timeout(monkeypatch):
+    """A hung/timed-out TSETMC relay must degrade a single candidate to
+    'no quote available' rather than raising out of _fetch_tsetmc_quote and
+    aborting the whole Auto-Invest run."""
+    monkeypatch.setattr(md, "fetch_symbol_universe", lambda **kwargs: [_tsetmc_item()])
+    monkeypatch.setattr(md.httpx, "Client", _StalledHttpClient)
+    assert md._fetch_tsetmc_quote("ارفع", timeout=1) is None

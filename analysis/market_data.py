@@ -16,14 +16,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import json
+import logging
 import os
 import time
 import urllib.error
 import urllib.parse
-import urllib.request
 from typing import Optional
 
+import httpx
+
 from symbol_universe import SymbolUniverseUnavailable, fetch_symbol_universe
+
+logger = logging.getLogger("kiasha.market_data")
 
 DEFAULT_BASE_URL = "https://biap.dadashi.no/api"
 DEFAULT_TSETMC_API_BASE = "https://cdn.tsetmc.com/api"
@@ -226,15 +230,22 @@ def fetch_watchlist(*, timeout: float = 8.0, use_cache: bool = True) -> "list[Li
         if cached and now - cached[0] < CACHE_TTL_SECONDS:
             return cached[1]
 
-    req = urllib.request.Request(f"{base}/stock/watchlist", headers=_auth_headers())
+    connect = min(timeout, 5.0)
+    started = time.monotonic()
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            body = resp.read()
-    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        with httpx.Client(
+            timeout=httpx.Timeout(timeout, connect=connect, read=timeout, write=connect, pool=connect),
+            headers=_auth_headers(),
+        ) as client:
+            response = client.get(f"{base}/stock/watchlist")
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        logger.warning("market_data watchlist_error host=%s error=%s", urllib.parse.urlsplit(base).netloc, type(exc).__name__)
         raise MarketDataUnavailable(f"could not reach {base}: {exc}") from exc
+    logger.info("market_data watchlist_done host=%s status=%s elapsed=%.2fs", urllib.parse.urlsplit(base).netloc, response.status_code, time.monotonic() - started)
 
     try:
-        payload = json.loads(body)
+        payload = response.json()
     except json.JSONDecodeError as exc:
         raise MarketDataUnavailable(f"invalid JSON from {base}: {exc}") from exc
 
@@ -264,9 +275,40 @@ def _resolve_symbol_name(code: str, *, timeout: float) -> str:
 
 
 def _read_json(url: str, *, timeout: float) -> dict:
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        payload = json.loads(resp.read().decode("utf-8"))
+    """Fetch and parse a JSON endpoint with hard, separately-bounded connect/read/write timeouts.
+
+    Plain ``urllib.urlopen(timeout=...)`` applies one blanket socket timeout that
+    resets on every individual recv() -- a remote endpoint that trickles a byte
+    every (timeout - epsilon) seconds never trips it, which is exactly the shape
+    of hang previously observed against direct TSETMC. httpx.Timeout bounds each
+    phase (connect, read-between-chunks, write, pool-checkout) independently and
+    finitely. This still isn't a true overall deadline on its own (a very slow
+    but steadily-trickling response could still exceed the caller's patience),
+    which is why every caller on the Auto-Invest hot path additionally wraps its
+    whole verified-price/AI chain in ``deadline.run_with_deadline`` -- that outer
+    wrapper is the real hang-safety net; this is defense in depth underneath it.
+
+    Exceptions are re-raised as the same types this function's callers (and
+    their tests) have always caught, so no call site needs to change.
+    """
+    host = urllib.parse.urlsplit(url).netloc
+    connect = min(timeout, 5.0)
+    started = time.monotonic()
+    try:
+        with httpx.Client(
+            timeout=httpx.Timeout(timeout, connect=connect, read=timeout, write=connect, pool=connect),
+            headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"},
+        ) as client:
+            response = client.get(url)
+        response.raise_for_status()
+        payload = response.json()
+    except httpx.TimeoutException as exc:
+        logger.warning("market_data timeout host=%s after=%.2fs", host, time.monotonic() - started)
+        raise TimeoutError(f"timed out reaching {host}: {exc}") from exc
+    except httpx.HTTPError as exc:
+        logger.warning("market_data network_error host=%s error=%s", host, type(exc).__name__)
+        raise urllib.error.URLError(f"{type(exc).__name__} reaching {host}: {exc}") from exc
+    logger.info("market_data request_done host=%s status=%s elapsed=%.2fs", host, response.status_code, time.monotonic() - started)
     return payload if isinstance(payload, dict) else {}
 
 

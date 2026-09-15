@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import sqlite3
+import time as time_module
 import urllib.error
 import urllib.request
 from typing import Any, Literal, Optional
@@ -82,6 +83,26 @@ def _max_symbol_pct() -> float:
 
 def _min_cash_reserve_pct() -> float:
     return max(0.0, min(99.0, _env_float("KIASHA_AUTO_MIN_CASH_RESERVE_PCT", 30.0)))
+
+
+def _run_budget_seconds() -> float:
+    """Cooperative wall-clock budget for one whole run_user_auto_invest call.
+
+    Per-candidate stages already carry their own hard deadline
+    (``_stage_timeout()``), but nothing previously bounded how many candidates
+    a single run could accumulate: REBALANCE (every open position) plus ENTRY
+    (up to ``KIASHA_AUTO_MAX_CANDIDATES``) could together take several times
+    the systemd timer's own interval in the legitimate worst case (several
+    genuinely-slow-but-not-hung AI calls in a row), starving every later
+    timer firing without any single call ever technically hanging.
+
+    This is checked cooperatively between candidates (not an external kill),
+    so a run that reaches its budget stops picking up *new* candidates but
+    keeps every already-computed result -- including any real PAPER_FILLED
+    trade -- instead of discarding a good partial run the way wrapping the
+    whole call in ``run_with_deadline`` would.
+    """
+    return max(30.0, _env_float("KIASHA_AUTO_RUN_BUDGET_SECONDS", 200.0))
 
 
 def _stage_timeout() -> float:
@@ -357,10 +378,14 @@ def update_auto_settings(user_id: str, *, enabled: bool, horizon: Literal["short
     return auto_status(user_id)
 
 
-def _rank_candidates() -> tuple[list[tuple[str, float]], list[dict[str, Any]]]:
+def _rank_candidates(*, run_started: Optional[float] = None, run_budget: Optional[float] = None) -> tuple[list[tuple[str, float]], list[dict[str, Any]]]:
     ranked: list[tuple[str, float]] = []
     diagnostics: list[dict[str, Any]] = []
     for code in _candidate_symbols():
+        if run_started is not None and run_budget is not None and time_module.monotonic() - run_started > run_budget:
+            logger.warning("run BUDGET_EXCEEDED phase=DISCOVERY elapsed=%.1fs budget=%.0fs", time_module.monotonic() - run_started, run_budget)
+            diagnostics.append({"status": "ERROR", "phase": "DISCOVERY", "reason": f"run budget of {run_budget:.0f}s exceeded during candidate discovery", "retryable": True})
+            break
         logger.info("candidate selection started code=%s phase=DISCOVERY", code)
         try:
             company, _ = _verified_company_bounded(code)
@@ -446,10 +471,19 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
     daily_budget = starting_capital * _daily_budget_pct() / 100.0
     reserve_cash = starting_capital * _min_cash_reserve_pct() / 100.0
     spent_this_run = 0.0
+    run_started = time_module.monotonic()
+    run_budget = _run_budget_seconds()
+
+    def _run_budget_exceeded() -> bool:
+        return time_module.monotonic() - run_started > run_budget
 
     try:
         for position in list(account.get("positions", [])):
             if _filled_count(results) >= max_trades:
+                break
+            if _run_budget_exceeded():
+                logger.warning("run BUDGET_EXCEEDED phase=REBALANCE elapsed=%.1fs budget=%.0fs", time_module.monotonic() - run_started, run_budget)
+                results.append({"status": "ERROR", "phase": "REBALANCE", "reason": f"run budget of {run_budget:.0f}s exceeded before all positions were checked", "retryable": True})
                 break
             code = str(position.get("code") or "").strip()
             owned = int(position.get("quantity") or 0)
@@ -540,7 +574,7 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
                     "retryable": True,
                 })
 
-        ranked, discovery_diagnostics = _rank_candidates()
+        ranked, discovery_diagnostics = _rank_candidates(run_started=run_started, run_budget=run_budget)
         results.extend(discovery_diagnostics)
         ranked = ranked[:candidate_limit]
         if not ranked and not discovery_diagnostics:
@@ -555,6 +589,10 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
                 break
             if code.upper() in sold_codes:
                 continue
+            if _run_budget_exceeded():
+                logger.warning("run BUDGET_EXCEEDED phase=ENTRY elapsed=%.1fs budget=%.0fs", time_module.monotonic() - run_started, run_budget)
+                results.append({"status": "ERROR", "phase": "ENTRY", "reason": f"run budget of {run_budget:.0f}s exceeded before all ranked candidates were checked", "retryable": True})
+                break
             account = AUDIT.get_paper_account(user_id=user_id) or account
             cash = float(account["cashBalance"])
             if cash <= reserve_cash + 1e-9 or spent_this_run >= daily_budget - 1e-9:
@@ -682,6 +720,10 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
         }
         if run_id.startswith("auto_"):
             STORE.finish(run_id=run_id, status=final_status, result=result)
+        logger.info(
+            "run FINAL runId=%s status=%s filled=%d candidatesSeen=%d spent=%.0f liveExecution=false",
+            run_id, final_status, _filled_count(results), len(results), spent_this_run,
+        )
         return result
     except Exception as exc:
         result = {
@@ -693,6 +735,10 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
         }
         if run_id.startswith("auto_"):
             STORE.finish(run_id=run_id, status=result["status"], result=result)
+        logger.warning(
+            "run FINAL runId=%s status=%s filled=%d reason=%s liveExecution=false",
+            run_id, result["status"], _filled_count(results), str(exc)[:200],
+        )
         return result
 
 

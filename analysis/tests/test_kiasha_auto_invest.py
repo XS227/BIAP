@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import itertools
 
 import kiasha_auto_invest as kai
 from audit_store import AuditStore
@@ -170,3 +171,63 @@ def test_eligible_buy_reaches_paper_filled_and_live_trading_stays_disabled(tmp_p
     assert row is not None
     assert row["status"] == "PAPER_FILLED"
     assert row["mode"] == "paper"
+
+
+def test_run_budget_exceeded_skips_remaining_candidates_but_keeps_earlier_fill(tmp_path, monkeypatch):
+    """The whole-run cooperative budget (KIASHA_AUTO_RUN_BUDGET_SECONDS) must
+    stop the ENTRY loop from starting a new candidate once exceeded, but must
+    never discard a trade that already filled earlier in the same run -- an
+    outer all-or-nothing timeout around the whole run would instead throw the
+    entire (successful) batch away."""
+    monkeypatch.setenv("BIAP_ENFORCE_MARKET_SESSION", "false")
+    monkeypatch.setenv("KIASHA_PAPER_EXECUTION_ENABLED", "true")
+    monkeypatch.setenv("KIASHA_PAPER_MIN_CONFIDENCE", "0.40")
+    monkeypatch.setenv("KIASHA_AUTO_RUN_BUDGET_SECONDS", "100")
+
+    db_path = str(tmp_path / "shared.sqlite3")
+    audit = AuditStore(db_path)
+    paper = PaperExecutionStore(db_path)
+    paper_sell = PaperSellStore(db_path)
+    monkeypatch.setattr(kai, "AUDIT", audit)
+    monkeypatch.setattr(kai, "PAPER", paper)
+    monkeypatch.setattr(kai, "PAPER_SELL", paper_sell)
+    monkeypatch.setattr(kai, "STORE", AutoInvestStore(str(tmp_path / "settings.sqlite3")))
+
+    user_id = "test-user"
+    kai.STORE.update_settings(user_id=user_id, enabled=True, horizon="short", max_daily_trades=3)
+
+    codes = ["FIRSTBUY", "SECONDBUY"]
+    monkeypatch.setattr(kai, "_candidate_symbols", lambda: codes)
+    monkeypatch.setattr(
+        kai, "decide",
+        lambda company: Decision(call="BUY", weighted_score=0.8, breakdown=[], explanation="test"),
+    )
+    monkeypatch.setattr(
+        kai, "_verified_company_bounded",
+        lambda c: ({"market": {"quote_fetched_at": None}}, 1000.0),
+    )
+
+    def fake_ai(code, *, horizon):
+        return KiashaAIProposal(
+            code=code, horizon="short", action="BUY", confidence=0.9,
+            position_pct=5.0, thesis="verified test thesis", risks=[], model="test-model",
+        )
+
+    monkeypatch.setattr(kai, "_analyze_with_ai_bounded", fake_ai)
+
+    # run_started reads 0.0; both DISCOVERY checks read comfortably inside the
+    # 100s budget so both candidates get ranked; the ENTRY loop's check ahead
+    # of the FIRST candidate also reads inside budget so it fills normally;
+    # only the check ahead of the SECOND candidate reads far past the budget.
+    clock = itertools.chain([0.0, 10.0, 20.0, 30.0], itertools.repeat(200.0))
+    monkeypatch.setattr(kai.time_module, "monotonic", lambda: next(clock))
+
+    result = kai.run_user_auto_invest(user_id, force=True)
+
+    filled = [t for t in result["trades"] if t.get("status") == "FILLED"]
+    assert len(filled) == 1
+    assert filled[0]["code"] == "FIRSTBUY"
+    budget_errors = [t for t in result["trades"] if "run budget" in str(t.get("reason", ""))]
+    assert len(budget_errors) == 1
+    assert budget_errors[0]["phase"] == "ENTRY"
+    assert budget_errors[0]["retryable"] is True

@@ -308,6 +308,16 @@ def _request(
     except httpx.TimeoutException as exc:
         logger.warning("kiasha_ai timeout code=%s round=%s after=%.2fs", code, round_no, time.monotonic() - started)
         raise KiashaAITimeout(f"Kiasha AI timeout for {code} after {timeout_seconds:.0f}s") from exc
+    except httpx.HTTPStatusError as exc:
+        # The API key is never in the response body, so this is safe to log --
+        # and without it, an upstream 4xx only ever surfaced as an opaque
+        # "400 Bad Request" with no way to tell a bad model id from a schema
+        # rejection from a rate limit apart from status code alone.
+        body = exc.response.text[:500]
+        logger.warning(
+            "kiasha_ai http_error code=%s round=%s status=%s body=%s", code, round_no, exc.response.status_code, body
+        )
+        raise RuntimeError(f"Kiasha AI request for {code} failed with HTTP {exc.response.status_code}: {body}") from exc
     except httpx.RequestError as exc:
         logger.warning("kiasha_ai network_error code=%s round=%s error=%s", code, round_no, type(exc).__name__)
         raise RuntimeError(f"Kiasha AI network error for {code}: {type(exc).__name__}") from exc
