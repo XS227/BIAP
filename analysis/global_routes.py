@@ -1,0 +1,121 @@
+"""FastAPI routes for BIAP Global.
+
+Global routes are isolated from the existing Iran `/stock/*` contract. They can
+therefore evolve independently while the Iran production endpoints stay intact.
+"""
+
+from __future__ import annotations
+
+import os
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
+
+from global_markets.country_packs import country_catalog
+from global_markets.models import InvestorProfile
+from global_markets.service import analyze_company, instrument_seed, portfolio_from_instruments
+from global_markets.source_catalog import SOURCE_PLANS, requirements_payload
+
+
+router = APIRouter(prefix="/global", tags=["BIAP Global"])
+
+
+class InstrumentRequest(BaseModel):
+    country: str = Field(min_length=2, max_length=2)
+    exchange: str = Field(min_length=2, max_length=64)
+    ticker: str = Field(min_length=1, max_length=64)
+    name: Optional[str] = Field(default=None, max_length=200)
+    currency: Optional[str] = Field(default=None, min_length=3, max_length=3)
+    isin: Optional[str] = Field(default=None, min_length=8, max_length=16)
+
+
+class PortfolioProfileRequest(BaseModel):
+    capital: float = Field(gt=0)
+    baseCurrency: str = Field(min_length=3, max_length=3)
+    riskTolerance: str = Field(default="medium", min_length=2, max_length=32)
+    horizon: str = Field(default="5y", min_length=1, max_length=32)
+    allowedCountries: list[str] = Field(default_factory=list, max_length=40)
+    allowedExchanges: list[str] = Field(default_factory=list, max_length=80)
+    maxPositionPct: float = Field(default=10.0, gt=0, le=100)
+    maxCountryPct: float = Field(default=40.0, gt=0, le=100)
+    maxSectorPct: float = Field(default=30.0, gt=0, le=100)
+    minCashReservePct: float = Field(default=10.0, ge=0, lt=100)
+    maxPositions: int = Field(default=10, ge=1, le=50)
+
+
+class PortfolioRequest(BaseModel):
+    profile: PortfolioProfileRequest
+    instruments: list[InstrumentRequest] = Field(min_length=1, max_length=50)
+    fxToBase: dict[str, float] = Field(default_factory=dict)
+
+
+def _seed(req: InstrumentRequest):
+    try:
+        return instrument_seed(
+            country=req.country,
+            exchange=req.exchange,
+            ticker=req.ticker,
+            name=req.name,
+            currency=req.currency,
+            isin=req.isin,
+        )
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/countries")
+def global_countries():
+    """Country/exchange selector data for web/mobile UI."""
+    return {"count": len(country_catalog()), "countries": country_catalog()}
+
+
+@router.get("/requirements")
+def global_requirements():
+    return {"requirements": requirements_payload(), "sources": SOURCE_PLANS}
+
+
+@router.get("/status")
+def global_status():
+    return {
+        "mode": "research-paper-first",
+        "liveTrading": False,
+        "marketProviderConfigured": bool(os.environ.get("BIAP_GLOBAL_MARKET_API_KEY")),
+        "secConfigured": bool(os.environ.get("BIAP_SEC_USER_AGENT")),
+        "iranBridgeConfigured": True,
+        "countries": len(country_catalog()),
+        "notes": "Missing provider data is never fabricated; evidence gates may return NO_RECOMMENDATION.",
+    }
+
+
+@router.post("/analyze")
+def global_analyze(req: InstrumentRequest):
+    try:
+        return analyze_company(_seed(req))
+    except Exception as exc:
+        # Provider failures are normally isolated into diagnostics. This catches
+        # only orchestration/configuration failures that prevent any evaluation.
+        raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+
+
+@router.post("/portfolio")
+def global_portfolio(req: PortfolioRequest):
+    profile = InvestorProfile(
+        capital=req.profile.capital,
+        base_currency=req.profile.baseCurrency.upper(),
+        risk_tolerance=req.profile.riskTolerance,
+        horizon=req.profile.horizon,
+        allowed_countries=tuple(value.upper() for value in req.profile.allowedCountries),
+        allowed_exchanges=tuple(value.upper() for value in req.profile.allowedExchanges),
+        max_position_pct=req.profile.maxPositionPct,
+        max_country_pct=req.profile.maxCountryPct,
+        max_sector_pct=req.profile.maxSectorPct,
+        min_cash_reserve_pct=req.profile.minCashReservePct,
+        max_positions=req.profile.maxPositions,
+    )
+    instruments = [_seed(item) for item in req.instruments]
+    fx = {currency.upper(): float(rate) for currency, rate in req.fxToBase.items() if float(rate) > 0}
+    try:
+        return portfolio_from_instruments(profile, instruments, fx_to_base=fx)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
