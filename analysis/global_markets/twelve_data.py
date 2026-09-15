@@ -1,10 +1,10 @@
-"""Twelve Data market adapter for BIAP Global.
+"""Twelve Data market/valuation adapter for BIAP Global.
 
-This adapter is optional and credential-free in source control: the API key is
-read from `BIAP_GLOBAL_MARKET_API_KEY`. Daily history is explicitly split-
-adjusted so technical returns are not corrupted by stock splits. Venue identity
-is qualified with ISO 10383 MIC whenever available and mismatched provider
-responses are rejected instead of silently analysing the wrong listing.
+API credentials are runtime-only (`BIAP_GLOBAL_MARKET_API_KEY`). Daily history
+is split-adjusted and MIC-qualified. Provider valuation statistics are useful for
+comparison/screening but are not treated as official regulatory filing evidence;
+EvidenceAgent still requires a separate official fundamentals source before a
+BUY candidate can pass.
 """
 
 from __future__ import annotations
@@ -22,20 +22,13 @@ from .country_packs import get_exchange
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, MarketDataProvider, append_source
 
-
 DEFAULT_BASE_URL = "https://api.twelvedata.com"
 
 
 class TwelveDataMarketProvider(MarketDataProvider):
     provider_id = "twelve-data"
 
-    def __init__(
-        self,
-        *,
-        api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
-        timeout: float = 12.0,
-    ) -> None:
+    def __init__(self, *, api_key: Optional[str] = None, base_url: Optional[str] = None, timeout: float = 12.0) -> None:
         self.api_key = (api_key or os.environ.get("BIAP_GLOBAL_MARKET_API_KEY") or "").strip()
         self.base_url = (base_url or os.environ.get("BIAP_GLOBAL_MARKET_BASE") or DEFAULT_BASE_URL).rstrip("/")
         self.timeout = max(2.0, float(timeout))
@@ -43,10 +36,9 @@ class TwelveDataMarketProvider(MarketDataProvider):
             raise GlobalProviderError("BIAP_GLOBAL_MARKET_API_KEY is required for Twelve Data")
 
     def _get(self, endpoint: str, params: dict[str, Any]) -> dict:
-        query = {**params, "apikey": self.api_key}
         try:
             with httpx.Client(timeout=self.timeout, headers={"Accept": "application/json"}) as client:
-                response = client.get(f"{self.base_url}/{endpoint.lstrip('/')}", params=query)
+                response = client.get(f"{self.base_url}/{endpoint.lstrip('/')}", params={**params, "apikey": self.api_key})
             response.raise_for_status()
             payload = response.json()
         except (httpx.HTTPError, ValueError) as exc:
@@ -54,8 +46,7 @@ class TwelveDataMarketProvider(MarketDataProvider):
         if not isinstance(payload, dict):
             raise GlobalProviderError(f"unexpected Twelve Data response for {endpoint}")
         if payload.get("status") == "error" or payload.get("code"):
-            message = str(payload.get("message") or "provider error")[:300]
-            raise GlobalProviderError(f"Twelve Data rejected request: {message}")
+            raise GlobalProviderError(f"Twelve Data rejected request: {str(payload.get('message') or 'provider error')[:300]}")
         return payload
 
     @staticmethod
@@ -70,24 +61,15 @@ class TwelveDataMarketProvider(MarketDataProvider):
     @staticmethod
     def _annualized_volatility(closes_desc: list[float]) -> Optional[float]:
         closes = list(reversed(closes_desc))
-        if len(closes) < 3:
-            return None
-        returns: list[float] = []
-        for previous, current in zip(closes, closes[1:]):
-            if previous <= 0 or current <= 0:
-                continue
-            returns.append(math.log(current / previous))
-        if len(returns) < 2:
-            return None
-        return statistics.stdev(returns) * math.sqrt(252.0) * 100.0
+        returns = [math.log(cur / prev) for prev, cur in zip(closes, closes[1:]) if prev > 0 and cur > 0]
+        return statistics.stdev(returns) * math.sqrt(252.0) * 100.0 if len(returns) >= 2 else None
 
     @staticmethod
     def _max_drawdown(closes_desc: list[float]) -> Optional[float]:
         closes = list(reversed(closes_desc))
         if not closes:
             return None
-        peak = closes[0]
-        worst = 0.0
+        peak, worst = closes[0], 0.0
         for close in closes:
             peak = max(peak, close)
             if peak > 0:
@@ -98,12 +80,8 @@ class TwelveDataMarketProvider(MarketDataProvider):
     def _period_return(closes_desc: list[float], trading_days: int) -> Optional[float]:
         if not closes_desc:
             return None
-        index = min(trading_days, len(closes_desc) - 1)
-        previous = closes_desc[index]
-        current = closes_desc[0]
-        if previous <= 0:
-            return None
-        return (current / previous - 1.0) * 100.0
+        previous = closes_desc[min(trading_days, len(closes_desc) - 1)]
+        return (closes_desc[0] / previous - 1.0) * 100.0 if previous > 0 else None
 
     @staticmethod
     def _observed_at(raw: Any) -> Optional[str]:
@@ -128,24 +106,58 @@ class TwelveDataMarketProvider(MarketDataProvider):
             return None
         return configured.mic.upper() if configured.mic else None
 
-    def enrich_market(self, company: GlobalCompany) -> GlobalCompany:
-        expected_mic = self._expected_mic(company)
-        params: dict[str, Any] = {
-            "symbol": company.ticker,
-            "interval": "1day",
-            "outputsize": 260,
-            "order": "DESC",
-            "format": "JSON",
-            "adjust": "splits",
-        }
+    @staticmethod
+    def _venue_params(company: GlobalCompany, expected_mic: Optional[str]) -> dict[str, str]:
+        params: dict[str, str] = {"symbol": company.ticker, "country": company.country.upper()}
         if expected_mic:
             params["mic_code"] = expected_mic
         elif company.exchange:
-            # Only fall back to exchange name when no verified MIC exists.
             params["exchange"] = company.exchange
-        if company.country:
-            params["country"] = company.country.upper()
+        return params
 
+    def _add_vendor_statistics(self, company: GlobalCompany, expected_mic: Optional[str]) -> GlobalCompany:
+        """Best-effort non-regulatory valuation supplement.
+
+        Statistics-plan/coverage failures do not discard already verified market
+        history. They simply leave valuation fields unavailable.
+        """
+        try:
+            payload = self._get("statistics", self._venue_params(company, expected_mic))
+        except GlobalProviderError as exc:
+            return replace(company, raw_provider_fields={
+                **company.raw_provider_fields,
+                "twelve_data_statistics_error": str(exc)[:240],
+            })
+        stats = payload.get("statistics") if isinstance(payload.get("statistics"), dict) else {}
+        valuation = stats.get("valuations_metrics") if isinstance(stats.get("valuations_metrics"), dict) else {}
+        stock_stats = stats.get("stock_statistics") if isinstance(stats.get("stock_statistics"), dict) else {}
+        dividends = stats.get("dividends_and_splits") if isinstance(stats.get("dividends_and_splits"), dict) else {}
+
+        enriched = replace(
+            company,
+            market_cap=company.market_cap or self._float(valuation.get("market_capitalization")),
+            shares_outstanding=company.shares_outstanding or self._float(stock_stats.get("shares_outstanding")),
+            pe=company.pe or self._float(valuation.get("trailing_pe")),
+            pb=company.pb or self._float(valuation.get("price_to_book_mrq")),
+            ev_ebitda=company.ev_ebitda or self._float(valuation.get("enterprise_to_ebitda")),
+            dividend_yield_pct=company.dividend_yield_pct or self._float(dividends.get("trailing_annual_dividend_yield")),
+            raw_provider_fields={**company.raw_provider_fields, "twelve_data_statistics_available": True},
+        )
+        return append_source(enriched, SourceEvidence(
+            provider=self.provider_id,
+            source_type="vendor_valuation_statistics",
+            source_id=enriched.identity(),
+            observed_at=datetime.now(timezone.utc).isoformat(),
+            quality=0.80,
+            notes="vendor-derived valuation supplement; not regulatory filing evidence",
+        ))
+
+    def enrich_market(self, company: GlobalCompany) -> GlobalCompany:
+        expected_mic = self._expected_mic(company)
+        params: dict[str, Any] = {
+            **self._venue_params(company, expected_mic),
+            "interval": "1day", "outputsize": 260, "order": "DESC", "format": "JSON", "adjust": "splits",
+        }
         payload = self._get("time_series", params)
         values = payload.get("values")
         if not isinstance(values, list) or not values:
@@ -155,13 +167,9 @@ class TwelveDataMarketProvider(MarketDataProvider):
         returned_mic = str(meta.get("mic_code") or "").strip().upper() or None
         returned_symbol = str(meta.get("symbol") or company.ticker).strip()
         if expected_mic and returned_mic and returned_mic != expected_mic:
-            raise GlobalProviderError(
-                f"venue mismatch for {company.ticker}: expected MIC {expected_mic}, provider returned {returned_mic}"
-            )
+            raise GlobalProviderError(f"venue mismatch for {company.ticker}: expected MIC {expected_mic}, provider returned {returned_mic}")
         if returned_symbol.upper() != company.ticker.upper():
-            raise GlobalProviderError(
-                f"symbol mismatch: requested {company.ticker}, provider returned {returned_symbol}"
-            )
+            raise GlobalProviderError(f"symbol mismatch: requested {company.ticker}, provider returned {returned_symbol}")
 
         rows = [row for row in values if isinstance(row, dict)]
         closes = [value for row in rows if (value := self._float(row.get("close"))) is not None]
@@ -172,18 +180,14 @@ class TwelveDataMarketProvider(MarketDataProvider):
             raise GlobalProviderError(f"no verified close prices returned for {company.identity()}")
 
         latest = rows[0]
-        latest_close = self._float(latest.get("close"))
-        latest_volume = self._float(latest.get("volume"))
-        currency = str(meta.get("currency") or company.currency or "").strip() or company.currency
-
         enriched = replace(
             company,
-            currency=currency,
+            currency=str(meta.get("currency") or company.currency or "").strip() or company.currency,
             mic_code=returned_mic or expected_mic or company.mic_code,
             instrument_type=str(meta.get("type") or company.instrument_type or "Common Stock"),
-            price=latest_close,
+            price=self._float(latest.get("close")),
             price_observed_at=self._observed_at(latest.get("datetime")),
-            volume_today=latest_volume,
+            volume_today=self._float(latest.get("volume")),
             avg_volume_30d=(sum(volumes) / len(volumes) if volumes else None),
             price_52w_high=max(highs) if highs else None,
             price_52w_low=min(lows) if lows else None,
@@ -192,20 +196,14 @@ class TwelveDataMarketProvider(MarketDataProvider):
             return_1m_pct=self._period_return(closes, 21),
             return_3m_pct=self._period_return(closes, 63),
             return_6m_pct=self._period_return(closes, 126),
-            raw_provider_fields={
-                **company.raw_provider_fields,
-                "twelve_data_meta": meta,
-                "price_adjustment": "splits",
-            },
+            raw_provider_fields={**company.raw_provider_fields, "twelve_data_meta": meta, "price_adjustment": "splits"},
         )
-        return append_source(
-            enriched,
-            SourceEvidence(
-                provider=self.provider_id,
-                source_type="daily_market_history",
-                source_id=enriched.identity(),
-                observed_at=enriched.price_observed_at,
-                quality=0.9,
-                notes="MIC-qualified, split-adjusted daily history; exchange licensing may apply",
-            ),
-        )
+        enriched = append_source(enriched, SourceEvidence(
+            provider=self.provider_id,
+            source_type="daily_market_history",
+            source_id=enriched.identity(),
+            observed_at=enriched.price_observed_at,
+            quality=0.90,
+            notes="MIC-qualified, split-adjusted daily history; exchange licensing may apply",
+        ))
+        return self._add_vendor_statistics(enriched, expected_mic)
