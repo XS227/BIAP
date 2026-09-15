@@ -8,12 +8,14 @@ verification/confidence is insufficient.
 
 from __future__ import annotations
 
-from dataclasses import asdict
+from dataclasses import asdict, replace
+import os
 from typing import Iterable, Optional
 
 from .agents import PortfolioCandidate, evidence_agent, portfolio_agent
 from .core_agents import run_core_agents
 from .country_packs import get_exchange
+from .fx import TwelveDataFXProvider
 from .models import GlobalCompany, InvestorProfile
 from .providers import ProviderDiagnostics, ProviderRegistry
 from .runtime import build_registry
@@ -115,16 +117,53 @@ def portfolio_from_instruments(
     fx_to_base: Optional[dict[str, float]] = None,
 ) -> dict:
     registry = registry or build_registry()
+    staged = [_evaluate(company, registry) for company in instruments]
+
+    base = profile.base_currency.strip().upper()
+    rates = {
+        currency.strip().upper(): float(rate)
+        for currency, rate in (fx_to_base or {}).items()
+        if float(rate) > 0
+    }
+    rates[base] = 1.0
+    required_currencies = {enriched.currency.upper() for enriched, *_ in staged}
+    missing_fx = sorted(currency for currency in required_currencies if currency not in rates)
+    fx_errors: dict[str, str] = {}
+
+    if missing_fx and os.environ.get("BIAP_GLOBAL_MARKET_API_KEY"):
+        fx_provider = TwelveDataFXProvider()
+        for currency in missing_fx:
+            try:
+                rates[currency] = fx_provider.rate(currency, base)
+            except Exception as exc:
+                fx_errors[currency] = str(exc)[:240]
+
     candidates: list[PortfolioCandidate] = []
     analyses: list[dict] = []
-
-    for company in instruments:
-        enriched, diagnostics, signals, evidence, score, confidence = _evaluate(company, registry)
-        analyses.append(_analysis_payload(enriched, diagnostics, signals, evidence, score, confidence))
+    for enriched, diagnostics, signals, evidence, score, confidence in staged:
+        currency = enriched.currency.upper()
+        if currency not in rates:
+            reason = f"verified FX rate {currency}/{base} unavailable"
+            evidence = replace(
+                evidence,
+                status="BLOCK",
+                confidence_multiplier=0.0,
+                missing_critical=tuple(dict.fromkeys((*evidence.missing_critical, "fx_rate"))),
+                reasoning=f"{evidence.reasoning}; {reason}",
+            )
+            score = 0.0
+            confidence = 0.0
+        payload = _analysis_payload(enriched, diagnostics, signals, evidence, score, confidence)
+        payload["portfolioEligible"] = not evidence.blocked
+        if currency in fx_errors:
+            payload["fxError"] = fx_errors[currency]
+        analyses.append(payload)
         candidates.append(PortfolioCandidate(enriched, signals, evidence))
 
-    proposal = portfolio_agent(profile, candidates, fx_to_base=fx_to_base)
+    proposal = portfolio_agent(profile, candidates, fx_to_base=rates)
     return {
         "proposal": asdict(proposal),
+        "fxToBase": rates,
+        "fxErrors": fx_errors,
         "analyses": analyses,
     }
