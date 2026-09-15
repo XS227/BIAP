@@ -2,7 +2,7 @@
 
 This is operational metadata for the app/API and deployment checklist. It does
 not claim that every listed official source already has a live parser. `status`
-is explicit so the UI can distinguish connected data from planned connectors.
+is explicit so the UI can distinguish connected evidence from planned sources.
 """
 
 from __future__ import annotations
@@ -19,15 +19,15 @@ class DataRequirement:
 
 
 ANALYSIS_REQUIREMENTS: tuple[DataRequirement, ...] = (
-    DataRequirement("identity", "instrument", True, "country, ticker, exchange/MIC and preferably ISIN"),
+    DataRequirement("identity", "instrument", True, "country, ticker, exchange/MIC plus ISIN/LEI when available"),
     DataRequirement("price", "market", True, "verified current/latest tradable price with timestamp"),
     DataRequirement("ohlcv_history", "market", True, "split-adjusted daily OHLCV history for returns, volatility and drawdown"),
     DataRequirement("corporate_actions", "market", False, "splits, dividends and symbol changes so history is not distorted"),
     DataRequirement("market_cap", "market", False, "market capitalization and shares outstanding"),
-    DataRequirement("fundamentals", "filings", True, "revenue, profit, margins, assets, liabilities and equity from official filings"),
+    DataRequirement("fundamentals", "filings", True, "revenue, profit, margins, assets, liabilities and equity from official/verified regulatory filings"),
     DataRequirement("cash_flow", "filings", True, "operating cash flow, capex/free cash flow and debt where applicable"),
     DataRequirement("valuation", "analysis", False, "P/E, P/B, EV/EBITDA and peer/sector comparables when valid"),
-    DataRequirement("audit_and_scope", "filings", False, "audit opinion plus consolidated/standalone reporting scope"),
+    DataRequirement("audit_and_scope", "filings", False, "audit opinion plus consolidated/standalone reporting scope when verifiable"),
     DataRequirement("material_events", "filings", False, "material disclosures, restatements, governance and corporate actions"),
     DataRequirement("fx", "portfolio", True, "verified FX conversion into investor base currency for cross-border allocation"),
     DataRequirement("market_calendar", "execution", True, "exchange timezone, trading sessions and holidays"),
@@ -36,11 +36,12 @@ ANALYSIS_REQUIREMENTS: tuple[DataRequirement, ...] = (
 )
 
 
-# `status` values:
-# connected = parser/adapter exists in BIAP Global now
-# bridge = connected by reusing the existing Iran path
-# market-ready = generic market connector can serve it when licensed, official filings adapter still required
-# planned = official source identified but parser/adapter not yet implemented
+# status values:
+# connected = official/verified fundamentals adapter is implemented; market data
+#             still depends on deployment coverage/key outside Iran.
+# bridge = connected by reusing the existing Iran path.
+# market-ready = country/exchange and generic market feed are configured, but an
+#                official fundamentals adapter is not yet implemented.
 SOURCE_PLANS: dict[str, dict] = {
     "IR": {
         "market": "TSETMC",
@@ -50,30 +51,35 @@ SOURCE_PLANS: dict[str, dict] = {
     },
     "US": {
         "market": "Twelve Data or licensed exchange/broker feed",
-        "filings": "SEC EDGAR submissions + XBRL Company Facts",
+        "filings": "SEC EDGAR/XBRL Company Facts",
         "status": "connected",
-        "notes": "SEC fundamentals adapter implemented; market adapter requires deployment API key.",
+        "notes": "SEC adapter implemented; market feed requires licensed deployment coverage.",
     },
     "CA": {"market": "global market feed", "filings": "SEDAR+", "status": "market-ready"},
-    "GB": {"market": "global market feed", "filings": "Companies House + issuer/LSE RNS evidence", "status": "market-ready"},
-    "SE": {"market": "Nasdaq Nordic / global market feed", "filings": "ESEF + issuer/Nasdaq disclosures", "status": "market-ready"},
-    "NO": {"market": "Euronext Oslo / global market feed", "filings": "ESEF + issuer/Euronext disclosures", "status": "market-ready"},
-    "DK": {"market": "Nasdaq Nordic / global market feed", "filings": "ESEF + issuer disclosures", "status": "market-ready"},
-    "FI": {"market": "Nasdaq Nordic / global market feed", "filings": "ESEF + issuer disclosures", "status": "market-ready"},
-    "IS": {"market": "Nasdaq Iceland / global market feed", "filings": "issuer disclosures", "status": "market-ready"},
-    "NL": {"market": "Euronext Amsterdam / global market feed", "filings": "ESEF + issuer/OAM filings", "status": "market-ready"},
-    "FR": {"market": "Euronext Paris / global market feed", "filings": "ESEF + issuer/OAM filings", "status": "market-ready"},
-    "BE": {"market": "Euronext Brussels / global market feed", "filings": "ESEF + issuer/OAM filings", "status": "market-ready"},
-    "IE": {"market": "Euronext Dublin / global market feed", "filings": "ESEF + issuer/OAM filings", "status": "market-ready"},
-    "PT": {"market": "Euronext Lisbon / global market feed", "filings": "ESEF + issuer/OAM filings", "status": "market-ready"},
-    "IT": {"market": "Euronext Milan / global market feed", "filings": "ESEF + issuer/OAM filings", "status": "market-ready"},
-    "DE": {"market": "Xetra/Frankfurt / global market feed", "filings": "ESEF + issuer/OAM filings", "status": "market-ready"},
-    "ES": {"market": "BME / global market feed", "filings": "ESEF + issuer/OAM filings", "status": "market-ready"},
+    "GB": {"market": "global market feed", "filings": "UKSEF/ESEF index + future Companies House/RNS corroboration", "status": "connected"},
+    "SE": {"market": "Nasdaq Nordic / global market feed", "filings": "ESEF xBRL + issuer/Nasdaq corroboration", "status": "connected"},
+    "NO": {"market": "Euronext Oslo / global market feed", "filings": "ESEF xBRL + issuer/Euronext corroboration", "status": "connected"},
+    "DK": {"market": "Nasdaq Nordic / global market feed", "filings": "ESEF xBRL + issuer disclosures", "status": "connected"},
+    "FI": {"market": "Nasdaq Nordic / global market feed", "filings": "ESEF xBRL + issuer disclosures", "status": "connected"},
+    "IS": {"market": "Nasdaq Iceland / global market feed", "filings": "ESEF xBRL where filed + issuer disclosures", "status": "connected"},
+    "NL": {"market": "Euronext Amsterdam / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
+    "FR": {"market": "Euronext Paris / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
+    "BE": {"market": "Euronext Brussels / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
+    "IE": {"market": "Euronext Dublin / global market feed", "filings": "issuer/OAM ESEF adapter still required", "status": "market-ready"},
+    "PT": {"market": "Euronext Lisbon / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
+    "IT": {"market": "Euronext Milan / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
+    "DE": {"market": "Xetra/Frankfurt / global market feed", "filings": "German OAM/issuer ESEF adapter still required", "status": "market-ready"},
+    "ES": {"market": "BME / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
     "CH": {"market": "SIX / global market feed", "filings": "SIX + issuer reports", "status": "market-ready"},
     "AU": {"market": "ASX / global market feed", "filings": "ASX announcements + issuer reports", "status": "market-ready"},
     "NZ": {"market": "NZX / global market feed", "filings": "NZX issuer disclosures", "status": "market-ready"},
     "JP": {"market": "Tokyo Stock Exchange / global market feed", "filings": "FSA EDINET", "status": "market-ready"},
-    "KR": {"market": "Korea Exchange / global market feed", "filings": "FSS OpenDART", "status": "market-ready"},
+    "KR": {
+        "market": "Korea Exchange / global market feed",
+        "filings": "FSS OpenDART",
+        "status": "connected",
+        "notes": "OpenDART full annual statement adapter implemented; runtime API key required.",
+    },
     "HK": {"market": "HKEX / global market feed", "filings": "HKEXnews", "status": "market-ready"},
     "SG": {"market": "SGX / global market feed", "filings": "SGX issuer announcements", "status": "market-ready"},
     "IN": {"market": "NSE/BSE / global market feed", "filings": "NSE/BSE corporate filings", "status": "market-ready"},
@@ -87,11 +93,6 @@ SOURCE_PLANS: dict[str, dict] = {
 
 def requirements_payload() -> list[dict]:
     return [
-        {
-            "key": item.key,
-            "group": item.group,
-            "critical": item.critical,
-            "description": item.description,
-        }
+        {"key": item.key, "group": item.group, "critical": item.critical, "description": item.description}
         for item in ANALYSIS_REQUIREMENTS
     ]
