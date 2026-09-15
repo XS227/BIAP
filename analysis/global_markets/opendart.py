@@ -1,10 +1,10 @@
 """South Korea OpenDART fundamentals adapter for BIAP Global.
 
-OpenDART is the Financial Supervisory Service disclosure API. The adapter uses
-stock-code -> corporation-code mapping and the full annual financial-statement
-endpoint. Consolidated (CFS) statements are preferred; separate (OFS) statements
-are used only when consolidated data is unavailable. Missing concepts remain
-None rather than being inferred.
+Uses Financial Supervisory Service OpenDART corporation-code mapping and full
+annual financial statements. Consolidated (CFS) statements are preferred and
+separate (OFS) statements are fallback only. Account concepts are matched by
+exact normalized XBRL account key/name so `Assets` cannot accidentally match
+`CurrentAssets`, etc.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import datetime, timezone
 import os
+import re
 import threading
 from typing import Any, Optional
 
@@ -20,10 +21,20 @@ import httpx
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
 
-
 DEFAULT_BASE = "https://engopendart.fss.or.kr/engapi"
 _corp_lock = threading.Lock()
 _corp_cache: Optional[dict[str, str]] = None
+
+
+def _normalized(value: Any) -> str:
+    return re.sub(r"[^a-z0-9]", "", str(value or "").lower())
+
+
+def _account_key(value: Any) -> str:
+    raw = str(value or "").strip()
+    # Typical IDs are `ifrs-full_Revenue`; compare the local concept exactly.
+    local = raw.rsplit("_", 1)[-1]
+    return _normalized(local)
 
 
 class OpenDARTFundamentalsProvider(FundamentalsProvider):
@@ -39,10 +50,7 @@ class OpenDARTFundamentalsProvider(FundamentalsProvider):
     def _get(self, endpoint: str, params: dict[str, Any]) -> dict:
         try:
             with httpx.Client(timeout=self.timeout, headers={"Accept": "application/json"}) as client:
-                response = client.get(
-                    f"{self.base_url}/{endpoint.lstrip('/')}",
-                    params={"crtfc_key": self.api_key, **params},
-                )
+                response = client.get(f"{self.base_url}/{endpoint.lstrip('/')}", params={"crtfc_key": self.api_key, **params})
             response.raise_for_status()
             payload = response.json()
         except (httpx.HTTPError, ValueError) as exc:
@@ -51,8 +59,7 @@ class OpenDARTFundamentalsProvider(FundamentalsProvider):
             raise GlobalProviderError("unexpected OpenDART response")
         status = str(payload.get("status") or "000")
         if status not in {"000", ""}:
-            message = str(payload.get("message") or "OpenDART provider error")[:300]
-            raise GlobalProviderError(f"OpenDART status {status}: {message}")
+            raise GlobalProviderError(f"OpenDART status {status}: {str(payload.get('message') or 'provider error')[:300]}")
         return payload
 
     def _corp_map(self) -> dict[str, str]:
@@ -62,18 +69,13 @@ class OpenDARTFundamentalsProvider(FundamentalsProvider):
         with _corp_lock:
             if _corp_cache is not None:
                 return _corp_cache
-            payload = self._get("corpCode.json", {})
-            rows = payload.get("list")
+            rows = self._get("corpCode.json", {}).get("list")
             if not isinstance(rows, list):
                 raise GlobalProviderError("OpenDART corporation-code response has no list")
-            mapping: dict[str, str] = {}
-            for row in rows:
-                if not isinstance(row, dict):
-                    continue
-                stock = str(row.get("stock_code") or "").strip()
-                corp = str(row.get("corp_code") or "").strip()
-                if stock and corp:
-                    mapping[stock] = corp
+            mapping = {
+                str(row.get("stock_code") or "").strip(): str(row.get("corp_code") or "").strip()
+                for row in rows if isinstance(row, dict) and row.get("stock_code") and row.get("corp_code")
+            }
             if not mapping:
                 raise GlobalProviderError("OpenDART returned no listed corporation-code mapping")
             _corp_cache = mapping
@@ -83,10 +85,9 @@ class OpenDARTFundamentalsProvider(FundamentalsProvider):
         explicit = str(company.raw_provider_fields.get("opendart_corp_code") or "").strip()
         if explicit:
             return explicit
-        stock_code = company.ticker.strip()
-        corp = self._corp_map().get(stock_code)
+        corp = self._corp_map().get(company.ticker.strip())
         if corp is None:
-            raise GlobalProviderError(f"OpenDART corporation code not found for {stock_code}")
+            raise GlobalProviderError(f"OpenDART corporation code not found for {company.ticker.strip()}")
         return corp
 
     @staticmethod
@@ -103,16 +104,18 @@ class OpenDARTFundamentalsProvider(FundamentalsProvider):
 
     @staticmethod
     def _matches(row: dict, ids: tuple[str, ...], names: tuple[str, ...]) -> bool:
-        account_id = str(row.get("account_id") or "").lower().replace(" ", "")
-        account_name = str(row.get("account_nm") or "").lower().replace(" ", "")
-        if any(token.lower().replace(" ", "") in account_id for token in ids):
-            return True
-        return any(token.lower().replace(" ", "") == account_name for token in names)
+        account_key = _account_key(row.get("account_id"))
+        name_key = _normalized(row.get("account_nm"))
+        expected_ids = {_normalized(token) for token in ids}
+        expected_names = {_normalized(token) for token in names}
+        return account_key in expected_ids or (name_key and name_key in expected_names)
 
     @classmethod
     def _find(cls, rows: list[dict], ids: tuple[str, ...], names: tuple[str, ...] = ()) -> Optional[dict]:
-        matches = [row for row in rows if cls._matches(row, ids, names)]
-        return matches[0] if matches else None
+        for row in rows:
+            if cls._matches(row, ids, names):
+                return row
+        return None
 
     @staticmethod
     def _pct_change(current: Optional[float], previous: Optional[float]) -> Optional[float]:
@@ -127,28 +130,18 @@ class OpenDARTFundamentalsProvider(FundamentalsProvider):
         return value / revenue * 100.0
 
     def _annual_rows(self, corp_code: str, year: int, fs_div: str) -> list[dict]:
-        payload = self._get(
-            "fnlttSinglAcntAll.json",
-            {
-                "corp_code": corp_code,
-                "bsns_year": str(year),
-                "reprt_code": "11011",
-                "fs_div": fs_div,
-            },
-        )
+        payload = self._get("fnlttSinglAcntAll.json", {
+            "corp_code": corp_code, "bsns_year": str(year), "reprt_code": "11011", "fs_div": fs_div,
+        })
         rows = payload.get("list")
         return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
 
     def _latest_statement(self, corp_code: str) -> tuple[list[dict], int, str]:
-        configured_year = os.environ.get("BIAP_OPENDART_FISCAL_YEAR")
-        if configured_year:
-            try:
-                start_year = int(configured_year)
-            except ValueError as exc:
-                raise GlobalProviderError("BIAP_OPENDART_FISCAL_YEAR must be a year") from exc
-        else:
-            start_year = datetime.now(timezone.utc).year - 1
-
+        raw_year = os.environ.get("BIAP_OPENDART_FISCAL_YEAR")
+        try:
+            start_year = int(raw_year) if raw_year else datetime.now(timezone.utc).year - 1
+        except ValueError as exc:
+            raise GlobalProviderError("BIAP_OPENDART_FISCAL_YEAR must be a year") from exc
         last_error: Optional[Exception] = None
         for year in range(start_year, start_year - 3, -1):
             for fs_div in ("CFS", "OFS"):
@@ -166,13 +159,12 @@ class OpenDARTFundamentalsProvider(FundamentalsProvider):
     def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
         if company.country.upper() != "KR":
             raise GlobalProviderError("OpenDART adapter only supports South Korea")
-
         corp_code = self._corp_code(company)
         rows, year, fs_div = self._latest_statement(corp_code)
 
         revenue_row = self._find(rows, ("revenue",), ("Revenue", "Sales"))
         gross_row = self._find(rows, ("grossprofit",), ("Gross profit",))
-        operating_row = self._find(rows, ("profitlossfromoperatingactivities", "operatingprofit"), ("Operating profit",))
+        operating_row = self._find(rows, ("profitlossfromoperatingactivities", "operatingprofitloss", "operatingprofit"), ("Operating profit", "Operating income"))
         net_row = self._find(rows, ("profitloss",), ("Profit (loss)", "Net income"))
         assets_row = self._find(rows, ("assets",), ("Total assets",))
         liabilities_row = self._find(rows, ("liabilities",), ("Total liabilities",))
@@ -210,21 +202,14 @@ class OpenDARTFundamentalsProvider(FundamentalsProvider):
             operating_cash_flow=self._number(ocf_row.get("thstrm_amount")) if ocf_row else None,
             filing_period_end=str(year),
             report_scope="consolidated" if fs_div == "CFS" else "standalone",
-            raw_provider_fields={
-                **company.raw_provider_fields,
-                "opendart_corp_code": corp_code,
-                "opendart_receipt_no": filing_no or None,
-            },
+            raw_provider_fields={**company.raw_provider_fields, "opendart_corp_code": corp_code, "opendart_receipt_no": filing_no or None},
         )
-        return append_source(
-            enriched,
-            SourceEvidence(
-                provider=self.provider_id,
-                source_type="official_regulatory_xbrl",
-                source_id=filing_no or corp_code,
-                source_url=source_url,
-                period_end=str(year),
-                quality=1.0,
-                notes=f"OpenDART annual statement; scope={fs_div}",
-            ),
-        )
+        return append_source(enriched, SourceEvidence(
+            provider=self.provider_id,
+            source_type="official_regulatory_xbrl",
+            source_id=filing_no or corp_code,
+            source_url=source_url,
+            period_end=str(year),
+            quality=1.0,
+            notes=f"OpenDART annual statement; scope={fs_div}",
+        ))
