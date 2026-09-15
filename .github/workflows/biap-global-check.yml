@@ -1,0 +1,40 @@
+name: BIAP Global check
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - 'analysis/global_markets/**'
+      - 'analysis/global_routes.py'
+      - 'analysis/global_api_server.py'
+      - 'analysis/tests/test_global_*.py'
+      - '.github/workflows/biap-global-check.yml'
+  pull_request:
+    paths:
+      - 'analysis/global_markets/**'
+      - 'analysis/global_routes.py'
+      - 'analysis/global_api_server.py'
+      - 'analysis/tests/test_global_*.py'
+      - '.github/workflows/biap-global-check.yml'
+  workflow_dispatch:
+
+jobs:
+  global-backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: analysis
+    env:
+      PYTHONPATH: .
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements.txt
+      - name: Compile Global modules
+        run: python -m compileall -q global_markets global_routes.py global_api_server.py
+      - name: Run Global regression tests
+        run: pytest -q tests/test_global_agents.py tests/test_global_architecture.py
