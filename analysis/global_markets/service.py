@@ -15,7 +15,7 @@ from .agents import PortfolioCandidate, evidence_agent, portfolio_agent
 from .core_agents import run_core_agents
 from .country_packs import get_exchange
 from .models import GlobalCompany, InvestorProfile
-from .providers import ProviderRegistry
+from .providers import ProviderDiagnostics, ProviderRegistry
 from .runtime import build_registry
 
 
@@ -58,28 +58,27 @@ def _weighted_score(signals) -> tuple[float, float]:
     return weighted / confidence_total, confidence_total / max(1, len(signals))
 
 
-def analyze_company(
-    company: GlobalCompany,
-    *,
-    registry: Optional[ProviderRegistry] = None,
-) -> dict:
-    registry = registry or build_registry()
-    enriched, provider_diagnostics = registry.enrich_best_effort(company)
+def _evaluate(company: GlobalCompany, registry: ProviderRegistry):
+    enriched, diagnostics = registry.enrich_best_effort(company)
     signals = run_core_agents(enriched)
     evidence = evidence_agent(enriched, signals)
     raw_score, mean_confidence = _weighted_score(signals)
     final_score = raw_score * evidence.confidence_multiplier
     final_confidence = mean_confidence * evidence.confidence_multiplier
+    return enriched, diagnostics, signals, evidence, final_score, final_confidence
 
-    if evidence.blocked or final_confidence < 0.35:
-        call = "NO_RECOMMENDATION"
-    elif final_score >= 0.25 and final_confidence >= 0.45:
-        call = "BUY_CANDIDATE"
-    elif final_score <= -0.25 and final_confidence >= 0.45:
-        call = "AVOID_OR_REVIEW"
-    else:
-        call = "HOLD_OR_WATCH"
 
+def _call(score: float, confidence: float, blocked: bool) -> str:
+    if blocked or confidence < 0.35:
+        return "NO_RECOMMENDATION"
+    if score >= 0.25 and confidence >= 0.45:
+        return "BUY_CANDIDATE"
+    if score <= -0.25 and confidence >= 0.45:
+        return "AVOID_OR_REVIEW"
+    return "HOLD_OR_WATCH"
+
+
+def _analysis_payload(enriched, diagnostics: ProviderDiagnostics, signals, evidence, score, confidence) -> dict:
     return {
         "identity": enriched.identity(),
         "country": enriched.country,
@@ -88,14 +87,24 @@ def analyze_company(
         "ticker": enriched.ticker,
         "name": enriched.name,
         "currency": enriched.currency,
-        "call": call,
-        "score": round(final_score, 6),
-        "confidence": round(final_confidence, 6),
-        "providerDiagnostics": provider_diagnostics.to_dict(),
+        "call": _call(score, confidence, evidence.blocked),
+        "score": round(score, 6),
+        "confidence": round(confidence, 6),
+        "providerDiagnostics": diagnostics.to_dict(),
         "evidence": asdict(evidence),
         "signals": [asdict(signal) for signal in signals],
         "company": asdict(enriched),
     }
+
+
+def analyze_company(
+    company: GlobalCompany,
+    *,
+    registry: Optional[ProviderRegistry] = None,
+) -> dict:
+    registry = registry or build_registry()
+    evaluated = _evaluate(company, registry)
+    return _analysis_payload(*evaluated)
 
 
 def portfolio_from_instruments(
@@ -110,18 +119,8 @@ def portfolio_from_instruments(
     analyses: list[dict] = []
 
     for company in instruments:
-        analysis = analyze_company(company, registry=registry)
-        analyses.append(analysis)
-        enriched = GlobalCompany(**{
-            key: value for key, value in analysis["company"].items()
-            if key in GlobalCompany.__dataclass_fields__
-        })
-        # asdict converted SourceEvidence instances to dicts; preserve evidence
-        # from the original enrichment by performing one direct enrichment for
-        # the candidate object instead of trusting that serialized copy.
-        enriched, _ = registry.enrich_best_effort(company)
-        signals = run_core_agents(enriched)
-        evidence = evidence_agent(enriched, signals)
+        enriched, diagnostics, signals, evidence, score, confidence = _evaluate(company, registry)
+        analyses.append(_analysis_payload(enriched, diagnostics, signals, evidence, score, confidence))
         candidates.append(PortfolioCandidate(enriched, signals, evidence))
 
     proposal = portfolio_agent(profile, candidates, fx_to_base=fx_to_base)
