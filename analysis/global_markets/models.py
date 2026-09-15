@@ -125,6 +125,8 @@ class PortfolioAllocation:
     currency: str
     weight_pct: float
     amount_base_currency: float
+    quantity: Optional[int]
+    estimated_price: Optional[float]
     score: float
     confidence: float
     reasoning: str
