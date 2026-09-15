@@ -29,6 +29,7 @@ class InstrumentRequest(BaseModel):
     name: Optional[str] = Field(default=None, max_length=200)
     currency: Optional[str] = Field(default=None, min_length=3, max_length=3)
     isin: Optional[str] = Field(default=None, min_length=8, max_length=16)
+    lei: Optional[str] = Field(default=None, min_length=20, max_length=20)
 
 
 class PortfolioProfileRequest(BaseModel):
@@ -60,6 +61,7 @@ def _seed(req: InstrumentRequest):
             name=req.name,
             currency=req.currency,
             isin=req.isin,
+            lei=req.lei,
         )
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -85,15 +87,18 @@ def global_instruments(
         registry = build_registry()
         provider = registry.universe(country, spec.code)
         instruments = list(provider.list_instruments(country=country.upper(), exchange=spec.code))
-    except (KeyError, Exception) as exc:
-        # Deliberately a provider/configuration error, not an empty market.
+    except Exception as exc:
+        # Provider/configuration error is intentionally not disguised as an empty market.
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
 
     if q:
         wanted = q.casefold().strip()
         instruments = [
             item for item in instruments
-            if wanted in item.ticker.casefold() or wanted in item.name.casefold() or (item.isin and wanted in item.isin.casefold())
+            if wanted in item.ticker.casefold()
+            or wanted in item.name.casefold()
+            or (item.isin and wanted in item.isin.casefold())
+            or (item.lei and wanted in item.lei.casefold())
         ]
     total = len(instruments)
     return {
@@ -113,15 +118,18 @@ def global_requirements():
 
 @router.get("/status")
 def global_status():
+    live_switch_requested = os.environ.get("BIAP_GLOBAL_LIVE_TRADING_ENABLED", "false").strip().lower() == "true"
     return {
         "mode": "research-paper-first",
-        "liveTrading": os.environ.get("BIAP_GLOBAL_LIVE_TRADING_ENABLED", "false").strip().lower() == "true",
+        "liveTrading": False,
+        "liveBrokerConnected": False,
+        "liveTradingSwitchRequested": live_switch_requested,
         "marketProviderConfigured": bool(os.environ.get("BIAP_GLOBAL_MARKET_API_KEY")),
         "secConfigured": bool(os.environ.get("BIAP_SEC_USER_AGENT")),
         "openDartConfigured": bool(os.environ.get("BIAP_OPENDART_API_KEY")),
         "iranBridgeConfigured": True,
         "countries": len(country_catalog()),
-        "notes": "Missing provider data is never fabricated; evidence gates may return NO_RECOMMENDATION.",
+        "notes": "No live global broker is connected yet. Missing data is never fabricated; evidence gates may return NO_RECOMMENDATION.",
     }
 
 
