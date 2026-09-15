@@ -1,7 +1,8 @@
 """Normalized data contracts for BIAP Global.
 
-These models deliberately avoid exchange-specific field names. Market/provider
-adapters are responsible for normalization before analysis.
+The global core never assumes a specific exchange, regulator or filing format.
+Provider adapters normalize verified source data into these contracts before any
+agent is allowed to score an instrument.
 """
 
 from __future__ import annotations
@@ -29,19 +30,30 @@ class SourceEvidence:
 
 @dataclass
 class GlobalCompany:
+    # Stable instrument identity. `exchange` is BIAP's display/routing name;
+    # `mic_code` is the ISO 10383 market identifier used to disambiguate the
+    # same ticker across venues whenever the upstream provider supports MICs.
     country: str
     exchange: str
     currency: str
     ticker: str
     name: str
+    mic_code: Optional[str] = None
     isin: Optional[str] = None
+    instrument_type: str = "Common Stock"
     sector: Optional[str] = None
+    industry: Optional[str] = None
+    reporting_currency: Optional[str] = None
+    lot_size: Optional[int] = None
 
+    # Market state and history. Prices must be split-adjusted when a provider
+    # supplies adjusted history; the adapter records that fact in provenance.
     price: Optional[float] = None
     price_observed_at: Optional[str] = None
     volume_today: Optional[float] = None
     avg_volume_30d: Optional[float] = None
     market_cap: Optional[float] = None
+    shares_outstanding: Optional[float] = None
     price_52w_high: Optional[float] = None
     price_52w_low: Optional[float] = None
     volatility_annualized_pct: Optional[float] = None
@@ -49,33 +61,52 @@ class GlobalCompany:
     return_1m_pct: Optional[float] = None
     return_3m_pct: Optional[float] = None
     return_6m_pct: Optional[float] = None
+    beta: Optional[float] = None
 
+    # Valuation and shareholder return.
     pe: Optional[float] = None
     sector_pe: Optional[float] = None
     pb: Optional[float] = None
     ev_ebitda: Optional[float] = None
     dividend_yield_pct: Optional[float] = None
+    eps: Optional[float] = None
+    book_value_per_share: Optional[float] = None
 
+    # Normalized filing fundamentals. Values stay in reporting_currency and
+    # must not be mixed across consolidated/standalone scope by an adapter.
     revenue: Optional[float] = None
     revenue_prev: Optional[float] = None
     revenue_yoy_pct: Optional[float] = None
+    gross_profit: Optional[float] = None
+    operating_income: Optional[float] = None
+    ebitda: Optional[float] = None
     net_income: Optional[float] = None
     net_margin_pct: Optional[float] = None
     net_margin_prev_pct: Optional[float] = None
     total_assets: Optional[float] = None
     total_liabilities: Optional[float] = None
     total_equity: Optional[float] = None
+    current_assets: Optional[float] = None
+    current_liabilities: Optional[float] = None
+    cash_and_equivalents: Optional[float] = None
     operating_cash_flow: Optional[float] = None
     free_cash_flow: Optional[float] = None
     total_debt: Optional[float] = None
+    interest_expense: Optional[float] = None
 
+    # Filing/evidence controls.
     audit_opinion: Optional[str] = None
     filing_period_end: Optional[str] = None
+    filing_observed_at: Optional[str] = None
+    report_scope: Optional[str] = None
+    restatement_flag: Optional[bool] = None
+    material_event_flags: tuple[str, ...] = ()
     sources: list[SourceEvidence] = field(default_factory=list)
     raw_provider_fields: dict = field(default_factory=dict)
 
     def identity(self) -> str:
-        return f"{self.country}:{self.exchange}:{self.ticker}"
+        venue = (self.mic_code or self.exchange).upper()
+        return f"{self.country.upper()}:{venue}:{self.ticker}"
 
 
 @dataclass(frozen=True)
