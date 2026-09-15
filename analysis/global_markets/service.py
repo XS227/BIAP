@@ -75,10 +75,12 @@ def _evaluate(company: GlobalCompany, registry: ProviderRegistry):
     return enriched, diagnostics, signals, evidence, final_score, final_confidence
 
 
-def _call(score: float, confidence: float, blocked: bool) -> str:
-    if blocked or confidence < 0.35:
+def _call(score: float, confidence: float, evidence_status: str) -> str:
+    # New BUY candidates are held to the strictest evidence state. WARN can
+    # still show analysis, but cannot be promoted into a fresh buy idea.
+    if evidence_status == "BLOCK" or confidence < 0.35:
         return "NO_RECOMMENDATION"
-    if score >= 0.25 and confidence >= 0.45:
+    if score >= 0.25 and confidence >= 0.45 and evidence_status == "PASS":
         return "BUY_CANDIDATE"
     if score <= -0.25 and confidence >= 0.45:
         return "AVOID_OR_REVIEW"
@@ -96,7 +98,7 @@ def _analysis_payload(enriched, diagnostics: ProviderDiagnostics, signals, evide
         "isin": enriched.isin,
         "lei": enriched.lei,
         "currency": enriched.currency,
-        "call": _call(score, confidence, evidence.blocked),
+        "call": _call(score, confidence, evidence.status),
         "score": round(score, 6),
         "confidence": round(confidence, 6),
         "providerDiagnostics": diagnostics.to_dict(),
@@ -149,23 +151,31 @@ def portfolio_from_instruments(
     analyses: list[dict] = []
     for enriched, diagnostics, signals, evidence, score, confidence in staged:
         currency = enriched.currency.upper()
+        block_reasons: list[str] = []
+        if evidence.status != "PASS":
+            block_reasons.append(f"portfolio requires PASS evidence, got {evidence.status}")
         if currency not in rates:
-            reason = f"verified FX rate {currency}/{base} unavailable"
-            evidence = replace(
+            block_reasons.append(f"verified FX rate {currency}/{base} unavailable")
+
+        portfolio_evidence = evidence
+        if block_reasons:
+            missing = list(evidence.missing_critical)
+            if currency not in rates:
+                missing.append("fx_rate")
+            portfolio_evidence = replace(
                 evidence,
                 status="BLOCK",
                 confidence_multiplier=0.0,
-                missing_critical=tuple(dict.fromkeys((*evidence.missing_critical, "fx_rate"))),
-                reasoning=f"{evidence.reasoning}; {reason}",
+                missing_critical=tuple(dict.fromkeys(missing)),
+                reasoning=f"{evidence.reasoning}; " + "; ".join(block_reasons),
             )
-            score = 0.0
-            confidence = 0.0
+
         payload = _analysis_payload(enriched, diagnostics, signals, evidence, score, confidence)
-        payload["portfolioEligible"] = not evidence.blocked
+        payload["portfolioEligible"] = portfolio_evidence.status == "PASS"
         if currency in fx_errors:
             payload["fxError"] = fx_errors[currency]
         analyses.append(payload)
-        candidates.append(PortfolioCandidate(enriched, signals, evidence))
+        candidates.append(PortfolioCandidate(enriched, signals, portfolio_evidence))
 
     proposal = portfolio_agent(profile, candidates, fx_to_base=rates)
     return {
