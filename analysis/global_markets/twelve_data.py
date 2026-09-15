@@ -1,10 +1,10 @@
 """Twelve Data market/valuation adapter for BIAP Global.
 
-API credentials are runtime-only (`BIAP_GLOBAL_MARKET_API_KEY`). Daily history
-is split-adjusted and MIC-qualified. Provider valuation statistics are useful for
-comparison/screening but are not treated as official regulatory filing evidence;
-EvidenceAgent still requires a separate official fundamentals source before a
-BUY candidate can pass.
+Credentials are runtime-only (`BIAP_GLOBAL_MARKET_API_KEY`). Daily history is
+split-adjusted. Exchange identity is checked against configured operating and
+segment MIC aliases. Vendor valuation/profile data is supplementary only;
+EvidenceAgent still requires separate official filing evidence before a BUY
+candidate can pass.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from typing import Any, Optional
 
 import httpx
 
-from .country_packs import get_exchange
+from .country_packs import ExchangeSpec, get_exchange
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, MarketDataProvider, append_source
 
@@ -97,42 +97,83 @@ class TwelveDataMarketProvider(MarketDataProvider):
         return parsed.astimezone(timezone.utc).isoformat()
 
     @staticmethod
-    def _expected_mic(company: GlobalCompany) -> Optional[str]:
-        if company.mic_code:
-            return company.mic_code.strip().upper()
+    def _exchange_spec(company: GlobalCompany) -> Optional[ExchangeSpec]:
         try:
-            configured = get_exchange(company.country, company.exchange)
+            return get_exchange(company.country, company.exchange)
         except KeyError:
             return None
-        return configured.mic.upper() if configured.mic else None
 
-    @staticmethod
-    def _venue_params(company: GlobalCompany, expected_mic: Optional[str]) -> dict[str, str]:
+    @classmethod
+    def _accepted_mics(cls, company: GlobalCompany) -> set[str]:
+        spec = cls._exchange_spec(company)
+        result = set(spec.accepted_mics) if spec else set()
+        if company.mic_code:
+            result.add(company.mic_code.strip().upper())
+        return result
+
+    @classmethod
+    def _query_mic(cls, company: GlobalCompany) -> Optional[str]:
+        if company.mic_code:
+            return company.mic_code.strip().upper()
+        spec = cls._exchange_spec(company)
+        return spec.mic.upper() if spec and spec.mic else None
+
+    @classmethod
+    def _venue_params(cls, company: GlobalCompany) -> dict[str, str]:
         params: dict[str, str] = {"symbol": company.ticker, "country": company.country.upper()}
-        if expected_mic:
-            params["mic_code"] = expected_mic
+        query_mic = cls._query_mic(company)
+        if query_mic:
+            params["mic_code"] = query_mic
         elif company.exchange:
             params["exchange"] = company.exchange
         return params
 
-    def _add_vendor_statistics(self, company: GlobalCompany, expected_mic: Optional[str]) -> GlobalCompany:
-        """Best-effort non-regulatory valuation supplement.
+    @classmethod
+    def _validate_meta(cls, company: GlobalCompany, meta: dict) -> tuple[Optional[str], str]:
+        returned_mic = str(meta.get("mic_code") or "").strip().upper() or None
+        returned_symbol = str(meta.get("symbol") or company.ticker).strip()
+        accepted = cls._accepted_mics(company)
+        if returned_mic and accepted and returned_mic not in accepted:
+            raise GlobalProviderError(
+                f"venue mismatch for {company.ticker}: expected one of {sorted(accepted)}, provider returned {returned_mic}"
+            )
+        if returned_symbol.upper() != company.ticker.upper():
+            raise GlobalProviderError(f"symbol mismatch: requested {company.ticker}, provider returned {returned_symbol}")
+        return returned_mic, returned_symbol
 
-        Statistics-plan/coverage failures do not discard already verified market
-        history. They simply leave valuation fields unavailable.
-        """
+    def _add_profile(self, company: GlobalCompany) -> GlobalCompany:
         try:
-            payload = self._get("statistics", self._venue_params(company, expected_mic))
+            payload = self._get("profile", self._venue_params(company))
+            self._validate_meta(company, payload)
         except GlobalProviderError as exc:
-            return replace(company, raw_provider_fields={
-                **company.raw_provider_fields,
-                "twelve_data_statistics_error": str(exc)[:240],
-            })
+            return replace(company, raw_provider_fields={**company.raw_provider_fields, "twelve_data_profile_error": str(exc)[:240]})
+        return append_source(replace(
+            company,
+            name=str(payload.get("name") or company.name),
+            sector=str(payload.get("sector") or company.sector or "").strip() or None,
+            industry=str(payload.get("industry") or company.industry or "").strip() or None,
+            instrument_type=str(payload.get("type") or company.instrument_type or "Common Stock"),
+            raw_provider_fields={**company.raw_provider_fields, "twelve_data_profile_available": True},
+        ), SourceEvidence(
+            provider=self.provider_id,
+            source_type="vendor_company_profile",
+            source_id=company.identity(),
+            observed_at=datetime.now(timezone.utc).isoformat(),
+            quality=0.80,
+            notes="vendor profile supplement; not regulatory filing evidence",
+        ))
+
+    def _add_vendor_statistics(self, company: GlobalCompany) -> GlobalCompany:
+        try:
+            payload = self._get("statistics", self._venue_params(company))
+            meta = payload.get("meta") if isinstance(payload.get("meta"), dict) else {}
+            self._validate_meta(company, meta)
+        except GlobalProviderError as exc:
+            return replace(company, raw_provider_fields={**company.raw_provider_fields, "twelve_data_statistics_error": str(exc)[:240]})
         stats = payload.get("statistics") if isinstance(payload.get("statistics"), dict) else {}
         valuation = stats.get("valuations_metrics") if isinstance(stats.get("valuations_metrics"), dict) else {}
         stock_stats = stats.get("stock_statistics") if isinstance(stats.get("stock_statistics"), dict) else {}
         dividends = stats.get("dividends_and_splits") if isinstance(stats.get("dividends_and_splits"), dict) else {}
-
         enriched = replace(
             company,
             market_cap=company.market_cap or self._float(valuation.get("market_capitalization")),
@@ -152,24 +193,37 @@ class TwelveDataMarketProvider(MarketDataProvider):
             notes="vendor-derived valuation supplement; not regulatory filing evidence",
         ))
 
-    def enrich_market(self, company: GlobalCompany) -> GlobalCompany:
-        expected_mic = self._expected_mic(company)
+    def _time_series(self, company: GlobalCompany) -> dict:
         params: dict[str, Any] = {
-            **self._venue_params(company, expected_mic),
+            **self._venue_params(company),
             "interval": "1day", "outputsize": 260, "order": "DESC", "format": "JSON", "adjust": "splits",
         }
-        payload = self._get("time_series", params)
+        try:
+            payload = self._get("time_series", params)
+            if isinstance(payload.get("values"), list) and payload.get("values"):
+                return payload
+        except GlobalProviderError:
+            payload = {}
+        # Operating MIC coverage can differ by vendor. If aliases exist, retry by
+        # exchange label and validate the returned segment MIC before accepting.
+        spec = self._exchange_spec(company)
+        if spec and spec.mic_aliases:
+            retry = {
+                "symbol": company.ticker,
+                "exchange": spec.label,
+                "country": company.country.upper(),
+                "interval": "1day", "outputsize": 260, "order": "DESC", "format": "JSON", "adjust": "splits",
+            }
+            return self._get("time_series", retry)
+        return payload
+
+    def enrich_market(self, company: GlobalCompany) -> GlobalCompany:
+        payload = self._time_series(company)
         values = payload.get("values")
         if not isinstance(values, list) or not values:
             raise GlobalProviderError(f"no daily market history returned for {company.identity()}")
-
         meta = payload.get("meta") if isinstance(payload.get("meta"), dict) else {}
-        returned_mic = str(meta.get("mic_code") or "").strip().upper() or None
-        returned_symbol = str(meta.get("symbol") or company.ticker).strip()
-        if expected_mic and returned_mic and returned_mic != expected_mic:
-            raise GlobalProviderError(f"venue mismatch for {company.ticker}: expected MIC {expected_mic}, provider returned {returned_mic}")
-        if returned_symbol.upper() != company.ticker.upper():
-            raise GlobalProviderError(f"symbol mismatch: requested {company.ticker}, provider returned {returned_symbol}")
+        returned_mic, _ = self._validate_meta(company, meta)
 
         rows = [row for row in values if isinstance(row, dict)]
         closes = [value for row in rows if (value := self._float(row.get("close"))) is not None]
@@ -178,12 +232,11 @@ class TwelveDataMarketProvider(MarketDataProvider):
         volumes = [value for row in rows[:30] if (value := self._float(row.get("volume"))) is not None]
         if not closes:
             raise GlobalProviderError(f"no verified close prices returned for {company.identity()}")
-
         latest = rows[0]
         enriched = replace(
             company,
             currency=str(meta.get("currency") or company.currency or "").strip() or company.currency,
-            mic_code=returned_mic or expected_mic or company.mic_code,
+            mic_code=returned_mic or self._query_mic(company) or company.mic_code,
             instrument_type=str(meta.get("type") or company.instrument_type or "Common Stock"),
             price=self._float(latest.get("close")),
             price_observed_at=self._observed_at(latest.get("datetime")),
@@ -206,4 +259,5 @@ class TwelveDataMarketProvider(MarketDataProvider):
             quality=0.90,
             notes="MIC-qualified, split-adjusted daily history; exchange licensing may apply",
         ))
-        return self._add_vendor_statistics(enriched, expected_mic)
+        enriched = self._add_profile(enriched)
+        return self._add_vendor_statistics(enriched)
