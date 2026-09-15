@@ -103,33 +103,37 @@ class IranLegacyProvider(MarketDataProvider, FundamentalsProvider):
         if not codal:
             return company
 
-        revenue = self._float(codal.get("revenue"))
+        revenue = self._float(codal.get("revenue_current"))
         revenue_prev = self._float(codal.get("revenue_prev"))
-        net_income = self._float(codal.get("net_income"))
+        net_income = self._float(codal.get("net_profit_current"))
         enriched = replace(
             company,
             reporting_currency="IRR",
             revenue=revenue,
             revenue_prev=revenue_prev,
             revenue_yoy_pct=self._float(codal.get("revenue_yoy_pct")),
-            gross_profit=self._float(codal.get("gross_profit")),
+            gross_profit=self._float(codal.get("gross_profit_current")),
             net_income=net_income,
             net_margin_pct=self._float(codal.get("net_margin_pct")),
             net_margin_prev_pct=self._float(codal.get("net_margin_prev_pct")),
-            total_assets=self._float(codal.get("total_assets")),
-            total_liabilities=self._float(codal.get("total_liabilities")),
-            total_equity=self._float(codal.get("total_equity")),
+            total_assets=self._float(codal.get("total_assets_current")),
+            total_liabilities=self._float(codal.get("total_liabilities_current")),
+            total_equity=self._float(codal.get("total_equity_current")),
             audit_opinion=codal.get("audit_opinion"),
-            filing_period_end=codal.get("period_end") or codal.get("report_period_end"),
             report_scope=codal.get("report_scope"),
+            raw_provider_fields={
+                **company.raw_provider_fields,
+                "iran_codal_tracing_no": codal.get("tracing_no"),
+                "iran_codal_report_title": codal.get("report_title"),
+            },
         )
         return append_source(
             enriched,
             SourceEvidence(
                 provider=self.provider_id,
                 source_type="official_regulatory_filing",
-                source_id=company.ticker,
-                period_end=enriched.filing_period_end,
+                source_id=str(codal.get("tracing_no") or company.ticker),
+                source_url=codal.get("report_url"),
                 quality=1.0,
                 notes="read-only bridge to existing CODAL verified fundamentals",
             ),
