@@ -15,6 +15,7 @@ from .opendart import OpenDARTFundamentalsProvider
 from .providers import ProviderRegistry
 from .sec_edgar import SECEdgarFundamentalsProvider
 from .twelve_data import TwelveDataMarketProvider
+from .universe import IranUniverseProvider, TwelveDataUniverseProvider
 
 
 def build_registry() -> ProviderRegistry:
@@ -22,18 +23,22 @@ def build_registry() -> ProviderRegistry:
 
     # Iran Global bridge always reuses the existing local TSETMC/CODAL stack.
     iran = IranLegacyProvider()
+    iran_universe = IranUniverseProvider()
     for exchange in COUNTRY_PACKS["IR"].exchanges:
+        registry.register_universe("IR", exchange.code, iran_universe)
         registry.register_market("IR", exchange.code, iran)
         registry.register_fundamentals("IR", exchange.code, iran)
 
-    # One global market adapter can serve every configured non-Iran venue when
-    # the deployment has a licensed provider key covering that venue.
+    # One global market/universe provider can serve configured non-Iran venues
+    # when the deployment has a licensed key covering that venue.
     if os.environ.get("BIAP_GLOBAL_MARKET_API_KEY"):
         market = TwelveDataMarketProvider()
+        universe = TwelveDataUniverseProvider()
         for country, pack in COUNTRY_PACKS.items():
             if country == "IR":
                 continue
             for exchange in pack.exchanges:
+                registry.register_universe(country, exchange.code, universe)
                 registry.register_market(country, exchange.code, market)
 
     # US official fundamentals are directly connected through SEC EDGAR/XBRL.
