@@ -1,12 +1,9 @@
 """SEC EDGAR/XBRL fundamentals adapter for BIAP Global US instruments.
 
-Uses the SEC public ticker mapping and `data.sec.gov/api/xbrl/companyfacts`.
-No SEC API key is required, but responsible automated access must identify the
-caller through `BIAP_SEC_USER_AGENT`.
-
-The parser is conservative: it reads standard US-GAAP facts, prefers annual
-10-K/10-K-A facts, de-duplicates repeated comparative periods, and leaves
-unsupported values unavailable instead of guessing.
+Uses SEC public ticker mapping and `data.sec.gov/api/xbrl/companyfacts`. No API
+key is required, but responsible automated access must identify the caller via
+`BIAP_SEC_USER_AGENT`. Only explicit standard US-GAAP facts are normalized;
+missing or ambiguous values remain unavailable.
 """
 
 from __future__ import annotations
@@ -21,10 +18,8 @@ import httpx
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
 
-
 SEC_TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 SEC_FACTS_BASE = "https://data.sec.gov/api/xbrl/companyfacts"
-
 _ticker_lock = threading.Lock()
 _ticker_cache: Optional[dict[str, int]] = None
 
@@ -36,16 +31,11 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         self.user_agent = (user_agent or os.environ.get("BIAP_SEC_USER_AGENT") or "").strip()
         self.timeout = max(3.0, float(timeout))
         if not self.user_agent:
-            raise GlobalProviderError(
-                "BIAP_SEC_USER_AGENT is required for responsible SEC automated access"
-            )
+            raise GlobalProviderError("BIAP_SEC_USER_AGENT is required for responsible SEC automated access")
 
     def _get_json(self, url: str) -> dict:
         try:
-            with httpx.Client(
-                timeout=self.timeout,
-                headers={"User-Agent": self.user_agent, "Accept": "application/json"},
-            ) as client:
+            with httpx.Client(timeout=self.timeout, headers={"User-Agent": self.user_agent, "Accept": "application/json"}) as client:
                 response = client.get(url)
             response.raise_for_status()
             payload = response.json()
@@ -86,10 +76,9 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
                 return int(explicit)
             except (TypeError, ValueError) as exc:
                 raise GlobalProviderError(f"invalid SEC CIK for {company.identity()}") from exc
-        ticker = company.ticker.strip().upper()
-        cik = self._ticker_map().get(ticker)
+        cik = self._ticker_map().get(company.ticker.strip().upper())
         if cik is None:
-            raise GlobalProviderError(f"SEC CIK not found for ticker {ticker}")
+            raise GlobalProviderError(f"SEC CIK not found for ticker {company.ticker.strip().upper()}")
         return cik
 
     @staticmethod
@@ -110,14 +99,9 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             if not isinstance(entries, list):
                 continue
             for row in entries:
-                if not isinstance(row, dict):
+                if not isinstance(row, dict) or row.get("form") not in {"10-K", "10-K/A"}:
                     continue
-                if row.get("form") not in {"10-K", "10-K/A"}:
-                    continue
-                if row.get("fp") not in {None, "FY"}:
-                    continue
-                value = row.get("val")
-                if not isinstance(value, (int, float)):
+                if row.get("fp") not in {None, "FY"} or not isinstance(row.get("val"), (int, float)):
                     continue
                 rows.append(row)
         rows.sort(key=lambda row: (str(row.get("end") or ""), str(row.get("filed") or "")), reverse=True)
@@ -129,12 +113,9 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             concept = gaap.get(tag)
             if not isinstance(concept, dict):
                 continue
-            rows = cls._annual_rows(concept)
-            if not rows:
-                continue
             unique: list[dict] = []
             seen_periods: set[str] = set()
-            for row in rows:
+            for row in cls._annual_rows(concept):
                 period = str(row.get("end") or row.get("fy") or "")
                 if not period or period in seen_periods:
                     continue
@@ -145,6 +126,11 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             if unique:
                 return unique
         return []
+
+    @classmethod
+    def _latest(cls, gaap: dict, tags: tuple[str, ...]) -> Optional[dict]:
+        rows = cls._annual_series(gaap, tags, count=1)
+        return rows[0] if rows else None
 
     @staticmethod
     def _value(row: Optional[dict]) -> Optional[float]:
@@ -165,11 +151,6 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             return None
         return income / revenue * 100.0
 
-    @staticmethod
-    def _latest(gaap: dict, tags: tuple[str, ...]) -> Optional[dict]:
-        rows = SECEdgarFundamentalsProvider._annual_series(gaap, tags, count=1)
-        return rows[0] if rows else None
-
     def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
         if company.country.strip().upper() != "US":
             raise GlobalProviderError("SEC EDGAR fundamentals adapter only supports US issuers")
@@ -182,37 +163,26 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         if not gaap:
             raise GlobalProviderError(f"SEC returned no standard US-GAAP company facts for {company.identity()}")
 
-        revenues = self._annual_series(gaap, (
-            "RevenueFromContractWithCustomerExcludingAssessedTax", "Revenues", "SalesRevenueNet",
-        ))
+        revenues = self._annual_series(gaap, ("RevenueFromContractWithCustomerExcludingAssessedTax", "Revenues", "SalesRevenueNet"))
         net_income = self._annual_series(gaap, ("NetIncomeLoss", "ProfitLoss"))
         gross_profit = self._latest(gaap, ("GrossProfit",))
         operating_income = self._latest(gaap, ("OperatingIncomeLoss",))
         assets = self._latest(gaap, ("Assets",))
         liabilities = self._latest(gaap, ("Liabilities",))
-        equity = self._latest(gaap, (
-            "StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
-        ))
+        equity = self._latest(gaap, ("StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"))
         current_assets = self._latest(gaap, ("AssetsCurrent",))
         current_liabilities = self._latest(gaap, ("LiabilitiesCurrent",))
-        cash = self._latest(gaap, (
-            "CashAndCashEquivalentsAtCarryingValue",
-            "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
-        ))
+        cash = self._latest(gaap, ("CashAndCashEquivalentsAtCarryingValue", "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents"))
         ocf = self._latest(gaap, ("NetCashProvidedByUsedInOperatingActivities",))
-        capex = self._latest(gaap, (
-            "PaymentsToAcquirePropertyPlantAndEquipment", "PaymentsForAdditionsToPropertyPlantAndEquipment",
-        ))
-        long_debt = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligationsCurrent", "LongTermDebtCurrent"))
-        long_debt_noncurrent = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligationsNoncurrent", "LongTermDebtNoncurrent"))
-        total_debt_direct = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligations", "LongTermDebt"))
+        capex = self._latest(gaap, ("PaymentsToAcquirePropertyPlantAndEquipment", "PaymentsForAdditionsToPropertyPlantAndEquipment"))
+        debt_current = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligationsCurrent", "LongTermDebtCurrent"))
+        debt_noncurrent = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligationsNoncurrent", "LongTermDebtNoncurrent"))
+        debt_total = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligations", "LongTermDebt"))
         interest = self._latest(gaap, ("InterestExpenseNonOperating", "InterestExpenseDebt"))
         eps = self._latest(gaap, ("EarningsPerShareDiluted", "EarningsPerShareBasic"))
-        shares = self._latest(gaap, (
-            "CommonStocksIncludingAdditionalPaidInCapitalMember",
-            "EntityCommonStockSharesOutstanding",
-            "CommonStockSharesOutstanding",
-        ))
+        # Only use a US-GAAP shares-count concept here. Do not substitute equity
+        # or paid-in-capital dollar concepts, which would silently corrupt market cap.
+        shares = self._latest(gaap, ("CommonStockSharesOutstanding",))
 
         revenue = self._value(revenues[0] if revenues else None)
         revenue_prev = self._value(revenues[1] if len(revenues) > 1 else None)
@@ -221,16 +191,14 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         ocf_value = self._value(ocf)
         capex_value = self._value(capex)
         fcf = None if ocf_value is None or capex_value is None else ocf_value - abs(capex_value)
-
-        debt_direct = self._value(total_debt_direct)
-        if debt_direct is None:
-            debt_parts = [self._value(long_debt), self._value(long_debt_noncurrent)]
-            debt_values = [value for value in debt_parts if value is not None]
-            debt_direct = sum(debt_values) if debt_values else None
+        total_debt = self._value(debt_total)
+        if total_debt is None:
+            parts = [value for value in (self._value(debt_current), self._value(debt_noncurrent)) if value is not None]
+            total_debt = sum(parts) if parts else None
 
         period_row = revenues[0] if revenues else (net_income[0] if net_income else assets)
-        period_end = str(period_row.get("end") or "") or None if period_row else None
-        filed_at = str(period_row.get("filed") or "") or None if period_row else None
+        period_end = (str(period_row.get("end") or "") or None) if period_row else None
+        filed_at = (str(period_row.get("filed") or "") or None) if period_row else None
 
         enriched = replace(
             company,
@@ -252,7 +220,7 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             cash_and_equivalents=self._value(cash),
             operating_cash_flow=ocf_value,
             free_cash_flow=fcf,
-            total_debt=debt_direct,
+            total_debt=total_debt,
             interest_expense=self._value(interest),
             eps=self._value(eps),
             shares_outstanding=company.shares_outstanding or self._value(shares),
