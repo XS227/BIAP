@@ -11,6 +11,7 @@ import os
 
 from .country_packs import COUNTRY_PACKS
 from .iran_adapter import IranLegacyProvider
+from .opendart import OpenDARTFundamentalsProvider
 from .providers import ProviderRegistry
 from .sec_edgar import SECEdgarFundamentalsProvider
 from .twelve_data import TwelveDataMarketProvider
@@ -40,5 +41,11 @@ def build_registry() -> ProviderRegistry:
         sec = SECEdgarFundamentalsProvider()
         for exchange in COUNTRY_PACKS["US"].exchanges:
             registry.register_fundamentals("US", exchange.code, sec)
+
+    # South Korea official fundamentals via Financial Supervisory Service DART.
+    if os.environ.get("BIAP_OPENDART_API_KEY"):
+        dart = OpenDARTFundamentalsProvider()
+        for exchange in COUNTRY_PACKS["KR"].exchanges:
+            registry.register_fundamentals("KR", exchange.code, dart)
 
     return registry
