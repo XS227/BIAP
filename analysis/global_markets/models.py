@@ -30,9 +30,8 @@ class SourceEvidence:
 
 @dataclass
 class GlobalCompany:
-    # Stable instrument identity. `exchange` is BIAP's display/routing name;
-    # `mic_code` is the ISO 10383 market identifier used to disambiguate the
-    # same ticker across venues whenever the upstream provider supports MICs.
+    # Stable instrument/entity identity. Exchange/MIC identifies the listing;
+    # ISIN identifies the security; LEI identifies the legal reporting entity.
     country: str
     exchange: str
     currency: str
@@ -40,6 +39,7 @@ class GlobalCompany:
     name: str
     mic_code: Optional[str] = None
     isin: Optional[str] = None
+    lei: Optional[str] = None
     instrument_type: str = "Common Stock"
     sector: Optional[str] = None
     industry: Optional[str] = None
