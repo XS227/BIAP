@@ -1,9 +1,10 @@
 """Twelve Data market adapter for BIAP Global.
 
 This adapter is optional and credential-free in source control: the API key is
-read from `BIAP_GLOBAL_MARKET_API_KEY`. It uses daily time-series data to
-normalize price/history metrics across supported exchanges. Production use must
-respect the provider's plan and exchange-licensing terms.
+read from `BIAP_GLOBAL_MARKET_API_KEY`. Daily history is explicitly split-
+adjusted so technical returns are not corrupted by stock splits. Venue identity
+is qualified with ISO 10383 MIC whenever available and mismatched provider
+responses are rejected instead of silently analysing the wrong listing.
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from typing import Any, Optional
 
 import httpx
 
+from .country_packs import get_exchange
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, MarketDataProvider, append_source
 
@@ -116,23 +118,50 @@ class TwelveDataMarketProvider(MarketDataProvider):
             parsed = parsed.replace(tzinfo=timezone.utc)
         return parsed.astimezone(timezone.utc).isoformat()
 
+    @staticmethod
+    def _expected_mic(company: GlobalCompany) -> Optional[str]:
+        if company.mic_code:
+            return company.mic_code.strip().upper()
+        try:
+            configured = get_exchange(company.country, company.exchange)
+        except KeyError:
+            return None
+        return configured.mic.upper() if configured.mic else None
+
     def enrich_market(self, company: GlobalCompany) -> GlobalCompany:
+        expected_mic = self._expected_mic(company)
         params: dict[str, Any] = {
             "symbol": company.ticker,
             "interval": "1day",
             "outputsize": 260,
             "order": "DESC",
             "format": "JSON",
+            "adjust": "splits",
         }
-        if company.exchange:
+        if expected_mic:
+            params["mic_code"] = expected_mic
+        elif company.exchange:
+            # Only fall back to exchange name when no verified MIC exists.
             params["exchange"] = company.exchange
         if company.country:
-            params["country"] = company.country
+            params["country"] = company.country.upper()
 
         payload = self._get("time_series", params)
         values = payload.get("values")
         if not isinstance(values, list) or not values:
             raise GlobalProviderError(f"no daily market history returned for {company.identity()}")
+
+        meta = payload.get("meta") if isinstance(payload.get("meta"), dict) else {}
+        returned_mic = str(meta.get("mic_code") or "").strip().upper() or None
+        returned_symbol = str(meta.get("symbol") or company.ticker).strip()
+        if expected_mic and returned_mic and returned_mic != expected_mic:
+            raise GlobalProviderError(
+                f"venue mismatch for {company.ticker}: expected MIC {expected_mic}, provider returned {returned_mic}"
+            )
+        if returned_symbol.upper() != company.ticker.upper():
+            raise GlobalProviderError(
+                f"symbol mismatch: requested {company.ticker}, provider returned {returned_symbol}"
+            )
 
         rows = [row for row in values if isinstance(row, dict)]
         closes = [value for row in rows if (value := self._float(row.get("close"))) is not None]
@@ -145,12 +174,13 @@ class TwelveDataMarketProvider(MarketDataProvider):
         latest = rows[0]
         latest_close = self._float(latest.get("close"))
         latest_volume = self._float(latest.get("volume"))
-        meta = payload.get("meta") if isinstance(payload.get("meta"), dict) else {}
         currency = str(meta.get("currency") or company.currency or "").strip() or company.currency
 
         enriched = replace(
             company,
             currency=currency,
+            mic_code=returned_mic or expected_mic or company.mic_code,
+            instrument_type=str(meta.get("type") or company.instrument_type or "Common Stock"),
             price=latest_close,
             price_observed_at=self._observed_at(latest.get("datetime")),
             volume_today=latest_volume,
@@ -165,6 +195,7 @@ class TwelveDataMarketProvider(MarketDataProvider):
             raw_provider_fields={
                 **company.raw_provider_fields,
                 "twelve_data_meta": meta,
+                "price_adjustment": "splits",
             },
         )
         return append_source(
@@ -172,9 +203,9 @@ class TwelveDataMarketProvider(MarketDataProvider):
             SourceEvidence(
                 provider=self.provider_id,
                 source_type="daily_market_history",
-                source_id=company.identity(),
+                source_id=enriched.identity(),
                 observed_at=enriched.price_observed_at,
                 quality=0.9,
-                notes="normalized from provider daily time-series; exchange licensing may apply",
+                notes="MIC-qualified, split-adjusted daily history; exchange licensing may apply",
             ),
         )
