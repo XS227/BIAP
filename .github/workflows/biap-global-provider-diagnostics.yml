@@ -38,3 +38,25 @@ jobs:
           for name in ['MARKET_KEY','SEC_ID','EDINET_KEY','OPENDART_KEY','CH_KEY']:
               print(f'{name}_available={bool(os.environ.get(name))}')
           PY
+      - name: Probe public demo reference-data coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.parse, urllib.request
+          tests = [
+              ('US-NASDAQ', {'country':'United States','exchange':'NASDAQ','type':'Common Stock'}),
+              ('GB-LSE', {'country':'United Kingdom','exchange':'London Stock Exchange','type':'Common Stock'}),
+              ('NO-OSLO', {'country':'Norway','exchange':'Euronext Oslo Børs','type':'Common Stock'}),
+          ]
+          for label, params in tests:
+              q = urllib.parse.urlencode({**params, 'apikey':'demo', 'outputsize':1000})
+              url = 'https://api.twelvedata.com/stocks?' + q
+              try:
+                  with urllib.request.urlopen(url, timeout=20) as r:
+                      payload = json.load(r)
+                  rows = payload.get('data') if isinstance(payload, dict) else None
+                  print(f'{label}_status={payload.get("status") if isinstance(payload,dict) else None} count={len(rows) if isinstance(rows,list) else 0} message={payload.get("message") if isinstance(payload,dict) else None}')
+              except Exception as exc:
+                  print(f'{label}_error={type(exc).__name__}:{exc}')
+          PY
