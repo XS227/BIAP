@@ -1,0 +1,24 @@
+[Unit]
+Description=BIAP Global research API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/biap-global/BIAP/analysis
+Environment=PYTHONPATH=/home/ubuntu/biap-global/BIAP/analysis
+Environment=BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global
+EnvironmentFile=-/home/ubuntu/biap-global/BIAP/analysis/.env.global
+ExecStart=/home/ubuntu/biap-global/BIAP/analysis/.venv-global/bin/uvicorn global_api_server:app --host 127.0.0.1 --port 8091 --workers 1
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=false
+ReadWritePaths=/var/lib/biap-global /home/ubuntu/biap-global/BIAP/.runtime
+
+[Install]
+WantedBy=multi-user.target
