@@ -9,6 +9,8 @@ on:
       - 'analysis/global_api_server.py'
       - 'analysis/.env.global.example'
       - 'deploy/setup-global-data.sh'
+      - 'deploy/configure-global-route.sh'
+      - 'deploy/systemd/biap-global.service'
       - '.github/workflows/setup-biap-global-server.yml'
   workflow_dispatch:
 
@@ -43,7 +45,7 @@ jobs:
     needs: validate
     runs-on: ubuntu-latest
     environment: production
-    timeout-minutes: 15
+    timeout-minutes: 18
     env:
       VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
       VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
@@ -61,7 +63,7 @@ jobs:
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
           chmod 600 ~/.ssh/biap_global_key
           ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
-      - name: Prepare separate Global checkout and data cache
+      - name: Prepare and publish separate Global service
         shell: bash
         run: |
           set -euo pipefail
@@ -85,10 +87,44 @@ jobs:
             git pull --ff-only origin feat/biap-global
           fi
           cd "$APP_DIR"
+          mkdir -p .runtime
           python3 -m venv analysis/.venv-global
           analysis/.venv-global/bin/python -m pip install -q --upgrade pip
           analysis/.venv-global/bin/python -m pip install -q -r analysis/requirements.txt
           BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global BIAP_GLOBAL_SERVICE_USER="$(id -un)" BIAP_GLOBAL_SERVICE_GROUP="$(id -gn)" bash deploy/setup-global-data.sh
+          if [[ ! -f analysis/.env.global ]]; then
+            cp analysis/.env.global.example analysis/.env.global
+            chmod 600 analysis/.env.global
+          fi
+          if [[ "$(id -u)" -eq 0 ]]; then SUDO=""; else SUDO="sudo -n"; fi
+          $SUDO install -m 0644 deploy/systemd/biap-global.service /etc/systemd/system/biap-global.service
+          $SUDO systemctl daemon-reload
+          $SUDO systemctl enable --now biap-global.service
+          $SUDO systemctl restart biap-global.service
+          for attempt in 1 2 3 4 5 6; do
+            if curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8091/health >/tmp/biap-global-health.json; then
+              cat /tmp/biap-global-health.json
+              break
+            fi
+            sleep 2
+          done
+          curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8091/health >/dev/null
+          bash deploy/configure-global-route.sh
           echo "Global checkout: $(git rev-parse --short HEAD)"
-          echo "Iran production checkout/service were not touched."
+          echo "Global local health OK. Iran production checkout/service were not touched."
           REMOTE
+      - name: Verify public Global route
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 15 https://biap.dadashi.no/global-api/health | tee /tmp/global-health.json
+          curl --fail --silent --show-error --max-time 15 https://biap.dadashi.no/global-api/global/countries > /tmp/global-countries.json
+          python3 - <<'PY'
+          import json
+          health=json.load(open('/tmp/global-health.json',encoding='utf-8'))
+          countries=json.load(open('/tmp/global-countries.json',encoding='utf-8'))
+          assert health.get('service') == 'biap-global'
+          assert health.get('productionIranModified') is False
+          assert int(countries.get('count',0)) >= 20
+          print('Public BIAP Global route OK:', countries['count'], 'country packs')
+          PY
