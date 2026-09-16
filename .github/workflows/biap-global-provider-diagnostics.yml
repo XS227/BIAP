@@ -64,3 +64,34 @@ jobs:
               except Exception as exc:
                   print(f'{label}_error={type(exc).__name__}:{exc}')
           PY
+      - name: Probe public demo market-data coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.parse, urllib.request
+          tests = [
+              ('AAPL-US', {'symbol':'AAPL','mic_code':'XNAS'}),
+              ('VOD-GB', {'symbol':'VOD','mic_code':'XLON'}),
+              ('EQNR-NO', {'symbol':'EQNR','mic_code':'XOSL'}),
+              ('VOLV-B-SE', {'symbol':'VOLV-B','mic_code':'XSTO'}),
+              ('BHP-AU', {'symbol':'BHP','mic_code':'XASX'}),
+          ]
+          for label, params in tests:
+              for endpoint, extra in [('quote',{}), ('time_series',{'interval':'1day','outputsize':10})]:
+                  q = urllib.parse.urlencode({**params, **extra, 'apikey':'demo'})
+                  url = f'https://api.twelvedata.com/{endpoint}?' + q
+                  try:
+                      with urllib.request.urlopen(url, timeout=20) as r:
+                          payload = json.load(r)
+                      if endpoint == 'quote':
+                          ok = bool(payload.get('close') or payload.get('price')) if isinstance(payload, dict) else False
+                          msg = payload.get('message') if isinstance(payload, dict) else None
+                      else:
+                          vals = payload.get('values') if isinstance(payload, dict) else None
+                          ok = isinstance(vals, list) and len(vals) > 0
+                          msg = payload.get('message') if isinstance(payload, dict) else None
+                      print(f'{label}_{endpoint}_ok={ok} message={msg}')
+                  except Exception as exc:
+                      print(f'{label}_{endpoint}_error={type(exc).__name__}:{exc}')
+          PY
