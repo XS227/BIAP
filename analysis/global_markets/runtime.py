@@ -1,10 +1,10 @@
 """Runtime provider wiring for BIAP Global.
 
 No credential is committed. Reference-data discovery is available through a
-public demo catalog, while market prices/history are registered only when a real
-server-side credential exists. Missing market/fundamental providers remain
-explicit diagnostics and are handled by the Evidence Agent rather than being
-fabricated.
+public demo catalog. Verified market snapshots remain usable through the
+persistent cache even when the live price/history credential is temporarily
+absent. Missing market/fundamental providers remain explicit diagnostics and are
+handled by the Evidence Agent rather than being fabricated.
 """
 from __future__ import annotations
 
@@ -52,18 +52,17 @@ def build_registry() -> ProviderRegistry:
         for exchange in pack.exchanges:
             registry.register_universe(country, exchange.code, universe)
 
-    # Price/history/valuation require a real server-side credential. Once
-    # configured, every verified enrichment is cached per instrument so a
-    # temporary upstream outage can fall back to the last real snapshot. The
-    # original price_observed_at remains intact; EvidenceAgent can still block
-    # stale snapshots and no synthetic market values are created.
-    if os.environ.get("BIAP_GLOBAL_MARKET_API_KEY"):
-        market = PersistentMarketProvider(TwelveDataMarketProvider())
-        for country, pack in COUNTRY_PACKS.items():
-            if country == "IR":
-                continue
-            for exchange in pack.exchanges:
-                registry.register_market(country, exchange.code, market)
+    # A cache-backed market provider is always registered. With a credential it
+    # refreshes from Twelve Data and persists verified snapshots; without a
+    # credential it becomes read-only cache mode. Missing snapshots still fail
+    # explicitly and cannot create synthetic prices.
+    market_key = (os.environ.get("BIAP_GLOBAL_MARKET_API_KEY") or "").strip()
+    market = PersistentMarketProvider(TwelveDataMarketProvider() if market_key else None)
+    for country, pack in COUNTRY_PACKS.items():
+        if country == "IR":
+            continue
+        for exchange in pack.exchanges:
+            registry.register_market(country, exchange.code, market)
 
     if os.environ.get("BIAP_SEC_USER_AGENT"):
         sec = SECEdgarFundamentalsProvider()
