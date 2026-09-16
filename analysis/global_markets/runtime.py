@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 
 from .cached_esef import CachedESEFFundamentalsProvider
+from .cached_market import PersistentMarketProvider
 from .cached_universe import PersistentUniverseProvider
 from .country_packs import COUNTRY_PACKS
 from .edinet import EDINETFundamentalsProvider
@@ -51,9 +52,13 @@ def build_registry() -> ProviderRegistry:
         for exchange in pack.exchanges:
             registry.register_universe(country, exchange.code, universe)
 
-    # Price/history/valuation still require a real server-side market credential.
+    # Price/history/valuation require a real server-side credential. Once
+    # configured, every verified enrichment is cached per instrument so a
+    # temporary upstream outage can fall back to the last real snapshot. The
+    # original price_observed_at remains intact; EvidenceAgent can still block
+    # stale snapshots and no synthetic market values are created.
     if os.environ.get("BIAP_GLOBAL_MARKET_API_KEY"):
-        market = TwelveDataMarketProvider()
+        market = PersistentMarketProvider(TwelveDataMarketProvider())
         for country, pack in COUNTRY_PACKS.items():
             if country == "IR":
                 continue
