@@ -36,5 +36,5 @@ jobs:
       - run: python -m pip install -r requirements.txt
       - name: Compile Global modules
         run: python -m compileall -q global_markets global_routes.py global_api_server.py
-      - name: Run Global regression tests
-        run: pytest -q tests/test_global_agents.py tests/test_global_architecture.py
+      - name: Run all Global regression tests
+        run: pytest -q tests/test_global_*.py
