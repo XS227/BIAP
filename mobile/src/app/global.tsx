@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { router } from 'expo-router';
 import { Brand, Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { fetchGlobalCountries, GlobalAnalysis, GlobalCountry, scanGlobalMarket } from '@/lib/global-api';
+import { fetchGlobalCountries, GlobalAnalysis, GlobalCountry, GlobalExchange, scanGlobalMarket } from '@/lib/global-api';
+import { getGlobalMarketSelection, setGlobalMarketSelection } from '@/lib/global-market-selection';
 
 const PRIORITY = ['US', 'GB', 'NO', 'SE', 'JP', 'AU', 'IR'];
 
@@ -38,8 +40,8 @@ export default function GlobalScreen() {
   const colors = Colors[scheme];
   const [countries, setCountries] = useState<GlobalCountry[]>([]);
   const [catalogLive, setCatalogLive] = useState(false);
-  const [countryCode, setCountryCode] = useState('NO');
-  const [exchangeCode, setExchangeCode] = useState('EURONEXT_OSLO');
+  const [countryCode, setCountryCode] = useState('US');
+  const [exchangeCode, setExchangeCode] = useState('NASDAQ');
   const [loadingCatalog, setLoadingCatalog] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState('');
@@ -47,11 +49,16 @@ export default function GlobalScreen() {
   const [results, setResults] = useState<GlobalAnalysis[]>([]);
 
   useEffect(() => {
-    fetchGlobalCountries().then(({ countries: rows, live }) => {
+    Promise.all([fetchGlobalCountries(), getGlobalMarketSelection()]).then(([catalog, saved]) => {
+      const rows = catalog.countries;
       setCountries(rows);
-      setCatalogLive(live);
-      const norway = rows.find((item) => item.country === 'NO');
-      if (!norway) {
+      setCatalogLive(catalog.live);
+      const savedCountry = rows.find((item) => item.country === saved.country);
+      const savedExchange = savedCountry?.exchanges.find((item) => item.code === saved.exchange);
+      if (savedCountry && savedExchange) {
+        setCountryCode(savedCountry.country);
+        setExchangeCode(savedExchange.code);
+      } else {
         const first = rows[0];
         if (first) {
           setCountryCode(first.country);
@@ -68,16 +75,44 @@ export default function GlobalScreen() {
   const selectedCountry = countries.find((item) => item.country === countryCode) || priorityCountries[0];
   const selectedExchange = selectedCountry?.exchanges.find((item) => item.code === exchangeCode) || selectedCountry?.exchanges[0];
 
-  const chooseCountry = (country: GlobalCountry) => {
+  const persist = async (country: GlobalCountry, exchange: GlobalExchange) => {
+    await setGlobalMarketSelection({
+      country: country.country,
+      countryName: country.name,
+      exchange: exchange.code,
+      exchangeLabel: exchange.label,
+      mic: exchange.mic,
+      currency: exchange.currencies[0] || '',
+    });
+  };
+
+  const chooseCountry = async (country: GlobalCountry) => {
+    const exchange = country.exchanges[0];
     setCountryCode(country.country);
-    setExchangeCode(country.exchanges[0]?.code || '');
+    setExchangeCode(exchange?.code || '');
     setResults([]);
     setScanError('');
     setScanMeta('');
+    if (exchange) await persist(country, exchange);
+  };
+
+  const chooseExchange = async (exchange: GlobalExchange) => {
+    setExchangeCode(exchange.code);
+    setResults([]);
+    setScanError('');
+    setScanMeta('');
+    if (selectedCountry) await persist(selectedCountry, exchange);
+  };
+
+  const useInBiap = async () => {
+    if (!selectedCountry || !selectedExchange) return;
+    await persist(selectedCountry, selectedExchange);
+    router.replace('/market');
   };
 
   const runScan = async () => {
     if (!selectedCountry || !selectedExchange) return;
+    await persist(selectedCountry, selectedExchange);
     setScanning(true); setScanError(''); setResults([]); setScanMeta('');
     try {
       const response = await scanGlobalMarket(selectedCountry.country, selectedExchange.code, 10);
@@ -85,7 +120,7 @@ export default function GlobalScreen() {
       setScanMeta(`${response.status} • ${response.recommendationCount ?? 0} qualified • ${response.deepAnalyzed ?? 0} deep analyses`);
       if (!response.recommendations?.length) setScanError('No stock passed all evidence and confidence gates. BIAP Global will not pad the list with weaker ideas.');
     } catch (error) {
-      setScanError(`Live scan is not available from this build yet. ${error instanceof Error ? error.message.slice(0, 160) : ''}`.trim());
+      setScanError(`Live scan is unavailable for this market right now. ${error instanceof Error ? error.message.slice(0, 160) : ''}`.trim());
     } finally { setScanning(false); }
   };
 
@@ -93,19 +128,19 @@ export default function GlobalScreen() {
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.hero}>
-          <Text style={styles.kicker}>BIAP GLOBAL • RESEARCH PREVIEW</Text>
-          <Text style={[styles.title, { color: colors.text }]}>One analysis engine. Multiple markets.</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Choose a country and exchange. BIAP Global uses market history, official filings, risk, valuation, forecasting and evidence verification before a stock can become a BUY candidate.</Text>
+          <Text style={styles.kicker}>BIAP GLOBAL • MARKET CONTEXT</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Choose the market. Keep the BIAP engine.</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>This selector changes the data providers used by Market, Stock Analysis, Kiasha and Portfolio. The analysis modules remain the same across countries.</Text>
           <View style={styles.badges}>
-            <View style={[styles.badge, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.badgeText, { color: colors.text }]}>6 agents</Text></View>
-            <View style={[styles.badge, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.badgeText, { color: colors.text }]}>Paper first</Text></View>
+            <View style={[styles.badge, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.badgeText, { color: colors.text }]}>Same BIAP modules</Text></View>
+            <View style={[styles.badge, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.badgeText, { color: colors.text }]}>Country adapters</Text></View>
             <View style={[styles.badge, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.badgeText, { color: colors.text }]}>Evidence gated</Text></View>
           </View>
         </View>
 
         <View style={[styles.notice, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
           <Text style={[styles.noticeTitle, { color: colors.text }]}>{catalogLive ? '● Global API connected' : '○ Preview catalog'}</Text>
-          <Text style={[styles.small, { color: colors.textSecondary }]}>{catalogLive ? 'Country and exchange data came from the BIAP Global backend.' : 'The app can be reviewed offline. Live scanning starts when the separate Global backend and provider keys are deployed.'}</Text>
+          <Text style={[styles.small, { color: colors.textSecondary }]}>{catalogLive ? 'Country and exchange metadata came from the BIAP Global backend.' : 'Catalog fallback is visible, but analysis remains unavailable until the relevant live providers are configured.'}</Text>
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>1. Country</Text>
@@ -113,7 +148,7 @@ export default function GlobalScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontal}>
             {priorityCountries.map((country) => {
               const active = country.country === selectedCountry?.country;
-              return <Pressable key={country.country} onPress={() => chooseCountry(country)} style={[styles.countryChip, { backgroundColor: active ? Brand.primary : colors.backgroundElement, borderColor: active ? Brand.primary : colors.backgroundSelected }]}>
+              return <Pressable key={country.country} onPress={() => { void chooseCountry(country); }} style={[styles.countryChip, { backgroundColor: active ? Brand.primary : colors.backgroundElement, borderColor: active ? Brand.primary : colors.backgroundSelected }]}>
                 <Text style={[styles.countryCode, { color: active ? '#fff' : colors.text }]}>{country.country}</Text>
                 <Text style={[styles.countryName, { color: active ? '#fff' : colors.textSecondary }]}>{country.name}</Text>
               </Pressable>;
@@ -125,7 +160,7 @@ export default function GlobalScreen() {
         <View style={styles.wrapRow}>
           {(selectedCountry?.exchanges || []).map((exchange) => {
             const active = exchange.code === selectedExchange?.code;
-            return <Pressable key={exchange.code} onPress={() => { setExchangeCode(exchange.code); setResults([]); setScanError(''); }} style={[styles.exchangeChip, { backgroundColor: active ? `${Brand.primary}22` : colors.backgroundElement, borderColor: active ? Brand.primary : colors.backgroundSelected }]}>
+            return <Pressable key={exchange.code} onPress={() => { void chooseExchange(exchange); }} style={[styles.exchangeChip, { backgroundColor: active ? `${Brand.primary}22` : colors.backgroundElement, borderColor: active ? Brand.primary : colors.backgroundSelected }]}>
               <Text style={[styles.exchangeText, { color: colors.text }]}>{exchange.label}</Text>
               <Text style={[styles.micText, { color: colors.textSecondary }]}>{exchange.mic || exchange.code} • {exchange.currencies.join('/')}</Text>
             </Pressable>;
@@ -133,22 +168,25 @@ export default function GlobalScreen() {
         </View>
 
         <View style={[styles.sourceCard, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
-          <Text style={[styles.sourceTitle, { color: colors.text }]}>Evidence path</Text>
+          <Text style={[styles.sourceTitle, { color: colors.text }]}>Data adapter</Text>
           <Text style={[styles.sourceLine, { color: colors.textSecondary }]}>Market: {selectedCountry?.marketProvider || 'provider adapter'}</Text>
           <Text style={[styles.sourceLine, { color: colors.textSecondary }]}>Fundamentals: {selectedCountry?.fundamentalsProvider || 'official filings'}</Text>
           <Text style={[styles.sourceLine, { color: colors.textSecondary }]}>Official evidence: {selectedCountry?.officialEvidenceSource || 'issuer/regulator filings'}</Text>
         </View>
 
+        <Pressable disabled={!selectedExchange} onPress={() => { void useInBiap(); }} style={[styles.useButton, { borderColor: Brand.primary }]}>
+          <Text style={[styles.useButtonText, { color: Brand.primary }]}>Use {selectedExchange?.label || 'this market'} in BIAP</Text>
+        </Pressable>
         <Pressable disabled={scanning || !selectedExchange} onPress={runScan} style={[styles.scanButton, { backgroundColor: Brand.primary, opacity: scanning ? .65 : 1 }]}>
-          {scanning ? <ActivityIndicator color="#fff" /> : <Text style={styles.scanButtonText}>Scan {selectedExchange?.label || 'market'} for up to 10 ideas</Text>}
+          {scanning ? <ActivityIndicator color="#fff" /> : <Text style={styles.scanButtonText}>Quick evidence scan (diagnostic)</Text>}
         </Pressable>
         {scanMeta ? <Text style={[styles.scanMeta, { color: colors.textSecondary }]}>{scanMeta}</Text> : null}
         {scanError ? <View style={[styles.errorBox, { borderColor: Brand.warning }]}><Text style={[styles.small, { color: colors.text }]}>{scanError}</Text></View> : null}
 
-        {results.length ? <Text style={[styles.sectionTitle, { color: colors.text }]}>Qualified ideas</Text> : null}
+        {results.length ? <Text style={[styles.sectionTitle, { color: colors.text }]}>Diagnostic qualified ideas</Text> : null}
         {results.map((item, index) => <ResultCard key={`${item.ticker || 'x'}-${index}`} item={item} colors={colors} />)}
 
-        <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>Research / decision-support preview. Live broker execution is disabled. A recommendation may be withheld when evidence is incomplete, stale or conflicting.</Text>
+        <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>The quick scan is not the main app experience. Full analysis belongs in Market → Stock Detail → Kiasha → Portfolio, using the selected country/exchange context.</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -178,7 +216,9 @@ const styles = StyleSheet.create({
   sourceCard: { borderWidth: 1, borderRadius: Radius.md, padding: Spacing.three, marginTop: 16 },
   sourceTitle: { fontFamily: Fonts.sans, fontWeight: '800', fontSize: 13, marginBottom: 6 },
   sourceLine: { fontFamily: Fonts.sans, fontSize: 11, lineHeight: 19 },
-  scanButton: { borderRadius: Radius.md, minHeight: 52, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, marginTop: 16 },
+  useButton: { borderWidth: 1, borderRadius: Radius.md, minHeight: 50, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, marginTop: 16 },
+  useButtonText: { fontFamily: Fonts.sans, fontWeight: '800', fontSize: 13, textAlign: 'center' },
+  scanButton: { borderRadius: Radius.md, minHeight: 50, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, marginTop: 10 },
   scanButtonText: { color: '#fff', fontFamily: Fonts.sans, fontWeight: '800', fontSize: 13, textAlign: 'center' },
   scanMeta: { fontFamily: Fonts.mono, fontSize: 10, marginTop: 8, textAlign: 'center' },
   errorBox: { borderWidth: 1, borderRadius: Radius.md, padding: 12, marginTop: 10 },
