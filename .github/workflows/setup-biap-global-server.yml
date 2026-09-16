@@ -80,7 +80,21 @@ jobs:
           else
             cd "$APP_DIR"
             if [[ -n "$(git status --porcelain)" ]]; then
-              echo "Refusing Global update: separate checkout has local changes" >&2
+              # These deploy scripts are chmod +x below. If the repository stores
+              # them non-executable, Git reports only their mode bits as local
+              # changes on the next run. Reset exactly these known generated
+              # changes, but still refuse deployment for every other local edit.
+              UNEXPECTED="$(git status --porcelain | awk '{print $2}' | grep -Ev '^(deploy/configure-global-route\.sh|deploy/setup-global-data\.sh|deploy/sync-global-sources\.sh)$' || true)"
+              if [[ -n "$UNEXPECTED" ]]; then
+                echo "Refusing Global update: separate checkout has unexpected local changes" >&2
+                git status --short
+                exit 1
+              fi
+              echo "Resetting known deploy-script mode changes before update"
+              git restore --worktree --staged -- deploy/configure-global-route.sh deploy/setup-global-data.sh deploy/sync-global-sources.sh
+            fi
+            if [[ -n "$(git status --porcelain)" ]]; then
+              echo "Refusing Global update: checkout remains dirty after safe reset" >&2
               git status --short
               exit 1
             fi
