@@ -2,8 +2,8 @@
 
 This service is the boundary between UI/API requests and provider/agent logic.
 It validates country/exchange identity, enriches evidence with fault isolation,
-runs the six-agent pipeline, and refuses to force a directional call when
-verification/confidence is insufficient.
+runs six scoring agents plus Evidence/Verification and Portfolio agents, and
+refuses to force a directional call when verification/confidence is insufficient.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from dataclasses import asdict, replace
 import os
 from typing import Iterable, Optional
 
+from .advanced_agents import run_advanced_agents
 from .agents import PortfolioCandidate, evidence_agent, portfolio_agent
 from .core_agents import run_core_agents
 from .country_packs import get_exchange
@@ -67,7 +68,7 @@ def _weighted_score(signals) -> tuple[float, float]:
 
 def _evaluate(company: GlobalCompany, registry: ProviderRegistry):
     enriched, diagnostics = registry.enrich_best_effort(company)
-    signals = run_core_agents(enriched)
+    signals = run_core_agents(enriched) + run_advanced_agents(enriched)
     evidence = evidence_agent(enriched, signals)
     raw_score, mean_confidence = _weighted_score(signals)
     final_score = raw_score * evidence.confidence_multiplier
