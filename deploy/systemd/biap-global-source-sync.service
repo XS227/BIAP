@@ -1,0 +1,17 @@
+[Unit]
+Description=BIAP Global official source index sync
+After=network-online.target biap-global.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/biap-global/BIAP
+Environment=BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global
+ExecStart=/bin/bash /home/ubuntu/biap-global/BIAP/deploy/sync-global-sources.sh
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=false
+ReadWritePaths=/var/lib/biap-global /home/ubuntu/biap-global/BIAP/.runtime
