@@ -1,8 +1,10 @@
 """Runtime provider wiring for BIAP Global.
 
-No credential is committed. A provider is registered only when its required
-runtime configuration is present. Missing providers become explicit diagnostics
-and are handled by the Evidence Agent rather than fabricated.
+No credential is committed. Reference-data discovery is available through a
+public demo catalog, while market prices/history are registered only when a real
+server-side credential exists. Missing market/fundamental providers remain
+explicit diagnostics and are handled by the Evidence Agent rather than being
+fabricated.
 """
 from __future__ import annotations
 
@@ -34,14 +36,23 @@ def build_registry() -> ProviderRegistry:
         registry.register_market("IR", exchange.code, iran)
         registry.register_fundamentals("IR", exchange.code, iran)
 
+    # Reference catalog is safe to register independently from the price feed.
+    # With no private key, TwelveDataUniverseProvider uses the documented demo
+    # authentication only for /stocks metadata. It never unlocks quote/history.
+    universe = TwelveDataUniverseProvider(api_key=os.environ.get("BIAP_GLOBAL_MARKET_API_KEY") or "demo")
+    for country, pack in COUNTRY_PACKS.items():
+        if country == "IR":
+            continue
+        for exchange in pack.exchanges:
+            registry.register_universe(country, exchange.code, universe)
+
+    # Price/history/valuation still require a real server-side market credential.
     if os.environ.get("BIAP_GLOBAL_MARKET_API_KEY"):
         market = TwelveDataMarketProvider()
-        universe = TwelveDataUniverseProvider()
         for country, pack in COUNTRY_PACKS.items():
             if country == "IR":
                 continue
             for exchange in pack.exchanges:
-                registry.register_universe(country, exchange.code, universe)
                 registry.register_market(country, exchange.code, market)
 
     if os.environ.get("BIAP_SEC_USER_AGENT"):
