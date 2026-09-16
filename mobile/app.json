@@ -1,19 +1,19 @@
 {
   "expo": {
-    "name": "BIAP",
-    "slug": "biap-mobile",
-    "version": "1.0.5",
+    "name": "BIAP Global",
+    "slug": "biap-global",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/brand/biap-logo.png",
-    "scheme": "biapmobile",
+    "scheme": "biapglobal",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/brand/biap-logo.png",
-      "bundleIdentifier": "com.biap.mobile"
+      "bundleIdentifier": "com.biap.global"
     },
     "android": {
-      "package": "com.biap.mobile",
-      "versionCode": 6,
+      "package": "com.biap.global",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#0B1020",
         "foregroundImage": "./assets/brand/biap-logo.png"
@@ -45,10 +45,7 @@
       "reactCompiler": true
     },
     "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "c19faf70-d87c-4904-8e66-5c06af009af0"
-      }
+      "router": {}
     }
   }
 }
