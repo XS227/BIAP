@@ -55,6 +55,8 @@ jobs:
           fi
       - name: Generate Android project
         run: npx expo prebuild --platform android --clean --no-install
+      - name: Apply Android network compatibility
+        run: python3 scripts/patch-android-network-compat.py
       - name: Configure arm64 signed preview
         run: |
           test -f android/app/debug.keystore
