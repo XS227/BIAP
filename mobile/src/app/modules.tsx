@@ -3,183 +3,93 @@ import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorSc
 import { router, useFocusEffect } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing, ThemeColors } from '@/constants/theme';
 import { getBusinessDataset } from '@/lib/business-data';
-import { getDemoMode, setDemoMode } from '@/lib/demo-mode';
-import { getSelectedListedCompany, ListedCompanySummary } from '@/lib/listed-company-selection';
+import { getSelectedGlobalCompany } from '@/lib/global-company-selection';
+import { getGlobalMarketSelection, type GlobalMarketSelection } from '@/lib/global-market-selection';
+import type { GlobalInstrument } from '@/lib/global-api';
 
-type ModuleItem = { key: string; title: string; subtitle: string; icon: string; href?: '/market' | '/portfolio' | '/kiasha' };
+type ModuleItem = { key: string; title: string; subtitle: string; icon: string; href?: '/market' | '/portfolio' | '/kiasha'; privateData?: boolean };
 type ModuleGroup = { key: string; title: string; accent: string; items: ModuleItem[] };
 
 const GROUPS: ModuleGroup[] = [
-  { key: 'investment', title: 'سرمایه‌گذاری و بورس', accent: Brand.positive, items: [
-    { key: 'market', title: 'بازار و تحلیل نماد', subtitle: 'TSETMC، قیمت و نمادها', icon: '📈', href: '/market' },
-    { key: 'kiasha', title: 'کیاشا AI Agents', subtitle: 'پیشنهاد خرید، نگهداری یا فروش', icon: '🤖', href: '/kiasha' },
-    { key: 'portfolio', title: 'پرتفوی', subtitle: 'دارایی و عملکرد Paper/Real', icon: '💼', href: '/portfolio' },
+  { key: 'investment', title: 'Investment & Markets', accent: Brand.positive, items: [
+    { key: 'market', title: 'Market & Stock Analysis', subtitle: 'Country-specific exchange universe and verified market data', icon: '📈', href: '/market' },
+    { key: 'kiasha', title: 'Kiasha AI Agents', subtitle: 'Market scan, agent consensus and evidence-gated ideas', icon: '🧠', href: '/kiasha' },
+    { key: 'portfolio', title: 'Portfolio Agent', subtitle: 'Capital allocation, FX, risk and concentration controls', icon: '💼', href: '/portfolio' },
   ]},
-  { key: 'data', title: 'تحلیل داده', accent: Brand.dataViolet, items: [
-    { key: 'eda', title: 'EDA Explorer', subtitle: 'تحلیل اکتشافی و الگوها', icon: '🔬' },
-    { key: 'sql', title: 'SQL Query', subtitle: 'Query روی context واقعی شرکت بورسی', icon: '🗄️' },
-    { key: 'anomaly', title: 'تشخیص ناهنجاری', subtitle: 'Outlier و رفتار غیرعادی', icon: '🚨' },
-    { key: 'forecast', title: 'پیش‌بینی آماری', subtitle: 'روند و سری زمانی', icon: '📉' },
-    { key: 'journey', title: 'Journey Map', subtitle: 'مسیر مشتری و نقاط اصطکاک', icon: '🗺️' },
-    { key: 'voc', title: 'VOC + Friction Points', subtitle: 'صدای مشتری و ریشه اصطکاک', icon: '💬' },
-    { key: 'behavior', title: 'رفتار کاربر', subtitle: 'Funnel، Churn و الگوی استفاده', icon: '🧭' },
+  { key: 'data', title: 'Data Analysis', accent: Brand.dataViolet, items: [
+    { key: 'eda', title: 'EDA Explorer', subtitle: 'Explore normalized market and financial facts', icon: '🔬' },
+    { key: 'sql', title: 'SQL / Data Query', subtitle: 'Query-ready normalized issuer context', icon: '🗄️' },
+    { key: 'anomaly', title: 'Anomaly Detection', subtitle: 'Observed outliers, volatility and drawdown', icon: '🚨' },
+    { key: 'forecast', title: 'Statistical Forecast', subtitle: 'Observed momentum and time-series readiness', icon: '📉' },
+    { key: 'journey', title: 'Journey Map', subtitle: 'Customer journey and friction points', icon: '🗺️', privateData: true },
+    { key: 'voc', title: 'VOC + Friction', subtitle: 'Voice of customer and root causes', icon: '💬', privateData: true },
+    { key: 'behavior', title: 'User Behavior', subtitle: 'Funnel, churn and usage behavior', icon: '🧭', privateData: true },
   ]},
-  { key: 'kpi', title: 'KPI و داشبورد', accent: Brand.primary, items: [
-    { key: 'kpi-extract', title: 'استخراج KPI', subtitle: 'KPI عمومی از Tindex/TSETMC/CODAL', icon: '🎯' },
-    { key: 'dashboard', title: 'BI Dashboard', subtitle: 'داشبورد مدیریتی', icon: '📊' },
-    { key: 'governance', title: 'KPI Governance', subtitle: 'مالک، هدف و چرخه شاخص', icon: '📏' },
-    { key: 'report', title: 'گزارش تحلیلی', subtitle: 'خلاصه قابل ارائه', icon: '📋' },
+  { key: 'kpi', title: 'KPI & Dashboard', accent: Brand.primary, items: [
+    { key: 'kpi-extract', title: 'KPI Extraction', subtitle: 'KPIs from official filings and market evidence', icon: '🎯' },
+    { key: 'dashboard', title: 'BI Dashboard', subtitle: 'Issuer-level financial and market dashboard', icon: '📊' },
+    { key: 'governance', title: 'KPI Governance', subtitle: 'Public baseline + optional internal targets/owners', icon: '📏' },
+    { key: 'report', title: 'Analytical Report', subtitle: 'Evidence-backed issuer summary', icon: '📋' },
   ]},
-  { key: 'business', title: 'توسعه کسب‌وکار', accent: Brand.secondary, items: [
-    { key: 'business-kpi', title: 'داشبورد KPI کسب‌وکار', subtitle: 'شاخص‌های عمومی + داده داخلی اختیاری', icon: '🎯' },
-    { key: 'swot', title: 'SWOT + رقبا', subtitle: 'رقبا و موقعیت بازار', icon: '⚔️' },
-    { key: 'market-entry', title: 'فرصت و ورود به بازار', subtitle: 'شواهد بازار و اولویت‌ها', icon: '🌍' },
-    { key: 'crm', title: 'CRM + Pipeline', subtitle: 'Lead Scoring، Pipeline و پیگیری', icon: '👥' },
-    { key: 'campaign', title: 'کمپین بازاریابی', subtitle: 'هدف، کانال و پیام', icon: '📣' },
-    { key: 'pricing', title: 'قیمت‌گذاری هوشمند', subtitle: 'سناریوهای قیمت', icon: '💰' },
-    { key: 'plan', title: 'Business Plan', subtitle: 'طرح کسب‌وکار', icon: '📄' },
-    { key: 'executive-report', title: 'گزارش مدیریتی', subtitle: 'KPI، انحراف و اقدام بعدی', icon: '🧾' },
+  { key: 'business', title: 'Business Development', accent: Brand.secondary, items: [
+    { key: 'business-kpi', title: 'Business KPI', subtitle: 'Public baseline + optional private operating data', icon: '🎯' },
+    { key: 'swot', title: 'SWOT + Competitors', subtitle: 'Financial strength, risk and valuation signals', icon: '⚔️' },
+    { key: 'market-entry', title: 'Market Entry', subtitle: 'Issuer baseline plus target-market inputs', icon: '🌍' },
+    { key: 'crm', title: 'CRM + Pipeline', subtitle: 'Lead scoring and pipeline analysis', icon: '👥', privateData: true },
+    { key: 'campaign', title: 'Campaign Analysis', subtitle: 'Public baseline + campaign data when connected', icon: '📣' },
+    { key: 'pricing', title: 'Smart Pricing', subtitle: 'Product price, cost and volume analysis', icon: '💰', privateData: true },
+    { key: 'plan', title: 'Business Plan', subtitle: 'Financial baseline with explicit business assumptions', icon: '📄' },
+    { key: 'executive-report', title: 'Executive Report', subtitle: 'KPI, risk, valuation and evidence summary', icon: '🧾' },
   ]},
-  { key: 'finance', title: 'مدل مالی', accent: '#4b8cff', items: [
-    { key: 'financial-model', title: 'Financial Modeling', subtitle: 'مدل مالی از baseline پایدار شرکت', icon: '📈' },
-    { key: 'scenario', title: 'Scenario Analysis', subtitle: 'خوش‌بینانه، پایه، بدبینانه', icon: '🔮' },
-    { key: 'unit', title: 'Unit Economics', subtitle: 'CAC، LTV و اقتصاد واحد', icon: '⚙️' },
-    { key: 'mbr', title: 'گزارش MBR', subtitle: 'گزارش ماهانه مدیریت', icon: '🧾' },
+  { key: 'finance', title: 'Financial Modeling', accent: '#4b8cff', items: [
+    { key: 'financial-model', title: 'Financial Model', subtitle: 'Normalized official financial statements', icon: '📈' },
+    { key: 'scenario', title: 'Scenario Analysis', subtitle: 'Observed sensitivity inputs; assumptions stay explicit', icon: '🔮' },
+    { key: 'unit', title: 'Unit Economics', subtitle: 'CAC, LTV and unit-level economics', icon: '⚙️', privateData: true },
+    { key: 'mbr', title: 'Monthly Business Review', subtitle: 'Public baseline + internal monthly data', icon: '🧾' },
   ]},
 ];
 
-function ModuleCard({ item, colors, accent, state, selected }: { item: ModuleItem; colors: ThemeColors; accent: string; state: string; selected: ListedCompanySummary | null }) {
-  const open = () => {
-    if (item.href) {
-      router.push(item.href);
-      return;
-    }
-    if (!selected) {
-      router.push({ pathname: '/data-connect', params: { key: item.key, companyMode: 'listed' } } as never);
-      return;
-    }
-    router.push({ pathname: '/module', params: { key: item.key, companyMode: 'listed', code: selected.code } } as never);
-  };
-  return (
-    <Pressable onPress={open} style={({ pressed }) => [styles.moduleCard, { backgroundColor: colors.backgroundElement, opacity: pressed ? 0.75 : 1 }]}>
-      <View style={[styles.moduleIcon, { backgroundColor: `${accent}22` }]}><Text style={styles.moduleEmoji}>{item.icon}</Text></View>
-      <Text style={[styles.moduleTitle, { color: colors.text }]}>{item.title}</Text>
-      <Text style={[styles.moduleSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
-      <Text style={[styles.state, { color: state === 'LIVE' || state.startsWith('LISTED') ? Brand.stockGreen : state === 'DEMO' ? '#a78bfa' : colors.textSecondary }]}>{state}</Text>
-    </Pressable>
-  );
+function ModuleCard({ item, colors, accent, state }: { item: ModuleItem; colors: ThemeColors; accent: string; state: string }) {
+  const open = () => item.href ? router.push(item.href) : router.push({ pathname: '/module', params: { key: item.key } } as never);
+  return <Pressable onPress={open} style={({ pressed }) => [styles.moduleCard, { backgroundColor: colors.backgroundElement, opacity: pressed ? .75 : 1 }]}>
+    <View style={[styles.moduleIcon, { backgroundColor: `${accent}22` }]}><Text style={styles.moduleEmoji}>{item.icon}</Text></View>
+    <Text style={[styles.moduleTitle, { color: colors.text }]}>{item.title}</Text>
+    <Text style={[styles.moduleSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
+    <Text style={[styles.state, { color: state.startsWith('LIVE') || state.startsWith('SELECTED') ? Brand.positive : state === 'PRIVATE DATA' ? Brand.dataViolet : colors.textSecondary }]}>{state}</Text>
+  </Pressable>;
 }
 
 export default function ModulesScreen() {
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const colors = Colors[scheme];
-  const [demo, setDemo] = useState(false);
-  const [companyConnected, setCompanyConnected] = useState(false);
-  const [selected, setSelected] = useState<ListedCompanySummary | null>(null);
+  const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
+  const [selected, setSelected] = useState<GlobalInstrument | null>(null);
+  const [market, setMarket] = useState<GlobalMarketSelection | null>(null);
+  const [hasPrivateData, setHasPrivateData] = useState(false);
 
-  const refreshStatus = useCallback(async () => {
-    const [d, dataset, listed] = await Promise.all([getDemoMode(), getBusinessDataset(), getSelectedListedCompany()]);
-    setDemo(d);
-    setCompanyConnected(Boolean(dataset?.rows.length));
-    setSelected(listed);
+  const refresh = useCallback(async () => {
+    const [company, marketSelection, dataset] = await Promise.all([getSelectedGlobalCompany(), getGlobalMarketSelection(), getBusinessDataset()]);
+    setSelected(company); setMarket(marketSelection); setHasPrivateData(Boolean(dataset?.rows?.length));
   }, []);
-  useFocusEffect(useCallback(() => { refreshStatus(); }, [refreshStatus]));
-  const toggle = async () => { const next = !demo; await setDemoMode(next); setDemo(next); };
+  useFocusEffect(useCallback(() => { void refresh(); }, [refresh]));
 
-  const stateFor = (group: string) => {
-    if (group === 'investment') return 'LIVE';
-    if (demo) return 'DEMO';
-    if (selected) return `LISTED • ${selected.symbol}`;
-    if (companyConnected) return 'PRIVATE DATA';
-    return 'SELECT LISTED COMPANY';
+  const stateFor = (item: ModuleItem, group: string) => {
+    if (group === 'investment') return 'LIVE GLOBAL';
+    if (item.privateData) return hasPrivateData ? 'PRIVATE DATA' : 'PRIVATE DATA REQUIRED';
+    if (selected) return `SELECTED • ${selected.ticker}`;
+    if (hasPrivateData) return 'PRIVATE DATA';
+    return 'SELECT A STOCK';
   };
 
-  // Listed-company selection is the primary path. Private CSV/Excel remains
-  // available inside Data Connections for fields that public sources cannot supply.
-  const openDataConnections = () => router.push({
-    pathname: '/data-connect',
-    params: { companyMode: 'listed', ...(selected ? { code: selected.code } : {}) },
-  } as never);
+  return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.six }]}><View style={styles.maxWidth}>
+    <View style={styles.headerRow}><Pressable onPress={() => router.back()} style={[styles.back, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.backText, { color: colors.text }]}>←</Text></Pressable><View style={styles.headerText}><Text style={[styles.title, { color: colors.text }]}>BIAP Modules</Text><Text style={[styles.subtitle, { color: colors.textSecondary }]}>Same modules. Different country data adapters.</Text></View></View>
 
-  return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.six }]}>
-        <View style={styles.maxWidth}>
-          <View style={styles.headerRow}>
-            <Pressable onPress={() => router.back()} style={[styles.back, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.backText, { color: colors.text }]}>←</Text></Pressable>
-            <View style={styles.headerText}><Text style={[styles.title, { color: colors.text }]}>همه ماژول‌های BIAP</Text><Text style={[styles.subtitle, { color: colors.textSecondary }]}>Business & Investment Analysis Platform</Text></View>
-          </View>
+    <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}><Text style={styles.heroMark}>GLOBAL MODULE ENGINE</Text><Text style={[styles.heroTitle, { color: colors.text }]}>One module layer for every connected exchange</Text><Text style={[styles.heroBody, { color: colors.textSecondary }]}>Public modules consume the normalized issuer schema, so SEC, ESEF, EDINET, OpenDART, CODAL and other providers feed the same analysis code. Customer/CRM/product modules still require private company data.</Text></View>
 
-          <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}>
-            <Text style={styles.heroMark}>BIAP V2</Text>
-            <Text style={[styles.heroTitle, { color: colors.text }]}>شرکت بورسی را انتخاب کنید؛ داده عمومی را BIAP خودش می‌آورد</Text>
-            <Text style={[styles.heroBody, { color: colors.textSecondary }]}>در Real Mode، KPI، SQL، Financial Model و تحلیل‌های عمومی از داده پایدار Tindex / TSETMC / CODAL استفاده می‌کنند. Excel/CSV فقط برای فیلدهای داخلی لازم است.</Text>
-          </View>
+    <View style={[styles.context, { backgroundColor: colors.backgroundElement }]}><View style={{ flex: 1 }}><Text style={[styles.contextLabel, { color: colors.textSecondary }]}>MARKET</Text><Text style={[styles.contextValue, { color: colors.text }]}>{market ? `${market.countryName} • ${market.exchangeLabel}` : 'Loading…'}</Text><Text style={[styles.contextLabel, { color: colors.textSecondary, marginTop: 8 }]}>SELECTED COMPANY</Text><Text style={[styles.contextValue, { color: selected ? colors.text : colors.textSecondary }]}>{selected ? `${selected.ticker} • ${selected.name}` : 'Open Market and select a stock'}</Text></View><View style={styles.contextActions}><Pressable onPress={() => router.push('/global')} style={[styles.smallButton, { borderColor: Brand.primary }]}><Text style={styles.smallButtonText}>Market</Text></Pressable><Pressable onPress={() => router.push('/market')} style={[styles.smallButton, { borderColor: Brand.positive }]}><Text style={[styles.smallButtonText, { color: Brand.positive }]}>Stock</Text></Pressable></View></View>
 
-          <View style={[styles.controlCard, { backgroundColor: colors.backgroundElement }]}>
-            <View style={{ flex: 1, alignItems: 'flex-end' }}>
-              <Text style={[styles.controlTitle, { color: colors.text }]}>حالت ماژول‌ها: {demo ? 'Demo' : 'Real'}</Text>
-              <Text style={[styles.controlSub, { color: colors.textSecondary }]}>{selected ? `شرکت بورسی انتخاب‌شده: ${selected.symbol}${selected.name ? ` • ${selected.name}` : ''}` : companyConnected ? 'داده خصوصی متصل است؛ برای مسیر بورسی یک شرکت انتخاب کنید.' : 'هنوز شرکت بورسی انتخاب نشده است.'}</Text>
-            </View>
-            <Pressable onPress={toggle} style={[styles.modeButton, { backgroundColor: demo ? '#7048e8' : Brand.stockGreen }]}><Text style={styles.modeButtonText}>{demo ? 'DEMO' : 'REAL'}</Text></Pressable>
-          </View>
+    {GROUPS.map((group) => <View key={group.key} style={styles.group}><View style={styles.groupHead}><View style={[styles.dot, { backgroundColor: group.accent }]} /><Text style={[styles.groupTitle, { color: colors.text }]}>{group.title}</Text></View><View style={styles.grid}>{group.items.map((item) => <ModuleCard key={item.key} item={item} colors={colors} accent={group.accent} state={stateFor(item, group.key)} />)}</View></View>)}
 
-          <Pressable onPress={openDataConnections} style={[styles.connect, { borderColor: selected ? Brand.stockGreen : Brand.primary }]}>
-            <Text style={[styles.connectText, { color: selected ? Brand.stockGreen : Brand.primary }]}>{selected ? `تغییر شرکت بورسی • ${selected.symbol}` : 'انتخاب شرکت بورسی / فرابورسی'}</Text>
-          </Pressable>
-
-          {GROUPS.map(group => (
-            <View key={group.key} style={styles.group}>
-              <View style={styles.groupHead}><View style={[styles.dot, { backgroundColor: group.accent }]} /><Text style={[styles.groupTitle, { color: colors.text }]}>{group.title}</Text></View>
-              <View style={styles.grid}>{group.items.map(item => <ModuleCard key={item.key} item={item} colors={colors} accent={group.accent} state={stateFor(group.key)} selected={selected} />)}</View>
-            </View>
-          ))}
-
-          <View style={[styles.demoPanel, { backgroundColor: colors.backgroundElement }]}>
-            <Text style={styles.demoChip}>DEMO SAFE</Text>
-            <Text style={[styles.demoPanelTitle, { color: colors.text }]}>Demo برای نمایش و تست جداست</Text>
-            <Text style={[styles.demoDisclaimer, { color: colors.textSecondary }]}>Demo در سفارش، پرتفوی واقعی یا داده شرکت نوشته نمی‌شود. Real Mode مقدار ناموجود را با داده ساختگی پر نمی‌کند.</Text>
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
+    <View style={[styles.info, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.infoTitle, { color: colors.text }]}>No fake fill-ins</Text><Text style={[styles.infoText, { color: colors.textSecondary }]}>If a country's filing adapter does not provide a field, the module shows it as unavailable. BIAP does not replace missing official data with an estimate unless a future model explicitly labels that estimate.</Text></View>
+  </View></ScrollView></SafeAreaView>;
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  content: { paddingHorizontal: Spacing.three, paddingTop: Spacing.three },
-  maxWidth: { maxWidth: MaxContentWidth, width: '100%', alignSelf: 'center' },
-  headerRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.three, marginBottom: Spacing.three },
-  headerText: { flex: 1, alignItems: 'flex-end' },
-  title: { fontFamily: Fonts.sans, fontSize: 22, fontWeight: '800' },
-  subtitle: { fontFamily: Fonts.sans, fontSize: 11, marginTop: 3 },
-  back: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-  backText: { fontSize: 19 },
-  hero: { borderRadius: Radius.lg, padding: Spacing.four, marginBottom: Spacing.three },
-  heroMark: { color: '#8ab4ff', fontFamily: Fonts.mono, fontSize: 12, fontWeight: '800', marginBottom: 8 },
-  heroTitle: { fontFamily: Fonts.sans, fontSize: 19, fontWeight: '800', textAlign: 'right', lineHeight: 30 },
-  heroBody: { fontFamily: Fonts.sans, fontSize: 12, textAlign: 'right', lineHeight: 21, marginTop: 6 },
-  controlCard: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.three, borderRadius: Radius.md, padding: Spacing.three },
-  controlTitle: { fontFamily: Fonts.sans, fontSize: 14, fontWeight: '900' },
-  controlSub: { fontFamily: Fonts.sans, fontSize: 10.5, marginTop: 3, textAlign: 'right' },
-  modeButton: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 16 },
-  modeButtonText: { color: '#fff', fontFamily: Fonts.mono, fontSize: 10, fontWeight: '900' },
-  connect: { borderWidth: 1, borderRadius: Radius.md, paddingVertical: 11, alignItems: 'center', marginTop: Spacing.two, marginBottom: Spacing.four },
-  connectText: { fontFamily: Fonts.sans, fontSize: 12, fontWeight: '900' },
-  group: { marginBottom: Spacing.four },
-  groupHead: { flexDirection: 'row-reverse', alignItems: 'center', gap: 7, marginBottom: Spacing.two },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  groupTitle: { fontFamily: Fonts.sans, fontSize: 16, fontWeight: '800' },
-  grid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: Spacing.two },
-  moduleCard: { flexBasis: '48%', flexGrow: 1, minHeight: 145, borderRadius: Radius.md, padding: Spacing.three, alignItems: 'flex-end' },
-  moduleIcon: { width: 42, height: 42, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  moduleEmoji: { fontSize: 20 },
-  moduleTitle: { fontFamily: Fonts.sans, fontSize: 14, fontWeight: '800', textAlign: 'right' },
-  moduleSubtitle: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 17, textAlign: 'right', marginTop: 4 },
-  state: { fontFamily: Fonts.mono, fontSize: 8.5, fontWeight: '900', marginTop: 8 },
-  demoPanel: { borderRadius: Radius.lg, padding: Spacing.four },
-  demoChip: { alignSelf: 'flex-end', color: '#fff', backgroundColor: '#7048e8', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 12, overflow: 'hidden', fontFamily: Fonts.mono, fontSize: 10, fontWeight: '800' },
-  demoPanelTitle: { fontFamily: Fonts.sans, fontSize: 15, fontWeight: '800', textAlign: 'right', marginTop: Spacing.two },
-  demoDisclaimer: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 18, textAlign: 'right', marginTop: Spacing.two },
-});
+const styles = StyleSheet.create({safe:{flex:1},content:{paddingHorizontal:Spacing.three,paddingTop:Spacing.three},maxWidth:{maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},headerRow:{flexDirection:'row',alignItems:'center',gap:Spacing.three,marginBottom:Spacing.three},headerText:{flex:1},title:{fontFamily:Fonts.sans,fontSize:22,fontWeight:'900'},subtitle:{fontFamily:Fonts.sans,fontSize:11,marginTop:3},back:{width:38,height:38,borderRadius:19,alignItems:'center',justifyContent:'center'},backText:{fontSize:19},hero:{borderRadius:Radius.lg,padding:Spacing.four,marginBottom:Spacing.three},heroMark:{color:Brand.primary,fontFamily:Fonts.mono,fontSize:10,fontWeight:'900',marginBottom:7},heroTitle:{fontFamily:Fonts.sans,fontSize:19,fontWeight:'900',lineHeight:27},heroBody:{fontFamily:Fonts.sans,fontSize:11,lineHeight:18,marginTop:6},context:{borderRadius:Radius.lg,padding:Spacing.three,flexDirection:'row',gap:12,alignItems:'center'},contextLabel:{fontFamily:Fonts.mono,fontSize:8,fontWeight:'800'},contextValue:{fontFamily:Fonts.sans,fontSize:11.5,fontWeight:'800',marginTop:2},contextActions:{gap:7},smallButton:{borderWidth:1,borderRadius:18,paddingHorizontal:10,paddingVertical:7,alignItems:'center'},smallButtonText:{color:Brand.primary,fontFamily:Fonts.sans,fontSize:9,fontWeight:'900'},group:{marginTop:Spacing.four},groupHead:{flexDirection:'row',alignItems:'center',gap:8,marginBottom:Spacing.two},dot:{width:8,height:8,borderRadius:4},groupTitle:{fontFamily:Fonts.sans,fontSize:16,fontWeight:'900'},grid:{flexDirection:'row',flexWrap:'wrap',gap:8},moduleCard:{width:'48.5%',minHeight:142,borderRadius:Radius.md,padding:Spacing.three},moduleIcon:{width:38,height:38,borderRadius:Radius.sm,alignItems:'center',justifyContent:'center'},moduleEmoji:{fontSize:19},moduleTitle:{fontFamily:Fonts.sans,fontSize:12.5,fontWeight:'900',marginTop:8},moduleSubtitle:{fontFamily:Fonts.sans,fontSize:9,lineHeight:14,marginTop:3,minHeight:29},state:{fontFamily:Fonts.mono,fontSize:7.5,fontWeight:'800',marginTop:7},info:{borderRadius:Radius.lg,padding:Spacing.four,marginTop:Spacing.four},infoTitle:{fontFamily:Fonts.sans,fontSize:13,fontWeight:'900'},infoText:{fontFamily:Fonts.sans,fontSize:10,lineHeight:16,marginTop:5}});
