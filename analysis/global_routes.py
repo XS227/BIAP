@@ -93,6 +93,12 @@ def global_instruments(
         registry = build_registry()
         provider = registry.universe(country, spec.code)
         instruments = list(provider.list_instruments(country=country.upper(), exchange=spec.code))
+        snapshot_info = None
+        if hasattr(provider, "snapshot_info"):
+            try:
+                snapshot_info = provider.snapshot_info(country=country.upper(), exchange=spec.code)
+            except Exception:
+                snapshot_info = None
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
     if q:
@@ -110,6 +116,7 @@ def global_instruments(
         "mic": spec.mic,
         "totalMatched": total,
         "returned": min(total, limit),
+        "catalog": snapshot_info,
         "instruments": [asdict(item) for item in instruments[:limit]],
     }
 
@@ -134,6 +141,8 @@ def global_status():
         "companiesHouseConfigured": bool(os.environ.get("BIAP_COMPANIES_HOUSE_API_KEY")),
         "esefConfigured": True,
         "iranBridgeConfigured": True,
+        "universeCacheConfigured": True,
+        "universeCacheHours": float(os.environ.get("BIAP_GLOBAL_UNIVERSE_CACHE_HOURS", "12")),
         "countries": len(country_catalog()),
         "notes": "No live global broker is connected. Missing/stale evidence is never fabricated and can force NO_RECOMMENDATION.",
     }
