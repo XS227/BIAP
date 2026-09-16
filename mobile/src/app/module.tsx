@@ -2,110 +2,81 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
-import { DEMO_MODULES } from '@/demo/demo-data';
-import { getDemoMode, setDemoMode } from '@/lib/demo-mode';
-import { fetchRealModuleData, RealModulePayload } from '@/lib/real-module-data';
-import { getBusinessDataset } from '@/lib/business-data';
-import { getSelectedListedCompany } from '@/lib/listed-company-selection';
-import { matchRequirementColumns, requirementFor, sourceLabel } from '@/lib/module-data-requirements';
+import { fetchGlobalModuleData, type GlobalModulePayload } from '@/lib/global-module-data';
+import { getSelectedGlobalCompany } from '@/lib/global-company-selection';
+import type { GlobalInstrument } from '@/lib/global-api';
+
+const META: Record<string, { title: string; icon: string; description: string }> = {
+  eda:{title:'EDA Explorer',icon:'🔬',description:'Exploratory analysis over normalized issuer facts and connected private data.'},
+  sql:{title:'SQL / Data Query',icon:'🗄️',description:'Query-ready view of the normalized BIAP Global company schema.'},
+  anomaly:{title:'Anomaly Detection',icon:'🚨',description:'Observed volatility, drawdown and unusual market behavior without synthetic values.'},
+  forecast:{title:'Statistical Forecast',icon:'📉',description:'Time-series readiness, observed momentum and evidence-based forecasting inputs.'},
+  'kpi-extract':{title:'KPI Extraction',icon:'🎯',description:'Extract available KPIs from the selected country’s official filings and market feed.'},
+  'business-kpi':{title:'Business KPI',icon:'🎯',description:'Public issuer baseline plus optional private operating data.'},
+  dashboard:{title:'BI Dashboard',icon:'📊',description:'Financial, market, risk and valuation KPIs for the selected issuer.'},
+  governance:{title:'KPI Governance',icon:'📏',description:'KPI baseline with optional internal targets, owners and thresholds.'},
+  report:{title:'Analytical Report',icon:'📋',description:'Evidence-backed summary built from the same normalized Global data.'},
+  swot:{title:'SWOT + Competitors',icon:'⚔️',description:'Issuer strengths, weaknesses, valuation and risk signals grounded in evidence.'},
+  'market-entry':{title:'Market Entry',icon:'🌍',description:'Company baseline from public evidence plus explicit target-market inputs.'},
+  journey:{title:'Journey Map',icon:'🗺️',description:'Customer journey analysis requires private customer/process data.'},
+  voc:{title:'VOC + Friction',icon:'💬',description:'Voice-of-customer analysis requires private feedback data.'},
+  behavior:{title:'User Behavior',icon:'🧭',description:'Funnel, churn and usage behavior require private product/customer data.'},
+  crm:{title:'CRM + Pipeline',icon:'👥',description:'Lead scoring and pipeline analysis require CRM or equivalent private data.'},
+  campaign:{title:'Campaign Analysis',icon:'📣',description:'Public baseline can be combined with private campaign performance data.'},
+  pricing:{title:'Smart Pricing',icon:'💰',description:'Product/service price, unit cost and volume data are required.'},
+  plan:{title:'Business Plan',icon:'📄',description:'Financial baseline plus explicit business assumptions and market inputs.'},
+  'executive-report':{title:'Executive Report',icon:'🧾',description:'Management-ready summary of financial, market, risk and evidence signals.'},
+  'financial-model':{title:'Financial Model',icon:'📈',description:'Normalized official financial statements form the baseline; missing lines stay missing.'},
+  scenario:{title:'Scenario Analysis',icon:'🔮',description:'Observed sensitivity inputs with explicit assumptions for forward scenarios.'},
+  unit:{title:'Unit Economics',icon:'⚙️',description:'CAC, LTV and contribution economics require internal unit-level data.'},
+  mbr:{title:'Monthly Business Review',icon:'🧾',description:'Public company baseline plus optional internal monthly operating data.'},
+};
+
+function toneColor(tone: string | undefined, normal: string) {
+  if (tone === 'positive') return Brand.positive;
+  if (tone === 'negative') return Brand.negative;
+  return normal;
+}
 
 export default function ModuleDetailScreen() {
-  const params = useLocalSearchParams<{ key?: string; code?: string; companyMode?: string }>();
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const colors = Colors[scheme];
-  const [demoMode, setDemoModeState] = useState(false);
-  const [real, setReal] = useState<RealModulePayload | null>(null);
-  const [loadingReal, setLoadingReal] = useState(true);
-  const [datasetColumns, setDatasetColumns] = useState<string[]>([]);
-  const key = typeof params.key === 'string' ? params.key : '';
-  const paramCode = typeof params.code === 'string' ? params.code : '';
-  const paramCompanyMode = typeof params.companyMode === 'string' ? params.companyMode : '';
-  const [code, setCode] = useState(paramCode);
-  const [companyMode, setCompanyMode] = useState<'listed' | 'private' | 'hybrid'>(paramCompanyMode === 'listed' ? 'listed' : paramCompanyMode === 'hybrid' ? 'hybrid' : 'private');
-  const module = DEMO_MODULES[key];
-  const requirement = requirementFor(key);
-  const readiness = requirement ? matchRequirementColumns(key, datasetColumns) : { matched: [], missing: [] };
+  const { key: rawKey } = useLocalSearchParams<{ key?: string }>();
+  const key = String(rawKey || '');
+  const info = META[key] || { title: 'BIAP Module', icon: '🧩', description: 'Global BIAP analysis module.' };
+  const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
+  const [company, setCompany] = useState<GlobalInstrument | null>(null);
+  const [payload, setPayload] = useState<GlobalModulePayload | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const reload = useCallback(async () => {
-    setLoadingReal(true);
-    const selected = !paramCode && !paramCompanyMode ? await getSelectedListedCompany() : null;
-    const effectiveCode = paramCode || selected?.code || '';
-    const effectiveMode: 'listed' | 'private' | 'hybrid' = paramCompanyMode === 'listed' ? 'listed' : paramCompanyMode === 'hybrid' ? 'hybrid' : selected ? 'listed' : 'private';
-    setCode(effectiveCode);
-    setCompanyMode(effectiveMode);
-    const [demo, payload, dataset] = await Promise.all([getDemoMode(), fetchRealModuleData(key, { code: effectiveCode, companyMode: effectiveMode }), getBusinessDataset()]);
-    setDemoModeState(demo);
-    setReal(payload);
-    setDatasetColumns(dataset?.columns ?? []);
-    setLoadingReal(false);
-  }, [key, paramCode, paramCompanyMode]);
+  const load = useCallback(async () => {
+    setLoading(true);
+    const selected = await getSelectedGlobalCompany();
+    setCompany(selected);
+    setPayload(await fetchGlobalModuleData(key, selected));
+    setLoading(false);
+  }, [key]);
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
 
-  useFocusEffect(useCallback(() => { reload(); }, [reload]));
+  return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView contentContainerStyle={styles.content}><View style={styles.maxWidth}>
+    <View style={styles.header}><Pressable onPress={() => router.back()} style={[styles.back,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.backText,{color:colors.text}]}>← Back</Text></Pressable><View style={styles.headerText}><Text style={[styles.title,{color:colors.text}]}>{info.icon} {info.title}</Text><Text style={[styles.subtitle,{color:colors.textSecondary}]}>{info.description}</Text></View></View>
 
-  const toggleDemo = async () => {
-    const next = !demoMode;
-    await setDemoMode(next);
-    setDemoModeState(next);
-    if (!next) await reload();
-  };
+    <View style={[styles.context,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.contextLabel,{color:Brand.primary}]}>ANALYSIS CONTEXT</Text><Text style={[styles.contextValue,{color:colors.text}]}>{company ? `${company.ticker} • ${company.name}` : 'No listed company selected'}</Text><Text style={[styles.contextSub,{color:colors.textSecondary}]}>{company ? `${company.country} • ${company.exchange} • ${company.currency}` : 'Select a stock from Market, or connect private company data for modules that require it.'}</Text><View style={styles.actions}><Pressable onPress={() => router.push('/market')} style={[styles.smallButton,{borderColor:Brand.positive}]}><Text style={[styles.smallButtonText,{color:Brand.positive}]}>Select stock</Text></Pressable><Pressable onPress={() => router.push({pathname:'/data-connect',params:{key}} as never)} style={[styles.smallButton,{borderColor:Brand.dataViolet}]}><Text style={[styles.smallButtonText,{color:Brand.dataViolet}]}>Connect private data</Text></Pressable></View></View>
 
-  const openDataConnect = () => router.push({ pathname: '/data-connect', params: { key, companyMode, code } } as never);
-  const renderMetrics = (metrics: { label: string; value: string; delta?: string; tone?: 'positive' | 'negative' | 'neutral' }[]) => (
-    <View style={styles.metricsRow}>{metrics.map((metric) => {
-      const tone = metric.tone === 'positive' ? Brand.positive : metric.tone === 'negative' ? Brand.negative : colors.text;
-      return <View key={metric.label} style={[styles.metric, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.metricValue, { color: tone }]}>{metric.value}</Text>{metric.delta ? <Text style={[styles.metricDelta, { color: tone }]}>{metric.delta}</Text> : null}<Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{metric.label}</Text></View>;
-    })}</View>
-  );
+    {loading ? <ActivityIndicator color={Brand.primary} style={{marginTop:40}}/> : payload ? <>
+      <View style={[styles.sourceCard,{backgroundColor:colors.backgroundElement,borderColor:payload.evidenceStatus==='PASS'?Brand.positive:colors.backgroundSelected}]}><View style={styles.sourceHead}><Text style={[styles.sourceTitle,{color:colors.text}]}>{payload.available?'LIVE / VERIFIED INPUT':'INPUT REQUIRED'}</Text>{payload.evidenceStatus?<Text style={[styles.evidence,{color:payload.evidenceStatus==='PASS'?Brand.positive:payload.evidenceStatus==='WARN'?Brand.warning:Brand.negative}]}>{payload.evidenceStatus}</Text>:null}</View><Text style={[styles.sourceLabel,{color:colors.textSecondary}]}>{payload.sourceLabel}</Text><Text style={[styles.summary,{color:colors.textSecondary}]}>{payload.summary}</Text></View>
 
-  const renderBullets = (title: string, bullets: string[]) => <View style={[styles.insightCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.insightTitle, { color: colors.text }]}>{title}</Text>{bullets.map((bullet) => <View key={bullet} style={styles.bulletRow}><Text style={[styles.bulletText, { color: colors.textSecondary }]}>{bullet}</Text><View style={styles.bulletDot} /></View>)}</View>;
+      {payload.metrics.length ? <View style={styles.metrics}>{payload.metrics.map((metric) => <View key={metric.label} style={[styles.metric,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.metricValue,{color:toneColor(metric.tone,colors.text)}]}>{metric.value}</Text><Text style={[styles.metricLabel,{color:colors.textSecondary}]}>{metric.label}</Text></View>)}</View> : null}
 
-  const requirementCard = requirement ? <View style={[styles.requirementCard,{backgroundColor:colors.backgroundElement,borderColor:companyMode==='listed'?'#16653444':colors.backgroundSelected}]}> 
-    <View style={styles.requirementHead}><View style={[styles.reqBadge,{backgroundColor:companyMode==='listed'?'#14532d':'#1e3a8a'}]}><Text style={styles.reqBadgeText}>{companyMode==='listed'?'بورسی • AUTO':'شرکتی • INPUT'}</Text></View><Text style={[styles.requirementTitle,{color:colors.text}]}>داده لازم برای این ماژول</Text></View>
-    {code ? <Text style={[styles.selectedCompany,{color:Brand.positive}]}>نماد انتخاب‌شده: {code}</Text> : null}
-    <Text style={[styles.requirementText,{color:colors.textSecondary}]}>{requirement.description}</Text>
-    {companyMode==='listed' ? <>
-      <Text style={[styles.reqSection,{color:colors.text}]}>منابع خودکار BIAP</Text>
-      <View style={styles.chips}>{requirement.listedAutoSources.length ? requirement.listedAutoSources.map(s=><View key={s} style={styles.autoChip}><Text style={styles.autoChipText}>{sourceLabel(s)}</Text></View>) : <Text style={[styles.requirementText,{color:Brand.warning}]}>این ماژول داده داخلی شرکت می‌خواهد و منبع بورسی به‌تنهایی کافی نیست.</Text>}</View>
-    </> : <>
-      <Text style={[styles.reqSection,{color:colors.text}]}>روش‌های ورود داده</Text>
-      <View style={styles.chips}>{requirement.privateSources.map(s=><View key={s} style={styles.inputChip}><Text style={styles.inputChipText}>{sourceLabel(s)}</Text></View>)}</View>
-    </>}
-    <Text style={[styles.reqSection,{color:colors.text}]}>فیلدها</Text>
-    {requirement.fields.map(field=>{
-      const matched=readiness.matched.includes(field);
-      const auto=companyMode==='listed' && Boolean(field.autoSources?.length);
-      return <View key={field.key} style={styles.fieldRow}><Text style={[styles.fieldState,{color:matched||auto?Brand.positive:field.required?Brand.warning:colors.textSecondary}]}>{matched?'✓ موجود':auto?'AUTO':field.required?'لازم':'اختیاری'}</Text><Text style={[styles.fieldLabel,{color:colors.text}]}>{field.label}</Text></View>;
-    })}
-    {companyMode!=='listed' && datasetColumns.length>0 ? <Text style={[styles.coverage,{color:readiness.missing.length?Brand.warning:Brand.positive}]}>{readiness.missing.length ? `${readiness.missing.length} فیلد اجباری هنوز در dataset پیدا نشد.` : '✓ همه فیلدهای اجباری در dataset شناسایی شدند.'}</Text> : null}
-    <Pressable onPress={openDataConnect} style={[styles.requirementButton,{borderColor:companyMode==='listed'?Brand.positive:Brand.primary}]}><Text style={[styles.requirementButtonText,{color:companyMode==='listed'?Brand.positive:Brand.primary}]}>{companyMode==='listed'?'بررسی / تکمیل داده این نماد':'باز کردن قالب داده این ماژول'}</Text></Pressable>
-  </View> : null;
+      {payload.bullets.length ? <View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.cardTitle,{color:colors.text}]}>Analysis evidence</Text>{payload.bullets.map((bullet,index)=><View key={`${index}-${bullet}`} style={styles.bullet}><View style={styles.dot}/><Text style={[styles.bulletText,{color:colors.textSecondary}]}>{bullet}</Text></View>)}</View> : null}
 
-  return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.six }]}><View style={styles.maxWidth}>
-    <View style={styles.headerRow}><Pressable onPress={() => router.back()} style={[styles.back, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.backText, { color: colors.text }]}>←</Text></Pressable><View style={styles.headerText}><Text style={[styles.title, { color: colors.text }]}>{module?.icon ?? '🧩'} {module?.title ?? requirement?.title ?? 'ماژول BIAP'}</Text><Text style={[styles.subtitle, { color: colors.textSecondary }]}>BIAP Mobile • Real Data First</Text></View></View>
+      {payload.note ? <View style={[styles.note,{borderColor:payload.available?colors.backgroundSelected:Brand.warning}]}><Text style={[styles.noteText,{color:colors.textSecondary}]}>{payload.note}</Text></View> : null}
 
-    {requirementCard}
+      {!payload.available ? <Pressable onPress={() => router.push({pathname:'/data-connect',params:{key}} as never)} style={[styles.primary,{backgroundColor:Brand.primary}]}><Text style={styles.primaryText}>Connect required data</Text></Pressable> : null}
 
-    <View style={[styles.modeCard, { backgroundColor: colors.backgroundElement }]}><View style={{ flex: 1, alignItems: 'flex-end' }}><Text style={[styles.modeTitle, { color: colors.text }]}>{demoMode ? 'Demo Mode' : 'Real Mode'}</Text><Text style={[styles.modeText, { color: colors.textSecondary }]}>{demoMode ? 'داده نمونه کاملاً برچسب‌خورده نمایش داده می‌شود و به داده واقعی نوشته نمی‌شود.' : 'فقط داده واقعی متصل نمایش داده می‌شود؛ مقدار ناموجود ساخته نمی‌شود.'}</Text></View><Pressable onPress={toggleDemo} style={[styles.toggle, { backgroundColor: demoMode ? '#7048e8' : Brand.stockGreen }]}><Text style={styles.toggleText}>{demoMode ? 'Demo' : 'واقعی'}</Text></Pressable></View>
+      {payload.analysis ? <View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.cardTitle,{color:colors.text}]}>Shared investment context</Text><Text style={[styles.summary,{color:colors.textSecondary}]}>This business/data module reads the same normalized issuer evidence as the investment engine. It does not silently write its private-company inputs back into Kiasha stock recommendations.</Text><Pressable onPress={() => router.push({pathname:'/stock/[code]',params:{code:payload.analysis?.ticker||company?.ticker||'',country:payload.analysis?.country||company?.country||'',exchange:payload.analysis?.exchange||company?.exchange||'',currency:payload.analysis?.currency||company?.currency||'',name:payload.analysis?.name||company?.name||''}} as never)} style={[styles.linkButton,{borderColor:Brand.primary}]}><Text style={styles.linkText}>Open full stock analysis</Text></Pressable></View> : null}
+    </> : null}
 
-    {!module ? <View style={[styles.empty, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.emptyTitle, { color: colors.text }]}>ماژول پیدا نشد</Text></View> : demoMode ? <>
-      <View style={styles.demoBadge}><Text style={styles.demoBadgeText}>DEMO • داده نمونه</Text></View>
-      <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.heroText, { color: colors.textSecondary }]}>{module.summary}</Text></View>
-      {renderMetrics(module.metrics)}
-      {renderBullets('خلاصه Demo', module.bullets)}
-      <View style={[styles.disclaimer, { borderColor: '#7c5cff66' }]}><Text style={styles.disclaimerText}>این مقادیر ساختگی و فقط برای نمایش Demo هستند؛ در حساب واقعی جایگزین داده ناموجود نمی‌شوند.</Text></View>
-      <Pressable onPress={openDataConnect} style={[styles.secondaryButton,{borderColor:'#7048e8'}]}><Text style={[styles.secondaryButtonText,{color:'#a78bfa'}]}>اتصال داده و رفتن به Real Mode</Text></Pressable>
-    </> : loadingReal ? <View style={styles.loading}><ActivityIndicator color={Brand.primary} /><Text style={[styles.emptyBody, { color: colors.textSecondary }]}>در حال خواندن منابع واقعی BIAP...</Text></View> : real?.available ? <>
-      <View style={styles.realBadge}><Text style={styles.realBadgeText}>LIVE • {real.sourceLabel}</Text></View>
-      <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.heroText, { color: colors.textSecondary }]}>{real.summary}</Text></View>
-      {renderMetrics(real.metrics)}
-      {renderBullets('خلاصه داده واقعی', real.bullets)}
-      {real.note ? <View style={[styles.realNote, { borderColor: Brand.stockGreen + '55' }]}><Text style={[styles.realNoteText, { color: colors.textSecondary }]}>{real.note}</Text></View> : null}
-      <Pressable onPress={openDataConnect} style={[styles.secondaryButton,{borderColor:Brand.stockGreen+'66'}]}><Text style={[styles.secondaryButtonText,{color:Brand.stockGreen}]}>مدیریت منبع داده</Text></Pressable>
-    </> : <View style={[styles.empty, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.emptyTitle, { color: colors.text }]}>برای این ماژول ورودی واقعی لازم است</Text><Text style={[styles.emptyBody, { color: colors.textSecondary }]}>{real?.note ?? 'منبع واقعی متصل در دسترس نیست.'}</Text><Text style={[styles.noFake, { color: Brand.stockGreen }]}>✓ بدون داده ساختگی</Text><Pressable onPress={openDataConnect} style={styles.connectButton}><Text style={styles.connectButtonText}>اتصال / تکمیل داده</Text></Pressable><Pressable onPress={toggleDemo} style={[styles.secondaryButton,{borderColor:'#7048e8'}]}><Text style={[styles.secondaryButtonText,{color:'#a78bfa'}]}>مشاهده Demo این ماژول</Text></Pressable></View>}
+    <Text style={[styles.disclaimer,{color:colors.textSecondary}]}>BIAP Global never fills missing official fields with invented production values. Private business data is kept separate from market recommendation evidence unless an explicit future model defines that integration.</Text>
   </View></ScrollView></SafeAreaView>;
 }
 
-const styles = StyleSheet.create({
-  safe:{flex:1},content:{paddingHorizontal:Spacing.three,paddingTop:Spacing.three},maxWidth:{maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},headerRow:{flexDirection:'row-reverse',alignItems:'center',gap:Spacing.three,marginBottom:Spacing.three},headerText:{flex:1,alignItems:'flex-end'},title:{fontFamily:Fonts.sans,fontSize:21,fontWeight:'800',textAlign:'right'},subtitle:{fontFamily:Fonts.sans,fontSize:11,marginTop:2},back:{width:38,height:38,borderRadius:19,alignItems:'center',justifyContent:'center'},backText:{fontSize:19},modeCard:{flexDirection:'row-reverse',alignItems:'center',gap:Spacing.three,borderRadius:Radius.md,padding:Spacing.three,marginBottom:Spacing.three},modeTitle:{fontFamily:Fonts.sans,fontSize:14,fontWeight:'800'},modeText:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:17,textAlign:'right',marginTop:3},toggle:{minWidth:62,paddingHorizontal:12,paddingVertical:8,borderRadius:18,alignItems:'center'},toggleText:{color:'#fff',fontFamily:Fonts.sans,fontSize:11,fontWeight:'800'},demoBadge:{alignSelf:'flex-end',backgroundColor:'#7048e8',borderRadius:14,paddingHorizontal:10,paddingVertical:5,marginBottom:Spacing.two},demoBadgeText:{color:'#fff',fontFamily:Fonts.mono,fontSize:10,fontWeight:'800'},realBadge:{alignSelf:'flex-end',backgroundColor:'#0f5132',borderRadius:14,paddingHorizontal:10,paddingVertical:5,marginBottom:Spacing.two},realBadgeText:{color:'#7ef7bc',fontFamily:Fonts.mono,fontSize:10,fontWeight:'800'},hero:{borderRadius:Radius.lg,padding:Spacing.four,marginBottom:Spacing.three},heroText:{fontFamily:Fonts.sans,fontSize:13,lineHeight:23,textAlign:'right'},metricsRow:{flexDirection:'row-reverse',gap:Spacing.two,marginBottom:Spacing.three},metric:{flex:1,borderRadius:Radius.md,padding:Spacing.three,alignItems:'center',minHeight:108,justifyContent:'center'},metricValue:{fontFamily:Fonts.mono,fontSize:18,fontWeight:'800'},metricDelta:{fontFamily:Fonts.mono,fontSize:10,marginTop:2},metricLabel:{fontFamily:Fonts.sans,fontSize:10,textAlign:'center',marginTop:5},insightCard:{borderRadius:Radius.lg,padding:Spacing.four,marginBottom:Spacing.three},insightTitle:{fontFamily:Fonts.sans,fontSize:15,fontWeight:'800',textAlign:'right',marginBottom:Spacing.three},bulletRow:{flexDirection:'row-reverse',alignItems:'center',gap:8,marginBottom:9},bulletDot:{width:6,height:6,borderRadius:3,backgroundColor:Brand.primary},bulletText:{flex:1,fontFamily:Fonts.sans,fontSize:12,lineHeight:20,textAlign:'right'},disclaimer:{borderWidth:1,borderRadius:Radius.md,padding:Spacing.three,backgroundColor:'#7048e811'},disclaimerText:{color:'#b6a6ff',fontFamily:Fonts.sans,fontSize:10.5,lineHeight:18,textAlign:'right'},realNote:{borderWidth:1,borderRadius:Radius.md,padding:Spacing.three},realNoteText:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:18,textAlign:'right'},empty:{borderRadius:Radius.lg,padding:Spacing.four,alignItems:'center',marginTop:Spacing.four},emptyTitle:{fontFamily:Fonts.sans,fontSize:16,fontWeight:'800',textAlign:'center'},emptyBody:{fontFamily:Fonts.sans,fontSize:12,lineHeight:21,textAlign:'center',marginTop:Spacing.two},noFake:{fontFamily:Fonts.sans,fontSize:11,fontWeight:'800',marginTop:Spacing.three},connectButton:{backgroundColor:Brand.primary,borderRadius:Radius.md,paddingHorizontal:20,paddingVertical:11,marginTop:Spacing.three},connectButtonText:{color:'#fff',fontFamily:Fonts.sans,fontSize:12,fontWeight:'900'},secondaryButton:{borderWidth:1,borderRadius:Radius.md,paddingHorizontal:18,paddingVertical:10,marginTop:Spacing.three,alignItems:'center'},secondaryButtonText:{fontFamily:Fonts.sans,fontSize:11.5,fontWeight:'900'},loading:{paddingVertical:Spacing.six,alignItems:'center',gap:Spacing.two},
-  requirementCard:{borderWidth:1,borderRadius:Radius.lg,padding:Spacing.four,marginBottom:Spacing.three},requirementHead:{flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center'},requirementTitle:{fontFamily:Fonts.sans,fontSize:15,fontWeight:'900'},reqBadge:{borderRadius:12,paddingHorizontal:8,paddingVertical:4},reqBadgeText:{color:'#dbeafe',fontFamily:Fonts.mono,fontSize:8.5,fontWeight:'900'},selectedCompany:{fontFamily:Fonts.sans,fontSize:11,fontWeight:'900',textAlign:'right',marginTop:8},requirementText:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:18,textAlign:'right',marginTop:7},reqSection:{fontFamily:Fonts.sans,fontSize:11.5,fontWeight:'900',textAlign:'right',marginTop:12},chips:{flexDirection:'row-reverse',flexWrap:'wrap',gap:6,marginTop:7},autoChip:{backgroundColor:'#14532d22',borderWidth:1,borderColor:'#16a34a66',borderRadius:12,paddingHorizontal:8,paddingVertical:5},autoChipText:{color:Brand.positive,fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},inputChip:{backgroundColor:'#1e40af18',borderWidth:1,borderColor:'#2563eb55',borderRadius:12,paddingHorizontal:8,paddingVertical:5},inputChipText:{color:'#60a5fa',fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},fieldRow:{flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center',paddingVertical:7,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:'#94a3b833'},fieldLabel:{fontFamily:Fonts.sans,fontSize:10.5,fontWeight:'700'},fieldState:{fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},coverage:{fontFamily:Fonts.sans,fontSize:10.5,fontWeight:'800',textAlign:'right',marginTop:10},requirementButton:{borderWidth:1,borderRadius:Radius.md,paddingVertical:10,alignItems:'center',marginTop:12},requirementButtonText:{fontFamily:Fonts.sans,fontSize:11.5,fontWeight:'900'}
-});
+const styles=StyleSheet.create({safe:{flex:1},content:{paddingHorizontal:Spacing.three,paddingTop:Spacing.three,paddingBottom:BottomTabInset+Spacing.six},maxWidth:{maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},header:{flexDirection:'row',alignItems:'flex-start',gap:12,marginBottom:Spacing.three},back:{paddingHorizontal:11,paddingVertical:8,borderRadius:18},backText:{fontFamily:Fonts.sans,fontSize:10,fontWeight:'800'},headerText:{flex:1},title:{fontFamily:Fonts.sans,fontSize:20,fontWeight:'900'},subtitle:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:16,marginTop:4},context:{borderRadius:Radius.lg,padding:Spacing.three},contextLabel:{fontFamily:Fonts.mono,fontSize:8,fontWeight:'900'},contextValue:{fontFamily:Fonts.sans,fontSize:14,fontWeight:'900',marginTop:5},contextSub:{fontFamily:Fonts.sans,fontSize:9.5,lineHeight:15,marginTop:3},actions:{flexDirection:'row',gap:8,marginTop:12},smallButton:{borderWidth:1,borderRadius:18,paddingHorizontal:10,paddingVertical:7},smallButtonText:{fontFamily:Fonts.sans,fontSize:9,fontWeight:'900'},sourceCard:{borderWidth:1,borderRadius:Radius.lg,padding:Spacing.four,marginTop:Spacing.three},sourceHead:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},sourceTitle:{fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},evidence:{fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},sourceLabel:{fontFamily:Fonts.mono,fontSize:8.5,marginTop:5},summary:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:17,marginTop:7},metrics:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:Spacing.three},metric:{width:'31.5%',minHeight:92,borderRadius:Radius.md,padding:10,justifyContent:'center',alignItems:'center'},metricValue:{fontFamily:Fonts.mono,fontSize:14,fontWeight:'900',textAlign:'center'},metricLabel:{fontFamily:Fonts.sans,fontSize:8.5,textAlign:'center',marginTop:5},card:{borderRadius:Radius.lg,padding:Spacing.four,marginTop:Spacing.three},cardTitle:{fontFamily:Fonts.sans,fontSize:13,fontWeight:'900'},bullet:{flexDirection:'row',gap:8,alignItems:'flex-start',marginTop:9},dot:{width:5,height:5,borderRadius:3,backgroundColor:Brand.primary,marginTop:5},bulletText:{flex:1,fontFamily:Fonts.sans,fontSize:9.5,lineHeight:15},note:{borderWidth:1,borderRadius:Radius.md,padding:12,marginTop:Spacing.three},noteText:{fontFamily:Fonts.sans,fontSize:9.5,lineHeight:15},primary:{minHeight:48,borderRadius:Radius.md,alignItems:'center',justifyContent:'center',marginTop:Spacing.three},primaryText:{color:'#fff',fontFamily:Fonts.sans,fontSize:11,fontWeight:'900'},linkButton:{borderWidth:1,borderRadius:18,alignSelf:'flex-start',paddingHorizontal:11,paddingVertical:7,marginTop:10},linkText:{color:Brand.primary,fontFamily:Fonts.sans,fontSize:9,fontWeight:'900'},disclaimer:{fontFamily:Fonts.sans,fontSize:8.5,lineHeight:14,textAlign:'center',marginTop:Spacing.four}});
