@@ -45,12 +45,16 @@ jobs:
           python3 - <<'PY'
           import json, urllib.parse, urllib.request
           tests = [
-              ('US-NASDAQ', {'country':'United States','exchange':'NASDAQ','type':'Common Stock'}),
-              ('GB-LSE', {'country':'United Kingdom','exchange':'London Stock Exchange','type':'Common Stock'}),
-              ('NO-OSLO', {'country':'Norway','exchange':'Euronext Oslo Børs','type':'Common Stock'}),
+              ('US-XNAS', {'mic_code':'XNAS','type':'Common Stock'}),
+              ('US-XNYS', {'mic_code':'XNYS','type':'Common Stock'}),
+              ('GB-XLON', {'mic_code':'XLON','type':'Common Stock'}),
+              ('NO-XOSL', {'mic_code':'XOSL','type':'Common Stock'}),
+              ('SE-XSTO', {'mic_code':'XSTO','type':'Common Stock'}),
+              ('JP-XTKS', {'mic_code':'XTKS','type':'Common Stock'}),
+              ('AU-XASX', {'mic_code':'XASX','type':'Common Stock'}),
           ]
           for label, params in tests:
-              q = urllib.parse.urlencode({**params, 'apikey':'demo', 'outputsize':1000})
+              q = urllib.parse.urlencode({**params, 'apikey':'demo', 'outputsize':5000})
               url = 'https://api.twelvedata.com/stocks?' + q
               try:
                   with urllib.request.urlopen(url, timeout=20) as r:
