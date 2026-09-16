@@ -20,11 +20,12 @@ export default function AppTabs({ onLogout }: Props) {
         tabBarLabelStyle: { fontFamily: 'Vazirmatn_400Regular', fontSize: 10.5 },
       }}>
         <Tabs.Screen name="index" options={{ title: 'Home', tabBarActiveTintColor: Brand.primary, tabBarIcon: ({ size }) => <TabIcon symbol="🏠" size={size} /> }} />
-        <Tabs.Screen name="global" options={{ title: 'Global', tabBarActiveTintColor: Brand.positive, tabBarIcon: ({ size }) => <TabIcon symbol="🌍" size={size} /> }} />
-        <Tabs.Screen name="kiasha" options={{ title: 'Kiasha', tabBarActiveTintColor: Brand.primary, tabBarIcon: ({ size }) => <TabIcon symbol="🤖" size={size} /> }} />
-        <Tabs.Screen name="more" options={{ title: 'More', tabBarActiveTintColor: colors.text, tabBarIcon: ({ size }) => <TabIcon symbol="☰" size={size} /> }} />
+        <Tabs.Screen name="global" options={{ title: 'Global Markets', tabBarActiveTintColor: Brand.positive, tabBarIcon: ({ size }) => <TabIcon symbol="🌍" size={size} /> }} />
 
-        {/* Iran/current BIAP screens stay in the branch but are hidden from the Global footer. */}
+        {/* Existing Iran/Persian screens stay available in this development branch
+            but are intentionally hidden from the English Global preview. */}
+        <Tabs.Screen name="kiasha" options={{ href: null }} />
+        <Tabs.Screen name="more" options={{ href: null }} />
         <Tabs.Screen name="market" options={{ href: null }} />
         <Tabs.Screen name="orders" options={{ href: null }} />
         <Tabs.Screen name="portfolio" options={{ href: null }} />
