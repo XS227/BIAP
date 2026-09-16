@@ -1,9 +1,8 @@
 """FastAPI routes for BIAP Global.
 
 Global routes are isolated from the existing Iran `/stock/*` contract. They can
-therefore evolve independently while the Iran production endpoints stay intact.
+evolve independently while the Iran production endpoints stay intact.
 """
-
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -16,6 +15,7 @@ from pydantic import BaseModel, Field
 from global_markets.country_packs import country_catalog, get_exchange
 from global_markets.models import InvestorProfile
 from global_markets.runtime import build_registry
+from global_markets.scan_service import scan_global_market
 from global_markets.service import analyze_company, instrument_seed, portfolio_from_instruments
 from global_markets.source_catalog import SOURCE_PLANS, requirements_payload
 
@@ -30,6 +30,14 @@ class InstrumentRequest(BaseModel):
     currency: Optional[str] = Field(default=None, min_length=3, max_length=3)
     isin: Optional[str] = Field(default=None, min_length=8, max_length=16)
     lei: Optional[str] = Field(default=None, min_length=20, max_length=20)
+
+
+class ScanRequest(BaseModel):
+    country: str = Field(min_length=2, max_length=2)
+    exchange: str = Field(min_length=2, max_length=64)
+    topN: int = Field(default=10, ge=1, le=50)
+    discoveryLimit: int = Field(default=1000, ge=10, le=5000)
+    deepLimit: int = Field(default=25, ge=1, le=100)
 
 
 class PortfolioProfileRequest(BaseModel):
@@ -69,7 +77,6 @@ def _seed(req: InstrumentRequest):
 
 @router.get("/countries")
 def global_countries():
-    """Country -> exchange selector data for web/mobile UI."""
     catalog = country_catalog()
     return {"count": len(catalog), "countries": catalog}
 
@@ -81,25 +88,21 @@ def global_instruments(
     q: Optional[str] = Query(default=None, max_length=80),
     limit: int = Query(default=100, ge=1, le=1000),
 ):
-    """Discover listed common stocks after a user selects country/exchange."""
     try:
         spec = get_exchange(country, exchange)
         registry = build_registry()
         provider = registry.universe(country, spec.code)
         instruments = list(provider.list_instruments(country=country.upper(), exchange=spec.code))
     except Exception as exc:
-        # Provider/configuration error is intentionally not disguised as an empty market.
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
-
     if q:
         wanted = q.casefold().strip()
-        instruments = [
-            item for item in instruments
-            if wanted in item.ticker.casefold()
+        instruments = [item for item in instruments if (
+            wanted in item.ticker.casefold()
             or wanted in item.name.casefold()
             or (item.isin and wanted in item.isin.casefold())
             or (item.lei and wanted in item.lei.casefold())
-        ]
+        )]
     total = len(instruments)
     return {
         "country": country.upper(),
@@ -127,10 +130,30 @@ def global_status():
         "marketProviderConfigured": bool(os.environ.get("BIAP_GLOBAL_MARKET_API_KEY")),
         "secConfigured": bool(os.environ.get("BIAP_SEC_USER_AGENT")),
         "openDartConfigured": bool(os.environ.get("BIAP_OPENDART_API_KEY")),
+        "edinetConfigured": bool(os.environ.get("BIAP_EDINET_API_KEY")),
+        "companiesHouseConfigured": bool(os.environ.get("BIAP_COMPANIES_HOUSE_API_KEY")),
+        "esefConfigured": True,
         "iranBridgeConfigured": True,
         "countries": len(country_catalog()),
-        "notes": "No live global broker is connected yet. Missing data is never fabricated; evidence gates may return NO_RECOMMENDATION.",
+        "notes": "No live global broker is connected. Missing/stale evidence is never fabricated and can force NO_RECOMMENDATION.",
     }
+
+
+@router.post("/scan")
+def global_scan(req: ScanRequest):
+    try:
+        get_exchange(req.country, req.exchange)
+        return scan_global_market(
+            country=req.country,
+            exchange=req.exchange,
+            top_n=req.topN,
+            discovery_limit=req.discoveryLimit,
+            deep_limit=req.deepLimit,
+        )
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
 
 
 @router.post("/analyze")
