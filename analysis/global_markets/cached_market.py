@@ -5,6 +5,11 @@ atomically snapshotted on the Global server. Fresh snapshots reduce provider
 load; if the upstream feed is temporarily unavailable, the latest verified
 snapshot can be returned with explicit fallback provenance. EvidenceAgent still
 uses the original price_observed_at timestamp and will WARN/BLOCK stale data.
+
+The provider also supports cache-only mode. That allows a deployment to keep
+using previously verified snapshots even when the upstream credential is
+temporarily unavailable. No snapshot means no market data; there is no synthetic
+fallback.
 """
 from __future__ import annotations
 
@@ -46,19 +51,24 @@ def _parse_iso(value: object) -> Optional[datetime]:
 
 
 class PersistentMarketProvider(MarketDataProvider):
-    """Wrap a verified market provider with per-instrument disk snapshots."""
+    """Wrap a verified market provider with per-instrument disk snapshots.
+
+    ``upstream=None`` creates a read-only cache provider. That mode is useful
+    during a provider outage or while credentials are being rotated.
+    """
 
     provider_id = "persistent-market-cache"
 
     def __init__(
         self,
-        upstream: MarketDataProvider,
+        upstream: Optional[MarketDataProvider] = None,
         *,
         data_dir: Optional[str] = None,
         fresh_hours: Optional[float] = None,
     ) -> None:
         self.upstream = upstream
-        self.provider_id = f"cached:{upstream.provider_id}"
+        self.upstream_id = upstream.provider_id if upstream is not None else "cache-only"
+        self.provider_id = f"cached:{self.upstream_id}"
         root = data_dir or os.environ.get("BIAP_GLOBAL_DATA_DIR") or "/var/lib/biap-global"
         self.root = Path(root).expanduser().resolve() / "market"
         ttl = fresh_hours if fresh_hours is not None else float(os.environ.get("BIAP_GLOBAL_MARKET_CACHE_HOURS", "6"))
@@ -69,10 +79,15 @@ class PersistentMarketProvider(MarketDataProvider):
         raw = f"{company.country.upper()}:{company.exchange.upper()}:{(company.mic_code or '').upper()}:{company.ticker.upper()}"
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
 
+    @staticmethod
+    def _slug(value: str) -> str:
+        return "".join(ch for ch in value.upper() if ch.isalnum() or ch in {"-", "_"}) or "UNKNOWN"
+
+    def _directory(self, country: str, exchange: str) -> Path:
+        return self.root / self._slug(country) / self._slug(exchange)
+
     def _path(self, company: GlobalCompany) -> Path:
-        country = "".join(ch for ch in company.country.upper() if ch.isalnum()) or "UNKNOWN"
-        exchange = "".join(ch for ch in company.exchange.upper() if ch.isalnum() or ch in {"-", "_"}) or "UNKNOWN"
-        return self.root / country / exchange / f"{self._key(company)}.json"
+        return self._directory(company.country, company.exchange) / f"{self._key(company)}.json"
 
     def _read(self, company: GlobalCompany) -> Optional[dict]:
         path = self._path(company)
@@ -101,6 +116,8 @@ class PersistentMarketProvider(MarketDataProvider):
         return age is not None and age <= self.fresh_seconds
 
     def _write(self, company: GlobalCompany) -> None:
+        if self.upstream is None:
+            raise GlobalProviderError("cache-only market provider cannot create snapshots")
         if company.price is None or company.price <= 0 or not company.price_observed_at:
             raise GlobalProviderError("refusing to cache market snapshot without verified price and timestamp")
         path = self._path(company)
@@ -113,7 +130,7 @@ class PersistentMarketProvider(MarketDataProvider):
                 "mic_code": company.mic_code,
                 "ticker": company.ticker,
             },
-            "provider": self.upstream.provider_id,
+            "provider": self.upstream_id,
             "fetchedAt": _utc_now().isoformat(),
             "market": {field: getattr(company, field) for field in _MARKET_FIELDS},
             "raw_provider_fields": company.raw_provider_fields,
@@ -137,7 +154,7 @@ class PersistentMarketProvider(MarketDataProvider):
         age = self._age_seconds(payload)
         age_hours = None if age is None else age / 3600.0
         fetched_at = str(payload.get("fetchedAt") or "") or None
-        upstream = str(payload.get("provider") or self.upstream.provider_id)
+        upstream = str(payload.get("provider") or self.upstream_id)
         cache_source = SourceEvidence(
             provider=self.provider_id,
             source_type="daily_market_history_cache",
@@ -168,19 +185,57 @@ class PersistentMarketProvider(MarketDataProvider):
     def snapshot_info(self, company: GlobalCompany) -> dict:
         payload = self._read(company)
         if payload is None:
-            return {"available": False, "provider": self.upstream.provider_id}
+            return {"available": False, "provider": self.upstream_id}
         age = self._age_seconds(payload)
         market = payload.get("market") if isinstance(payload.get("market"), dict) else {}
         return {
             "available": True,
-            "provider": str(payload.get("provider") or self.upstream.provider_id),
+            "provider": str(payload.get("provider") or self.upstream_id),
             "fetchedAt": payload.get("fetchedAt"),
             "priceObservedAt": market.get("price_observed_at"),
             "ageHours": None if age is None else round(age / 3600.0, 2),
             "fresh": self._is_fresh(payload),
         }
 
+    def cached_companies(self, *, country: str, exchange: str) -> list[GlobalCompany]:
+        """Enumerate valid cached market snapshots for a bounded exchange scan."""
+        directory = self._directory(country, exchange)
+        try:
+            paths = sorted(directory.glob("*.json"))
+        except OSError:
+            return []
+        rows: list[GlobalCompany] = []
+        for path in paths:
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError, TypeError):
+                continue
+            if not isinstance(payload, dict) or payload.get("schemaVersion") != 1:
+                continue
+            identity = payload.get("identity") if isinstance(payload.get("identity"), dict) else {}
+            if str(identity.get("country") or "").upper() != country.upper():
+                continue
+            if str(identity.get("exchange") or "").upper() != exchange.upper():
+                continue
+            market = payload.get("market") if isinstance(payload.get("market"), dict) else {}
+            ticker = str(identity.get("ticker") or "").strip()
+            currency = str(market.get("currency") or "").strip().upper()
+            if not ticker or not currency:
+                continue
+            seed = GlobalCompany(
+                country=country.upper(),
+                exchange=exchange.upper(),
+                mic_code=str(identity.get("mic_code") or "").strip().upper() or None,
+                currency=currency,
+                ticker=ticker,
+                name=ticker,
+            )
+            rows.append(self._decode(seed, payload, fallback=True))
+        return rows
+
     def refresh(self, company: GlobalCompany) -> GlobalCompany:
+        if self.upstream is None:
+            raise GlobalProviderError("market upstream is not configured; cache-only mode")
         enriched = self.upstream.enrich_market(company)
         self._write(enriched)
         payload = self._read(company)
@@ -190,6 +245,10 @@ class PersistentMarketProvider(MarketDataProvider):
         cached = self._read(company)
         if cached is not None and self._is_fresh(cached):
             return self._decode(company, cached, fallback=False)
+        if self.upstream is None:
+            if cached is not None:
+                return self._decode(company, cached, fallback=True)
+            raise GlobalProviderError("market upstream is not configured and no verified cache exists")
         try:
             return self.refresh(company)
         except Exception as exc:
