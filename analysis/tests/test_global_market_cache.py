@@ -86,6 +86,26 @@ def test_market_cache_falls_back_to_last_verified_snapshot(tmp_path):
     assert "fallback" in (cache_sources[-1].notes or "").lower()
 
 
+def test_cache_only_provider_reuses_verified_snapshot(tmp_path):
+    writer = PersistentMarketProvider(FakeMarket(), data_dir=str(tmp_path), fresh_hours=0)
+    first = writer.enrich_market(seed())
+
+    reader = PersistentMarketProvider(None, data_dir=str(tmp_path), fresh_hours=0)
+    cached = reader.enrich_market(seed())
+    listed = reader.cached_companies(country="US", exchange="NASDAQ")
+
+    assert cached.price == pytest.approx(first.price)
+    assert cached.price_observed_at == first.price_observed_at
+    assert cached.raw_provider_fields["market_cache"] == "fallback"
+    assert any(row.ticker == "TEST" and row.price == pytest.approx(123.45) for row in listed)
+
+
+def test_cache_only_provider_fails_without_snapshot(tmp_path):
+    provider = PersistentMarketProvider(None, data_dir=str(tmp_path), fresh_hours=0)
+    with pytest.raises(GlobalProviderError):
+        provider.enrich_market(seed())
+
+
 def test_market_cache_refuses_unverified_price_snapshot(tmp_path):
     class BadMarket(MarketDataProvider):
         provider_id = "bad-market"
