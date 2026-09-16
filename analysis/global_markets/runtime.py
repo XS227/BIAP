@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 
 from .cached_esef import CachedESEFFundamentalsProvider
+from .cached_universe import PersistentUniverseProvider
 from .country_packs import COUNTRY_PACKS
 from .edinet import EDINETFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
@@ -30,7 +31,7 @@ def build_registry() -> ProviderRegistry:
     registry = ProviderRegistry()
 
     iran = IranLegacyProvider()
-    iran_universe = IranUniverseProvider()
+    iran_universe = PersistentUniverseProvider(IranUniverseProvider())
     for exchange in COUNTRY_PACKS["IR"].exchanges:
         registry.register_universe("IR", exchange.code, iran_universe)
         registry.register_market("IR", exchange.code, iran)
@@ -38,8 +39,12 @@ def build_registry() -> ProviderRegistry:
 
     # Reference catalog is safe to register independently from the price feed.
     # With no private key, TwelveDataUniverseProvider uses the documented demo
-    # authentication only for /stocks metadata. It never unlocks quote/history.
-    universe = TwelveDataUniverseProvider(api_key=os.environ.get("BIAP_GLOBAL_MARKET_API_KEY") or "demo")
+    # authentication only for /stocks metadata. PersistentUniverseProvider keeps
+    # the last verified exchange snapshot on the Global server, so temporary
+    # upstream failures do not erase the user's ability to browse instruments.
+    universe = PersistentUniverseProvider(
+        TwelveDataUniverseProvider(api_key=os.environ.get("BIAP_GLOBAL_MARKET_API_KEY") or "demo")
+    )
     for country, pack in COUNTRY_PACKS.items():
         if country == "IR":
             continue
