@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily BIAP Global official source sync
+
+[Timer]
+OnCalendar=*-*-* 03:25:00
+Persistent=true
+RandomizedDelaySec=900
+Unit=biap-global-source-sync.service
+
+[Install]
+WantedBy=timers.target
