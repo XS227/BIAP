@@ -1,15 +1,15 @@
 """Two-stage market scanning for BIAP Global.
 
 Stage 1 is intentionally cheap: discover the selected exchange universe and use
-batch quotes only to rank by tradability/liquidity. Stage 2 deeply analyzes a
-bounded shortlist with market history, official filings and all six BIAP Global
-agents. The scan reports its coverage and never pads the result to a requested
-number when too few companies pass evidence/confidence gates.
+batch quotes to rank by tradability/liquidity. Stage 2 deeply analyzes a bounded
+shortlist with market history, official filings and all six BIAP Global agents.
+When the live feed is unavailable, previously verified market snapshots may be
+used for a clearly labelled CACHED_SCAN; EvidenceAgent still controls freshness
+and can block stale data. Results are never padded or fabricated.
 """
 
 from __future__ import annotations
 
-from dataclasses import asdict
 from datetime import date
 import math
 import os
@@ -50,7 +50,7 @@ class GlobalMarketScanner:
 
     def _batch_quote_request(self, symbols: list[str], country: str, spec: ExchangeSpec, *, use_mic: bool) -> dict:
         if not self.market_api_key:
-            raise GlobalProviderError("BIAP_GLOBAL_MARKET_API_KEY is required for non-Iran market scanning")
+            raise GlobalProviderError("BIAP_GLOBAL_MARKET_API_KEY is required for live non-Iran market scanning")
         params: dict[str, Any] = {
             "symbol": ",".join(symbols),
             "interval": "1day",
@@ -80,10 +80,7 @@ class GlobalMarketScanner:
         for value in payload.values():
             if not isinstance(value, dict):
                 continue
-            if isinstance(value.get("data"), dict):
-                row = value["data"]
-            else:
-                row = value
+            row = value.get("data") if isinstance(value.get("data"), dict) else value
             if row.get("symbol") and row.get("status") != "error":
                 rows.append(row)
         return rows
@@ -141,14 +138,75 @@ class GlobalMarketScanner:
         return results, errors
 
     @staticmethod
+    def _cached_quotes(companies: list[GlobalCompany], allowed_tickers: set[str]) -> list[dict]:
+        results: list[dict] = []
+        for company in companies:
+            ticker = company.ticker.upper()
+            if ticker not in allowed_tickers:
+                continue
+            price = company.price
+            effective_volume = company.avg_volume_30d or company.volume_today
+            if price is None or price <= 0 or effective_volume is None or effective_volume <= 0:
+                continue
+            range_position = None
+            if company.price_52w_high is not None and company.price_52w_low is not None and company.price_52w_high > company.price_52w_low:
+                range_position = max(0.0, min(1.0, (price - company.price_52w_low) / (company.price_52w_high - company.price_52w_low)))
+            results.append({
+                "ticker": ticker,
+                "price": price,
+                "averageVolume": effective_volume,
+                "liquidityValue": price * effective_volume,
+                "rangePosition": range_position,
+                "quoteDate": company.price_observed_at[:10] if company.price_observed_at else None,
+                "mic": company.mic_code,
+                "cache": company.raw_provider_fields.get("market_cache"),
+            })
+        return results
+
+    @staticmethod
     def _screen_rank(row: dict) -> tuple[float, float]:
         liquidity = max(1.0, float(row.get("liquidityValue") or 0.0))
-        # Stage 1 is a tradability screen, not a BUY model. Log liquidity keeps
-        # mega-caps from overwhelming all other liquid issuers by raw magnitude.
         liquidity_score = math.log10(liquidity)
         position = row.get("rangePosition")
         range_neutrality = 0.0 if position is None else 1.0 - abs(float(position) - 0.5)
         return liquidity_score, range_neutrality
+
+    @staticmethod
+    def _deep_results(
+        shortlist_tickers: list[str],
+        selected_universe: list[GlobalCompany],
+        quote_by_ticker: dict[str, dict],
+        registry,
+    ) -> list[dict]:
+        instrument_by_ticker = {item.ticker.upper(): item for item in selected_universe}
+        deep_results: list[dict] = []
+        for ticker in shortlist_tickers:
+            company = instrument_by_ticker.get(ticker)
+            if company is None:
+                continue
+            try:
+                result = analyze_company(company, registry=registry)
+            except Exception as exc:
+                deep_results.append({
+                    "ticker": ticker,
+                    "call": "NO_RECOMMENDATION",
+                    "score": 0.0,
+                    "confidence": 0.0,
+                    "error": str(exc)[:300],
+                })
+                continue
+            result["screening"] = quote_by_ticker.get(ticker)
+            deep_results.append(result)
+        return deep_results
+
+    @staticmethod
+    def _recommendations(deep_results: list[dict], top_n: int) -> list[dict]:
+        buys = [result for result in deep_results if result.get("call") == "BUY_CANDIDATE"]
+        buys.sort(
+            key=lambda result: float(result.get("score") or 0.0) * float(result.get("confidence") or 0.0),
+            reverse=True,
+        )
+        return buys[:top_n]
 
     def scan(
         self,
@@ -174,61 +232,63 @@ class GlobalMarketScanner:
         selected_universe = universe[:discovery_limit]
         partial = discovered_count > discovery_limit
 
-        # Reference discovery can operate with the documented public demo
-        # catalog, but quotes/history cannot. Return a clean, non-error state so
-        # the app can still browse real instruments without pretending that a
-        # tradability screen or BUY analysis has run.
         if not self.market_api_key:
+            market_provider = registry.market(country, spec.code)
+            cached_companies = market_provider.cached_companies(country=country.upper(), exchange=spec.code) if hasattr(market_provider, "cached_companies") else []
+            allowed_tickers = {item.ticker.upper() for item in selected_universe}
+            cached_quotes = self._cached_quotes(cached_companies, allowed_tickers)
+            if not cached_quotes:
+                return {
+                    "status": "MARKET_DATA_REQUIRED",
+                    "country": country.upper(),
+                    "exchange": spec.code,
+                    "mic": spec.mic,
+                    "requestedRecommendations": top_n,
+                    "recommendationCount": 0,
+                    "universeDiscovered": discovered_count,
+                    "universeScreened": 0,
+                    "quotesUsable": 0,
+                    "deepAnalyzed": 0,
+                    "screeningCoveragePct": 0.0,
+                    "screeningErrors": ["Reference catalog is available; no verified price/history snapshot exists yet."],
+                    "recommendations": [],
+                    "deepResults": [],
+                    "catalogOnly": True,
+                    "cachedMarketData": False,
+                    "notes": "Configure a market-data credential once to seed verified snapshots. BIAP will not produce BUY candidates from catalog metadata alone.",
+                }
+
+            ranked = sorted(cached_quotes, key=self._screen_rank, reverse=True)
+            shortlist_tickers = [row["ticker"] for row in ranked[:deep_limit]]
+            quote_by_ticker = {row["ticker"]: row for row in cached_quotes}
+            deep_results = self._deep_results(shortlist_tickers, selected_universe, quote_by_ticker, registry)
+            recommendations = self._recommendations(deep_results, top_n)
             return {
-                "status": "MARKET_DATA_REQUIRED",
+                "status": "CACHED_SCAN" if recommendations else "CACHED_NO_RECOMMENDATION",
                 "country": country.upper(),
                 "exchange": spec.code,
                 "mic": spec.mic,
                 "requestedRecommendations": top_n,
-                "recommendationCount": 0,
+                "recommendationCount": len(recommendations),
                 "universeDiscovered": discovered_count,
-                "universeScreened": 0,
-                "quotesUsable": 0,
-                "deepAnalyzed": 0,
-                "screeningCoveragePct": 0.0,
-                "screeningErrors": ["Reference catalog is available; quote/history market-data credential is not configured."],
-                "recommendations": [],
-                "deepResults": [],
-                "catalogOnly": True,
-                "notes": "BIAP will not produce BUY candidates until verified quote/history data is available.",
+                "universeScreened": len(cached_quotes),
+                "quotesUsable": len(cached_quotes),
+                "deepAnalyzed": len(deep_results),
+                "screeningCoveragePct": round(100.0 * len(cached_quotes) / discovered_count, 2) if discovered_count else 0.0,
+                "screeningErrors": ["Live price/history feed unavailable; scan used persisted verified market snapshots."],
+                "recommendations": recommendations,
+                "deepResults": deep_results,
+                "catalogOnly": False,
+                "cachedMarketData": True,
+                "notes": "Cached scan only. EvidenceAgent preserves original price timestamps and blocks stale or incomplete evidence.",
             }
 
         quotes, screening_errors = self._batch_quotes(selected_universe, country.upper(), spec)
         quote_by_ticker = {row["ticker"]: row for row in quotes}
         ranked = sorted(quotes, key=self._screen_rank, reverse=True)
         shortlist_tickers = [row["ticker"] for row in ranked[:deep_limit]]
-        instrument_by_ticker = {item.ticker.upper(): item for item in selected_universe}
-
-        deep_results: list[dict] = []
-        for ticker in shortlist_tickers:
-            company = instrument_by_ticker.get(ticker)
-            if company is None:
-                continue
-            try:
-                result = analyze_company(company, registry=registry)
-            except Exception as exc:
-                deep_results.append({
-                    "ticker": ticker,
-                    "call": "NO_RECOMMENDATION",
-                    "score": 0.0,
-                    "confidence": 0.0,
-                    "error": str(exc)[:300],
-                })
-                continue
-            result["screening"] = quote_by_ticker.get(ticker)
-            deep_results.append(result)
-
-        buy_candidates = [result for result in deep_results if result.get("call") == "BUY_CANDIDATE"]
-        buy_candidates.sort(
-            key=lambda result: float(result.get("score") or 0.0) * float(result.get("confidence") or 0.0),
-            reverse=True,
-        )
-        recommendations = buy_candidates[:top_n]
+        deep_results = self._deep_results(shortlist_tickers, selected_universe, quote_by_ticker, registry)
+        recommendations = self._recommendations(deep_results, top_n)
         status = "PARTIAL_SCAN" if partial or screening_errors else "COMPLETE_SCAN"
         if not recommendations:
             status = "NO_RECOMMENDATION" if status == "COMPLETE_SCAN" else status
@@ -248,12 +308,11 @@ class GlobalMarketScanner:
             "screeningErrors": screening_errors,
             "recommendations": recommendations,
             "deepResults": deep_results,
+            "cachedMarketData": False,
             "notes": "Stage 1 ranks tradability only; BUY_CANDIDATE requires deep evidence/agent gates. Results are not padded to top_n.",
         }
 
     def _scan_iran(self, *, exchange: str, top_n: int, deep_limit: int) -> dict:
-        # Reuse the production-proven Iran market scanner as a shortlist source,
-        # then re-run its candidates through the Global evidence/agent pipeline.
         from market_scanner import scan_market
 
         legacy = scan_market(market=exchange, max_symbols=max(50, deep_limit * 8))
@@ -271,15 +330,14 @@ class GlobalMarketScanner:
                 name=str(row.get("name") or ticker),
             )
             deep_results.append(analyze_company(company, registry=registry))
-        buys = [row for row in deep_results if row.get("call") == "BUY_CANDIDATE"]
-        buys.sort(key=lambda row: float(row.get("score") or 0) * float(row.get("confidence") or 0), reverse=True)
+        buys = self._recommendations(deep_results, top_n)
         return {
             "status": "IR_LEGACY_SHORTLIST",
             "country": "IR",
             "exchange": exchange,
             "requestedRecommendations": top_n,
-            "recommendationCount": min(top_n, len(buys)),
-            "recommendations": buys[:top_n],
+            "recommendationCount": len(buys),
+            "recommendations": buys,
             "deepResults": deep_results,
             "legacyScanner": {
                 "scanned": legacy.get("scanned") if isinstance(legacy, dict) else None,
