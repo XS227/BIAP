@@ -1,17 +1,5 @@
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  useColorScheme,
-} from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useColorScheme } from 'react-native';
 import { router } from 'expo-router';
 import { BiapLogo, Brand, Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { API_BASE } from '@/lib/api';
@@ -19,184 +7,16 @@ import { storeAuthPayload } from '@/lib/auth-session';
 import { setDemoMode } from '@/lib/demo-mode';
 import { getClientContext } from '@/lib/activity';
 
-function FreeAnalysisCard() {
-  return (
-    <View style={[promoStyles.card, { backgroundColor: Brand.secondary }]}>
-      <View style={promoStyles.row}>
-        <View style={promoStyles.badge}><Text style={promoStyles.badgeText}>✓</Text></View>
-        <Text style={{ fontSize: 26 }}>🎁</Text>
-      </View>
-      <Text style={promoStyles.title}>۵ تحلیل رایگان</Text>
-      <Text style={promoStyles.body}>پس از ثبت‌نام، ۵ تحلیل رایگان از عامل هوشمند کیاشا دریافت کنید.</Text>
-    </View>
-  );
+function FreeAnalysisCard(){return <View style={[promoStyles.card,{backgroundColor:Brand.secondary}]}><View style={promoStyles.row}><View style={promoStyles.badge}><Text style={promoStyles.badgeText}>✓</Text></View><Text style={{fontSize:26}}>🎁</Text></View><Text style={promoStyles.title}>5 free analyses</Text><Text style={promoStyles.body}>Create an account and receive five introductory Kiasha analyses.</Text></View>}
+const promoStyles=StyleSheet.create({card:{width:'100%',borderRadius:Radius.lg,padding:Spacing.four,alignItems:'flex-start',gap:6,marginBottom:Spacing.three},row:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',width:'100%'},badge:{width:22,height:22,borderRadius:11,backgroundColor:'rgba(255,255,255,0.25)',alignItems:'center',justifyContent:'center'},badgeText:{color:'#fff',fontSize:13,fontWeight:'700'},title:{color:'#fff',fontSize:18,fontFamily:Fonts.sans,fontWeight:'700'},body:{color:'rgba(255,255,255,0.9)',fontSize:12,fontFamily:Fonts.sans,lineHeight:19}});
+type Props={onLogin?:()=>void;onBack?:()=>void};
+function signupErrorMessage(data:any):string{if(typeof data?.error==='string')return data.error;if(typeof data?.detail?.error==='string')return data.detail.error;if(typeof data?.detail==='string')return data.detail;return 'Registration failed.'}
+
+export default function RegisterScreen({onLogin,onBack}:Props){
+  const colors=useColorScheme()==='dark'?Colors.dark:Colors.light;const[name,setName]=useState('');const[email,setEmail]=useState('');const[password,setPassword]=useState('');const[confirm,setConfirm]=useState('');const[loading,setLoading]=useState(false);const[errorMsg,setErrorMsg]=useState('');const[success,setSuccess]=useState(false);const goBack=()=>onBack?onBack():router.back();
+  const validate=():string|null=>{if(!name.trim())return'Enter your name.';if(!email.trim())return'Enter your email.';if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))return'Enter a valid email address.';if(password.length<8)return'The password must contain at least 8 characters.';if(password!==confirm)return'The passwords do not match.';return null};
+  const handleRegister=async()=>{const err=validate();if(err){setErrorMsg(err);return}setErrorMsg('');setLoading(true);try{const normalizedEmail=email.trim().toLowerCase();const context=await getClientContext();const res=await fetch(`${API_BASE}/auth/signup`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fullName:name.trim(),email:normalizedEmail,password,...context})});let data:any=null;try{data=await res.json()}catch{data=null}if(!res.ok){setErrorMsg(signupErrorMessage(data));return}if(!data?.accessToken){setSuccess(true);return}await storeAuthPayload(data);await setDemoMode(false);onLogin?.()}catch{setErrorMsg('Could not connect to the server.')}finally{setLoading(false)}};
+  if(success)return <View style={[styles.container,styles.successWrap,{backgroundColor:colors.background}]}><Image source={BiapLogo} style={styles.logo} resizeMode="contain"/><Text style={[styles.successTitle,{color:colors.text}]}>Account created</Text><Text style={[styles.successSub,{color:colors.textSecondary}]}>Your BIAP account is ready. You can sign in now.</Text><FreeAnalysisCard/><Pressable style={[styles.button,{backgroundColor:Brand.primary}]} onPress={goBack}><Text style={styles.buttonText}>Sign in</Text></Pressable></View>;
+  return <KeyboardAvoidingView style={[styles.container,{backgroundColor:colors.background}]} behavior={Platform.OS==='ios'?'padding':undefined}><ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}><Image source={BiapLogo} style={styles.logo} resizeMode="contain"/><Text style={[styles.title,{color:colors.text}]}>Create BIAP Global account</Text><Text style={[styles.subtitle,{color:colors.textSecondary}]}>Use the same account across supported BIAP services.</Text><View style={{height:16}}/><FreeAnalysisCard/><TextInput placeholder="Full name" placeholderTextColor={colors.textSecondary} value={name} onChangeText={setName} style={[styles.input,{color:colors.text,backgroundColor:colors.backgroundElement,borderColor:colors.backgroundSelected}]}/><TextInput placeholder="Email" placeholderTextColor={colors.textSecondary} value={email} onChangeText={setEmail} style={[styles.input,{color:colors.text,backgroundColor:colors.backgroundElement,borderColor:colors.backgroundSelected}]} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} textContentType="emailAddress" autoComplete="email"/><TextInput placeholder="Password (minimum 8 characters)" placeholderTextColor={colors.textSecondary} value={password} onChangeText={setPassword} secureTextEntry style={[styles.input,{color:colors.text,backgroundColor:colors.backgroundElement,borderColor:colors.backgroundSelected}]}/><TextInput placeholder="Confirm password" placeholderTextColor={colors.textSecondary} value={confirm} onChangeText={setConfirm} secureTextEntry style={[styles.input,{color:colors.text,backgroundColor:colors.backgroundElement,borderColor:colors.backgroundSelected}]}/>{errorMsg?<Text style={styles.error}>{errorMsg}</Text>:null}<Pressable style={[styles.button,{backgroundColor:Brand.primary,opacity:loading?0.7:1}]} onPress={handleRegister} disabled={loading}>{loading?<ActivityIndicator color="#fff"/>:<Text style={styles.buttonText}>Create account</Text>}</Pressable><Pressable onPress={goBack} style={{marginTop:Spacing.three}}><Text style={[styles.link,{color:colors.textSecondary}]}>Already have an account? Sign in</Text></Pressable></ScrollView></KeyboardAvoidingView>;
 }
-
-const promoStyles = StyleSheet.create({
-  card: { width: '100%', borderRadius: Radius.lg, padding: Spacing.four, alignItems: 'flex-end', gap: 6, marginBottom: Spacing.three },
-  row: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', width: '100%' },
-  badge: { width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
-  badgeText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  title: { color: '#fff', fontSize: 18, fontFamily: Fonts.sans, fontWeight: '700' },
-  body: { color: 'rgba(255,255,255,0.9)', fontSize: 13, fontFamily: Fonts.sans, textAlign: 'right', lineHeight: 20 },
-});
-
-type Props = { onLogin?: () => void; onBack?: () => void };
-
-function signupErrorMessage(data: any): string {
-  if (typeof data?.error === 'string') return data.error;
-  if (typeof data?.detail?.error === 'string') return data.detail.error;
-  if (typeof data?.detail === 'string') return data.detail;
-  return 'خطا در ثبت‌نام';
-}
-
-export default function RegisterScreen({ onLogin, onBack }: Props) {
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const colors = Colors[scheme];
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [success, setSuccess] = useState(false);
-
-  const goBack = () => (onBack ? onBack() : router.back());
-
-  const validate = (): string | null => {
-    if (!name.trim()) return 'نام را وارد کنید';
-    if (!email.trim()) return 'ایمیل را وارد کنید';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'ایمیل معتبر وارد کنید';
-    if (password.length < 8) return 'رمز عبور باید حداقل ۸ کاراکتر باشد';
-    if (password !== confirm) return 'رمز عبور و تکرار آن یکسان نیستند';
-    return null;
-  };
-
-  const handleRegister = async () => {
-    const err = validate();
-    if (err) {
-      setErrorMsg(err);
-      return;
-    }
-    setErrorMsg('');
-    setLoading(true);
-    try {
-      const normalizedEmail = email.trim().toLowerCase();
-      const context = await getClientContext();
-      const res = await fetch(`${API_BASE}/auth/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName: name.trim(), email: normalizedEmail, password, ...context }),
-      });
-      let data: any = null;
-      try {
-        data = await res.json();
-      } catch {
-        data = null;
-      }
-      if (!res.ok) {
-        setErrorMsg(signupErrorMessage(data));
-        return;
-      }
-      if (!data?.accessToken) {
-        setSuccess(true);
-        return;
-      }
-
-      await storeAuthPayload(data);
-      await setDemoMode(false);
-      onLogin?.();
-    } catch {
-      setErrorMsg('اتصال به سرور برقرار نشد');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (success) {
-    return (
-      <View style={[styles.container, styles.successWrap, { backgroundColor: colors.background }]}>
-        <Image source={BiapLogo} style={styles.logo} resizeMode="contain" />
-        <Text style={[styles.successTitle, { color: colors.text }]}>ثبت‌نام موفق!</Text>
-        <Text style={[styles.successSub, { color: colors.textSecondary }]}>حساب شما ایجاد شد. اکنون می‌توانید وارد شوید.</Text>
-        <FreeAnalysisCard />
-        <Pressable style={[styles.button, { backgroundColor: Brand.primary }]} onPress={goBack}>
-          <Text style={styles.buttonText}>ورود به حساب</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
-  return (
-    <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Image source={BiapLogo} style={styles.logo} resizeMode="contain" />
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>ایجاد حساب کاربری جدید</Text>
-        <View style={{ height: 20 }} />
-        <FreeAnalysisCard />
-        <View style={{ height: 8 }} />
-        <TextInput
-          placeholder="نام و نام خانوادگی"
-          placeholderTextColor={colors.textSecondary}
-          value={name}
-          onChangeText={setName}
-          style={[styles.input, { color: colors.text, backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}
-          textAlign="right"
-        />
-        <TextInput
-          placeholder="ایمیل"
-          placeholderTextColor={colors.textSecondary}
-          value={email}
-          onChangeText={setEmail}
-          style={[styles.input, { color: colors.text, backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-          textContentType="emailAddress"
-          autoComplete="email"
-          textAlign="right"
-        />
-        <TextInput
-          placeholder="رمز عبور (حداقل ۸ کاراکتر)"
-          placeholderTextColor={colors.textSecondary}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          style={[styles.input, { color: colors.text, backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}
-          textAlign="right"
-        />
-        <TextInput
-          placeholder="تکرار رمز عبور"
-          placeholderTextColor={colors.textSecondary}
-          value={confirm}
-          onChangeText={setConfirm}
-          secureTextEntry
-          style={[styles.input, { color: colors.text, backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}
-          textAlign="right"
-        />
-        {errorMsg ? <Text style={styles.error}>{errorMsg}</Text> : null}
-        <Pressable style={[styles.button, { backgroundColor: Brand.primary, opacity: loading ? 0.7 : 1 }]} onPress={handleRegister} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>ثبت‌نام</Text>}
-        </Pressable>
-        <Pressable onPress={goBack} style={{ marginTop: Spacing.three }}>
-          <Text style={[styles.link, { color: colors.textSecondary }]}>حساب دارید؟ وارد شوید</Text>
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  successWrap: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.four, gap: Spacing.two },
-  scroll: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.four, paddingVertical: Spacing.six },
-  logo: { width: 120, height: 40 },
-  subtitle: { fontSize: 14, marginTop: 8, textAlign: 'center', fontFamily: Fonts.sans },
-  input: { width: '100%', borderWidth: 1, borderRadius: Radius.md, paddingHorizontal: Spacing.three, paddingVertical: 14, marginBottom: 14, fontSize: 16, fontFamily: Fonts.sans },
-  button: { width: '100%', borderRadius: Radius.md, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: Fonts.sans },
-  link: { fontSize: 13, fontFamily: Fonts.sans },
-  error: { color: '#E15B5B', fontSize: 13, marginBottom: 8, textAlign: 'center', fontFamily: Fonts.sans },
-  successTitle: { fontSize: 24, fontFamily: Fonts.sans, marginTop: Spacing.three },
-  successSub: { fontSize: 14, fontFamily: Fonts.sans, textAlign: 'center', marginTop: Spacing.two, paddingHorizontal: Spacing.four },
-});
+const styles=StyleSheet.create({container:{flex:1},successWrap:{alignItems:'center',justifyContent:'center',paddingHorizontal:Spacing.four,gap:Spacing.two},scroll:{flexGrow:1,alignItems:'center',justifyContent:'center',paddingHorizontal:Spacing.four,paddingVertical:Spacing.six},logo:{width:120,height:40},title:{fontSize:21,fontFamily:Fonts.sans,fontWeight:'800',marginTop:Spacing.three},subtitle:{fontSize:12,marginTop:5,textAlign:'center',fontFamily:Fonts.sans},input:{width:'100%',borderWidth:1,borderRadius:Radius.md,paddingHorizontal:Spacing.three,paddingVertical:14,marginBottom:14,fontSize:15,fontFamily:Fonts.sans},button:{width:'100%',borderRadius:Radius.md,paddingVertical:16,alignItems:'center',marginTop:8},buttonText:{color:'#fff',fontSize:15,fontWeight:'800',fontFamily:Fonts.sans},link:{fontSize:12,fontFamily:Fonts.sans},error:{color:'#E15B5B',fontSize:12,marginBottom:8,textAlign:'center',fontFamily:Fonts.sans},successTitle:{fontSize:24,fontFamily:Fonts.sans,fontWeight:'800',marginTop:Spacing.three},successSub:{fontSize:13,fontFamily:Fonts.sans,textAlign:'center',marginTop:Spacing.two,paddingHorizontal:Spacing.four}});
