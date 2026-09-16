@@ -8,13 +8,17 @@ on:
       - '.github/workflows/biap-global-apk.yml'
   workflow_dispatch:
 
+concurrency:
+  group: biap-global-apk
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   android-preview:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: mobile
@@ -51,9 +55,10 @@ jobs:
           fi
       - name: Generate Android project
         run: npx expo prebuild --platform android --clean --no-install
-      - name: Sign preview with generated debug keystore
+      - name: Configure arm64 signed preview
         run: |
           test -f android/app/debug.keystore
+          printf '\nreactNativeArchitectures=arm64-v8a\n' >> android/gradle.properties
           python3 - <<'PY'
           from pathlib import Path
           path = Path('android/app/build.gradle')
@@ -67,11 +72,11 @@ jobs:
               text = head + marker + '\n            signingConfig signingConfigs.debug' + tail
               path.write_text(text, encoding='utf-8')
           PY
-      - name: Build release APK
+      - name: Build arm64 release APK
         run: |
           chmod +x android/gradlew
           cd android
-          ./gradlew :app:assembleRelease --no-daemon
+          ./gradlew :app:assembleRelease --no-daemon --max-workers=4
       - name: Verify APK signature
         run: |
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
@@ -80,14 +85,14 @@ jobs:
       - name: Name APK
         run: |
           VERSION=$(node -p "require('./app.json').expo.version")
-          cp android/app/build/outputs/apk/release/app-release.apk "BIAP-Global-${VERSION}.apk"
-          sha256sum "BIAP-Global-${VERSION}.apk" > "BIAP-Global-${VERSION}.apk.sha256"
+          cp android/app/build/outputs/apk/release/app-release.apk "BIAP-Global-${VERSION}-arm64.apk"
+          sha256sum "BIAP-Global-${VERSION}-arm64.apk" > "BIAP-Global-${VERSION}-arm64.apk.sha256"
       - name: Upload preview APK
         uses: actions/upload-artifact@v4
         with:
-          name: biap-global-android-${{ github.sha }}
+          name: biap-global-android-arm64-${{ github.sha }}
           path: |
-            mobile/BIAP-Global-*.apk
-            mobile/BIAP-Global-*.apk.sha256
+            mobile/BIAP-Global-*-arm64.apk
+            mobile/BIAP-Global-*-arm64.apk.sha256
           if-no-files-found: error
           retention-days: 14
