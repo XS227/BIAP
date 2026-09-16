@@ -19,7 +19,9 @@ from .twelve_data import TwelveDataMarketProvider
 from .universe import IranUniverseProvider, TwelveDataUniverseProvider
 from .verified_filing_drop import VerifiedFilingDropProvider
 
-_ESEF_COUNTRIES = ("SE", "NO", "DK", "FI", "IS", "NL", "FR", "BE", "PT", "IT", "ES", "GB")
+_ESEF_COUNTRIES = (
+    "SE", "NO", "DK", "FI", "IS", "NL", "FR", "BE", "IE", "PT", "IT", "DE", "ES", "GB",
+)
 
 
 def build_registry() -> ProviderRegistry:
