@@ -129,12 +129,17 @@ def global_requirements():
 @router.get("/status")
 def global_status():
     live_switch_requested = os.environ.get("BIAP_GLOBAL_LIVE_TRADING_ENABLED", "false").strip().lower() == "true"
+    market_configured = bool(os.environ.get("BIAP_GLOBAL_MARKET_API_KEY"))
     return {
         "mode": "research-paper-first",
         "liveTrading": False,
         "liveBrokerConnected": False,
         "liveTradingSwitchRequested": live_switch_requested,
-        "marketProviderConfigured": bool(os.environ.get("BIAP_GLOBAL_MARKET_API_KEY")),
+        "marketProviderConfigured": market_configured,
+        "marketProviderMode": "live-plus-persistent-cache" if market_configured else "catalog-only",
+        "marketCacheConfigured": True,
+        "marketCacheHours": float(os.environ.get("BIAP_GLOBAL_MARKET_CACHE_HOURS", "6")),
+        "marketCachePolicy": "verified snapshots only; stale timestamps are preserved and EvidenceAgent may block them",
         "secConfigured": bool(os.environ.get("BIAP_SEC_USER_AGENT")),
         "openDartConfigured": bool(os.environ.get("BIAP_OPENDART_API_KEY")),
         "edinetConfigured": bool(os.environ.get("BIAP_EDINET_API_KEY")),
