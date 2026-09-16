@@ -2,7 +2,7 @@
   "expo": {
     "name": "BIAP Global",
     "slug": "biap-global",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "orientation": "portrait",
     "icon": "./assets/brand/biap-logo.png",
     "scheme": "biapglobal",
@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "com.biap.global",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#0B1020",
         "foregroundImage": "./assets/brand/biap-logo.png"
