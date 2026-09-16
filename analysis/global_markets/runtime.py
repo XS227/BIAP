@@ -17,9 +17,8 @@ from .providers import ProviderRegistry
 from .sec_edgar import SECEdgarFundamentalsProvider
 from .twelve_data import TwelveDataMarketProvider
 from .universe import IranUniverseProvider, TwelveDataUniverseProvider
+from .verified_filing_drop import VerifiedFilingDropProvider
 
-# Common ESEF/UKSEF path. Country-specific OAM/issuer corroboration can be added
-# without changing the agent layer.
 _ESEF_COUNTRIES = ("SE", "NO", "DK", "FI", "IS", "NL", "FR", "BE", "PT", "IT", "ES", "GB")
 
 
@@ -62,5 +61,12 @@ def build_registry() -> ProviderRegistry:
         dart = OpenDARTFundamentalsProvider()
         for exchange in COUNTRY_PACKS["KR"].exchanges:
             registry.register_fundamentals("KR", exchange.code, dart)
+
+    # ASX/issuer disclosures are licensing-sensitive. An authorized ingestion
+    # job writes normalized verified records to the server filing drop; this
+    # provider refuses anything without explicit provenance and verification.
+    au = VerifiedFilingDropProvider(country="AU", provider_names=("asx", "asx-issuer", "issuer"))
+    for exchange in COUNTRY_PACKS["AU"].exchanges:
+        registry.register_fundamentals("AU", exchange.code, au)
 
     return registry
