@@ -15,15 +15,17 @@ import { trackAppOpen } from '@/lib/activity';
 SplashScreen.preventAutoHideAsync();
 
 type AuthScreen = 'login' | 'register';
+const GLOBAL_PREVIEW = process.env.EXPO_PUBLIC_BIAP_GLOBAL_PREVIEW === '1';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(GLOBAL_PREVIEW);
   const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
-  const [checking, setChecking] = useState(true);
+  const [checking, setChecking] = useState(!GLOBAL_PREVIEW);
   const [fontsLoaded] = useFonts({ Vazirmatn_400Regular, Vazirmatn_700Bold });
 
   useEffect(() => {
+    if (GLOBAL_PREVIEW) return;
     void trackAppOpen();
     getValidAccessToken().then((token) => {
       setIsLoggedIn(Boolean(token));
@@ -33,12 +35,9 @@ export default function RootLayout() {
 
   if (checking || !fontsLoaded) return null;
 
-  const handleLoggedIn = () => {
-    setAuthScreen('login');
-    setIsLoggedIn(true);
-  };
-
+  const handleLoggedIn = () => { setAuthScreen('login'); setIsLoggedIn(true); };
   const handleLogout = () => {
+    if (GLOBAL_PREVIEW) return;
     setAuthScreen('login');
     setIsLoggedIn(false);
   };
