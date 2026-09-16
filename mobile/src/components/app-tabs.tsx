@@ -14,21 +14,18 @@ export default function AppTabs({ onLogout }: Props) {
   const colors = Colors[scheme];
   return (
     <LogoutContext.Provider value={onLogout}>
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.backgroundSelected },
-          tabBarLabelStyle: { fontFamily: 'Vazirmatn_400Regular', fontSize: 10.5 },
-        }}
-      >
-        {/* Keep the footer intentionally small. Everything else is reachable
-            from the More / burger menu or contextual navigation. */}
-        <Tabs.Screen name="index" options={{ title: 'خانه', tabBarActiveTintColor: Brand.primary, tabBarIcon: ({ size }) => <TabIcon symbol="🏠" size={size} /> }} />
-        <Tabs.Screen name="market" options={{ title: 'بازار', tabBarActiveTintColor: Brand.positive, tabBarIcon: ({ size }) => <TabIcon symbol="📈" size={size} /> }} />
-        <Tabs.Screen name="kiasha" options={{ title: 'کیاشا', tabBarActiveTintColor: Brand.primary, tabBarIcon: ({ size }) => <TabIcon symbol="🤖" size={size} /> }} />
-        <Tabs.Screen name="more" options={{ title: 'بیشتر', tabBarActiveTintColor: colors.text, tabBarIcon: ({ size }) => <TabIcon symbol="☰" size={size} /> }} />
+      <Tabs screenOptions={{
+        headerShown: false,
+        tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.backgroundSelected },
+        tabBarLabelStyle: { fontFamily: 'Vazirmatn_400Regular', fontSize: 10.5 },
+      }}>
+        <Tabs.Screen name="index" options={{ title: 'Home', tabBarActiveTintColor: Brand.primary, tabBarIcon: ({ size }) => <TabIcon symbol="🏠" size={size} /> }} />
+        <Tabs.Screen name="global" options={{ title: 'Global', tabBarActiveTintColor: Brand.positive, tabBarIcon: ({ size }) => <TabIcon symbol="🌍" size={size} /> }} />
+        <Tabs.Screen name="kiasha" options={{ title: 'Kiasha', tabBarActiveTintColor: Brand.primary, tabBarIcon: ({ size }) => <TabIcon symbol="🤖" size={size} /> }} />
+        <Tabs.Screen name="more" options={{ title: 'More', tabBarActiveTintColor: colors.text, tabBarIcon: ({ size }) => <TabIcon symbol="☰" size={size} /> }} />
 
-        {/* Reachable by navigation, hidden from the footer */}
+        {/* Iran/current BIAP screens stay in the branch but are hidden from the Global footer. */}
+        <Tabs.Screen name="market" options={{ href: null }} />
         <Tabs.Screen name="orders" options={{ href: null }} />
         <Tabs.Screen name="portfolio" options={{ href: null }} />
         <Tabs.Screen name="favorites" options={{ href: null }} />
