@@ -1,0 +1,229 @@
+"""Persistent instrument-universe cache for BIAP Global.
+
+The cache is a resilience layer, not a source of truth. A successful upstream
+catalog request is normalized and atomically snapshotted under
+BIAP_GLOBAL_DATA_DIR. If the upstream catalog is temporarily unavailable, BIAP
+can serve the latest verified snapshot while preserving its age/provenance.
+"""
+from __future__ import annotations
+
+from dataclasses import asdict
+from datetime import datetime, timezone
+import json
+import os
+from pathlib import Path
+from typing import Iterable, Optional
+
+from .models import GlobalCompany, SourceEvidence
+from .providers import GlobalProviderError, InstrumentUniverseProvider
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _parse_iso(value: object) -> Optional[datetime]:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+class PersistentUniverseProvider(InstrumentUniverseProvider):
+    """Wrap an upstream universe provider with an atomic disk snapshot.
+
+    Fresh cache entries are served immediately to avoid repeatedly downloading
+    large exchange catalogs. Once the freshness TTL expires, the next request
+    refreshes upstream. On upstream failure, the latest cached snapshot is used
+    regardless of age, and the cached SourceEvidence makes that fallback
+    explicit to downstream diagnostics.
+    """
+
+    provider_id = "persistent-universe-cache"
+
+    def __init__(
+        self,
+        upstream: InstrumentUniverseProvider,
+        *,
+        data_dir: Optional[str] = None,
+        fresh_hours: Optional[float] = None,
+    ) -> None:
+        self.upstream = upstream
+        self.provider_id = f"cached:{upstream.provider_id}"
+        root = data_dir or os.environ.get("BIAP_GLOBAL_DATA_DIR") or "/var/lib/biap-global"
+        self.root = Path(root).expanduser().resolve() / "universe"
+        ttl = fresh_hours if fresh_hours is not None else float(os.environ.get("BIAP_GLOBAL_UNIVERSE_CACHE_HOURS", "12"))
+        self.fresh_seconds = max(0.0, ttl * 3600.0)
+
+    @staticmethod
+    def _slug(value: str) -> str:
+        return "".join(ch for ch in value.upper() if ch.isalnum() or ch in {"-", "_"}) or "UNKNOWN"
+
+    def _path(self, country: str, exchange: str) -> Path:
+        return self.root / self._slug(country) / f"{self._slug(exchange)}.json"
+
+    def _read_payload(self, country: str, exchange: str) -> Optional[dict]:
+        path = self._path(country, exchange)
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            return None
+        if not isinstance(payload, dict) or payload.get("schemaVersion") != 1:
+            return None
+        if str(payload.get("country") or "").upper() != country.upper():
+            return None
+        if str(payload.get("exchange") or "").upper() != exchange.upper():
+            return None
+        if not isinstance(payload.get("instruments"), list):
+            return None
+        return payload
+
+    def _age_seconds(self, payload: dict) -> Optional[float]:
+        fetched = _parse_iso(payload.get("fetchedAt"))
+        if fetched is None:
+            return None
+        return max(0.0, (_utc_now() - fetched).total_seconds())
+
+    def _is_fresh(self, payload: dict) -> bool:
+        age = self._age_seconds(payload)
+        return age is not None and age <= self.fresh_seconds
+
+    @staticmethod
+    def _row(company: GlobalCompany) -> dict:
+        return {
+            "country": company.country,
+            "exchange": company.exchange,
+            "currency": company.currency,
+            "ticker": company.ticker,
+            "name": company.name,
+            "mic_code": company.mic_code,
+            "isin": company.isin,
+            "lei": company.lei,
+            "instrument_type": company.instrument_type,
+            "sector": company.sector,
+            "industry": company.industry,
+            "lot_size": company.lot_size,
+            "raw_provider_fields": company.raw_provider_fields,
+            "sources": [asdict(source) for source in company.sources],
+        }
+
+    def _write(self, country: str, exchange: str, rows: list[GlobalCompany]) -> None:
+        if not rows:
+            raise GlobalProviderError("refusing to replace universe cache with an empty snapshot")
+        path = self._path(country, exchange)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        now = _utc_now().isoformat()
+        payload = {
+            "schemaVersion": 1,
+            "country": country.upper(),
+            "exchange": exchange.upper(),
+            "provider": self.upstream.provider_id,
+            "fetchedAt": now,
+            "count": len(rows),
+            "instruments": [self._row(row) for row in rows],
+        }
+        temporary = path.with_suffix(path.suffix + ".tmp")
+        temporary.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        os.replace(temporary, path)
+
+    def _decode(self, payload: dict, *, fallback: bool) -> list[GlobalCompany]:
+        fetched_at = str(payload.get("fetchedAt") or "") or None
+        upstream = str(payload.get("provider") or "unknown")
+        age = self._age_seconds(payload)
+        age_hours = None if age is None else age / 3600.0
+        result: list[GlobalCompany] = []
+        for row in payload.get("instruments") or []:
+            if not isinstance(row, dict):
+                continue
+            ticker = str(row.get("ticker") or "").strip()
+            currency = str(row.get("currency") or "").strip().upper()
+            if not ticker or not currency:
+                continue
+            original_sources: list[SourceEvidence] = []
+            for source in row.get("sources") or []:
+                if not isinstance(source, dict):
+                    continue
+                try:
+                    original_sources.append(SourceEvidence(**{key: source.get(key) for key in SourceEvidence.__dataclass_fields__}))
+                except TypeError:
+                    continue
+            cache_source = SourceEvidence(
+                provider=self.provider_id,
+                source_type="instrument_reference_cache",
+                source_id=f"{str(row.get('country') or '').upper()}:{str(row.get('exchange') or '').upper()}:{ticker}",
+                observed_at=fetched_at,
+                quality=0.82 if fallback else 0.88,
+                notes=(
+                    f"Persistent fallback snapshot from {upstream}; age_hours={age_hours:.1f}"
+                    if fallback and age_hours is not None
+                    else f"Persistent snapshot from {upstream}"
+                ),
+            )
+            raw = dict(row.get("raw_provider_fields") or {})
+            raw.update({
+                "catalog_cache": "fallback" if fallback else "fresh",
+                "catalog_cached_at": fetched_at,
+                "catalog_upstream_provider": upstream,
+                "catalog_age_hours": None if age_hours is None else round(age_hours, 2),
+            })
+            result.append(GlobalCompany(
+                country=str(row.get("country") or "").upper(),
+                exchange=str(row.get("exchange") or "").upper(),
+                currency=currency,
+                ticker=ticker,
+                name=str(row.get("name") or ticker).strip(),
+                mic_code=str(row.get("mic_code") or "").strip().upper() or None,
+                isin=str(row.get("isin") or "").strip().upper() or None,
+                lei=str(row.get("lei") or "").strip().upper() or None,
+                instrument_type=str(row.get("instrument_type") or "Common Stock"),
+                sector=str(row.get("sector") or "").strip() or None,
+                industry=str(row.get("industry") or "").strip() or None,
+                lot_size=row.get("lot_size") if isinstance(row.get("lot_size"), int) else None,
+                raw_provider_fields=raw,
+                sources=[*original_sources, cache_source],
+            ))
+        return result
+
+    def snapshot_info(self, *, country: str, exchange: str) -> dict:
+        payload = self._read_payload(country, exchange)
+        if payload is None:
+            return {"available": False, "provider": self.upstream.provider_id}
+        age = self._age_seconds(payload)
+        return {
+            "available": True,
+            "provider": str(payload.get("provider") or self.upstream.provider_id),
+            "fetchedAt": payload.get("fetchedAt"),
+            "count": int(payload.get("count") or 0),
+            "ageHours": None if age is None else round(age / 3600.0, 2),
+            "fresh": self._is_fresh(payload),
+        }
+
+    def refresh(self, *, country: str, exchange: str) -> list[GlobalCompany]:
+        rows = list(self.upstream.list_instruments(country=country, exchange=exchange))
+        self._write(country, exchange, rows)
+        payload = self._read_payload(country, exchange)
+        return self._decode(payload, fallback=False) if payload else rows
+
+    def list_instruments(
+        self,
+        *,
+        country: Optional[str] = None,
+        exchange: Optional[str] = None,
+    ) -> Iterable[GlobalCompany]:
+        if not country or not exchange:
+            raise GlobalProviderError("country and exchange are required for cached instrument discovery")
+        cached = self._read_payload(country, exchange)
+        if cached is not None and self._is_fresh(cached):
+            return self._decode(cached, fallback=False)
+        try:
+            return self.refresh(country=country, exchange=exchange)
+        except Exception as exc:
+            if cached is not None:
+                return self._decode(cached, fallback=True)
+            if isinstance(exc, GlobalProviderError):
+                raise
+            raise GlobalProviderError(f"instrument catalog unavailable and no cache exists: {type(exc).__name__}") from exc
