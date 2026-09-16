@@ -1,0 +1,25 @@
+name: BIAP Global provider diagnostics
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-provider-diagnostics.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Public Global provider status
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 15 https://biap.dadashi.no/global-api/health
+          echo
+          curl --fail --silent --show-error --max-time 15 https://biap.dadashi.no/global-api/global/status
+          echo
