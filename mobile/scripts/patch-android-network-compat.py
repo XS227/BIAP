@@ -25,9 +25,10 @@ if 'OkHttpClientProvider' not in text:
 
 oncreate_marker = '    super.onCreate()\n'
 compat_code = '''    // BIAP Global Android network compatibility:
-    // - keeps normal TLS certificate/hostname verification
-    // - prefers the known BIAP origin IP to survive poisoned/broken DNS
-    // - uses TLS 1.2 + HTTP/1.1 for compatibility with restrictive mobile middleboxes
+    // - install before super.onCreate() so React Native cannot cache the default client first
+    // - keep normal TLS certificate and hostname verification enabled
+    // - prefer the known BIAP origin IP when device DNS is broken/poisoned
+    // - use TLS 1.2 + HTTP/1.1 for restrictive mobile middleboxes
     OkHttpClientProvider.setOkHttpClientFactory(object : OkHttpClientFactory {
       override fun createNewNetworkModuleClient(): OkHttpClient {
         val tls12 = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
@@ -37,7 +38,10 @@ compat_code = '''    // BIAP Global Android network compatibility:
           .dns(object : Dns {
             override fun lookup(hostname: String): List<InetAddress> {
               if (hostname.equals("biap.dadashi.no", ignoreCase = true)) {
-                val fixed = InetAddress.getByName("5.249.252.88")
+                val fixed = InetAddress.getByAddress(
+                  hostname,
+                  byteArrayOf(5, 249.toByte(), 252.toByte(), 88)
+                )
                 val system = runCatching { Dns.SYSTEM.lookup(hostname) }.getOrDefault(emptyList())
                 return listOf(fixed) + system.filterNot { it.hostAddress == fixed.hostAddress }
               }
@@ -54,7 +58,7 @@ compat_code = '''    // BIAP Global Android network compatibility:
 if 'BIAP Global Android network compatibility' not in text:
     if oncreate_marker not in text:
         raise SystemExit('Could not locate onCreate super call')
-    text = text.replace(oncreate_marker, oncreate_marker + compat_code, 1)
+    text = text.replace(oncreate_marker, compat_code + oncreate_marker, 1)
 
 path.write_text(text, encoding='utf-8')
 print(f'Patched {path}')
