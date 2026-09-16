@@ -8,6 +8,7 @@ import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-ma
 type Risk='low'|'medium'|'high';
 type ScopeMarket={country:string;countryName:string;exchange:string;exchangeLabel:string;currency:string;mic?:string|null};
 const PRIORITY=['US','NO','SE','GB','JP','AU','DE','FR','NL','FI','DK','KR','IR'];
+const MAX_PORTFOLIO_INPUTS=50;
 
 function num(value:number|undefined|null,digits=2){return value==null||!Number.isFinite(Number(value))?'—':Number(value).toLocaleString('en-US',{maximumFractionDigits:digits})}
 function keyOf(m:ScopeMarket){return `${m.country}:${m.exchange}`}
@@ -38,11 +39,13 @@ export default function GlobalPortfolioScreen(){
     if(!Number.isFinite(amount)||amount<=0){setError('Enter a positive capital amount.');return}if(!/^[A-Za-z]{3}$/.test(baseCurrency.trim())){setError('Base currency must be a 3-letter code such as EUR, USD or NOK.');return}if(!scopes.length){setError('Select at least one market.');return}
     setLoading(true);setError('');setResult(null);setCandidateCount(0);setScanNotes([]);
     try{
-      const perMarket=Math.max(5,Math.min(15,Math.ceil(positions*1.5)));
+      const perMarketCapacity=Math.max(1,Math.floor(MAX_PORTFOLIO_INPUTS/scopes.length));
+      const desiredPerMarket=Math.max(5,Math.ceil(positions*1.5));
+      const perMarket=Math.min(50,perMarketCapacity,desiredPerMarket);
       const scans=await Promise.allSettled(scopes.map((scope)=>scanGlobalMarket(scope.country,scope.exchange,perMarket)));
       const notes:string[]=[];const candidates:GlobalInstrument[]=[];
       scans.forEach((scan,index)=>{const scope=scopes[index];if(scan.status==='rejected'){notes.push(`${scope.country}/${scope.exchange}: scan failed`);return}const body=scan.value;notes.push(`${scope.country}/${scope.exchange}: ${body.recommendationCount??0} qualified from ${body.deepAnalyzed??0} deep analyses`);for(const item of body.recommendations||[]){if(!item.ticker)continue;candidates.push({country:item.country||scope.country,exchange:item.exchange||scope.exchange,currency:item.currency||scope.currency,ticker:item.ticker,name:item.name||item.ticker,isin:item.isin||null,lei:item.lei||null});}});
-      const unique=[...new Map(candidates.map((x)=>[`${x.country}:${x.exchange}:${x.ticker}`,x])).values()];setCandidateCount(unique.length);setScanNotes(notes);
+      const unique=[...new Map(candidates.map((x)=>[`${x.country}:${x.exchange}:${x.ticker}`,x])).values()].slice(0,MAX_PORTFOLIO_INPUTS);setCandidateCount(unique.length);setScanNotes(notes);
       if(!unique.length){setError('No evidence-qualified BUY candidates are available across the selected markets. Portfolio Agent will not manufacture a portfolio.');return}
       const countryCap=scopes.length<=1?100:Math.max(30,Math.min(60,Math.ceil(140/scopes.length)));
       const portfolio=await buildGlobalPortfolio({capital:amount,baseCurrency:baseCurrency.trim().toUpperCase(),riskTolerance:risk,horizon:horizon.trim()||'5y',allowedCountries:[...new Set(scopes.map((x)=>x.country))],allowedExchanges:[...new Set(scopes.map((x)=>x.exchange))],maxPositionPct:Math.min(25,Math.max(3,100/Math.max(positions,1)*1.5)),maxCountryPct:countryCap,maxSectorPct:35,minCashReservePct:reserve,maxPositions:positions},unique);
