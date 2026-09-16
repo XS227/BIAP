@@ -14,6 +14,13 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    environment: production
+    env:
+      MARKET_KEY: ${{ secrets.BIAP_GLOBAL_MARKET_API_KEY || secrets.TWELVE_DATA_API_KEY }}
+      SEC_ID: ${{ secrets.BIAP_SEC_USER_AGENT || secrets.SEC_USER_AGENT }}
+      EDINET_KEY: ${{ secrets.BIAP_EDINET_API_KEY || secrets.EDINET_API_KEY }}
+      OPENDART_KEY: ${{ secrets.BIAP_OPENDART_API_KEY || secrets.OPENDART_API_KEY }}
+      CH_KEY: ${{ secrets.BIAP_COMPANIES_HOUSE_API_KEY || secrets.COMPANIES_HOUSE_API_KEY }}
     steps:
       - name: Public Global provider status
         shell: bash
@@ -23,3 +30,11 @@ jobs:
           echo
           curl --fail --silent --show-error --max-time 15 https://biap.dadashi.no/global-api/global/status
           echo
+      - name: Check matching GitHub secrets without revealing values
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          for name in ['MARKET_KEY','SEC_ID','EDINET_KEY','OPENDART_KEY','CH_KEY']:
+              print(f'{name}_available={bool(os.environ.get(name))}')
+          PY
