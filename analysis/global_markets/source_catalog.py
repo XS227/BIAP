@@ -4,9 +4,7 @@ This is operational metadata for the app/API and deployment checklist. It does
 not claim that every listed official source already has a live parser. `status`
 is explicit so the UI can distinguish connected evidence from planned sources.
 """
-
 from __future__ import annotations
-
 from dataclasses import dataclass
 
 
@@ -35,28 +33,15 @@ ANALYSIS_REQUIREMENTS: tuple[DataRequirement, ...] = (
     DataRequirement("costs", "execution", False, "commissions, fees and estimated spread for realistic paper/live evaluation"),
 )
 
-
-# status values:
-# connected = official/verified fundamentals adapter is implemented; market data
-#             still depends on deployment coverage/key outside Iran.
-# bridge = connected by reusing the existing Iran path.
-# market-ready = country/exchange and generic market feed are configured, but an
-#                official fundamentals adapter is not yet implemented.
+# connected = a verified fundamentals/evidence adapter exists, though credentials
+# or authorized ingestion may still be required at deployment time.
+# bridge = existing Iran production path reused read-only.
+# market-ready = exchange routing exists but verified fundamentals adapter remains planned.
 SOURCE_PLANS: dict[str, dict] = {
-    "IR": {
-        "market": "TSETMC",
-        "filings": "CODAL",
-        "status": "bridge",
-        "notes": "Reuses existing Iran production-proven read-only data path.",
-    },
-    "US": {
-        "market": "Twelve Data or licensed exchange/broker feed",
-        "filings": "SEC EDGAR/XBRL Company Facts",
-        "status": "connected",
-        "notes": "SEC adapter implemented; market feed requires licensed deployment coverage.",
-    },
+    "IR": {"market": "TSETMC", "filings": "CODAL", "status": "bridge", "notes": "Existing Iran path reused read-only."},
+    "US": {"market": "licensed global feed", "filings": "SEC EDGAR/XBRL Company Facts", "status": "connected", "notes": "SEC adapter implemented; real User-Agent required."},
     "CA": {"market": "global market feed", "filings": "SEDAR+", "status": "market-ready"},
-    "GB": {"market": "global market feed", "filings": "UKSEF/ESEF index + future Companies House/RNS corroboration", "status": "connected"},
+    "GB": {"market": "LSE / licensed global feed", "filings": "UKSEF/ESEF + Companies House corroboration", "status": "connected", "notes": "ESEF fundamentals adapter plus Companies House official metadata client."},
     "SE": {"market": "Nasdaq Nordic / global market feed", "filings": "ESEF xBRL + issuer/Nasdaq corroboration", "status": "connected"},
     "NO": {"market": "Euronext Oslo / global market feed", "filings": "ESEF xBRL + issuer/Euronext corroboration", "status": "connected"},
     "DK": {"market": "Nasdaq Nordic / global market feed", "filings": "ESEF xBRL + issuer disclosures", "status": "connected"},
@@ -65,21 +50,16 @@ SOURCE_PLANS: dict[str, dict] = {
     "NL": {"market": "Euronext Amsterdam / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
     "FR": {"market": "Euronext Paris / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
     "BE": {"market": "Euronext Brussels / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
-    "IE": {"market": "Euronext Dublin / global market feed", "filings": "issuer/OAM ESEF adapter still required", "status": "market-ready"},
+    "IE": {"market": "Euronext Dublin / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
     "PT": {"market": "Euronext Lisbon / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
     "IT": {"market": "Euronext Milan / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
-    "DE": {"market": "Xetra/Frankfurt / global market feed", "filings": "German OAM/issuer ESEF adapter still required", "status": "market-ready"},
+    "DE": {"market": "Xetra/Frankfurt / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
     "ES": {"market": "BME / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
     "CH": {"market": "SIX / global market feed", "filings": "SIX + issuer reports", "status": "market-ready"},
-    "AU": {"market": "ASX / global market feed", "filings": "ASX announcements + issuer reports", "status": "market-ready"},
+    "AU": {"market": "ASX / licensed global feed", "filings": "verified ASX/issuer filing drop", "status": "connected", "notes": "Requires authorized/licensed ingestion; unverified local records are rejected."},
     "NZ": {"market": "NZX / global market feed", "filings": "NZX issuer disclosures", "status": "market-ready"},
-    "JP": {"market": "Tokyo Stock Exchange / global market feed", "filings": "FSA EDINET", "status": "market-ready"},
-    "KR": {
-        "market": "Korea Exchange / global market feed",
-        "filings": "FSS OpenDART",
-        "status": "connected",
-        "notes": "OpenDART full annual statement adapter implemented; runtime API key required.",
-    },
+    "JP": {"market": "Tokyo Stock Exchange / global market feed", "filings": "FSA EDINET API v2", "status": "connected", "notes": "EDINET index/cache/parser implemented; API key required and daily server sync supported."},
+    "KR": {"market": "Korea Exchange / global market feed", "filings": "FSS OpenDART", "status": "connected", "notes": "OpenDART annual statement adapter implemented; API key required."},
     "HK": {"market": "HKEX / global market feed", "filings": "HKEXnews", "status": "market-ready"},
     "SG": {"market": "SGX / global market feed", "filings": "SGX issuer announcements", "status": "market-ready"},
     "IN": {"market": "NSE/BSE / global market feed", "filings": "NSE/BSE corporate filings", "status": "market-ready"},
