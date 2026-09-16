@@ -9,8 +9,10 @@ on:
       - 'analysis/global_api_server.py'
       - 'analysis/.env.global.example'
       - 'deploy/setup-global-data.sh'
+      - 'deploy/sync-global-sources.sh'
       - 'deploy/configure-global-route.sh'
-      - 'deploy/systemd/biap-global.service'
+      - 'deploy/systemd/biap-global*.service'
+      - 'deploy/systemd/biap-global*.timer'
       - '.github/workflows/setup-biap-global-server.yml'
   workflow_dispatch:
 
@@ -39,7 +41,7 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install -r requirements.txt
       - run: python -m compileall -q global_markets global_routes.py global_api_server.py
-      - run: pytest -q tests/test_global_agents.py tests/test_global_architecture.py
+      - run: pytest -q tests/test_global_*.py
 
   setup-isolated-server:
     needs: validate
@@ -88,6 +90,7 @@ jobs:
           fi
           cd "$APP_DIR"
           mkdir -p .runtime
+          chmod +x deploy/setup-global-data.sh deploy/sync-global-sources.sh deploy/configure-global-route.sh
           python3 -m venv analysis/.venv-global
           analysis/.venv-global/bin/python -m pip install -q --upgrade pip
           analysis/.venv-global/bin/python -m pip install -q -r analysis/requirements.txt
@@ -98,9 +101,12 @@ jobs:
           fi
           if [[ "$(id -u)" -eq 0 ]]; then SUDO=""; else SUDO="sudo -n"; fi
           $SUDO install -m 0644 deploy/systemd/biap-global.service /etc/systemd/system/biap-global.service
+          $SUDO install -m 0644 deploy/systemd/biap-global-source-sync.service /etc/systemd/system/biap-global-source-sync.service
+          $SUDO install -m 0644 deploy/systemd/biap-global-source-sync.timer /etc/systemd/system/biap-global-source-sync.timer
           $SUDO systemctl daemon-reload
           $SUDO systemctl enable --now biap-global.service
           $SUDO systemctl restart biap-global.service
+          $SUDO systemctl enable --now biap-global-source-sync.timer
           for attempt in 1 2 3 4 5 6; do
             if curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8091/health >/tmp/biap-global-health.json; then
               cat /tmp/biap-global-health.json
@@ -110,6 +116,7 @@ jobs:
           done
           curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8091/health >/dev/null
           bash deploy/configure-global-route.sh
+          $SUDO systemctl list-timers --all biap-global-source-sync.timer --no-pager || true
           echo "Global checkout: $(git rev-parse --short HEAD)"
           echo "Global local health OK. Iran production checkout/service were not touched."
           REMOTE
