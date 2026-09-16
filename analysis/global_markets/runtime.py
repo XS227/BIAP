@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import os
 
+from .cached_esef import CachedESEFFundamentalsProvider
 from .country_packs import COUNTRY_PACKS
 from .edinet import EDINETFundamentalsProvider
-from .esef import ESEFFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
 from .opendart import OpenDARTFundamentalsProvider
 from .providers import ProviderRegistry
@@ -49,7 +49,7 @@ def build_registry() -> ProviderRegistry:
         for exchange in COUNTRY_PACKS["US"].exchanges:
             registry.register_fundamentals("US", exchange.code, sec)
 
-    esef = ESEFFundamentalsProvider()
+    esef = CachedESEFFundamentalsProvider()
     for country in _ESEF_COUNTRIES:
         for exchange in COUNTRY_PACKS[country].exchanges:
             registry.register_fundamentals(country, exchange.code, esef)
