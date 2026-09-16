@@ -1,8 +1,121 @@
-import {useCallback,useMemo,useState} from'react';import{View,Text,StyleSheet,ScrollView,useColorScheme,SafeAreaView,Pressable,RefreshControl}from'react-native';import{router,useFocusEffect}from'expo-router';import{Colors,Brand,Fonts,Spacing,Radius,BottomTabInset,MaxContentWidth,ThemeColors}from'@/constants/theme';import{fetchPaperPortfolio,PaperPortfolio,PaperPosition}from'@/lib/paper-portfolio';import{fetchPaperEquityHistory,fetchKiashaEquityHistory,PaperEquitySnapshot,KiashaEquitySnapshot}from'@/lib/api';import{SymbolLogo}from'@/components/symbol-logo';
-function money(v:number|null|undefined){return v==null||!Number.isFinite(v)?'—':Math.round(v).toLocaleString('fa-IR')}function pct(v:number|null|undefined){return v==null||!Number.isFinite(v)?'—':`${v>=0?'+':''}${v.toFixed(2)}٪`}function signed(v:number|null|undefined){return v==null||!Number.isFinite(v)?'—':`${v>=0?'+':''}${Math.round(v).toLocaleString('fa-IR')}`}
-type Point={snapshotDate:string;totalEquity:number};function ret(h:Point[],back:number){if(h.length<2)return{amount:null as number|null,pct:null as number|null};const e=h[h.length-1],s=h[Math.max(0,h.length-1-back)];if(!s||!e||s.totalEquity<=0)return{amount:null,pct:null};const amount=e.totalEquity-s.totalEquity;return{amount,pct:amount/s.totalEquity*100}}
-function DualCard({label,total,kiasha,colors}:{label:string;total:ReturnType<typeof ret>;kiasha:ReturnType<typeof ret>;colors:ThemeColors}){return <View style={[styles.periodCard,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.periodLabel,{color:colors.textSecondary}]}>{label}</Text><Text style={[styles.metricName,{color:colors.textSecondary}]}>کل پرتفوی</Text><Text style={[styles.metricValue,{color:total.amount==null?colors.text:total.amount>=0?Brand.positive:Brand.negative}]}>{pct(total.pct)}</Text><Text style={[styles.metricName,{color:colors.textSecondary}]}>Kiasha</Text><Text style={[styles.metricValue,{color:kiasha.amount==null?colors.text:kiasha.amount>=0?Brand.positive:Brand.negative}]}>{pct(kiasha.pct)}</Text></View>}
-function Position({p,colors}:{p:PaperPosition;colors:ThemeColors}){const pos=(p.unrealizedPnL??0)>=0,label=p.displayName||p.code;return <Pressable onPress={()=>router.push(`/stock/${p.code}`)} style={[styles.asset,{backgroundColor:colors.backgroundElement}]}><SymbolLogo symbol={label} size={38}/><Text numberOfLines={1} style={[styles.assetName,{color:colors.text}]}>{label}</Text><Text style={[styles.small,{color:colors.textSecondary}]}>{money(p.costBasis)}</Text><Text style={[styles.pnl,{color:pos?Brand.positive:Brand.negative}]}>{pct(p.unrealizedPnLPct)}</Text><Text style={[styles.small,{color:pos?Brand.positive:Brand.negative}]}>{signed(p.unrealizedPnL)}</Text></Pressable>}
-function CompareChart({total,kiasha,colors}:{total:Point[];kiasha:Point[];colors:ThemeColors}){const t=total.slice(-20),k=kiasha.slice(-20);if(t.length<2&&k.length<2)return <View style={[styles.empty,{backgroundColor:colors.backgroundElement}]}><Text style={{color:colors.textSecondary}}>نمودار پس از ثبت snapshotهای واقعی نمایش داده می‌شود.</Text></View>;const normalized=(a:Point[])=>{if(a.length<2||a[0].totalEquity<=0)return[];return a.map(x=>({date:x.snapshotDate,v:(x.totalEquity/a[0].totalEquity-1)*100}))};const tn=normalized(t),kn=normalized(k),vals=[...tn,...kn].map(x=>x.v),min=Math.min(0,...vals),max=Math.max(0,...vals),range=Math.max(1,max-min);return <View style={[styles.chart,{backgroundColor:colors.backgroundElement}]}><View style={styles.chartHead}><Text style={{color:colors.textSecondary}}>٪ تغییر</Text><Text style={[styles.title,{color:colors.text}]}>کل پرتفوی در برابر Kiasha</Text></View><View style={styles.legend}><Text style={{color:Brand.primary}}>● کل</Text><Text style={{color:Brand.positive}}>● Kiasha</Text></View><View style={styles.chartArea}>{Array.from({length:20}).map((_,i)=>{const tv=tn[i]?.v,kv=kn[i]?.v;return <View key={i} style={styles.slot}>{tv!=null?<View style={[styles.lineBar,{height:8+((tv-min)/range)*70,backgroundColor:Brand.primary}]}/>:null}{kv!=null?<View style={[styles.lineBar,{height:8+((kv-min)/range)*70,backgroundColor:Brand.positive}]}/>:null}</View>})}</View></View>}
-export default function PortfolioScreen(){const colors=Colors[useColorScheme()==='dark'?'dark':'light'];const[p,setP]=useState<PaperPortfolio|null>(null),[h,setH]=useState<PaperEquitySnapshot[]>([]),[kh,setKh]=useState<KiashaEquitySnapshot[]>([]),[loading,setLoading]=useState(true),[refreshing,setRefreshing]=useState(false);const load=useCallback(async()=>{const[a,b,c]=await Promise.all([fetchPaperPortfolio(),fetchPaperEquityHistory(120,12000),fetchKiashaEquityHistory(120,12000)]);setP(a);setH((b?.items??[]).slice().sort((x,y)=>x.snapshotDate.localeCompare(y.snapshotDate)));setKh((c?.items??[]).slice().sort((x,y)=>x.snapshotDate.localeCompare(y.snapshotDate)));setLoading(false);setRefreshing(false)},[]);useFocusEffect(useCallback(()=>{load()},[load]));const equity=p&&p.totalMarketValue!==null?(p.cash??0)+p.totalMarketValue:null;const periods=useMemo(()=>[{label:'امروز',back:1},{label:'هفته',back:5},{label:'ماه',back:22}].map(x=>({...x,total:ret(h,x.back),kiasha:ret(kh,x.back)})),[h,kh]);return <SafeAreaView style={[styles.safe,{backgroundColor:colors.background}]}><ScrollView contentContainerStyle={[styles.content,{paddingBottom:BottomTabInset+Spacing.four}]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);load()}} tintColor={Brand.primary}/>}><View style={{maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'}}><View style={styles.header}><Text style={[styles.headerTitle,{color:colors.text}]}>پرتفوی من</Text><Text style={[styles.sub,{color:colors.textSecondary}]}>عملکرد کل سرمایه و بخش مدیریت‌شده توسط Kiasha، جدا و شفاف</Text></View>{loading?<Text style={{color:colors.textSecondary}}>در حال محاسبه...</Text>:p?<><View style={[styles.hero,{backgroundColor:colors.backgroundElement}]}><Text style={{color:colors.textSecondary}}>ارزش کل حساب</Text><Text style={[styles.heroValue,{color:colors.text}]}>{money(equity)} <Text style={styles.small}>ریال</Text></Text><Text style={{color:(p.totalUnrealizedPnL??0)>=0?Brand.positive:Brand.negative}}>{pct(p.totalUnrealizedPnLPct)} • {signed(p.totalUnrealizedPnL)} ریال</Text></View><View style={styles.row}>{periods.map(x=><DualCard key={x.label} label={x.label} total={x.total} kiasha={x.kiasha} colors={colors}/>)}</View><View style={styles.row}><View style={[styles.balance,{backgroundColor:colors.backgroundElement}]}><Text style={{color:colors.textSecondary}}>نقد آزاد</Text><Text style={[styles.balanceValue,{color:colors.text}]}>{money(p.manualAvailableCash??p.cash)}</Text></View><View style={[styles.balance,{backgroundColor:colors.backgroundElement}]}><Text style={{color:colors.textSecondary}}>سرمایه Kiasha</Text><Text style={[styles.balanceValue,{color:colors.text}]}>{money((p.kiashaReservedCash??0)+(p.kiashaInvestedCost??0))}</Text></View><View style={[styles.balance,{backgroundColor:colors.backgroundElement}]}><Text style={{color:colors.textSecondary}}>ارزش سهام</Text><Text style={[styles.balanceValue,{color:colors.text}]}>{money(p.totalMarketValue)}</Text></View></View><CompareChart total={h} kiasha={kh} colors={colors}/><View style={styles.section}><Text style={[styles.title,{color:colors.text}]}>سرمایه‌گذاری‌های من</Text><Text style={{color:colors.textSecondary}}>{p.positions.length.toLocaleString('fa-IR')} دارایی</Text></View><View style={styles.grid}>{p.positions.map(x=><Position key={x.code} p={x} colors={colors}/>)}</View><View style={[styles.notice,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.title,{color:colors.text}]}>بدون بازده ساختگی</Text><Text style={[styles.sub,{color:colors.textSecondary}]}>Kiasha فقط زمانی بازده نشان می‌دهد که همه موقعیت‌های باز آن با قیمت تأییدشده ارزش‌گذاری شده باشند. داده ناقص با — نمایش داده می‌شود.</Text></View></>:null}</View></ScrollView></SafeAreaView>}
-const styles=StyleSheet.create({safe:{flex:1},content:{paddingHorizontal:Spacing.three},header:{paddingTop:Spacing.four,paddingBottom:Spacing.three,alignItems:'flex-end'},headerTitle:{fontSize:23,fontFamily:Fonts.sans,fontWeight:'800'},sub:{fontSize:11,lineHeight:18,textAlign:'right',fontFamily:Fonts.sans},hero:{borderRadius:Radius.lg,padding:Spacing.four,alignItems:'flex-end',marginBottom:Spacing.three},heroValue:{fontFamily:Fonts.mono,fontSize:29,fontWeight:'800',marginVertical:5},row:{flexDirection:'row-reverse',gap:Spacing.two,marginBottom:Spacing.two},periodCard:{flex:1,borderRadius:Radius.md,padding:Spacing.two,alignItems:'flex-end',minHeight:112},periodLabel:{fontSize:10,fontWeight:'800'},metricName:{fontSize:8,marginTop:6},metricValue:{fontFamily:Fonts.mono,fontWeight:'800',fontSize:12},balance:{flex:1,borderRadius:Radius.md,padding:Spacing.two,alignItems:'flex-end'},balanceValue:{fontFamily:Fonts.mono,fontWeight:'800',fontSize:11,marginTop:5},chart:{borderRadius:Radius.lg,padding:Spacing.three,marginVertical:Spacing.two},chartHead:{flexDirection:'row-reverse',justifyContent:'space-between'},legend:{flexDirection:'row-reverse',gap:18,marginTop:8},chartArea:{height:92,flexDirection:'row',alignItems:'flex-end',gap:2,marginTop:8},slot:{flex:1,height:90,flexDirection:'row',alignItems:'flex-end',gap:1},lineBar:{flex:1,borderRadius:2},empty:{borderRadius:Radius.lg,padding:Spacing.four},section:{flexDirection:'row-reverse',justifyContent:'space-between',marginTop:Spacing.four,marginBottom:Spacing.two},title:{fontFamily:Fonts.sans,fontSize:15,fontWeight:'800'},grid:{flexDirection:'row-reverse',flexWrap:'wrap',gap:Spacing.two},asset:{width:'31.5%',borderRadius:Radius.md,padding:Spacing.two,alignItems:'center',minHeight:145},assetName:{fontFamily:Fonts.sans,fontSize:11,fontWeight:'800',marginTop:7,width:'100%',textAlign:'center'},small:{fontFamily:Fonts.mono,fontSize:9,marginTop:4},pnl:{fontFamily:Fonts.mono,fontSize:11,fontWeight:'800',marginTop:7},notice:{borderRadius:Radius.md,padding:Spacing.three,marginTop:Spacing.four,alignItems:'flex-end'}});
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View, useColorScheme } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { buildGlobalPortfolio, GlobalInstrument, GlobalPortfolioResponse, scanGlobalMarket } from '@/lib/global-api';
+import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-market-selection';
+
+type Risk = 'low' | 'medium' | 'high';
+
+function num(value: number | undefined | null, digits = 2) {
+  if (value == null || !Number.isFinite(Number(value))) return '—';
+  return Number(value).toLocaleString('en-US', { maximumFractionDigits: digits });
+}
+
+export default function GlobalPortfolioScreen() {
+  const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
+  const [selection, setSelection] = useState<GlobalMarketSelection | null>(null);
+  const [capital, setCapital] = useState('50000');
+  const [baseCurrency, setBaseCurrency] = useState('EUR');
+  const [risk, setRisk] = useState<Risk>('medium');
+  const [horizon, setHorizon] = useState('5y');
+  const [maxPositions, setMaxPositions] = useState('10');
+  const [cashReserve, setCashReserve] = useState('15');
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState<GlobalPortfolioResponse | null>(null);
+  const [candidateCount, setCandidateCount] = useState(0);
+
+  useFocusEffect(useCallback(() => {
+    getGlobalMarketSelection().then(setSelection);
+  }, []));
+
+  const build = async () => {
+    if (!selection) return;
+    const amount = Number(capital.replace(/,/g, ''));
+    const positions = Math.max(1, Math.min(30, Number(maxPositions) || 10));
+    const reserve = Math.max(0, Math.min(80, Number(cashReserve) || 0));
+    if (!Number.isFinite(amount) || amount <= 0) { setError('Enter a positive capital amount.'); return; }
+    if (!/^[A-Za-z]{3}$/.test(baseCurrency.trim())) { setError('Base currency must be a 3-letter code such as EUR, USD or NOK.'); return; }
+    setLoading(true); setError(''); setResult(null); setCandidateCount(0);
+    try {
+      const scan = await scanGlobalMarket(selection.country, selection.exchange, Math.max(positions, 10));
+      const candidates = (scan.recommendations || []).filter((item) => item.ticker).map<GlobalInstrument>((item) => ({
+        country: item.country || selection.country,
+        exchange: item.exchange || selection.exchange,
+        currency: item.currency || selection.currency,
+        ticker: item.ticker || '',
+        name: item.name || item.ticker || '',
+        isin: item.isin || null,
+        lei: item.lei || null,
+      }));
+      setCandidateCount(candidates.length);
+      if (!candidates.length) {
+        setError('No evidence-qualified BUY candidates are available for this market, so Portfolio Agent will not manufacture a portfolio.');
+        return;
+      }
+      const portfolio = await buildGlobalPortfolio({
+        capital: amount,
+        baseCurrency: baseCurrency.trim().toUpperCase(),
+        riskTolerance: risk,
+        horizon: horizon.trim() || '5y',
+        allowedCountries: [selection.country],
+        allowedExchanges: [selection.exchange],
+        maxPositionPct: Math.min(25, Math.max(2, 100 / Math.max(positions, 1) * 1.5)),
+        maxCountryPct: 100,
+        maxSectorPct: 35,
+        minCashReservePct: reserve,
+        maxPositions: positions,
+      }, candidates);
+      setResult(portfolio);
+    } catch (err) {
+      setError(err instanceof Error ? err.message.slice(0, 360) : 'Portfolio Agent is unavailable.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const proposal = result?.proposal;
+  const allocations = proposal?.allocations || [];
+
+  return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void build(); }} tintColor={Brand.primary} />} contentContainerStyle={styles.content}>
+    <View style={styles.maxWidth}>
+      <View style={styles.header}><View style={{ flex: 1 }}><Text style={[styles.title, { color: colors.text }]}>Portfolio Agent</Text><Text style={[styles.subtitle, { color: colors.textSecondary }]}>Evidence-qualified portfolio construction with FX, risk and concentration controls</Text></View><Pressable onPress={() => router.push('/global')} style={[styles.marketButton, { borderColor: Brand.primary }]}><Text style={styles.marketButtonText}>Change market</Text></Pressable></View>
+
+      <View style={[styles.marketCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.marketEyebrow, { color: Brand.primary }]}>CURRENT SCOPE</Text><Text style={[styles.marketTitle, { color: colors.text }]}>{selection ? `${selection.countryName} • ${selection.exchangeLabel}` : 'Loading…'}</Text><Text style={[styles.marketText, { color: colors.textSecondary }]}>This first full-parity build constructs from the selected market. The same Portfolio Agent API already supports instruments from multiple countries; multi-market scope selection will be layered on this screen after single-market validation.</Text></View>
+
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Investor profile</Text>
+      <View style={[styles.form, { backgroundColor: colors.backgroundElement }]}>
+        <View style={styles.twoCols}><View style={styles.field}><Text style={[styles.label, { color: colors.textSecondary }]}>Capital</Text><TextInput value={capital} onChangeText={setCapital} keyboardType="decimal-pad" style={[styles.input, { color: colors.text, borderColor: colors.backgroundSelected }]} /></View><View style={styles.field}><Text style={[styles.label, { color: colors.textSecondary }]}>Base currency</Text><TextInput value={baseCurrency} onChangeText={setBaseCurrency} autoCapitalize="characters" maxLength={3} style={[styles.input, { color: colors.text, borderColor: colors.backgroundSelected }]} /></View></View>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Risk tolerance</Text><View style={styles.segment}>{(['low', 'medium', 'high'] as Risk[]).map((item) => <Pressable key={item} onPress={() => setRisk(item)} style={[styles.segmentButton, { backgroundColor: risk === item ? Brand.primary : colors.backgroundSelected }]}><Text style={[styles.segmentText, { color: risk === item ? '#fff' : colors.text }]}>{item}</Text></Pressable>)}</View>
+        <View style={styles.twoCols}><View style={styles.field}><Text style={[styles.label, { color: colors.textSecondary }]}>Horizon</Text><TextInput value={horizon} onChangeText={setHorizon} placeholder="5y" placeholderTextColor={colors.textSecondary} style={[styles.input, { color: colors.text, borderColor: colors.backgroundSelected }]} /></View><View style={styles.field}><Text style={[styles.label, { color: colors.textSecondary }]}>Max positions</Text><TextInput value={maxPositions} onChangeText={setMaxPositions} keyboardType="number-pad" style={[styles.input, { color: colors.text, borderColor: colors.backgroundSelected }]} /></View></View>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Minimum cash reserve (%)</Text><TextInput value={cashReserve} onChangeText={setCashReserve} keyboardType="decimal-pad" style={[styles.input, { color: colors.text, borderColor: colors.backgroundSelected }]} />
+      </View>
+
+      <Pressable disabled={loading || !selection} onPress={() => { void build(); }} style={[styles.buildButton, { backgroundColor: Brand.primary, opacity: loading ? .65 : 1 }]}>{loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buildText}>Scan market and build paper portfolio</Text>}</Pressable>
+      {error ? <View style={[styles.errorBox, { borderColor: Brand.warning }]}><Text style={[styles.errorText, { color: colors.textSecondary }]}>{error}</Text></View> : null}
+
+      {proposal ? <>
+        <View style={[styles.summary, { backgroundColor: colors.backgroundElement }]}><View style={styles.summaryTop}><View><Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Proposal status</Text><Text style={[styles.summaryStatus, { color: proposal.status === 'NO_RECOMMENDATION' ? Brand.warning : Brand.positive }]}>{proposal.status || '—'}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Qualified inputs</Text><Text style={[styles.summaryNumber, { color: colors.text }]}>{candidateCount}</Text></View></View><View style={styles.summaryMetrics}><View><Text style={[styles.summaryValue, { color: colors.text }]}>{num(proposal.invested_pct)}%</Text><Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>invested</Text></View><View><Text style={[styles.summaryValue, { color: colors.text }]}>{num(proposal.cash_pct)}%</Text><Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>cash</Text></View><View><Text style={[styles.summaryValue, { color: colors.text }]}>{allocations.length}</Text><Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>positions</Text></View></View>{proposal.reasoning ? <Text style={[styles.reasoning, { color: colors.textSecondary }]}>{proposal.reasoning}</Text> : null}</View>
+
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Proposed allocations</Text>
+        {allocations.length ? allocations.map((item, index) => <View key={`${item.identity}-${index}`} style={[styles.allocation, { backgroundColor: colors.backgroundElement }]}><View style={styles.allocationTop}><View><Text style={[styles.allocationTicker, { color: colors.text }]}>#{index + 1} {item.ticker}</Text><Text style={[styles.allocationMeta, { color: colors.textSecondary }]}>{item.country} • {item.exchange} • {item.currency}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.weight, { color: Brand.primary }]}>{num(item.weight_pct)}%</Text><Text style={[styles.allocationMeta, { color: colors.textSecondary }]}>{num(item.quantity, 0)} shares</Text></View></View><View style={styles.allocationMetrics}><Text style={[styles.allocationMetric, { color: colors.textSecondary }]}>Amount <Text style={{ color: colors.text }}>{num(item.amount_base_currency)} {baseCurrency.toUpperCase()}</Text></Text><Text style={[styles.allocationMetric, { color: colors.textSecondary }]}>Score <Text style={{ color: colors.text }}>{num(item.score, 3)}</Text></Text><Text style={[styles.allocationMetric, { color: colors.textSecondary }]}>Confidence <Text style={{ color: colors.text }}>{item.confidence == null ? '—' : `${Math.round(item.confidence * 100)}%`}</Text></Text></View><Text style={[styles.reasoning, { color: colors.textSecondary }]}>{item.reasoning}</Text></View>) : <View style={[styles.empty, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.emptyText, { color: colors.textSecondary }]}>No allocation cleared all Portfolio Agent gates.</Text></View>}
+
+        {result?.fxErrors && Object.keys(result.fxErrors).length ? <View style={[styles.errorBox, { borderColor: Brand.warning }]}><Text style={[styles.errorText, { color: colors.textSecondary }]}>FX unavailable: {Object.entries(result.fxErrors).map(([k, v]) => `${k}: ${v}`).join(' • ')}</Text></View> : null}
+      </> : null}
+
+      <View style={[styles.notice, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.noticeTitle, { color: colors.text }]}>Paper first</Text><Text style={[styles.noticeText, { color: colors.textSecondary }]}>Portfolio Agent proposes weights and quantities only. It does not submit live orders. Live brokerage is a separate adapter and remains disabled until broker permissions, costs, execution risk, compliance and validation are ready.</Text></View>
+    </View>
+  </ScrollView></SafeAreaView>;
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 }, content: { paddingHorizontal: Spacing.three, paddingBottom: BottomTabInset + Spacing.six }, maxWidth: { maxWidth: MaxContentWidth, width: '100%', alignSelf: 'center' },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: Spacing.four, paddingBottom: Spacing.three }, title: { fontFamily: Fonts.sans, fontSize: 25, fontWeight: '900' }, subtitle: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 16, marginTop: 3 }, marketButton: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 }, marketButtonText: { color: Brand.primary, fontFamily: Fonts.sans, fontSize: 10, fontWeight: '900' },
+  marketCard: { borderRadius: Radius.lg, padding: Spacing.four }, marketEyebrow: { fontFamily: Fonts.mono, fontSize: 8.5, fontWeight: '900' }, marketTitle: { fontFamily: Fonts.sans, fontSize: 17, fontWeight: '900', marginTop: 5 }, marketText: { fontFamily: Fonts.sans, fontSize: 9.5, lineHeight: 15, marginTop: 5 }, sectionTitle: { fontFamily: Fonts.sans, fontSize: 15, fontWeight: '900', marginTop: 20, marginBottom: 8 },
+  form: { borderRadius: Radius.lg, padding: Spacing.three }, twoCols: { flexDirection: 'row', gap: 8 }, field: { flex: 1 }, label: { fontFamily: Fonts.sans, fontSize: 9, marginTop: 8, marginBottom: 4 }, input: { borderWidth: 1, borderRadius: Radius.md, paddingHorizontal: 11, paddingVertical: 10, fontFamily: Fonts.mono, fontSize: 12 }, segment: { flexDirection: 'row', gap: 6 }, segmentButton: { flex: 1, minHeight: 38, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }, segmentText: { fontFamily: Fonts.sans, fontSize: 10, fontWeight: '900', textTransform: 'capitalize' }, buildButton: { minHeight: 50, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center', marginTop: 12 }, buildText: { color: '#fff', fontFamily: Fonts.sans, fontSize: 11.5, fontWeight: '900' },
+  errorBox: { borderWidth: 1, borderRadius: Radius.md, padding: 11, marginTop: 10 }, errorText: { fontFamily: Fonts.sans, fontSize: 9.5, lineHeight: 15 }, summary: { borderRadius: Radius.lg, padding: Spacing.four, marginTop: 14 }, summaryTop: { flexDirection: 'row', justifyContent: 'space-between' }, summaryLabel: { fontFamily: Fonts.sans, fontSize: 8.5 }, summaryStatus: { fontFamily: Fonts.mono, fontSize: 12, fontWeight: '900', marginTop: 3 }, summaryNumber: { fontFamily: Fonts.mono, fontSize: 17, fontWeight: '900', marginTop: 2 }, summaryMetrics: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }, summaryValue: { fontFamily: Fonts.mono, fontSize: 17, fontWeight: '900' }, reasoning: { fontFamily: Fonts.sans, fontSize: 9, lineHeight: 14, marginTop: 8 },
+  allocation: { borderRadius: Radius.lg, padding: Spacing.three, marginBottom: 8 }, allocationTop: { flexDirection: 'row', justifyContent: 'space-between' }, allocationTicker: { fontFamily: Fonts.mono, fontSize: 14, fontWeight: '900' }, allocationMeta: { fontFamily: Fonts.mono, fontSize: 8.5, marginTop: 3 }, weight: { fontFamily: Fonts.mono, fontSize: 15, fontWeight: '900' }, allocationMetrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 10 }, allocationMetric: { fontFamily: Fonts.mono, fontSize: 8.5 }, empty: { borderRadius: Radius.lg, padding: Spacing.four }, emptyText: { fontFamily: Fonts.sans, fontSize: 10, textAlign: 'center' }, notice: { borderRadius: Radius.lg, padding: Spacing.four, marginTop: 18 }, noticeTitle: { fontFamily: Fonts.sans, fontSize: 13, fontWeight: '900' }, noticeText: { fontFamily: Fonts.sans, fontSize: 9.5, lineHeight: 15, marginTop: 5 },
+});
