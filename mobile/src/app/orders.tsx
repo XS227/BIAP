@@ -1,164 +1,32 @@
-import { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, useColorScheme, SafeAreaView, Pressable } from 'react-native';
-import { useFocusEffect, router } from 'expo-router';
-import { Colors, Brand, Fonts, Spacing, Radius, BottomTabInset, MaxContentWidth, ThemeColors } from '@/constants/theme';
-import { fetchOrderHistory, OrderReceipt } from '@/lib/api';
-import { fetchManualPaperOrders, ManualPaperOrder } from '@/lib/kiasha-paper-trade';
-import { fetchTsetmcInstrumentLabel } from '@/lib/market-quote';
-import { getDemoMode } from '@/lib/demo-mode';
-import { getDemoWallet, DemoTrade } from '@/lib/demo-trading';
-import { listManualInvestments, ManualInvestment } from '@/lib/manual-investments';
-import { SymbolLogo } from '@/components/symbol-logo';
+import { useCallback, useState } from 'react';
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { fetchGlobalStatus } from '@/lib/global-api';
+import { getGlobalMarketSelection, type GlobalMarketSelection } from '@/lib/global-market-selection';
 
-const SIDE_LABEL: Record<string, string> = { BUY: 'خرید', SELL: 'فروش' };
-const STATUS_LABEL: Record<string, string> = {
-  PAPER_FILLED: 'اجرا شد (Paper)',
-  DEMO_FILLED: 'اجرا شد (Demo)',
-  MANUAL_TRACKED: 'ثبت شد (دستی)',
-  MANUAL_SOLD: 'فروش ثبت شد (دستی)',
-  PENDING_APPROVAL: 'در انتظار تأیید',
-  PENDING_MARKET_OPEN: 'در صف بازگشایی بازار',
-  CANCELLED_SIGNAL: 'لغو شد — سیگنال تغییر کرد',
-  CANCELLED_RISK: 'لغو شد — کنترل ریسک',
-  SIMULATED: 'شبیه‌سازی شد',
-};
+export default function GlobalExecutionScreen(){
+  const colors=useColorScheme()==='dark'?Colors.dark:Colors.light;
+  const[market,setMarket]=useState<GlobalMarketSelection|null>(null);const[status,setStatus]=useState<Record<string,unknown>|null>(null);
+  useFocusEffect(useCallback(()=>{Promise.all([getGlobalMarketSelection(),fetchGlobalStatus()]).then(([m,s])=>{setMarket(m);setStatus(s)});},[]));
+  const liveBroker=Boolean(status?.liveBrokerConnected);const liveTrading=Boolean(status?.liveTrading);const switchRequested=Boolean(status?.liveTradingSwitchRequested);
+  return <SafeAreaView style={[styles.safe,{backgroundColor:colors.background}]}><ScrollView contentContainerStyle={styles.content}><View style={styles.max}>
+    <View style={styles.header}><Pressable onPress={()=>router.back()} style={[styles.back,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.backText,{color:colors.text}]}>← Back</Text></Pressable><View style={{flex:1}}><Text style={[styles.title,{color:colors.text}]}>Orders & Execution</Text><Text style={[styles.sub,{color:colors.textSecondary}]}>Global execution is isolated from the Iran order history and broker paths.</Text></View></View>
 
-type DemoDisplayOrder = {
-  id: string;
-  code: string;
-  side: 'BUY' | 'SELL';
-  quantity: number;
-  status: 'DEMO_FILLED';
-  created_at: string;
-  submittedAt: string;
-  note: string;
-  price: number;
-  mode: 'demo';
-};
-type ManualBrokerDisplayOrder = {
-  id: string;
-  code: string;
-  side: 'BUY' | 'SELL';
-  quantity: number;
-  status: 'MANUAL_TRACKED' | 'MANUAL_SOLD';
-  created_at: string;
-  submittedAt: string;
-  note: string;
-  price: number;
-  mode: 'manual';
-};
-type DisplayOrder = OrderReceipt | ManualPaperOrder | DemoDisplayOrder | ManualBrokerDisplayOrder;
+    <View style={[styles.hero,{backgroundColor:colors.backgroundElement}]}><Text style={styles.eyebrow}>ACTIVE MARKET</Text><Text style={[styles.market,{color:colors.text}]}>{market?`${market.countryName} • ${market.exchangeLabel}`:'Loading…'}</Text><Text style={[styles.meta,{color:colors.textSecondary}]}>{market?`${market.mic||market.exchange} • ${market.currency}`:''}</Text></View>
 
-function demoOrder(trade: DemoTrade): DemoDisplayOrder {
-  return {
-    id: trade.id,
-    code: trade.code,
-    side: trade.side,
-    quantity: trade.quantity,
-    status: 'DEMO_FILLED',
-    created_at: trade.createdAt,
-    submittedAt: trade.createdAt,
-    note: `قیمت ثبت دمو: ${Math.round(trade.price).toLocaleString('fa-IR')} ریال`,
-    price: trade.price,
-    mode: 'demo',
-  };
-}
-function manualOrder(inv: ManualInvestment): ManualBrokerDisplayOrder {
-  const sold = inv.status === 'SOLD';
-  return {
-    id: inv.id,
-    code: inv.code,
-    side: sold ? 'SELL' : 'BUY',
-    quantity: inv.quantity,
-    status: sold ? 'MANUAL_SOLD' : 'MANUAL_TRACKED',
-    created_at: sold ? inv.soldAt! : inv.boughtAt,
-    submittedAt: sold ? inv.soldAt! : inv.boughtAt,
-    note: sold
-      ? `فروش کل موقعیت با قیمت ${Math.round(inv.sellPrice ?? 0).toLocaleString('fa-IR')} ریال ثبت شد.`
-      : `خرید واقعی خارج از BIAP با قیمت ${Math.round(inv.buyPrice).toLocaleString('fa-IR')} ریال ثبت شد.`,
-    price: sold ? (inv.sellPrice ?? 0) : inv.buyPrice,
-    mode: 'manual',
-  };
-}
-function isDemoOrder(order: DisplayOrder): order is DemoDisplayOrder { return (order as DemoDisplayOrder).mode === 'demo'; }
-function isManualOrder(order: DisplayOrder): order is ManualBrokerDisplayOrder { return (order as ManualBrokerDisplayOrder).mode === 'manual'; }
-function statusColor(status: string) {
-  if (status === 'PAPER_FILLED' || status === 'DEMO_FILLED') return Brand.positive;
-  if (status === 'PENDING_APPROVAL' || status === 'PENDING_MARKET_OPEN') return Brand.warning;
-  if (status.startsWith('CANCELLED')) return Brand.negative;
-  return Brand.secondary;
-}
-function OrderCard({ order, colors, label }: { order: DisplayOrder; colors: ThemeColors; label?: string }) {
-  const sideColor = order.side === 'BUY' ? Brand.positive : Brand.negative;
-  const rawDate = order.submittedAt || order.created_at;
-  const date = rawDate ? new Date(rawDate) : null;
-  const dateLabel = date && !Number.isNaN(date.getTime()) ? date.toLocaleString('fa-IR') : '';
-  const source = isDemoOrder(order) ? 'Demo — فقط روی همین دستگاه' : isManualOrder(order) ? 'دستی — گزارش خرید واقعی شما' : 'Paper — حساب سرور';
-  const displayLabel = label || (/^\d+$/.test(order.code) ? 'در حال دریافت نام نماد…' : order.code);
-  const logoSymbol = label || (/^\d+$/.test(order.code) ? 'BIAP' : order.code);
-  return <Pressable onPress={() => router.push(`/stock/${order.code}`)} style={({ pressed }) => [orderStyles.card, { backgroundColor: colors.backgroundElement, opacity: pressed ? 0.8 : 1 }]}>
-    <View style={orderStyles.topRow}><View style={[orderStyles.statusBadge, { backgroundColor: `${statusColor(order.status)}22` }]}><Text style={[orderStyles.statusText, { color: statusColor(order.status) }]}>{STATUS_LABEL[order.status] ?? order.status}</Text></View><View style={[orderStyles.sideBadge, { backgroundColor: `${sideColor}22` }]}><Text style={[orderStyles.sideText, { color: sideColor }]}>{SIDE_LABEL[order.side] ?? order.side}</Text></View></View>
-    <View style={orderStyles.identityRow}><SymbolLogo symbol={logoSymbol} size={40}/><View style={orderStyles.identityCopy}><Text style={[orderStyles.code, { color: colors.text }]}>{displayLabel}</Text>{label && label !== order.code ? <Text style={[orderStyles.instrumentId, { color: colors.textSecondary }]}>شناسه بازار: {order.code}</Text> : null}</View></View>
-    <Text style={[orderStyles.meta, { color: colors.textSecondary }]}>{order.quantity.toLocaleString('fa-IR')} سهم · {source}</Text>
-    {order.note ? <Text style={[orderStyles.note, { color: colors.textSecondary }]}>{order.note}</Text> : null}
-    {dateLabel ? <Text style={[orderStyles.date, { color: colors.textSecondary }]}>{dateLabel}</Text> : null}
-  </Pressable>;
-}
-function EmptyState({ colors, demo }: { colors: ThemeColors; demo: boolean }) {
-  return <View style={emptyStyles.wrap}><Text style={{fontSize:40}}>🧾</Text><Text style={[emptyStyles.title,{color:colors.text}]}>هنوز سفارشی ثبت نشده</Text><Text style={[emptyStyles.body,{color:colors.textSecondary}]}>{demo ? 'خرید و فروش‌های Demo این دستگاه اینجا نمایش داده می‌شوند.' : 'سفارش‌های Paper همین حساب سرور اینجا نمایش داده می‌شوند.'}</Text><Pressable onPress={()=>router.push('/market')} style={[emptyStyles.btn,{backgroundColor:Brand.primary}]}><Text style={emptyStyles.btnText}>برو به بازار</Text></Pressable></View>;
+    <View style={styles.statusGrid}><View style={[styles.statusCard,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.statusValue,{color:Brand.positive}]}>PAPER</Text><Text style={[styles.statusLabel,{color:colors.textSecondary}]}>Current execution mode</Text></View><View style={[styles.statusCard,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.statusValue,{color:liveBroker?Brand.positive:colors.textSecondary}]}>{liveBroker?'CONNECTED':'NONE'}</Text><Text style={[styles.statusLabel,{color:colors.textSecondary}]}>Live broker</Text></View><View style={[styles.statusCard,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.statusValue,{color:liveTrading?Brand.positive:Brand.warning}]}>{liveTrading?'ON':'OFF'}</Text><Text style={[styles.statusLabel,{color:colors.textSecondary}]}>Live trading</Text></View></View>
+
+    <View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.cardTitle,{color:colors.text}]}>Why there are no Global live orders here yet</Text><Text style={[styles.body,{color:colors.textSecondary}]}>BIAP Global can analyze markets and construct a paper portfolio, but sending an order requires a market-aware broker adapter, contract identifiers, trading permissions, lot sizes, fees, FX, audit logging and final risk checks. The Iran Paper/Order history is intentionally not reused for Global markets.</Text></View>
+
+    <View style={[styles.flow,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.cardTitle,{color:colors.text}]}>Execution pipeline</Text>{['Kiasha / Stock Analysis','Evidence + Risk Gate','Portfolio Agent','Paper Order Draft','Human Approval','Future Regulated Broker Adapter'].map((item,index)=><View key={item} style={styles.step}><View style={[styles.number,{backgroundColor:index<4?Brand.primary:colors.backgroundSelected}]}><Text style={styles.numberText}>{index+1}</Text></View><Text style={[styles.stepText,{color:colors.text}]}>{item}</Text></View>)}</View>
+
+    {switchRequested&&!liveTrading?<View style={[styles.warning,{borderColor:Brand.warning}]}><Text style={[styles.warningTitle,{color:Brand.warning}]}>Live switch requested but not enabled</Text><Text style={[styles.body,{color:colors.textSecondary}]}>The backend still reports liveTrading=false. BIAP will not bypass this gate.</Text></View>:null}
+
+    <Pressable onPress={()=>router.push('/portfolio')} style={[styles.primary,{backgroundColor:Brand.primary}]}><Text style={styles.primaryText}>Build a Global paper portfolio</Text></Pressable><Pressable onPress={()=>router.push('/market')} style={[styles.secondary,{borderColor:Brand.primary}]}><Text style={styles.secondaryText}>Open Market</Text></Pressable>
+
+    <Text style={[styles.disclaimer,{color:colors.textSecondary}]}>No live order is transmitted from this screen. A future Global broker integration must be explicit and separate from the Iran production execution path.</Text>
+  </View></ScrollView></SafeAreaView>;
 }
 
-export default function OrdersScreen(){
-  const scheme=useColorScheme()==='dark'?'dark':'light';
-  const colors=Colors[scheme];
-  const [orders,setOrders]=useState<DisplayOrder[]>([]);
-  const [names,setNames]=useState<Record<string,string>>({});
-  const [refreshing,setRefreshing]=useState(false);
-  const [error,setError]=useState(false);
-  const [demo,setDemo]=useState(false);
-
-  const load=useCallback(async()=>{
-    const demoMode = await getDemoMode();
-    setDemo(demoMode);
-    if (demoMode) {
-      try {
-        const wallet = await getDemoWallet();
-        setOrders(wallet.trades.map(demoOrder));
-        setError(false);
-      } catch {
-        setError(true);
-      }
-      setRefreshing(false);
-      return;
-    }
-    const [legacy,queued,manual]=await Promise.all([fetchOrderHistory(),fetchManualPaperOrders(),listManualInvestments().catch(()=>[])]);
-    if(legacy===null&&queued===null&&!manual.length) setError(true);
-    else {
-      setError(false);
-      const combined: DisplayOrder[]=[...manual.map(manualOrder),...(queued??[]),...(legacy??[])];
-      const seen=new Set<string>();
-      const unique=combined.filter(item=>{if(seen.has(item.id))return false;seen.add(item.id);return true});
-      unique.sort((a,b)=>String(b.submittedAt||b.created_at).localeCompare(String(a.submittedAt||a.created_at)));
-      setOrders(unique);
-    }
-    setRefreshing(false);
-  },[]);
-
-  useFocusEffect(useCallback(()=>{load()},[load]));
-  useEffect(()=>{
-    let cancelled=false;
-    const numeric=[...new Set(orders.map(o=>o.code).filter(c=>/^\d+$/.test(c)))].filter(c=>!names[c]);
-    if(!numeric.length)return;
-    Promise.all(numeric.map(async code=>[code,await fetchTsetmcInstrumentLabel(code)] as const)).then(rows=>{
-      if(cancelled)return;
-      setNames(cur=>{const next={...cur};for(const[code,label]of rows)if(label)next[code]=label;return next});
-    });
-    return()=>{cancelled=true};
-  },[orders,names]);
-
-  return <SafeAreaView style={[styles.safe,{backgroundColor:colors.background}]}><ScrollView contentContainerStyle={[styles.content,{paddingBottom:BottomTabInset+Spacing.four}]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);load()}} tintColor={Brand.primary}/>}><View style={{maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'}}><View style={styles.header}><View style={styles.headerLine}><View style={[styles.modeBadge,{backgroundColor:demo?'#7048e8':Brand.primary}]}><Text style={styles.modeBadgeText}>{demo?'DEMO':'PAPER'}</Text></View><Text style={[styles.headerTitle,{color:colors.text}]}>سفارش‌ها</Text></View><Text style={[styles.headerSub,{color:colors.textSecondary}]}>{demo?'تاریخچه خرید و فروش Demo همین دستگاه؛ با حساب Paper مخلوط نمی‌شود.':'تاریخچه سفارش‌های Paper همین حساب سرور؛ با معاملات Demo محلی مخلوط نمی‌شود.'}</Text></View>{error?<View style={[styles.errorBox,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.errorText,{color:colors.textSecondary}]}>دریافت سفارش‌ها با خطا مواجه شد. برای تلاش دوباره پایین را بکشید.</Text></View>:orders.length===0?<EmptyState colors={colors} demo={demo}/>:orders.map(o=><OrderCard key={o.id} order={o} colors={colors} label={names[o.code]}/>)}</View></ScrollView></SafeAreaView>;
-}
-
-const orderStyles = StyleSheet.create({card:{borderRadius:Radius.md,padding:Spacing.three,marginBottom:Spacing.two,alignItems:'flex-end',gap:4},topRow:{flexDirection:'row-reverse',gap:Spacing.one},identityRow:{width:'100%',flexDirection:'row-reverse',alignItems:'center',gap:Spacing.two,marginTop:5},identityCopy:{flex:1,alignItems:'flex-end'},statusBadge:{paddingHorizontal:Spacing.two,paddingVertical:4,borderRadius:Radius.sm},statusText:{fontFamily:Fonts.sans,fontSize:11,fontWeight:'700'},sideBadge:{paddingHorizontal:Spacing.two,paddingVertical:4,borderRadius:Radius.sm},sideText:{fontFamily:Fonts.sans,fontSize:11,fontWeight:'700'},code:{fontFamily:Fonts.sans,fontSize:16,fontWeight:'800'},instrumentId:{fontFamily:Fonts.mono,fontSize:9,marginTop:2},meta:{fontFamily:Fonts.sans,fontSize:12},note:{fontFamily:Fonts.sans,fontSize:12,textAlign:'right',lineHeight:19},date:{fontFamily:Fonts.mono,fontSize:11,marginTop:2}});
-const emptyStyles=StyleSheet.create({wrap:{alignItems:'center',gap:Spacing.two,paddingTop:Spacing.six,paddingHorizontal:Spacing.four},title:{fontFamily:Fonts.sans,fontSize:17,fontWeight:'700'},body:{fontFamily:Fonts.sans,fontSize:13,textAlign:'center',lineHeight:21},btn:{marginTop:Spacing.two,borderRadius:Radius.sm,paddingHorizontal:Spacing.four,paddingVertical:Spacing.three},btnText:{color:'#fff',fontFamily:Fonts.sans,fontSize:14,fontWeight:'700'}});
-const styles=StyleSheet.create({safe:{flex:1},content:{paddingHorizontal:Spacing.three},header:{paddingTop:Spacing.four,paddingBottom:Spacing.three},headerLine:{flexDirection:'row-reverse',alignItems:'center',gap:Spacing.two},headerTitle:{fontSize:22,fontFamily:Fonts.sans,textAlign:'right',fontWeight:'700'},headerSub:{fontSize:12,fontFamily:Fonts.sans,textAlign:'right',marginTop:5,lineHeight:20},modeBadge:{borderRadius:12,paddingHorizontal:8,paddingVertical:3},modeBadgeText:{color:'#fff',fontFamily:Fonts.mono,fontSize:9,fontWeight:'800'},errorBox:{borderRadius:Radius.md,padding:Spacing.three,marginTop:Spacing.two},errorText:{fontFamily:Fonts.sans,fontSize:13,textAlign:'right'}});
+const styles=StyleSheet.create({safe:{flex:1},content:{paddingHorizontal:Spacing.three,paddingBottom:BottomTabInset+Spacing.six},max:{maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},header:{flexDirection:'row',alignItems:'flex-start',gap:12,paddingTop:Spacing.four,paddingBottom:Spacing.three},back:{paddingHorizontal:11,paddingVertical:8,borderRadius:18},backText:{fontFamily:Fonts.sans,fontSize:10,fontWeight:'800'},title:{fontFamily:Fonts.sans,fontSize:22,fontWeight:'900'},sub:{fontFamily:Fonts.sans,fontSize:10,lineHeight:15,marginTop:3},hero:{borderRadius:Radius.lg,padding:Spacing.four},eyebrow:{color:Brand.primary,fontFamily:Fonts.mono,fontSize:8.5,fontWeight:'900'},market:{fontFamily:Fonts.sans,fontSize:17,fontWeight:'900',marginTop:5},meta:{fontFamily:Fonts.mono,fontSize:9,marginTop:3},statusGrid:{flexDirection:'row',gap:8,marginTop:10},statusCard:{flex:1,borderRadius:Radius.md,paddingVertical:14,paddingHorizontal:6,alignItems:'center'},statusValue:{fontFamily:Fonts.mono,fontSize:12,fontWeight:'900',textAlign:'center'},statusLabel:{fontFamily:Fonts.sans,fontSize:8,textAlign:'center',marginTop:4},card:{borderRadius:Radius.lg,padding:Spacing.four,marginTop:14},cardTitle:{fontFamily:Fonts.sans,fontSize:13,fontWeight:'900'},body:{fontFamily:Fonts.sans,fontSize:10,lineHeight:16,marginTop:6},flow:{borderRadius:Radius.lg,padding:Spacing.four,marginTop:12},step:{flexDirection:'row',alignItems:'center',gap:10,marginTop:10},number:{width:26,height:26,borderRadius:13,alignItems:'center',justifyContent:'center'},numberText:{color:'#fff',fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},stepText:{fontFamily:Fonts.sans,fontSize:10.5,fontWeight:'700'},warning:{borderWidth:1,borderRadius:Radius.md,padding:12,marginTop:12},warningTitle:{fontFamily:Fonts.sans,fontSize:11,fontWeight:'900'},primary:{minHeight:48,borderRadius:Radius.md,alignItems:'center',justifyContent:'center',marginTop:14},primaryText:{color:'#fff',fontFamily:Fonts.sans,fontSize:10.5,fontWeight:'900'},secondary:{minHeight:46,borderRadius:Radius.md,borderWidth:1,alignItems:'center',justifyContent:'center',marginTop:8},secondaryText:{color:Brand.primary,fontFamily:Fonts.sans,fontSize:10.5,fontWeight:'900'},disclaimer:{fontFamily:Fonts.sans,fontSize:8.5,lineHeight:14,textAlign:'center',marginTop:18}});
