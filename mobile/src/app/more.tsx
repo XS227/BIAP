@@ -10,7 +10,7 @@ import type { GlobalInstrument } from '@/lib/global-api';
 type Item = { icon:string; title:string; sub:string; onPress:()=>void; accent?:string };
 
 function Row({item,colors}:{item:Item;colors:ThemeColors}){
-  return <Pressable onPress={item.onPress} style={({pressed})=>[styles.row,{backgroundColor:colors.backgroundElement,opacity:pressed?.75:1}]}>
+  return <Pressable onPress={item.onPress} style={({pressed})=>[styles.row,{backgroundColor:colors.backgroundElement,opacity:pressed ? .75 : 1}]}>
     <View style={[styles.icon,{backgroundColor:`${item.accent||Brand.primary}22`}]}><Text style={styles.emoji}>{item.icon}</Text></View>
     <View style={{flex:1}}><Text style={[styles.rowTitle,{color:colors.text}]}>{item.title}</Text><Text style={[styles.rowSub,{color:colors.textSecondary}]}>{item.sub}</Text></View><Text style={[styles.chevron,{color:colors.textSecondary}]}>›</Text>
   </Pressable>;
