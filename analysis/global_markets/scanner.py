@@ -174,6 +174,30 @@ class GlobalMarketScanner:
         selected_universe = universe[:discovery_limit]
         partial = discovered_count > discovery_limit
 
+        # Reference discovery can operate with the documented public demo
+        # catalog, but quotes/history cannot. Return a clean, non-error state so
+        # the app can still browse real instruments without pretending that a
+        # tradability screen or BUY analysis has run.
+        if not self.market_api_key:
+            return {
+                "status": "MARKET_DATA_REQUIRED",
+                "country": country.upper(),
+                "exchange": spec.code,
+                "mic": spec.mic,
+                "requestedRecommendations": top_n,
+                "recommendationCount": 0,
+                "universeDiscovered": discovered_count,
+                "universeScreened": 0,
+                "quotesUsable": 0,
+                "deepAnalyzed": 0,
+                "screeningCoveragePct": 0.0,
+                "screeningErrors": ["Reference catalog is available; quote/history market-data credential is not configured."],
+                "recommendations": [],
+                "deepResults": [],
+                "catalogOnly": True,
+                "notes": "BIAP will not produce BUY candidates until verified quote/history data is available.",
+            }
+
         quotes, screening_errors = self._batch_quotes(selected_universe, country.upper(), spec)
         quote_by_ticker = {row["ticker"]: row for row in quotes}
         ranked = sorted(quotes, key=self._screen_rank, reverse=True)
