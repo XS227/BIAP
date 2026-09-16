@@ -5,159 +5,108 @@ import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing 
 import { buildGlobalPortfolio, fetchGlobalCountries, GlobalAnalysis, GlobalCountry, GlobalInstrument, GlobalPortfolioResponse, scanGlobalMarket } from '@/lib/global-api';
 import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-market-selection';
 
-type Risk='low'|'medium'|'high';
-type ScopeMarket={country:string;countryName:string;exchange:string;exchangeLabel:string;currency:string;mic?:string|null};
-type MarketComparison={
-  key:string; country:string; exchange:string; label:string; qualified:number; deep:number; coverage:number;
-  pass:number; warn:number; block:number; avgScore:number|null; avgConfidence:number|null; topTicker:string; topScore:number|null;
-};
+type Risk = 'low' | 'medium' | 'high';
+type Scope = { country:string; countryName:string; exchange:string; exchangeLabel:string; currency:string; mic?:string|null };
+type MarketStat = { key:string; country:string; label:string; qualified:number; deep:number; coverage:number; pass:number; warn:number; block:number; avgScore:number|null; avgConfidence:number|null; top:string };
+const PRIORITY = ['US','NO','SE','GB','JP','AU','DE','FR','NL','FI','DK','KR','IR'];
+const AGENTS = ['fundamental','risk','forecast','comparison','quality','liquidity'] as const;
+const MAX_INPUTS = 50;
 
-const PRIORITY=['US','NO','SE','GB','JP','AU','DE','FR','NL','FI','DK','KR','IR'];
-const MAX_PORTFOLIO_INPUTS=50;
-const AGENTS=['fundamental','risk','forecast','comparison','quality','liquidity'] as const;
+const n=(v:number|null|undefined,d=2)=>v==null||!Number.isFinite(Number(v))?'—':Number(v).toLocaleString('en-US',{maximumFractionDigits:d});
+const pc=(v:number|null|undefined)=>v==null||!Number.isFinite(Number(v))?'—':`${Math.round(Number(v)*100)}%`;
+const scopeKey=(m:Scope)=>`${m.country}:${m.exchange}`;
+const analysisKey=(a:GlobalAnalysis)=>`${a.country||''}:${a.exchange||''}:${a.ticker||''}`;
+const fromSelection=(s:GlobalMarketSelection):Scope=>({country:s.country,countryName:s.countryName,exchange:s.exchange,exchangeLabel:s.exchangeLabel,currency:s.currency,mic:s.mic});
+const signal=(a:GlobalAnalysis|undefined,name:string)=>a?.signals?.find(x=>x.agent===name);
 
-function num(value:number|undefined|null,digits=2){return value==null||!Number.isFinite(Number(value))?'—':Number(value).toLocaleString('en-US',{maximumFractionDigits:digits})}
-function pct01(value:number|undefined|null){return value==null||!Number.isFinite(Number(value))?'—':`${Math.round(Number(value)*100)}%`}
-function keyOf(m:ScopeMarket){return `${m.country}:${m.exchange}`}
-function fromSelection(s:GlobalMarketSelection):ScopeMarket{return{country:s.country,countryName:s.countryName,exchange:s.exchange,exchangeLabel:s.exchangeLabel,currency:s.currency,mic:s.mic}}
-function analysisKey(a:GlobalAnalysis){return `${a.country||''}:${a.exchange||''}:${a.ticker||''}`}
-
-function marketStats(scope:ScopeMarket, body:Awaited<ReturnType<typeof scanGlobalMarket>>):MarketComparison{
-  const deep=Array.isArray(body.deepResults)?body.deepResults:[];
-  const scored=deep.filter((x)=>x.score!=null&&Number.isFinite(Number(x.score)));
-  const confident=deep.filter((x)=>x.confidence!=null&&Number.isFinite(Number(x.confidence)));
-  const avgScore=scored.length?scored.reduce((s,x)=>s+Number(x.score),0)/scored.length:null;
-  const avgConfidence=confident.length?confident.reduce((s,x)=>s+Number(x.confidence),0)/confident.length:null;
-  const top=[...(body.recommendations||[])].sort((a,b)=>Number(b.score||0)-Number(a.score||0))[0];
-  return{
-    key:keyOf(scope),country:scope.country,exchange:scope.exchange,label:scope.exchangeLabel,
-    qualified:Number(body.recommendationCount||body.recommendations?.length||0),deep:Number(body.deepAnalyzed||deep.length||0),coverage:Number(body.screeningCoveragePct||0),
-    pass:deep.filter((x)=>x.evidence?.status==='PASS').length,warn:deep.filter((x)=>x.evidence?.status==='WARN').length,block:deep.filter((x)=>x.evidence?.status==='BLOCK').length,
-    avgScore,avgConfidence,topTicker:top?.ticker||'—',topScore:top?.score??null,
+function factorText(a:GlobalAnalysis|undefined){
+  const list=a?.signals||[];
+  const positives=[...list].filter(x=>x.vote>.08&&x.confidence>0).sort((x,y)=>y.vote*y.confidence-x.vote*x.confidence).slice(0,3);
+  const negatives=[...list].filter(x=>x.vote<-.08&&x.confidence>0).sort((x,y)=>x.vote*x.confidence-y.vote*y.confidence).slice(0,2);
+  return {
+    why: positives.length?positives.map(x=>`${x.agent} ${x.vote>=0?'+':''}${x.vote.toFixed(2)}`).join(' • '):'No strong positive factor',
+    caution: negatives.length?negatives.map(x=>`${x.agent} ${x.vote.toFixed(2)}`).join(' • '):'No material negative agent vote',
   };
 }
 
-function signalFor(analysis:GlobalAnalysis|undefined,agent:string){return analysis?.signals?.find((s)=>s.agent===agent)}
-function factorSummary(analysis:GlobalAnalysis|undefined){
-  const signals=analysis?.signals||[];
-  const positive=[...signals].filter((s)=>s.vote>0.08&&s.confidence>0).sort((a,b)=>(b.vote*b.confidence)-(a.vote*a.confidence)).slice(0,3);
-  const negative=[...signals].filter((s)=>s.vote<-0.08&&s.confidence>0).sort((a,b)=>(a.vote*a.confidence)-(b.vote*b.confidence)).slice(0,2);
-  return{
-    positive:positive.map((s)=>`${s.agent} ${s.vote>=0?'+':''}${s.vote.toFixed(2)}`).join(' • ')||'No strong positive agent factor',
-    negative:negative.map((s)=>`${s.agent} ${s.vote.toFixed(2)}`).join(' • ')||'No material negative agent vote',
-  };
+function stat(scope:Scope,r:Awaited<ReturnType<typeof scanGlobalMarket>>):MarketStat{
+  const deep=r.deepResults||[];
+  const scored=deep.filter(x=>x.score!=null&&Number.isFinite(Number(x.score)));
+  const confident=deep.filter(x=>x.confidence!=null&&Number.isFinite(Number(x.confidence)));
+  const top=[...(r.recommendations||[])].sort((a,b)=>Number(b.score||0)-Number(a.score||0))[0];
+  return {key:scopeKey(scope),country:scope.country,label:scope.exchangeLabel,qualified:Number(r.recommendationCount||r.recommendations?.length||0),deep:Number(r.deepAnalyzed||deep.length||0),coverage:Number(r.screeningCoveragePct||0),pass:deep.filter(x=>x.evidence?.status==='PASS').length,warn:deep.filter(x=>x.evidence?.status==='WARN').length,block:deep.filter(x=>x.evidence?.status==='BLOCK').length,avgScore:scored.length?scored.reduce((s,x)=>s+Number(x.score),0)/scored.length:null,avgConfidence:confident.length?confident.reduce((s,x)=>s+Number(x.confidence),0)/confident.length:null,top:top?.ticker||'—'};
 }
 
 export default function GlobalPortfolioScreen(){
   const colors=useColorScheme()==='dark'?Colors.dark:Colors.light;
   const[current,setCurrent]=useState<GlobalMarketSelection|null>(null);
   const[countries,setCountries]=useState<GlobalCountry[]>([]);
-  const[scopes,setScopes]=useState<ScopeMarket[]>([]);
-  const[capital,setCapital]=useState('50000');
-  const[baseCurrency,setBaseCurrency]=useState('EUR');
-  const[risk,setRisk]=useState<Risk>('medium');
-  const[horizon,setHorizon]=useState('5y');
-  const[maxPositions,setMaxPositions]=useState('10');
-  const[cashReserve,setCashReserve]=useState('15');
-  const[loading,setLoading]=useState(false);
-  const[refreshing,setRefreshing]=useState(false);
-  const[error,setError]=useState('');
-  const[scanNotes,setScanNotes]=useState<string[]>([]);
-  const[comparison,setComparison]=useState<MarketComparison[]>([]);
-  const[result,setResult]=useState<GlobalPortfolioResponse|null>(null);
+  const[scopes,setScopes]=useState<Scope[]>([]);
+  const[capital,setCapital]=useState('50000'); const[baseCurrency,setBaseCurrency]=useState('EUR');
+  const[risk,setRisk]=useState<Risk>('medium'); const[horizon,setHorizon]=useState('5y');
+  const[maxPositions,setMaxPositions]=useState('10'); const[cashReserve,setCashReserve]=useState('15');
+  const[loading,setLoading]=useState(false); const[refreshing,setRefreshing]=useState(false);
+  const[error,setError]=useState(''); const[notes,setNotes]=useState<string[]>([]);
+  const[stats,setStats]=useState<MarketStat[]>([]); const[result,setResult]=useState<GlobalPortfolioResponse|null>(null);
   const[candidateCount,setCandidateCount]=useState(0);
 
-  useFocusEffect(useCallback(()=>{
-    Promise.all([getGlobalMarketSelection(),fetchGlobalCountries()]).then(([selection,catalog])=>{
-      setCurrent(selection);setCountries(catalog.countries);setScopes((prev)=>prev.length?prev:[fromSelection(selection)]);
-    });
-  },[]));
+  useFocusEffect(useCallback(()=>{Promise.all([getGlobalMarketSelection(),fetchGlobalCountries()]).then(([s,c])=>{setCurrent(s);setCountries(c.countries);setScopes(p=>p.length?p:[fromSelection(s)]);});},[]));
 
-  const marketOptions=useMemo(()=>{
-    const currentKey=current?`${current.country}:${current.exchange}`:'';
-    const rows:ScopeMarket[]=[];
-    for(const country of countries){for(const exchange of country.exchanges){rows.push({country:country.country,countryName:country.name,exchange:exchange.code,exchangeLabel:exchange.label,currency:exchange.currencies[0]||'',mic:exchange.mic});}}
-    const rank=new Map(PRIORITY.map((x,i)=>[x,i]));
-    return rows.sort((a,b)=>keyOf(a)===currentKey?-1:keyOf(b)===currentKey?1:(rank.get(a.country)??99)-(rank.get(b.country)??99)||a.exchangeLabel.localeCompare(b.exchangeLabel));
+  const options=useMemo(()=>{
+    const rows:Scope[]=[]; for(const c of countries)for(const e of c.exchanges)rows.push({country:c.country,countryName:c.name,exchange:e.code,exchangeLabel:e.label,currency:e.currencies[0]||'',mic:e.mic});
+    const rank=new Map(PRIORITY.map((x,i)=>[x,i])); const ck=current?`${current.country}:${current.exchange}`:'';
+    return rows.sort((a,b)=>scopeKey(a)===ck?-1:scopeKey(b)===ck?1:(rank.get(a.country)??99)-(rank.get(b.country)??99)||a.exchangeLabel.localeCompare(b.exchangeLabel));
   },[countries,current]);
 
-  const toggleScope=(market:ScopeMarket)=>setScopes((prev)=>{
-    const exists=prev.some((x)=>keyOf(x)===keyOf(market));
-    if(exists)return prev.length===1?prev:prev.filter((x)=>keyOf(x)!==keyOf(market));
-    if(prev.length>=4)return prev;
-    return[...prev,market];
-  });
+  const toggle=(m:Scope)=>setScopes(prev=>{const exists=prev.some(x=>scopeKey(x)===scopeKey(m));if(exists)return prev.length===1?prev:prev.filter(x=>scopeKey(x)!==scopeKey(m));return prev.length>=4?prev:[...prev,m];});
 
   const build=async()=>{
-    const amount=Number(capital.replace(/,/g,''));
-    const positions=Math.max(1,Math.min(30,Number(maxPositions)||10));
-    const reserve=Math.max(0,Math.min(80,Number(cashReserve)||0));
+    const amount=Number(capital.replace(/,/g,'')); const positions=Math.max(1,Math.min(30,Number(maxPositions)||10)); const reserve=Math.max(0,Math.min(80,Number(cashReserve)||0));
     if(!Number.isFinite(amount)||amount<=0){setError('Enter a positive capital amount.');return}
     if(!/^[A-Za-z]{3}$/.test(baseCurrency.trim())){setError('Base currency must be a 3-letter code such as EUR, USD or NOK.');return}
-    if(!scopes.length){setError('Select at least one market.');return}
-    setLoading(true);setError('');setResult(null);setCandidateCount(0);setScanNotes([]);setComparison([]);
+    setLoading(true);setError('');setResult(null);setNotes([]);setStats([]);setCandidateCount(0);
     try{
-      const perMarketCapacity=Math.max(1,Math.floor(MAX_PORTFOLIO_INPUTS/scopes.length));
-      const desiredPerMarket=Math.max(5,Math.ceil(positions*1.5));
-      const perMarket=Math.min(50,perMarketCapacity,desiredPerMarket);
-      const scans=await Promise.allSettled(scopes.map((scope)=>scanGlobalMarket(scope.country,scope.exchange,perMarket)));
-      const notes:string[]=[];const candidates:GlobalInstrument[]=[];const compare:MarketComparison[]=[];
-      scans.forEach((scan,index)=>{
-        const scope=scopes[index];
-        if(scan.status==='rejected'){notes.push(`${scope.country}/${scope.exchange}: scan failed`);compare.push({key:keyOf(scope),country:scope.country,exchange:scope.exchange,label:scope.exchangeLabel,qualified:0,deep:0,coverage:0,pass:0,warn:0,block:0,avgScore:null,avgConfidence:null,topTicker:'—',topScore:null});return}
-        const body=scan.value;
-        compare.push(marketStats(scope,body));
-        notes.push(`${scope.country}/${scope.exchange}: ${body.recommendationCount??0} qualified from ${body.deepAnalyzed??0} deep analyses`);
-        for(const item of body.recommendations||[]){if(!item.ticker)continue;candidates.push({country:item.country||scope.country,exchange:item.exchange||scope.exchange,currency:item.currency||scope.currency,ticker:item.ticker,name:item.name||item.ticker,isin:item.isin||null,lei:item.lei||null,sector:item.company?.sector||null,industry:item.company?.industry||null,lot_size:item.company?.lot_size||null});}
-      });
-      setComparison(compare);
-      const unique=[...new Map(candidates.map((x)=>[`${x.country}:${x.exchange}:${x.ticker}`,x])).values()].slice(0,MAX_PORTFOLIO_INPUTS);
-      setCandidateCount(unique.length);setScanNotes(notes);
-      if(!unique.length){setError('No evidence-qualified BUY candidates are available across the selected markets. Portfolio Agent will not manufacture a portfolio.');return}
+      const perMarket=Math.min(50,Math.max(1,Math.floor(MAX_INPUTS/scopes.length)),Math.max(5,Math.ceil(positions*1.5)));
+      const scans=await Promise.allSettled(scopes.map(s=>scanGlobalMarket(s.country,s.exchange,perMarket)));
+      const instruments:GlobalInstrument[]=[]; const nextStats:MarketStat[]=[]; const nextNotes:string[]=[];
+      scans.forEach((r,i)=>{const s=scopes[i];if(r.status==='rejected'){nextNotes.push(`${s.country}/${s.exchange}: scan failed`);return}nextStats.push(stat(s,r.value));nextNotes.push(`${s.country}/${s.exchange}: ${r.value.recommendationCount??0} qualified from ${r.value.deepAnalyzed??0} deep analyses`);for(const x of r.value.recommendations||[]){if(!x.ticker)continue;instruments.push({country:x.country||s.country,exchange:x.exchange||s.exchange,currency:x.currency||s.currency,ticker:x.ticker,name:x.name||x.ticker,isin:x.isin||null,lei:x.lei||null,sector:x.company?.sector||null,industry:x.company?.industry||null,lot_size:x.company?.lot_size||null});}});
+      setStats(nextStats);setNotes(nextNotes);
+      const unique=[...new Map(instruments.map(x=>[`${x.country}:${x.exchange}:${x.ticker}`,x])).values()].slice(0,MAX_INPUTS); setCandidateCount(unique.length);
+      if(!unique.length){setError('No evidence-qualified BUY candidates were found across the selected markets.');return}
       const countryCap=scopes.length<=1?100:Math.max(30,Math.min(60,Math.ceil(140/scopes.length)));
-      const portfolio=await buildGlobalPortfolio({capital:amount,baseCurrency:baseCurrency.trim().toUpperCase(),riskTolerance:risk,horizon:horizon.trim()||'5y',allowedCountries:[...new Set(scopes.map((x)=>x.country))],allowedExchanges:[...new Set(scopes.map((x)=>x.exchange))],maxPositionPct:Math.min(25,Math.max(3,100/Math.max(positions,1)*1.5)),maxCountryPct:countryCap,maxSectorPct:35,minCashReservePct:reserve,maxPositions:positions},unique);
-      setResult(portfolio);
-    }catch(err){setError(err instanceof Error?err.message.slice(0,360):'Portfolio Agent is unavailable.')}finally{setLoading(false);setRefreshing(false)}
+      setResult(await buildGlobalPortfolio({capital:amount,baseCurrency:baseCurrency.trim().toUpperCase(),riskTolerance:risk,horizon:horizon.trim()||'5y',allowedCountries:[...new Set(scopes.map(x=>x.country))],allowedExchanges:[...new Set(scopes.map(x=>x.exchange))],maxPositionPct:Math.min(25,Math.max(3,150/positions)),maxCountryPct:countryCap,maxSectorPct:35,minCashReservePct:reserve,maxPositions:positions},unique));
+    }catch(e){setError(e instanceof Error?e.message.slice(0,360):'Portfolio Agent is unavailable.')}finally{setLoading(false);setRefreshing(false)}
   };
 
-  const proposal=result?.proposal;
-  const allocations=proposal?.allocations||[];
-  const analysisMap=useMemo(()=>new Map((result?.analyses||[]).map((a)=>[analysisKey(a),a])),[result]);
+  const proposal=result?.proposal; const allocations=proposal?.allocations||[];
+  const map=useMemo(()=>new Map((result?.analyses||[]).map(a=>[analysisKey(a),a])),[result]);
 
-  return <SafeAreaView style={[styles.safe,{backgroundColor:colors.background}]}><ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);void build()}} tintColor={Brand.primary}/>} contentContainerStyle={styles.content}><View style={styles.max}>
-    <View style={styles.header}><View style={{flex:1}}><Text style={[styles.title,{color:colors.text}]}>Global Portfolio Agent</Text><Text style={[styles.subtitle,{color:colors.textSecondary}]}>Compare exchanges, select verified candidates, then allocate with FX, risk and concentration controls</Text></View><Pressable onPress={()=>router.push('/global')} style={[styles.marketButton,{borderColor:Brand.primary}]}><Text style={styles.marketButtonText}>Market selector</Text></Pressable></View>
+  return <SafeAreaView style={[s.safe,{backgroundColor:colors.background}]}><ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);void build();}} tintColor={Brand.primary}/>} contentContainerStyle={s.content}><View style={s.max}>
+    <View style={s.header}><View style={{flex:1}}><Text style={[s.title,{color:colors.text}]}>Global Portfolio Agent</Text><Text style={[s.sub,{color:colors.textSecondary}]}>Compare up to four exchanges, then build one evidence-gated cross-market portfolio.</Text></View><Pressable onPress={()=>router.push('/global')} style={[s.outline,{borderColor:Brand.primary}]}><Text style={s.outlineText}>Market selector</Text></Pressable></View>
 
-    <View style={[styles.scopeCard,{backgroundColor:colors.backgroundElement}]}><Text style={styles.eyebrow}>MULTI-MARKET SCOPE • MAX 4 IN PREVIEW</Text><Text style={[styles.scopeTitle,{color:colors.text}]}>Select exchanges to compare and combine</Text><Text style={[styles.scopeText,{color:colors.textSecondary}]}>Each exchange is screened independently with the same six scoring agents and Evidence gate. Only verified BUY candidates enter the global allocation step.</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scopeScroll}>{marketOptions.map((market)=>{const active=scopes.some((x)=>keyOf(x)===keyOf(market));return <Pressable key={keyOf(market)} onPress={()=>toggleScope(market)} style={[styles.scopeChip,{backgroundColor:active?Brand.primary:colors.backgroundSelected}]}><Text style={[styles.scopeCode,{color:active?'#fff':colors.text}]}>{market.country}</Text><Text style={[styles.scopeName,{color:active?'#fff':colors.textSecondary}]}>{market.exchangeLabel}</Text></Pressable>})}</ScrollView><Text style={[styles.selectedLine,{color:colors.textSecondary}]}>Selected: {scopes.map((x)=>`${x.country}/${x.exchangeLabel}`).join(' • ')}</Text></View>
+    <View style={[s.card,{backgroundColor:colors.backgroundElement}]}><Text style={s.eyebrow}>MULTI-MARKET SCOPE • MAX 4</Text><Text style={[s.cardTitle,{color:colors.text}]}>Choose exchanges</Text><Text style={[s.body,{color:colors.textSecondary}]}>Every selected exchange is screened with the same six scoring agents. Evidence/Verification must PASS before a stock can enter the allocation stage.</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>{options.map(m=>{const active=scopes.some(x=>scopeKey(x)===scopeKey(m));return <Pressable key={scopeKey(m)} onPress={()=>toggle(m)} style={[s.chip,{backgroundColor:active?Brand.primary:colors.backgroundSelected}]}><Text style={[s.chipCode,{color:active?'#fff':colors.text}]}>{m.country}</Text><Text numberOfLines={2} style={[s.chipName,{color:active?'#fff':colors.textSecondary}]}>{m.exchangeLabel}</Text></Pressable>})}</ScrollView><Text style={[s.tiny,{color:colors.textSecondary}]}>Selected: {scopes.map(x=>`${x.country}/${x.exchangeLabel}`).join(' • ')}</Text></View>
 
-    <Text style={[styles.sectionTitle,{color:colors.text}]}>Investor profile</Text><View style={[styles.form,{backgroundColor:colors.backgroundElement}]}><View style={styles.twoCols}><View style={styles.field}><Text style={[styles.label,{color:colors.textSecondary}]}>Capital</Text><TextInput value={capital} onChangeText={setCapital} keyboardType="decimal-pad" style={[styles.input,{color:colors.text,borderColor:colors.backgroundSelected}]}/></View><View style={styles.field}><Text style={[styles.label,{color:colors.textSecondary}]}>Base currency</Text><TextInput value={baseCurrency} onChangeText={setBaseCurrency} autoCapitalize="characters" maxLength={3} style={[styles.input,{color:colors.text,borderColor:colors.backgroundSelected}]}/></View></View><Text style={[styles.label,{color:colors.textSecondary}]}>Risk tolerance</Text><View style={styles.segment}>{(['low','medium','high'] as Risk[]).map((item)=><Pressable key={item} onPress={()=>setRisk(item)} style={[styles.segmentButton,{backgroundColor:risk===item?Brand.primary:colors.backgroundSelected}]}><Text style={[styles.segmentText,{color:risk===item?'#fff':colors.text}]}>{item}</Text></Pressable>)}</View><View style={styles.twoCols}><View style={styles.field}><Text style={[styles.label,{color:colors.textSecondary}]}>Horizon</Text><TextInput value={horizon} onChangeText={setHorizon} placeholder="5y" placeholderTextColor={colors.textSecondary} style={[styles.input,{color:colors.text,borderColor:colors.backgroundSelected}]}/></View><View style={styles.field}><Text style={[styles.label,{color:colors.textSecondary}]}>Max positions</Text><TextInput value={maxPositions} onChangeText={setMaxPositions} keyboardType="number-pad" style={[styles.input,{color:colors.text,borderColor:colors.backgroundSelected}]}/></View></View><Text style={[styles.label,{color:colors.textSecondary}]}>Minimum cash reserve (%)</Text><TextInput value={cashReserve} onChangeText={setCashReserve} keyboardType="decimal-pad" style={[styles.input,{color:colors.text,borderColor:colors.backgroundSelected}]}/></View>
+    <Text style={[s.section,{color:colors.text}]}>Investor profile</Text><View style={[s.card,{backgroundColor:colors.backgroundElement}]}><View style={s.two}><Field label="Capital" value={capital} onChange={setCapital} colors={colors}/><Field label="Base currency" value={baseCurrency} onChange={setBaseCurrency} colors={colors}/></View><Text style={[s.label,{color:colors.textSecondary}]}>Risk tolerance</Text><View style={s.segment}>{(['low','medium','high'] as Risk[]).map(x=><Pressable key={x} onPress={()=>setRisk(x)} style={[s.segmentBtn,{backgroundColor:risk===x?Brand.primary:colors.backgroundSelected}]}><Text style={{color:risk===x?'#fff':colors.text,fontFamily:Fonts.sans,fontWeight:'800'}}>{x}</Text></Pressable>)}</View><View style={s.two}><Field label="Horizon" value={horizon} onChange={setHorizon} colors={colors}/><Field label="Max positions" value={maxPositions} onChange={setMaxPositions} colors={colors}/></View><Field label="Minimum cash reserve (%)" value={cashReserve} onChange={setCashReserve} colors={colors}/></View>
 
-    <Pressable disabled={loading||!scopes.length} onPress={()=>{void build()}} style={[styles.buildButton,{backgroundColor:Brand.primary,opacity:loading?.65:1}]}>{loading?<ActivityIndicator color="#fff"/>:<Text style={styles.buildText}>Compare markets and build global portfolio</Text>}</Pressable>
-    {scanNotes.length?<View style={[styles.notes,{backgroundColor:colors.backgroundElement}]}>{scanNotes.map((note)=><Text key={note} style={[styles.noteText,{color:colors.textSecondary}]}>• {note}</Text>)}</View>:null}
-    {error?<View style={[styles.errorBox,{borderColor:Brand.warning}]}><Text style={[styles.errorText,{color:colors.textSecondary}]}>{error}</Text></View>:null}
+    <Pressable disabled={loading||!scopes.length} onPress={()=>{void build();}} style={[s.primary,{backgroundColor:Brand.primary,opacity:loading?0.65:1}]}>{loading?<ActivityIndicator color="#fff"/>:<Text style={s.primaryText}>Compare markets and build global portfolio</Text>}</Pressable>
+    {notes.length?<View style={[s.card,{backgroundColor:colors.backgroundElement,marginTop:8}]}>{notes.map(x=><Text key={x} style={[s.tiny,{color:colors.textSecondary}]}>• {x}</Text>)}</View>:null}
+    {error?<Text style={[s.error,{color:Brand.warning}]}>{error}</Text>:null}
 
-    {comparison.length?<><Text style={[styles.sectionTitle,{color:colors.text}]}>Market comparison</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.compareScroll}>{comparison.map((m)=><View key={m.key} style={[styles.compareCard,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.compareCountry,{color:Brand.primary}]}>{m.country}</Text><Text numberOfLines={2} style={[styles.compareName,{color:colors.text}]}>{m.label}</Text><View style={styles.compareGrid}><View><Text style={[styles.compareValue,{color:colors.text}]}>{m.qualified}</Text><Text style={[styles.compareLabel,{color:colors.textSecondary}]}>qualified</Text></View><View><Text style={[styles.compareValue,{color:colors.text}]}>{m.deep}</Text><Text style={[styles.compareLabel,{color:colors.textSecondary}]}>deep</Text></View><View><Text style={[styles.compareValue,{color:colors.text}]}>{num(m.avgScore,3)}</Text><Text style={[styles.compareLabel,{color:colors.textSecondary}]}>avg score</Text></View><View><Text style={[styles.compareValue,{color:colors.text}]}>{pct01(m.avgConfidence)}</Text><Text style={[styles.compareLabel,{color:colors.textSecondary}]}>avg conf.</Text></View></View><Text style={[styles.compareEvidence,{color:colors.textSecondary}]}>Evidence P/W/B: {m.pass}/{m.warn}/{m.block}</Text><Text style={[styles.compareTop,{color:colors.text}]}>Top: {m.topTicker} {m.topScore==null?'':`(${num(m.topScore,3)})`}</Text></View>)}</ScrollView></>:null}
+    {stats.length?<><Text style={[s.section,{color:colors.text}]}>Market comparison</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>{stats.map(x=><View key={x.key} style={[s.marketCard,{backgroundColor:colors.backgroundElement}]}><Text style={s.eyebrow}>{x.country}</Text><Text style={[s.marketName,{color:colors.text}]}>{x.label}</Text><Text style={[s.marketLine,{color:colors.textSecondary}]}>Qualified {x.qualified} • Deep {x.deep}</Text><Text style={[s.marketLine,{color:colors.textSecondary}]}>Avg score {n(x.avgScore,3)} • Conf. {pc(x.avgConfidence)}</Text><Text style={[s.marketLine,{color:colors.textSecondary}]}>Evidence P/W/B {x.pass}/{x.warn}/{x.block}</Text><Text style={[s.marketTop,{color:colors.text}]}>Top candidate: {x.top}</Text></View>)}</ScrollView></>:null}
 
-    {proposal?<><View style={[styles.summary,{backgroundColor:colors.backgroundElement}]}><View style={styles.summaryTop}><View><Text style={[styles.summaryLabel,{color:colors.textSecondary}]}>Proposal status</Text><Text style={[styles.summaryStatus,{color:proposal.status==='NO_RECOMMENDATION'?Brand.warning:Brand.positive}]}>{proposal.status||'—'}</Text></View><View style={{alignItems:'flex-end'}}><Text style={[styles.summaryLabel,{color:colors.textSecondary}]}>Qualified inputs</Text><Text style={[styles.summaryNumber,{color:colors.text}]}>{candidateCount}</Text></View></View><View style={styles.summaryMetrics}><View><Text style={[styles.summaryValue,{color:colors.text}]}>{num(proposal.invested_pct)}%</Text><Text style={[styles.summaryLabel,{color:colors.textSecondary}]}>invested</Text></View><View><Text style={[styles.summaryValue,{color:colors.text}]}>{num(proposal.cash_pct)}%</Text><Text style={[styles.summaryLabel,{color:colors.textSecondary}]}>cash</Text></View><View><Text style={[styles.summaryValue,{color:colors.text}]}>{allocations.length}</Text><Text style={[styles.summaryLabel,{color:colors.textSecondary}]}>positions</Text></View></View>{proposal.reasoning?<Text style={[styles.reasoning,{color:colors.textSecondary}]}>{proposal.reasoning}</Text>:null}</View>
+    {proposal?<><View style={[s.card,{backgroundColor:colors.backgroundElement,marginTop:18}]}><View style={s.between}><View><Text style={[s.label,{color:colors.textSecondary}]}>PROPOSAL STATUS</Text><Text style={[s.status,{color:proposal.status==='NO_RECOMMENDATION'?Brand.warning:Brand.positive}]}>{proposal.status||'—'}</Text></View><View style={{alignItems:'flex-end'}}><Text style={[s.label,{color:colors.textSecondary}]}>QUALIFIED INPUTS</Text><Text style={[s.big,{color:colors.text}]}>{candidateCount}</Text></View></View><Text style={[s.body,{color:colors.textSecondary}]}>Invested {n(proposal.invested_pct,1)}% • Cash {n(proposal.cash_pct,1)}% • Positions {allocations.length}</Text></View>
 
-      <Text style={[styles.sectionTitle,{color:colors.text}]}>Proposed allocations</Text>{allocations.length?allocations.map((item,index)=>{const a=analysisMap.get(`${item.country||''}:${item.exchange||''}:${item.ticker||''}`);const factors=factorSummary(a);return <View key={`${item.identity}-${index}`} style={[styles.allocation,{backgroundColor:colors.backgroundElement}]}><View style={styles.allocationTop}><View><Text style={[styles.allocationTicker,{color:colors.text}]}>#{index+1} {item.ticker}</Text><Text style={[styles.allocationMeta,{color:colors.textSecondary}]}>{item.country} • {item.exchange} • {item.currency}</Text></View><View style={{alignItems:'flex-end'}}><Text style={[styles.weight,{color:Brand.primary}]}>{num(item.weight_pct)}%</Text><Text style={[styles.allocationMeta,{color:colors.textSecondary}]}>{num(item.quantity,0)} shares</Text></View></View><View style={styles.allocationMetrics}><Text style={[styles.allocationMetric,{color:colors.textSecondary}]}>Amount <Text style={{color:colors.text}}>{num(item.amount_base_currency)} {baseCurrency.toUpperCase()}</Text></Text><Text style={[styles.allocationMetric,{color:colors.textSecondary}]}>Score <Text style={{color:colors.text}}>{num(item.score,3)}</Text></Text><Text style={[styles.allocationMetric,{color:colors.textSecondary}]}>Confidence <Text style={{color:colors.text}}>{pct01(item.confidence)}</Text></Text></View><Text style={[styles.factorPositive,{color:Brand.positive}]}>Why selected: {factors.positive}</Text><Text style={[styles.factorRisk,{color:factors.negative.startsWith('No material')?colors.textSecondary:Brand.warning}]}>Remaining cautions: {factors.negative}</Text></View>}):<View style={[styles.empty,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.emptyText,{color:colors.textSecondary}]}>No allocation cleared all Portfolio Agent gates.</Text></View>}
+      <Text style={[s.section,{color:colors.text}]}>Proposed allocations</Text>{allocations.map((x,i)=>{const a=map.get(`${x.country||''}:${x.exchange||''}:${x.ticker||''}`);const f=factorText(a);return <View key={`${x.identity}-${i}`} style={[s.card,{backgroundColor:colors.backgroundElement,marginBottom:8}]}><View style={s.between}><View><Text style={[s.allocTicker,{color:colors.text}]}>#{i+1} {x.ticker}</Text><Text style={[s.tiny,{color:colors.textSecondary}]}>{x.country} • {x.exchange} • {x.currency}</Text></View><Text style={[s.weight,{color:Brand.primary}]}>{n(x.weight_pct,1)}%</Text></View><Text style={[s.tiny,{color:colors.textSecondary}]}>Amount {n(x.amount_base_currency)} {baseCurrency.toUpperCase()} • Score {n(x.score,3)} • Confidence {pc(x.confidence)}</Text><Text style={[s.why,{color:Brand.positive}]}>Why selected: {f.why}</Text><Text style={[s.caution,{color:f.caution.startsWith('No material')?colors.textSecondary:Brand.warning}]}>Remaining cautions: {f.caution}</Text></View>})}
 
-      {allocations.length?<><Text style={[styles.sectionTitle,{color:colors.text}]}>Final analytical summary</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tableScroll}><View><View style={[styles.tableRow,styles.tableHeader,{backgroundColor:colors.backgroundSelected}]}><Text style={[styles.colStock,{color:colors.text}]}>Stock / Market</Text><Text style={[styles.colSmall,{color:colors.text}]}>Weight</Text><Text style={[styles.colSmall,{color:colors.text}]}>Score</Text><Text style={[styles.colSmall,{color:colors.text}]}>Conf.</Text><Text style={[styles.colEvidence,{color:colors.text}]}>Evidence</Text>{AGENTS.map((agent)=><Text key={agent} style={[styles.colAgent,{color:colors.text}]}>{agent}</Text>)}</View>{allocations.map((item,index)=>{const a=analysisMap.get(`${item.country||''}:${item.exchange||''}:${item.ticker||''}`);return <View key={`table-${item.identity}-${index}`} style={[styles.tableRow,{backgroundColor:index%2?colors.backgroundElement:colors.background}]}><View style={styles.colStock}><Text style={[styles.tableTicker,{color:colors.text}]}>{item.ticker}</Text><Text style={[styles.tableMeta,{color:colors.textSecondary}]}>{item.country}/{item.exchange}</Text></View><Text style={[styles.colSmall,{color:colors.text}]}>{num(item.weight_pct,1)}%</Text><Text style={[styles.colSmall,{color:colors.text}]}>{num(item.score,2)}</Text><Text style={[styles.colSmall,{color:colors.text}]}>{pct01(item.confidence)}</Text><Text style={[styles.colEvidence,{color:a?.evidence?.status==='PASS'?Brand.positive:Brand.warning}]}>{a?.evidence?.status||'—'}</Text>{AGENTS.map((agent)=>{const s=signalFor(a,agent);return <Text key={agent} style={[styles.colAgent,{color:s&&s.vote>=.2?Brand.positive:s&&s.vote<=-.2?Brand.negative:colors.textSecondary}]}>{s?`${s.vote>=0?'+':''}${s.vote.toFixed(2)}`:'—'}</Text>})}</View>})}</View></ScrollView></>:null}
+      {allocations.length?<><Text style={[s.section,{color:colors.text}]}>Final analytical summary</Text><ScrollView horizontal showsHorizontalScrollIndicator={false}><View><View style={[s.row,s.rowHead,{backgroundColor:colors.backgroundSelected}]}><Cell w={145}>Stock / Market</Cell><Cell>Weight</Cell><Cell>Score</Cell><Cell>Conf.</Cell><Cell w={74}>Evidence</Cell>{AGENTS.map(a=><Cell key={a} w={82}>{a}</Cell>)}</View>{allocations.map((x,i)=>{const a=map.get(`${x.country||''}:${x.exchange||''}:${x.ticker||''}`);return <View key={`r-${i}`} style={[s.row,{backgroundColor:i%2?colors.backgroundElement:colors.background}]}><View style={{width:145}}><Text style={[s.rowTicker,{color:colors.text}]}>{x.ticker}</Text><Text style={[s.rowMeta,{color:colors.textSecondary}]}>{x.country}/{x.exchange}</Text></View><Cell>{n(x.weight_pct,1)}%</Cell><Cell>{n(x.score,2)}</Cell><Cell>{pc(x.confidence)}</Cell><Cell w={74} color={a?.evidence?.status==='PASS'?Brand.positive:Brand.warning}>{a?.evidence?.status||'—'}</Cell>{AGENTS.map(name=>{const z=signal(a,name);return <Cell key={name} w={82} color={z&&z.vote>=.2?Brand.positive:z&&z.vote<=-.2?Brand.negative:colors.textSecondary}>{z?`${z.vote>=0?'+':''}${z.vote.toFixed(2)}`:'—'}</Cell>})}</View>})}</View></ScrollView></>:null}
+      {result?.fxErrors&&Object.keys(result.fxErrors).length?<Text style={[s.error,{color:Brand.warning}]}>FX unavailable: {Object.entries(result.fxErrors).map(([k,v])=>`${k}: ${v}`).join(' • ')}</Text>:null}
+    </>:null}
 
-      {result?.fxErrors&&Object.keys(result.fxErrors).length?<View style={[styles.errorBox,{borderColor:Brand.warning}]}><Text style={[styles.errorText,{color:colors.textSecondary}]}>FX unavailable: {Object.entries(result.fxErrors).map(([k,v])=>`${k}: ${v}`).join(' • ')}</Text></View>:null}</>:null}
-
-    <View style={[styles.notice,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.noticeTitle,{color:colors.text}]}>Decision support, paper first</Text><Text style={[styles.noticeText,{color:colors.textSecondary}]}>The portfolio is a research proposal based on verified inputs and explicit constraints. Missing/stale evidence can remove a stock entirely. No live order is submitted in this build.</Text></View>
+    <View style={[s.card,{backgroundColor:colors.backgroundElement,marginTop:18}]}><Text style={[s.cardTitle,{color:colors.text}]}>Decision support, paper first</Text><Text style={[s.body,{color:colors.textSecondary}]}>Missing, stale or conflicting evidence can remove a stock entirely. This build proposes research allocations only and does not submit live broker orders.</Text></View>
   </View></ScrollView></SafeAreaView>;
 }
 
-const styles=StyleSheet.create({
-  safe:{flex:1},content:{paddingHorizontal:Spacing.three,paddingBottom:BottomTabInset+Spacing.six},max:{maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},
-  header:{flexDirection:'row',alignItems:'center',gap:12,paddingTop:Spacing.four,paddingBottom:Spacing.three},title:{fontFamily:Fonts.sans,fontSize:25,fontWeight:'900'},subtitle:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:16,marginTop:3},marketButton:{borderWidth:1,borderRadius:20,paddingHorizontal:12,paddingVertical:8},marketButtonText:{color:Brand.primary,fontFamily:Fonts.sans,fontSize:9.5,fontWeight:'900'},
-  scopeCard:{borderRadius:Radius.lg,padding:Spacing.four},eyebrow:{color:Brand.primary,fontFamily:Fonts.mono,fontSize:8,fontWeight:'900'},scopeTitle:{fontFamily:Fonts.sans,fontSize:16,fontWeight:'900',marginTop:5},scopeText:{fontFamily:Fonts.sans,fontSize:9.5,lineHeight:15,marginTop:4},scopeScroll:{gap:7,paddingVertical:12,paddingRight:8},scopeChip:{width:118,borderRadius:Radius.md,padding:10},scopeCode:{fontFamily:Fonts.mono,fontSize:12,fontWeight:'900'},scopeName:{fontFamily:Fonts.sans,fontSize:8.5,lineHeight:12,marginTop:3},selectedLine:{fontFamily:Fonts.mono,fontSize:7.5,lineHeight:12},
-  sectionTitle:{fontFamily:Fonts.sans,fontSize:15,fontWeight:'900',marginTop:20,marginBottom:8},form:{borderRadius:Radius.lg,padding:Spacing.three},twoCols:{flexDirection:'row',gap:8},field:{flex:1},label:{fontFamily:Fonts.sans,fontSize:9,marginTop:8,marginBottom:4},input:{borderWidth:1,borderRadius:Radius.md,paddingHorizontal:11,paddingVertical:10,fontFamily:Fonts.mono,fontSize:12},segment:{flexDirection:'row',gap:6},segmentButton:{flex:1,minHeight:38,borderRadius:18,alignItems:'center',justifyContent:'center'},segmentText:{fontFamily:Fonts.sans,fontSize:10,fontWeight:'900',textTransform:'capitalize'},
-  buildButton:{minHeight:50,borderRadius:Radius.md,alignItems:'center',justifyContent:'center',marginTop:12},buildText:{color:'#fff',fontFamily:Fonts.sans,fontSize:11.5,fontWeight:'900'},notes:{borderRadius:Radius.md,padding:10,marginTop:8},noteText:{fontFamily:Fonts.mono,fontSize:8.5,lineHeight:14},errorBox:{borderWidth:1,borderRadius:Radius.md,padding:11,marginTop:10},errorText:{fontFamily:Fonts.sans,fontSize:9.5,lineHeight:15},
-  compareScroll:{gap:8,paddingRight:8},compareCard:{width:190,borderRadius:Radius.lg,padding:Spacing.three},compareCountry:{fontFamily:Fonts.mono,fontSize:10,fontWeight:'900'},compareName:{fontFamily:Fonts.sans,fontSize:12,fontWeight:'900',marginTop:3,minHeight:32},compareGrid:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',marginTop:8,rowGap:8},compareValue:{fontFamily:Fonts.mono,fontSize:12,fontWeight:'900'},compareLabel:{fontFamily:Fonts.sans,fontSize:7.5,marginTop:2},compareEvidence:{fontFamily:Fonts.mono,fontSize:8,marginTop:9},compareTop:{fontFamily:Fonts.mono,fontSize:9,fontWeight:'800',marginTop:4},
-  summary:{borderRadius:Radius.lg,padding:Spacing.four,marginTop:16},summaryTop:{flexDirection:'row',justifyContent:'space-between'},summaryLabel:{fontFamily:Fonts.sans,fontSize:8.5},summaryStatus:{fontFamily:Fonts.mono,fontSize:12,fontWeight:'900',marginTop:3},summaryNumber:{fontFamily:Fonts.mono,fontSize:17,fontWeight:'900',marginTop:2},summaryMetrics:{flexDirection:'row',justifyContent:'space-between',marginTop:16},summaryValue:{fontFamily:Fonts.mono,fontSize:17,fontWeight:'900'},reasoning:{fontFamily:Fonts.sans,fontSize:9,lineHeight:14,marginTop:8},
-  allocation:{borderRadius:Radius.lg,padding:Spacing.three,marginBottom:8},allocationTop:{flexDirection:'row',justifyContent:'space-between'},allocationTicker:{fontFamily:Fonts.mono,fontSize:14,fontWeight:'900'},allocationMeta:{fontFamily:Fonts.mono,fontSize:8.5,marginTop:3},weight:{fontFamily:Fonts.mono,fontSize:15,fontWeight:'900'},allocationMetrics:{flexDirection:'row',flexWrap:'wrap',gap:12,marginTop:10},allocationMetric:{fontFamily:Fonts.mono,fontSize:8.5},factorPositive:{fontFamily:Fonts.sans,fontSize:9,lineHeight:14,marginTop:10,fontWeight:'700'},factorRisk:{fontFamily:Fonts.sans,fontSize:8.7,lineHeight:14,marginTop:4},empty:{borderRadius:Radius.lg,padding:Spacing.four},emptyText:{fontFamily:Fonts.sans,fontSize:10,textAlign:'center'},
-  tableScroll:{paddingBottom:4},tableRow:{minWidth:920,flexDirection:'row',alignItems:'center',minHeight:48,paddingHorizontal:8,borderRadius:4,marginBottom:2},tableHeader:{minHeight:38},colStock:{width:145,fontFamily:Fonts.mono,fontSize:8.5,fontWeight:'800'},colSmall:{width:62,fontFamily:Fonts.mono,fontSize:8,textAlign:'center'},colEvidence:{width:72,fontFamily:Fonts.mono,fontSize:8,textAlign:'center',fontWeight:'800'},colAgent:{width:82,fontFamily:Fonts.mono,fontSize:7.8,textAlign:'center'},tableTicker:{fontFamily:Fonts.mono,fontSize:10,fontWeight:'900'},tableMeta:{fontFamily:Fonts.mono,fontSize:7,marginTop:2},
-  notice:{borderRadius:Radius.lg,padding:Spacing.four,marginTop:18},noticeTitle:{fontFamily:Fonts.sans,fontSize:13,fontWeight:'900'},noticeText:{fontFamily:Fonts.sans,fontSize:9.5,lineHeight:15,marginTop:5},
-});
+function Field({label,value,onChange,colors}:{label:string;value:string;onChange:(v:string)=>void;colors:typeof Colors.light|typeof Colors.dark}){return <View style={{flex:1}}><Text style={[s.label,{color:colors.textSecondary}]}>{label}</Text><TextInput value={value} onChangeText={onChange} autoCapitalize="characters" style={[s.input,{color:colors.text,borderColor:colors.backgroundSelected}]}/></View>}
+function Cell({children,w=62,color}:{children:React.ReactNode;w?:number;color?:string}){return <Text style={[s.cell,{width:w,color:color||'#9aa4b2'}]}>{children}</Text>}
+
+const s=StyleSheet.create({safe:{flex:1},content:{paddingHorizontal:Spacing.three,paddingBottom:BottomTabInset+Spacing.six},max:{maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},header:{flexDirection:'row',alignItems:'center',gap:10,paddingTop:Spacing.four,paddingBottom:Spacing.three},title:{fontFamily:Fonts.sans,fontSize:24,fontWeight:'900'},sub:{fontFamily:Fonts.sans,fontSize:10,lineHeight:15,marginTop:3},outline:{borderWidth:1,borderRadius:20,paddingHorizontal:10,paddingVertical:8},outlineText:{color:Brand.primary,fontFamily:Fonts.sans,fontSize:9,fontWeight:'900'},card:{borderRadius:Radius.lg,padding:Spacing.three},eyebrow:{color:Brand.primary,fontFamily:Fonts.mono,fontSize:8,fontWeight:'900'},cardTitle:{fontFamily:Fonts.sans,fontSize:14,fontWeight:'900',marginTop:4},body:{fontFamily:Fonts.sans,fontSize:9.5,lineHeight:15,marginTop:5},chips:{gap:7,paddingVertical:10,paddingRight:6},chip:{width:118,borderRadius:Radius.md,padding:9},chipCode:{fontFamily:Fonts.mono,fontSize:11,fontWeight:'900'},chipName:{fontFamily:Fonts.sans,fontSize:8,lineHeight:11,marginTop:3},tiny:{fontFamily:Fonts.mono,fontSize:8,lineHeight:13},section:{fontFamily:Fonts.sans,fontSize:15,fontWeight:'900',marginTop:19,marginBottom:8},two:{flexDirection:'row',gap:8},label:{fontFamily:Fonts.sans,fontSize:8.5,marginTop:7,marginBottom:4},input:{borderWidth:1,borderRadius:Radius.md,paddingHorizontal:10,paddingVertical:9,fontFamily:Fonts.mono,fontSize:11},segment:{flexDirection:'row',gap:6},segmentBtn:{flex:1,minHeight:36,borderRadius:18,alignItems:'center',justifyContent:'center'},primary:{minHeight:49,borderRadius:Radius.md,alignItems:'center',justifyContent:'center',marginTop:12},primaryText:{color:'#fff',fontFamily:Fonts.sans,fontSize:11,fontWeight:'900'},error:{fontFamily:Fonts.sans,fontSize:9.5,lineHeight:15,marginTop:9},marketCard:{width:190,borderRadius:Radius.lg,padding:Spacing.three},marketName:{fontFamily:Fonts.sans,fontSize:11,fontWeight:'900',marginTop:3,minHeight:28},marketLine:{fontFamily:Fonts.mono,fontSize:7.8,marginTop:5},marketTop:{fontFamily:Fonts.mono,fontSize:8.5,fontWeight:'800',marginTop:7},between:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start'},status:{fontFamily:Fonts.mono,fontSize:11,fontWeight:'900',marginTop:3},big:{fontFamily:Fonts.mono,fontSize:16,fontWeight:'900'},allocTicker:{fontFamily:Fonts.mono,fontSize:13,fontWeight:'900'},weight:{fontFamily:Fonts.mono,fontSize:15,fontWeight:'900'},why:{fontFamily:Fonts.sans,fontSize:8.8,lineHeight:14,marginTop:10,fontWeight:'700'},caution:{fontFamily:Fonts.sans,fontSize:8.5,lineHeight:14,marginTop:4},row:{minWidth:920,flexDirection:'row',alignItems:'center',minHeight:46,paddingHorizontal:7,marginBottom:2},rowHead:{minHeight:36},cell:{fontFamily:Fonts.mono,fontSize:7.6,textAlign:'center'},rowTicker:{fontFamily:Fonts.mono,fontSize:9.5,fontWeight:'900'},rowMeta:{fontFamily:Fonts.mono,fontSize:6.8,marginTop:2}});
