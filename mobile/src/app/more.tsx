@@ -1,136 +1,43 @@
-import { View, Text, StyleSheet, ScrollView, useColorScheme, SafeAreaView, Pressable, Alert, Linking } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import Constants from 'expo-constants';
-import { router } from 'expo-router';
-import { Colors, Brand, Fonts, Spacing, Radius, BottomTabInset, MaxContentWidth, ThemeColors } from '@/constants/theme';
-import { useLogout } from '@/lib/logout-context';
-import { logoutAndClearAuthSession } from '@/lib/auth-session';
-import { API_BASE } from '@/lib/api';
+import { router, useFocusEffect } from 'expo-router';
+import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing, ThemeColors } from '@/constants/theme';
+import { getGlobalMarketSelection, type GlobalMarketSelection } from '@/lib/global-market-selection';
+import { getSelectedGlobalCompany } from '@/lib/global-company-selection';
+import type { GlobalInstrument } from '@/lib/global-api';
 
-type MenuItem = { icon: string; title: string; sub: string; onPress: () => void; destructive?: boolean; accent?: string };
-type MobileRelease = { version: string; versionCode?: number | null; releasedAt?: string | null; changes?: string[]; apkAvailable?: boolean; apkUrl?: string };
+type Item = { icon:string; title:string; sub:string; onPress:()=>void; accent?:string };
 
-const FARABI_TRADING_URL = 'https://m.farabixo.irfarabi.com';
-const FARABIZ_PARTNER_URL = 'https://farabiz.irfarabi.com';
-
-function MenuRow({ item, colors }: { item: MenuItem; colors: ThemeColors }) {
-  return (
-    <Pressable onPress={item.onPress} style={({ pressed }) => [rowStyles.row, { backgroundColor: colors.backgroundElement, opacity: pressed ? 0.8 : 1 }]}>
-      <Text style={[rowStyles.chevron, { color: colors.textSecondary }]}>‹</Text>
-      <View style={rowStyles.textWrap}>
-        <Text style={[rowStyles.title, { color: item.destructive ? Brand.negative : colors.text }]}>{item.title}</Text>
-        <Text style={[rowStyles.sub, { color: colors.textSecondary }]}>{item.sub}</Text>
-      </View>
-      <View style={[rowStyles.iconWrap, item.accent ? { backgroundColor: `${item.accent}22` } : null]}><Text style={{ fontSize: 20 }}>{item.icon}</Text></View>
-    </Pressable>
-  );
+function Row({item,colors}:{item:Item;colors:ThemeColors}){
+  return <Pressable onPress={item.onPress} style={({pressed})=>[styles.row,{backgroundColor:colors.backgroundElement,opacity:pressed?.75:1}]}>
+    <View style={[styles.icon,{backgroundColor:`${item.accent||Brand.primary}22`}]}><Text style={styles.emoji}>{item.icon}</Text></View>
+    <View style={{flex:1}}><Text style={[styles.rowTitle,{color:colors.text}]}>{item.title}</Text><Text style={[styles.rowSub,{color:colors.textSecondary}]}>{item.sub}</Text></View><Text style={[styles.chevron,{color:colors.textSecondary}]}>›</Text>
+  </Pressable>;
 }
 
-const rowStyles = StyleSheet.create({
-  row: { flexDirection: 'row-reverse', alignItems: 'center', gap: Spacing.three, borderRadius: Radius.md, padding: Spacing.three, marginBottom: Spacing.two },
-  textWrap: { flex: 1, alignItems: 'flex-end', gap: 2 }, title: { fontFamily: Fonts.sans, fontSize: 15, fontWeight: '700' }, sub: { fontFamily: Fonts.sans, fontSize: 12 }, chevron: { fontSize: 18 }, iconWrap: { width: 40, height: 40, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center' },
-});
-
-function versionParts(value: string): number[] {
-  return value.split('.').map((part) => Number.parseInt(part, 10) || 0);
-}
-
-function isNewerVersion(latest: string, current: string): boolean {
-  const a = versionParts(latest); const b = versionParts(current); const length = Math.max(a.length, b.length);
-  for (let i = 0; i < length; i += 1) {
-    const left = a[i] || 0; const right = b[i] || 0;
-    if (left !== right) return left > right;
-  }
-  return false;
-}
-
-function releaseDownloadUrl(release: MobileRelease): string {
-  const path = release.apkUrl || '/app/latest.apk';
-  return /^https?:\/\//i.test(path) ? path : `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
-}
-
-async function openUrl(url: string, title: string) {
-  try {
-    await Linking.openURL(url);
-  } catch {
-    Alert.alert(title, 'باز کردن این صفحه ممکن نشد. اتصال اینترنت را بررسی کنید.');
-  }
-}
-
-export default function MoreScreen() {
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light'; const colors = Colors[scheme]; const logout = useLogout();
-  const currentVersion = Constants.expoConfig?.version || 'unknown';
-  const currentVersionCode = Constants.platform?.android?.versionCode ?? null;
-  const openModules = () => router.push('/modules' as never);
-  const handleLogout = () => { Alert.alert('خروج از حساب', 'آیا مطمئن هستید که می‌خواهید خارج شوید؟', [{ text: 'انصراف', style: 'cancel' }, { text: 'خروج', style: 'destructive', onPress: async () => { await logoutAndClearAuthSession(); logout(); } }]); };
-
-  const checkForUpdate = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/app/release`, { headers: { Accept: 'application/json' } });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const release = await response.json() as MobileRelease;
-      if (!release?.version) throw new Error('invalid release');
-
-      const releaseVersionCode = typeof release.versionCode === 'number' ? release.versionCode : null;
-      const currentByNativeBuild = typeof currentVersionCode === 'number' && releaseVersionCode !== null && currentVersionCode >= releaseVersionCode;
-      const currentBySemanticVersion = currentVersion !== 'unknown' && !isNewerVersion(release.version, currentVersion);
-      if (currentByNativeBuild || currentBySemanticVersion) {
-        const installedDisplay = currentByNativeBuild && currentVersion !== release.version ? release.version : currentVersion;
-        const buildDisplay = typeof currentVersionCode === 'number' ? `\nBuild نصب‌شده: ${currentVersionCode}` : '';
-        Alert.alert('BIAP به‌روز است', `نسخه نصب‌شده: ${installedDisplay}${buildDisplay}\nآخرین نسخه: ${release.version}`);
-        return;
-      }
-
-      const notes = Array.isArray(release.changes) && release.changes.length
-        ? `\n\nتغییرات:\n• ${release.changes.slice(0, 5).join('\n• ')}`
-        : '';
-      const unavailable = release.apkAvailable === false ? '\n\nفایل APK هنوز روی سرور انتشار قرار نگرفته است.' : '';
-      const currentBuild = typeof currentVersionCode === 'number' ? ` (build ${currentVersionCode})` : '';
-      Alert.alert(
-        'نسخه جدید BIAP',
-        `نسخه نصب‌شده: ${currentVersion}${currentBuild}\nنسخه جدید: ${release.version}${notes}${unavailable}`,
-        [
-          { text: 'بعداً', style: 'cancel' },
-          ...(release.apkAvailable === false ? [] : [{ text: 'دانلود و نصب', onPress: () => { void openUrl(releaseDownloadUrl(release), 'به‌روزرسانی BIAP'); } }]),
-        ],
-      );
-    } catch {
-      Alert.alert('بررسی به‌روزرسانی', 'در حال حاضر ارتباط با مرکز به‌روزرسانی برقرار نشد. کمی بعد دوباره امتحان کنید.');
-    }
-  };
-
-  const openFarabiTrading = () => {
-    Alert.alert(
-      'معاملات آنلاین فارابی',
-      'برای خرید و فروش واقعی وارد سامانه رسمی فارابیکسو می‌شوید. BIAP فعلاً API معاملاتی فارابی ندارد و هیچ سفارش یا رمز کارگزاری را دریافت نمی‌کند.',
-      [
-        { text: 'انصراف', style: 'cancel' },
-        { text: 'ورود به فارابیکسو', onPress: () => { void openUrl(FARABI_TRADING_URL, 'فارابیکسو'); } },
-      ],
-    );
-  };
-
-  const items: MenuItem[] = [
-    { icon: '🔄', title: 'به‌روزرسانی BIAP', sub: `بررسی نسخه جدید و دانلود APK • نسخه فعلی ${currentVersion}`, onPress: () => { void checkForUpdate(); }, accent: Brand.primary },
-    { icon: '📈', title: 'معاملات آنلاین فارابی', sub: 'ورود امن به سامانه رسمی فارابیکسو برای خرید و فروش واقعی', onPress: openFarabiTrading, accent: Brand.positive },
-    { icon: '🤝', title: 'همکاری با فارابی (فارابیز پلاس)', sub: 'برنامه رسمی معرفی صندوق‌های ETF و درآمد مشارکتی فارابی', onPress: () => { void openUrl(FARABIZ_PARTNER_URL, 'فارابیز پلاس'); }, accent: '#0ea5e9' },
-    { icon: '🧾', title: 'سفارش‌ها', sub: 'سفارش‌های Paper و تاریخچه اجرای کیا‌شا', onPress: () => router.push('/orders'), accent: Brand.warning },
-    { icon: '💼', title: 'پرتفوی', sub: 'موقعیت‌ها، تخصیص سرمایه و بازده Paper', onPress: () => router.push('/portfolio'), accent: Brand.secondary },
-    { icon: '⭐', title: 'علاقه‌مندی‌ها', sub: 'نمادهایی که برای بررسی بعدی ذخیره کرده‌اید', onPress: () => router.push('/favorites' as never), accent: '#f59e0b' },
-    { icon: '❓', title: 'چطور از BIAP استفاده کنم؟', sub: 'How to do it • راهنمای بازار، کیا‌شا، Paper و ماژول‌ها', onPress: () => router.push('/how-to' as never), accent: Brand.primary },
-    { icon: '🤖', title: 'پروفایل سرمایه‌گذاری کیا‌شا', sub: 'سرمایه Paper، بازده، دقت و Track Record ایجنت', onPress: () => router.push('/kiasha-profile' as never), accent: '#7c3aed' },
-    { icon: '🧩', title: 'همه ماژول‌های BIAP', sub: 'سرمایه‌گذاری، داده، KPI، کسب‌وکار و مدل مالی', onPress: openModules, accent: Brand.primary },
-    { icon: '💼', title: 'توسعه کسب‌وکار', sub: 'SWOT، CRM، Journey، کمپین و مدل مالی', onPress: () => router.push('/bizdev'), accent: Brand.secondary },
-    { icon: '📊', title: 'تحلیل داده', sub: 'EDA، آمار، نمودار و خروجی CSV', onPress: () => router.push('/data'), accent: Brand.dataViolet },
-    { icon: '🔌', title: 'اتصال داده', sub: 'داده شرکت برای ماژول‌های تحلیل و کسب‌وکار', onPress: () => router.push('/data-connect' as never), accent: Brand.dataViolet },
-    { icon: '👤', title: 'حساب کاربری', sub: 'اطلاعات، تغییر رمز و تنظیمات حساب', onPress: () => router.push('/profile') },
+export default function MoreScreen(){
+  const colors=useColorScheme()==='dark'?Colors.dark:Colors.light;
+  const[market,setMarket]=useState<GlobalMarketSelection|null>(null);
+  const[company,setCompany]=useState<GlobalInstrument|null>(null);
+  useFocusEffect(useCallback(()=>{Promise.all([getGlobalMarketSelection(),getSelectedGlobalCompany()]).then(([m,c])=>{setMarket(m);setCompany(c)});},[]));
+  const version=Constants.expoConfig?.version||'0.1.0';
+  const items:Item[]=[
+    {icon:'🧩',title:'BIAP Modules',sub:'Data, KPI, business development and financial modeling on the same Global issuer schema.',onPress:()=>router.push('/modules'),accent:Brand.primary},
+    {icon:'🌍',title:'Country & Exchange',sub:market?`${market.countryName} • ${market.exchangeLabel}`:'Choose the market context used across BIAP.',onPress:()=>router.push('/global'),accent:'#0ea5e9'},
+    {icon:'📈',title:'Selected Company',sub:company?`${company.ticker} • ${company.name}`:'Open Market and select a listed company for cross-module analysis.',onPress:()=>router.push('/market'),accent:Brand.positive},
+    {icon:'🔌',title:'Private Data Connections',sub:'CSV/Excel and company data for CRM, pricing, journey, unit economics and internal KPIs.',onPress:()=>router.push('/data-connect' as never),accent:Brand.dataViolet},
+    {icon:'💼',title:'Portfolio Agent',sub:'Capital, FX, cash reserve, risk tolerance and concentration-aware allocation.',onPress:()=>router.push('/portfolio'),accent:Brand.secondary},
+    {icon:'🧠',title:'Kiasha',sub:'Evidence-gated market scan and ranked stock ideas for the selected market.',onPress:()=>router.push('/kiasha'),accent:'#7c3aed'},
+    {icon:'🧾',title:'Orders / Execution',sub:'Paper-first execution area. Global live brokerage remains disabled until a broker adapter is approved.',onPress:()=>router.push('/orders'),accent:Brand.warning},
+    {icon:'👤',title:'Profile & Settings',sub:'Account and app settings.',onPress:()=>router.push('/profile'),accent:'#64748b'},
   ];
-
-  return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]}><View style={{ maxWidth: MaxContentWidth, width: '100%', alignSelf: 'center' }}>
-    <View style={styles.header}><Text style={[styles.headerTitle, { color: colors.text }]}>بیشتر</Text><Text style={[styles.headerSub, { color: colors.textSecondary }]}>مرکز ماژول‌ها، معاملات، به‌روزرسانی، راهنما و تنظیمات BIAP</Text></View>
-    <Pressable onPress={() => router.push('/how-to' as never)} style={[styles.hero, { backgroundColor: colors.backgroundElement }]}><Text style={styles.heroEyebrow}>START HERE</Text><Text style={[styles.heroTitle, { color: colors.text }]}>اولین بار است؟ از اینجا شروع کن</Text><Text style={[styles.heroBody, { color: colors.textSecondary }]}>راهنمای قدم‌به‌قدم بازار، کیا‌شا، Paper Trade، تحلیل داده و مسیر معاملات واقعی.</Text><Text style={styles.heroLink}>مشاهده راهنما ←</Text></Pressable>
-    {items.map((item) => <MenuRow key={item.title} item={item} colors={colors} />)}
-    <View style={{ height: Spacing.three }} /><MenuRow item={{ icon: '🚪', title: 'خروج از حساب', sub: 'خروج از حساب کاربری فعلی', onPress: handleLogout, destructive: true }} colors={colors} />
+  return <SafeAreaView style={[styles.safe,{backgroundColor:colors.background}]}><ScrollView contentContainerStyle={styles.content}><View style={styles.max}>
+    <View style={styles.header}><Text style={[styles.title,{color:colors.text}]}>More</Text><Text style={[styles.sub,{color:colors.textSecondary}]}>BIAP Global tools, modules and configuration</Text></View>
+    <View style={[styles.hero,{backgroundColor:colors.backgroundElement}]}><Text style={styles.eyebrow}>BIAP GLOBAL • v{version}</Text><Text style={[styles.heroTitle,{color:colors.text}]}>One product, one analysis engine, many markets.</Text><Text style={[styles.heroText,{color:colors.textSecondary}]}>Country adapters normalize exchange, market and filing data before it reaches BIAP modules. Missing official data remains missing; private operational data stays separated from investment evidence.</Text></View>
+    {items.map(item=><Row key={item.title} item={item} colors={colors}/>)}
+    <View style={[styles.status,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.statusTitle,{color:colors.text}]}>Execution status</Text><Text style={[styles.statusText,{color:colors.textSecondary}]}>Research, market scanning and Portfolio Agent are enabled. Live brokerage is OFF in this build. A future broker adapter must pass market permissions, contract mapping, costs, risk gates and compliance review before orders can be sent.</Text></View>
   </View></ScrollView></SafeAreaView>;
 }
 
-const styles = StyleSheet.create({ safe:{flex:1},content:{paddingHorizontal:Spacing.three},header:{paddingTop:Spacing.four,paddingBottom:Spacing.three,alignItems:'flex-end'},headerTitle:{fontSize:22,fontFamily:Fonts.sans,textAlign:'right',fontWeight:'800'},headerSub:{fontSize:12,fontFamily:Fonts.sans,textAlign:'right',marginTop:3},hero:{borderRadius:Radius.lg,padding:Spacing.four,marginBottom:Spacing.three,alignItems:'flex-end'},heroEyebrow:{color:'#8ab4ff',fontFamily:Fonts.mono,fontSize:11,fontWeight:'800'},heroTitle:{fontFamily:Fonts.sans,fontSize:18,fontWeight:'800',marginTop:6},heroBody:{fontFamily:Fonts.sans,fontSize:12,lineHeight:20,textAlign:'right',marginTop:5},heroLink:{color:Brand.primary,fontFamily:Fonts.sans,fontSize:12,fontWeight:'700',marginTop:Spacing.two} });
+const styles=StyleSheet.create({safe:{flex:1},content:{paddingHorizontal:Spacing.three,paddingBottom:BottomTabInset+Spacing.four},max:{maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},header:{paddingTop:Spacing.four,paddingBottom:Spacing.three},title:{fontFamily:Fonts.sans,fontSize:25,fontWeight:'900'},sub:{fontFamily:Fonts.sans,fontSize:11,marginTop:3},hero:{borderRadius:Radius.lg,padding:Spacing.four,marginBottom:Spacing.three},eyebrow:{color:Brand.primary,fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},heroTitle:{fontFamily:Fonts.sans,fontSize:18,fontWeight:'900',marginTop:7},heroText:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:17,marginTop:5},row:{borderRadius:Radius.md,padding:Spacing.three,marginBottom:8,flexDirection:'row',alignItems:'center',gap:12},icon:{width:42,height:42,borderRadius:Radius.sm,alignItems:'center',justifyContent:'center'},emoji:{fontSize:20},rowTitle:{fontFamily:Fonts.sans,fontSize:13,fontWeight:'900'},rowSub:{fontFamily:Fonts.sans,fontSize:9.5,lineHeight:15,marginTop:3},chevron:{fontSize:24},status:{borderRadius:Radius.lg,padding:Spacing.four,marginTop:Spacing.three},statusTitle:{fontFamily:Fonts.sans,fontSize:13,fontWeight:'900'},statusText:{fontFamily:Fonts.sans,fontSize:9.5,lineHeight:15,marginTop:5}});
