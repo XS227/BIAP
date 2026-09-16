@@ -1,40 +1,84 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, RefreshControl, useColorScheme, SafeAreaView, Pressable } from 'react-native';
+import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { router } from 'expo-router';
-import { Colors, Brand, Fonts, Spacing, Radius, BottomTabInset, MaxContentWidth, ThemeColors, BiapLogo } from '@/constants/theme';
-import { formatPrice, parsePct, StockItem } from '@/lib/api';
-import { computeMarketSummary } from '@/lib/market-stats';
-import { marketStatusLabel } from '@/lib/market-hours';
-import { fetchLiveMarketPreview } from '@/lib/live-market-preview';
-import { StockRowSkeleton } from '@/components/skeleton';
-import { SymbolLogo } from '@/components/symbol-logo';
+import { BiapLogo, Brand, Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 
-function WatchRow({ item, colors }: { item: StockItem; colors: ThemeColors }) {
-  const pct = parsePct(item.changePercent); const up = pct >= 0;
-  return <Pressable onPress={() => router.push(`/stock/${item.code}`)} style={({ pressed }) => [styles.watchRow, { backgroundColor: colors.backgroundElement, opacity: pressed ? .75 : 1 }]}>
-    <View style={styles.watchLeft}><SymbolLogo symbol={item.name || item.code} size={38} /><View style={{ alignItems: 'flex-start' }}><Text style={[styles.watchName, { color: colors.text }]}>{item.name}</Text><Text style={styles.realTag}>REAL MARKET</Text></View></View>
-    <View style={styles.watchRight}><Text style={[styles.price, { color: colors.text }]}>{formatPrice(item.lastPrice ?? item.closingPrice)}</Text><Text style={{ color: up ? Brand.positive : Brand.negative, fontFamily: Fonts.mono, fontSize: 12 }}>{up ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}٪</Text></View>
-  </Pressable>;
-}
-function ProductCard({ icon, title, body, accent, onPress, colors }: { icon: string; title: string; body: string; accent: string; onPress: () => void; colors: ThemeColors }) { return <Pressable onPress={onPress} style={({ pressed }) => [styles.productCard, { backgroundColor: colors.backgroundElement, borderColor: `${accent}44`, opacity: pressed ? .78 : 1 }]}><View style={[styles.productIcon, { backgroundColor: `${accent}22` }]}><Text style={{ fontSize: 23 }}>{icon}</Text></View><View style={{ flex: 1, alignItems: 'flex-end' }}><Text style={[styles.productTitle, { color: colors.text }]}>{title}</Text><Text style={[styles.productBody, { color: colors.textSecondary }]}>{body}</Text></View></Pressable>; }
+const markets = [
+  ['🇳🇴', 'Norway', 'Euronext Oslo + ESEF'],
+  ['🇺🇸', 'United States', 'NYSE / Nasdaq + SEC EDGAR'],
+  ['🇬🇧', 'United Kingdom', 'LSE + UKSEF / Companies House'],
+  ['🇯🇵', 'Japan', 'Tokyo Stock Exchange + EDINET'],
+  ['🇦🇺', 'Australia', 'ASX + official issuer evidence'],
+  ['🇸🇪', 'Sweden', 'Nasdaq Stockholm + ESEF'],
+];
 
 export default function HomeScreen() {
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light'; const colors = Colors[scheme];
-  const [data, setData] = useState<StockItem[]>([]); const [loading, setLoading] = useState(true); const [refreshing, setRefreshing] = useState(false); const [error, setError] = useState(false); const marketStatus = marketStatusLabel();
-  const load = useCallback(async () => { try { setError(false); const rows = await fetchLiveMarketPreview(); setData(rows); setError(rows.length === 0); } catch { setError(true); } finally { setLoading(false); setRefreshing(false); } }, []);
-  useEffect(() => { load(); const interval = setInterval(load, 45_000); return () => clearInterval(interval); }, [load]);
-  const summary = useMemo(() => computeMarketSummary(data), [data]);
-  return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={Brand.primary} />}><View style={styles.maxWidth}>
-    <View style={styles.header}><Pressable onPress={() => router.push('/more')} style={[styles.avatar, { backgroundColor: Brand.primary }]}><Text style={styles.avatarText}>؟</Text></Pressable><Image source={BiapLogo} style={styles.logo} resizeMode="contain" /><Pressable onPress={() => router.push('/search')} style={[styles.search, { backgroundColor: colors.backgroundElement }]}><Text>🔍</Text></Pressable></View>
-    <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}><Text style={styles.eyebrow}>BIAP • Business & Investment Analysis Platform</Text><Text style={[styles.heroTitle, { color: colors.text }]}>سرمایه‌گذاری، تحلیل داده و رشد کسب‌وکار</Text><Text style={[styles.heroBody, { color: colors.textSecondary }]}>کیاشا برای بازار سرمایه؛ ابزارهای تحلیلی و مدیریتی برای داده و کسب‌وکار، همه در یک اپ.</Text><Pressable onPress={() => router.push('/how-to' as never)} style={[styles.heroButton, { backgroundColor: Brand.primary }]}><Text style={styles.heroButtonText}>چطور از BIAP استفاده کنم؟</Text></Pressable></View>
-    <Text style={[styles.sectionTitle, { color: colors.text }]}>حوزه‌های BIAP</Text>
-    <ProductCard icon="🤖" title="بازار سرمایه • Kiasha" body="تا ۱۰ پیشنهاد برتر از داده واقعی قابل‌تأیید، افق کوتاه/بلندمدت و Track Record Paper" accent={Brand.positive} onPress={() => router.push('/kiasha')} colors={colors} />
-    <ProductCard icon="📊" title="تحلیل داده" body="EDA، KPI، SQL، Forecast، Anomaly و داشبورد" accent={Brand.dataViolet} onPress={() => router.push('/modules' as never)} colors={colors} />
-    <ProductCard icon="💼" title="توسعه کسب‌وکار" body="SWOT، CRM، Journey، Pricing، Business Plan و مدل مالی" accent={Brand.secondary} onPress={() => router.push('/modules' as never)} colors={colors} />
-    <View style={styles.sectionHead}><Pressable onPress={() => router.push('/market')}><Text style={{ color: Brand.primary, fontFamily: Fonts.sans }}>مشاهده بازار ←</Text></Pressable><Text style={[styles.sectionTitle, { color: colors.text }]}>منتخب زنده بازار</Text></View>
-    <View style={[styles.marketPill, { backgroundColor: colors.backgroundElement }]}><Text style={{ color: marketStatus.open ? Brand.positive : colors.textSecondary, fontFamily: Fonts.sans }}>{marketStatus.label} • {summary.total ? `${summary.gainers} مثبت / ${summary.losers} منفی` : 'در انتظار داده واقعی'}</Text></View>
-    {error ? <Text style={[styles.error, { color: colors.textSecondary, backgroundColor: colors.backgroundElement }]}>فعلاً قیمت معتبر از منبع واقعی دریافت نشد. صفحه را پایین بکش یا وارد بازار شو؛ عدد جایگزین ساخته نمی‌شود.</Text> : null}
-    {loading ? [1,2,3].map(i => <StockRowSkeleton key={i} />) : data.map(item => <WatchRow key={`${item.code}-${item.name}`} item={item} colors={colors} />)}
-  </View></ScrollView></SafeAreaView>;
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const colors = Colors[scheme];
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <Image source={BiapLogo} style={styles.logo} resizeMode="contain" />
+          <View style={[styles.globalPill, { borderColor: Brand.primary }]}><Text style={styles.globalPillText}>GLOBAL</Text></View>
+        </View>
+
+        <View style={[styles.hero, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
+          <Text style={styles.kicker}>BUSINESS & INVESTMENT ANALYSIS PLATFORM</Text>
+          <Text style={[styles.title, { color: colors.text }]}>BIAP Global</Text>
+          <Text style={[styles.body, { color: colors.textSecondary }]}>A multi-market research and portfolio decision-support system. Six agents combine fundamentals, risk, forecasting, comparison, evidence verification and portfolio construction.</Text>
+          <Pressable onPress={() => router.push('/global')} style={styles.primaryButton}><Text style={styles.primaryButtonText}>Open Global Markets</Text></Pressable>
+        </View>
+
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Priority markets</Text>
+        <View style={styles.grid}>
+          {markets.map(([icon, name, source]) => (
+            <Pressable key={name} onPress={() => router.push('/global')} style={[styles.card, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
+              <Text style={styles.icon}>{icon}</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>{name}</Text>
+              <Text style={[styles.cardText, { color: colors.textSecondary }]}>{source}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <View style={[styles.systemCard, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
+          <Text style={[styles.systemTitle, { color: colors.text }]}>Evidence before recommendation</Text>
+          <Text style={[styles.systemText, { color: colors.textSecondary }]}>BIAP Global can return NO RECOMMENDATION when price data is stale, filings are missing, identity is ambiguous or the agents materially disagree. Live broker execution remains disabled in this preview.</Text>
+        </View>
+
+        <View style={styles.featureRow}>
+          <View style={[styles.feature, { backgroundColor: colors.backgroundElement }]}><Text style={styles.featureNumber}>6</Text><Text style={[styles.featureLabel, { color: colors.textSecondary }]}>agents</Text></View>
+          <View style={[styles.feature, { backgroundColor: colors.backgroundElement }]}><Text style={styles.featureNumber}>30+</Text><Text style={[styles.featureLabel, { color: colors.textSecondary }]}>country packs</Text></View>
+          <View style={[styles.feature, { backgroundColor: colors.backgroundElement }]}><Text style={styles.featureNumber}>0</Text><Text style={[styles.featureLabel, { color: colors.textSecondary }]}>forced buys</Text></View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
 }
-const styles = StyleSheet.create({ safe:{flex:1}, content:{paddingHorizontal:Spacing.three,paddingTop:Spacing.three}, maxWidth:{maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'}, header:{flexDirection:'row-reverse',alignItems:'center',justifyContent:'space-between',marginBottom:Spacing.three}, avatar:{width:36,height:36,borderRadius:18,alignItems:'center',justifyContent:'center'}, avatarText:{color:'#fff',fontWeight:'800'}, logo:{width:92,height:31}, search:{width:36,height:36,borderRadius:18,alignItems:'center',justifyContent:'center'}, hero:{borderRadius:Radius.lg,padding:Spacing.four,alignItems:'flex-end',marginBottom:Spacing.four}, eyebrow:{color:'#8ab4ff',fontFamily:Fonts.mono,fontSize:9,fontWeight:'800',textAlign:'right'}, heroTitle:{fontFamily:Fonts.sans,fontSize:21,fontWeight:'800',textAlign:'right',lineHeight:32,marginTop:7}, heroBody:{fontFamily:Fonts.sans,fontSize:12,lineHeight:21,textAlign:'right',marginTop:5}, heroButton:{borderRadius:Radius.sm,paddingHorizontal:16,paddingVertical:10,marginTop:Spacing.three}, heroButtonText:{color:'#fff',fontFamily:Fonts.sans,fontSize:12,fontWeight:'800'}, sectionTitle:{fontFamily:Fonts.sans,fontSize:16,fontWeight:'800',textAlign:'right',marginBottom:Spacing.two}, productCard:{borderWidth:1,borderRadius:Radius.md,padding:Spacing.three,flexDirection:'row-reverse',alignItems:'center',gap:Spacing.three,marginBottom:Spacing.two}, productIcon:{width:48,height:48,borderRadius:Radius.sm,alignItems:'center',justifyContent:'center'}, productTitle:{fontFamily:Fonts.sans,fontSize:15,fontWeight:'800',textAlign:'right'}, productBody:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:18,textAlign:'right',marginTop:3}, sectionHead:{flexDirection:'row-reverse',alignItems:'center',justifyContent:'space-between',marginTop:Spacing.four}, marketPill:{borderRadius:Radius.sm,padding:Spacing.three,alignItems:'flex-end',marginBottom:Spacing.two}, error:{padding:Spacing.three,borderRadius:Radius.sm,textAlign:'right',fontFamily:Fonts.sans,marginBottom:Spacing.two}, watchRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',borderRadius:Radius.sm,padding:Spacing.three,marginBottom:Spacing.two}, watchLeft:{flexDirection:'row',alignItems:'center',gap:Spacing.two}, watchName:{fontFamily:Fonts.sans,fontSize:14,fontWeight:'800'}, realTag:{fontFamily:Fonts.mono,fontSize:8,color:Brand.positive,marginTop:2}, watchRight:{alignItems:'flex-end',gap:2}, price:{fontFamily:Fonts.mono,fontSize:13} });
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 },
+  content: { padding: Spacing.three, paddingBottom: 110 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
+  logo: { width: 104, height: 38 },
+  globalPill: { borderWidth: 1, borderRadius: 30, paddingHorizontal: 12, paddingVertical: 6 },
+  globalPillText: { color: Brand.primary, fontFamily: Fonts.mono, fontWeight: '900', fontSize: 10, letterSpacing: 1.2 },
+  hero: { borderWidth: 1, borderRadius: Radius.lg, padding: 22 },
+  kicker: { color: Brand.primary, fontFamily: Fonts.mono, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
+  title: { fontFamily: Fonts.sans, fontSize: 32, fontWeight: '900', marginTop: 8 },
+  body: { fontFamily: Fonts.sans, fontSize: 13, lineHeight: 22, marginTop: 6 },
+  primaryButton: { marginTop: 18, backgroundColor: Brand.primary, minHeight: 50, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
+  primaryButtonText: { color: '#fff', fontFamily: Fonts.sans, fontWeight: '900', fontSize: 14 },
+  sectionTitle: { fontFamily: Fonts.sans, fontSize: 17, fontWeight: '900', marginTop: 24, marginBottom: 10 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  card: { width: '48%', minHeight: 120, borderWidth: 1, borderRadius: Radius.md, padding: 13 },
+  icon: { fontSize: 24 },
+  cardTitle: { fontFamily: Fonts.sans, fontWeight: '900', fontSize: 14, marginTop: 6 },
+  cardText: { fontFamily: Fonts.sans, fontSize: 10, lineHeight: 16, marginTop: 4 },
+  systemCard: { borderWidth: 1, borderRadius: Radius.md, padding: 16, marginTop: 20 },
+  systemTitle: { fontFamily: Fonts.sans, fontWeight: '900', fontSize: 14 },
+  systemText: { fontFamily: Fonts.sans, fontSize: 11, lineHeight: 18, marginTop: 5 },
+  featureRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  feature: { flex: 1, borderRadius: Radius.md, paddingVertical: 14, alignItems: 'center' },
+  featureNumber: { color: Brand.primary, fontFamily: Fonts.mono, fontWeight: '900', fontSize: 18 },
+  featureLabel: { fontFamily: Fonts.sans, fontSize: 9, marginTop: 3 },
+});
