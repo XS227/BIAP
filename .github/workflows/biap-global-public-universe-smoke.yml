@@ -1,0 +1,48 @@
+name: BIAP Global public universe smoke
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-public-universe-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify public instrument catalogs and safe scan state
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://biap.dadashi.no/global-api/global'
+          python3 - <<'PY'
+          import json, urllib.request
+          base='https://biap.dadashi.no/global-api/global'
+          cases=[('GB','LSE'),('NO','EURONEXT_OSLO'),('US','NASDAQ')]
+          for country, exchange in cases:
+              url=f'{base}/instruments/{country}/{exchange}?limit=5'
+              with urllib.request.urlopen(url, timeout=30) as r:
+                  payload=json.load(r)
+              print(country, exchange, 'total=', payload.get('totalMatched'), 'returned=', payload.get('returned'))
+              rows=payload.get('instruments') or []
+              assert rows, f'empty instrument catalog for {country}/{exchange}'
+              assert all(row.get('ticker') for row in rows)
+
+          req=urllib.request.Request(
+              f'{base}/scan',
+              data=json.dumps({'country':'GB','exchange':'LSE','topN':10,'discoveryLimit':50,'deepLimit':10}).encode(),
+              headers={'Content-Type':'application/json'},
+              method='POST',
+          )
+          with urllib.request.urlopen(req, timeout=30) as r:
+              scan=json.load(r)
+          print('GB/LSE scan status=', scan.get('status'), 'universe=', scan.get('universeDiscovered'), 'recommendations=', scan.get('recommendationCount'))
+          assert scan.get('status') == 'MARKET_DATA_REQUIRED'
+          assert int(scan.get('universeDiscovered') or 0) > 0
+          assert int(scan.get('recommendationCount') or 0) == 0
+          PY
