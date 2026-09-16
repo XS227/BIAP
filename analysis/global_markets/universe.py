@@ -1,4 +1,11 @@
-"""Instrument universe adapters for BIAP Global country/exchange selection."""
+"""Instrument universe adapters for BIAP Global country/exchange selection.
+
+Reference-data discovery is intentionally separable from price/history access.
+Twelve Data documents a public ``demo`` key for the /stocks catalog. BIAP may
+use that catalog when no private market-data credential is configured, but the
+result is tagged as reference-only evidence and is never treated as a price
+feed or sufficient evidence for a BUY recommendation.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +16,7 @@ import httpx
 
 from symbol_universe import SymbolUniverseUnavailable, query_symbols
 
-from .country_packs import ExchangeSpec, get_exchange
+from .country_packs import ExchangeSpec, get_country_pack, get_exchange
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
 
@@ -18,12 +25,14 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
     provider_id = "twelve-data-universe"
 
     def __init__(self, *, api_key: Optional[str] = None, timeout: float = 15.0, max_rows: int = 5000) -> None:
-        self.api_key = (api_key or os.environ.get("BIAP_GLOBAL_MARKET_API_KEY") or "").strip()
+        configured_key = api_key if api_key is not None else os.environ.get("BIAP_GLOBAL_MARKET_API_KEY")
+        self.api_key = (configured_key or "demo").strip()
+        self.demo_mode = self.api_key.lower() == "demo"
+        if self.demo_mode:
+            self.provider_id = "twelve-data-universe-demo"
         self.base_url = os.environ.get("BIAP_GLOBAL_MARKET_BASE", "https://api.twelvedata.com").rstrip("/")
         self.timeout = max(3.0, float(timeout))
         self.max_rows = max(1, min(int(max_rows), 20000))
-        if not self.api_key:
-            raise GlobalProviderError("BIAP_GLOBAL_MARKET_API_KEY is required for global instrument discovery")
 
     def _request(self, params: dict) -> dict:
         try:
@@ -39,19 +48,39 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
             raise GlobalProviderError(str(payload.get("message") or "instrument universe provider error")[:300])
         return payload
 
+    @staticmethod
+    def _payload_score(payload: dict) -> tuple[int, int]:
+        rows = payload.get("data")
+        row_count = len(rows) if isinstance(rows, list) else 0
+        try:
+            total = int(payload.get("count") or 0)
+        except (TypeError, ValueError):
+            total = 0
+        return row_count, total
+
     def _get_page(self, *, country: str, spec: ExchangeSpec, page: int, outputsize: int) -> dict:
-        base = {"country": country.upper(), "page": page, "outputsize": outputsize, "format": "JSON", "type": "Common Stock"}
+        # MIC is the safest cross-vendor venue identity. Do not add a country
+        # filter to MIC queries because vendors differ on whether they expect an
+        # ISO alpha-2 code or a human country name.
+        common = {"page": page, "outputsize": outputsize, "format": "JSON", "type": "Common Stock"}
+        candidates: list[dict] = []
+
         if spec.mic:
-            first = self._request({**base, "mic_code": spec.mic})
-            if isinstance(first.get("data"), list) and first.get("data"):
-                return first
-            # Some vendors catalog segment MICs while our selector stores the
-            # operating MIC. Retry with the human exchange label, then validate
-            # each returned MIC against accepted operating/segment aliases.
-            if spec.mic_aliases:
-                return self._request({**base, "exchange": spec.label})
-            return first
-        return self._request({**base, "exchange": spec.label})
+            candidates.append(self._request({**common, "mic_code": spec.mic}))
+
+        # The operating MIC can be sparse while the exchange-name catalog
+        # includes segment MICs (notably NASDAQ). Conversely LSE/Oslo work much
+        # better by MIC. Query both and deterministically keep the richer page.
+        country_name = get_country_pack(country).name
+        try:
+            candidates.append(self._request({**common, "country": country_name, "exchange": spec.label}))
+        except GlobalProviderError:
+            if not candidates:
+                raise
+
+        if not candidates:
+            raise GlobalProviderError(f"no reference-data lookup strategy for {country}/{spec.code}")
+        return max(candidates, key=self._payload_score)
 
     def list_instruments(self, *, country: Optional[str] = None, exchange: Optional[str] = None) -> Iterable[GlobalCompany]:
         if not country or not exchange:
@@ -59,6 +88,7 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
         spec = get_exchange(country, exchange)
         accepted_mics = set(spec.accepted_mics)
         result: list[GlobalCompany] = []
+        seen: set[tuple[str, str]] = set()
         page = 1
         page_size = min(1000, self.max_rows)
 
@@ -76,6 +106,11 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
                 returned_mic = str(row.get("mic_code") or "").strip().upper() or None
                 if accepted_mics and returned_mic and returned_mic not in accepted_mics:
                     continue
+                venue_key = (returned_mic or spec.mic or spec.code).upper()
+                dedupe_key = (venue_key, symbol.upper())
+                if dedupe_key in seen:
+                    continue
+                seen.add(dedupe_key)
                 currency = str(row.get("currency") or (spec.currencies[0] if spec.currencies else "")).strip().upper()
                 if not currency:
                     continue
@@ -94,12 +129,17 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
                     raw_provider_fields={
                         "figi": str(row.get("figi_code") or "").strip() or None,
                         "cfi": str(row.get("cfi_code") or "").strip() or None,
+                        "reference_access": "demo" if self.demo_mode else "authenticated",
                     },
                     sources=[SourceEvidence(
                         provider=self.provider_id,
                         source_type="instrument_reference",
                         source_id=f"{country.upper()}:{returned_mic or spec.mic or spec.code}:{symbol}",
-                        quality=0.9,
+                        quality=0.85 if self.demo_mode else 0.9,
+                        notes=(
+                            "Reference catalog only; demo authentication does not provide quote/history access."
+                            if self.demo_mode else None
+                        ),
                     )],
                 ))
                 if len(result) >= self.max_rows:
