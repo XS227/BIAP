@@ -48,6 +48,8 @@ jobs:
           set -euo pipefail
           APP_DIR=/home/ubuntu/biap-global/BIAP
           cd "$APP_DIR"
+          # The deploy workflow owns branch updates. This refresh intentionally
+          # uses the already-deployed isolated checkout and never touches Iran.
           export BIAP_GLOBAL_APP_DIR="$APP_DIR"
           export BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global
           bash deploy/sync-global-sources.sh
