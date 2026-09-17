@@ -38,7 +38,11 @@ _FUNDAMENTAL_FIELDS = (
     "restatement_flag", "material_event_flags",
 )
 
-_OFFICIAL_SOURCE_TOKENS = ("official", "regulatory", "xbrl", "filing")
+# Match EvidenceAgent's concept of a verified financial source. ``official`` by
+# itself is deliberately insufficient: an official company registry may verify
+# legal identity, but it is not an official financial statement.
+_OFFICIAL_FINANCIAL_TOKENS = ("filing", "regulatory", "xbrl", "financial_statement")
+_CACHE_SOURCE_TOKENS = (*_OFFICIAL_FINANCIAL_TOKENS, "fundamental", "financial_metrics", "company_registry")
 
 
 def _utc_now() -> datetime:
@@ -63,7 +67,17 @@ def _official_sources(company: GlobalCompany) -> list[SourceEvidence]:
         provider = source.provider.lower()
         if "vendor" in kind or "vendor" in provider:
             continue
-        if any(token in kind for token in _OFFICIAL_SOURCE_TOKENS):
+        if any(token in kind for token in _OFFICIAL_FINANCIAL_TOKENS):
+            rows.append(source)
+    return rows
+
+
+def _cache_sources(company: GlobalCompany) -> list[SourceEvidence]:
+    """Persist fundamentals/corroboration provenance, never market provenance."""
+    rows: list[SourceEvidence] = []
+    for source in company.sources:
+        kind = source.source_type.lower().replace("-", "_")
+        if any(token in kind for token in _CACHE_SOURCE_TOKENS):
             rows.append(source)
     return rows
 
@@ -138,7 +152,7 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         return age is not None and age <= self.fresh_seconds
 
     def _write(self, company: GlobalCompany) -> None:
-        sources = [asdict(source) for source in company.sources]
+        sources = [asdict(source) for source in _cache_sources(company)]
         official = bool(_official_sources(company))
         payload = {
             "schemaVersion": 1,
@@ -193,8 +207,10 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
             except TypeError:
                 continue
 
-        raw_fields = dict(seed.raw_provider_fields)
-        raw_fields.update(payload.get("raw_provider_fields") or {})
+        # Cached provider diagnostics are useful, but any fresh market/catalog
+        # fields already on the seed take precedence over stale cached metadata.
+        raw_fields = dict(payload.get("raw_provider_fields") or {})
+        raw_fields.update(seed.raw_provider_fields)
         age = self._age_seconds(payload)
         raw_fields.update({
             "fundamentals_cache": "fallback" if fallback else "fresh",
