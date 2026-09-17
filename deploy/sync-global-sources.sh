@@ -16,14 +16,20 @@ fi
 export BIAP_GLOBAL_DATA_DIR="${BIAP_GLOBAL_DATA_DIR:-/var/lib/biap-global}"
 mkdir -p "$BIAP_GLOBAL_DATA_DIR/source-index" "$BIAP_GLOBAL_DATA_DIR/filings/JP"
 
-# Japan: keep a small rolling window current after the initial bootstrap.
+# Keep the instrument catalogs for the main global exchanges warm. Individual
+# market failures are isolated inside universe_sync and never erase a good cache.
+if ! "$PY" -m global_markets.universe_sync; then
+  echo "UNIVERSE_SYNC: no market refreshed this run; existing snapshots preserved" >&2
+fi
+
+# Japan: keep a small rolling EDINET window current after the initial bootstrap.
 if [[ -n "${BIAP_EDINET_API_KEY:-}" ]]; then
   "$PY" -m global_markets.edinet_sync --days "${BIAP_EDINET_DAILY_SYNC_DAYS:-4}"
 else
   echo "EDINET: skipped (BIAP_EDINET_API_KEY not configured)"
 fi
 
-# ESEF/GLEIF are queried on demand by verified LEI and may be cached by the API
-# layer. Australia is intentionally not scraped here: an authorized/licensed
-# ingestion job must populate the verified filing drop.
+# ESEF/GLEIF are queried on demand by verified LEI and cached by the API layer.
+# Australia is intentionally not scraped here: an authorized/licensed ingestion
+# job must populate the verified filing drop for official fundamentals.
 echo "Global source sync completed safely."
