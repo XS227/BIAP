@@ -251,3 +251,49 @@ def test_new_vs_re_enriched_counting_in_audit_log(tmp_path, monkeypatch):
     second_run = reg.list_runs(limit=1)[0]
     assert second_run["succeeded"] == 2
     assert second_run["re_enriched_companies"] == 2  # both were already enriched before this run
+
+
+def test_run_batch_restrict_to_codes_never_enriches_outside_the_explicit_set(tmp_path, monkeypatch):
+    """A bounded operational run (e.g. "enrich exactly these N confirmed companies")
+    must never enroll a company discovered by this same call's classification pass,
+    even though that company is also genuinely never-enriched."""
+    store = ListedCompanyStore(str(tmp_path / "listed.sqlite3"))
+    reg = CompanyRegistryStore(str(tmp_path / "listed.sqlite3"))
+    store.upsert_universe([
+        _item("1", "الف", "شرکت الف"),
+        _item("2", "ب", "شرکت ب"),
+        _item("3", "ج", "شرکت ج"),
+    ])
+    # refresh_universe's live discovery this run finds all three -- but the
+    # caller only confirmed "1" and "2" as the target set.
+    _stub_universe(monkeypatch, store, reg, ["1", "2", "3"])
+
+    built = []
+
+    def fake_build(code):
+        built.append(code)
+        return ({"ticker": code, "name_fa": code, "data_available": {"codal": True}, "market": {}}, "test-builder")
+
+    monkeypatch.setattr(ingestion, "_build_verified_company", fake_build)
+
+    result = ingestion.run_batch(store=store, registry=reg, batch_size=10, restrict_to_codes=["1", "2"])
+
+    assert sorted(built) == ["1", "2"]
+    assert "3" not in built
+    assert result["total"] == 2
+    assert store.get("3")["company"] is None
+    assert result["metadata"]["restrictedToCodesCount"] == 2
+
+
+def test_run_batch_without_restrict_to_codes_behaves_as_before(tmp_path, monkeypatch):
+    store = ListedCompanyStore(str(tmp_path / "listed.sqlite3"))
+    reg = CompanyRegistryStore(str(tmp_path / "listed.sqlite3"))
+    store.upsert_universe([_item("1", "الف", "شرکت الف")])
+    _stub_universe(monkeypatch, store, reg, ["1"])
+    monkeypatch.setattr(
+        ingestion, "_build_verified_company",
+        lambda code: ({"ticker": code, "name_fa": code, "data_available": {}, "market": {}}, "test-builder"),
+    )
+    result = ingestion.run_batch(store=store, registry=reg, batch_size=10)
+    assert result["metadata"]["restrictedToCodesCount"] is None
+    assert result["succeeded"] == 1

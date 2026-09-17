@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import time
-from typing import Any
+from typing import Any, Iterable
 import uuid
 
 from codal_data import CodalDataUnavailable, list_companies
@@ -340,6 +340,7 @@ def run_batch(
     batch_size: int = DAILY_BATCH_SIZE,
     reset: bool = False,
     interval_seconds: float = 0.0,
+    restrict_to_codes: Iterable[str] | None = None,
 ) -> dict[str, Any]:
     """Enrich up to one bounded daily slice of the listed-company universe.
 
@@ -369,6 +370,14 @@ def run_batch(
     Every invocation appends exactly one row to the append-only
     ``collection_runs`` audit log, whether it completes, pauses partway
     through, or stops on a rate limit.
+
+    ``restrict_to_codes``, when given, bounds which codes this call may ever
+    enrich to that explicit set (e.g. a specific, already-confirmed list of
+    genuine companies) -- classification/discovery in ``refresh_universe``
+    still runs normally and keeps the registry current, but a company
+    discovered by that same refresh is never enrolled into enrichment unless
+    it was already in the caller's explicit set. Without it, behavior is
+    unchanged: the full never-enriched-first priority order applies.
     """
     target = store or ListedCompanyStore()
     reg = registry or CompanyRegistryStore(target.db_path)
@@ -384,6 +393,9 @@ def run_batch(
     if eligible_codes is None:
         eligible_codes = target.pending_codes(start=0, limit=5000)
     eligible_codes = [str(c) for c in dict.fromkeys(str(c) for c in eligible_codes if str(c))]
+    if restrict_to_codes is not None:
+        allowed = {str(c) for c in restrict_to_codes}
+        eligible_codes = [c for c in eligible_codes if c in allowed]
     total = len(eligible_codes)
     discovered = int(universe.get("rawUniverseCount") or universe.get("rawCount") or total)
 
@@ -419,6 +431,7 @@ def run_batch(
         "schedulerPriority": "never-enriched genuine companies first, then oldest-enriched for refresh",
         "neverEnrichedBeforeRun": never_enriched_before,
         "runId": run_id,
+        "restrictedToCodesCount": len(eligible_codes) if restrict_to_codes is not None else None,
     }
 
     processed = 0
