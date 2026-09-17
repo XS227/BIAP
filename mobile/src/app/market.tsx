@@ -17,6 +17,32 @@ function callColor(call: string | undefined, secondary: string) {
   return secondary;
 }
 
+function normalizedSearch(value: string | null | undefined) {
+  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ');
+}
+
+function searchScore(item: GlobalInstrument, rawQuery: string) {
+  const q = normalizedSearch(rawQuery);
+  if (!q) return 0;
+  const ticker = normalizedSearch(item.ticker).replace(/ /g, '');
+  const isin = normalizedSearch(item.isin).replace(/ /g, '');
+  const name = normalizedSearch(item.name);
+  const words = name.split(' ').filter(Boolean);
+
+  if (ticker === q) return 1000;
+  if (ticker.startsWith(q)) return 900;
+  if (isin && isin === q) return 850;
+  if (isin && isin.startsWith(q)) return 800;
+  if (name === q) return 760;
+  if (words.some((word) => word === q)) return 700;
+  if (words.some((word) => word.startsWith(q))) return 620;
+
+  const queryWords = q.split(' ').filter(Boolean);
+  if (queryWords.length > 1 && queryWords.every((part) => words.some((word) => word === part || word.startsWith(part)))) return 560;
+  // Do not match arbitrary inner substrings (APPLE must not match Pineapple).
+  return -1;
+}
+
 export default function MarketScreen() {
   const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
   const [selection, setSelection] = useState<GlobalMarketSelection | null>(null);
@@ -61,9 +87,13 @@ export default function MarketScreen() {
   }, [load]));
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
     if (!q) return instruments;
-    return instruments.filter((item) => item.ticker.toLowerCase().includes(q) || item.name.toLowerCase().includes(q) || String(item.isin || '').toLowerCase().includes(q));
+    return instruments
+      .map((item) => ({ item, score: searchScore(item, q) }))
+      .filter((entry) => entry.score >= 0)
+      .sort((a, b) => b.score - a.score || a.item.ticker.localeCompare(b.item.ticker))
+      .map((entry) => entry.item);
   }, [instruments, query]);
 
   const searchRemote = async () => {
@@ -84,7 +114,8 @@ export default function MarketScreen() {
         setScanStatus(`Catalog available • ${result.universeDiscovered ?? instruments.length} instruments • verified price/history feed pending`);
       } else if (extended.cachedMarketData || result.status.startsWith('CACHED_')) {
         setScanMode('cached');
-        setScanStatus(`Cached market data • ${result.recommendationCount ?? 0} qualified • ${result.deepAnalyzed ?? 0} deep analyses`);
+        const coverage = result.screeningCoveragePct == null ? '' : ` • ${Number(result.screeningCoveragePct).toFixed(1)}% coverage`;
+        setScanStatus(`Cached market data • ${result.recommendationCount ?? 0} qualified • ${result.deepAnalyzed ?? 0} deep analyses${coverage}`);
       } else {
         setScanMode('live');
         setScanStatus(`Live market data • ${result.recommendationCount ?? 0} qualified • ${result.deepAnalyzed ?? 0} deep analyses`);
@@ -124,11 +155,11 @@ export default function MarketScreen() {
     <View style={styles.searchRow}><TextInput value={query} onChangeText={setQuery} onSubmitEditing={() => { void searchRemote(); }} autoCapitalize="characters" placeholder="Search ticker, company or ISIN" placeholderTextColor={colors.textSecondary} style={[styles.search, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected, color: colors.text }]} /><Pressable disabled={loadingSearch} onPress={() => { void searchRemote(); }} style={[styles.searchButton, { backgroundColor: Brand.primary, opacity: loadingSearch ? .6 : 1 }]}>{loadingSearch ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.searchButtonText}>Search</Text>}</Pressable></View>
 
     <View style={styles.scanRow}><View style={{ flex: 1 }}><Text style={[styles.scanTitle, { color: colors.text }]}>Kiasha market selection</Text><Text style={[styles.scanText, { color: colors.textSecondary }]}>Universe → liquidity screen → six-agent deep analysis → evidence gate.</Text></View><Pressable disabled={scanning || !selection} onPress={() => { void runScan(); }} style={[styles.scanButton, { borderColor: Brand.primary }]}>{scanning ? <ActivityIndicator color={Brand.primary} size="small" /> : <Text style={styles.scanButtonText}>Run scan</Text>}</Pressable></View>
-    {scanStatus ? <View style={[styles.statusBox, { backgroundColor: colors.backgroundElement, borderColor: modeColor }]}><Text style={[styles.status, { color: modeColor }]}>{scanStatus}</Text>{scanMode === 'catalog' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>The instrument list is real. BIAP will not create BUY candidates until verified market prices are available.</Text> : scanMode === 'cached' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>Saved verified snapshots are being used. Evidence freshness rules still apply.</Text> : null}</View> : null}
+    {scanStatus ? <View style={[styles.statusBox, { backgroundColor: colors.backgroundElement, borderColor: modeColor }]}><Text style={[styles.status, { color: modeColor }]}>{scanStatus}</Text>{scanMode === 'catalog' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>The instrument list is real. BIAP will not create BUY candidates until verified market prices are available.</Text> : scanMode === 'cached' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>Saved verified snapshots are being used. This may cover only a small part of the exchange; it is not a full-market scan unless coverage is near 100%. Evidence freshness rules still apply.</Text> : null}</View> : null}
     {scan.length ? <View style={styles.picks}>{scan.slice(0, 5).map((item, index) => <Pressable key={`${item.ticker}-${index}`} onPress={() => { void openStock(item); }} style={[styles.pick, { backgroundColor: colors.backgroundElement }]}><View><Text style={[styles.pickTicker, { color: colors.text }]}>#{index + 1} {item.ticker}</Text><Text numberOfLines={1} style={[styles.pickName, { color: colors.textSecondary }]}>{item.name}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.pickCall, { color: callColor(item.call, colors.textSecondary) }]}>{item.call}</Text><Text style={[styles.pickConfidence, { color: colors.textSecondary }]}>{item.confidence == null ? '—' : `${Math.round(item.confidence * 100)}% conf.`}</Text></View></Pressable>)}</View> : null}
     {error ? <View style={[styles.errorBox, { borderColor: Brand.warning }]}><Text style={[styles.errorText, { color: colors.textSecondary }]}>{error}</Text></View> : null}
 
-    <FlatList data={filtered} keyExtractor={(item) => `${item.country}:${item.exchange}:${item.ticker}:${item.isin || ''}`} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(query); }} tintColor={Brand.primary} />} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list} ListHeaderComponent={<Text style={[styles.listTitle, { color: colors.text }]}>{query.trim() ? 'Search results' : 'Exchange instruments'}</Text>} ListEmptyComponent={loading ? <ActivityIndicator color={Brand.primary} style={{ marginTop: 30 }} /> : <Text style={[styles.empty, { color: colors.textSecondary }]}>No instruments available from the selected market provider.</Text>} renderItem={({ item }) => <Pressable onPress={() => { void openStock(item); }} style={[styles.row, { backgroundColor: colors.backgroundElement }]}><View style={styles.identity}><Text style={[styles.ticker, { color: colors.text }]}>{item.ticker}</Text><Text numberOfLines={1} style={[styles.name, { color: colors.textSecondary }]}>{item.name}</Text><Text style={[styles.meta, { color: colors.textSecondary }]}>{item.mic_code || selection?.mic || item.exchange} • {item.currency}{item.sector ? ` • ${item.sector}` : ''}</Text></View><Text style={[styles.chevron, { color: Brand.primary }]}>›</Text></Pressable>} />
+    <FlatList data={filtered} keyExtractor={(item) => `${item.country}:${item.exchange}:${item.ticker}:${item.isin || ''}`} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(query); }} tintColor={Brand.primary} />} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list} ListHeaderComponent={<Text style={[styles.listTitle, { color: colors.text }]}>{query.trim() ? 'Search results' : 'Exchange instruments'}</Text>} ListEmptyComponent={loading ? <ActivityIndicator color={Brand.primary} style={{ marginTop: 30 }} /> : <Text style={[styles.empty, { color: colors.textSecondary }]}>{query.trim() ? 'No exact ticker or company-name match on this exchange.' : 'No instruments available from the selected market provider.'}</Text>} renderItem={({ item }) => <Pressable onPress={() => { void openStock(item); }} style={[styles.row, { backgroundColor: colors.backgroundElement }]}><View style={styles.identity}><Text style={[styles.ticker, { color: colors.text }]}>{item.ticker}</Text><Text numberOfLines={1} style={[styles.name, { color: colors.textSecondary }]}>{item.name}</Text><Text style={[styles.meta, { color: colors.textSecondary }]}>{item.mic_code || selection?.mic || item.exchange} • {item.currency}{item.sector ? ` • ${item.sector}` : ''}</Text></View><Text style={[styles.chevron, { color: Brand.primary }]}>›</Text></Pressable>} />
   </View></SafeAreaView>;
 }
 
