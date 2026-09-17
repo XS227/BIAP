@@ -59,6 +59,10 @@ jobs:
           set +a
           export PYTHONPATH="$APP_DIR/analysis"
           export BIAP_GLOBAL_DATA_DIR="${BIAP_GLOBAL_DATA_DIR:-/var/lib/biap-global}"
+          # An explicit warm is intended to hit the official upstream now, not
+          # simply re-read today's normalized cache. Normal request traffic keeps
+          # the normal 24h TTL and remains cheap/resilient.
+          export BIAP_GLOBAL_FUNDAMENTALS_CACHE_HOURS=0
           mkdir -p "$BIAP_GLOBAL_DATA_DIR/fundamentals" "$BIAP_GLOBAL_DATA_DIR/cache/sec-edgar"
           .venv-global/bin/python -m global_markets.official_cache_warm | tee /tmp/biap-global-cache-warm.json
           echo "fundamentals_latest_files=$(find "$BIAP_GLOBAL_DATA_DIR/fundamentals" -type f -name latest.json 2>/dev/null | wc -l)"
