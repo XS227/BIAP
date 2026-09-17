@@ -17,8 +17,8 @@ from .cached_universe import PersistentUniverseProvider
 from .companies_house import CompaniesHouseCorroborator
 from .corroboration import CorroboratingFundamentalsProvider
 from .country_packs import COUNTRY_PACKS
-from .cvm import CVMFundamentalsProvider
 from .cvm_itr import CVMITRCorroborator
+from .cvm_resolver import CVMResolvedFundamentalsProvider
 from .edinet import EDINETFundamentalsProvider
 from .fallback_fundamentals import FallbackFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
@@ -141,8 +141,10 @@ def build_registry() -> ProviderRegistry:
         register_fundamentals("AU", exchange.code, au_with_fallback)
 
     # Brazil: regulator-published CVM DFP is the annual fundamentals base and
-    # CVM ITR is an independent official quarterly corroboration stream.
-    br_annual = FallbackFundamentalsProvider(CVMFundamentalsProvider(), public_fundamentals)
+    # CVM ITR is an independent official quarterly corroboration stream. The B3
+    # display-name resolver still requires one unique CVM CNPJ before evidence
+    # can clear; abbreviated share-class labels are never fuzzily matched.
+    br_annual = FallbackFundamentalsProvider(CVMResolvedFundamentalsProvider(), public_fundamentals)
     br = CorroboratingFundamentalsProvider(br_annual, CVMITRCorroborator())
     for exchange in COUNTRY_PACKS["BR"].exchanges:
         register_fundamentals("BR", exchange.code, br)
