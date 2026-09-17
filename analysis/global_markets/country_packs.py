@@ -99,7 +99,7 @@ COUNTRY_PACKS: dict[str, CountryPack] = {
         E("FRANKFURT", "Frankfurt Stock Exchange", ("EUR",), "XFRA"),
     ), "twelve-data", "esef-issuer", "esef-issuer", "Issuer/OAM + ESEF filings", ("DAX",), "ibkr"),
     "ES": CountryPack("ES", "Spain", (
-        E("BME_MADRID", "Bolsa de Madrid", ("EUR",), "BMEX", ("XMAD",)),
+        E("BME_MADRID", "Bolsa de Madrid", ("EUR",), "XMAD", ("BMEX",)),
     ), "twelve-data", "esef-issuer", "esef-issuer", "Issuer/OAM + ESEF filings", ("IBEX35",), "ibkr"),
     "CH": CountryPack("CH", "Switzerland", (
         E("SIX", "SIX Swiss Exchange", ("CHF",), "XSWX"),
@@ -107,7 +107,7 @@ COUNTRY_PACKS: dict[str, CountryPack] = {
 
     "AU": CountryPack("AU", "Australia", (E("ASX", "Australian Securities Exchange", ("AUD",), "XASX"),), "twelve-data", "asx-issuer", "asx-issuer", "ASX announcements + issuer reports", ("ASX200",), "ibkr"),
     "NZ": CountryPack("NZ", "New Zealand", (E("NZX", "New Zealand Exchange", ("NZD",), "XNZE"),), "twelve-data", "nzx-issuer", "nzx-issuer", "NZX issuer disclosures", ("NZX50",), "ibkr"),
-    "JP": CountryPack("JP", "Japan", (E("TSE_JP", "Tokyo Stock Exchange", ("JPY",), "XTKS"),), "twelve-data", "edinet", "edinet", "FSA EDINET", ("NIKKEI225", "TOPIX"), "ibkr"),
+    "JP": CountryPack("JP", "Japan", (E("TSE_JP", "Tokyo Stock Exchange", ("JPY",), "XJPX", ("XTKS",)),), "twelve-data", "edinet", "edinet", "FSA EDINET", ("NIKKEI225", "TOPIX"), "ibkr"),
     "KR": CountryPack("KR", "South Korea", (E("KRX", "Korea Exchange", ("KRW",), "XKRX"),), "twelve-data", "opendart", "opendart", "Financial Supervisory Service OpenDART", ("KOSPI",), "ibkr"),
     "HK": CountryPack("HK", "Hong Kong", (E("HKEX", "Hong Kong Stock Exchange", ("HKD",), "XHKG"),), "twelve-data", "hkexnews", "hkexnews", "HKEXnews", ("HSI",), "ibkr"),
     "SG": CountryPack("SG", "Singapore", (E("SGX", "Singapore Exchange", ("SGD",), "XSES"),), "twelve-data", "sgx-issuer", "sgx-issuer", "SGX issuer announcements", ("STI",), "ibkr"),
