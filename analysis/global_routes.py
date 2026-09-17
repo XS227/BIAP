@@ -165,26 +165,30 @@ def global_instruments(
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0, le=20000),
 ):
+    """Browse an exchange or perform a targeted instrument search.
+
+    Search is deliberately independent from a full exchange refresh. Exact
+    ticker/name discovery (for example AAPL) must not wait for thousands of
+    catalog rows to download just because the persistent snapshot is missing or
+    stale. A full snapshot is only required for unfiltered browsing/scan flows.
+    """
     try:
         spec = get_exchange(country, exchange)
         registry = build_registry()
         provider = registry.universe(country, spec.code)
-        instruments = list(provider.list_instruments(country=country.upper(), exchange=spec.code))
-        snapshot_info = None
-        if hasattr(provider, "snapshot_info"):
-            try:
-                snapshot_info = provider.snapshot_info(country=country.upper(), exchange=spec.code)
-            except Exception:
-                snapshot_info = None
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
 
+    snapshot_info = None
+    if hasattr(provider, "snapshot_info"):
+        try:
+            snapshot_info = provider.snapshot_info(country=country.upper(), exchange=spec.code)
+        except Exception:
+            snapshot_info = None
+
     if q:
-        # Search the complete local snapshot first, then merge targeted upstream
-        # discovery. This makes exact symbols/names discoverable even when a
-        # persistent snapshot was incomplete without re-downloading the whole
-        # exchange for each search request.
-        candidates = list(instruments)
+        candidates = []
+        targeted_error = None
         targeted_search = getattr(provider, "search_instruments", None)
         if callable(targeted_search):
             try:
@@ -194,9 +198,30 @@ def global_instruments(
                     query=q,
                     limit=min(120, max(30, limit)),
                 ))
-            except Exception:
-                pass
-        instruments = [item for _, item in _rank_instruments(candidates, q)]
+            except Exception as exc:
+                targeted_error = exc
+
+        # If targeted discovery already produced a match, do not force a full
+        # catalog refresh. This is the latency/resilience path used by mobile
+        # ticker search when the persistent exchange snapshot is absent/stale.
+        ranked_targeted = _rank_instruments(candidates, q)
+        if ranked_targeted:
+            instruments = [item for _, item in ranked_targeted]
+        else:
+            try:
+                local = list(provider.list_instruments(country=country.upper(), exchange=spec.code))
+            except Exception as exc:
+                if targeted_error is not None:
+                    detail = f"targeted search failed ({type(targeted_error).__name__}); catalog unavailable ({type(exc).__name__})"
+                else:
+                    detail = str(exc)
+                raise HTTPException(status_code=503, detail=detail[:500]) from exc
+            instruments = [item for _, item in _rank_instruments(local, q)]
+    else:
+        try:
+            instruments = list(provider.list_instruments(country=country.upper(), exchange=spec.code))
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
 
     total = len(instruments)
     page = instruments[offset:offset + limit]
