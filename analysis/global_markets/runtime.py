@@ -14,6 +14,7 @@ import os
 from .cached_esef import CachedESEFFundamentalsProvider
 from .cached_fundamentals import PersistentFundamentalsProvider
 from .cached_market import PersistentMarketProvider
+from .cached_sec_edgar import CachedSECEdgarFundamentalsProvider
 from .cached_universe import PersistentUniverseProvider
 from .companies_house import CompaniesHouseCorroborator
 from .corroboration import CorroboratingFundamentalsProvider
@@ -27,7 +28,6 @@ from .kap_current import KAPCurrentFundamentalsProvider
 from .opendart import OpenDARTFundamentalsProvider
 from .providers import ProviderRegistry
 from .regional_yahoo_chart import RegionalYahooChartMarketProvider
-from .sec_edgar import SECEdgarFundamentalsProvider
 from .twelve_data import TwelveDataMarketProvider
 from .universe import IranUniverseProvider, TwelveDataUniverseProvider
 from .verified_filing_drop import VerifiedFilingDropProvider
@@ -88,15 +88,15 @@ def build_registry() -> ProviderRegistry:
         registry.register_fundamentals(country, exchange_code, provider)
         fundamentals_registered.add((country.upper(), exchange_code.upper()))
 
-    # SEC companyfacts is a public, no-key official source. Every successful
-    # normalized filing snapshot is also persisted on the Global server. This
-    # gives the app an outage-safe official baseline and builds a per-period
-    # history archive as new 10-K filings arrive.
+    # SEC companyfacts is a public, no-key official source. Raw SEC CompanyFacts
+    # JSON (including historical facts) is persisted first, then BIAP stores the
+    # normalized filing snapshot by filing period. This gives the app both a
+    # historical source cache and an outage-safe analysis baseline.
     sec_user_agent = (
         os.environ.get("BIAP_SEC_USER_AGENT")
         or "BIAP Global research application (+https://setai.no)"
     ).strip()
-    sec = PersistentFundamentalsProvider(SECEdgarFundamentalsProvider(user_agent=sec_user_agent))
+    sec = PersistentFundamentalsProvider(CachedSECEdgarFundamentalsProvider(user_agent=sec_user_agent))
     for exchange in COUNTRY_PACKS["US"].exchanges:
         register_fundamentals("US", exchange.code, sec)
 
