@@ -4,8 +4,11 @@ from io import BytesIO
 import json
 from zipfile import ZipFile
 
+import pytest
+
 from global_markets.cvm import CVMFundamentalsProvider, parse_cvm_dfp_archive
 from global_markets.models import GlobalCompany
+from global_markets.providers import GlobalProviderError
 from global_markets.runtime import build_registry
 from global_markets.source_cache import source_index_path
 
@@ -72,6 +75,18 @@ def _archive():
     return buf.getvalue()
 
 
+def _write_index(tmp_path):
+    record = parse_cvm_dfp_archive(_archive())[0]
+    payload = {
+        "updatedAt": "2026-09-18T00:00:00+00:00",
+        "companies": {record["normalizedName"]: [record]},
+    }
+    path = source_index_path("cvm-dfp")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return record, path
+
+
 def test_parse_cvm_dfp_archive_uses_fixed_accounts_and_scale():
     rows = parse_cvm_dfp_archive(_archive())
     assert len(rows) == 1
@@ -92,14 +107,7 @@ def test_parse_cvm_dfp_archive_uses_fixed_accounts_and_scale():
 
 def test_cvm_provider_appends_official_regulatory_provenance(tmp_path, monkeypatch):
     monkeypatch.setenv("BIAP_GLOBAL_DATA_DIR", str(tmp_path))
-    record = parse_cvm_dfp_archive(_archive())[0]
-    payload = {
-        "updatedAt": "2026-09-18T00:00:00+00:00",
-        "companies": {record["normalizedName"]: [record]},
-    }
-    path = source_index_path("cvm-dfp")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload), encoding="utf-8")
+    _write_index(tmp_path)
 
     company = GlobalCompany(
         country="BR", exchange="B3", mic_code="BVMF", currency="BRL",
@@ -114,6 +122,35 @@ def test_cvm_provider_appends_official_regulatory_provenance(tmp_path, monkeypat
     assert source.provider == "cvm-open-data-dfp"
     assert source.source_type == "official_regulatory_financial_statement"
     assert source.quality == 0.98
+
+
+def test_cvm_provider_accepts_same_business_tokens_in_vendor_order(tmp_path, monkeypatch):
+    monkeypatch.setenv("BIAP_GLOBAL_DATA_DIR", str(tmp_path))
+    _write_index(tmp_path)
+    # Twelve Data currently presents PETR4 with the brand before the legal name.
+    company = GlobalCompany(
+        country="BR", exchange="B3", mic_code="BVMF", currency="BRL",
+        ticker="PETR4", name="Petrobras - Petroleo Brasileiro S.A.",
+    )
+    enriched = CVMFundamentalsProvider().enrich_fundamentals(company)
+    assert enriched.raw_provider_fields["cvm_cnpj"] == "33000167000101"
+    assert enriched.raw_provider_fields["cvm_match_mode"] == "exact_business_token_signature"
+    assert enriched.sources[-1].provider == "cvm-open-data-dfp"
+
+
+def test_cvm_signature_never_accepts_multiple_cnpjs(tmp_path, monkeypatch):
+    monkeypatch.setenv("BIAP_GLOBAL_DATA_DIR", str(tmp_path))
+    record, path = _write_index(tmp_path)
+    duplicate = {**record, "cnpj": "11111111000199"}
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["companies"]["petrobras petroleo brasileiro s a"] = [duplicate]
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    company = GlobalCompany(
+        country="BR", exchange="B3", mic_code="BVMF", currency="BRL",
+        ticker="PETR4", name="Petrobras - Petroleo Brasileiro S.A.",
+    )
+    with pytest.raises(GlobalProviderError, match="ambiguous"):
+        CVMFundamentalsProvider().enrich_fundamentals(company)
 
 
 def test_runtime_registers_brazil_official_provider(monkeypatch):
