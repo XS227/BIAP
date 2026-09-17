@@ -10,6 +10,13 @@ function n(value: number | null | undefined, digits = 2) {
   return Number(value).toLocaleString('en-US', { maximumFractionDigits: digits });
 }
 
+function priceN(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(Number(value))) return '—';
+  const x = Math.abs(Number(value));
+  const digits = x >= 1 ? 2 : x >= 0.1 ? 3 : x >= 0.01 ? 4 : x >= 0.001 ? 5 : 6;
+  return Number(value).toLocaleString('en-US', { maximumFractionDigits: digits });
+}
+
 function pct(value: number | null | undefined, digits = 1) {
   if (value == null || !Number.isFinite(Number(value))) return '—';
   return `${Number(value).toLocaleString('en-US', { maximumFractionDigits: digits })}%`;
@@ -82,9 +89,11 @@ export default function GlobalStockDetailScreen() {
   const callTone = decisionColor(analysis?.call, colors.textSecondary);
   const price = company?.price;
   const priceTimestamp = company?.price_observed_at;
+  const lowPriceWarning = price != null && Number.isFinite(Number(price)) && Number(price) > 0 && Number(price) < 0.1;
+  const extremeVolatilityWarning = company?.volatility_annualized_pct != null && Number(company.volatility_annualized_pct) >= 250;
   const marketRows = useMemo(() => [
-    ['Price', price == null ? '—' : `${n(price)} ${analysis?.currency || ''}`],
-    ['52-week range', company?.price_52w_low == null || company?.price_52w_high == null ? '—' : `${n(company.price_52w_low)} – ${n(company.price_52w_high)}`],
+    ['Price', price == null ? '—' : `${priceN(price)} ${analysis?.currency || ''}`],
+    ['52-week range', company?.price_52w_low == null || company?.price_52w_high == null ? '—' : `${priceN(company.price_52w_low)} – ${priceN(company.price_52w_high)}`],
     ['1M / 3M / 6M', `${pct(company?.return_1m_pct)} / ${pct(company?.return_3m_pct)} / ${pct(company?.return_6m_pct)}`],
     ['Annualized volatility', pct(company?.volatility_annualized_pct)],
     ['Max drawdown', pct(company?.max_drawdown_pct)],
@@ -104,13 +113,15 @@ export default function GlobalStockDetailScreen() {
       {loading ? <ActivityIndicator color={Brand.primary} style={{ marginTop: 50 }} /> : error ? <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Analysis unavailable</Text><Text style={[styles.body, { color: colors.textSecondary }]}>{error}</Text></View> : analysis ? <>
         <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}>
           <View style={styles.rowBetween}><View style={{ flex: 1 }}><Text style={[styles.ticker, { color: colors.text }]}>{analysis.ticker}</Text><Text style={[styles.companyName, { color: colors.textSecondary }]}>{analysis.name}</Text><Text style={[styles.identity, { color: colors.textSecondary }]}>{analysis.country} • {analysis.exchange} • {analysis.mic || 'MIC n/a'} • {analysis.currency}</Text></View><View style={[styles.callPill, { borderColor: callTone }]}><Text style={[styles.callText, { color: callTone }]}>{analysis.call}</Text></View></View>
-          <View style={styles.priceRow}><Text style={[styles.price, { color: colors.text }]}>{price == null ? '—' : n(price)}</Text><Text style={[styles.currency, { color: colors.textSecondary }]}>{analysis.currency}</Text></View>
+          <View style={styles.priceRow}><Text style={[styles.price, { color: colors.text }]}>{price == null ? '—' : priceN(price)}</Text><Text style={[styles.currency, { color: colors.textSecondary }]}>{analysis.currency}</Text></View>
           <Text style={[styles.timestamp, { color: colors.textSecondary }]}>{priceTimestamp ? `Price observed ${priceTimestamp}` : 'Verified price timestamp unavailable'}</Text>
         </View>
 
+        {(lowPriceWarning || extremeVolatilityWarning) ? <View style={[styles.caution, { backgroundColor: colors.backgroundElement, borderColor: Brand.warning }]}><Text style={[styles.cautionTitle, { color: Brand.warning }]}>Market-data caution</Text><Text style={[styles.body, { color: colors.textSecondary }]}>{lowPriceWarning ? 'This is a very low-priced instrument; BIAP preserves extra decimal precision instead of rounding it to zero. ' : ''}{extremeVolatilityWarning ? 'Observed volatility is extreme, so risk metrics should be interpreted with extra caution and remain subject to the Evidence gate.' : ''}</Text></View> : null}
+
         <View style={styles.metrics}><Metric label="Kiasha score" value={analysis.score == null ? '—' : n(analysis.score, 3)} colors={colors}/><Metric label="Decision confidence" value={analysis.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`} colors={colors}/><Metric label="Evidence" value={analysis.evidence?.status || '—'} colors={colors}/></View>
 
-        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Kiasha decision</Text><Text style={[styles.body, { color: colors.textSecondary }]}>Kiasha combines the four core agent signals after provider normalization, then applies the Evidence/Verification gate. A new BUY candidate is allowed only when evidence status is PASS and confidence clears the threshold.</Text></View>
+        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Kiasha decision</Text><Text style={[styles.body, { color: colors.textSecondary }]}>Kiasha combines the six scoring agent signals after provider normalization, then applies the Evidence/Verification gate. A new BUY candidate is allowed only when evidence status is PASS and confidence clears the threshold.</Text></View>
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Core analysis agents</Text>
         {signals.map((signal) => <AgentCard key={signal.agent} signal={signal} colors={colors} />)}
@@ -146,6 +157,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 }, content: { paddingHorizontal: Spacing.three, paddingBottom: BottomTabInset + Spacing.six }, maxWidth: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: Spacing.three }, back: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 18 }, backText: { fontFamily: Fonts.sans, fontSize: 11, fontWeight: '700' }, headerMeta: { fontFamily: Fonts.sans, fontSize: 10.5 },
   hero: { borderRadius: Radius.lg, padding: Spacing.four }, rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }, ticker: { fontFamily: Fonts.mono, fontSize: 26, fontWeight: '900' }, companyName: { fontFamily: Fonts.sans, fontSize: 12, marginTop: 3 }, identity: { fontFamily: Fonts.mono, fontSize: 9, marginTop: 5 }, callPill: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 }, callText: { fontFamily: Fonts.mono, fontSize: 8.5, fontWeight: '900' }, priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 18 }, price: { fontFamily: Fonts.mono, fontSize: 31, fontWeight: '900' }, currency: { fontFamily: Fonts.mono, fontSize: 11 }, timestamp: { fontFamily: Fonts.mono, fontSize: 8.5, marginTop: 4 },
+  caution: { borderWidth: 1, borderRadius: Radius.md, padding: Spacing.three, marginTop: 10 }, cautionTitle: { fontFamily: Fonts.sans, fontSize: 11, fontWeight: '900' },
   metrics: { flexDirection: 'row', gap: 8, marginTop: 10 }, metric: { flex: 1, borderRadius: Radius.md, paddingVertical: 14, paddingHorizontal: 8, alignItems: 'center' }, metricValue: { fontFamily: Fonts.mono, fontSize: 15, fontWeight: '900', textAlign: 'center' }, metricLabel: { fontFamily: Fonts.sans, fontSize: 8.5, marginTop: 4, textAlign: 'center' },
   sectionTitle: { fontFamily: Fonts.sans, fontSize: 15, fontWeight: '900', marginTop: 20, marginBottom: 8 }, card: { borderRadius: Radius.lg, padding: Spacing.three, marginTop: 10 }, cardTitle: { fontFamily: Fonts.sans, fontSize: 14, fontWeight: '900' }, body: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 17, marginTop: 5 },
   agentCard: { borderWidth: 1, borderRadius: Radius.lg, padding: Spacing.three, marginBottom: 8 }, agentName: { fontFamily: Fonts.sans, fontSize: 12.5, fontWeight: '900' }, agentVote: { fontFamily: Fonts.mono, fontSize: 12, fontWeight: '900' }, agentConfidence: { fontFamily: Fonts.mono, fontSize: 9, marginTop: 5 }, agentReason: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 17, marginTop: 6 }, warning: { fontFamily: Fonts.sans, fontSize: 9.5, lineHeight: 15, marginTop: 6 },
