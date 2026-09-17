@@ -28,27 +28,44 @@ def _clean_isin(value: object) -> Optional[str]:
 
 
 def _ordinary_equity_row(*, country: str, spec: ExchangeSpec, row: dict, symbol: str, currency: str) -> bool:
-    """Conservatively reject debt/preference/foreign secondary lines.
+    """Conservatively accept only ordinary operating-company equities.
 
-    Some vendor reference rows are labelled ``Common Stock`` even when the
-    symbol/name clearly represents a floating-rate note, preference line or a
-    foreign-currency international segment. BIAP's Kiasha stock scanner should
-    screen ordinary operating-company equities, not those instruments.
+    Vendor reference catalogs occasionally label bonds, preference shares,
+    structured products and foreign/international-segment lines as ``Common
+    Stock``. Kiasha's stock scanner must not treat those as ordinary shares.
+    CFI is authoritative when present; venue-specific ticker/name guards are a
+    second line of defence for incomplete vendor rows.
     """
     instrument_type = str(row.get("type") or "Common Stock").strip()
     kind = instrument_type.lower()
     if "stock" not in kind and "equity" not in kind:
         return False
 
+    cfi = str(row.get("cfi_code") or "").strip().upper()
+    # ISO 10962 CFI codes for equities start with E. If the vendor supplied a
+    # CFI at all, do not override a non-equity classification with a loose
+    # textual "Common Stock" label.
+    if cfi and not cfi.startswith("E"):
+        return False
+
     allowed_currencies = {value.upper() for value in spec.currencies}
     if country.upper() == "GB":
-        # LSE common shares may be catalogued in pounds or pence.
+        # LSE ordinary shares may be catalogued in pounds or pence.
         allowed_currencies.add("GBX")
     if allowed_currencies and currency.upper() not in allowed_currencies:
         return False
 
-    ticker = symbol.upper()
+    ticker = symbol.strip().upper()
+    if not ticker:
+        return False
     if ".PR." in ticker or ticker.endswith(".PR") or ".RT." in ticker or ticker.endswith(".RT"):
+        return False
+
+    # Numeric-leading XLON symbols are commonly international/structured
+    # segments (for example 0A0D/010K/1HP5) rather than the issuer's primary
+    # ordinary London line. Do not apply this rule to Oslo, where legitimate
+    # ordinary equities such as 2020 Bulkers use numeric tickers.
+    if country.upper() == "GB" and ticker[0].isdigit():
         return False
 
     name = f" {str(row.get('name') or '').upper()} "
@@ -56,6 +73,8 @@ def _ordinary_equity_row(*, country: str, spec: ExchangeSpec, row: dict, symbol:
         " FRN ", " FLOATING RATE ", " BOND ", " NOTE ", " NOTES ",
         " WARRANT ", " WARRANTS ", " RIGHTS ", " CERTIFICATE ",
         " PREFERENCE ", " PREFERRED ", " CONVERTIBLE BOND ",
+        " ETN ", " ETC ", " STRUCTURED ", " ZERO COUPON ",
+        " MEDIUM TERM ", " DEBT SECURITY ",
     )
     return not any(token in name for token in rejected_name_tokens)
 
