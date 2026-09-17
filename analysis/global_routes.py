@@ -28,8 +28,12 @@ class InstrumentRequest(BaseModel):
     ticker: str = Field(min_length=1, max_length=64)
     name: Optional[str] = Field(default=None, max_length=200)
     currency: Optional[str] = Field(default=None, min_length=3, max_length=3)
-    isin: Optional[str] = Field(default=None, min_length=8, max_length=16)
-    lei: Optional[str] = Field(default=None, min_length=20, max_length=20)
+    # Catalog providers sometimes return entitlement sentinel text instead of an
+    # identifier. Accept the transport value here and sanitize it before it can
+    # become issuer evidence; this keeps old cached snapshots from breaking the
+    # analysis endpoint while still refusing to trust malformed identifiers.
+    isin: Optional[str] = Field(default=None, max_length=64)
+    lei: Optional[str] = Field(default=None, max_length=64)
 
 
 class ScanRequest(BaseModel):
@@ -60,6 +64,16 @@ class PortfolioRequest(BaseModel):
     fxToBase: dict[str, float] = Field(default_factory=dict)
 
 
+def _clean_isin(value: Optional[str]) -> Optional[str]:
+    text = (value or "").strip().upper()
+    return text if len(text) == 12 and text.isalnum() else None
+
+
+def _clean_lei(value: Optional[str]) -> Optional[str]:
+    text = (value or "").strip().upper()
+    return text if len(text) == 20 and text.isalnum() else None
+
+
 def _seed(req: InstrumentRequest):
     try:
         return instrument_seed(
@@ -68,8 +82,8 @@ def _seed(req: InstrumentRequest):
             ticker=req.ticker,
             name=req.name,
             currency=req.currency,
-            isin=req.isin,
-            lei=req.lei,
+            isin=_clean_isin(req.isin),
+            lei=_clean_lei(req.lei),
         )
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
