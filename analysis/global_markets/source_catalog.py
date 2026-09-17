@@ -65,9 +65,9 @@ SOURCE_PLANS: dict[str, dict] = {
     "IN": {"market": "NSE/BSE / global market feed", "filings": "NSE/BSE corporate filings", "status": "market-ready"},
     "SA": {"market": "Saudi Exchange / global market feed", "filings": "Saudi Exchange disclosures", "status": "market-ready"},
     "AE": {"market": "ADX/DFM / global market feed", "filings": "ADX/DFM disclosures", "status": "market-ready"},
-    "TR": {"market": "Borsa Istanbul / global market feed", "filings": "KAP Public Disclosure Platform", "status": "market-ready", "notes": "KAP exposes public disclosures and financial reports; verified ingestion remains planned rather than relying on undocumented endpoints."},
+    "TR": {"market": "Borsa Istanbul / global market feed", "filings": "KAP Public Disclosure Platform", "status": "connected", "notes": "Official KAP BIST directory and public financial-summary pages are connected without a private API; BIAP uses only the latest completed annual column and keeps KAP's delay/correction caveat in provenance."},
     "ZA": {"market": "JSE / global market feed", "filings": "JSE SENS + issuer reports", "status": "market-ready"},
-    "BR": {"market": "B3 / global market feed", "filings": "CVM DFP open data + issuer filings", "status": "connected", "notes": "Official CVM standardized annual DFP open data is connected without an API key and refreshed from the regulator dataset."},
+    "BR": {"market": "B3 / global market feed", "filings": "CVM DFP annual + CVM ITR quarterly open data", "status": "connected", "notes": "Official CVM DFP annual data and ITR quarterly corroboration are connected without API keys and refreshed from regulator datasets."},
 }
 
 
