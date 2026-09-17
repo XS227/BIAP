@@ -1,7 +1,7 @@
 """Brazil CVM open-data fundamentals for BIAP Global.
 
 CVM publishes standardized annual financial statements (DFP) as public ZIP/CSV
-open data.  This module keeps the network/download step separate from analysis:
+open data. This module keeps the network/download step separate from analysis:
 ``sync_cvm_dfp`` builds a compact verified index under BIAP_GLOBAL_DATA_DIR and
 ``CVMFundamentalsProvider`` reads only that index at request time.
 
@@ -62,13 +62,32 @@ def _ascii(value: object) -> str:
     return "".join(ch for ch in text if not unicodedata.combining(ch))
 
 
-def _normalize_name(value: object) -> str:
+def _name_tokens(value: object) -> list[str]:
     text = _ascii(value).casefold().replace("&", " and ")
-    tokens = [token for token in re.split(r"[^a-z0-9]+", text) if token]
-    # Remove only trailing legal-form tokens; never remove ordinary business words.
+    return [token for token in re.split(r"[^a-z0-9]+", text) if token]
+
+
+def _normalize_name(value: object) -> str:
+    tokens = _name_tokens(value)
+    # Exact-name key: remove only a trailing legal form. This remains the first,
+    # strongest issuer join and intentionally preserves business-word order.
     while tokens and tokens[-1] in {"sa", "s", "a", "ltda", "limitada"}:
         tokens.pop()
     return " ".join(tokens)
+
+
+def _business_signature(value: object) -> tuple[str, ...]:
+    """Order-insensitive fallback for catalog/CVM legal-name presentation only.
+
+    B3/reference vendors sometimes render the same legal name as
+    ``Petrobras - Petroleo Brasileiro S.A.`` while CVM renders
+    ``PETROLEO BRASILEIRO S.A. - PETROBRAS``. We do not use fuzzy matching.
+    Instead we remove only Brazilian legal-form tokens and require the exact
+    remaining business-token multiset to match one unique CNPJ.
+    """
+    legal = {"s", "a", "sa", "ltda", "limitada"}
+    tokens = [token for token in _name_tokens(value) if token not in legal]
+    return tuple(sorted(tokens)) if len(tokens) >= 2 else ()
 
 
 def _number(value: object) -> Optional[float]:
@@ -251,22 +270,43 @@ def sync_cvm_dfp(*, years: Optional[list[int]] = None, timeout: float = 45.0) ->
 class CVMFundamentalsProvider(FundamentalsProvider):
     provider_id = "cvm-open-data-dfp"
 
+    @staticmethod
+    def _resolve_rows(companies: dict[str, Any], company_name: str) -> tuple[list[dict[str, Any]], str]:
+        key = _normalize_name(company_name)
+        exact = companies.get(key)
+        if isinstance(exact, list) and exact:
+            return [row for row in exact if isinstance(row, dict)], "exact_legal_name"
+
+        wanted_signature = _business_signature(company_name)
+        if not wanted_signature:
+            raise GlobalProviderError(f"no strict CVM legal-name match for {company_name!r}")
+        matches: list[dict[str, Any]] = []
+        for indexed_name, rows in companies.items():
+            if _business_signature(indexed_name) != wanted_signature or not isinstance(rows, list):
+                continue
+            matches.extend(row for row in rows if isinstance(row, dict))
+        cnpjs = {str(row.get("cnpj") or "") for row in matches if row.get("cnpj")}
+        if len(cnpjs) != 1:
+            raise GlobalProviderError(
+                f"CVM business-token signature for {company_name!r} is ambiguous/unavailable ({len(cnpjs)} CNPJs)"
+            )
+        return matches, "exact_business_token_signature"
+
     def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
         if company.country.upper() != "BR":
             raise GlobalProviderError(f"CVM provider is configured for BR, not {company.country}")
         index = read_json(source_index_path(_INDEX_NAME))
         if not isinstance(index, dict) or not isinstance(index.get("companies"), dict):
             raise GlobalProviderError("CVM DFP cache is unavailable; run global_markets.cvm_sync")
-        key = _normalize_name(company.name)
-        rows = index["companies"].get(key)
-        if not isinstance(rows, list) or not rows:
-            raise GlobalProviderError(f"no strict CVM legal-name match for {company.name!r}")
+        rows, match_mode = self._resolve_rows(index["companies"], company.name)
+        if not rows:
+            raise GlobalProviderError(f"no strict CVM issuer match for {company.name!r}")
 
-        # One normalized legal name must resolve to one issuer CNPJ.
+        # Every accepted alias/signature must still resolve to one issuer CNPJ.
         cnpjs = {str(row.get("cnpj") or "") for row in rows if isinstance(row, dict)}
         cnpjs.discard("")
         if len(cnpjs) != 1:
-            raise GlobalProviderError(f"CVM legal-name match is ambiguous ({len(cnpjs)} CNPJs)")
+            raise GlobalProviderError(f"CVM issuer match is ambiguous ({len(cnpjs)} CNPJs)")
         candidates = [row for row in rows if isinstance(row, dict) and isinstance(row.get("metrics"), dict)]
         if not candidates:
             raise GlobalProviderError("CVM match has no normalized financial statements")
@@ -294,6 +334,7 @@ class CVMFundamentalsProvider(FundamentalsProvider):
                 **company.raw_provider_fields,
                 "cvm_cnpj": chosen.get("cnpj"),
                 "cvm_legal_name": chosen.get("legalName"),
+                "cvm_match_mode": match_mode,
                 "cvm_dataset_updated_at": observed_at,
             },
         })
@@ -306,5 +347,8 @@ class CVMFundamentalsProvider(FundamentalsProvider):
             observed_at=observed_at,
             period_end=latest_period or None,
             quality=0.98 if chosen.get("scope") == "consolidated" else 0.94,
-            notes="Official CVM standardized DFP open-data statement; fixed account codes only.",
+            notes=(
+                "Official CVM standardized DFP open-data statement; fixed account codes only; "
+                f"issuerMatch={match_mode}."
+            ),
         ))
