@@ -17,10 +17,10 @@ from typing import Iterable, Optional
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
 
-# Version 2 invalidates snapshots created before the ordinary-equity filter was
-# introduced. Old v1 caches may contain FRNs, preference lines and foreign
-# secondary listings that should never enter Kiasha's stock universe.
-CACHE_SCHEMA_VERSION = 2
+# Version 3 invalidates snapshots created before the CFI + venue-specific
+# ordinary-equity hardening. Older caches may still contain structured products
+# or international LSE segment lines even if they were labelled Common Stock.
+CACHE_SCHEMA_VERSION = 3
 
 
 def _utc_now() -> datetime:
