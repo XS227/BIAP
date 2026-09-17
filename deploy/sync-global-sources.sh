@@ -22,24 +22,30 @@ if ! "$PY" -m global_markets.universe_sync; then
   echo "UNIVERSE_SYNC: no market refreshed this run; existing snapshots preserved" >&2
 fi
 
-# Brazil: CVM DFP is regulator-published open data. It is updated weekly, so do
-# not download the annual ZIPs every day; bootstrap immediately and refresh when
-# the compact local index is older than six days. A failed refresh never deletes
-# the last verified index.
-CVM_INDEX="$BIAP_GLOBAL_DATA_DIR/source-index/cvm-dfp.json"
-CVM_REFRESH=0
-if [[ ! -s "$CVM_INDEX" ]]; then
-  CVM_REFRESH=1
-elif find "$CVM_INDEX" -mtime +6 -print -quit | grep -q .; then
-  CVM_REFRESH=1
-fi
-if [[ "$CVM_REFRESH" -eq 1 ]]; then
-  if ! "$PY" -m global_markets.cvm_sync; then
-    echo "CVM: refresh failed; existing verified index preserved" >&2
+# Brazil: CVM DFP is the annual regulator-published fundamentals base. CVM ITR is
+# a second official quarterly filing stream used as corroboration/freshness only.
+# Both datasets are updated weekly; refresh compact indexes at most every 6 days.
+refresh_if_stale() {
+  local label="$1"
+  local index_path="$2"
+  local module="$3"
+  local refresh=0
+  if [[ ! -s "$index_path" ]]; then
+    refresh=1
+  elif find "$index_path" -mtime +6 -print -quit | grep -q .; then
+    refresh=1
   fi
-else
-  echo "CVM: recent verified DFP index already present"
-fi
+  if [[ "$refresh" -eq 1 ]]; then
+    if ! "$PY" -m "$module"; then
+      echo "$label: refresh failed; existing verified index preserved" >&2
+    fi
+  else
+    echo "$label: recent verified index already present"
+  fi
+}
+
+refresh_if_stale "CVM_DFP" "$BIAP_GLOBAL_DATA_DIR/source-index/cvm-dfp.json" "global_markets.cvm_sync"
+refresh_if_stale "CVM_ITR" "$BIAP_GLOBAL_DATA_DIR/source-index/cvm-itr.json" "global_markets.cvm_itr_sync"
 
 # Japan: keep a small rolling EDINET window current after the initial bootstrap.
 if [[ -n "${BIAP_EDINET_API_KEY:-}" ]]; then
