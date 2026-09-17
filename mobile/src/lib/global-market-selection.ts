@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { clearSelectedGlobalCompanyIfIncompatible } from '@/lib/global-company-selection';
 
 export type GlobalMarketSelection = {
   country: string;
@@ -43,14 +44,26 @@ function valid(value: GlobalMarketSelection | null | undefined): value is Global
   );
 }
 
+async function synchronizeCompany(selection: GlobalMarketSelection): Promise<void> {
+  await clearSelectedGlobalCompanyIfIncompatible({
+    country: selection.country,
+    exchange: selection.exchange,
+    mic: selection.mic,
+  });
+}
+
 export async function getGlobalMarketSelection(): Promise<GlobalMarketSelection> {
-  if (memoryValue) return memoryValue;
+  if (memoryValue) {
+    await synchronizeCompany(memoryValue);
+    return memoryValue;
+  }
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = normalize(JSON.parse(raw) as GlobalMarketSelection);
       if (valid(parsed)) {
         memoryValue = parsed;
+        await synchronizeCompany(parsed);
         return parsed;
       }
     }
@@ -58,6 +71,7 @@ export async function getGlobalMarketSelection(): Promise<GlobalMarketSelection>
     // Fall through to the explicit default; never fabricate market data.
   }
   memoryValue = DEFAULT_GLOBAL_MARKET;
+  await synchronizeCompany(DEFAULT_GLOBAL_MARKET);
   return DEFAULT_GLOBAL_MARKET;
 }
 
@@ -66,6 +80,7 @@ export async function setGlobalMarketSelection(value: GlobalMarketSelection): Pr
   if (!valid(next)) throw new Error('Invalid country/exchange/currency selection');
   memoryValue = next;
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  await synchronizeCompany(next);
   listeners.forEach((listener) => listener(next));
   return next;
 }
