@@ -216,6 +216,7 @@ export default function GlobalPortfolioScreen() {
       const nextNotes: string[] = [];
       let usableMarkets = 0;
       let catalogOnlyMarkets = 0;
+      let limitedCoverageMarkets = 0;
 
       scans.forEach((scanResult, index) => {
         const scope = scopes[index];
@@ -239,9 +240,12 @@ export default function GlobalPortfolioScreen() {
         }
 
         usableMarkets += 1;
+        if (marketStat.coverage < 80) limitedCoverageMarkets += 1;
         const sourceLabel = marketStat.mode === 'CACHED' ? 'cached verified market data' : 'live market data';
+        const coverageLabel = `${n(marketStat.coverage, 1)}% screening coverage`;
+        const limitedLabel = marketStat.coverage < 80 ? ' • LIMITED COVERAGE' : '';
         nextNotes.push(
-          `${scope.country}/${scope.exchange}: ${sourceLabel} • ${scan.recommendationCount ?? 0} qualified from ${scan.deepAnalyzed ?? 0} deep analyses`,
+          `${scope.country}/${scope.exchange}: ${sourceLabel} • ${coverageLabel}${limitedLabel} • ${scan.recommendationCount ?? 0} qualified from ${scan.deepAnalyzed ?? 0} deep analyses`,
         );
 
         for (const item of scan.recommendations || []) {
@@ -270,7 +274,9 @@ export default function GlobalPortfolioScreen() {
         if (usableMarkets === 0 && catalogOnlyMarkets > 0) {
           setError('Portfolio not generated yet: the selected market catalogs are available, but verified price/history snapshots have not been seeded.');
         } else if (usableMarkets > 0 && catalogOnlyMarkets > 0) {
-          setError('No evidence-qualified BUY candidates were found in the markets with verified data. Catalog-only markets were not included in the investment comparison.');
+          setError('No evidence-qualified BUY candidates were found in the currently verified market-data coverage. Catalog-only markets were excluded, and partial cached coverage is not a full-exchange scan.');
+        } else if (limitedCoverageMarkets > 0) {
+          setError('No evidence-qualified BUY candidates were found in the currently verified snapshots. Coverage is limited; this result is not a full-exchange scan.');
         } else {
           setError('No evidence-qualified BUY candidates were found across the selected markets with verified market data.');
         }
@@ -381,6 +387,7 @@ export default function GlobalPortfolioScreen() {
                   <Text style={[s.marketName, { color: colors.text }]}>{market.label}</Text>
                   <Text style={[s.marketLine, { color: colors.textSecondary }]}>Status {market.status}</Text>
                   {market.mode === 'CATALOG' ? <Text style={[s.marketLine, { color: Brand.warning }]}>Price/history pending — excluded from portfolio</Text> : <>
+                    <Text style={[s.marketLine, { color: market.coverage < 80 ? Brand.warning : colors.textSecondary }]}>Screening coverage {n(market.coverage, 1)}%{market.coverage < 80 ? ' • LIMITED' : ''}</Text>
                     <Text style={[s.marketLine, { color: colors.textSecondary }]}>Qualified {market.qualified} • Deep {market.deep}</Text>
                     <Text style={[s.marketLine, { color: colors.textSecondary }]}>Avg score {n(market.avgScore, 3)} • Conf. {pc(market.avgConfidence)}</Text>
                     <Text style={[s.marketLine, { color: colors.textSecondary }]}>Evidence P/W/B {market.pass}/{market.warn}/{market.block}</Text>
@@ -444,7 +451,7 @@ export default function GlobalPortfolioScreen() {
 
           <View style={[s.card, { backgroundColor: colors.backgroundElement, marginTop: 18 }]}>
             <Text style={[s.cardTitle, { color: colors.text }]}>Decision support, paper first</Text>
-            <Text style={[s.body, { color: colors.textSecondary }]}>Live and cached verified data are labelled separately. Catalog-only markets are never treated as investable evidence. Missing, stale or conflicting evidence can remove a stock entirely, and this build never submits live broker orders.</Text>
+            <Text style={[s.body, { color: colors.textSecondary }]}>Live and cached verified data are labelled separately. Cached scans may cover only a subset of an exchange, and the exact screening coverage is shown above. Catalog-only markets are never treated as investable evidence. Missing, stale or conflicting evidence can remove a stock entirely, and this build never submits live broker orders.</Text>
           </View>
         </View>
       </ScrollView>
