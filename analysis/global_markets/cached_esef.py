@@ -7,12 +7,13 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from .esef import ESEFFundamentalsProvider, FILINGS_API
+from .esef import FILINGS_API
+from .esef_country import CountryAwareESEFFundamentalsProvider
 from .providers import GlobalProviderError
 from .source_cache import data_root, read_json, write_json_atomic
 
 
-class CachedESEFFundamentalsProvider(ESEFFundamentalsProvider):
+class CachedESEFFundamentalsProvider(CountryAwareESEFFundamentalsProvider):
     provider_id = "esef-xbrl-cached"
 
     def _cache_path(self, url: str, params: Optional[dict]) -> Path:
