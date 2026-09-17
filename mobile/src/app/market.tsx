@@ -39,8 +39,20 @@ function searchScore(item: GlobalInstrument, rawQuery: string) {
 
   const queryWords = q.split(' ').filter(Boolean);
   if (queryWords.length > 1 && queryWords.every((part) => words.some((word) => word === part || word.startsWith(part)))) return 560;
-  // Do not match arbitrary inner substrings (APPLE must not match Pineapple).
   return -1;
+}
+
+function appendUnique(existing: GlobalInstrument[], incoming: GlobalInstrument[]) {
+  const seen = new Set(existing.map((item) => `${item.country}:${item.exchange}:${item.ticker}:${item.isin || ''}`));
+  const merged = [...existing];
+  for (const item of incoming) {
+    const key = `${item.country}:${item.exchange}:${item.ticker}:${item.isin || ''}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push(item);
+    }
+  }
+  return merged;
 }
 
 export default function MarketScreen() {
@@ -51,6 +63,10 @@ export default function MarketScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingSearch, setLoadingSearch] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [nextOffset, setNextOffset] = useState<number | null>(null);
+  const [totalMatched, setTotalMatched] = useState(0);
   const [error, setError] = useState('');
   const [scan, setScan] = useState<GlobalAnalysis[]>([]);
   const [scanning, setScanning] = useState(false);
@@ -66,10 +82,17 @@ export default function MarketScreen() {
       const result = await fetchGlobalInstruments(selected.country, selected.exchange, {
         q: searchText || undefined,
         limit: searchText ? 150 : PAGE_SIZE,
+        offset: 0,
       });
       setInstruments(result.instruments || []);
+      setTotalMatched(result.totalMatched || 0);
+      setHasMore(Boolean(result.hasMore));
+      setNextOffset(result.nextOffset ?? null);
     } catch (err) {
       setInstruments([]);
+      setTotalMatched(0);
+      setHasMore(false);
+      setNextOffset(null);
       setError(err instanceof Error ? err.message.slice(0, 220) : 'Market universe is unavailable.');
     } finally {
       setLoading(false);
@@ -77,6 +100,27 @@ export default function MarketScreen() {
       setLoadingSearch(false);
     }
   }, []);
+
+  const loadMore = async () => {
+    if (!selection || loading || loadingMore || !hasMore || nextOffset == null) return;
+    setLoadingMore(true);
+    try {
+      const searchText = query.trim();
+      const result = await fetchGlobalInstruments(selection.country, selection.exchange, {
+        q: searchText || undefined,
+        limit: searchText ? 150 : PAGE_SIZE,
+        offset: nextOffset,
+      });
+      setInstruments((current) => appendUnique(current, result.instruments || []));
+      setTotalMatched(result.totalMatched || totalMatched);
+      setHasMore(Boolean(result.hasMore));
+      setNextOffset(result.nextOffset ?? null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message.slice(0, 220) : 'Could not load more instruments.');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   useFocusEffect(useCallback(() => {
     setLoading(true);
@@ -97,9 +141,8 @@ export default function MarketScreen() {
   }, [instruments, query]);
 
   const searchRemote = async () => {
-    if (!query.trim()) return load('');
     setLoadingSearch(true);
-    await load(query);
+    await load(query.trim());
   };
 
   const runScan = async () => {
@@ -111,7 +154,7 @@ export default function MarketScreen() {
       setScan(result.recommendations || []);
       if (extended.catalogOnly || result.status === 'MARKET_DATA_REQUIRED') {
         setScanMode('catalog');
-        setScanStatus(`Catalog available • ${result.universeDiscovered ?? instruments.length} instruments • verified price/history feed pending`);
+        setScanStatus(`Catalog available • ${result.universeDiscovered ?? totalMatched || instruments.length} instruments • verified price/history feed pending`);
       } else if (extended.cachedMarketData || result.status.startsWith('CACHED_')) {
         setScanMode('cached');
         const coverage = result.screeningCoveragePct == null ? '' : ` • ${Number(result.screeningCoveragePct).toFixed(1)}% coverage`;
@@ -148,6 +191,9 @@ export default function MarketScreen() {
   };
 
   const modeColor = scanMode === 'live' ? Brand.positive : scanMode === 'cached' || scanMode === 'catalog' ? Brand.warning : colors.textSecondary;
+  const listLabel = query.trim()
+    ? `Search results${totalMatched ? ` • ${totalMatched}` : ''}`
+    : `Exchange instruments${totalMatched ? ` • ${instruments.length} of ${totalMatched}` : ''}`;
 
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><View style={[styles.container, { backgroundColor: colors.background }]}>
     <View style={styles.header}><View style={styles.headerTop}><View style={{ flex: 1 }}><Text style={[styles.title, { color: colors.text }]}>Market</Text><Text style={[styles.subtitle, { color: colors.textSecondary }]}>{selection ? `${selection.countryName} • ${selection.exchangeLabel}` : 'Loading market context…'}</Text></View><Pressable onPress={() => router.push('/global')} style={[styles.changeButton, { borderColor: Brand.primary }]}><Text style={styles.changeButtonText}>Change market</Text></Pressable></View>{selection ? <Text style={[styles.contextLine, { color: colors.textSecondary }]}>{selection.mic || selection.exchange} • {selection.currency} • one BIAP engine</Text> : null}</View>
@@ -159,10 +205,22 @@ export default function MarketScreen() {
     {scan.length ? <View style={styles.picks}>{scan.slice(0, 5).map((item, index) => <Pressable key={`${item.ticker}-${index}`} onPress={() => { void openStock(item); }} style={[styles.pick, { backgroundColor: colors.backgroundElement }]}><View><Text style={[styles.pickTicker, { color: colors.text }]}>#{index + 1} {item.ticker}</Text><Text numberOfLines={1} style={[styles.pickName, { color: colors.textSecondary }]}>{item.name}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.pickCall, { color: callColor(item.call, colors.textSecondary) }]}>{item.call}</Text><Text style={[styles.pickConfidence, { color: colors.textSecondary }]}>{item.confidence == null ? '—' : `${Math.round(item.confidence * 100)}% conf.`}</Text></View></Pressable>)}</View> : null}
     {error ? <View style={[styles.errorBox, { borderColor: Brand.warning }]}><Text style={[styles.errorText, { color: colors.textSecondary }]}>{error}</Text></View> : null}
 
-    <FlatList data={filtered} keyExtractor={(item) => `${item.country}:${item.exchange}:${item.ticker}:${item.isin || ''}`} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(query); }} tintColor={Brand.primary} />} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list} ListHeaderComponent={<Text style={[styles.listTitle, { color: colors.text }]}>{query.trim() ? 'Search results' : 'Exchange instruments'}</Text>} ListEmptyComponent={loading ? <ActivityIndicator color={Brand.primary} style={{ marginTop: 30 }} /> : <Text style={[styles.empty, { color: colors.textSecondary }]}>{query.trim() ? 'No exact ticker or company-name match on this exchange.' : 'No instruments available from the selected market provider.'}</Text>} renderItem={({ item }) => <Pressable onPress={() => { void openStock(item); }} style={[styles.row, { backgroundColor: colors.backgroundElement }]}><View style={styles.identity}><Text style={[styles.ticker, { color: colors.text }]}>{item.ticker}</Text><Text numberOfLines={1} style={[styles.name, { color: colors.textSecondary }]}>{item.name}</Text><Text style={[styles.meta, { color: colors.textSecondary }]}>{item.mic_code || selection?.mic || item.exchange} • {item.currency}{item.sector ? ` • ${item.sector}` : ''}</Text></View><Text style={[styles.chevron, { color: Brand.primary }]}>›</Text></Pressable>} />
+    <FlatList
+      data={filtered}
+      keyExtractor={(item) => `${item.country}:${item.exchange}:${item.ticker}:${item.isin || ''}`}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(query); }} tintColor={Brand.primary} />}
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={styles.list}
+      onEndReached={() => { void loadMore(); }}
+      onEndReachedThreshold={0.45}
+      ListHeaderComponent={<Text style={[styles.listTitle, { color: colors.text }]}>{listLabel}</Text>}
+      ListFooterComponent={loadingMore ? <ActivityIndicator color={Brand.primary} style={{ marginVertical: 18 }} /> : (!query.trim() && totalMatched > 0 && !hasMore ? <Text style={[styles.endText, { color: colors.textSecondary }]}>All {totalMatched} available instruments loaded.</Text> : null)}
+      ListEmptyComponent={loading ? <ActivityIndicator color={Brand.primary} style={{ marginTop: 30 }} /> : <Text style={[styles.empty, { color: colors.textSecondary }]}>{query.trim() ? 'No exact ticker or company-name match on this exchange.' : 'No instruments available from the selected market provider.'}</Text>}
+      renderItem={({ item }) => <Pressable onPress={() => { void openStock(item); }} style={[styles.row, { backgroundColor: colors.backgroundElement }]}><View style={styles.identity}><Text style={[styles.ticker, { color: colors.text }]}>{item.ticker}</Text><Text numberOfLines={1} style={[styles.name, { color: colors.textSecondary }]}>{item.name}</Text><Text style={[styles.meta, { color: colors.textSecondary }]}>{item.mic_code || selection?.mic || item.exchange} • {item.currency}{item.sector ? ` • ${item.sector}` : ''}</Text></View><Text style={[styles.chevron, { color: Brand.primary }]}>›</Text></Pressable>}
+    />
   </View></SafeAreaView>;
 }
 
 const styles = StyleSheet.create({
-  safe:{flex:1},container:{flex:1},header:{paddingHorizontal:Spacing.three,paddingTop:Spacing.four,paddingBottom:Spacing.two,maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},headerTop:{flexDirection:'row',alignItems:'center',gap:12},title:{fontFamily:Fonts.sans,fontSize:25,fontWeight:'900'},subtitle:{fontFamily:Fonts.sans,fontSize:12,marginTop:2},contextLine:{fontFamily:Fonts.mono,fontSize:9.5,marginTop:7},changeButton:{borderWidth:1,borderRadius:18,paddingHorizontal:12,paddingVertical:8},changeButtonText:{color:Brand.primary,fontFamily:Fonts.sans,fontSize:10,fontWeight:'800'},searchRow:{flexDirection:'row',gap:8,paddingHorizontal:Spacing.three,maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},search:{flex:1,borderWidth:1,borderRadius:Radius.md,paddingHorizontal:13,paddingVertical:11,fontFamily:Fonts.sans,fontSize:12},searchButton:{minWidth:76,borderRadius:Radius.md,alignItems:'center',justifyContent:'center'},searchButtonText:{color:'#fff',fontFamily:Fonts.sans,fontSize:11,fontWeight:'900'},scanRow:{flexDirection:'row',alignItems:'center',gap:10,marginHorizontal:Spacing.three,marginTop:Spacing.three,padding:Spacing.three,borderRadius:Radius.md,maxWidth:MaxContentWidth,alignSelf:'center'},scanTitle:{fontFamily:Fonts.sans,fontSize:12.5,fontWeight:'900'},scanText:{fontFamily:Fonts.sans,fontSize:9.5,lineHeight:15,marginTop:3},scanButton:{borderWidth:1,minWidth:76,minHeight:40,borderRadius:20,alignItems:'center',justifyContent:'center',paddingHorizontal:10},scanButtonText:{color:Brand.primary,fontFamily:Fonts.sans,fontSize:10,fontWeight:'900'},statusBox:{borderWidth:1,borderRadius:Radius.md,padding:10,marginHorizontal:Spacing.three,marginTop:8,maxWidth:MaxContentWidth,alignSelf:'center',width:'90%'},status:{fontFamily:Fonts.mono,fontSize:9,textAlign:'center'},statusHint:{fontFamily:Fonts.sans,fontSize:9,lineHeight:14,textAlign:'center',marginTop:5},picks:{paddingHorizontal:Spacing.three,paddingTop:Spacing.two,maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},pick:{borderRadius:Radius.md,padding:12,marginBottom:7,flexDirection:'row',justifyContent:'space-between',gap:10},pickTicker:{fontFamily:Fonts.mono,fontSize:12,fontWeight:'900'},pickName:{fontFamily:Fonts.sans,fontSize:9.5,marginTop:2,maxWidth:220},pickCall:{fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},pickConfidence:{fontFamily:Fonts.mono,fontSize:8.5,marginTop:2},errorBox:{borderWidth:1,borderRadius:Radius.md,padding:10,marginHorizontal:Spacing.three,marginTop:8},errorText:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:17},list:{paddingHorizontal:Spacing.three,paddingBottom:BottomTabInset+Spacing.four,maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},listTitle:{fontFamily:Fonts.sans,fontSize:14,fontWeight:'900',marginTop:Spacing.three,marginBottom:Spacing.two},row:{borderRadius:Radius.md,padding:13,marginBottom:8,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},identity:{flex:1},ticker:{fontFamily:Fonts.mono,fontSize:14,fontWeight:'900'},name:{fontFamily:Fonts.sans,fontSize:10.5,marginTop:2},meta:{fontFamily:Fonts.mono,fontSize:8.5,marginTop:4},chevron:{fontSize:26,marginLeft:10},empty:{fontFamily:Fonts.sans,fontSize:11,textAlign:'center',marginTop:30},
+  safe:{flex:1},container:{flex:1},header:{paddingHorizontal:Spacing.three,paddingTop:Spacing.four,paddingBottom:Spacing.two,maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},headerTop:{flexDirection:'row',alignItems:'center',gap:12},title:{fontFamily:Fonts.sans,fontSize:25,fontWeight:'900'},subtitle:{fontFamily:Fonts.sans,fontSize:12,marginTop:2},contextLine:{fontFamily:Fonts.mono,fontSize:9.5,marginTop:7},changeButton:{borderWidth:1,borderRadius:18,paddingHorizontal:12,paddingVertical:8},changeButtonText:{color:Brand.primary,fontFamily:Fonts.sans,fontSize:10,fontWeight:'800'},searchRow:{flexDirection:'row',gap:8,paddingHorizontal:Spacing.three,maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},search:{flex:1,borderWidth:1,borderRadius:Radius.md,paddingHorizontal:13,paddingVertical:11,fontFamily:Fonts.sans,fontSize:12},searchButton:{minWidth:76,borderRadius:Radius.md,alignItems:'center',justifyContent:'center'},searchButtonText:{color:'#fff',fontFamily:Fonts.sans,fontSize:11,fontWeight:'900'},scanRow:{flexDirection:'row',alignItems:'center',gap:10,marginHorizontal:Spacing.three,marginTop:Spacing.three,padding:Spacing.three,borderRadius:Radius.md,maxWidth:MaxContentWidth,alignSelf:'center'},scanTitle:{fontFamily:Fonts.sans,fontSize:12.5,fontWeight:'900'},scanText:{fontFamily:Fonts.sans,fontSize:9.5,lineHeight:15,marginTop:3},scanButton:{borderWidth:1,minWidth:76,minHeight:40,borderRadius:20,alignItems:'center',justifyContent:'center',paddingHorizontal:10},scanButtonText:{color:Brand.primary,fontFamily:Fonts.sans,fontSize:10,fontWeight:'900'},statusBox:{borderWidth:1,borderRadius:Radius.md,padding:10,marginHorizontal:Spacing.three,marginTop:8,maxWidth:MaxContentWidth,alignSelf:'center',width:'90%'},status:{fontFamily:Fonts.mono,fontSize:9,textAlign:'center'},statusHint:{fontFamily:Fonts.sans,fontSize:9,lineHeight:14,textAlign:'center',marginTop:5},picks:{paddingHorizontal:Spacing.three,paddingTop:Spacing.two,maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},pick:{borderRadius:Radius.md,padding:12,marginBottom:7,flexDirection:'row',justifyContent:'space-between',gap:10},pickTicker:{fontFamily:Fonts.mono,fontSize:12,fontWeight:'900'},pickName:{fontFamily:Fonts.sans,fontSize:9.5,marginTop:2,maxWidth:220},pickCall:{fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},pickConfidence:{fontFamily:Fonts.mono,fontSize:8.5,marginTop:2},errorBox:{borderWidth:1,borderRadius:Radius.md,padding:10,marginHorizontal:Spacing.three,marginTop:8},errorText:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:17},list:{paddingHorizontal:Spacing.three,paddingBottom:BottomTabInset+Spacing.four,maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},listTitle:{fontFamily:Fonts.sans,fontSize:14,fontWeight:'900',marginTop:Spacing.three,marginBottom:Spacing.two},row:{borderRadius:Radius.md,padding:13,marginBottom:8,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},identity:{flex:1},ticker:{fontFamily:Fonts.mono,fontSize:14,fontWeight:'900'},name:{fontFamily:Fonts.sans,fontSize:10.5,marginTop:2},meta:{fontFamily:Fonts.mono,fontSize:8.5,marginTop:4},chevron:{fontSize:26,marginLeft:10},empty:{fontFamily:Fonts.sans,fontSize:11,textAlign:'center',marginTop:30},endText:{fontFamily:Fonts.sans,fontSize:9.5,textAlign:'center',marginVertical:16},
 });
