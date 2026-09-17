@@ -7,9 +7,11 @@ on:
     paths:
       - 'analysis/global_markets/official_cache_warm.py'
       - 'analysis/global_markets/cached_fundamentals.py'
+      - 'analysis/global_markets/cached_sec_edgar.py'
       - 'analysis/global_markets/cached_esef.py'
       - 'analysis/global_markets/esef_country.py'
       - 'analysis/global_markets/gleif.py'
+      - 'analysis/global_markets/runtime.py'
       - '.github/workflows/biap-global-cache-warm.yml'
 
 concurrency:
@@ -57,8 +59,9 @@ jobs:
           set +a
           export PYTHONPATH="$APP_DIR/analysis"
           export BIAP_GLOBAL_DATA_DIR="${BIAP_GLOBAL_DATA_DIR:-/var/lib/biap-global}"
-          mkdir -p "$BIAP_GLOBAL_DATA_DIR/fundamentals"
+          mkdir -p "$BIAP_GLOBAL_DATA_DIR/fundamentals" "$BIAP_GLOBAL_DATA_DIR/cache/sec-edgar"
           .venv-global/bin/python -m global_markets.official_cache_warm | tee /tmp/biap-global-cache-warm.json
           echo "fundamentals_latest_files=$(find "$BIAP_GLOBAL_DATA_DIR/fundamentals" -type f -name latest.json 2>/dev/null | wc -l)"
           echo "fundamentals_period_files=$(find "$BIAP_GLOBAL_DATA_DIR/fundamentals" -type f -path '*/history/*.json' 2>/dev/null | wc -l)"
+          echo "sec_raw_cache_files=$(find "$BIAP_GLOBAL_DATA_DIR/cache/sec-edgar" -type f -name '*.json' 2>/dev/null | wc -l)"
           REMOTE
