@@ -13,9 +13,9 @@ permissions:
 jobs:
   live-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
-      - name: Verify Brazil and Türkiye production evidence
+      - name: Verify production official evidence
         shell: bash
         run: |
           set -euo pipefail
@@ -23,8 +23,11 @@ jobs:
           import json, urllib.parse, urllib.request
           base = 'https://biap.dadashi.no/global-api/global'
           cases = [
-              ('BR', 'B3', 'PETR4', 'BRL', 'cvm-open-data-dfp-resolved'),
+              ('US', 'NASDAQ', 'AAPL', 'USD', 'sec-edgar-xbrl-cached'),
+              ('FR', 'EURONEXT_PARIS', 'MC', 'EUR', 'esef-xbrl-cached'),
+              ('ES', 'BME_MADRID', 'SAN', 'EUR', 'esef-xbrl-cached'),
               ('TR', 'BIST', 'AKBNK', 'TRY', 'kap-official-financial-summary'),
+              ('BR', 'B3', 'PETR4', 'BRL', 'cvm-open-data-dfp-resolved'),
           ]
           for country, exchange, ticker, currency, expected_provider in cases:
               q = urllib.parse.urlencode({'q': ticker, 'limit': 20})
@@ -43,7 +46,7 @@ jobs:
                   f'{base}/analyze', data=json.dumps(body).encode(),
                   headers={'Content-Type':'application/json','Accept':'application/json'}, method='POST'
               )
-              with urllib.request.urlopen(req, timeout=75) as r:
+              with urllib.request.urlopen(req, timeout=90) as r:
                   payload = json.load(r)
               company = payload.get('company') or {}
               evidence = payload.get('evidence') or {}
@@ -55,6 +58,7 @@ jobs:
                   'evidence': evidence.get('status'), 'missing': evidence.get('missing_critical'),
                   'coverage': evidence.get('coverage'),
                   'filingPeriod': company.get('filing_period_end'),
+                  'fundamentalsCache': (company.get('raw_provider_fields') or {}).get('fundamentals_cache'),
                   'kapTransport': (company.get('raw_provider_fields') or {}).get('kap_transport'),
                   'cvmMatchMode': (company.get('raw_provider_fields') or {}).get('cvm_match_mode'),
               }
