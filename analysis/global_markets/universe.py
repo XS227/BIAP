@@ -42,15 +42,11 @@ def _ordinary_equity_row(*, country: str, spec: ExchangeSpec, row: dict, symbol:
         return False
 
     cfi = str(row.get("cfi_code") or "").strip().upper()
-    # ISO 10962 CFI codes for equities start with E. If the vendor supplied a
-    # CFI at all, do not override a non-equity classification with a loose
-    # textual "Common Stock" label.
     if cfi and not cfi.startswith("E"):
         return False
 
     allowed_currencies = {value.upper() for value in spec.currencies}
     if country.upper() == "GB":
-        # LSE ordinary shares may be catalogued in pounds or pence.
         allowed_currencies.add("GBX")
     if allowed_currencies and currency.upper() not in allowed_currencies:
         return False
@@ -61,10 +57,6 @@ def _ordinary_equity_row(*, country: str, spec: ExchangeSpec, row: dict, symbol:
     if ".PR." in ticker or ticker.endswith(".PR") or ".RT." in ticker or ticker.endswith(".RT"):
         return False
 
-    # Numeric-leading XLON symbols are commonly international/structured
-    # segments (for example 0A0D/010K/1HP5) rather than the issuer's primary
-    # ordinary London line. Do not apply this rule to Oslo, where legitimate
-    # ordinary equities such as 2020 Bulkers use numeric tickers.
     if country.upper() == "GB" and ticker[0].isdigit():
         return False
 
@@ -82,7 +74,7 @@ def _ordinary_equity_row(*, country: str, spec: ExchangeSpec, row: dict, symbol:
 class TwelveDataUniverseProvider(InstrumentUniverseProvider):
     provider_id = "twelve-data-universe"
 
-    def __init__(self, *, api_key: Optional[str] = None, timeout: float = 15.0, max_rows: int = 5000) -> None:
+    def __init__(self, *, api_key: Optional[str] = None, timeout: float = 15.0, max_rows: Optional[int] = None) -> None:
         configured_key = api_key if api_key is not None else os.environ.get("BIAP_GLOBAL_MARKET_API_KEY")
         self.api_key = (configured_key or "demo").strip()
         self.demo_mode = self.api_key.lower() == "demo"
@@ -90,12 +82,13 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
             self.provider_id = "twelve-data-universe-demo"
         self.base_url = os.environ.get("BIAP_GLOBAL_MARKET_BASE", "https://api.twelvedata.com").rstrip("/")
         self.timeout = max(3.0, float(timeout))
-        self.max_rows = max(1, min(int(max_rows), 20000))
+        configured_max = max_rows if max_rows is not None else int(os.environ.get("BIAP_GLOBAL_UNIVERSE_MAX_ROWS", "20000"))
+        self.max_rows = max(1, min(int(configured_max), 20000))
 
-    def _request(self, params: dict) -> dict:
+    def _request(self, params: dict, *, endpoint: str = "stocks") -> dict:
         try:
             with httpx.Client(timeout=self.timeout, headers={"Accept": "application/json"}) as client:
-                response = client.get(f"{self.base_url}/stocks", params={**params, "apikey": self.api_key})
+                response = client.get(f"{self.base_url}/{endpoint.lstrip('/')}", params={**params, "apikey": self.api_key})
             response.raise_for_status()
             payload = response.json()
         except (httpx.HTTPError, ValueError) as exc:
@@ -134,11 +127,101 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
             raise GlobalProviderError(f"no reference-data lookup strategy for {country}/{spec.code}")
         return max(candidates, key=self._payload_score)
 
+    def _company_from_row(self, *, country: str, spec: ExchangeSpec, row: dict) -> Optional[GlobalCompany]:
+        symbol = str(row.get("symbol") or "").strip()
+        if not symbol:
+            return None
+        returned_mic = str(row.get("mic_code") or "").strip().upper() or None
+        accepted_mics = set(spec.accepted_mics)
+        if accepted_mics and returned_mic and returned_mic not in accepted_mics:
+            return None
+        currency = str(row.get("currency") or (spec.currencies[0] if spec.currencies else "")).strip().upper()
+        if not currency:
+            return None
+
+        normalized = dict(row)
+        if not normalized.get("name") and normalized.get("instrument_name"):
+            normalized["name"] = normalized.get("instrument_name")
+        if not normalized.get("type") and normalized.get("instrument_type"):
+            normalized["type"] = normalized.get("instrument_type")
+        if not _ordinary_equity_row(country=country, spec=spec, row=normalized, symbol=symbol, currency=currency):
+            return None
+
+        instrument_type = str(normalized.get("type") or "Common Stock").strip()
+        return GlobalCompany(
+            country=country.upper(),
+            exchange=spec.code,
+            mic_code=returned_mic or spec.mic,
+            currency=currency,
+            ticker=symbol,
+            name=str(normalized.get("name") or symbol).strip(),
+            isin=_clean_isin(normalized.get("isin")),
+            instrument_type=instrument_type or "Common Stock",
+            raw_provider_fields={
+                "figi": str(normalized.get("figi_code") or "").strip() or None,
+                "cfi": str(normalized.get("cfi_code") or "").strip() or None,
+                "reference_access": "demo" if self.demo_mode else "authenticated",
+            },
+            sources=[SourceEvidence(
+                provider=self.provider_id,
+                source_type="instrument_reference",
+                source_id=f"{country.upper()}:{returned_mic or spec.mic or spec.code}:{symbol}",
+                quality=0.85 if self.demo_mode else 0.9,
+                notes=(
+                    "Reference catalog only; demo authentication does not provide quote/history access."
+                    if self.demo_mode else None
+                ),
+            )],
+        )
+
+    def search_instruments(
+        self,
+        *,
+        country: str,
+        exchange: str,
+        query: str,
+        limit: int = 120,
+    ) -> list[GlobalCompany]:
+        """Resolve a ticker or company name without relying on a cached prefix.
+
+        ``symbol_search`` is used as a discovery fallback so an exact symbol such
+        as AAPL remains discoverable even when a local exchange snapshot is old
+        or incomplete. Results are still constrained to the selected venue and
+        ordinary equities before being exposed to BIAP.
+        """
+        text = str(query or "").strip()
+        if not text:
+            return []
+        spec = get_exchange(country, exchange)
+        payload = self._request(
+            {"symbol": text, "outputsize": max(1, min(int(limit), 120)), "show_plan": "false"},
+            endpoint="symbol_search",
+        )
+        rows = payload.get("data")
+        if not isinstance(rows, list):
+            return []
+        result: list[GlobalCompany] = []
+        seen: set[tuple[str, str]] = set()
+        for raw in rows:
+            if not isinstance(raw, dict):
+                continue
+            row = dict(raw)
+            row.setdefault("name", raw.get("instrument_name"))
+            row.setdefault("type", raw.get("instrument_type"))
+            item = self._company_from_row(country=country, spec=spec, row=row)
+            if item is None:
+                continue
+            key = ((item.mic_code or item.exchange).upper(), item.ticker.upper())
+            if key in seen:
+                continue
+            seen.add(key)
+            result.append(item)
+        return result
+
     def list_instruments(self, *, country: Optional[str] = None, exchange: Optional[str] = None) -> Iterable[GlobalCompany]:
         if not country or not exchange:
             raise GlobalProviderError("country and exchange are required for bounded instrument discovery")
         spec = get_exchange(country, exchange)
-        accepted_mics = set(spec.accepted_mics)
         result: list[GlobalCompany] = []
         seen: set[tuple[str, str]] = set()
         page = 1
@@ -152,48 +235,15 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
             for row in rows:
                 if not isinstance(row, dict):
                     continue
-                symbol = str(row.get("symbol") or "").strip()
-                if not symbol:
+                item = self._company_from_row(country=country, spec=spec, row=row)
+                if item is None:
                     continue
-                returned_mic = str(row.get("mic_code") or "").strip().upper() or None
-                if accepted_mics and returned_mic and returned_mic not in accepted_mics:
-                    continue
-                venue_key = (returned_mic or spec.mic or spec.code).upper()
-                dedupe_key = (venue_key, symbol.upper())
+                venue_key = (item.mic_code or spec.mic or spec.code).upper()
+                dedupe_key = (venue_key, item.ticker.upper())
                 if dedupe_key in seen:
                     continue
-                currency = str(row.get("currency") or (spec.currencies[0] if spec.currencies else "")).strip().upper()
-                if not currency:
-                    continue
-                if not _ordinary_equity_row(country=country, spec=spec, row=row, symbol=symbol, currency=currency):
-                    continue
                 seen.add(dedupe_key)
-                instrument_type = str(row.get("type") or "Common Stock").strip()
-                result.append(GlobalCompany(
-                    country=country.upper(),
-                    exchange=spec.code,
-                    mic_code=returned_mic or spec.mic,
-                    currency=currency,
-                    ticker=symbol,
-                    name=str(row.get("name") or symbol).strip(),
-                    isin=_clean_isin(row.get("isin")),
-                    instrument_type=instrument_type or "Common Stock",
-                    raw_provider_fields={
-                        "figi": str(row.get("figi_code") or "").strip() or None,
-                        "cfi": str(row.get("cfi_code") or "").strip() or None,
-                        "reference_access": "demo" if self.demo_mode else "authenticated",
-                    },
-                    sources=[SourceEvidence(
-                        provider=self.provider_id,
-                        source_type="instrument_reference",
-                        source_id=f"{country.upper()}:{returned_mic or spec.mic or spec.code}:{symbol}",
-                        quality=0.85 if self.demo_mode else 0.9,
-                        notes=(
-                            "Reference catalog only; demo authentication does not provide quote/history access."
-                            if self.demo_mode else None
-                        ),
-                    )],
-                ))
+                result.append(item)
                 if len(result) >= self.max_rows:
                     break
             raw_count = payload.get("count")
