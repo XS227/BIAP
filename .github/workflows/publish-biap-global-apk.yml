@@ -1,5 +1,6 @@
 name: Publish BIAP Global APK
 
+# Publishes the latest successful BIAP Global ARM64 build to the public web download path.
 on:
   push:
     branches: [feat/biap-global]
