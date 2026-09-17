@@ -5,12 +5,19 @@ resolver prefers an exact legal-name match. When a market catalog abbreviates a
 legal form (for example ``plc`` versus ``public limited company``), it may use a
 strict legal-form-normalized fallback, but only when that fallback resolves to
 one unique active LEI. Ambiguous/fuzzy business-name matches are still rejected.
+
+European catalog names frequently differ only by accents, punctuation or a
+spelled-out legal form (``S.A.``, ``S.p.A.``, ``AB`` versus ``Aktiebolaget``).
+Those differences are normalized conservatively. When several *exact* legal-name
+records remain, issuer country may disambiguate by GLEIF legal jurisdiction; BIAP
+never chooses an arbitrary fuzzy result.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 import re
+import unicodedata
 from typing import Optional
 
 import httpx
@@ -28,10 +35,19 @@ class LEIResolution:
     entity_status: Optional[str]
     registration_status: Optional[str]
     source_url: str
+    legal_jurisdiction: Optional[str] = None
+
+
+def _ascii(value: str) -> str:
+    # NFKD keeps the business-name letters while discarding combining accents,
+    # e.g. L'Oréal -> L'Oreal and Moët -> Moet. Do not transliterate arbitrary
+    # words or use edit distance: business-name identity must remain exact.
+    normalized = unicodedata.normalize("NFKD", str(value or ""))
+    return "".join(ch for ch in normalized if not unicodedata.combining(ch))
 
 
 def _fold_name(value: str) -> str:
-    return re.sub(r"[^A-Z0-9]", "", value.upper())
+    return re.sub(r"[^A-Z0-9]", "", _ascii(value).upper())
 
 
 # Catalog vendors commonly abbreviate only the legal form while keeping the
@@ -63,23 +79,51 @@ _LEGAL_FORM_SUFFIXES: tuple[tuple[str, ...], ...] = (
     ("SPA",),
     ("NV",),
     ("BV",),
+    # Punctuated forms are tokenized one letter at a time.
+    ("O", "Y", "J"),
+    ("A", "B"),
+    ("A", "S", "A"),
+    ("A", "S"),
+    ("S", "E"),
+    ("S", "P", "A"),
+    ("S", "A"),
+    ("N", "V"),
+    ("B", "V"),
+)
+
+# A few European legal forms are commonly written *before* the business name.
+# They are legal-form words, not business-name words, and are stripped only from
+# the beginning of the candidate name.
+_LEGAL_FORM_PREFIXES: tuple[tuple[str, ...], ...] = (
+    ("AKTIEBOLAGET",),
 )
 
 
 def _name_tokens(value: str) -> list[str]:
-    return [token for token in re.split(r"[^A-Z0-9]+", value.upper()) if token]
+    return [token for token in re.split(r"[^A-Z0-9]+", _ascii(value).upper()) if token]
 
 
 def _legal_core_tokens(value: str) -> list[str]:
     tokens = _name_tokens(value)
-    changed = True
-    while tokens and changed:
-        changed = False
+
+    prefix_changed = True
+    while tokens and prefix_changed:
+        prefix_changed = False
+        for prefix in _LEGAL_FORM_PREFIXES:
+            n = len(prefix)
+            if len(tokens) >= n and tuple(tokens[:n]) == prefix:
+                del tokens[:n]
+                prefix_changed = True
+                break
+
+    suffix_changed = True
+    while tokens and suffix_changed:
+        suffix_changed = False
         for suffix in _LEGAL_FORM_SUFFIXES:
             n = len(suffix)
             if len(tokens) >= n and tuple(tokens[-n:]) == suffix:
                 del tokens[-n:]
-                changed = True
+                suffix_changed = True
                 break
     return tokens
 
@@ -90,6 +134,16 @@ def _legal_core(value: str) -> str:
 
 def _legal_core_query(value: str) -> str:
     return " ".join(_legal_core_tokens(value))
+
+
+def _jurisdiction_matches(country: Optional[str], jurisdiction: Optional[str]) -> bool:
+    wanted = str(country or "").strip().upper()
+    actual = str(jurisdiction or "").strip().upper()
+    if not wanted or not actual:
+        return False
+    # GLEIF legalJurisdiction may be ISO-3166 country (ES) or subdivision
+    # (US-DE). Only an exact country/prefix match is used for disambiguation.
+    return actual == wanted or actual.startswith(wanted + "-")
 
 
 class GLEIFResolver:
@@ -132,6 +186,7 @@ class GLEIFResolver:
             entity_status=str(entity.get("status") or "").strip().upper() or None,
             registration_status=str(registration.get("status") or "").strip().upper() or None,
             source_url=f"{GLEIF_BASE}/lei-records/{lei}",
+            legal_jurisdiction=str(entity.get("legalJurisdiction") or "").strip().upper() or None,
         )
 
     @staticmethod
@@ -139,6 +194,24 @@ class GLEIFResolver:
         if resolution.entity_status == "INACTIVE":
             return False
         return resolution.registration_status not in {"RETIRED", "ANNULLED", "DUPLICATE"}
+
+    @staticmethod
+    def _unique_or_country(
+        matches: list[LEIResolution],
+        *,
+        country: Optional[str],
+    ) -> tuple[Optional[LEIResolution], int]:
+        unique = {match.lei: match for match in matches}
+        if len(unique) == 1:
+            return next(iter(unique.values())), 1
+        if len(unique) > 1 and country:
+            narrowed = {
+                lei: match for lei, match in unique.items()
+                if _jurisdiction_matches(country, match.legal_jurisdiction)
+            }
+            if len(narrowed) == 1:
+                return next(iter(narrowed.values())), 1
+        return None, len(unique)
 
     def verify_lei(self, lei: str) -> LEIResolution:
         wanted = lei.strip().upper()
@@ -172,36 +245,37 @@ class GLEIFResolver:
                 result.append(resolution)
         return result
 
-    def resolve_exact_legal_name(self, name: str) -> LEIResolution:
+    def resolve_exact_legal_name(self, name: str, *, country: Optional[str] = None) -> LEIResolution:
         wanted = name.strip()
         if len(wanted) < 2:
             raise GlobalProviderError("legal name is required for GLEIF resolution")
 
-        # First preserve the original strict behavior: punctuation/case may vary,
-        # but the legal name itself must be identical.
+        # First preserve strict behavior: punctuation, case and diacritics may
+        # vary, but the legal-name letters themselves must be identical.
         folded = _fold_name(wanted)
         exact = [match for match in self._search(wanted, page_size=50) if _fold_name(match.legal_name) == folded]
-        unique_exact = {match.lei: match for match in exact}
-        if len(unique_exact) == 1:
-            return next(iter(unique_exact.values()))
-        if len(unique_exact) > 1:
+        resolved, count = self._unique_or_country(exact, country=country)
+        if resolved is not None:
+            return resolved
+        if count > 1:
             raise GlobalProviderError(
-                f"GLEIF exact-name resolution for {wanted!r} is ambiguous ({len(unique_exact)} active matches)"
+                f"GLEIF exact-name resolution for {wanted!r} is ambiguous ({count} active matches)"
             )
 
         # Fallback only for legal-form spelling/abbreviation differences. The
-        # business-name core must remain exactly equal after removing a trailing
-        # recognized legal form, and one unique LEI must survive.
+        # business-name core must remain exactly equal after removing recognized
+        # prefix/suffix legal forms, and one unique LEI must survive (optionally
+        # narrowed by the selected issuer jurisdiction).
         core = _legal_core(wanted)
         query = _legal_core_query(wanted)
         if len(core) < 4 or not query:
             raise GlobalProviderError(f"GLEIF exact-name resolution for {wanted!r} is unavailable")
 
         relaxed = [match for match in self._search(query) if _legal_core(match.legal_name) == core]
-        unique_relaxed = {match.lei: match for match in relaxed}
-        if len(unique_relaxed) != 1:
+        resolved, count = self._unique_or_country(relaxed, country=country)
+        if resolved is None:
             raise GlobalProviderError(
                 f"GLEIF legal-form-normalized resolution for {wanted!r} is ambiguous/unavailable "
-                f"({len(unique_relaxed)} active matches)"
+                f"({count} active matches)"
             )
-        return next(iter(unique_relaxed.values()))
+        return resolved
