@@ -1,0 +1,55 @@
+name: Refresh BIAP Global official sources
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-source-refresh.yml'
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Setup BIAP Global server"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: biap-global-source-refresh
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+      VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+      VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+    steps:
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$VPS_SSH_KEY" || { echo "VPS_SSH_KEY is not configured" >&2; exit 1; }
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
+          chmod 600 ~/.ssh/biap_global_key
+          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Refresh verified Global source caches
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          APP_DIR=/home/ubuntu/biap-global/BIAP
+          cd "$APP_DIR"
+          export BIAP_GLOBAL_APP_DIR="$APP_DIR"
+          export BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global
+          bash deploy/sync-global-sources.sh
+          echo "SOURCE_REFRESH_HEAD=$(git rev-parse --short HEAD)"
+          REMOTE
