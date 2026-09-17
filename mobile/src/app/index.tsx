@@ -18,7 +18,18 @@ export default function HomeScreen(){
   const[market,setMarket]=useState<GlobalMarketSelection|null>(null);
   const[company,setCompany]=useState<GlobalInstrument|null>(null);
   const[status,setStatus]=useState<Record<string,unknown>|null>(null);
-  useFocusEffect(useCallback(()=>{Promise.all([getGlobalMarketSelection(),getSelectedGlobalCompany(),fetchGlobalStatus()]).then(([m,c,s])=>{setMarket(m);setCompany(c);setStatus(s)});},[]));
+  useFocusEffect(useCallback(()=>{
+    let active=true;
+    void (async()=>{
+      const m=await getGlobalMarketSelection();
+      const[c,s]=await Promise.all([getSelectedGlobalCompany(),fetchGlobalStatus()]);
+      if(!active)return;
+      setMarket(m);
+      setCompany(c);
+      setStatus(s);
+    })();
+    return()=>{active=false;};
+  },[]));
   const apiOk=Boolean(status);
   const licensedFeed=Boolean(status?.licensedMarketFeedConfigured ?? status?.marketProviderConfigured);
   const publicFallback=Boolean(status?.publicMarketFallbackConfigured);
