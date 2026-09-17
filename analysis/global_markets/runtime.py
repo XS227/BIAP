@@ -18,11 +18,11 @@ from .edinet import EDINETFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
 from .opendart import OpenDARTFundamentalsProvider
 from .providers import ProviderRegistry
+from .regional_yahoo_chart import RegionalYahooChartMarketProvider
 from .sec_edgar import SECEdgarFundamentalsProvider
 from .twelve_data import TwelveDataMarketProvider
 from .universe import IranUniverseProvider, TwelveDataUniverseProvider
 from .verified_filing_drop import VerifiedFilingDropProvider
-from .yahoo_chart import YahooChartMarketProvider
 
 _ESEF_COUNTRIES = (
     "SE", "NO", "DK", "FI", "IS", "NL", "FR", "BE", "IE", "PT", "IT", "DE", "ES", "GB",
@@ -53,14 +53,13 @@ def build_registry() -> ProviderRegistry:
         for exchange in pack.exchanges:
             registry.register_universe(country, exchange.code, universe)
 
-    # Licensed Twelve Data remains the preferred market source. When no licensed
-    # credential is configured, a deliberately lower-trust public daily-history
-    # fallback is enabled only for the three launch/test markets US, GB and NO.
-    # Every successful result is persisted by PersistentMarketProvider. Other
-    # countries stay cache-only rather than silently receiving guessed prices.
+    # Licensed Twelve Data remains the preferred market source. Without a
+    # licensed credential, BIAP uses a lower-trust public EOD fallback only on
+    # venues with deterministic Yahoo symbol suffixes. Every successful result
+    # is persisted; ambiguous venues remain cache-only rather than being guessed.
     market_key = (os.environ.get("BIAP_GLOBAL_MARKET_API_KEY") or "").strip()
     licensed_market = PersistentMarketProvider(TwelveDataMarketProvider()) if market_key else None
-    public_market = PersistentMarketProvider(YahooChartMarketProvider()) if not market_key else None
+    public_market = PersistentMarketProvider(RegionalYahooChartMarketProvider()) if not market_key else None
     cache_only_market = PersistentMarketProvider(None)
     for country, pack in COUNTRY_PACKS.items():
         if country == "IR":
@@ -68,18 +67,15 @@ def build_registry() -> ProviderRegistry:
         for exchange in pack.exchanges:
             if licensed_market is not None:
                 provider = licensed_market
-            elif public_market is not None and YahooChartMarketProvider.supported(country, exchange.code):
+            elif public_market is not None and RegionalYahooChartMarketProvider.supported(country, exchange.code):
                 provider = public_market
             else:
                 provider = cache_only_market
             registry.register_market(country, exchange.code, provider)
 
-    # SEC companyfacts is a public, no-key source. The old wiring silently omitted
-    # the US fundamentals provider whenever BIAP_SEC_USER_AGENT was not present on
-    # the server, which made every US analysis market-data-only and forced the
-    # Evidence gate to BLOCK with missing=fundamental_source. Always register the
-    # adapter and use a descriptive project contact URL when deployment has not
-    # provided a more specific User-Agent string.
+    # SEC companyfacts is a public, no-key source. Always register the adapter
+    # and use a descriptive project contact URL when deployment has not provided
+    # a more specific User-Agent string.
     sec_user_agent = (
         os.environ.get("BIAP_SEC_USER_AGENT")
         or "BIAP Global research application (+https://setai.no)"
