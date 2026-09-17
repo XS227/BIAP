@@ -17,10 +17,10 @@ from typing import Iterable, Optional
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
 
-# Version 3 invalidates snapshots created before the CFI + venue-specific
-# ordinary-equity hardening. Older caches may still contain structured products
-# or international LSE segment lines even if they were labelled Common Stock.
-CACHE_SCHEMA_VERSION = 3
+# Version 4 invalidates snapshots created while the mobile/global catalog could
+# be seeded from a bounded prefix. A fresh snapshot is required so browsing and
+# server-side search can cover the complete provider universe.
+CACHE_SCHEMA_VERSION = 4
 
 
 def _utc_now() -> datetime:
@@ -205,6 +205,7 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
             "count": int(payload.get("count") or 0),
             "ageHours": None if age is None else round(age / 3600.0, 2),
             "fresh": self._is_fresh(payload),
+            "schemaVersion": CACHE_SCHEMA_VERSION,
         }
 
     def refresh(self, *, country: str, exchange: str) -> list[GlobalCompany]:
@@ -212,6 +213,28 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
         self._write(country, exchange, rows)
         payload = self._read_payload(country, exchange)
         return self._decode(payload, fallback=False) if payload else rows
+
+    def search_instruments(
+        self,
+        *,
+        country: str,
+        exchange: str,
+        query: str,
+        limit: int = 120,
+    ) -> list[GlobalCompany]:
+        """Forward targeted discovery to the upstream provider when supported.
+
+        This path deliberately does not replace the exchange snapshot. It is a
+        targeted recovery path for symbols/names that are not present in an old
+        or incomplete local catalog.
+        """
+        search = getattr(self.upstream, "search_instruments", None)
+        if not callable(search):
+            return []
+        try:
+            return list(search(country=country, exchange=exchange, query=query, limit=limit))
+        except GlobalProviderError:
+            return []
 
     def list_instruments(
         self,
