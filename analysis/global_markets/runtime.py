@@ -3,8 +3,9 @@
 No credential is committed. Reference-data discovery is available through a
 public demo catalog. Verified market snapshots remain usable through the
 persistent cache even when the live price/history credential is temporarily
-absent. Missing market/fundamental providers remain explicit diagnostics and are
-handled by the Evidence Agent rather than being fabricated.
+absent. Missing official fundamentals remain explicit to the Evidence Agent;
+public vendor financial metrics may supplement the UI/agents but never silently
+upgrade themselves to official filing evidence.
 """
 from __future__ import annotations
 
@@ -15,6 +16,7 @@ from .cached_market import PersistentMarketProvider
 from .cached_universe import PersistentUniverseProvider
 from .country_packs import COUNTRY_PACKS
 from .edinet import EDINETFundamentalsProvider
+from .fallback_fundamentals import FallbackFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
 from .opendart import OpenDARTFundamentalsProvider
 from .providers import ProviderRegistry
@@ -23,6 +25,7 @@ from .sec_edgar import SECEdgarFundamentalsProvider
 from .twelve_data import TwelveDataMarketProvider
 from .universe import IranUniverseProvider, TwelveDataUniverseProvider
 from .verified_filing_drop import VerifiedFilingDropProvider
+from .yahoo_fundamentals import YahooFundamentalsProvider
 
 _ESEF_COUNTRIES = (
     "SE", "NO", "DK", "FI", "IS", "NL", "FR", "BE", "IE", "PT", "IT", "DE", "ES", "GB",
@@ -73,37 +76,72 @@ def build_registry() -> ProviderRegistry:
                 provider = cache_only_market
             registry.register_market(country, exchange.code, provider)
 
-    # SEC companyfacts is a public, no-key source. Always register the adapter
-    # and use a descriptive project contact URL when deployment has not provided
-    # a more specific User-Agent string.
+    # Public vendor annual financial metrics are a display/analysis supplement,
+    # not official filing evidence. Its SourceEvidence type intentionally does
+    # not satisfy EvidenceAgent's fundamental_source gate.
+    public_fundamentals = YahooFundamentalsProvider()
+    fundamentals_registered: set[tuple[str, str]] = set()
+
+    def register_fundamentals(country: str, exchange_code: str, provider) -> None:
+        registry.register_fundamentals(country, exchange_code, provider)
+        fundamentals_registered.add((country.upper(), exchange_code.upper()))
+
+    # SEC companyfacts is a public, no-key official source. Always register the
+    # adapter and use a descriptive project contact URL when deployment has not
+    # provided a more specific User-Agent string.
     sec_user_agent = (
         os.environ.get("BIAP_SEC_USER_AGENT")
         or "BIAP Global research application (+https://setai.no)"
     ).strip()
     sec = SECEdgarFundamentalsProvider(user_agent=sec_user_agent)
     for exchange in COUNTRY_PACKS["US"].exchanges:
-        registry.register_fundamentals("US", exchange.code, sec)
+        register_fundamentals("US", exchange.code, sec)
 
+    # Europe: official ESEF first. If an issuer cannot be safely joined to an
+    # ESEF filing, use labelled vendor metrics so cards/agents are not empty,
+    # while keeping the Evidence gate BLOCKED until official provenance exists.
     esef = CachedESEFFundamentalsProvider()
+    esef_with_fallback = FallbackFundamentalsProvider(esef, public_fundamentals)
     for country in _ESEF_COUNTRIES:
         for exchange in COUNTRY_PACKS[country].exchanges:
-            registry.register_fundamentals(country, exchange.code, esef)
+            register_fundamentals(country, exchange.code, esef_with_fallback)
 
+    # Japan: EDINET remains authoritative when its deployment key is available.
+    # The public fallback still gives users non-empty annual metrics when EDINET
+    # is unavailable, without masquerading as FSA filing evidence.
     if os.environ.get("BIAP_EDINET_API_KEY"):
         edinet = EDINETFundamentalsProvider()
-        for exchange in COUNTRY_PACKS["JP"].exchanges:
-            registry.register_fundamentals("JP", exchange.code, edinet)
+        jp_provider = FallbackFundamentalsProvider(edinet, public_fundamentals)
+    else:
+        jp_provider = public_fundamentals
+    for exchange in COUNTRY_PACKS["JP"].exchanges:
+        register_fundamentals("JP", exchange.code, jp_provider)
 
     if os.environ.get("BIAP_OPENDART_API_KEY"):
         dart = OpenDARTFundamentalsProvider()
         for exchange in COUNTRY_PACKS["KR"].exchanges:
-            registry.register_fundamentals("KR", exchange.code, dart)
+            register_fundamentals("KR", exchange.code, dart)
 
     # ASX/issuer disclosures are licensing-sensitive. An authorized ingestion
-    # job writes normalized verified records to the server filing drop; this
-    # provider refuses anything without explicit provenance and verification.
+    # job writes normalized verified records to the server filing drop. When a
+    # verified record is absent, vendor metrics are supplementary only.
     au = VerifiedFilingDropProvider(country="AU", provider_names=("asx", "asx-issuer", "issuer"))
+    au_with_fallback = FallbackFundamentalsProvider(au, public_fundamentals)
     for exchange in COUNTRY_PACKS["AU"].exchanges:
-        registry.register_fundamentals("AU", exchange.code, au)
+        register_fundamentals("AU", exchange.code, au_with_fallback)
+
+    # Other deterministic Yahoo-routed markets currently lack a complete
+    # official filing adapter in this branch. Give those markets useful public
+    # financial metrics now, but deliberately leave recommendation verification
+    # blocked until their official source adapter is connected.
+    for country, pack in COUNTRY_PACKS.items():
+        if country == "IR":
+            continue
+        for exchange in pack.exchanges:
+            key = (country.upper(), exchange.code.upper())
+            if key in fundamentals_registered:
+                continue
+            if RegionalYahooChartMarketProvider.supported(country, exchange.code):
+                register_fundamentals(country, exchange.code, public_fundamentals)
 
     return registry
