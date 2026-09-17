@@ -1,8 +1,10 @@
 """Conservative legal-entity resolution for BIAP Global.
 
-GLEIF is used only to resolve an exact legal name to a Legal Entity Identifier
-(LEI). Ambiguous/fuzzy matches are rejected rather than guessed. This LEI then
-becomes the join key into ESEF filings.
+GLEIF is used to resolve issuer names to a Legal Entity Identifier (LEI). The
+resolver prefers an exact legal-name match. When a market catalog abbreviates a
+legal form (for example ``plc`` versus ``public limited company``), it may use a
+strict legal-form-normalized fallback, but only when that fallback resolves to
+one unique active LEI. Ambiguous/fuzzy business-name matches are still rejected.
 """
 
 from __future__ import annotations
@@ -29,9 +31,65 @@ class LEIResolution:
 
 
 def _fold_name(value: str) -> str:
-    # Deliberately punctuation/case-insensitive only. We do NOT strip corporate
-    # suffixes or reorder tokens because that can collapse distinct legal entities.
     return re.sub(r"[^A-Z0-9]", "", value.upper())
+
+
+# Catalog vendors commonly abbreviate only the legal form while keeping the
+# actual business name intact. These suffix groups are treated as equivalent for
+# the fallback resolver. We never remove arbitrary business words.
+_LEGAL_FORM_SUFFIXES: tuple[tuple[str, ...], ...] = (
+    ("PUBLIC", "LIMITED", "COMPANY"),
+    ("PUBLIC", "LIMITED"),
+    ("LIMITED", "LIABILITY", "COMPANY"),
+    ("LIMITED", "COMPANY"),
+    ("JOINT", "STOCK", "COMPANY"),
+    ("PLC",),
+    ("LTD",),
+    ("LIMITED",),
+    ("INC",),
+    ("INCORPORATED",),
+    ("CORP",),
+    ("CORPORATION",),
+    ("CO",),
+    ("COMPANY",),
+    ("OYJ",),
+    ("OY",),
+    ("AB",),
+    ("ASA",),
+    ("AS",),
+    ("AG",),
+    ("SE",),
+    ("SA",),
+    ("SPA",),
+    ("NV",),
+    ("BV",),
+)
+
+
+def _name_tokens(value: str) -> list[str]:
+    return [token for token in re.split(r"[^A-Z0-9]+", value.upper()) if token]
+
+
+def _legal_core_tokens(value: str) -> list[str]:
+    tokens = _name_tokens(value)
+    changed = True
+    while tokens and changed:
+        changed = False
+        for suffix in _LEGAL_FORM_SUFFIXES:
+            n = len(suffix)
+            if len(tokens) >= n and tuple(tokens[-n:]) == suffix:
+                del tokens[-n:]
+                changed = True
+                break
+    return tokens
+
+
+def _legal_core(value: str) -> str:
+    return "".join(_legal_core_tokens(value))
+
+
+def _legal_core_query(value: str) -> str:
+    return " ".join(_legal_core_tokens(value))
 
 
 class GLEIFResolver:
@@ -76,6 +134,12 @@ class GLEIFResolver:
             source_url=f"{GLEIF_BASE}/lei-records/{lei}",
         )
 
+    @staticmethod
+    def _usable(resolution: LEIResolution) -> bool:
+        if resolution.entity_status == "INACTIVE":
+            return False
+        return resolution.registration_status not in {"RETIRED", "ANNULLED", "DUPLICATE"}
+
     def verify_lei(self, lei: str) -> LEIResolution:
         wanted = lei.strip().upper()
         if len(wanted) != 20 or not wanted.isalnum():
@@ -85,38 +149,59 @@ class GLEIFResolver:
         resolution = self._resolution(row) if isinstance(row, dict) else None
         if resolution is None or resolution.lei != wanted:
             raise GlobalProviderError(f"GLEIF could not verify LEI {wanted}")
-        if resolution.entity_status == "INACTIVE":
-            raise GlobalProviderError(f"GLEIF entity for {wanted} is inactive")
+        if not self._usable(resolution):
+            raise GlobalProviderError(f"GLEIF entity for {wanted} is not active/usable")
         return resolution
 
-    def resolve_exact_legal_name(self, name: str) -> LEIResolution:
-        wanted = name.strip()
-        if len(wanted) < 2:
-            raise GlobalProviderError("legal name is required for GLEIF resolution")
+    def _search(self, text: str, *, page_size: int = 100) -> list[LEIResolution]:
         payload = self._get(
             "lei-records",
             {
-                "filter[entity.legalName]": wanted,
-                "page[size]": 50,
+                "filter[entity.legalName]": text,
+                "page[size]": max(1, min(int(page_size), 200)),
                 "page[number]": 1,
             },
         )
         rows = payload.get("data")
         if not isinstance(rows, list):
             raise GlobalProviderError("GLEIF legal-name search returned no data list")
-        folded = _fold_name(wanted)
-        matches: list[LEIResolution] = []
+        result: list[LEIResolution] = []
         for row in rows:
             resolution = self._resolution(row)
-            if resolution is None:
-                continue
-            if resolution.entity_status == "INACTIVE":
-                continue
-            if _fold_name(resolution.legal_name) == folded:
-                matches.append(resolution)
-        unique = {match.lei: match for match in matches}
-        if len(unique) != 1:
+            if resolution is not None and self._usable(resolution):
+                result.append(resolution)
+        return result
+
+    def resolve_exact_legal_name(self, name: str) -> LEIResolution:
+        wanted = name.strip()
+        if len(wanted) < 2:
+            raise GlobalProviderError("legal name is required for GLEIF resolution")
+
+        # First preserve the original strict behavior: punctuation/case may vary,
+        # but the legal name itself must be identical.
+        folded = _fold_name(wanted)
+        exact = [match for match in self._search(wanted, page_size=50) if _fold_name(match.legal_name) == folded]
+        unique_exact = {match.lei: match for match in exact}
+        if len(unique_exact) == 1:
+            return next(iter(unique_exact.values()))
+        if len(unique_exact) > 1:
             raise GlobalProviderError(
-                f"GLEIF exact-name resolution for {wanted!r} is ambiguous/unavailable ({len(unique)} exact active matches)"
+                f"GLEIF exact-name resolution for {wanted!r} is ambiguous ({len(unique_exact)} active matches)"
             )
-        return next(iter(unique.values()))
+
+        # Fallback only for legal-form spelling/abbreviation differences. The
+        # business-name core must remain exactly equal after removing a trailing
+        # recognized legal form, and one unique LEI must survive.
+        core = _legal_core(wanted)
+        query = _legal_core_query(wanted)
+        if len(core) < 4 or not query:
+            raise GlobalProviderError(f"GLEIF exact-name resolution for {wanted!r} is unavailable")
+
+        relaxed = [match for match in self._search(query) if _legal_core(match.legal_name) == core]
+        unique_relaxed = {match.lei: match for match in relaxed}
+        if len(unique_relaxed) != 1:
+            raise GlobalProviderError(
+                f"GLEIF legal-form-normalized resolution for {wanted!r} is ambiguous/unavailable "
+                f"({len(unique_relaxed)} active matches)"
+            )
+        return next(iter(unique_relaxed.values()))
