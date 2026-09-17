@@ -18,6 +18,7 @@ from .companies_house import CompaniesHouseCorroborator
 from .corroboration import CorroboratingFundamentalsProvider
 from .country_packs import COUNTRY_PACKS
 from .cvm import CVMFundamentalsProvider
+from .cvm_itr import CVMITRCorroborator
 from .edinet import EDINETFundamentalsProvider
 from .fallback_fundamentals import FallbackFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
@@ -145,10 +146,13 @@ def build_registry() -> ProviderRegistry:
     for exchange in COUNTRY_PACKS["AU"].exchanges:
         register_fundamentals("AU", exchange.code, au_with_fallback)
 
-    # Brazil: CVM DFP is regulator-published structured open data and requires no
-    # secret. The daily source-sync job keeps a recent local index. If a strict
-    # legal-name join is unavailable, public vendor metrics remain supplement-only.
-    br = FallbackFundamentalsProvider(CVMFundamentalsProvider(), public_fundamentals)
+    # Brazil: regulator-published CVM DFP is the annual fundamentals base and
+    # requires no secret. CVM ITR is a second official quarterly source used only
+    # to corroborate issuer/freshness; it never overwrites annual DFP values.
+    # If a strict official join is unavailable, public vendor metrics remain
+    # supplement-only and therefore do not clear the Evidence gate.
+    br_annual = FallbackFundamentalsProvider(CVMFundamentalsProvider(), public_fundamentals)
+    br = CorroboratingFundamentalsProvider(br_annual, CVMITRCorroborator())
     for exchange in COUNTRY_PACKS["BR"].exchanges:
         register_fundamentals("BR", exchange.code, br)
 
