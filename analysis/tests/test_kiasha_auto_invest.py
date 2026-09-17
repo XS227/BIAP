@@ -65,6 +65,77 @@ def test_auto_invest_retryable_run_can_reclaim_same_day(tmp_path):
     assert latest["result"] is None
 
 
+def test_stuck_running_run_is_not_reclaimed_before_stale_timeout(tmp_path):
+    """A run genuinely still in flight (fresh RUNNING row) must never be
+    reclaimed by a concurrent/later caller -- that would risk a double
+    execution against the same Paper account and day."""
+    store = AutoInvestStore(str(tmp_path / "auto.sqlite3"))
+    now = datetime(2026, 9, 17, 6, 0, tzinfo=timezone.utc)
+    first = store.claim_today(user_id="u1", now_utc=now)
+    assert first is not None
+
+    still_running = store.claim_today(
+        user_id="u1",
+        now_utc=now.replace(minute=5),
+        stale_running_after_seconds=1800.0,
+    )
+    assert still_running is None
+
+
+def test_stuck_running_run_is_reclaimed_after_stale_timeout(tmp_path):
+    """A run left in RUNNING forever (crashed process, SIGKILL, OOM-kill, or
+    an interrupted manual force-run that never reached ``finish()``) must
+    eventually be reclaimable, otherwise it silently blocks every later
+    non-force Auto Invest attempt for the rest of that Tehran day."""
+    store = AutoInvestStore(str(tmp_path / "auto.sqlite3"))
+    started = datetime(2026, 9, 17, 6, 0, tzinfo=timezone.utc)
+    first = store.claim_today(user_id="u1", now_utc=started)
+    assert first is not None
+    # Simulate the process dying: no finish() call ever happens.
+
+    too_soon = store.claim_today(
+        user_id="u1",
+        now_utc=started.replace(minute=10),
+        stale_running_after_seconds=1800.0,
+    )
+    assert too_soon is None
+
+    reclaimed = store.claim_today(
+        user_id="u1",
+        now_utc=started.replace(hour=7),
+        stale_running_after_seconds=1800.0,
+    )
+    assert reclaimed == first
+    latest = store.latest_run(user_id="u1")
+    assert latest is not None
+    assert latest["status"] == "RUNNING"
+
+
+def test_auto_invest_setup_failure_still_finishes_claimed_run(tmp_path, monkeypatch):
+    """A failure while loading the Paper account (before the per-candidate
+    loop even starts) must still call ``STORE.finish`` for the claimed
+    ``auto_`` run. Previously this setup ran outside the try/except, so any
+    exception there left the run stuck in RUNNING forever -- indistinguishable
+    from a crash -- and silently blocked every later run for that day."""
+    db_path = str(tmp_path / "auto.sqlite3")
+    monkeypatch.setattr(kai, "STORE", AutoInvestStore(db_path))
+    kai.STORE.update_settings(user_id="u1", enabled=True, horizon="short", max_daily_trades=3)
+    monkeypatch.setenv("KIASHA_PAPER_EXECUTION_ENABLED", "true")
+
+    def boom(**kwargs):
+        raise RuntimeError("simulated ensure_paper_account failure")
+
+    monkeypatch.setattr(kai.AUDIT, "ensure_paper_account", boom)
+
+    result = kai.run_user_auto_invest("u1", force=True)
+
+    assert result["status"] == "RETRYABLE"
+    latest = kai.STORE.latest_run(user_id="u1")
+    assert latest is not None
+    assert latest["status"] == "RETRYABLE"
+    assert latest["finishedAt"] is not None
+
+
 def test_one_candidate_timeout_does_not_stop_others(monkeypatch):
     """A DeadlineExceeded on one candidate (simulated TSETMC/CODAL/AI stall)
     must be recorded as a retryable diagnostic and never prevent a later,
