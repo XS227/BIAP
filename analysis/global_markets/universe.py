@@ -21,6 +21,18 @@ from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
 
 
+def _clean_isin(value: object) -> Optional[str]:
+    """Return only a structurally valid ISIN-like identifier.
+
+    Some reference catalogs return entitlement sentinels such as
+    ``REQUEST_ACCESS_VIA_ADD_ONS`` in identifier fields when that field is not
+    included in the current plan. Treat those values as unavailable evidence,
+    never as an issuer identifier.
+    """
+    text = str(value or "").strip().upper()
+    return text if len(text) == 12 and text.isalnum() else None
+
+
 class TwelveDataUniverseProvider(InstrumentUniverseProvider):
     provider_id = "twelve-data-universe"
 
@@ -124,7 +136,7 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
                     currency=currency,
                     ticker=symbol,
                     name=str(row.get("name") or symbol).strip(),
-                    isin=str(row.get("isin") or "").strip().upper() or None,
+                    isin=_clean_isin(row.get("isin")),
                     instrument_type=instrument_type or "Common Stock",
                     raw_provider_fields={
                         "figi": str(row.get("figi_code") or "").strip() or None,
