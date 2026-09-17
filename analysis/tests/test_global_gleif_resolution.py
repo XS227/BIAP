@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import pytest
 
+from global_markets.esef_country import CountryAwareESEFFundamentalsProvider
 from global_markets.gleif import GLEIFResolver, LEIResolution, _legal_core
+from global_markets.models import GlobalCompany
 from global_markets.providers import GlobalProviderError
 
 
-def _row(lei: str, name: str, country: str) -> LEIResolution:
+def _row(lei: str, name: str, country: str | None) -> LEIResolution:
     return LEIResolution(
         lei=lei,
         legal_name=name,
@@ -14,6 +16,17 @@ def _row(lei: str, name: str, country: str) -> LEIResolution:
         registration_status="ISSUED",
         source_url=f"https://example.test/{lei}",
         legal_jurisdiction=country,
+    )
+
+
+def _company(country: str, name: str, ticker: str = "TEST") -> GlobalCompany:
+    return GlobalCompany(
+        country=country,
+        exchange="TEST_EXCHANGE",
+        mic_code="TEST",
+        currency="EUR",
+        ticker=ticker,
+        name=name,
     )
 
 
@@ -60,3 +73,40 @@ def test_legal_form_normalization_can_match_spelled_out_swedish_form(monkeypatch
 
     match = resolver.resolve_exact_legal_name("Volvo AB", country="SE")
     assert match.lei == "44444444444444444444"
+
+
+def test_esef_country_filing_can_disambiguate_same_legal_core(monkeypatch):
+    provider = CountryAwareESEFFundamentalsProvider()
+    rows = [
+        _row("11111111111111111111", "LVMH MOET HENNESSY LOUIS VUITTON", None),
+        _row("22222222222222222222", "LVMH MOET HENNESSY LOUIS VUITTON INC.", None),
+    ]
+    monkeypatch.setattr(
+        provider.gleif,
+        "resolve_exact_legal_name",
+        lambda *args, **kwargs: (_ for _ in ()).throw(GlobalProviderError("ambiguous")),
+    )
+    monkeypatch.setattr(provider.gleif, "_search", lambda *args, **kwargs: rows)
+    monkeypatch.setattr(provider, "_country_filing_exists", lambda lei, country: lei == "11111111111111111111")
+
+    lei, legal_name = provider._resolve_lei(_company("FR", "LVMH Moët Hennessy Louis Vuitton SE", "MC"))
+    assert lei == "11111111111111111111"
+    assert legal_name == "LVMH MOET HENNESSY LOUIS VUITTON"
+
+
+def test_esef_country_filing_never_guesses_when_two_candidates_match(monkeypatch):
+    provider = CountryAwareESEFFundamentalsProvider()
+    rows = [
+        _row("11111111111111111111", "Banco Santander, S.A.", None),
+        _row("22222222222222222222", "Banco Santander S.A.", None),
+    ]
+    monkeypatch.setattr(
+        provider.gleif,
+        "resolve_exact_legal_name",
+        lambda *args, **kwargs: (_ for _ in ()).throw(GlobalProviderError("ambiguous")),
+    )
+    monkeypatch.setattr(provider.gleif, "_search", lambda *args, **kwargs: rows)
+    monkeypatch.setattr(provider, "_country_filing_exists", lambda lei, country: True)
+
+    with pytest.raises(GlobalProviderError, match="ambiguous"):
+        provider._resolve_lei(_company("ES", "Banco Santander, S.A.", "SAN"))
