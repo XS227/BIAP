@@ -76,50 +76,21 @@ jobs:
             echo "Expected one of: CLOUDFLARE_API_TOKEN, CLOUDFLARE_TOKEN, CF_API_TOKEN" >&2
             exit 2
           fi
-
           API="https://api.cloudflare.com/client/v4"
-          AUTH=( -H "Authorization: Bearer ${CF_TOKEN}" -H "Content-Type: application/json" )
-          ZONE_JSON="$(curl --fail --silent --show-error "${AUTH[@]}" "${API}/zones?name=${CF_ZONE}&status=active")"
-          ZONE_ID="$(ZONE_JSON="$ZONE_JSON" python3 - <<'PY'
-import json, os
-body=json.loads(os.environ['ZONE_JSON'])
-items=body.get('result') or []
-if not body.get('success') or not items:
-    raise SystemExit('Cloudflare zone not found or token lacks Zone:Read')
-print(items[0]['id'])
-PY
-          )"
-
-          RECORD_JSON="$(curl --fail --silent --show-error "${AUTH[@]}" "${API}/zones/${ZONE_ID}/dns_records?type=A&name=${GLOBAL_HOST}")"
-          RECORD_ID="$(RECORD_JSON="$RECORD_JSON" python3 - <<'PY'
-import json, os
-body=json.loads(os.environ['RECORD_JSON'])
-items=body.get('result') or []
-print(items[0]['id'] if items else '')
-PY
-          )"
-
-          BODY="$(python3 - <<PY
-import json
-print(json.dumps({'type':'A','name':'${GLOBAL_HOST}','content':'${VPS_HOST}','ttl':120,'proxied':False}))
-PY
-          )"
+          ZONE_JSON="$(curl --fail --silent --show-error -H "Authorization: Bearer ${CF_TOKEN}" -H "Content-Type: application/json" "${API}/zones?name=${CF_ZONE}&status=active")"
+          ZONE_ID="$(printf '%s' "$ZONE_JSON" | jq -er '.result[0].id')"
+          RECORD_JSON="$(curl --fail --silent --show-error -H "Authorization: Bearer ${CF_TOKEN}" -H "Content-Type: application/json" "${API}/zones/${ZONE_ID}/dns_records?type=A&name=${GLOBAL_HOST}")"
+          RECORD_ID="$(printf '%s' "$RECORD_JSON" | jq -r '.result[0].id // empty')"
+          BODY="$(jq -nc --arg name "$GLOBAL_HOST" --arg content "$VPS_HOST" '{type:"A",name:$name,content:$content,ttl:120,proxied:false}')"
           if [[ -n "$RECORD_ID" ]]; then
-            curl --fail --silent --show-error -X PUT "${AUTH[@]}" --data "$BODY" "${API}/zones/${ZONE_ID}/dns_records/${RECORD_ID}" >/tmp/cf-dns.json
+            curl --fail --silent --show-error -X PUT -H "Authorization: Bearer ${CF_TOKEN}" -H "Content-Type: application/json" --data "$BODY" "${API}/zones/${ZONE_ID}/dns_records/${RECORD_ID}" >/tmp/cf-dns.json
             echo "Updated ${GLOBAL_HOST} -> ${VPS_HOST}"
           else
-            curl --fail --silent --show-error -X POST "${AUTH[@]}" --data "$BODY" "${API}/zones/${ZONE_ID}/dns_records" >/tmp/cf-dns.json
+            curl --fail --silent --show-error -X POST -H "Authorization: Bearer ${CF_TOKEN}" -H "Content-Type: application/json" --data "$BODY" "${API}/zones/${ZONE_ID}/dns_records" >/tmp/cf-dns.json
             echo "Created ${GLOBAL_HOST} -> ${VPS_HOST}"
           fi
-
-          python3 - <<'PY'
-import json
-body=json.load(open('/tmp/cf-dns.json',encoding='utf-8'))
-assert body.get('success') is True, body
-record=body.get('result') or {}
-print('Cloudflare DNS OK:', record.get('name'), '->', record.get('content'), 'proxied=', record.get('proxied'))
-PY
-
+          jq -e '.success == true' /tmp/cf-dns.json >/dev/null
+          jq -r '"Cloudflare DNS OK: \(.result.name) -> \(.result.content) proxied=\(.result.proxied)"' /tmp/cf-dns.json
           for attempt in $(seq 1 30); do
             if getent ahostsv4 "$GLOBAL_HOST" 2>/dev/null | awk '{print $1}' | grep -Fxq "$VPS_HOST"; then
               echo "DNS propagation visible from runner."
