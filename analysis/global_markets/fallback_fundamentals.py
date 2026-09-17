@@ -1,6 +1,8 @@
 """Composable fundamentals provider fallback for BIAP Global."""
 from __future__ import annotations
 
+from dataclasses import replace
+
 from .models import GlobalCompany
 from .providers import FundamentalsProvider, GlobalProviderError
 
@@ -28,5 +30,10 @@ class FallbackFundamentalsProvider(FundamentalsProvider):
                 raise GlobalProviderError(
                     f"primary fundamentals unavailable ({primary_error}); fallback unavailable ({fallback_error})"
                 ) from fallback_error
-            enriched.raw_provider_fields["fundamentals_primary_error"] = str(primary_error)[:240]
-            return enriched
+            return replace(
+                enriched,
+                raw_provider_fields={
+                    **enriched.raw_provider_fields,
+                    "fundamentals_primary_error": str(primary_error)[:240],
+                },
+            )
