@@ -19,7 +19,7 @@ import re
 import threading
 import time
 from typing import Optional
-from urllib.parse import urljoin
+import unicodedata
 
 import httpx
 
@@ -36,11 +36,15 @@ def _plain(value: object) -> str:
 
 
 def _ascii_upper(value: object) -> str:
-    text = _plain(value).upper()
-    replacements = str.maketrans({
-        "Ç": "C", "Ğ": "G", "İ": "I", "Ö": "O", "Ş": "S", "Ü": "U",
-    })
-    return text.translate(replacements)
+    # Turkish dotted/dotless I needs explicit handling before upper-casing.
+    # NFKD then removes accents such as â in "kâr" so fixed KAP labels can be
+    # compared conservatively without adding fuzzy concept matching.
+    text = _plain(value).replace("ı", "i").replace("İ", "I").upper()
+    text = text.translate(str.maketrans({
+        "Ç": "C", "Ğ": "G", "Ö": "O", "Ş": "S", "Ü": "U",
+    }))
+    normalized = unicodedata.normalize("NFKD", text)
+    return "".join(ch for ch in normalized if not unicodedata.combining(ch))
 
 
 def _number(value: object) -> Optional[float]:
