@@ -184,38 +184,60 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
     ) -> list[GlobalCompany]:
         """Resolve a ticker or company name without relying on a cached prefix.
 
-        ``symbol_search`` is used as a discovery fallback so an exact symbol such
-        as AAPL remains discoverable even when a local exchange snapshot is old
-        or incomplete. Results are still constrained to the selected venue and
-        ordinary equities before being exposed to BIAP.
+        Exact ``/stocks?symbol=...`` lookup is attempted first because it is the
+        most reliable recovery path for a ticker such as AAPL when a persistent
+        exchange snapshot is stale or incomplete. ``symbol_search`` is then
+        merged for company-name/prefix discovery. Every returned row is still
+        constrained to the selected venue and ordinary equities.
         """
         text = str(query or "").strip()
         if not text:
             return []
         spec = get_exchange(country, exchange)
-        payload = self._request(
-            {"symbol": text, "outputsize": max(1, min(int(limit), 120)), "show_plan": "false"},
-            endpoint="symbol_search",
-        )
-        rows = payload.get("data")
-        if not isinstance(rows, list):
-            return []
+        requested = max(1, min(int(limit), 120))
+        payloads: list[dict] = []
+
+        # Do not force the primary MIC here: NASDAQ symbols can be reported on
+        # segment MICs such as XNGS/XNMS. _company_from_row validates all of the
+        # exchange's accepted MICs after retrieval.
+        try:
+            payloads.append(self._request(
+                {"symbol": text, "outputsize": requested, "format": "JSON", "type": "Common Stock"},
+                endpoint="stocks",
+            ))
+        except GlobalProviderError:
+            pass
+
+        try:
+            payloads.append(self._request(
+                {"symbol": text, "outputsize": requested, "show_plan": "false"},
+                endpoint="symbol_search",
+            ))
+        except GlobalProviderError:
+            pass
+
         result: list[GlobalCompany] = []
         seen: set[tuple[str, str]] = set()
-        for raw in rows:
-            if not isinstance(raw, dict):
+        for payload in payloads:
+            rows = payload.get("data")
+            if not isinstance(rows, list):
                 continue
-            row = dict(raw)
-            row.setdefault("name", raw.get("instrument_name"))
-            row.setdefault("type", raw.get("instrument_type"))
-            item = self._company_from_row(country=country, spec=spec, row=row)
-            if item is None:
-                continue
-            key = ((item.mic_code or item.exchange).upper(), item.ticker.upper())
-            if key in seen:
-                continue
-            seen.add(key)
-            result.append(item)
+            for raw in rows:
+                if not isinstance(raw, dict):
+                    continue
+                row = dict(raw)
+                row.setdefault("name", raw.get("instrument_name"))
+                row.setdefault("type", raw.get("instrument_type"))
+                item = self._company_from_row(country=country, spec=spec, row=row)
+                if item is None:
+                    continue
+                key = ((item.mic_code or item.exchange).upper(), item.ticker.upper())
+                if key in seen:
+                    continue
+                seen.add(key)
+                result.append(item)
+                if len(result) >= requested:
+                    return result
         return result
 
     def list_instruments(self, *, country: Optional[str] = None, exchange: Optional[str] = None) -> Iterable[GlobalCompany]:
@@ -224,14 +246,31 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
         spec = get_exchange(country, exchange)
         result: list[GlobalCompany] = []
         seen: set[tuple[str, str]] = set()
+        seen_pages: set[tuple[str, ...]] = set()
         page = 1
+        # Large pages keep refresh cost bounded when the provider honors the
+        # requested size. Some catalog tiers cap each response below this value;
+        # in that case BIAP keeps requesting subsequent pages instead of
+        # mistaking the page-local `count` for a universe total.
         page_size = min(1000, self.max_rows)
+        raw_rows_seen = 0
+        max_pages = min(500, max(3, self.max_rows + 2))
 
-        while len(result) < self.max_rows:
+        while raw_rows_seen < self.max_rows and page <= max_pages:
             payload = self._get_page(country=country, spec=spec, page=page, outputsize=page_size)
             rows = payload.get("data")
             if not isinstance(rows, list) or not rows:
                 break
+
+            signature = tuple(str(row.get("symbol") or "").strip().upper() for row in rows if isinstance(row, dict))
+            if signature and signature in seen_pages:
+                # Defensive guard for providers/tiers that ignore the page
+                # parameter and repeatedly return page one.
+                break
+            if signature:
+                seen_pages.add(signature)
+
+            raw_rows_seen += len(rows)
             for row in rows:
                 if not isinstance(row, dict):
                     continue
@@ -244,16 +283,8 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
                     continue
                 seen.add(dedupe_key)
                 result.append(item)
-                if len(result) >= self.max_rows:
-                    break
-            raw_count = payload.get("count")
-            try:
-                count = int(raw_count) if raw_count is not None else None
-            except (TypeError, ValueError):
-                count = None
-            if len(rows) < page_size or (count is not None and page * page_size >= count):
-                break
             page += 1
+
         return result
 
 
