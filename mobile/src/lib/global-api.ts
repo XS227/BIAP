@@ -229,11 +229,20 @@ export async function fetchGlobalCountries(): Promise<{ countries: GlobalCountry
 export async function fetchGlobalInstruments(
   country: string,
   exchange: string,
-  options: { q?: string; limit?: number } = {},
-): Promise<{ instruments: GlobalInstrument[]; totalMatched: number; returned: number; mic?: string | null }> {
+  options: { q?: string; limit?: number; offset?: number } = {},
+): Promise<{
+  instruments: GlobalInstrument[];
+  totalMatched: number;
+  returned: number;
+  offset: number;
+  hasMore: boolean;
+  nextOffset?: number | null;
+  mic?: string | null;
+}> {
   const params = new URLSearchParams();
   if (options.q?.trim()) params.set('q', options.q.trim());
   params.set('limit', String(Math.max(1, Math.min(options.limit ?? 100, 1000))));
+  params.set('offset', String(Math.max(0, options.offset ?? 0)));
   const suffix = params.toString() ? `?${params.toString()}` : '';
   return request(`/global/instruments/${encodeURIComponent(country.toUpperCase())}/${encodeURIComponent(exchange)}${suffix}`, undefined, 25_000);
 }
