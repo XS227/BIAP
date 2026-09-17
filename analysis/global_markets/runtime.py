@@ -12,6 +12,7 @@ from __future__ import annotations
 import os
 
 from .cached_esef import CachedESEFFundamentalsProvider
+from .cached_fundamentals import PersistentFundamentalsProvider
 from .cached_market import PersistentMarketProvider
 from .cached_universe import PersistentUniverseProvider
 from .companies_house import CompaniesHouseCorroborator
@@ -87,26 +88,30 @@ def build_registry() -> ProviderRegistry:
         registry.register_fundamentals(country, exchange_code, provider)
         fundamentals_registered.add((country.upper(), exchange_code.upper()))
 
-    # SEC companyfacts is a public, no-key official source. Always register the
-    # adapter and use a descriptive project contact URL when deployment has not
-    # provided a more specific User-Agent string.
+    # SEC companyfacts is a public, no-key official source. Every successful
+    # normalized filing snapshot is also persisted on the Global server. This
+    # gives the app an outage-safe official baseline and builds a per-period
+    # history archive as new 10-K filings arrive.
     sec_user_agent = (
         os.environ.get("BIAP_SEC_USER_AGENT")
         or "BIAP Global research application (+https://setai.no)"
     ).strip()
-    sec = SECEdgarFundamentalsProvider(user_agent=sec_user_agent)
+    sec = PersistentFundamentalsProvider(SECEdgarFundamentalsProvider(user_agent=sec_user_agent))
     for exchange in COUNTRY_PACKS["US"].exchanges:
         register_fundamentals("US", exchange.code, sec)
 
     # Europe: official ESEF first. If an issuer cannot be safely joined to an
     # ESEF filing, use labelled vendor metrics so cards/agents are not empty,
     # while keeping the Evidence gate BLOCKED until official provenance exists.
+    # ESEF HTTP responses already have a disk cache; the normalized wrapper adds
+    # a stable per-company filing archive and stale-source resilience.
     # UK can additionally corroborate the legal entity against Companies House
     # when its free API credential has been configured.
     esef = CachedESEFFundamentalsProvider()
     esef_with_fallback = FallbackFundamentalsProvider(esef, public_fundamentals)
+    esef_persistent = PersistentFundamentalsProvider(esef_with_fallback)
     companies_house_key = (os.environ.get("BIAP_COMPANIES_HOUSE_API_KEY") or "").strip()
-    uk_provider = (
+    uk_base = (
         CorroboratingFundamentalsProvider(
             esef_with_fallback,
             CompaniesHouseCorroborator(api_key=companies_house_key),
@@ -114,8 +119,9 @@ def build_registry() -> ProviderRegistry:
         if companies_house_key
         else esef_with_fallback
     )
+    uk_provider = PersistentFundamentalsProvider(uk_base)
     for country in _ESEF_COUNTRIES:
-        provider = uk_provider if country == "GB" else esef_with_fallback
+        provider = uk_provider if country == "GB" else esef_persistent
         for exchange in COUNTRY_PACKS[country].exchanges:
             register_fundamentals(country, exchange.code, provider)
 
@@ -149,12 +155,12 @@ def build_registry() -> ProviderRegistry:
     for exchange in COUNTRY_PACKS["BR"].exchanges:
         register_fundamentals("BR", exchange.code, br)
 
-    # Türkiye: KAP is the official Public Disclosure Platform. Its public BIST
-    # directory and financial-summary pages expose selected annual statement
-    # lines without an API credential. KAP currently streams those tables in
-    # server-rendered Next.js Flight payloads, so the current adapter supports
-    # both semantic tables and that public server-rendered representation.
-    tr = FallbackFundamentalsProvider(KAPCurrentFundamentalsProvider(), public_fundamentals)
+    # Türkiye: KAP is the official Public Disclosure Platform. Its current page
+    # contains several comparative annual columns. Persist the normalized result
+    # so completed KAP periods remain available locally if the public site is
+    # temporarily unavailable.
+    tr_base = FallbackFundamentalsProvider(KAPCurrentFundamentalsProvider(), public_fundamentals)
+    tr = PersistentFundamentalsProvider(tr_base)
     for exchange in COUNTRY_PACKS["TR"].exchanges:
         register_fundamentals("TR", exchange.code, tr)
 
