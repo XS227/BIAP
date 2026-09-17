@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#090d16" />
+  <meta name="description" content="BIAP Global — evidence-gated market analysis and paper-first portfolio construction across connected exchanges." />
+  <title>BIAP Global Web</title>
+  <style>
+    :root{
+      --bg:#090d16;--panel:#101725;--panel2:#151e2e;--line:#243148;--text:#f5f7fb;--muted:#9aa7bb;
+      --blue:#3d7cff;--blue2:#2754d9;--green:#37d08b;--amber:#f4b84f;--red:#ff6b7a;--radius:18px;
+      --shadow:0 18px 60px rgba(0,0,0,.28)
+    }
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:
+      radial-gradient(circle at 85% -10%,rgba(61,124,255,.22),transparent 28%),
+      radial-gradient(circle at 0 20%,rgba(51,208,139,.08),transparent 25%),var(--bg);
+      color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    button,input,select{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:none}
+    .wrap{width:min(1220px,calc(100% - 28px));margin:auto}.nav{position:sticky;top:0;z-index:30;
+      border-bottom:1px solid rgba(255,255,255,.06);background:rgba(9,13,22,.86);backdrop-filter:blur(18px)}
+    .navin{height:68px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{display:flex;align-items:center;gap:11px;font-weight:900}.mark{width:39px;height:39px;border-radius:13px;
+      display:grid;place-items:center;background:linear-gradient(135deg,var(--blue),#6c5ce7);box-shadow:0 9px 30px rgba(61,124,255,.25)}
+    .pill{border:1px solid #345fd0;color:#8fb0ff;padding:6px 9px;border-radius:999px;font-size:11px;font-weight:800}
+    .navlinks{display:flex;gap:15px;color:var(--muted);font-size:12px}.navlinks a:hover{color:#fff}
+    .hero{padding:42px 0 24px}.heroGrid{display:grid;grid-template-columns:1.25fr .75fr;gap:18px;align-items:stretch}
+    .heroCard,.card{border:1px solid var(--line);background:linear-gradient(145deg,rgba(18,26,42,.96),rgba(11,16,27,.96));
+      border-radius:var(--radius);box-shadow:var(--shadow)}.heroCard{padding:28px}.eyebrow{font-size:11px;color:#8fb0ff;font-weight:900;
+      letter-spacing:1.1px}.hero h1{font-size:clamp(34px,5.5vw,62px);line-height:1.02;margin:12px 0 12px;letter-spacing:-1.6px}
+    .hero p{color:var(--muted);font-size:14px;line-height:1.75;max-width:760px;margin:0}.heroActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+    .btn{border:1px solid #324057;background:#151f31;color:#fff;padding:11px 15px;border-radius:12px;font-weight:800;font-size:12px}
+    .btn.primary{border-color:transparent;background:linear-gradient(135deg,var(--blue),var(--blue2))}
+    .btn:disabled{opacity:.5;cursor:not-allowed}.statusCard{padding:22px;display:flex;flex-direction:column;justify-content:space-between}
+    .statusTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.statusTitle{font-size:13px;font-weight:900}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 15px currentColor;display:inline-block;margin-right:6px}
+    .statusGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:17px}.metric{background:#151e2e;border:1px solid #25324a;
+      padding:12px;border-radius:12px}.metric span{display:block;color:var(--muted);font-size:10px}.metric b{display:block;margin-top:4px;font-size:14px}
+    section{padding:16px 0}.sectionHead{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:11px}
+    .sectionHead h2{font-size:20px;margin:0}.sectionHead p{color:var(--muted);font-size:11px;margin:4px 0 0}.card{padding:18px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .field label{display:block;color:var(--muted);font-size:10px;font-weight:800;margin:0 0 6px}.field select,.field input{
+      width:100%;border:1px solid #2b3a54;background:#0c1321;color:#fff;border-radius:11px;padding:10px 11px;outline:none}
+    .field select:focus,.field input:focus{border-color:#4b80ff}.fields{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+    .marketLine{display:flex;gap:8px;align-items:end}.marketLine .field{flex:1}.marketMeta{color:var(--muted);font-size:11px;margin-top:10px}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.notice{margin-top:10px;padding:10px 12px;border-radius:11px;border:1px solid #31415d;
+      color:var(--muted);font-size:11px;line-height:1.55}.notice.good{border-color:rgba(55,208,139,.45);color:#8debb9}
+    .notice.warn{border-color:rgba(244,184,79,.5);color:#ffd482}.notice.bad{border-color:rgba(255,107,122,.45);color:#ffabb5}
+    .tableWrap{overflow:auto;border:1px solid var(--line);border-radius:14px;margin-top:12px}table{border-collapse:collapse;width:100%;min-width:780px}
+    th,td{padding:10px 11px;border-bottom:1px solid #202b40;text-align:left;font-size:11px}th{color:#90a0b8;font-size:10px;background:#111a2a;position:sticky;top:0}
+    tr:last-child td{border-bottom:0}tbody tr{cursor:pointer}tbody tr:hover{background:#121d2e}.ticker{font-weight:900;color:#fff}
+    .sub{color:var(--muted);font-size:10px}.tag{display:inline-flex;padding:4px 7px;border-radius:999px;background:#1b2941;color:#bcd0ef;font-size:9px;font-weight:800}
+    .tag.pass{background:rgba(55,208,139,.13);color:#65e4a6}.tag.warn{background:rgba(244,184,79,.14);color:#ffd077}
+    .tag.block{background:rgba(255,107,122,.12);color:#ff97a4}.analysisGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+    .kv{padding:11px;border:1px solid #25324a;border-radius:12px;background:#121b2a}.kv span{display:block;color:var(--muted);font-size:9px}
+    .kv b{display:block;font-size:13px;margin-top:4px;word-break:break-word}.signals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+    .signal{padding:11px;border:1px solid #25324a;border-radius:12px;background:#101827}.signalTop{display:flex;justify-content:space-between;gap:8px;font-size:10px}
+    .signal p{font-size:10px;color:var(--muted);line-height:1.5;margin:7px 0 0}.scopeChips{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+    .scopeChip{border:1px solid #30405c;background:#111a2a;color:#dce5f5;border-radius:999px;padding:7px 10px;font-size:10px}
+    .scopeChip.active{background:#234ea5;border-color:#3d7cff}.alloc{display:grid;grid-template-columns:1.2fr .65fr .65fr .65fr;gap:8px;
+      align-items:center;padding:11px 0;border-bottom:1px solid #222e43}.alloc:last-child{border-bottom:0}.alloc b{font-size:12px}.right{text-align:right}
+    .empty{color:var(--muted);font-size:11px;padding:18px 0;text-align:center}.footer{padding:26px 0 42px;color:#7f8ba0;font-size:10px}
+    .hidden{display:none!important}.loader{width:14px;height:14px;border:2px solid #6f83a1;border-top-color:white;border-radius:50%;display:inline-block;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}@media(max-width:900px){.heroGrid,.grid2{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}
+      .analysisGrid{grid-template-columns:repeat(2,1fr)}.signals{grid-template-columns:1fr 1fr}.navlinks{display:none}}
+    @media(max-width:560px){.fields{grid-template-columns:1fr}.marketLine{align-items:stretch;flex-direction:column}.statusGrid{grid-template-columns:1fr 1fr}
+      .analysisGrid,.signals{grid-template-columns:1fr}.heroCard{padding:20px}.card{padding:14px}.alloc{grid-template-columns:1fr 1fr}.alloc .right{text-align:left}}
+  </style>
+</head>
+<body>
+  <nav class="nav"><div class="wrap navin">
+    <div class="brand"><div class="mark">B</div><span>BIAP Global</span><span class="pill">WEB</span></div>
+    <div class="navlinks"><a href="#market">Market</a><a href="#analysis">Analysis</a><a href="#portfolio">Portfolio</a></div>
+    <span id="apiBadge" class="pill">Checking API…</span>
+  </div></nav>
+
+  <main>
+    <header class="hero"><div class="wrap heroGrid">
+      <div class="heroCard">
+        <div class="eyebrow">BUSINESS & INVESTMENT ANALYSIS PLATFORM</div>
+        <h1>One BIAP engine.<br/>Multiple markets.</h1>
+        <p>English web version of BIAP Global using the same country/exchange catalog, market scan, evidence gate, instrument analysis and paper-first portfolio engine as the mobile build. Missing or stale evidence is shown rather than invented.</p>
+        <div class="heroActions"><a class="btn primary" href="#market">Open Market</a><a class="btn" href="#portfolio">Global Portfolio</a></div>
+      </div>
+      <div class="heroCard statusCard">
+        <div class="statusTop"><div><div class="statusTitle"><span class="dot" id="statusDot"></span>Global service</div><div class="sub" id="statusText">Connecting…</div></div><span class="tag" id="modeTag">paper-first</span></div>
+        <div class="statusGrid">
+          <div class="metric"><span>Countries</span><b id="countryCount">—</b></div>
+          <div class="metric"><span>Market data</span><b id="feedMode">—</b></div>
+          <div class="metric"><span>Live broker</span><b id="brokerMode">OFF</b></div>
+          <div class="metric"><span>Evidence</span><b>GATED</b></div>
+        </div>
+      </div>
+    </div></header>
+
+    <section id="market"><div class="wrap">
+      <div class="sectionHead"><div><h2>Market</h2><p>Select a country and exchange, browse instruments, then run the six-agent scan.</p></div></div>
+      <div class="card">
+        <div class="marketLine">
+          <div class="field"><label>Country</label><select id="countrySelect"></select></div>
+          <div class="field"><label>Exchange</label><select id="exchangeSelect"></select></div>
+          <div class="field"><label>Search ticker, company or ISIN</label><input id="searchInput" placeholder="AAPL, Apple, US0378331005" /></div>
+        </div>
+        <div class="marketMeta" id="marketMeta">Loading catalog…</div>
+        <div class="toolbar">
+          <button class="btn primary" id="searchBtn">Load instruments</button>
+          <button class="btn" id="scanBtn">Run Kiasha scan</button>
+          <button class="btn" id="addScopeBtn">Add market to portfolio</button>
+        </div>
+        <div id="marketNotice" class="notice hidden"></div>
+        <div class="tableWrap">
+          <table><thead><tr><th>Ticker</th><th>Company</th><th>Exchange / MIC</th><th>Currency</th><th>Sector</th></tr></thead>
+          <tbody id="instrumentRows"></tbody></table>
+        </div>
+        <div id="instrumentEmpty" class="empty">Select a market to load instruments.</div>
+      </div>
+    </div></section>
+
+    <section id="analysis"><div class="wrap">
+      <div class="sectionHead"><div><h2>Stock analysis</h2><p>Click any instrument or scan candidate to run the same evidence-gated analysis endpoint.</p></div></div>
+      <div class="card">
+        <div id="analysisEmpty" class="empty">No stock selected.</div>
+        <div id="analysisView" class="hidden">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+            <div><div class="eyebrow" id="analysisIdentity">—</div><h3 id="analysisName" style="margin:7px 0 0">—</h3></div>
+            <div><span id="analysisCall" class="tag">—</span></div>
+          </div>
+          <div class="analysisGrid" id="analysisMetrics"></div>
+          <div id="analysisEvidence" class="notice"></div>
+          <div class="signals" id="signalCards"></div>
+        </div>
+      </div>
+    </div></section>
+
+    <section id="portfolio"><div class="wrap">
+      <div class="sectionHead"><div><h2>Global Portfolio Agent</h2><p>Compare up to four exchanges. Only evidence-qualified scan candidates can enter the paper portfolio stage.</p></div></div>
+      <div class="card">
+        <div class="scopeChips" id="scopeChips"></div>
+        <div class="fields" style="margin-top:14px">
+          <div class="field"><label>Capital</label><input id="capitalInput" type="number" min="1" value="50000"/></div>
+          <div class="field"><label>Base currency</label><input id="baseInput" maxlength="3" value="EUR"/></div>
+          <div class="field"><label>Risk tolerance</label><select id="riskInput"><option>low</option><option selected>medium</option><option>high</option></select></div>
+          <div class="field"><label>Horizon</label><input id="horizonInput" value="5y"/></div>
+          <div class="field"><label>Max positions</label><input id="positionsInput" type="number" min="1" max="30" value="10"/></div>
+          <div class="field"><label>Cash reserve %</label><input id="cashInput" type="number" min="0" max="80" value="15"/></div>
+        </div>
+        <div class="toolbar"><button class="btn primary" id="portfolioBtn">Compare markets and build portfolio</button></div>
+        <div id="portfolioNotice" class="notice hidden"></div>
+        <div id="portfolioView" class="hidden" style="margin-top:14px">
+          <div class="analysisGrid" id="portfolioMetrics"></div>
+          <div id="allocationRows" style="margin-top:8px"></div>
+        </div>
+      </div>
+    </div></section>
+  </main>
+
+  <footer class="footer"><div class="wrap">BIAP Global Web · Decision support and paper-first research. Live global broker execution is disabled.</div></footer>
+
+  <script>
+    const API = '/global-api';
+    const PRIORITY = ['US','NO','SE','GB','JP','AU','DE','FR','NL','FI','DK','KR','IR'];
+    const state = { countries:[], country:null, exchange:null, instruments:[], scopes:[], lastScan:null };
+
+    const $ = (id) => document.getElementById(id);
+    const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const num = (value, digits=2) => value == null || !Number.isFinite(Number(value)) ? '—' : Number(value).toLocaleString('en-US',{maximumFractionDigits:digits});
+    const pct01 = (value) => value == null || !Number.isFinite(Number(value)) ? '—' : `${Math.round(Number(value)*100)}%`;
+    const pct = (value) => value == null || !Number.isFinite(Number(value)) ? '—' : `${num(value,1)}%`;
+
+    async function request(path, options={}) {
+      const response = await fetch(`${API}${path}`, {headers:{'Content-Type':'application/json',...(options.headers||{})}, ...options});
+      if (!response.ok) {
+        let detail = '';
+        try { const body = await response.json(); detail = body.detail || JSON.stringify(body); } catch { detail = await response.text(); }
+        throw new Error(detail || `HTTP ${response.status}`);
+      }
+      return response.json();
+    }
+
+    function notice(id, message='', tone='') {
+      const el = $(id);
+      el.textContent = message;
+      el.className = `notice${tone ? ` ${tone}` : ''}${message ? '' : ' hidden'}`;
+    }
+
+    function setBusy(button, busy, label) {
+      button.disabled = busy;
+      button.dataset.label ||= button.textContent;
+      button.innerHTML = busy ? '<span class="loader"></span> Working…' : (label || button.dataset.label);
+    }
+
+    function exchangeBy(code, country=state.country) {
+      return country?.exchanges?.find((e)=>e.code===code) || null;
+    }
+
+    function selectedKey() {
+      return state.country && state.exchange ? `${state.country.country}:${state.exchange.code}` : '';
+    }
+
+    function populateCountries() {
+      const rank = new Map(PRIORITY.map((v,i)=>[v,i]));
+      state.countries.sort((a,b)=>(rank.get(a.country)??99)-(rank.get(b.country)??99)||a.name.localeCompare(b.name));
+      $('countrySelect').innerHTML = state.countries.map((c)=>`<option value="${esc(c.country)}">${esc(c.name)} (${esc(c.country)})</option>`).join('');
+      const saved = JSON.parse(localStorage.getItem('biap-global-web:market') || 'null');
+      const preferred = state.countries.find((c)=>c.country===saved?.country) || state.countries.find((c)=>c.country==='US') || state.countries[0];
+      state.country = preferred || null;
+      if (!state.country) return;
+      $('countrySelect').value = state.country.country;
+      populateExchanges(saved?.exchange);
+    }
+
+    function populateExchanges(preferredCode='') {
+      $('exchangeSelect').innerHTML = '';
+      if (!state.country) return;
+      $('exchangeSelect').innerHTML = (state.country.exchanges || []).map((e)=>`<option value="${esc(e.code)}">${esc(e.label)}${e.mic ? ` · ${esc(e.mic)}` : ''}</option>`).join('');
+      const preferred = exchangeBy(preferredCode) || state.country.exchanges?.[0] || null;
+      state.exchange = preferred;
+      if (preferred) $('exchangeSelect').value = preferred.code;
+      persistMarket();
+      updateMarketMeta();
+    }
+
+    function persistMarket() {
+      if (!state.country || !state.exchange) return;
+      localStorage.setItem('biap-global-web:market', JSON.stringify({country:state.country.country,exchange:state.exchange.code}));
+    }
+
+    function updateMarketMeta() {
+      if (!state.country || !state.exchange) { $('marketMeta').textContent='No market selected.'; return; }
+      const currencies = (state.exchange.currencies || []).join('/') || '—';
+      $('marketMeta').textContent = `${state.country.name} · ${state.exchange.label} · ${state.exchange.mic || state.exchange.code} · ${currencies} · ${state.country.fundamentalsProvider || 'official filings'}`;
+    }
+
+    function instrumentPayload(item) {
+      return {
+        country:item.country || state.country?.country,
+        exchange:item.exchange || state.exchange?.code,
+        ticker:item.ticker,
+        name:item.name || item.ticker,
+        currency:item.currency || state.exchange?.currencies?.[0] || 'USD',
+        isin:item.isin || undefined,
+        lei:item.lei || undefined
+      };
+    }
+
+    function renderInstruments(items) {
+      state.instruments = items || [];
+      $('instrumentRows').innerHTML = state.instruments.map((item,index)=>`<tr data-index="${index}">
+        <td><span class="ticker">${esc(item.ticker)}</span></td>
+        <td>${esc(item.name || item.ticker)}</td>
+        <td><span class="sub">${esc(item.mic_code || item.exchange || state.exchange?.mic || '')}</span></td>
+        <td>${esc(item.currency || '')}</td>
+        <td><span class="sub">${esc(item.sector || '—')}</span></td>
+      </tr>`).join('');
+      $('instrumentEmpty').classList.toggle('hidden', state.instruments.length > 0);
+      $('instrumentEmpty').textContent = state.instruments.length ? '' : 'No instruments returned for this query.';
+      [...$('instrumentRows').querySelectorAll('tr')].forEach((row)=>row.addEventListener('click',()=>analyzeInstrument(state.instruments[Number(row.dataset.index)])));
+    }
+
+    async function loadInstruments() {
+      if (!state.country || !state.exchange) return;
+      const btn = $('searchBtn'); setBusy(btn,true); notice('marketNotice');
+      try {
+        const q = $('searchInput').value.trim();
+        const params = new URLSearchParams({limit:q?'150':'80',offset:'0'});
+        if (q) params.set('q',q);
+        const data = await request(`/global/instruments/${encodeURIComponent(state.country.country)}/${encodeURIComponent(state.exchange.code)}?${params}`);
+        renderInstruments(data.instruments || []);
+        const catalog = data.catalog?.status ? ` · catalog ${data.catalog.status}` : '';
+        notice('marketNotice', `${data.totalMatched ?? 0} matched · ${data.returned ?? 0} loaded${catalog}`, 'good');
+      } catch (err) {
+        renderInstruments([]);
+        notice('marketNotice', err.message || 'Instrument load failed.', 'bad');
+      } finally { setBusy(btn,false); }
+    }
+
+    function renderScan(data) {
+      const recs = data.recommendations || [];
+      renderInstruments(recs.map((a)=>a.company || a));
+      const mode = data.catalogOnly || data.status==='MARKET_DATA_REQUIRED' ? 'catalog only' : data.cachedMarketData || String(data.status||'').startsWith('CACHED_') ? 'cached verified data' : 'live/verified data';
+      const coverage = data.screeningCoveragePct == null ? '' : ` · ${num(data.screeningCoveragePct,1)}% coverage`;
+      notice('marketNotice', `${mode} · ${data.recommendationCount ?? recs.length} qualified · ${data.deepAnalyzed ?? 0} deep analyses${coverage}`,
+        mode==='catalog only' ? 'warn' : 'good');
+    }
+
+    async function runScan() {
+      if (!state.country || !state.exchange) return;
+      const btn = $('scanBtn'); setBusy(btn,true); notice('marketNotice');
+      try {
+        const data = await request('/global/scan',{method:'POST',body:JSON.stringify({
+          country:state.country.country,exchange:state.exchange.code,topN:10,discoveryLimit:1000,deepLimit:25
+        })});
+        state.lastScan = data;
+        renderScan(data);
+      } catch (err) { notice('marketNotice', err.message || 'Market scan failed.', 'bad'); }
+      finally { setBusy(btn,false); }
+    }
+
+    function metric(label,value) { return `<div class="kv"><span>${esc(label)}</span><b>${esc(value)}</b></div>`; }
+
+    async function analyzeInstrument(item) {
+      if (!item?.ticker) return;
+      $('analysisEmpty').textContent = 'Analyzing…';
+      $('analysisView').classList.add('hidden');
+      location.hash = '#analysis';
+      try {
+        const data = await request('/global/analyze',{method:'POST',body:JSON.stringify(instrumentPayload(item))});
+        $('analysisEmpty').classList.add('hidden');
+        $('analysisView').classList.remove('hidden');
+        $('analysisIdentity').textContent = data.identity || `${data.country || item.country}:${data.exchange || item.exchange}:${data.ticker || item.ticker}`;
+        $('analysisName').textContent = data.name || item.name || item.ticker;
+        $('analysisCall').textContent = data.call || 'NO_RECOMMENDATION';
+        $('analysisCall').className = `tag ${data.call==='BUY_CANDIDATE' ? 'pass' : data.call==='AVOID_OR_REVIEW' ? 'block' : 'warn'}`;
+        const c = data.company || {};
+        $('analysisMetrics').innerHTML = [
+          metric('Price',`${num(c.price)} ${c.currency || data.currency || ''}`.trim()),
+          metric('Score',num(data.score,3)), metric('Confidence',pct01(data.confidence)),
+          metric('Evidence',data.evidence?.status || '—'), metric('Revenue YoY',pct(c.revenue_yoy_pct)),
+          metric('Net margin',pct(c.net_margin_pct)), metric('Volatility',pct(c.volatility_annualized_pct)),
+          metric('Market cap',num(c.market_cap,0))
+        ].join('');
+        const ev = data.evidence || {};
+        const missing = (ev.missing_critical || []).length ? ` Missing: ${(ev.missing_critical||[]).join(', ')}.` : '';
+        const contradictions = (ev.contradictions || []).length ? ` Conflicts: ${(ev.contradictions||[]).join(', ')}.` : '';
+        $('analysisEvidence').className = `notice ${ev.status==='PASS'?'good':ev.status==='BLOCK'?'bad':'warn'}`;
+        $('analysisEvidence').textContent = `${ev.reasoning || 'Evidence assessment available.'}${missing}${contradictions}`;
+        $('signalCards').innerHTML = (data.signals || []).map((s)=>`<div class="signal">
+          <div class="signalTop"><b>${esc(s.agent)}</b><span>${Number(s.vote)>=0?'+':''}${num(s.vote,2)} · ${pct01(s.confidence)}</span></div>
+          <p>${esc(s.reasoning || '')}</p></div>`).join('') || '<div class="empty">No agent signals returned.</div>';
+      } catch (err) {
+        $('analysisEmpty').classList.remove('hidden');
+        $('analysisEmpty').textContent = err.message || 'Analysis failed.';
+      }
+    }
+
+    function scopeData(scope) {
+      const country = state.countries.find((c)=>c.country===scope.country);
+      const exchange = country?.exchanges?.find((e)=>e.code===scope.exchange);
+      return {country,exchange};
+    }
+
+    function renderScopes() {
+      if (!state.scopes.length && state.country && state.exchange) state.scopes=[{country:state.country.country,exchange:state.exchange.code}];
+      $('scopeChips').innerHTML = state.scopes.map((s,i)=>{
+        const {country,exchange}=scopeData(s);
+        return `<button class="scopeChip active" data-index="${i}">${esc(country?.country || s.country)} · ${esc(exchange?.label || s.exchange)} ×</button>`;
+      }).join('') || '<span class="sub">Add a market above.</span>';
+      [...$('scopeChips').querySelectorAll('button')].forEach((el)=>el.addEventListener('click',()=>{
+        if (state.scopes.length<=1) return;
+        state.scopes.splice(Number(el.dataset.index),1); renderScopes();
+      }));
+    }
+
+    function addCurrentScope() {
+      if (!state.country || !state.exchange) return;
+      const key=selectedKey();
+      if (state.scopes.some((s)=>`${s.country}:${s.exchange}`===key)) {
+        notice('portfolioNotice','This market is already in the portfolio scope.','warn'); return;
+      }
+      if (state.scopes.length>=4) { notice('portfolioNotice','Portfolio comparison is limited to four exchanges.','warn'); return; }
+      state.scopes.push({country:state.country.country,exchange:state.exchange.code});
+      renderScopes(); notice('portfolioNotice',`${state.country.name} / ${state.exchange.label} added.`,'good');
+    }
+
+    function uniqueInstruments(items) {
+      const map = new Map();
+      for (const item of items) {
+        if (!item?.ticker) continue;
+        const p = instrumentPayload(item);
+        const key=`${p.country}:${p.exchange}:${p.ticker}`;
+        if (!map.has(key)) map.set(key,p);
+      }
+      return [...map.values()].slice(0,50);
+    }
+
+    async function buildPortfolio() {
+      if (!state.scopes.length) return;
+      const btn=$('portfolioBtn'); setBusy(btn,true); notice('portfolioNotice'); $('portfolioView').classList.add('hidden');
+      try {
+        const scans = await Promise.allSettled(state.scopes.map((scope)=>request('/global/scan',{method:'POST',body:JSON.stringify({
+          country:scope.country,exchange:scope.exchange,topN:Math.max(5,Math.ceil(Number($('positionsInput').value||10)*1.5)),
+          discoveryLimit:1000,deepLimit:25
+        })})));
+        const candidates=[]; const notes=[];
+        scans.forEach((result,index)=>{
+          const scope=state.scopes[index];
+          if (result.status==='rejected') { notes.push(`${scope.country}/${scope.exchange}: scan failed`); return; }
+          const data=result.value; const mode=data.catalogOnly||data.status==='MARKET_DATA_REQUIRED'?'catalog-only':data.cachedMarketData||String(data.status||'').startsWith('CACHED_')?'cached':'verified';
+          notes.push(`${scope.country}/${scope.exchange}: ${mode}, ${data.recommendationCount ?? 0} qualified`);
+          if (mode==='catalog-only') return;
+          for (const item of (data.recommendations||[])) candidates.push(item.company || item);
+        });
+        const instruments=uniqueInstruments(candidates);
+        if (!instruments.length) throw new Error(`No evidence-qualified candidates. ${notes.join(' · ')}`);
+        const capital=Number($('capitalInput').value); const positions=Math.max(1,Math.min(30,Number($('positionsInput').value||10)));
+        const reserve=Math.max(0,Math.min(80,Number($('cashInput').value||0)));
+        const countryCap=state.scopes.length<=1?100:Math.max(30,Math.min(60,Math.ceil(140/state.scopes.length)));
+        const profile={
+          capital,baseCurrency:$('baseInput').value.trim().toUpperCase(),riskTolerance:$('riskInput').value,
+          horizon:$('horizonInput').value.trim()||'5y',allowedCountries:[...new Set(state.scopes.map((s)=>s.country))],
+          allowedExchanges:[...new Set(state.scopes.map((s)=>s.exchange))],maxPositionPct:Math.min(25,Math.max(3,150/positions)),
+          maxCountryPct:countryCap,maxSectorPct:35,minCashReservePct:reserve,maxPositions:positions
+        };
+        const data=await request('/global/portfolio',{method:'POST',body:JSON.stringify({profile,instruments,fxToBase:{}})});
+        const p=data.proposal || {};
+        $('portfolioView').classList.remove('hidden');
+        $('portfolioMetrics').innerHTML=[
+          metric('Status',p.status || '—'),metric('Qualified inputs',String(instruments.length)),
+          metric('Invested',pct(p.invested_pct)),metric('Cash',pct(p.cash_pct))
+        ].join('');
+        $('allocationRows').innerHTML=(p.allocations||[]).map((a)=>`<div class="alloc">
+          <div><b>${esc(a.ticker)}</b><div class="sub">${esc(a.country)} · ${esc(a.exchange)} · ${esc(a.currency)}</div></div>
+          <div><span class="sub">Weight</span><br/><b>${pct(a.weight_pct)}</b></div>
+          <div><span class="sub">Score</span><br/><b>${num(a.score,3)}</b></div>
+          <div class="right"><span class="sub">Confidence</span><br/><b>${pct01(a.confidence)}</b></div>
+        </div>`).join('') || '<div class="empty">No allocations generated.</div>';
+        notice('portfolioNotice',`${notes.join(' · ')} · ${instruments.length} candidates sent to the portfolio engine.`,'good');
+      } catch (err) { notice('portfolioNotice',err.message || 'Portfolio build failed.','bad'); }
+      finally { setBusy(btn,false); }
+    }
+
+    async function init() {
+      try {
+        const [status,catalog] = await Promise.all([request('/global/status'),request('/global/countries')]);
+        state.countries = catalog.countries || [];
+        $('apiBadge').textContent='API ONLINE'; $('apiBadge').style.borderColor='#2f8f68'; $('apiBadge').style.color='#75e8ae';
+        $('statusDot').style.background='#37d08b'; $('statusText').textContent='Connected to BIAP Global API';
+        $('countryCount').textContent=String(catalog.count ?? state.countries.length);
+        $('feedMode').textContent=status.licensedMarketFeedConfigured?'LICENSED':status.publicMarketFallbackConfigured?'PUBLIC + CACHE':'CACHE';
+        $('brokerMode').textContent=status.liveBrokerConnected?'CONNECTED':'OFF';
+        $('modeTag').textContent=status.mode || 'research-paper-first';
+        populateCountries(); renderScopes(); await loadInstruments();
+      } catch (err) {
+        $('apiBadge').textContent='API CHECK'; $('statusText').textContent=err.message || 'API unavailable';
+        notice('marketNotice','The web shell loaded, but the Global API did not respond.','bad');
+      }
+    }
+
+    $('countrySelect').addEventListener('change',(e)=>{
+      state.country=state.countries.find((c)=>c.country===e.target.value)||null; populateExchanges(); renderScopes(); loadInstruments();
+    });
+    $('exchangeSelect').addEventListener('change',(e)=>{
+      state.exchange=exchangeBy(e.target.value); persistMarket(); updateMarketMeta(); loadInstruments();
+    });
+    $('searchBtn').addEventListener('click',loadInstruments);
+    $('searchInput').addEventListener('keydown',(e)=>{if(e.key==='Enter') loadInstruments();});
+    $('scanBtn').addEventListener('click',runScan);
+    $('addScopeBtn').addEventListener('click',addCurrentScope);
+    $('portfolioBtn').addEventListener('click',buildPortfolio);
+    init();
+  </script>
+</body>
+</html>
