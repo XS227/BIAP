@@ -22,7 +22,7 @@ from .cvm_resolver import CVMResolvedFundamentalsProvider
 from .edinet import EDINETFundamentalsProvider
 from .fallback_fundamentals import FallbackFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
-from .kap import KAPFundamentalsProvider
+from .kap_current import KAPCurrentFundamentalsProvider
 from .opendart import OpenDARTFundamentalsProvider
 from .providers import ProviderRegistry
 from .regional_yahoo_chart import RegionalYahooChartMarketProvider
@@ -151,9 +151,10 @@ def build_registry() -> ProviderRegistry:
 
     # Türkiye: KAP is the official Public Disclosure Platform. Its public BIST
     # directory and financial-summary pages expose selected annual statement
-    # lines without an API credential. Use the latest completed annual column as
-    # official evidence and fall back to vendor metrics only if KAP is unavailable.
-    tr = FallbackFundamentalsProvider(KAPFundamentalsProvider(), public_fundamentals)
+    # lines without an API credential. KAP currently streams those tables in
+    # server-rendered Next.js Flight payloads, so the current adapter supports
+    # both semantic tables and that public server-rendered representation.
+    tr = FallbackFundamentalsProvider(KAPCurrentFundamentalsProvider(), public_fundamentals)
     for exchange in COUNTRY_PACKS["TR"].exchanges:
         register_fundamentals("TR", exchange.code, tr)
 
