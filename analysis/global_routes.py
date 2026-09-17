@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import asdict
 import os
+import re
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
@@ -74,6 +75,51 @@ def _clean_lei(value: Optional[str]) -> Optional[str]:
     return text if len(text) == 20 and text.isalnum() else None
 
 
+def _search_text(value: object) -> str:
+    return " ".join(part for part in re.split(r"[^a-z0-9]+", str(value or "").casefold()) if part)
+
+
+def _instrument_search_score(item, query: str) -> Optional[int]:
+    """Score explicit ticker/identifier/company-name matches.
+
+    Inner-word substring matches are deliberately excluded: querying APPLE must
+    not return Pineapple Power merely because the letters occur in the middle
+    of one word.
+    """
+    q = _search_text(query)
+    if not q:
+        return 0
+    q_compact = q.replace(" ", "")
+    ticker = _search_text(item.ticker).replace(" ", "")
+    isin = _search_text(item.isin).replace(" ", "") if item.isin else ""
+    lei = _search_text(item.lei).replace(" ", "") if item.lei else ""
+    name = _search_text(item.name)
+    words = [word for word in name.split(" ") if word]
+
+    if ticker == q_compact:
+        return 1000
+    if ticker.startswith(q_compact):
+        return 900
+    if isin and isin == q_compact:
+        return 850
+    if isin and isin.startswith(q_compact):
+        return 820
+    if lei and lei == q_compact:
+        return 800
+    if lei and lei.startswith(q_compact):
+        return 780
+    if name == q:
+        return 760
+    if q in words:
+        return 700
+    if any(word.startswith(q) for word in words):
+        return 620
+    parts = [part for part in q.split(" ") if part]
+    if len(parts) > 1 and all(any(word == part or word.startswith(part) for word in words) for part in parts):
+        return 560
+    return None
+
+
 def _seed(req: InstrumentRequest):
     try:
         return instrument_seed(
@@ -116,13 +162,13 @@ def global_instruments(
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
     if q:
-        wanted = q.casefold().strip()
-        instruments = [item for item in instruments if (
-            wanted in item.ticker.casefold()
-            or wanted in item.name.casefold()
-            or (item.isin and wanted in item.isin.casefold())
-            or (item.lei and wanted in item.lei.casefold())
-        )]
+        ranked = []
+        for item in instruments:
+            score = _instrument_search_score(item, q)
+            if score is not None:
+                ranked.append((score, item))
+        ranked.sort(key=lambda pair: (-pair[0], pair[1].ticker.casefold()))
+        instruments = [item for _, item in ranked]
     total = len(instruments)
     return {
         "country": country.upper(),
@@ -150,7 +196,9 @@ def global_status():
         "liveBrokerConnected": False,
         "liveTradingSwitchRequested": live_switch_requested,
         "marketProviderConfigured": market_configured,
-        "marketProviderMode": "live-plus-persistent-cache" if market_configured else "catalog-only",
+        "marketProviderMode": "licensed-live-plus-persistent-cache" if market_configured else "public-eod-fallback-plus-persistent-cache",
+        "licensedMarketFeedConfigured": market_configured,
+        "publicMarketFallbackConfigured": True,
         "marketCacheConfigured": True,
         "marketCacheHours": float(os.environ.get("BIAP_GLOBAL_MARKET_CACHE_HOURS", "6")),
         "marketCachePolicy": "verified snapshots only; stale timestamps are preserved and EvidenceAgent may block them",
@@ -163,7 +211,7 @@ def global_status():
         "universeCacheConfigured": True,
         "universeCacheHours": float(os.environ.get("BIAP_GLOBAL_UNIVERSE_CACHE_HOURS", "12")),
         "countries": len(country_catalog()),
-        "notes": "No live global broker is connected. Missing/stale evidence is never fabricated and can force NO_RECOMMENDATION.",
+        "notes": "No live global broker is connected. Public EOD market fallback is lower trust than a licensed feed; missing/stale evidence is never fabricated and can force NO_RECOMMENDATION.",
     }
 
 
