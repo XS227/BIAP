@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 
 from fastapi import APIRouter
 
@@ -53,8 +52,14 @@ def _source_state(country: str) -> dict:
         official_ready = bool(os.environ.get(credential_required))
         supplemental = ["FSS OpenDART", "public vendor fallback"]
     elif country == "BR":
-        official_ready = source_index_path("cvm-dfp").exists()
-        supplemental = ["CVM DFP open data", "public vendor fallback"]
+        dfp_ready = source_index_path("cvm-dfp").exists()
+        itr_ready = source_index_path("cvm-itr").exists()
+        official_ready = dfp_ready
+        supplemental = [
+            f"CVM DFP annual open data ({'ready' if dfp_ready else 'cache missing'})",
+            f"CVM ITR quarterly corroboration ({'ready' if itr_ready else 'cache missing'})",
+            "public vendor fallback",
+        ]
     elif country == "AU":
         official_ready = _any_verified_drop("AU")
         supplemental = ["verified ASX/issuer filing drop", "public vendor fallback"]
