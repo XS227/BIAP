@@ -10,11 +10,11 @@ on:
 permissions:
   contents: read
 
-# 2026-09-17 refresh: verify provider credentials/coverage without exposing secrets.
+# Verify provider credentials/coverage without exposing secrets.
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     environment: production
     env:
       MARKET_KEY: ${{ secrets.BIAP_GLOBAL_MARKET_API_KEY || secrets.TWELVE_DATA_API_KEY }}
@@ -23,7 +23,7 @@ jobs:
       OPENDART_KEY: ${{ secrets.BIAP_OPENDART_API_KEY || secrets.OPENDART_API_KEY }}
       CH_KEY: ${{ secrets.BIAP_COMPANIES_HOUSE_API_KEY || secrets.COMPANIES_HOUSE_API_KEY }}
     steps:
-      - name: Public Global provider status
+      - name: Public Global provider and source status
         shell: bash
         run: |
           set -euo pipefail
@@ -31,6 +31,21 @@ jobs:
           echo
           curl --fail --silent --show-error --max-time 15 https://biap.dadashi.no/global-api/global/status
           echo
+          curl --fail --silent --show-error --max-time 15 https://biap.dadashi.no/global-api/global/source-status | tee /tmp/source-status.json
+          echo
+          python3 - <<'PY'
+          import json
+          with open('/tmp/source-status.json', encoding='utf-8') as f:
+              payload = json.load(f)
+          rows = {row['country']: row for row in payload.get('sources', [])}
+          assert rows['BR']['officialRuntimeReady'] is True, rows.get('BR')
+          assert rows['US']['officialRuntimeReady'] is True, rows.get('US')
+          assert rows['ES']['officialRuntimeReady'] is True, rows.get('ES')
+          assert rows['JP']['credentialRequired'] == 'BIAP_EDINET_API_KEY', rows.get('JP')
+          assert rows['KR']['credentialRequired'] == 'BIAP_OPENDART_API_KEY', rows.get('KR')
+          print('source-status officialReadyCount=', payload.get('officialReadyCount'))
+          PY
+
       - name: Check matching GitHub secrets without revealing values
         shell: bash
         run: |
@@ -39,6 +54,7 @@ jobs:
           for name in ['MARKET_KEY','SEC_ID','EDINET_KEY','OPENDART_KEY','CH_KEY']:
               print(f'{name}_available={bool(os.environ.get(name))}')
           PY
+
       - name: Probe public demo reference-data coverage
         shell: bash
         run: |
@@ -54,6 +70,7 @@ jobs:
               ('ES-XMAD', {'mic_code':'XMAD','type':'Common Stock'}),
               ('JP-XJPX', {'mic_code':'XJPX','type':'Common Stock'}),
               ('AU-XASX', {'mic_code':'XASX','type':'Common Stock'}),
+              ('BR-BVMF', {'mic_code':'BVMF','type':'Common Stock'}),
           ]
           for label, params in tests:
               q = urllib.parse.urlencode({**params, 'apikey':'demo', 'outputsize':5000})
@@ -66,6 +83,7 @@ jobs:
               except Exception as exc:
                   print(f'{label}_error={type(exc).__name__}:{exc}')
           PY
+
       - name: Probe public demo market-data coverage
         shell: bash
         run: |
@@ -80,6 +98,7 @@ jobs:
               ('SAN-ES', {'symbol':'SAN','mic_code':'XMAD'}),
               ('7203-JP', {'symbol':'7203','mic_code':'XJPX'}),
               ('BHP-AU', {'symbol':'BHP','mic_code':'XASX'}),
+              ('PETR4-BR', {'symbol':'PETR4','mic_code':'BVMF'}),
           ]
           for label, params in tests:
               for endpoint, extra in [('quote',{}), ('time_series',{'interval':'1day','outputsize':10})]:
@@ -99,6 +118,7 @@ jobs:
                   except Exception as exc:
                       print(f'{label}_{endpoint}_error={type(exc).__name__}:{exc}')
           PY
+
       - name: Live production analysis smoke for launch markets
         shell: bash
         run: |
@@ -153,7 +173,8 @@ jobs:
                   'marketProviders': sorted({s.get('provider') for s in market_sources}),
               }, sort_keys=True))
           PY
-      - name: Live Spain Japan catalog and global fundamentals smoke
+
+      - name: Live Spain Japan Singapore and Brazil fundamentals smoke
         shell: bash
         run: |
           set -euo pipefail
@@ -167,6 +188,7 @@ jobs:
               ('ES', 'BME_MADRID', 'SAN', 'EUR'),
               ('JP', 'TSE_JP', '7203', 'JPY'),
               ('SG', 'SGX', 'D05', 'SGD'),
+              ('BR', 'B3', 'PETR4', 'BRL'),
           ]
           metric_names = (
               'revenue', 'net_income', 'total_assets', 'total_equity',
@@ -205,20 +227,24 @@ jobs:
               metrics = {name: company.get(name) for name in metric_names if company.get(name) is not None}
               sources = company.get('sources') or []
               fundamental_sources = [s for s in sources if s.get('provider') in {
-                  'esef-xbrl-cached', 'edinet', 'yahoo-public-fundamentals-global'
-              } or 'fundamental' in str(s.get('source_type') or '').lower() or 'xbrl' in str(s.get('source_type') or '').lower()]
+                  'esef-xbrl-cached', 'edinet', 'yahoo-public-fundamentals-global', 'cvm-open-data-dfp'
+              } or 'fundamental' in str(s.get('source_type') or '').lower() or 'xbrl' in str(s.get('source_type') or '').lower() or 'regulatory' in str(s.get('source_type') or '').lower()]
 
               assert isinstance(company.get('price'), (int, float)) and company.get('price') > 0, (
                   country, exchange, ticker, 'missing price', diagnostics,
               )
               assert metrics, (country, exchange, ticker, 'fundamentals still empty', diagnostics, sources)
               assert fundamental_sources, (country, exchange, ticker, 'fundamental provenance missing', diagnostics, sources)
+              if country == 'BR':
+                  assert any(s.get('provider') == 'cvm-open-data-dfp' for s in sources), (country, ticker, sources, diagnostics)
+                  assert (payload.get('evidence') or {}).get('status') in {'PASS', 'WARN'}, payload.get('evidence')
 
               print(json.dumps({
                   'market': f'{country}/{exchange}',
                   'ticker': ticker,
                   'catalogMic': catalog.get('mic'),
                   'catalogReturned': catalog.get('returned'),
+                  'catalogName': exact.get('name'),
                   'price': company.get('price'),
                   'fundamentalsStatus': diagnostics.get('fundamentalsStatus'),
                   'fundamentalsProvider': diagnostics.get('fundamentalsProvider'),
@@ -227,6 +253,7 @@ jobs:
                   'sourceProviders': sorted({str(s.get('provider')) for s in fundamental_sources}),
               }, sort_keys=True))
           PY
+
       - name: Live catalog filter smoke
         shell: bash
         run: |
