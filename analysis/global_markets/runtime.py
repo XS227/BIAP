@@ -14,7 +14,10 @@ import os
 from .cached_esef import CachedESEFFundamentalsProvider
 from .cached_market import PersistentMarketProvider
 from .cached_universe import PersistentUniverseProvider
+from .companies_house import CompaniesHouseCorroborator
+from .corroboration import CorroboratingFundamentalsProvider
 from .country_packs import COUNTRY_PACKS
+from .cvm import CVMFundamentalsProvider
 from .edinet import EDINETFundamentalsProvider
 from .fallback_fundamentals import FallbackFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
@@ -100,11 +103,23 @@ def build_registry() -> ProviderRegistry:
     # Europe: official ESEF first. If an issuer cannot be safely joined to an
     # ESEF filing, use labelled vendor metrics so cards/agents are not empty,
     # while keeping the Evidence gate BLOCKED until official provenance exists.
+    # UK can additionally corroborate the legal entity against Companies House
+    # when its free API credential has been configured.
     esef = CachedESEFFundamentalsProvider()
     esef_with_fallback = FallbackFundamentalsProvider(esef, public_fundamentals)
+    companies_house_key = (os.environ.get("BIAP_COMPANIES_HOUSE_API_KEY") or "").strip()
+    uk_provider = (
+        CorroboratingFundamentalsProvider(
+            esef_with_fallback,
+            CompaniesHouseCorroborator(api_key=companies_house_key),
+        )
+        if companies_house_key
+        else esef_with_fallback
+    )
     for country in _ESEF_COUNTRIES:
+        provider = uk_provider if country == "GB" else esef_with_fallback
         for exchange in COUNTRY_PACKS[country].exchanges:
-            register_fundamentals(country, exchange.code, esef_with_fallback)
+            register_fundamentals(country, exchange.code, provider)
 
     # Japan: EDINET remains authoritative when its deployment key is available.
     # The public fallback still gives users non-empty annual metrics when EDINET
@@ -129,6 +144,13 @@ def build_registry() -> ProviderRegistry:
     au_with_fallback = FallbackFundamentalsProvider(au, public_fundamentals)
     for exchange in COUNTRY_PACKS["AU"].exchanges:
         register_fundamentals("AU", exchange.code, au_with_fallback)
+
+    # Brazil: CVM DFP is regulator-published structured open data and requires no
+    # secret. The daily source-sync job keeps a recent local index. If a strict
+    # legal-name join is unavailable, public vendor metrics remain supplement-only.
+    br = FallbackFundamentalsProvider(CVMFundamentalsProvider(), public_fundamentals)
+    for exchange in COUNTRY_PACKS["BR"].exchanges:
+        register_fundamentals("BR", exchange.code, br)
 
     # Other deterministic Yahoo-routed markets currently lack a complete
     # official filing adapter in this branch. Give those markets useful public
