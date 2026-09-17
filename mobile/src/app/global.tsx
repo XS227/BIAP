@@ -31,7 +31,7 @@ export default function GlobalScreen() {
         const first = catalog.countries[0];
         if (first) {
           setCountryCode(first.country);
-          setExchangeCode(first.exchanges[0]?.code || '');
+          setExchangeCode(first.exchanges.length === 1 ? first.exchanges[0]?.code || '' : '');
         }
       })
       .finally(() => setLoading(false));
@@ -43,7 +43,10 @@ export default function GlobalScreen() {
   }, [countries]);
 
   const selectedCountry = countries.find((item) => item.country === countryCode) || priorityCountries[0];
-  const selectedExchange = selectedCountry?.exchanges.find((item) => item.code === exchangeCode) || selectedCountry?.exchanges[0];
+  const selectedExchange = selectedCountry
+    ? selectedCountry.exchanges.find((item) => item.code === exchangeCode)
+      || (selectedCountry.exchanges.length === 1 ? selectedCountry.exchanges[0] : undefined)
+    : undefined;
 
   const persistAndOpen = async (country: GlobalCountry, exchange: GlobalExchange) => {
     await setGlobalMarketSelection({
@@ -58,12 +61,15 @@ export default function GlobalScreen() {
   };
 
   const chooseCountry = async (country: GlobalCountry) => {
-    const firstExchange = country.exchanges[0];
     setCountryCode(country.country);
-    setExchangeCode(firstExchange?.code || '');
-    if (country.exchanges.length === 1 && firstExchange) {
-      await persistAndOpen(country, firstExchange);
+    if (country.exchanges.length === 1 && country.exchanges[0]) {
+      const onlyExchange = country.exchanges[0];
+      setExchangeCode(onlyExchange.code);
+      await persistAndOpen(country, onlyExchange);
+      return;
     }
+    // Multi-exchange countries require an explicit exchange choice.
+    setExchangeCode('');
   };
 
   const chooseExchange = async (exchange: GlobalExchange) => {
@@ -84,6 +90,27 @@ export default function GlobalScreen() {
           <Text style={[styles.statusText, { color: colors.textSecondary }]}>The BIAP engine does not change by country. Only the market and filing adapters change.</Text>
         </View>
 
+        {selectedCountry?.exchanges.length && selectedCountry.exchanges.length > 1 ? (
+          <>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Exchange</Text>
+            <Text style={[styles.exchangePrompt, { color: colors.textSecondary }]}>Choose which {selectedCountry.name} exchange to open.</Text>
+            <View style={styles.exchangeList}>
+              {selectedCountry.exchanges.map((exchange) => {
+                const active = exchange.code === exchangeCode;
+                return (
+                  <Pressable key={exchange.code} onPress={() => { void chooseExchange(exchange); }} style={[styles.exchangeCard, { backgroundColor: active ? Brand.primary : colors.backgroundElement, borderColor: active ? Brand.primary : colors.backgroundSelected }]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.exchangeTitle, { color: active ? '#fff' : colors.text }]}>{exchange.label}</Text>
+                      <Text style={[styles.exchangeMeta, { color: active ? '#EAF2FF' : colors.textSecondary }]}>{exchange.mic || exchange.code} • {exchange.currencies.join('/')}</Text>
+                    </View>
+                    <Text style={[styles.chevron, { color: active ? '#fff' : Brand.primary }]}>›</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        ) : null}
+
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Country</Text>
         {loading ? <ActivityIndicator color={Brand.primary} /> : (
           <View style={styles.countryGrid}>
@@ -99,23 +126,6 @@ export default function GlobalScreen() {
             })}
           </View>
         )}
-
-        {selectedCountry?.exchanges.length && selectedCountry.exchanges.length > 1 ? (
-          <>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Exchange</Text>
-            <View style={styles.exchangeList}>
-              {selectedCountry.exchanges.map((exchange) => (
-                <Pressable key={exchange.code} onPress={() => { void chooseExchange(exchange); }} style={[styles.exchangeCard, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.exchangeTitle, { color: colors.text }]}>{exchange.label}</Text>
-                    <Text style={[styles.exchangeMeta, { color: colors.textSecondary }]}>{exchange.mic || exchange.code} • {exchange.currencies.join('/')}</Text>
-                  </View>
-                  <Text style={styles.chevron}>›</Text>
-                </Pressable>
-              ))}
-            </View>
-          </>
-        ) : null}
 
         {selectedCountry && selectedExchange ? (
           <View style={[styles.adapterCard, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
@@ -151,11 +161,12 @@ const styles = StyleSheet.create({
   countryCode: { fontFamily: Fonts.mono, fontSize: 17, fontWeight: '900' },
   countryName: { fontFamily: Fonts.sans, fontSize: 12, fontWeight: '700', marginTop: 4 },
   countryMeta: { fontFamily: Fonts.mono, fontSize: 9, marginTop: 5 },
+  exchangePrompt: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 16, marginTop: -4, marginBottom: 9 },
   exchangeList: { gap: 8 },
   exchangeCard: { borderWidth: 1, borderRadius: Radius.md, padding: 13, flexDirection: 'row', alignItems: 'center' },
   exchangeTitle: { fontFamily: Fonts.sans, fontSize: 13, fontWeight: '900' },
   exchangeMeta: { fontFamily: Fonts.mono, fontSize: 9.5, marginTop: 4 },
-  chevron: { color: Brand.primary, fontSize: 28, marginLeft: 10 },
+  chevron: { fontSize: 28, marginLeft: 10 },
   adapterCard: { borderWidth: 1, borderRadius: Radius.md, padding: Spacing.three, marginTop: Spacing.four },
   adapterTitle: { fontFamily: Fonts.sans, fontSize: 12, fontWeight: '900', marginBottom: 6 },
   adapterLine: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 18 },
