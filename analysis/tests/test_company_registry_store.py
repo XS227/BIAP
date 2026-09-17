@@ -130,6 +130,46 @@ def test_collection_runs_has_no_mutable_updated_at_column(tmp_path):
     assert "updated_at" not in cols
 
 
+def test_prune_orphaned_companies_removes_stale_misclassified_entries(tmp_path):
+    reg = CompanyRegistryStore(str(tmp_path / "registry.sqlite3"))
+
+    # Simulate a run where a rights issue was wrongly classified as its own
+    # insurance company (its name keyword-matched بیمه before rights detection
+    # covered the abbreviated "ح." naming pattern).
+    stale_key = issuer_key("حياتح", "ح.بیمه زندگی مفید", "insurance_company")
+    stale_issuer_id, _ = reg.get_or_create_company(
+        issuer_key_value=stale_key, symbol="حياتح", name="ح.بیمه زندگی مفید",
+        category="insurance_company", primary_instrument_code="900", run_id="run-1",
+    )
+    reg.upsert_instrument(
+        code="900", symbol="حياتح", name="ح.بیمه زندگی مفید", market=None, paper_type=None,
+        category="insurance_company", reason="stale", issuer_id=stale_issuer_id, is_duplicate=False, run_id="run-1",
+    )
+    assert reg.company_count() == 1
+
+    # A later run correctly reclassifies it as a rights issue linked to the real base company,
+    # whose own ordinary-share instrument ("901") is the one that actually keeps the company alive.
+    real_key = issuer_key("حیات", "بیمه زندگی مفید", "insurance_company")
+    real_issuer_id, _ = reg.get_or_create_company(
+        issuer_key_value=real_key, symbol="حیات", name="بیمه زندگی مفید",
+        category="insurance_company", primary_instrument_code="901", run_id="run-2",
+    )
+    reg.upsert_instrument(
+        code="901", symbol="حیات", name="بیمه زندگی مفید", market="TSE", paper_type="300",
+        category="insurance_company", reason="ordinary share", issuer_id=real_issuer_id, is_duplicate=False, run_id="run-2",
+    )
+    reg.upsert_instrument(
+        code="900", symbol="حياتح", name="ح.بیمه زندگی مفید", market=None, paper_type=None,
+        category=CATEGORY_RIGHTS_ISSUE, reason="rights", issuer_id=real_issuer_id, is_duplicate=False, run_id="run-2",
+    )
+
+    assert reg.company_count() == 2  # stale row still present until pruned
+    pruned = reg.prune_orphaned_companies()
+    assert pruned == 1
+    assert reg.company_count() == 1
+    assert real_issuer_id != stale_issuer_id
+
+
 def test_growth_by_date_reconstructs_history_from_run_log(tmp_path):
     reg = CompanyRegistryStore(str(tmp_path / "registry.sqlite3"))
     base_kwargs = dict(

@@ -16,6 +16,7 @@ database file, never dropped/altered):
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -48,6 +49,23 @@ class CompanyRegistryStore:
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         return conn
+
+    @contextmanager
+    def _session(self, conn: Optional[sqlite3.Connection] = None):
+        """Reuse a caller-supplied connection (no per-call commit/close, caller
+        owns the transaction), or open+commit+close a fresh one as before.
+
+        A bulk classification pass processes thousands of instruments; opening
+        a brand-new SQLite connection per row (the original per-method
+        ``self._connect()`` pattern) is slow and memory-hungry enough at that
+        volume to get the whole process OOM-killed on this host. Passing one
+        shared connection through a batch keeps single-call callers unchanged.
+        """
+        if conn is not None:
+            yield conn
+        else:
+            with self._connect() as owned:
+                yield owned
 
     def _init_db(self) -> None:
         with self._connect() as conn:
@@ -125,11 +143,12 @@ class CompanyRegistryStore:
         issuer_id: str | None,
         is_duplicate: bool,
         run_id: str,
+        conn: Optional[sqlite3.Connection] = None,
     ) -> bool:
         """Insert or refresh one instrument's classification. Returns True if newly discovered."""
         now = _now_iso()
         code = str(code).strip()
-        with self._connect() as conn:
+        with self._session(conn) as conn:
             existed = conn.execute(
                 "SELECT 1 FROM instrument_registry WHERE code=?", (code,)
             ).fetchone() is not None
@@ -167,11 +186,12 @@ class CompanyRegistryStore:
         category: str,
         primary_instrument_code: str,
         run_id: str,
+        conn: Optional[sqlite3.Connection] = None,
     ) -> tuple[str, bool]:
         """Return (issuer_id, created). Never renames/loses an existing company on re-run."""
         issuer_id = company_id_for(issuer_key_value)
         now = _now_iso()
-        with self._connect() as conn:
+        with self._session(conn) as conn:
             existing = conn.execute(
                 "SELECT issuer_id FROM company_registry WHERE issuer_id=?", (issuer_id,)
             ).fetchone()
@@ -200,11 +220,39 @@ class CompanyRegistryStore:
                 (_now_iso(), issuer_id),
             )
 
-    def company_exists(self, issuer_id: str) -> bool:
-        with self._connect() as conn:
+    def company_exists(self, issuer_id: str, conn: Optional[sqlite3.Connection] = None) -> bool:
+        with self._session(conn) as conn:
             return conn.execute(
                 "SELECT 1 FROM company_registry WHERE issuer_id=?", (issuer_id,)
             ).fetchone() is not None
+
+    def prune_orphaned_companies(self, conn: Optional[sqlite3.Connection] = None) -> int:
+        """Remove company_registry rows no longer backed by any company-category instrument.
+
+        Classification can improve over time (better keyword coverage, new
+        verification signals): an issuer that was previously misclassified as
+        a genuine company (e.g. a rights issue whose name keyword-matched a
+        financial-company bucket before rights detection covered its naming
+        pattern) may later have every one of its instruments correctly
+        reclassified. When that happens, its registry row would otherwise sit
+        forever as a stale, uncorrectable entry -- unlike ``collection_runs``,
+        company_registry is a derived, self-healing view of current
+        classification truth, not an audit trail, so pruning it is safe and
+        never touches ``listed_companies``/``company_json``.
+        """
+        with self._session(conn) as conn:
+            placeholders = ",".join("?" for _ in COMPANY_CATEGORIES)
+            cur = conn.execute(
+                f"""
+                DELETE FROM company_registry
+                WHERE issuer_id NOT IN (
+                    SELECT DISTINCT issuer_id FROM instrument_registry
+                    WHERE issuer_id IS NOT NULL AND category IN ({placeholders})
+                )
+                """,
+                tuple(COMPANY_CATEGORIES),
+            )
+            return cur.rowcount if cur.rowcount and cur.rowcount > 0 else 0
 
     def company_count(self) -> int:
         with self._connect() as conn:

@@ -105,3 +105,62 @@ def test_refresh_universe_empty_live_universe_falls_back_to_registry(tmp_path, m
 
     assert result["strategy"] == "empty-live-universe-fallback"
     assert result["_codes"] == ["1"]
+
+
+def test_codal_issuer_directory_resolves_otherwise_unknown_company(tmp_path, monkeypatch):
+    """A real name with no market/paper_type signal stays unknown -- unless CODAL's
+    issuer directory (bulk-fetched once, not per instrument) confirms it."""
+    store = ListedCompanyStore(str(tmp_path / "listed.sqlite3"))
+    reg = CompanyRegistryStore(str(tmp_path / "listed.sqlite3"))
+
+    unresolved = _item("1", "زگلدشت", "كشت و دام گلدشت نمونه اصفهان", market=None, paper_type=None)
+    monkeypatch.setattr(ingestion, "query_symbols", lambda limit=10000: [unresolved])
+    monkeypatch.setattr(ingestion, "list_companies", lambda: [{"sy": "زگلدشت", "n": "كشت و دام گلدشت"}])
+
+    result = ingestion.refresh_universe(store, reg)
+
+    assert result["_codes"] == ["1"]
+    row = reg.get_instrument("1")
+    assert row["category"] == "operating_company"
+    assert "verified issuer" in row["classification_reason"]
+
+
+def test_codal_issuer_directory_never_overrides_a_fund_keyword_match(tmp_path, monkeypatch):
+    """Even if a symbol happens to also appear in CODAL's directory, an unambiguous
+    fund/bond/option name keyword still wins -- CODAL only widens the fallback."""
+    store = ListedCompanyStore(str(tmp_path / "listed.sqlite3"))
+    reg = CompanyRegistryStore(str(tmp_path / "listed.sqlite3"))
+
+    fund = _item("1", "آکورد", "صندوق سرمایه گذاری آکورد", market=None, paper_type=None)
+    monkeypatch.setattr(ingestion, "query_symbols", lambda limit=10000: [fund])
+    monkeypatch.setattr(ingestion, "list_companies", lambda: [{"sy": "آکورد", "n": "صندوق آکورد"}])
+
+    result = ingestion.refresh_universe(store, reg)
+
+    assert result["_codes"] == []
+    row = reg.get_instrument("1")
+    assert row["category"] == "fund_etf"
+
+
+def test_prior_verified_enrichment_evidence_resolves_unknown_on_reclassification(tmp_path, monkeypatch):
+    """A row already enriched with real CODAL metadata (from an earlier run) is
+    itself authoritative evidence, even without a fresh CODAL directory match."""
+    store = ListedCompanyStore(str(tmp_path / "listed.sqlite3"))
+    reg = CompanyRegistryStore(str(tmp_path / "listed.sqlite3"))
+    store.upsert_universe([_item("1", "زگلدشت", "كشت و دام گلدشت نمونه اصفهان", market=None, paper_type=None)])
+    store.save_enriched(
+        "1",
+        {"ticker": "زگلدشت", "name_fa": "كشت و دام گلدشت نمونه اصفهان",
+         "codal_metadata": {"company_id": "012151", "company_name": "کشت و دام گلدشت نمونه اصفهان"},
+         "data_available": {}, "market": {}},
+        provenance={"builder": "test"},
+    )
+
+    unresolved = _item("1", "زگلدشت", "كشت و دام گلدشت نمونه اصفهان", market=None, paper_type=None)
+    monkeypatch.setattr(ingestion, "query_symbols", lambda limit=10000: [unresolved])
+
+    result = ingestion.refresh_universe(store, reg)
+
+    assert result["_codes"] == ["1"]
+    row = reg.get_instrument("1")
+    assert row["category"] == "operating_company"

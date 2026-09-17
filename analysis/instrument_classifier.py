@@ -16,6 +16,7 @@ rather than being silently guessed at.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 
 # Canonical category vocabulary. Keep in sync with the docs/task spec.
 CATEGORY_OPERATING_COMPANY = "operating_company"
@@ -87,9 +88,30 @@ def _contains_any(haystack: str, needles: tuple[str, ...]) -> bool:
 
 
 _RIGHTS_KEYWORDS = ("حق تقدم",)
-_BOND_KEYWORDS = ("اوراق", "صکوک", "خزانه", "مرابحه", "اجاره", "منفعت")
-_OPTION_KEYWORDS = ("اختیار خرید", "اختیار فروش", "اختیار معامله", "آتی")
+# ``ح.<name>``/``ح .<name>`` is TSETMC's abbreviated rights-issue name prefix
+# (e.g. "ح.بیمه زندگی مفید" for the rights issue of بیمه زندگی مفید) -- distinct
+# from the full "حق تقدم" phrase, and checked with spaces stripped so "ح ."/"ح."
+# both match.
+_RIGHTS_NAME_PREFIX = "ح."
+_BOND_KEYWORDS = ("اوراق", "صکوک", "خزانه", "مرابحه", "اجاره", "منفعت", "مشارکت", "سلف", "گواهی اعتبار")
+# TSETMC's option-market naming abbreviates اختیار خرید/فروش to اختیارخ/اختیارف
+# (no space) -- match the bare root so both the abbreviated and spelled-out
+# forms are caught; "اختیار" is exchange-standard derivatives terminology and
+# does not otherwise appear in real company names.
+_OPTION_KEYWORDS = ("اختیار",)
+# "آتی" (futures) as a bare substring also matches inside "آتیه" ("future/
+# heritage" -- a common, unrelated word in real company/fund names, e.g.
+# "آتیه داده پرداز", "سرمایه گذاری آتیه دماوند"). Exclude that specific
+# collision with a negative lookahead rather than dropping the keyword
+# entirely, since real futures contracts are genuinely named "آتی <underlying>
+# -<date>" (their symbols also conventionally start with ج, but the name check
+# alone is already reliable once "آتیه" is excluded).
+_FUTURES_PATTERN = re.compile(r"آتی(?!ه)")
 _FUND_KEYWORDS = ("صندوق",)
+# "ص.<name>"/"ص .<name>" is TSETMC's abbreviated fund name prefix (e.g.
+# "ص.س.درآمد ثابت آسال-د" for a fixed-income fund) -- checked the same way as
+# the rights-issue "ح." prefix, spaces stripped so "ص ."/"ص." both match.
+_FUND_NAME_PREFIX = "ص."
 _COMMODITY_KEYWORDS = ("سکه", "زعفران", "گواهی سپرده کالایی", "شمش")
 _BANK_KEYWORDS = ("بانک",)
 _INSURANCE_KEYWORDS = ("بیمه",)
@@ -115,6 +137,7 @@ def classify_instrument(
     name: str | None = None,
     market: str | None = None,
     paper_type: str | None = None,
+    verified_issuer: bool = False,
 ) -> Classification:
     """Classify one TSETMC/IFB instrument row. Pure function, no I/O.
 
@@ -123,21 +146,39 @@ def classify_instrument(
     (rights issues, bonds, options, funds, commodities) are checked before the
     broader financial-company buckets, which are checked before the
     ordinary-share fallback.
+
+    ``verified_issuer`` is an out-of-band, already-verified signal supplied by
+    the caller (e.g. a CODAL issuer-directory match, or already-fetched CODAL
+    metadata / live market data on a previously-enriched row) -- never guessed
+    here. It only widens the final ordinary-share fallback tier; every
+    non-company keyword check above still runs first and takes priority, so a
+    CODAL-listed bond/fund is still classified as a bond/fund.
     """
     text = normalize_text(f"{symbol} {name or ''}")
+    name_compact = normalize_text(name or "").replace(" ", "")
+    symbol_norm = normalize_text(symbol)
     paper_type = str(paper_type or "").strip()
 
-    if paper_type == RIGHTS_ISSUE_YVAL or _contains_any(text, _RIGHTS_KEYWORDS):
-        return Classification(CATEGORY_RIGHTS_ISSUE, "rights-issue yVal or حق تقدم in name")
+    if (
+        paper_type == RIGHTS_ISSUE_YVAL
+        or _contains_any(text, _RIGHTS_KEYWORDS)
+        or name_compact.startswith(_RIGHTS_NAME_PREFIX)
+        or (len(symbol_norm) > 1 and symbol_norm.endswith("ح"))
+    ):
+        return Classification(CATEGORY_RIGHTS_ISSUE, "rights-issue yVal, حق تقدم/ح. name prefix, or ح-suffixed symbol")
 
     if _contains_any(text, _BOND_KEYWORDS):
         return Classification(CATEGORY_BOND_DEBT, "bond/sukuk/treasury keyword in name")
 
-    if _contains_any(text, _OPTION_KEYWORDS):
-        return Classification(CATEGORY_OPTION_DERIVATIVE, "option/futures keyword in name")
+    # Checked before options/futures: a fund's own strategy description can
+    # mention "آتی" (e.g. a commodity fund investing via futures) without the
+    # *instrument itself* being a futures contract -- صندوق/"ص." is the
+    # stronger, unambiguous signal for what this instrument actually is.
+    if _contains_any(text, _FUND_KEYWORDS) or name_compact.startswith(_FUND_NAME_PREFIX):
+        return Classification(CATEGORY_FUND_ETF, "صندوق (fund) keyword or ص. name prefix")
 
-    if _contains_any(text, _FUND_KEYWORDS):
-        return Classification(CATEGORY_FUND_ETF, "صندوق (fund) keyword in name")
+    if _contains_any(text, _OPTION_KEYWORDS) or _FUTURES_PATTERN.search(text):
+        return Classification(CATEGORY_OPTION_DERIVATIVE, "option/futures keyword in name")
 
     if _contains_any(text, _COMMODITY_KEYWORDS):
         return Classification(CATEGORY_COMMODITY_INSTRUMENT, "commodity keyword in name")
@@ -162,6 +203,9 @@ def classify_instrument(
 
     if paper_type in ORDINARY_SHARE_YVALS or (market or "").upper() in {"TSE", "IFB", "IFB_BASE"}:
         return Classification(CATEGORY_OPERATING_COMPANY, "verified ordinary-share yVal or market flow")
+
+    if verified_issuer:
+        return Classification(CATEGORY_OPERATING_COMPANY, "verified issuer (CODAL directory match or prior verified enrichment)")
 
     return Classification(CATEGORY_UNKNOWN, "no positive classification signal")
 

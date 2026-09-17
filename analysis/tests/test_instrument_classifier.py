@@ -68,8 +68,72 @@ def test_bond_debt_classification():
     assert _cat(symbol="صکوک1", name="صکوک اجاره دولت", market=None, paper_type=None) == CATEGORY_BOND_DEBT
 
 
+def test_bond_debt_classification_participation_and_salaf_contracts():
+    """Real production names: مشارکت (participation bonds) and سلف (Salaf/forward-sale contracts)."""
+    assert _cat(symbol="مشهد072", name="مشارکت ش مشهد072-3ماهه23%", market=None, paper_type=None) == CATEGORY_BOND_DEBT
+    assert _cat(symbol="عقیر1", name="سلف پارس بهین پالایش قشم", market=None, paper_type=None) == CATEGORY_BOND_DEBT
+
+
 def test_option_derivative_classification():
     assert _cat(symbol="ضفولاد", name="اختیار خرید فولاد", market=None, paper_type=None) == CATEGORY_OPTION_DERIVATIVE
+
+
+def test_option_derivative_classification_abbreviated_tsetmc_form():
+    """Real TSETMC option names abbreviate اختیار خرید/فروش to اختیارخ/اختیارف with no space."""
+    assert _cat(symbol="ضهرم8031", name="اختيارخ اهرم-62000-1405/08/27", market=None, paper_type=None) == CATEGORY_OPTION_DERIVATIVE
+    assert _cat(symbol="طتاص7012", name="اختيارف تاصيكو-21520-05/07/08", market=None, paper_type=None) == CATEGORY_OPTION_DERIVATIVE
+
+
+def test_futures_classification_real_contract_names():
+    assert _cat(symbol="جهرم0508", name="آتي اهرم-1405/08/27", market=None, paper_type=None) == CATEGORY_OPTION_DERIVATIVE
+    assert _cat(symbol="جخود0508", name="آتي خودرو-1405/08/06", market=None, paper_type=None) == CATEGORY_OPTION_DERIVATIVE
+
+
+def test_futures_keyword_does_not_collide_with_atiyeh_word():
+    """"آتیه" (posterity/heritage) is a common, unrelated word in real company/fund
+    names and must never be misread as the آتی (futures) keyword."""
+    assert _cat(symbol="اپرداز", name="آتیه داده پرداز", market=None, paper_type=None) != CATEGORY_OPTION_DERIVATIVE
+    result = _cat(symbol="واتي", name="سرمايه گذاري آتيه دماوند", market=None, paper_type=None)
+    assert result == CATEGORY_INVESTMENT_COMPANY
+
+
+def test_fund_classification_takes_priority_over_futures_mention_in_strategy_name():
+    """A commodity/futures-strategy fund's own name may mention آتی without the
+    instrument itself being a futures contract -- صندوق must win."""
+    assert _cat(symbol="رزگلد", name="صندوق س. كالاي آرمان آتي", market=None, paper_type=None) == CATEGORY_FUND_ETF
+    assert _cat(symbol="آكورد", name="صندوق س. آرمان آتي كوثر-د", market=None, paper_type=None) == CATEGORY_FUND_ETF
+
+
+def test_fund_classification_abbreviated_dot_prefix():
+    """Real production funds: "ص.<name>"/"ص.س.<name>" abbreviated prefix, not the full صندوق word."""
+    assert _cat(symbol="آسود", name="ص.س.درآمد ثابت آرمان اقتصاد-د", market="TSE", paper_type="300") == CATEGORY_FUND_ETF
+    assert _cat(symbol="كيميا", name="ص. معدني كيمياي زنجان گستران", market="TSE", paper_type="300") == CATEGORY_FUND_ETF
+
+
+def test_bond_debt_classification_agricultural_credit_certificate():
+    assert _cat(symbol="گام0602162", name="گواهی اعتبارمولد کشاورزی060231", market=None, paper_type=None) == CATEGORY_BOND_DEBT
+
+
+def test_rights_issue_abbreviated_dot_prefix_and_bare_symbol_suffix():
+    """Real production rights issues: "ح.<name>" prefix (not the full حق تقدم phrase)
+    and a bare ح-suffixed symbol, which must not fall through to a keyword match
+    on the underlying company's own sector (bank/insurance/investment/holding)."""
+    assert _cat(symbol="حياتح", name="ح.بيمه زندگي مفيد", market=None, paper_type=None) == CATEGORY_RIGHTS_ISSUE
+    assert _cat(symbol="اعتلاح", name="ح سرمایه گذاری اعتلاء البرز", market=None, paper_type=None) == CATEGORY_RIGHTS_ISSUE
+    assert _cat(symbol="وآتوسح", name="ح .گروه سرمايه گذاري توسكا", market=None, paper_type=None) == CATEGORY_RIGHTS_ISSUE
+    assert _cat(symbol="کچادح", name="ح . معدنیوصنعتیچادرملو", market=None, paper_type=None) == CATEGORY_RIGHTS_ISSUE
+
+
+def test_verified_issuer_signal_only_widens_operating_company_fallback():
+    # Without a verified-issuer signal and no other evidence, stays unknown.
+    assert _cat(symbol="زگلدشت", name="كشت و دام گلدشت نمونه اصفهان", market=None, paper_type=None) == CATEGORY_UNKNOWN
+    # An out-of-band verified signal (e.g. CODAL directory match) resolves it.
+    result = classify_instrument(symbol="زگلدشت", name="كشت و دام گلدشت نمونه اصفهان", market=None, paper_type=None, verified_issuer=True)
+    assert result.category == CATEGORY_OPERATING_COMPANY
+
+    # But it never overrides an actual non-company keyword match.
+    fund_result = classify_instrument(symbol="آکورد", name="صندوق سرمایه گذاری آکورد", market=None, paper_type=None, verified_issuer=True)
+    assert fund_result.category == CATEGORY_FUND_ETF
 
 
 def test_rights_issue_classification_by_name_and_yval():

@@ -1,24 +1,34 @@
 #!/usr/bin/env python3
-"""One-off (idempotent) migration: classify the existing raw instrument tape
-and populate the company/issuer registry, without touching any existing
-enriched company data.
+"""(Re-)classify the full raw instrument tape and (re)populate the
+company/issuer registry, without touching any existing enriched company data.
 
-Reads every row already in ``listed_companies`` (the raw TSETMC universe
-collected under the old CODAL-whitelist policy -- includes both previously
-"eligible" rows and previously-excluded "tsetmc"-tagged rows), classifies
-each one, resolves issuers, deduplicates, and writes the results into the new
-``instrument_registry``/``company_registry`` tables via the exact same
-classification/dedup path used by the live daily worker
-(listed_company_ingestion._classify_and_register). ``company_json`` (the
-enriched payload) is never read or modified by this script -- it only adds
-``source_universe``/``provenance_json`` metadata on the same rows via the
-normal ``upsert_universe`` path, which explicitly COALESCEs around
-enrichment fields.
+Reads every instrument code known from either of two sources and merges them
+(``instrument_registry`` takes priority when a code is in both, since it may
+hold richer/fresher symbol-name-market-paper_type data from a live TSETMC
+fetch than the older ``listed_companies`` table ever captured):
+
+- ``instrument_registry`` -- the full raw universe as already classified by
+  any previous run (first migration or a live daily refresh). Reclassifying
+  from here (rather than only ever fetching live) means classifier
+  improvements apply retroactively without depending on TSETMC connectivity,
+  which this host's network to TSETMC is not always reliable for.
+- ``listed_companies`` -- the original pre-registry raw TSETMC universe (also
+  covers any code that, for whatever reason, never made it into
+  instrument_registry).
+
+Each row is classified, issuers are resolved, duplicates are deduplicated,
+and results are written via the exact same classification/dedup path used by
+the live daily worker (listed_company_ingestion._classify_and_register).
+``company_json`` (the enriched payload) is never read or modified by this
+script -- it only adds ``source_universe``/``provenance_json`` metadata on
+company rows via the normal ``upsert_universe`` path, which explicitly
+COALESCEs around enrichment fields.
 
 Safe to run multiple times: instrument/company upserts are idempotent
-(keyed by code / deterministic issuer_id), though each run still appends its
-own row to the append-only ``collection_runs`` audit log, since a migration
-pass is itself a real, auditable event.
+(keyed by code / deterministic issuer_id), a stale company_registry entry
+that no instrument still backs is pruned automatically, and each run still
+appends its own row to the append-only ``collection_runs`` audit log, since a
+(re)classification pass is itself a real, auditable event.
 
 Usage:
     python3 migrate_company_registry.py [--db PATH]
@@ -40,22 +50,36 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _load_raw_rows(target: ListedCompanyStore) -> list[dict]:
+def _load_raw_rows(target: ListedCompanyStore, registry: CompanyRegistryStore) -> list[dict]:
+    merged: dict[str, dict] = {}
     with target._connect() as conn:
-        rows = conn.execute(
+        for row in conn.execute(
             "SELECT code, symbol, name_fa, market, source_universe FROM listed_companies ORDER BY code"
-        ).fetchall()
-    return [
-        {
-            "code": row["code"],
-            "symbol": row["symbol"],
-            "name": row["name_fa"],
-            "market": row["market"],
-            "paper_type": None,  # not persisted historically; classification falls back to name/market signals
-            "source": row["source_universe"] or "migration",
-        }
-        for row in rows
-    ]
+        ).fetchall():
+            merged[row["code"]] = {
+                "code": row["code"],
+                "symbol": row["symbol"],
+                "name": row["name_fa"],
+                "market": row["market"],
+                "paper_type": None,  # not persisted historically; classification falls back to other signals
+                "source": row["source_universe"] or "migration",
+            }
+    with registry._connect() as conn:
+        for row in conn.execute(
+            "SELECT code, symbol, name, market, paper_type FROM instrument_registry ORDER BY code"
+        ).fetchall():
+            # instrument_registry may hold richer data (a live TSETMC fetch's real
+            # symbol/name/paper_type) than listed_companies ever captured for this
+            # code -- prefer it when both sources know the same code.
+            merged[row["code"]] = {
+                "code": row["code"],
+                "symbol": row["symbol"],
+                "name": row["name"],
+                "market": row["market"],
+                "paper_type": row["paper_type"],
+                "source": "instrument-registry-reclassify",
+            }
+    return [merged[code] for code in sorted(merged)]
 
 
 def run_migration(db_path: str = DEFAULT_LISTED_COMPANY_DB) -> dict:
@@ -70,7 +94,7 @@ def run_migration(db_path: str = DEFAULT_LISTED_COMPANY_DB) -> dict:
     total_enriched_before = target.status()["enriched"]
     raw_before = target.count()
 
-    raw_rows = _load_raw_rows(target)
+    raw_rows = _load_raw_rows(target, reg)
     # Wrap plain dicts the same way live query_symbols() items look to _classify_and_register.
     fake_items = [type("Row", (), {"to_dict": (lambda self, d=row: d)})() for row in raw_rows]
 

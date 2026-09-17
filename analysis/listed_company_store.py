@@ -231,6 +231,35 @@ class ListedCompanyStore:
         never_enriched, _ = self._split_by_enrichment(codes)
         return len(never_enriched)
 
+    def verified_enrichment_codes(self) -> set[str]:
+        """Codes whose already-fetched enrichment payload independently proves a genuine issuer.
+
+        "Proof" means CODAL's own issuer-directory metadata was matched
+        (``codal_metadata``), or live TSETMC market data was actually
+        observed (a non-null price/market flow) -- never the mere presence
+        of a company_json blob, which company_builder also populates for
+        symbols that ultimately had no verified data at all.
+        """
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT code, company_json FROM listed_companies WHERE company_json IS NOT NULL"
+            ).fetchall()
+        verified: set[str] = set()
+        for row in rows:
+            try:
+                company = json.loads(row["company_json"])
+            except (TypeError, ValueError):
+                continue
+            if not isinstance(company, dict):
+                continue
+            if company.get("codal_metadata"):
+                verified.add(str(row["code"]))
+                continue
+            market = company.get("market") or {}
+            if isinstance(market, dict) and (market.get("price") or market.get("market_flow")):
+                verified.add(str(row["code"]))
+        return verified
+
     def pending_codes(self, *, start: int = 0, limit: int = 100) -> list[str]:
         with self._connect() as conn:
             rows = conn.execute("SELECT code FROM listed_companies ORDER BY code LIMIT ? OFFSET ?", (max(1, min(limit, 5000)), max(0, start))).fetchall()

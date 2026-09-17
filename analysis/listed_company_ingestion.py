@@ -16,6 +16,7 @@ import time
 from typing import Any
 import uuid
 
+from codal_data import CodalDataUnavailable, list_companies
 from company_builder import build_company_from_quote, build_company_from_symbol
 from company_registry_store import CompanyRegistryStore, company_id_for
 from instrument_classifier import (
@@ -25,6 +26,7 @@ from instrument_classifier import (
     COMPANY_LINKED_NON_PRIMARY_CATEGORIES,
     classify_instrument,
     issuer_key as compute_issuer_key,
+    normalize_text,
 )
 from listed_company_store import ListedCompanyStore
 from market_data import MarketDataUnavailable, find_quote
@@ -74,8 +76,36 @@ def _raw_row(item: Any) -> dict[str, Any]:
     return item.to_dict() if hasattr(item, "to_dict") else dict(item)
 
 
-def _classify_universe(raw_items: list[Any]) -> list[dict[str, Any]]:
-    """Classify every discovered instrument. Pure, deterministic, no I/O.
+def _codal_verified_symbols() -> set[str]:
+    """Bulk-fetch CODAL's issuer directory once (not per instrument) as a classification signal.
+
+    CODAL is not a gate on collection (see refresh_universe), but its issuer
+    directory is authoritative, already-available metadata: a symbol present
+    there is a genuine registered issuer. Best-effort -- any failure just
+    means this signal is unavailable this run, never a hard error.
+    """
+    try:
+        rows = list_companies()
+    except (CodalDataUnavailable, OSError, ValueError):
+        return set()
+    symbols: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        symbol = normalize_text(row.get("sy"))
+        if symbol:
+            symbols.add(symbol)
+    return symbols
+
+
+def _classify_universe(
+    raw_items: list[Any],
+    *,
+    codal_symbols: frozenset[str] = frozenset(),
+    verified_codes: frozenset[str] = frozenset(),
+) -> list[dict[str, Any]]:
+    """Classify every discovered instrument. Deterministic; the only I/O is
+    whatever the caller already did to build ``codal_symbols``/``verified_codes``.
 
     Sorted by code before classification so issuer/dedup resolution below is
     independent of whatever order the upstream feed happened to return.
@@ -90,7 +120,10 @@ def _classify_universe(raw_items: list[Any]) -> list[dict[str, Any]]:
         name = data.get("name")
         market = data.get("market")
         paper_type = data.get("paper_type") or data.get("paperType") or data.get("yVal")
-        classification = classify_instrument(symbol=symbol, name=name, market=market, paper_type=paper_type)
+        verified_issuer = code in verified_codes or normalize_text(symbol) in codal_symbols
+        classification = classify_instrument(
+            symbol=symbol, name=name, market=market, paper_type=paper_type, verified_issuer=verified_issuer,
+        )
         rows.append({
             "code": code, "symbol": symbol, "name": name, "market": market,
             "paper_type": paper_type, "category": classification.category,
@@ -116,8 +149,18 @@ def _classify_and_register(
     (never discarded). Only genuine, deduplicated companies (one primary
     instrument per issuer) are written to the enrichment-eligible
     ``listed_companies`` table.
+
+    Two out-of-band, already-authoritative signals feed the classifier's
+    final fallback tier (never overriding a non-company keyword match): a
+    one-time bulk CODAL issuer-directory fetch, and codes whose already-
+    fetched enrichment payload independently proves a genuine issuer (CODAL
+    metadata match or observed live market data). Both are best-effort --
+    unavailable upstreams just mean fewer instruments resolve this run, never
+    a fabricated classification.
     """
-    classified = _classify_universe(raw_items)
+    codal_symbols = frozenset(_codal_verified_symbols())
+    verified_codes = frozenset(target.verified_enrichment_codes())
+    classified = _classify_universe(raw_items, codal_symbols=codal_symbols, verified_codes=verified_codes)
 
     company_rows = [r for r in classified if r["category"] in COMPANY_CATEGORIES]
     linked_rows = [r for r in classified if r["category"] in COMPANY_LINKED_NON_PRIMARY_CATEGORIES]
@@ -129,56 +172,66 @@ def _classify_and_register(
     new_companies = 0
     selected: list[dict[str, Any]] = []
     seen_issuer_ids: dict[str, str] = {}
-
-    for row in company_rows:
-        key = compute_issuer_key(row["symbol"], row["name"], row["category"])
-        candidate_id = company_id_for(key) if key else None
-        if candidate_id and candidate_id in seen_issuer_ids:
-            row["original_category"] = row["category"]
-            row["category"] = CATEGORY_DUPLICATE_SHARE_CLASS
-            row["reason"] = f"duplicate issuer_key of {seen_issuer_ids[candidate_id]}; originally {row['original_category']}"
-            row["issuer_id"] = candidate_id
-            row["is_duplicate"] = True
-            continue
-        issuer_id, created = registry.get_or_create_company(
-            issuer_key_value=key,
-            symbol=row["symbol"],
-            name=row["name"],
-            category=row["category"],
-            primary_instrument_code=row["code"],
-            run_id=run_id,
-        ) if key else (None, False)
-        if candidate_id:
-            seen_issuer_ids[candidate_id] = issuer_id
-        row["issuer_id"] = issuer_id
-        row["is_duplicate"] = False
-        if created:
-            new_companies += 1
-        selected.append({**row["raw"], "code": row["code"], "symbol": row["symbol"], "source": "listed-company-registry"})
-
-    for row in linked_rows:  # rights issues: link to an existing base-share company, never create one
-        key = compute_issuer_key(row["symbol"], row["name"], row["category"])
-        candidate_id = company_id_for(key) if key else None
-        issuer_id = seen_issuer_ids.get(candidate_id) if candidate_id else None
-        if issuer_id is None and candidate_id and registry.company_exists(candidate_id):
-            # Base share's company was registered in an earlier run, not this batch.
-            issuer_id = candidate_id
-        row["issuer_id"] = issuer_id
-        row["is_duplicate"] = False
-
-    for row in other_rows:
-        row["issuer_id"] = None
-        row["is_duplicate"] = False
-
     newly_classified_instruments = 0
-    for row in classified:
-        is_new = registry.upsert_instrument(
-            code=row["code"], symbol=row["symbol"], name=row["name"], market=row["market"],
-            paper_type=row["paper_type"], category=row["category"], reason=row["reason"],
-            issuer_id=row.get("issuer_id"), is_duplicate=row.get("is_duplicate", False), run_id=run_id,
-        )
-        if is_new:
-            newly_classified_instruments += 1
+
+    # One shared connection/transaction for the whole batch instead of one
+    # per row: at a few thousand instruments, opening a fresh SQLite
+    # connection per call is slow enough to get the process OOM-killed.
+    with registry._connect() as conn:
+        for row in company_rows:
+            key = compute_issuer_key(row["symbol"], row["name"], row["category"])
+            candidate_id = company_id_for(key) if key else None
+            if candidate_id and candidate_id in seen_issuer_ids:
+                row["original_category"] = row["category"]
+                row["category"] = CATEGORY_DUPLICATE_SHARE_CLASS
+                row["reason"] = f"duplicate issuer_key of {seen_issuer_ids[candidate_id]}; originally {row['original_category']}"
+                row["issuer_id"] = candidate_id
+                row["is_duplicate"] = True
+                continue
+            issuer_id, created = registry.get_or_create_company(
+                issuer_key_value=key,
+                symbol=row["symbol"],
+                name=row["name"],
+                category=row["category"],
+                primary_instrument_code=row["code"],
+                run_id=run_id,
+                conn=conn,
+            ) if key else (None, False)
+            if candidate_id:
+                seen_issuer_ids[candidate_id] = issuer_id
+            row["issuer_id"] = issuer_id
+            row["is_duplicate"] = False
+            if created:
+                new_companies += 1
+            selected.append({**row["raw"], "code": row["code"], "symbol": row["symbol"], "source": "listed-company-registry"})
+
+        for row in linked_rows:  # rights issues: link to an existing base-share company, never create one
+            key = compute_issuer_key(row["symbol"], row["name"], row["category"])
+            candidate_id = company_id_for(key) if key else None
+            issuer_id = seen_issuer_ids.get(candidate_id) if candidate_id else None
+            if issuer_id is None and candidate_id and registry.company_exists(candidate_id, conn=conn):
+                # Base share's company was registered in an earlier run, not this batch.
+                issuer_id = candidate_id
+            row["issuer_id"] = issuer_id
+            row["is_duplicate"] = False
+
+        for row in other_rows:
+            row["issuer_id"] = None
+            row["is_duplicate"] = False
+
+        for row in classified:
+            is_new = registry.upsert_instrument(
+                code=row["code"], symbol=row["symbol"], name=row["name"], market=row["market"],
+                paper_type=row["paper_type"], category=row["category"], reason=row["reason"],
+                issuer_id=row.get("issuer_id"), is_duplicate=row.get("is_duplicate", False), run_id=run_id,
+                conn=conn,
+            )
+            if is_new:
+                newly_classified_instruments += 1
+
+        # Classification can improve run over run; self-heal any company_registry
+        # row a prior run created that no instrument now actually backs.
+        pruned_companies = registry.prune_orphaned_companies(conn=conn)
 
     if selected:
         target.upsert_universe(selected)
@@ -197,6 +250,7 @@ def _classify_and_register(
         "newlyClassifiedInstruments": newly_classified_instruments,
         "excludedNonCompany": excluded_non_company,
         "unresolvedUnknown": unresolved_unknown,
+        "prunedOrphanedCompanies": pruned_companies,
     }
 
 
