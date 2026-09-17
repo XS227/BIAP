@@ -5,7 +5,13 @@ on:
   push:
     branches: [feat/biap-global]
     paths:
+      - 'analysis/global_markets/official_cache_warm.py'
+      - 'analysis/global_markets/cached_fundamentals.py'
       - '.github/workflows/biap-global-cache-warm.yml'
+
+concurrency:
+  group: biap-global-cache-warm
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -38,6 +44,10 @@ jobs:
           ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
           set -euo pipefail
           APP_DIR=/home/ubuntu/biap-global/BIAP
+          cd "$APP_DIR"
+          git fetch origin feat/biap-global
+          git checkout feat/biap-global
+          git pull --ff-only origin feat/biap-global
           cd "$APP_DIR/analysis"
           set -a
           [[ -f .env.global ]] && source .env.global
