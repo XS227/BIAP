@@ -1,6 +1,6 @@
 from global_markets.country_packs import get_exchange
 from global_markets.models import GlobalCompany
-from global_markets.universe import _ordinary_equity_row
+from global_markets.universe import TwelveDataUniverseProvider, _ordinary_equity_row
 from global_markets.yahoo_chart import YahooChartMarketProvider
 
 
@@ -21,6 +21,17 @@ def _payload(*, exchange="NMS", currency="USD", closes=(100.0, 102.0, 101.0, 104
                 },
             }],
         }
+    }
+
+
+def _catalog_row(symbol: str, name: str, *, mic="XNAS", currency="USD"):
+    return {
+        "symbol": symbol,
+        "name": name,
+        "currency": currency,
+        "mic_code": mic,
+        "type": "Common Stock",
+        "cfi_code": "ESVUFR",
     }
 
 
@@ -110,3 +121,49 @@ def test_catalog_rejects_debt_structured_and_foreign_secondary_lines():
         row={"type": "Common Stock", "name": "Shell plc", "cfi_code": "ESVUFR"},
         symbol="SHEL", currency="GBP",
     )
+
+
+def test_universe_pager_does_not_treat_page_count_as_total(monkeypatch):
+    provider = TwelveDataUniverseProvider(api_key="demo", max_rows=10)
+    pages = {
+        1: {"count": 3, "data": [
+            _catalog_row("AAPL", "Apple Inc."),
+            _catalog_row("ADBE", "Adobe Inc."),
+            _catalog_row("AMZN", "Amazon.com Inc."),
+        ]},
+        2: {"count": 2, "data": [
+            _catalog_row("MSFT", "Microsoft Corp."),
+            _catalog_row("NVDA", "NVIDIA Corp."),
+        ]},
+        3: {"count": 0, "data": []},
+    }
+    monkeypatch.setattr(
+        provider,
+        "_get_page",
+        lambda *, country, spec, page, outputsize: pages.get(page, {"count": 0, "data": []}),
+    )
+
+    rows = list(provider.list_instruments(country="US", exchange="NASDAQ"))
+
+    assert [row.ticker for row in rows] == ["AAPL", "ADBE", "AMZN", "MSFT", "NVDA"]
+
+
+def test_exact_aapl_search_uses_stocks_lookup_before_symbol_search(monkeypatch):
+    provider = TwelveDataUniverseProvider(api_key="demo")
+    calls: list[str] = []
+
+    def fake_request(params, *, endpoint="stocks"):
+        calls.append(endpoint)
+        if endpoint == "stocks":
+            return {"count": 1, "data": [
+                _catalog_row("AAPL", "Apple Inc.", mic="XNGS"),
+            ], "status": "ok"}
+        return {"data": [], "status": "ok"}
+
+    monkeypatch.setattr(provider, "_request", fake_request)
+
+    rows = provider.search_instruments(country="US", exchange="NASDAQ", query="AAPL", limit=20)
+
+    assert rows and rows[0].ticker == "AAPL"
+    assert rows[0].mic_code == "XNGS"
+    assert calls[0] == "stocks"
