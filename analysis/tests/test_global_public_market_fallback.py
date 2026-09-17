@@ -67,27 +67,46 @@ def test_public_market_fallback_normalizes_lse_pence_to_gbp(monkeypatch):
     assert enriched.raw_provider_fields["public_market_price_scale"] == 0.01
 
 
-def test_catalog_rejects_debt_and_foreign_secondary_lines():
+def test_catalog_rejects_debt_structured_and_foreign_secondary_lines():
     oslo = get_exchange("NO", "EURONEXT_OSLO")
     lse = get_exchange("GB", "LSE")
 
     assert _ordinary_equity_row(
         country="NO", spec=oslo,
-        row={"type": "Common Stock", "name": "Equinor ASA"},
+        row={"type": "Common Stock", "name": "Equinor ASA", "cfi_code": "ESVUFR"},
         symbol="EQNR", currency="NOK",
+    )
+    # Numeric tickers are valid on Oslo and must not be rejected globally.
+    assert _ordinary_equity_row(
+        country="NO", spec=oslo,
+        row={"type": "Common Stock", "name": "2020 Bulkers Ltd.", "cfi_code": "ESVUFR"},
+        symbol="2020", currency="NOK",
     )
     assert not _ordinary_equity_row(
         country="NO", spec=oslo,
         row={"type": "Common Stock", "name": "Aasen Spb 22/27 FRN"},
         symbol="AASB31.PR.RO", currency="NOK",
     )
+    # A supplied non-equity CFI wins over a loose Common Stock text label.
     assert not _ordinary_equity_row(
         country="GB", spec=lse,
-        row={"type": "Common Stock", "name": "Alcon Inc."},
-        symbol="0A0D", currency="CHF",
+        row={"type": "Common Stock", "name": "Structured Note", "cfi_code": "DBFSGR"},
+        symbol="ABC1", currency="GBP",
+    )
+    # Numeric-leading XLON symbols are typically international/structured
+    # secondary lines and are outside Kiasha's ordinary London stock universe.
+    assert not _ordinary_equity_row(
+        country="GB", spec=lse,
+        row={"type": "Common Stock", "name": "Alcon Inc.", "cfi_code": "ESVUFR"},
+        symbol="0A0D", currency="GBP",
+    )
+    assert not _ordinary_equity_row(
+        country="GB", spec=lse,
+        row={"type": "Common Stock", "name": "Morgan Stanley B.V.", "cfi_code": "ESVUFR"},
+        symbol="1HP5", currency="GBP",
     )
     assert _ordinary_equity_row(
         country="GB", spec=lse,
-        row={"type": "Common Stock", "name": "Shell plc"},
+        row={"type": "Common Stock", "name": "Shell plc", "cfi_code": "ESVUFR"},
         symbol="SHEL", currency="GBP",
     )
