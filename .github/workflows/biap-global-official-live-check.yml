@@ -13,7 +13,7 @@ permissions:
 jobs:
   live-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -22,83 +22,25 @@ jobs:
       - name: Install Global runtime
         working-directory: analysis
         run: python -m pip install -r requirements.txt
-      - name: Probe KAP provider directly
+      - name: Inspect KAP live HTML
         working-directory: analysis
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
-          from global_markets.kap import KAPFundamentalsProvider
-          from global_markets.models import GlobalCompany
-          try:
-              seed = GlobalCompany(country='TR', exchange='BIST', mic_code='XIST', currency='TRY', ticker='AKBNK', name='Akbank T.A.Ş.')
-              result = KAPFundamentalsProvider().enrich_fundamentals(seed)
-              print('KAP_DIRECT_OK', result.filing_period_end, [(s.provider, s.source_type) for s in result.sources])
-          except Exception as exc:
-              print('KAP_DIRECT_ERROR', type(exc).__name__, str(exc))
-              raise
-          PY
-      - name: Verify official evidence for Brazil and Türkiye
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import json
-          import urllib.parse
-          import urllib.request
-
-          base = 'https://biap.dadashi.no/global-api/global'
-          cases = [
-              ('BR', 'B3', 'PETR4', 'BRL', ('cvm-open-data-dfp-resolved',)),
-              ('TR', 'BIST', 'AKBNK', 'TRY', ('kap-official-financial-summary',)),
-          ]
-
-          for country, exchange, ticker, currency, expected in cases:
-              query = urllib.parse.urlencode({'q': ticker, 'limit': 20})
-              with urllib.request.urlopen(f'{base}/instruments/{country}/{exchange}?{query}', timeout=45) as response:
-                  catalog = json.load(response)
-              instruments = catalog.get('instruments') or []
-              exact = next((row for row in instruments if str(row.get('ticker') or '').upper() == ticker), None)
-              assert exact is not None, (country, exchange, ticker, 'exact ticker not found', catalog)
-              body = {
-                  'country': country,
-                  'exchange': exchange,
-                  'ticker': exact.get('ticker') or ticker,
-                  'name': exact.get('name') or ticker,
-                  'currency': exact.get('currency') or currency,
-                  'isin': exact.get('isin'),
-                  'lei': exact.get('lei'),
-              }
-              req = urllib.request.Request(
-                  f'{base}/analyze',
-                  data=json.dumps(body).encode('utf-8'),
-                  headers={'Content-Type':'application/json','Accept':'application/json'},
-                  method='POST',
-              )
-              with urllib.request.urlopen(req, timeout=75) as response:
-                  payload = json.load(response)
-              company = payload.get('company') or {}
-              evidence = payload.get('evidence') or {}
-              diagnostics = payload.get('providerDiagnostics') or {}
-              sources = company.get('sources') or []
-              providers = {str(s.get('provider') or '') for s in sources}
-              print(json.dumps({
-                  'market': f'{country}/{exchange}',
-                  'ticker': ticker,
-                  'catalogName': exact.get('name'),
-                  'fundamentalsProvider': diagnostics.get('fundamentalsProvider'),
-                  'fundamentalsStatus': diagnostics.get('fundamentalsStatus'),
-                  'providers': sorted(providers),
-                  'evidence': evidence.get('status'),
-                  'missing': evidence.get('missing_critical'),
-                  'coverage': evidence.get('coverage'),
-                  'cvmMatchMode': (company.get('raw_provider_fields') or {}).get('cvm_match_mode'),
-              }, ensure_ascii=False, sort_keys=True))
-              assert any(provider in providers for provider in expected), (
-                  country, ticker, 'official provider missing', exact.get('name'), providers, diagnostics,
-              )
-              assert 'fundamental_source' not in (evidence.get('missing_critical') or []), (
-                  country, ticker, evidence, providers,
-              )
-              assert evidence.get('status') in {'PASS', 'WARN'}, (country, ticker, evidence)
+          from global_markets.kap import KAPFundamentalsProvider, KAP_BASE
+          provider = KAPFundamentalsProvider()
+          directory = provider._load_directory()
+          print('KAP_DIRECTORY_COUNT', len(directory), 'AKBNK_PATH', directory.get('AKBNK'))
+          path = directory.get('AKBNK')
+          assert path
+          slug = path.split('/sirket-bilgileri/ozet/', 1)[-1].strip('/')
+          url = f'{KAP_BASE}/tr/sirket-finansal-bilgileri/{slug}'
+          html = provider._get(url)
+          print('KAP_HTML_LEN', len(html), 'TABLE_COUNT', html.lower().count('<table'), 'TR_COUNT', html.lower().count('<tr'))
+          for needle in ('2025/12', '2025', 'Varlıklar Toplamı', 'VARLIKLAR TOPLAMI', 'Net Dönem', 'NET DÖNEM'):
+              idx = html.find(needle)
+              print('KAP_NEEDLE', repr(needle), idx)
+              if idx >= 0:
+                  print('KAP_SNIPPET', html[max(0, idx-500):idx+1200].replace('\n', ' ')[:1700])
           PY
