@@ -39,9 +39,9 @@ ANALYSIS_REQUIREMENTS: tuple[DataRequirement, ...] = (
 # market-ready = exchange routing exists but verified fundamentals adapter remains planned.
 SOURCE_PLANS: dict[str, dict] = {
     "IR": {"market": "TSETMC", "filings": "CODAL", "status": "bridge", "notes": "Existing Iran path reused read-only."},
-    "US": {"market": "licensed global feed", "filings": "SEC EDGAR/XBRL Company Facts", "status": "connected", "notes": "SEC adapter implemented; real User-Agent required."},
-    "CA": {"market": "global market feed", "filings": "SEDAR+", "status": "market-ready"},
-    "GB": {"market": "LSE / licensed global feed", "filings": "UKSEF/ESEF + Companies House corroboration", "status": "connected", "notes": "ESEF fundamentals adapter plus Companies House official metadata client."},
+    "US": {"market": "licensed global feed", "filings": "SEC EDGAR/XBRL Company Facts", "status": "connected", "notes": "SEC adapter implemented; descriptive User-Agent is used when no deployment-specific contact is configured."},
+    "CA": {"market": "global market feed", "filings": "SEDAR+", "status": "market-ready", "notes": "Public filings are available, but no stable machine-readable official financial-statement adapter is connected yet."},
+    "GB": {"market": "LSE / licensed global feed", "filings": "UKSEF/ESEF + Companies House corroboration", "status": "connected", "notes": "ESEF fundamentals are connected. Companies House legal-entity corroboration is automatically added when BIAP_COMPANIES_HOUSE_API_KEY is configured."},
     "SE": {"market": "Nasdaq Nordic / global market feed", "filings": "ESEF xBRL + issuer/Nasdaq corroboration", "status": "connected"},
     "NO": {"market": "Euronext Oslo / global market feed", "filings": "ESEF xBRL + issuer/Euronext corroboration", "status": "connected"},
     "DK": {"market": "Nasdaq Nordic / global market feed", "filings": "ESEF xBRL + issuer disclosures", "status": "connected"},
@@ -58,16 +58,16 @@ SOURCE_PLANS: dict[str, dict] = {
     "CH": {"market": "SIX / global market feed", "filings": "SIX + issuer reports", "status": "market-ready"},
     "AU": {"market": "ASX / licensed global feed", "filings": "verified ASX/issuer filing drop", "status": "connected", "notes": "Requires authorized/licensed ingestion; unverified local records are rejected."},
     "NZ": {"market": "NZX / global market feed", "filings": "NZX issuer disclosures", "status": "market-ready"},
-    "JP": {"market": "Tokyo Stock Exchange / global market feed", "filings": "FSA EDINET API v2", "status": "connected", "notes": "EDINET index/cache/parser implemented; API key required and daily server sync supported."},
-    "KR": {"market": "Korea Exchange / global market feed", "filings": "FSS OpenDART", "status": "connected", "notes": "OpenDART annual statement adapter implemented; API key required."},
-    "HK": {"market": "HKEX / global market feed", "filings": "HKEXnews", "status": "market-ready"},
-    "SG": {"market": "SGX / global market feed", "filings": "SGX issuer announcements", "status": "market-ready"},
+    "JP": {"market": "Tokyo Stock Exchange / global market feed", "filings": "FSA EDINET API v2", "status": "connected", "notes": "EDINET index/cache/parser implemented; BIAP_EDINET_API_KEY is required for official FSA evidence and daily sync."},
+    "KR": {"market": "Korea Exchange / global market feed", "filings": "FSS OpenDART", "status": "connected", "notes": "OpenDART annual statement adapter implemented; BIAP_OPENDART_API_KEY is required for official evidence."},
+    "HK": {"market": "HKEX / global market feed", "filings": "HKEXnews", "status": "market-ready", "notes": "Public disclosures exist, but a stable supported machine interface has not yet been promoted to verified ingestion."},
+    "SG": {"market": "SGX / global market feed", "filings": "SGX issuer announcements", "status": "market-ready", "notes": "Public disclosures exist, but a stable supported machine interface has not yet been promoted to verified ingestion."},
     "IN": {"market": "NSE/BSE / global market feed", "filings": "NSE/BSE corporate filings", "status": "market-ready"},
     "SA": {"market": "Saudi Exchange / global market feed", "filings": "Saudi Exchange disclosures", "status": "market-ready"},
     "AE": {"market": "ADX/DFM / global market feed", "filings": "ADX/DFM disclosures", "status": "market-ready"},
-    "TR": {"market": "Borsa Istanbul / global market feed", "filings": "KAP Public Disclosure Platform", "status": "market-ready"},
+    "TR": {"market": "Borsa Istanbul / global market feed", "filings": "KAP Public Disclosure Platform", "status": "market-ready", "notes": "KAP exposes public disclosures and financial reports; verified ingestion remains planned rather than relying on undocumented endpoints."},
     "ZA": {"market": "JSE / global market feed", "filings": "JSE SENS + issuer reports", "status": "market-ready"},
-    "BR": {"market": "B3 / global market feed", "filings": "CVM open data + issuer filings", "status": "market-ready"},
+    "BR": {"market": "B3 / global market feed", "filings": "CVM DFP open data + issuer filings", "status": "connected", "notes": "Official CVM standardized annual DFP open data is connected without an API key and refreshed from the regulator dataset."},
 }
 
 
