@@ -60,6 +60,13 @@ def _source_state(country: str) -> dict:
             f"CVM ITR quarterly corroboration ({'ready' if itr_ready else 'cache missing'})",
             "public vendor fallback",
         ]
+    elif country == "TR":
+        official_ready = True
+        supplemental = [
+            "KAP official BIST company directory",
+            "KAP official annual financial summaries",
+            "public vendor fallback",
+        ]
     elif country == "AU":
         official_ready = _any_verified_drop("AU")
         supplemental = ["verified ASX/issuer filing drop", "public vendor fallback"]
