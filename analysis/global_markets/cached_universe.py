@@ -17,10 +17,11 @@ from typing import Iterable, Optional
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
 
-# Version 4 invalidates snapshots created while the mobile/global catalog could
-# be seeded from a bounded prefix. A fresh snapshot is required so browsing and
-# server-side search can cover the complete provider universe.
-CACHE_SCHEMA_VERSION = 4
+# Version 5 invalidates snapshots created while the catalog pager treated the
+# provider's page-local `count` as a universe total. Those snapshots could stop
+# after the first alphabetical page (commonly A/B). A fresh snapshot is required
+# so browsing and server-side search cover all retrievable provider pages.
+CACHE_SCHEMA_VERSION = 5
 
 
 def _utc_now() -> datetime:
