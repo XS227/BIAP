@@ -14,7 +14,7 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     environment: production
     env:
       MARKET_KEY: ${{ secrets.BIAP_GLOBAL_MARKET_API_KEY || secrets.TWELVE_DATA_API_KEY }}
@@ -95,4 +95,76 @@ jobs:
                       print(f'{label}_{endpoint}_ok={ok} message={msg}')
                   except Exception as exc:
                       print(f'{label}_{endpoint}_error={type(exc).__name__}:{exc}')
+          PY
+      - name: Live production analysis smoke for launch markets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import urllib.request
+
+          url = 'https://biap.dadashi.no/global-api/global/analyze'
+          cases = [
+              ('AAPL', {'country':'US','exchange':'NASDAQ','ticker':'AAPL','name':'Apple Inc.','currency':'USD'}),
+              ('EQNR', {'country':'NO','exchange':'EURONEXT_OSLO','ticker':'EQNR','name':'Equinor ASA','currency':'NOK'}),
+              ('SHEL', {'country':'GB','exchange':'LSE','ticker':'SHEL','name':'Shell plc','currency':'GBP'}),
+          ]
+          for label, body in cases:
+              request = urllib.request.Request(
+                  url,
+                  data=json.dumps(body).encode('utf-8'),
+                  headers={'Content-Type':'application/json','Accept':'application/json'},
+                  method='POST',
+              )
+              with urllib.request.urlopen(request, timeout=45) as response:
+                  payload = json.load(response)
+              company = payload.get('company') or {}
+              signals = payload.get('signals') or []
+              price = company.get('price')
+              observed = company.get('price_observed_at')
+              vol = company.get('volatility_annualized_pct')
+              drawdown = company.get('max_drawdown_pct')
+              avgvol = company.get('avg_volume_30d')
+              market_sources = [s for s in (company.get('sources') or []) if s.get('source_type') in ('market_history','public_daily_market_history','market_snapshot_cache')]
+              nonzero_signals = [s for s in signals if float(s.get('confidence') or 0) > 0]
+              assert isinstance(price, (int,float)) and price > 0, (label, 'price', price, payload.get('providerDiagnostics'))
+              assert observed, (label, 'price_observed_at', observed)
+              assert isinstance(vol, (int,float)), (label, 'volatility', vol)
+              assert isinstance(drawdown, (int,float)), (label, 'drawdown', drawdown)
+              assert isinstance(avgvol, (int,float)), (label, 'avg_volume_30d', avgvol)
+              assert market_sources, (label, 'market provenance missing', company.get('sources'))
+              assert len(nonzero_signals) >= 3, (label, 'nonzero signal count', len(nonzero_signals), signals)
+              print(json.dumps({
+                  'ticker': label,
+                  'price': price,
+                  'currency': company.get('currency'),
+                  'observedAt': observed,
+                  'volatility': vol,
+                  'maxDrawdown': drawdown,
+                  'avgVolume30d': avgvol,
+                  'call': payload.get('call'),
+                  'confidence': payload.get('confidence'),
+                  'evidenceStatus': (payload.get('evidence') or {}).get('status'),
+                  'nonzeroSignals': len(nonzero_signals),
+                  'marketProviders': sorted({s.get('provider') for s in market_sources}),
+              }, sort_keys=True))
+          PY
+      - name: Live catalog filter smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.request
+          cases = [
+              ('NO','EURONEXT_OSLO','AASB31.PR.RO'),
+              ('GB','LSE','0A0D'),
+          ]
+          for country, exchange, rejected in cases:
+              url = f'https://biap.dadashi.no/global-api/global/instruments/{country}/{exchange}?limit=1000'
+              with urllib.request.urlopen(url, timeout=45) as response:
+                  payload = json.load(response)
+              symbols = {str(row.get('ticker') or '').upper() for row in payload.get('instruments') or []}
+              assert rejected.upper() not in symbols, (country, exchange, rejected, 'still present')
+              print(f'{country}/{exchange}: returned={payload.get("returned")} rejected={rejected} absent=True')
           PY
