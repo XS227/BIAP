@@ -17,6 +17,11 @@ from typing import Iterable, Optional
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
 
+# Version 2 invalidates snapshots created before the ordinary-equity filter was
+# introduced. Old v1 caches may contain FRNs, preference lines and foreign
+# secondary listings that should never enter Kiasha's stock universe.
+CACHE_SCHEMA_VERSION = 2
+
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -72,7 +77,7 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError, TypeError):
             return None
-        if not isinstance(payload, dict) or payload.get("schemaVersion") != 1:
+        if not isinstance(payload, dict) or payload.get("schemaVersion") != CACHE_SCHEMA_VERSION:
             return None
         if str(payload.get("country") or "").upper() != country.upper():
             return None
@@ -118,7 +123,7 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
         path.parent.mkdir(parents=True, exist_ok=True)
         now = _utc_now().isoformat()
         payload = {
-            "schemaVersion": 1,
+            "schemaVersion": CACHE_SCHEMA_VERSION,
             "country": country.upper(),
             "exchange": exchange.upper(),
             "provider": self.upstream.provider_id,
