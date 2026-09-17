@@ -14,7 +14,7 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     environment: production
     env:
       MARKET_KEY: ${{ secrets.BIAP_GLOBAL_MARKET_API_KEY || secrets.TWELVE_DATA_API_KEY }}
@@ -51,7 +51,8 @@ jobs:
               ('GB-XLON', {'mic_code':'XLON','type':'Common Stock'}),
               ('NO-XOSL', {'mic_code':'XOSL','type':'Common Stock'}),
               ('SE-XSTO', {'mic_code':'XSTO','type':'Common Stock'}),
-              ('JP-XTKS', {'mic_code':'XTKS','type':'Common Stock'}),
+              ('ES-XMAD', {'mic_code':'XMAD','type':'Common Stock'}),
+              ('JP-XJPX', {'mic_code':'XJPX','type':'Common Stock'}),
               ('AU-XASX', {'mic_code':'XASX','type':'Common Stock'}),
           ]
           for label, params in tests:
@@ -76,6 +77,8 @@ jobs:
               ('VOD-GB', {'symbol':'VOD','mic_code':'XLON'}),
               ('EQNR-NO', {'symbol':'EQNR','mic_code':'XOSL'}),
               ('VOLV-B-SE', {'symbol':'VOLV-B','mic_code':'XSTO'}),
+              ('SAN-ES', {'symbol':'SAN','mic_code':'XMAD'}),
+              ('7203-JP', {'symbol':'7203','mic_code':'XJPX'}),
               ('BHP-AU', {'symbol':'BHP','mic_code':'XASX'}),
           ]
           for label, params in tests:
@@ -148,6 +151,80 @@ jobs:
                   'evidenceStatus': (payload.get('evidence') or {}).get('status'),
                   'nonzeroSignals': len(nonzero_signals),
                   'marketProviders': sorted({s.get('provider') for s in market_sources}),
+              }, sort_keys=True))
+          PY
+      - name: Live Spain Japan catalog and global fundamentals smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import urllib.parse
+          import urllib.request
+
+          base = 'https://biap.dadashi.no/global-api/global'
+          cases = [
+              ('ES', 'BME_MADRID', 'SAN', 'EUR'),
+              ('JP', 'TSE_JP', '7203', 'JPY'),
+              ('SG', 'SGX', 'D05', 'SGD'),
+          ]
+          metric_names = (
+              'revenue', 'net_income', 'total_assets', 'total_equity',
+              'operating_cash_flow', 'free_cash_flow', 'total_debt', 'ebitda',
+          )
+
+          for country, exchange, ticker, currency in cases:
+              query = urllib.parse.urlencode({'q': ticker, 'limit': 20})
+              catalog_url = f'{base}/instruments/{country}/{exchange}?{query}'
+              with urllib.request.urlopen(catalog_url, timeout=45) as response:
+                  catalog = json.load(response)
+              instruments = catalog.get('instruments') or []
+              exact = next((row for row in instruments if str(row.get('ticker') or '').upper() == ticker.upper()), None)
+              assert exact is not None, (country, exchange, ticker, 'exact ticker not found', catalog)
+
+              body = {
+                  'country': country,
+                  'exchange': exchange,
+                  'ticker': exact.get('ticker') or ticker,
+                  'name': exact.get('name') or ticker,
+                  'currency': exact.get('currency') or currency,
+                  'isin': exact.get('isin'),
+                  'lei': exact.get('lei'),
+              }
+              request = urllib.request.Request(
+                  f'{base}/analyze',
+                  data=json.dumps(body).encode('utf-8'),
+                  headers={'Content-Type':'application/json','Accept':'application/json'},
+                  method='POST',
+              )
+              with urllib.request.urlopen(request, timeout=60) as response:
+                  payload = json.load(response)
+
+              company = payload.get('company') or {}
+              diagnostics = payload.get('providerDiagnostics') or {}
+              metrics = {name: company.get(name) for name in metric_names if company.get(name) is not None}
+              sources = company.get('sources') or []
+              fundamental_sources = [s for s in sources if s.get('provider') in {
+                  'esef-xbrl-cached', 'edinet', 'yahoo-public-fundamentals-global'
+              } or 'fundamental' in str(s.get('source_type') or '').lower() or 'xbrl' in str(s.get('source_type') or '').lower()]
+
+              assert isinstance(company.get('price'), (int, float)) and company.get('price') > 0, (
+                  country, exchange, ticker, 'missing price', diagnostics,
+              )
+              assert metrics, (country, exchange, ticker, 'fundamentals still empty', diagnostics, sources)
+              assert fundamental_sources, (country, exchange, ticker, 'fundamental provenance missing', diagnostics, sources)
+
+              print(json.dumps({
+                  'market': f'{country}/{exchange}',
+                  'ticker': ticker,
+                  'catalogMic': catalog.get('mic'),
+                  'catalogReturned': catalog.get('returned'),
+                  'price': company.get('price'),
+                  'fundamentalsStatus': diagnostics.get('fundamentalsStatus'),
+                  'fundamentalsProvider': diagnostics.get('fundamentalsProvider'),
+                  'metricsPresent': sorted(metrics),
+                  'evidenceStatus': (payload.get('evidence') or {}).get('status'),
+                  'sourceProviders': sorted({str(s.get('provider')) for s in fundamental_sources}),
               }, sort_keys=True))
           PY
       - name: Live catalog filter smoke
