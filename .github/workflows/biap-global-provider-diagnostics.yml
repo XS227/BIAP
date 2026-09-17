@@ -10,6 +10,7 @@ on:
 permissions:
   contents: read
 
+# 2026-09-17 refresh: verify provider credentials/coverage without exposing secrets.
 jobs:
   check:
     runs-on: ubuntu-latest
