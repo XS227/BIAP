@@ -65,8 +65,6 @@ class YahooChartMarketProvider(MarketDataProvider):
         country = company.country.strip().upper()
         if country not in _SUFFIX:
             raise GlobalProviderError(f"Yahoo public fallback is not enabled for {country}")
-        # Yahoo uses '-' for many share-class separators (e.g. BRK-B). The
-        # Global catalog already bounds the venue, so this normalization is safe.
         base = company.ticker.strip().upper().replace(".", "-")
         if not base:
             raise GlobalProviderError("ticker is required")
@@ -152,10 +150,12 @@ class YahooChartMarketProvider(MarketDataProvider):
     def _normalized_currency(meta_currency: object) -> tuple[Optional[str], float]:
         text = str(meta_currency or "").strip()
         upper = text.upper()
-        # Yahoo commonly returns GBp for LSE securities quoted in pence. BIAP
-        # normalizes those prices to GBP so portfolio FX/amount math is coherent.
-        if upper in {"GBP", "GBX", "GBPENCE", "GBPENNY", "GBPENCE"}:
-            return "GBP", (0.01 if upper != "GBP" else 1.0)
+        # Preserve the vendor's case long enough to distinguish GBp (pence)
+        # from GBP (pounds). Upper-casing first would collapse both into GBP.
+        if text == "GBp" or upper in {"GBX", "GBPENCE", "GBPENNY"}:
+            return "GBP", 0.01
+        if upper == "GBP":
+            return "GBP", 1.0
         return (upper or None), 1.0
 
     @classmethod
@@ -212,12 +212,14 @@ class YahooChartMarketProvider(MarketDataProvider):
             if close is None or close <= 0:
                 continue
             adjusted = self._float(adj_values[index]) if isinstance(adj_values, list) and index < len(adj_values) else None
+            high = self._float(highs[index]) if index < len(highs) else None
+            low = self._float(lows[index]) if index < len(lows) else None
             bars.append({
                 "timestamp": timestamp,
                 "close": close * price_scale,
                 "adjusted": (adjusted if adjusted and adjusted > 0 else close) * price_scale,
-                "high": (self._float(highs[index]) * price_scale) if index < len(highs) and self._float(highs[index]) is not None else None,
-                "low": (self._float(lows[index]) * price_scale) if index < len(lows) and self._float(lows[index]) is not None else None,
+                "high": high * price_scale if high is not None else None,
+                "low": low * price_scale if low is not None else None,
                 "volume": self._float(volumes[index]) if index < len(volumes) else None,
             })
         if not bars:
