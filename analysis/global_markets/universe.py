@@ -22,15 +22,42 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 
 
 def _clean_isin(value: object) -> Optional[str]:
-    """Return only a structurally valid ISIN-like identifier.
-
-    Some reference catalogs return entitlement sentinels such as
-    ``REQUEST_ACCESS_VIA_ADD_ONS`` in identifier fields when that field is not
-    included in the current plan. Treat those values as unavailable evidence,
-    never as an issuer identifier.
-    """
+    """Return only a structurally valid ISIN-like identifier."""
     text = str(value or "").strip().upper()
     return text if len(text) == 12 and text.isalnum() else None
+
+
+def _ordinary_equity_row(*, country: str, spec: ExchangeSpec, row: dict, symbol: str, currency: str) -> bool:
+    """Conservatively reject debt/preference/foreign secondary lines.
+
+    Some vendor reference rows are labelled ``Common Stock`` even when the
+    symbol/name clearly represents a floating-rate note, preference line or a
+    foreign-currency international segment. BIAP's Kiasha stock scanner should
+    screen ordinary operating-company equities, not those instruments.
+    """
+    instrument_type = str(row.get("type") or "Common Stock").strip()
+    kind = instrument_type.lower()
+    if "stock" not in kind and "equity" not in kind:
+        return False
+
+    allowed_currencies = {value.upper() for value in spec.currencies}
+    if country.upper() == "GB":
+        # LSE common shares may be catalogued in pounds or pence.
+        allowed_currencies.add("GBX")
+    if allowed_currencies and currency.upper() not in allowed_currencies:
+        return False
+
+    ticker = symbol.upper()
+    if ".PR." in ticker or ticker.endswith(".PR") or ".RT." in ticker or ticker.endswith(".RT"):
+        return False
+
+    name = f" {str(row.get('name') or '').upper()} "
+    rejected_name_tokens = (
+        " FRN ", " FLOATING RATE ", " BOND ", " NOTE ", " NOTES ",
+        " WARRANT ", " WARRANTS ", " RIGHTS ", " CERTIFICATE ",
+        " PREFERENCE ", " PREFERRED ", " CONVERTIBLE BOND ",
+    )
+    return not any(token in name for token in rejected_name_tokens)
 
 
 class TwelveDataUniverseProvider(InstrumentUniverseProvider):
@@ -71,18 +98,12 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
         return row_count, total
 
     def _get_page(self, *, country: str, spec: ExchangeSpec, page: int, outputsize: int) -> dict:
-        # MIC is the safest cross-vendor venue identity. Do not add a country
-        # filter to MIC queries because vendors differ on whether they expect an
-        # ISO alpha-2 code or a human country name.
         common = {"page": page, "outputsize": outputsize, "format": "JSON", "type": "Common Stock"}
         candidates: list[dict] = []
 
         if spec.mic:
             candidates.append(self._request({**common, "mic_code": spec.mic}))
 
-        # The operating MIC can be sparse while the exchange-name catalog
-        # includes segment MICs (notably NASDAQ). Conversely LSE/Oslo work much
-        # better by MIC. Query both and deterministically keep the richer page.
         country_name = get_country_pack(country).name
         try:
             candidates.append(self._request({**common, "country": country_name, "exchange": spec.label}))
@@ -122,13 +143,13 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
                 dedupe_key = (venue_key, symbol.upper())
                 if dedupe_key in seen:
                     continue
-                seen.add(dedupe_key)
                 currency = str(row.get("currency") or (spec.currencies[0] if spec.currencies else "")).strip().upper()
                 if not currency:
                     continue
-                instrument_type = str(row.get("type") or "Common Stock").strip()
-                if "stock" not in instrument_type.lower() and "equity" not in instrument_type.lower():
+                if not _ordinary_equity_row(country=country, spec=spec, row=row, symbol=symbol, currency=currency):
                     continue
+                seen.add(dedupe_key)
+                instrument_type = str(row.get("type") or "Common Stock").strip()
                 result.append(GlobalCompany(
                     country=country.upper(),
                     exchange=spec.code,
