@@ -14,14 +14,44 @@ import os
 from .country_packs import COUNTRY_PACKS, get_exchange
 from .runtime import build_registry
 
+# Keep the principal supported global venues warm so switching country in the
+# app does not depend on a fresh upstream catalog request. Failures are isolated
+# per market and an existing verified cache is never replaced by an empty result.
 _DEFAULT_TARGETS = (
     "US:NASDAQ",
     "US:NYSE",
     "GB:LSE",
     "NO:EURONEXT_OSLO",
     "SE:NASDAQ_STOCKHOLM",
-    "JP:TSE_JP",
+    "DK:NASDAQ_COPENHAGEN",
+    "FI:NASDAQ_HELSINKI",
+    "IS:NASDAQ_ICELAND",
+    "NL:EURONEXT_AMSTERDAM",
+    "FR:EURONEXT_PARIS",
+    "BE:EURONEXT_BRUSSELS",
+    "IE:EURONEXT_DUBLIN",
+    "PT:EURONEXT_LISBON",
+    "IT:EURONEXT_MILAN",
+    "DE:XETRA",
+    "DE:FRANKFURT",
+    "ES:BME_MADRID",
+    "CH:SIX",
     "AU:ASX",
+    "NZ:NZX",
+    "JP:TSE_JP",
+    "CA:TSX",
+    "CA:TSXV",
+    "HK:HKEX",
+    "SG:SGX",
+    "IN:NSE",
+    "IN:BSE",
+    "SA:SAUDI_EXCHANGE",
+    "TR:BIST",
+    "ZA:JSE",
+    "BR:B3",
+    "KR:KRX",
+    "AE:ADX",
+    "AE:DFM",
 )
 
 
@@ -73,9 +103,6 @@ def main() -> int:
             )
             ok += 1
         except Exception as exc:
-            # One market must never prevent the remaining countries from syncing.
-            # PersistentUniverseProvider also refuses to overwrite a good cache
-            # with an empty/failed refresh.
             print(f"UNIVERSE_SYNC failed {country}:{exchange} error={type(exc).__name__}:{str(exc)[:220]}")
             failed += 1
     print(f"UNIVERSE_SYNC complete ok={ok} failed={failed}")
