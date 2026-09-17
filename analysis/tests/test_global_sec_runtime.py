@@ -1,3 +1,4 @@
+from global_markets.cached_fundamentals import PersistentFundamentalsProvider
 from global_markets.runtime import build_registry
 from global_markets.sec_edgar import SECEdgarFundamentalsProvider
 
@@ -9,7 +10,9 @@ def test_us_sec_fundamentals_are_registered_without_env(monkeypatch):
     nasdaq = registry.fundamentals("US", "NASDAQ")
     nyse = registry.fundamentals("US", "NYSE")
 
-    assert isinstance(nasdaq, SECEdgarFundamentalsProvider)
-    assert isinstance(nyse, SECEdgarFundamentalsProvider)
-    assert nasdaq.user_agent
-    assert nyse.user_agent
+    assert isinstance(nasdaq, PersistentFundamentalsProvider)
+    assert isinstance(nyse, PersistentFundamentalsProvider)
+    assert isinstance(nasdaq.upstream, SECEdgarFundamentalsProvider)
+    assert isinstance(nyse.upstream, SECEdgarFundamentalsProvider)
+    assert nasdaq.upstream.user_agent
+    assert nyse.upstream.user_agent
