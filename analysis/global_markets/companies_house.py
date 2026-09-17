@@ -7,6 +7,7 @@ market-price or parsed-fundamentals provider.
 """
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timezone
 import os
 import re
@@ -14,7 +15,8 @@ from typing import Any, Optional
 
 import httpx
 
-from .providers import GlobalProviderError
+from .models import GlobalCompany, SourceEvidence
+from .providers import GlobalProviderError, append_source
 from .source_cache import read_json, source_index_path, write_json_atomic
 
 DEFAULT_BASE = "https://api.company-information.service.gov.uk"
@@ -85,3 +87,42 @@ def cache_company(legal_name: str) -> dict:
     index["updatedAt"] = datetime.now(timezone.utc).isoformat()
     write_json_atomic(path, index)
     return {"companyNumber": number, "path": str(path)}
+
+
+class CompaniesHouseCorroborator:
+    """Append UK legal-entity/filing metadata without pretending it is XBRL data."""
+
+    provider_id = "companies-house"
+
+    def __init__(self, *, api_key: Optional[str] = None, timeout: float = 12.0) -> None:
+        self.client = CompaniesHouseClient(api_key=api_key, timeout=timeout)
+
+    def corroborate(self, company: GlobalCompany) -> GlobalCompany:
+        if company.country.upper() != "GB":
+            raise GlobalProviderError(f"Companies House corroboration is for GB, not {company.country}")
+        resolved = self.client.resolve_exact(company.name)
+        number = resolved["companyNumber"]
+        profile = resolved.get("profile") if isinstance(resolved.get("profile"), dict) else {}
+        status = str(profile.get("company_status") or "").strip().lower() or None
+        company_name = str(profile.get("company_name") or company.name).strip()
+        updated = datetime.now(timezone.utc).isoformat()
+        enriched = replace(
+            company,
+            raw_provider_fields={
+                **company.raw_provider_fields,
+                "companies_house_number": number,
+                "companies_house_legal_name": company_name,
+                "companies_house_status": status,
+            },
+        )
+        if any(source.provider == self.provider_id and source.source_id == number for source in enriched.sources):
+            return enriched
+        return append_source(enriched, SourceEvidence(
+            provider=self.provider_id,
+            source_type="official_company_registry",
+            source_id=number,
+            source_url=f"https://find-and-update.company-information.service.gov.uk/company/{number}",
+            observed_at=updated,
+            quality=0.99,
+            notes="Official UK legal-entity corroboration; not a substitute for UKSEF/ESEF financial statements.",
+        ))
