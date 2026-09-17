@@ -1,0 +1,57 @@
+name: BIAP Global live smoke
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-live-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify public Global health and instrument discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://biap.dadashi.no/global-api'
+          curl --fail --silent --show-error --max-time 20 "$BASE/health" > /tmp/health.json
+          curl --fail --silent --show-error --max-time 30 "$BASE/global/instruments/US/NASDAQ?q=AAPL&limit=20&offset=0" > /tmp/aapl.json
+          curl --fail --silent --show-error --max-time 30 "$BASE/global/instruments/US/NASDAQ?q=MSFT&limit=20&offset=0" > /tmp/msft.json
+          curl --fail --silent --show-error --max-time 30 "$BASE/global/instruments/US/NASDAQ?q=NVDA&limit=20&offset=0" > /tmp/nvda.json
+          curl --fail --silent --show-error --max-time 30 "$BASE/global/instruments/GB/LSE?q=SHEL&limit=20&offset=0" > /tmp/shel.json
+          curl --fail --silent --show-error --max-time 30 "$BASE/global/instruments/US/NASDAQ?limit=50&offset=500" > /tmp/nasdaq500.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          health=json.loads(Path('/tmp/health.json').read_text())
+          assert health.get('service') == 'biap-global', health
+
+          def tickers(path):
+              payload=json.loads(Path(path).read_text())
+              return payload, {str(x.get('ticker','')).upper() for x in payload.get('instruments', [])}
+
+          aapl,aapl_t=tickers('/tmp/aapl.json')
+          msft,msft_t=tickers('/tmp/msft.json')
+          nvda,nvda_t=tickers('/tmp/nvda.json')
+          shel,shel_t=tickers('/tmp/shel.json')
+          page,page_t=tickers('/tmp/nasdaq500.json')
+
+          assert 'AAPL' in aapl_t, aapl
+          assert 'MSFT' in msft_t, msft
+          assert 'NVDA' in nvda_t, nvda
+          assert 'SHEL' in shel_t, shel
+          assert int(page.get('offset', -1)) == 500, page
+          assert int(page.get('returned', 0)) > 0, page
+          print('AAPL:', sorted(aapl_t))
+          print('MSFT:', sorted(msft_t))
+          print('NVDA:', sorted(nvda_t))
+          print('SHEL:', sorted(shel_t))
+          print('NASDAQ offset 500 returned:', page.get('returned'), 'sample:', sorted(page_t)[:10])
+          PY
