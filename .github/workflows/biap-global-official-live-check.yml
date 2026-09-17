@@ -13,8 +13,31 @@ permissions:
 jobs:
   live-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Global runtime
+        working-directory: analysis
+        run: python -m pip install -r requirements.txt
+      - name: Probe KAP provider directly
+        working-directory: analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from global_markets.kap import KAPFundamentalsProvider
+          from global_markets.models import GlobalCompany
+          try:
+              seed = GlobalCompany(country='TR', exchange='BIST', mic_code='XIST', currency='TRY', ticker='AKBNK', name='Akbank T.A.Ş.')
+              result = KAPFundamentalsProvider().enrich_fundamentals(seed)
+              print('KAP_DIRECT_OK', result.filing_period_end, [(s.provider, s.source_type) for s in result.sources])
+          except Exception as exc:
+              print('KAP_DIRECT_ERROR', type(exc).__name__, str(exc))
+              raise
+          PY
       - name: Verify official evidence for Brazil and Türkiye
         shell: bash
         run: |
