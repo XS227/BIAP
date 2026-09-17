@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 
+from global_markets.cached_fundamentals import PersistentFundamentalsProvider
+from global_markets.fallback_fundamentals import FallbackFundamentalsProvider
 from global_markets.kap_current import KAPCurrentFundamentalsProvider, parse_kap_current_summary
 from global_markets.runtime import build_registry
 
@@ -36,5 +38,7 @@ def test_runtime_uses_current_kap_provider(monkeypatch):
     monkeypatch.delenv("BIAP_GLOBAL_MARKET_API_KEY", raising=False)
     registry = build_registry()
     provider = registry.fundamentals("TR", "BIST")
+    assert isinstance(provider, PersistentFundamentalsProvider)
+    assert isinstance(provider.upstream, FallbackFundamentalsProvider)
+    assert isinstance(provider.upstream.primary, KAPCurrentFundamentalsProvider)
     assert "kap-official-financial-summary" in provider.provider_id
-    assert isinstance(provider.primary, KAPCurrentFundamentalsProvider)
