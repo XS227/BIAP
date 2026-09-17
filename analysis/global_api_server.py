@@ -8,10 +8,12 @@ lets the mobile/web client point to a separate staging origin.
 from fastapi import FastAPI
 
 from global_routes import router as global_router
+from global_source_routes import router as global_source_router
 
 
 app = FastAPI(title="BIAP Global research service")
 app.include_router(global_router)
+app.include_router(global_source_router)
 
 
 @app.get("/health")
