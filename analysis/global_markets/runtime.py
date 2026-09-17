@@ -22,6 +22,7 @@ from .sec_edgar import SECEdgarFundamentalsProvider
 from .twelve_data import TwelveDataMarketProvider
 from .universe import IranUniverseProvider, TwelveDataUniverseProvider
 from .verified_filing_drop import VerifiedFilingDropProvider
+from .yahoo_chart import YahooChartMarketProvider
 
 _ESEF_COUNTRIES = (
     "SE", "NO", "DK", "FI", "IS", "NL", "FR", "BE", "IE", "PT", "IT", "DE", "ES", "GB",
@@ -52,17 +53,26 @@ def build_registry() -> ProviderRegistry:
         for exchange in pack.exchanges:
             registry.register_universe(country, exchange.code, universe)
 
-    # A cache-backed market provider is always registered. With a credential it
-    # refreshes from Twelve Data and persists verified snapshots; without a
-    # credential it becomes read-only cache mode. Missing snapshots still fail
-    # explicitly and cannot create synthetic prices.
+    # Licensed Twelve Data remains the preferred market source. When no licensed
+    # credential is configured, a deliberately lower-trust public daily-history
+    # fallback is enabled only for the three launch/test markets US, GB and NO.
+    # Every successful result is persisted by PersistentMarketProvider. Other
+    # countries stay cache-only rather than silently receiving guessed prices.
     market_key = (os.environ.get("BIAP_GLOBAL_MARKET_API_KEY") or "").strip()
-    market = PersistentMarketProvider(TwelveDataMarketProvider() if market_key else None)
+    licensed_market = PersistentMarketProvider(TwelveDataMarketProvider()) if market_key else None
+    public_market = PersistentMarketProvider(YahooChartMarketProvider()) if not market_key else None
+    cache_only_market = PersistentMarketProvider(None)
     for country, pack in COUNTRY_PACKS.items():
         if country == "IR":
             continue
         for exchange in pack.exchanges:
-            registry.register_market(country, exchange.code, market)
+            if licensed_market is not None:
+                provider = licensed_market
+            elif public_market is not None and YahooChartMarketProvider.supported(country, exchange.code):
+                provider = public_market
+            else:
+                provider = cache_only_market
+            registry.register_market(country, exchange.code, provider)
 
     if os.environ.get("BIAP_SEC_USER_AGENT"):
         sec = SECEdgarFundamentalsProvider()
