@@ -74,10 +74,19 @@ def build_registry() -> ProviderRegistry:
                 provider = cache_only_market
             registry.register_market(country, exchange.code, provider)
 
-    if os.environ.get("BIAP_SEC_USER_AGENT"):
-        sec = SECEdgarFundamentalsProvider()
-        for exchange in COUNTRY_PACKS["US"].exchanges:
-            registry.register_fundamentals("US", exchange.code, sec)
+    # SEC companyfacts is a public, no-key source. The old wiring silently omitted
+    # the US fundamentals provider whenever BIAP_SEC_USER_AGENT was not present on
+    # the server, which made every US analysis market-data-only and forced the
+    # Evidence gate to BLOCK with missing=fundamental_source. Always register the
+    # adapter and use a descriptive project contact URL when deployment has not
+    # provided a more specific User-Agent string.
+    sec_user_agent = (
+        os.environ.get("BIAP_SEC_USER_AGENT")
+        or "BIAP Global research application (+https://setai.no)"
+    ).strip()
+    sec = SECEdgarFundamentalsProvider(user_agent=sec_user_agent)
+    for exchange in COUNTRY_PACKS["US"].exchanges:
+        registry.register_fundamentals("US", exchange.code, sec)
 
     esef = CachedESEFFundamentalsProvider()
     for country in _ESEF_COUNTRIES:
