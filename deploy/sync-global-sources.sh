@@ -14,12 +14,20 @@ if [[ -f "$ENV_FILE" ]]; then
 fi
 
 export BIAP_GLOBAL_DATA_DIR="${BIAP_GLOBAL_DATA_DIR:-/var/lib/biap-global}"
-mkdir -p "$BIAP_GLOBAL_DATA_DIR/source-index" "$BIAP_GLOBAL_DATA_DIR/filings/JP"
+mkdir -p "$BIAP_GLOBAL_DATA_DIR/source-index" "$BIAP_GLOBAL_DATA_DIR/filings/JP" "$BIAP_GLOBAL_DATA_DIR/fundamentals"
 
 # Keep the instrument catalogs for the main global exchanges warm. Individual
 # market failures are isolated inside universe_sync and never erase a good cache.
 if ! "$PY" -m global_markets.universe_sync; then
   echo "UNIVERSE_SYNC: no market refreshed this run; existing snapshots preserved" >&2
+fi
+
+# Build an outage-safe baseline for US, ESEF/UKSEF Europe and Türkiye. The job
+# uses only a bounded cross-market QA set; every other company is persisted on
+# demand after its first analysis. Existing official snapshots are never erased
+# by a failed refresh.
+if ! "$PY" -m global_markets.official_cache_warm; then
+  echo "OFFICIAL_CACHE_WARM: refresh degraded; existing snapshots preserved" >&2
 fi
 
 # Brazil: CVM DFP is the annual regulator-published fundamentals base. CVM ITR is
@@ -54,8 +62,9 @@ else
   echo "EDINET: skipped (BIAP_EDINET_API_KEY not configured)"
 fi
 
-# ESEF/GLEIF are queried on demand by verified LEI and cached by the API layer.
-# UK Companies House is queried only when its API key is configured. Australia
-# is intentionally not scraped here: an authorized/licensed ingestion job must
-# populate the verified filing drop for official fundamentals.
+# ESEF/GLEIF are queried by verified LEI and cached by the API layer. The warm
+# job above pre-populates a representative baseline and on-demand analysis grows
+# the archive over time. UK Companies House is queried only when its API key is
+# configured. Australia is intentionally not scraped here: an authorized/
+# licensed ingestion job must populate the verified filing drop.
 echo "Global source sync completed safely."
