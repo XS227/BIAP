@@ -53,6 +53,11 @@ jobs:
       VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
       VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
       VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      MARKET_KEY: ${{ secrets.BIAP_GLOBAL_MARKET_API_KEY || secrets.TWELVE_DATA_API_KEY }}
+      SEC_ID: ${{ secrets.BIAP_SEC_USER_AGENT || secrets.SEC_USER_AGENT }}
+      EDINET_KEY: ${{ secrets.BIAP_EDINET_API_KEY || secrets.EDINET_API_KEY }}
+      OPENDART_KEY: ${{ secrets.BIAP_OPENDART_API_KEY || secrets.OPENDART_API_KEY }}
+      CH_KEY: ${{ secrets.BIAP_COMPANIES_HOUSE_API_KEY || secrets.COMPANIES_HOUSE_API_KEY }}
     steps:
       - name: Check isolated deploy credentials
         run: |
@@ -65,6 +70,39 @@ jobs:
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
           chmod 600 ~/.ssh/biap_global_key
           ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+      - name: Prepare runtime provider overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          pairs = {
+              "BIAP_GLOBAL_MARKET_API_KEY": os.environ.get("MARKET_KEY", ""),
+              "BIAP_SEC_USER_AGENT": os.environ.get("SEC_ID", ""),
+              "BIAP_EDINET_API_KEY": os.environ.get("EDINET_KEY", ""),
+              "BIAP_OPENDART_API_KEY": os.environ.get("OPENDART_KEY", ""),
+              "BIAP_COMPANIES_HOUSE_API_KEY": os.environ.get("CH_KEY", ""),
+          }
+
+          def quote(value: str) -> str:
+              if "\n" in value or "\r" in value:
+                  raise SystemExit("provider secret contains an unsupported newline")
+              return '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
+
+          lines = [f"{key}={quote(value.strip())}" for key, value in pairs.items() if value and value.strip()]
+          path = Path("/tmp/biap-global-provider.env")
+          path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+          path.chmod(0o600)
+          print("Runtime provider credentials available:", len(lines))
+          PY
+      - name: Copy runtime provider overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          scp -i ~/.ssh/biap_global_key -P "$PORT" -o BatchMode=yes /tmp/biap-global-provider.env "$VPS_USER@$VPS_HOST:/tmp/biap-global-provider.env"
       - name: Prepare and publish separate Global service
         shell: bash
         run: |
@@ -80,10 +118,6 @@ jobs:
           else
             cd "$APP_DIR"
             if [[ -n "$(git status --porcelain)" ]]; then
-              # These deploy scripts are chmod +x below. If the repository stores
-              # them non-executable, Git reports only their mode bits as local
-              # changes on the next run. Reset exactly these known generated
-              # changes, but still refuse deployment for every other local edit.
               UNEXPECTED="$(git status --porcelain | awk '{print $2}' | grep -Ev '^(deploy/configure-global-route\.sh|deploy/setup-global-data\.sh|deploy/sync-global-sources\.sh)$' || true)"
               if [[ -n "$UNEXPECTED" ]]; then
                 echo "Refusing Global update: separate checkout has unexpected local changes" >&2
@@ -111,8 +145,16 @@ jobs:
           BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global BIAP_GLOBAL_SERVICE_USER="$(id -un)" BIAP_GLOBAL_SERVICE_GROUP="$(id -gn)" bash deploy/setup-global-data.sh
           if [[ ! -f analysis/.env.global ]]; then
             cp analysis/.env.global.example analysis/.env.global
-            chmod 600 analysis/.env.global
           fi
+          if [[ -s /tmp/biap-global-provider.env ]]; then
+            while IFS='=' read -r key _rest; do
+              [[ "$key" =~ ^[A-Z0-9_]+$ ]] || continue
+              sed -i "/^${key}=/d" analysis/.env.global
+            done < /tmp/biap-global-provider.env
+            cat /tmp/biap-global-provider.env >> analysis/.env.global
+          fi
+          rm -f /tmp/biap-global-provider.env
+          chmod 600 analysis/.env.global
           if [[ "$(id -u)" -eq 0 ]]; then SUDO=""; else SUDO="sudo -n"; fi
           $SUDO install -m 0644 deploy/systemd/biap-global.service /etc/systemd/system/biap-global.service
           $SUDO install -m 0644 deploy/systemd/biap-global-source-sync.service /etc/systemd/system/biap-global-source-sync.service
