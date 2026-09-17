@@ -154,7 +154,7 @@ export default function MarketScreen() {
       setScan(result.recommendations || []);
       if (extended.catalogOnly || result.status === 'MARKET_DATA_REQUIRED') {
         setScanMode('catalog');
-        setScanStatus(`Catalog available • ${result.universeDiscovered ?? totalMatched || instruments.length} instruments • verified price/history feed pending`);
+        setScanStatus(`Catalog available • ${(result.universeDiscovered ?? totalMatched) || instruments.length} instruments • verified price/history feed pending`);
       } else if (extended.cachedMarketData || result.status.startsWith('CACHED_')) {
         setScanMode('cached');
         const coverage = result.screeningCoveragePct == null ? '' : ` • ${Number(result.screeningCoveragePct).toFixed(1)}% coverage`;
