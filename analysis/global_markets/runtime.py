@@ -22,6 +22,7 @@ from .cvm_itr import CVMITRCorroborator
 from .edinet import EDINETFundamentalsProvider
 from .fallback_fundamentals import FallbackFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
+from .kap import KAPFundamentalsProvider
 from .opendart import OpenDARTFundamentalsProvider
 from .providers import ProviderRegistry
 from .regional_yahoo_chart import RegionalYahooChartMarketProvider
@@ -47,10 +48,6 @@ def build_registry() -> ProviderRegistry:
         registry.register_fundamentals("IR", exchange.code, iran)
 
     # Reference catalog is safe to register independently from the price feed.
-    # With no private key, TwelveDataUniverseProvider uses the documented demo
-    # authentication only for /stocks metadata. PersistentUniverseProvider keeps
-    # the last verified exchange snapshot on the Global server, so temporary
-    # upstream failures do not erase the user's ability to browse instruments.
     universe = PersistentUniverseProvider(
         TwelveDataUniverseProvider(api_key=os.environ.get("BIAP_GLOBAL_MARKET_API_KEY") or "demo")
     )
@@ -123,8 +120,6 @@ def build_registry() -> ProviderRegistry:
             register_fundamentals(country, exchange.code, provider)
 
     # Japan: EDINET remains authoritative when its deployment key is available.
-    # The public fallback still gives users non-empty annual metrics when EDINET
-    # is unavailable, without masquerading as FSA filing evidence.
     if os.environ.get("BIAP_EDINET_API_KEY"):
         edinet = EDINETFundamentalsProvider()
         jp_provider = FallbackFundamentalsProvider(edinet, public_fundamentals)
@@ -139,22 +134,26 @@ def build_registry() -> ProviderRegistry:
             register_fundamentals("KR", exchange.code, dart)
 
     # ASX/issuer disclosures are licensing-sensitive. An authorized ingestion
-    # job writes normalized verified records to the server filing drop. When a
-    # verified record is absent, vendor metrics are supplementary only.
+    # job writes normalized verified records to the server filing drop.
     au = VerifiedFilingDropProvider(country="AU", provider_names=("asx", "asx-issuer", "issuer"))
     au_with_fallback = FallbackFundamentalsProvider(au, public_fundamentals)
     for exchange in COUNTRY_PACKS["AU"].exchanges:
         register_fundamentals("AU", exchange.code, au_with_fallback)
 
     # Brazil: regulator-published CVM DFP is the annual fundamentals base and
-    # requires no secret. CVM ITR is a second official quarterly source used only
-    # to corroborate issuer/freshness; it never overwrites annual DFP values.
-    # If a strict official join is unavailable, public vendor metrics remain
-    # supplement-only and therefore do not clear the Evidence gate.
+    # CVM ITR is an independent official quarterly corroboration stream.
     br_annual = FallbackFundamentalsProvider(CVMFundamentalsProvider(), public_fundamentals)
     br = CorroboratingFundamentalsProvider(br_annual, CVMITRCorroborator())
     for exchange in COUNTRY_PACKS["BR"].exchanges:
         register_fundamentals("BR", exchange.code, br)
+
+    # Türkiye: KAP is the official Public Disclosure Platform. Its public BIST
+    # directory and financial-summary pages expose selected annual statement
+    # lines without an API credential. Use the latest completed annual column as
+    # official evidence and fall back to vendor metrics only if KAP is unavailable.
+    tr = FallbackFundamentalsProvider(KAPFundamentalsProvider(), public_fundamentals)
+    for exchange in COUNTRY_PACKS["TR"].exchanges:
+        register_fundamentals("TR", exchange.code, tr)
 
     # Other deterministic Yahoo-routed markets currently lack a complete
     # official filing adapter in this branch. Give those markets useful public
