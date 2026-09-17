@@ -120,6 +120,22 @@ def _instrument_search_score(item, query: str) -> Optional[int]:
     return None
 
 
+def _rank_instruments(instruments, query: str):
+    ranked = []
+    seen: set[tuple[str, str, str]] = set()
+    for item in instruments:
+        score = _instrument_search_score(item, query)
+        if score is None:
+            continue
+        key = (str(item.country).upper(), str(item.exchange).upper(), str(item.ticker).upper())
+        if key in seen:
+            continue
+        seen.add(key)
+        ranked.append((score, item))
+    ranked.sort(key=lambda pair: (-pair[0], pair[1].ticker.casefold()))
+    return ranked
+
+
 def _seed(req: InstrumentRequest):
     try:
         return instrument_seed(
@@ -147,6 +163,7 @@ def global_instruments(
     exchange: str,
     q: Optional[str] = Query(default=None, max_length=80),
     limit: int = Query(default=100, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0, le=20000),
 ):
     try:
         spec = get_exchange(country, exchange)
@@ -161,23 +178,41 @@ def global_instruments(
                 snapshot_info = None
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+
     if q:
-        ranked = []
-        for item in instruments:
-            score = _instrument_search_score(item, q)
-            if score is not None:
-                ranked.append((score, item))
-        ranked.sort(key=lambda pair: (-pair[0], pair[1].ticker.casefold()))
-        instruments = [item for _, item in ranked]
+        # Search the complete local snapshot first, then merge targeted upstream
+        # discovery. This makes exact symbols/names discoverable even when a
+        # persistent snapshot was incomplete without re-downloading the whole
+        # exchange for each search request.
+        candidates = list(instruments)
+        targeted_search = getattr(provider, "search_instruments", None)
+        if callable(targeted_search):
+            try:
+                candidates.extend(targeted_search(
+                    country=country.upper(),
+                    exchange=spec.code,
+                    query=q,
+                    limit=min(120, max(30, limit)),
+                ))
+            except Exception:
+                pass
+        instruments = [item for _, item in _rank_instruments(candidates, q)]
+
     total = len(instruments)
+    page = instruments[offset:offset + limit]
+    next_offset = offset + len(page)
+    has_more = next_offset < total
     return {
         "country": country.upper(),
         "exchange": spec.code,
         "mic": spec.mic,
         "totalMatched": total,
-        "returned": min(total, limit),
+        "returned": len(page),
+        "offset": offset,
+        "hasMore": has_more,
+        "nextOffset": next_offset if has_more else None,
         "catalog": snapshot_info,
-        "instruments": [asdict(item) for item in instruments[:limit]],
+        "instruments": [asdict(item) for item in page],
     }
 
 
@@ -210,6 +245,7 @@ def global_status():
         "iranBridgeConfigured": True,
         "universeCacheConfigured": True,
         "universeCacheHours": float(os.environ.get("BIAP_GLOBAL_UNIVERSE_CACHE_HOURS", "12")),
+        "universeMaxRows": int(os.environ.get("BIAP_GLOBAL_UNIVERSE_MAX_ROWS", "20000")),
         "countries": len(country_catalog()),
         "notes": "No live global broker is connected. Public EOD market fallback is lower trust than a licensed feed; missing/stale evidence is never fabricated and can force NO_RECOMMENDATION.",
     }
