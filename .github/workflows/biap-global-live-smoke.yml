@@ -1,5 +1,6 @@
 name: BIAP Global live smoke
 
+# Live regression guard for exact ticker search and deep exchange pagination.
 on:
   push:
     branches: [feat/biap-global]
