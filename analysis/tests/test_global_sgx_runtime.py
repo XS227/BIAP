@@ -11,7 +11,8 @@ def test_singapore_partial_official_provider_is_registered():
 
     assert isinstance(provider, PersistentFundamentalsProvider)
     assert isinstance(provider.upstream, FallbackFundamentalsProvider)
-    assert isinstance(provider.upstream.primary, SGXIssuerFundamentalsProvider)
+    assert isinstance(provider.upstream.primary, FallbackFundamentalsProvider)
+    assert isinstance(provider.upstream.primary.primary, SGXIssuerFundamentalsProvider)
 
 
 def test_singapore_source_plan_is_explicitly_partial():
