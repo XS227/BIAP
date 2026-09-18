@@ -22,6 +22,11 @@ function pct(value: number | null | undefined, digits = 1) {
   return `${Number(value).toLocaleString('en-US', { maximumFractionDigits: digits })}%`;
 }
 
+function friendly(value: string | null | undefined) {
+  if (!value) return '—';
+  return value.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 function decisionColor(call: string | undefined, secondary: string) {
   if (call === 'BUY_CANDIDATE') return Brand.positive;
   if (call === 'HOLD_OR_WATCH') return Brand.warning;
@@ -84,6 +89,8 @@ export default function GlobalStockDetailScreen() {
 
   useEffect(() => { setLoading(true); void load(); }, [load]);
   const company = analysis?.company;
+  const decision = analysis?.decisionTable;
+  const dm = decision?.metrics;
   const signals = Array.isArray(analysis?.signals) ? analysis!.signals! : [];
   const sources = Array.isArray(company?.sources) ? company!.sources! : [];
   const callTone = decisionColor(analysis?.call, colors.textSecondary);
@@ -97,15 +104,37 @@ export default function GlobalStockDetailScreen() {
     ['1M / 3M / 6M', `${pct(company?.return_1m_pct)} / ${pct(company?.return_3m_pct)} / ${pct(company?.return_6m_pct)}`],
     ['Annualized volatility', pct(company?.volatility_annualized_pct)],
     ['Max drawdown', pct(company?.max_drawdown_pct)],
+    ['Beta', n(company?.beta)],
     ['Volume / 30d avg.', `${n(company?.volume_today, 0)} / ${n(company?.avg_volume_30d, 0)}`],
   ], [company, price, analysis?.currency]);
   const valuationRows = useMemo(() => [
     ['Market cap', n(company?.market_cap, 0)], ['P/E', n(company?.pe)], ['P/B', n(company?.pb)], ['EV/EBITDA', n(company?.ev_ebitda)], ['Peer / sector P/E', n(company?.sector_pe)],
+    ['Dividend yield', pct(company?.dividend_yield_pct)], ['EPS', n(company?.eps)], ['Book value / share', n(company?.book_value_per_share)],
   ], [company]);
   const financialRows = useMemo(() => [
     ['Revenue', n(company?.revenue, 0)], ['Revenue YoY', pct(company?.revenue_yoy_pct)], ['Net income', n(company?.net_income, 0)], ['Net margin', pct(company?.net_margin_pct)],
     ['Assets', n(company?.total_assets, 0)], ['Liabilities', n(company?.total_liabilities, 0)], ['Equity', n(company?.total_equity, 0)], ['Operating cash flow', n(company?.operating_cash_flow, 0)], ['Free cash flow', n(company?.free_cash_flow, 0)], ['Debt', n(company?.total_debt, 0)],
   ], [company]);
+
+  const decisionRows = useMemo(() => [
+    ['Short-term outlook', friendly(decision?.shortTermOutlook)],
+    ['Long-term outlook', friendly(decision?.longTermOutlook)],
+    ['Momentum', friendly(decision?.momentum)],
+    ['Risk level', friendly(decision?.riskLevel)],
+    ['Drawdown risk', friendly(decision?.drawdownRisk)],
+    ['52-week position', pct(dm?.position52wPct)],
+    ['Volume vs 30d', dm?.volumeVs30d == null ? '—' : `${n(dm.volumeVs30d, 2)}x`],
+    ['Valuation vs sector', friendly(decision?.valuationView)],
+    ['P/E vs sector', pct(dm?.peVsSectorPct)],
+    ['Dividend / income', friendly(decision?.incomeProfile)],
+    ['Dividend yield', pct(dm?.dividendYieldPct)],
+    ['Debt / equity', dm?.debtToEquity == null ? '—' : `${n(dm.debtToEquity, 2)}x`],
+    ['Current ratio', dm?.currentRatio == null ? '—' : `${n(dm.currentRatio, 2)}x`],
+    ['ROE', pct(dm?.roePct)],
+    ['ROA', pct(dm?.roaPct)],
+    ['Kiasha', analysis?.call || '—'],
+    ['Evidence', analysis?.evidence?.status || '—'],
+  ], [analysis?.call, analysis?.evidence?.status, decision, dm]);
 
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} tintColor={Brand.primary} />} contentContainerStyle={styles.content}>
     <View style={styles.maxWidth}>
@@ -122,6 +151,12 @@ export default function GlobalStockDetailScreen() {
         <View style={styles.metrics}><Metric label="Kiasha score" value={analysis.score == null ? '—' : n(analysis.score, 3)} colors={colors}/><Metric label="Decision confidence" value={analysis.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`} colors={colors}/><Metric label="Evidence" value={analysis.evidence?.status || '—'} colors={colors}/></View>
 
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Kiasha decision</Text><Text style={[styles.body, { color: colors.textSecondary }]}>Kiasha combines the six scoring agent signals after provider normalization, then applies the Evidence/Verification gate. A new BUY candidate is allowed only when evidence status is PASS and confidence clears the threshold.</Text></View>
+
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Investor decision table</Text>
+        <View style={[styles.card, { backgroundColor: colors.backgroundElement, marginTop: 0 }]}>
+          {decisionRows.map(([label, value]) => <View key={label} style={[styles.dataRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>{label}</Text><Text style={[styles.dataValue, { color: colors.text }]}>{value}</Text></View>)}
+          <Text style={[styles.body, { color: colors.textSecondary }]}>The base stock score is the same for every user. Personal risk, horizon, income and growth preferences are applied separately by Portfolio Agent.</Text>
+        </View>
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Core analysis agents</Text>
         {signals.map((signal) => <AgentCard key={signal.agent} signal={signal} colors={colors} />)}
