@@ -1,0 +1,99 @@
+name: BIAP Global final decision-support live check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-final-live-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  live-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Verify decision table, investor profile and Global Top 10
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.parse, urllib.request
+
+          base = 'https://biap.dadashi.no/global-api/global'
+
+          def get_json(url, timeout=60):
+              with urllib.request.urlopen(url, timeout=timeout) as response:
+                  return json.load(response)
+
+          def post(path, body, timeout=180):
+              req = urllib.request.Request(
+                  base + path,
+                  data=json.dumps(body).encode(),
+                  headers={'Content-Type': 'application/json', 'Accept': 'application/json'},
+                  method='POST',
+              )
+              with urllib.request.urlopen(req, timeout=timeout) as response:
+                  return json.load(response)
+
+          q = urllib.parse.urlencode({'q': 'AAPL', 'limit': 20})
+          catalog = get_json(f'{base}/instruments/US/NASDAQ?{q}', 60)
+          aapl = next(row for row in catalog.get('instruments', []) if row.get('ticker') == 'AAPL')
+          instrument = {
+              'country': 'US', 'exchange': 'NASDAQ', 'ticker': 'AAPL',
+              'name': aapl.get('name') or 'Apple Inc.', 'currency': aapl.get('currency') or 'USD',
+              'isin': aapl.get('isin'), 'lei': aapl.get('lei'),
+          }
+
+          analysis = post('/analyze', instrument, 90)
+          decision = analysis.get('decisionTable') or {}
+          metrics = decision.get('metrics') or {}
+          assert decision.get('shortTermOutlook')
+          assert decision.get('longTermOutlook')
+          assert 'position52wPct' in metrics
+          assert (decision.get('kiasha') or {}).get('call') == analysis.get('call')
+          assert analysis.get('evidence', {}).get('status') in {'PASS', 'WARN', 'BLOCK'}
+          print(json.dumps({
+              'AAPL': {
+                  'call': analysis.get('call'),
+                  'evidence': analysis.get('evidence', {}).get('status'),
+                  'short': decision.get('shortTermOutlook'),
+                  'long': decision.get('longTermOutlook'),
+                  'risk': decision.get('riskLevel'),
+              }
+          }, sort_keys=True))
+
+          portfolio = post('/portfolio', {
+              'profile': {
+                  'capital': 50000, 'baseCurrency': 'USD', 'riskTolerance': 'low',
+                  'horizon': '1y', 'allowedCountries': ['US'], 'allowedExchanges': ['NASDAQ'],
+                  'maxPositionPct': 25, 'maxCountryPct': 100, 'maxSectorPct': 100,
+                  'minCashReservePct': 25, 'maxPositions': 4,
+                  'objectives': ['income', 'capital_preservation'],
+                  'liquidityNeed': 'high', 'maxDrawdownComfortPct': 15,
+              },
+              'instruments': [instrument],
+              'fxToBase': {'USD': 1.0},
+          }, 120)
+          profile = portfolio.get('profileAssessment') or {}
+          assert profile.get('label') in {'CONSERVATIVE', 'BALANCED', 'AGGRESSIVE_GROWTH'}
+          assert profile.get('objectives') == ['income', 'capital_preservation']
+          print(json.dumps({'profileAssessment': profile}, sort_keys=True))
+
+          global_scan = post('/scan-global', {'topN': 3, 'maxAgeHours': 24}, 420)
+          assert global_scan.get('marketsScanned', 0) >= 10
+          assert isinstance(global_scan.get('recommendations'), list)
+          for row in global_scan.get('recommendations') or []:
+              assert row.get('call') == 'BUY_CANDIDATE'
+              assert (row.get('evidence') or {}).get('status') == 'PASS'
+          print(json.dumps({
+              'globalTop': {
+                  'status': global_scan.get('status'),
+                  'marketsScanned': global_scan.get('marketsScanned'),
+                  'recommendationCount': global_scan.get('recommendationCount'),
+                  'tickers': [row.get('ticker') for row in global_scan.get('recommendations') or []],
+              }
+          }, sort_keys=True))
+          PY
