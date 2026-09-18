@@ -49,3 +49,17 @@ def test_operating_company_remains_after_de_spac_name_change():
         },
         symbol="AACT", currency="USD",
     )
+
+
+def test_leveraged_bull_certificate_is_not_an_equity():
+    spec = get_exchange("SE", "NASDAQ_STOCKHOLM")
+    assert not _ordinary_equity_row(
+        country="SE", spec=spec,
+        row={
+            "name": "BULL VOLV X2 H",
+            "type": "Common Stock",
+            "currency": "SEK",
+            "mic_code": "XSTO",
+        },
+        symbol="BULL VOLV X2 H", currency="SEK",
+    )
