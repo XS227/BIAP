@@ -27,6 +27,7 @@ from .providers import FundamentalsProvider, GlobalProviderError, append_source
 
 
 SGX_FINANCIAL_INFORMATION_URL = "https://investorrelations.sgx.com/financial-information"
+SGX_FINANCIAL_INFORMATION_NODE_URL = "https://investorrelations.sgx.com/node/13251"
 
 
 def _plain_text(value: str) -> str:
@@ -64,27 +65,47 @@ class SGXIssuerFundamentalsProvider(FundamentalsProvider):
         self.timeout = max(3.0, float(timeout))
 
     def _get_text(self) -> str:
+        headers = {
+            "Accept": "text/html,application/xhtml+xml",
+            "Accept-Language": "en-US,en;q=0.9",
+            "User-Agent": (
+                "Mozilla/5.0 (X11; Linux x86_64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/131.0.0.0 Safari/537.36"
+            ),
+        }
+        errors: list[str] = []
         try:
             with httpx.Client(
                 timeout=self.timeout,
                 follow_redirects=True,
-                headers={
-                    "Accept": "text/html,application/xhtml+xml",
-                    "Accept-Language": "en-US,en;q=0.9",
-                    "User-Agent": "BIAP-Global/1.0 issuer-financial-information",
-                },
+                headers=headers,
             ) as client:
-                response = client.get(SGX_FINANCIAL_INFORMATION_URL)
-            response.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            status = exc.response.status_code if exc.response is not None else "unknown"
-            raise GlobalProviderError(f"SGX issuer request failed: HTTP {status}") from exc
+                for url in (SGX_FINANCIAL_INFORMATION_URL, SGX_FINANCIAL_INFORMATION_NODE_URL):
+                    try:
+                        response = client.get(url)
+                        response.raise_for_status()
+                    except httpx.HTTPStatusError as exc:
+                        status = exc.response.status_code if exc.response is not None else "unknown"
+                        errors.append(f"{url}:HTTP {status}")
+                        continue
+                    except httpx.HTTPError as exc:
+                        errors.append(f"{url}:{type(exc).__name__}")
+                        continue
+                    text = _plain_text(response.text)
+                    # The friendly route can occasionally return a shell while
+                    # Drupal's canonical node route still contains the same
+                    # issuer-published table. Accept only the exact table marker.
+                    if "Operating revenue" in text and all(
+                        marker in text for marker in ("FY22", "FY23", "FY24", "FY25", "FY26")
+                    ):
+                        return text
+                    errors.append(f"{url}:financial-table-missing")
         except httpx.HTTPError as exc:
-            raise GlobalProviderError(f"SGX issuer request failed: {type(exc).__name__}") from exc
-        text = _plain_text(response.text)
-        if len(text) < 200:
-            raise GlobalProviderError("SGX issuer response is unexpectedly short")
-        return text
+            errors.append(type(exc).__name__)
+        raise GlobalProviderError(
+            "SGX issuer financial table unavailable (" + "; ".join(errors)[:500] + ")"
+        )
 
     @staticmethod
     def _verify_identity(company: GlobalCompany) -> None:
