@@ -22,6 +22,13 @@ if ! "$PY" -m global_markets.universe_sync; then
   echo "UNIVERSE_SYNC: no market refreshed this run; existing snapshots preserved" >&2
 fi
 
+# Expand the daily public-EOD/history cache for a broader set of liquid
+# operating companies. This is market-history coverage only, not a recommendation
+# list. Failures never erase existing snapshots.
+if ! "$PY" -m global_markets.market_cache_warm; then
+  echo "MARKET_CACHE_WARM: refresh degraded; existing market history preserved" >&2
+fi
+
 # Build an outage-safe baseline for US, ESEF/UKSEF Europe and Türkiye. The job
 # uses only a bounded cross-market QA set; every other company is persisted on
 # demand after its first analysis. Existing official snapshots are never erased
