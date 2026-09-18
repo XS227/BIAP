@@ -98,6 +98,24 @@ _LEGAL_FORM_PREFIXES: tuple[tuple[str, ...], ...] = (
     ("AKTIEBOLAGET",),
 )
 
+# Market/reference catalogs often append a security/share-class description to
+# the issuer legal name. These are listing descriptors, not issuer identity.
+# Strip only recognized trailing descriptors; never remove arbitrary business
+# words or use fuzzy edit-distance matching.
+_DISPLAY_SECURITY_SUFFIXES: tuple[tuple[str, ...], ...] = (
+    ("SERIES", "A", "SHARES"),
+    ("SERIES", "B", "SHARES"),
+    ("SERIES", "C", "SHARES"),
+    ("CLASS", "A", "ORDINARY", "SHARES"),
+    ("CLASS", "B", "ORDINARY", "SHARES"),
+    ("CLASS", "A", "SHARES"),
+    ("CLASS", "B", "SHARES"),
+    ("ORDINARY", "SHARES"),
+    ("REGISTERED", "SHARES"),
+    ("COMMON", "STOCK"),
+    ("COMMON", "SHARES"),
+)
+
 
 def _name_tokens(value: str) -> list[str]:
     return [token for token in re.split(r"[^A-Z0-9]+", _ascii(value).upper()) if token]
@@ -105,6 +123,18 @@ def _name_tokens(value: str) -> list[str]:
 
 def _legal_core_tokens(value: str) -> list[str]:
     tokens = _name_tokens(value)
+
+    # Remove a trailing market security/share-class descriptor before legal-form
+    # normalization. Example: "Aker ASA Series A Shares" -> "Aker ASA" -> "Aker".
+    descriptor_changed = True
+    while tokens and descriptor_changed:
+        descriptor_changed = False
+        for suffix in _DISPLAY_SECURITY_SUFFIXES:
+            n = len(suffix)
+            if len(tokens) >= n and tuple(tokens[-n:]) == suffix:
+                del tokens[-n:]
+                descriptor_changed = True
+                break
 
     prefix_changed = True
     while tokens and prefix_changed:
