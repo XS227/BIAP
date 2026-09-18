@@ -53,29 +53,34 @@ jobs:
           ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
           set -euo pipefail
           APP_DIR=/home/ubuntu/biap-global/BIAP
+          WORK_DIR=/tmp/biap-global-cache-warm
           cd "$APP_DIR"
           git fetch origin feat/biap-global
-          git checkout feat/biap-global
-          git pull --ff-only origin feat/biap-global
-          cd "$APP_DIR/analysis"
+          git worktree remove --force "$WORK_DIR" 2>/dev/null || rm -rf "$WORK_DIR"
+          git worktree prune
+          git worktree add --detach "$WORK_DIR" origin/feat/biap-global
+          cleanup() { cd "$APP_DIR"; git worktree remove --force "$WORK_DIR" 2>/dev/null || true; }
+          trap cleanup EXIT
+          cd "$WORK_DIR/analysis"
           set -a
-          [[ -f .env.global ]] && source .env.global
+          [[ -f "$APP_DIR/analysis/.env.global" ]] && source "$APP_DIR/analysis/.env.global"
           set +a
-          export PYTHONPATH="$APP_DIR/analysis"
+          export PYTHONPATH="$WORK_DIR/analysis"
           export BIAP_GLOBAL_DATA_DIR="${BIAP_GLOBAL_DATA_DIR:-/var/lib/biap-global}"
+          PY="$APP_DIR/analysis/.venv-global/bin/python"
           # An explicit warm is intended to hit the official upstream now, not
           # simply re-read today's normalized cache. Normal request traffic keeps
           # the normal 24h TTL and remains cheap/resilient.
           export BIAP_GLOBAL_FUNDAMENTALS_CACHE_HOURS=0
           export BIAP_GLOBAL_MARKET_CACHE_HOURS=0
           mkdir -p "$BIAP_GLOBAL_DATA_DIR/fundamentals" "$BIAP_GLOBAL_DATA_DIR/cache/sec-edgar" "$BIAP_GLOBAL_DATA_DIR/history"
-          .venv-global/bin/python -m global_markets.market_cache_warm | tee /tmp/biap-global-market-cache-warm.json
-          .venv-global/bin/python -m global_markets.official_cache_warm | tee /tmp/biap-global-cache-warm.json
+          "$PY" -m global_markets.market_cache_warm | tee /tmp/biap-global-market-cache-warm.json
+          "$PY" -m global_markets.official_cache_warm | tee /tmp/biap-global-cache-warm.json
           echo "fundamentals_latest_files=$(find "$BIAP_GLOBAL_DATA_DIR/fundamentals" -type f -name latest.json 2>/dev/null | wc -l)"
           echo "fundamentals_period_files=$(find "$BIAP_GLOBAL_DATA_DIR/fundamentals" -type f -path '*/history/*.json' 2>/dev/null | wc -l)"
           echo "sec_raw_cache_files=$(find "$BIAP_GLOBAL_DATA_DIR/cache/sec-edgar" -type f -name '*.json' 2>/dev/null | wc -l)"
           echo "market_history_files=$(find "$BIAP_GLOBAL_DATA_DIR/history" -type f -name '*.json' 2>/dev/null | wc -l)"
-          market_history_points=$(.venv-global/bin/python <<'PY'
+          market_history_points=$("$PY" <<'PY'
           import json
           import os
           from pathlib import Path
