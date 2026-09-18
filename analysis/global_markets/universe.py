@@ -10,6 +10,7 @@ feed or sufficient evidence for a BUY recommendation.
 from __future__ import annotations
 
 import os
+import re
 from typing import Iterable, Optional
 
 import httpx
@@ -70,6 +71,21 @@ def _ordinary_equity_row(*, country: str, spec: ExchangeSpec, row: dict, symbol:
         " SPAC ",
     )
     if any(token in name for token in rejected_name_tokens):
+        return False
+
+    # Leveraged/inverse exchange products and certificates can be mislabeled by
+    # reference vendors as Common Stock. They are not operating-company shares
+    # and must never enter Kiasha's equity universe.
+    structured_markers = (
+        " MINI FUTURE ", " TURBO ", " LEVERAGED ", " INVERSE ",
+        " TRACKER ", " CERTIFICATE ", " OPEN END ",
+    )
+    if any(marker in name for marker in structured_markers):
+        return False
+    stripped_name = name.strip()
+    if stripped_name.startswith(("BULL ", "BEAR ")):
+        return False
+    if re.search(r"\bX[2-9]\b", stripped_name) and any(token in stripped_name for token in ("BULL", "BEAR", "LONG", "SHORT")):
         return False
 
     # US reference catalogs frequently expose blank-check/SPAC shells as
