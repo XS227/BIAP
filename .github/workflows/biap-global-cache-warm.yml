@@ -86,6 +86,23 @@ jobs:
           if ! "$PY" -m global_markets.cvm_itr_sync; then
             echo "CVM_ITR: refresh failed; existing verified index preserved" >&2
           fi
+          "$PY" - <<'PY'
+import httpx
+urls = {
+    "allianz_html": "https://www.allianz.com/en/investor_relations/results-reports/financial-statements.html",
+    "allianz_pdf": "https://www.allianz.com/content/dam/onemarketing/azcom/Allianz_com/investor-relations/en/results-reports/annual-report/ar-2025/en-allianz-group-annual-report-2025.pdf",
+}
+headers = {
+    "Accept-Language": "en-US,en;q=0.9",
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+}
+for label, url in urls.items():
+    try:
+        r = httpx.get(url, headers=headers, timeout=20, follow_redirects=True)
+        print(f"probe:{label}:status={r.status_code}:bytes={len(r.content)}:type={r.headers.get('content-type')}")
+    except Exception as exc:
+        print(f"probe:{label}:error={type(exc).__name__}")
+PY
           "$PY" -m global_markets.market_cache_warm | tee /tmp/biap-global-market-cache-warm.json
           "$PY" -m global_markets.official_cache_warm | tee /tmp/biap-global-cache-warm.json
           echo "fundamentals_latest_files=$(find "$BIAP_GLOBAL_DATA_DIR/fundamentals" -type f -name latest.json 2>/dev/null | wc -l)"
