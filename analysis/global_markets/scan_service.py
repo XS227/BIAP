@@ -1,17 +1,81 @@
 """Public scan orchestration for BIAP Global.
 
-Non-Iran markets use the Global two-stage scanner. Iran reuses the existing
-production-proven market scan as a shortlist source and then re-runs candidates
-through the Global six-agent/evidence pipeline. This wrapper intentionally
-avoids changing the Iran production scanner.
+Besides single-exchange scans, this module builds a cached cross-market Top 10
+for the currently finalized US/Europe/Türkiye coverage. The global list never
+pads results: only evidence-qualified BUY_CANDIDATE rows are ranked.
 """
 
 from __future__ import annotations
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Optional
 
 from .models import GlobalCompany
 from .runtime import build_registry
 from .scanner import GlobalMarketScanner
 from .service import analyze_company
+from .source_cache import data_root, read_json, write_json_atomic
+
+
+_GLOBAL_TOP_MARKETS: tuple[tuple[str, str], ...] = (
+    ("US", "NASDAQ"),
+    ("US", "NYSE"),
+    ("GB", "LSE"),
+    ("DE", "XETRA"),
+    ("FR", "EURONEXT_PARIS"),
+    ("NL", "EURONEXT_AMSTERDAM"),
+    ("ES", "BME_MADRID"),
+    ("IT", "EURONEXT_MILAN"),
+    ("SE", "NASDAQ_STOCKHOLM"),
+    ("NO", "EURONEXT_OSLO"),
+    ("DK", "NASDAQ_COPENHAGEN"),
+    ("FI", "NASDAQ_HELSINKI"),
+    ("BE", "EURONEXT_BRUSSELS"),
+    ("TR", "BIST"),
+)
+
+
+def _scan_cache_path(country: str, exchange: str) -> Path:
+    safe_country = "".join(ch for ch in country.upper() if ch.isalnum() or ch in {"-", "_"})
+    safe_exchange = "".join(ch for ch in exchange.upper() if ch.isalnum() or ch in {"-", "_"})
+    return data_root() / "scan-cache" / safe_country / f"{safe_exchange}.json"
+
+
+def _write_scan_cache(country: str, exchange: str, payload: dict) -> None:
+    wrapper = {
+        "schemaVersion": 1,
+        "cachedAt": datetime.now(timezone.utc).isoformat(),
+        "country": country.upper(),
+        "exchange": exchange.upper(),
+        "payload": payload,
+    }
+    try:
+        write_json_atomic(_scan_cache_path(country, exchange), wrapper)
+    except OSError:
+        pass
+
+
+def _read_scan_cache(country: str, exchange: str, *, max_age_hours: float) -> Optional[dict]:
+    wrapper = read_json(_scan_cache_path(country, exchange), default=None)
+    if not isinstance(wrapper, dict) or wrapper.get("schemaVersion") != 1:
+        return None
+    payload = wrapper.get("payload")
+    if not isinstance(payload, dict):
+        return None
+    try:
+        cached_at = datetime.fromisoformat(str(wrapper.get("cachedAt") or "").replace("Z", "+00:00"))
+        if cached_at.tzinfo is None:
+            cached_at = cached_at.replace(tzinfo=timezone.utc)
+        age_hours = (datetime.now(timezone.utc) - cached_at.astimezone(timezone.utc)).total_seconds() / 3600.0
+    except ValueError:
+        return None
+    if age_hours > max(0.0, float(max_age_hours)):
+        return None
+    result = dict(payload)
+    result["scanCache"] = {"hit": True, "cachedAt": wrapper.get("cachedAt"), "ageHours": round(max(0.0, age_hours), 2)}
+    return result
 
 
 def scan_global_market(
@@ -25,16 +89,18 @@ def scan_global_market(
     country = country.strip().upper()
     exchange = exchange.strip().upper()
     if country != "IR":
-        return GlobalMarketScanner().scan(
+        result = GlobalMarketScanner().scan(
             country=country,
             exchange=exchange,
             top_n=top_n,
             discovery_limit=discovery_limit,
             deep_limit=deep_limit,
         )
+        _write_scan_cache(country, exchange, result)
+        return result
 
-    # The legacy Iran scanner exposes refresh_market_scan(), not scan_market().
-    # Keep it read-only and use its verified shortlist as discovery input.
+    # Keep Iran read-only until its Tindex/CODAL integration work is explicitly
+    # resumed; Global never mutates the production Iran scanner.
     from market_scanner import refresh_market_scan
 
     legacy = refresh_market_scan(force=False)
@@ -88,4 +154,123 @@ def scan_global_market(
             "deepAnalyzedCount": legacy.get("deepAnalyzedCount") if isinstance(legacy, dict) else None,
         },
         "notes": "Iran uses the existing verified Iran scanner for discovery and the Global evidence gates for final eligibility.",
+    }
+
+
+def scan_global_top10(
+    *,
+    top_n: int = 10,
+    max_age_hours: float = 6.0,
+) -> dict:
+    """Rank qualified candidates across finalized US, Europe and Türkiye markets.
+
+    Per-market scans are persisted and reused for a bounded TTL. This makes the
+    global view practical even before a paid all-market batch feed is enabled.
+    """
+
+    top_n = max(1, min(int(top_n), 25))
+    results: dict[tuple[str, str], dict] = {}
+    pending: list[tuple[str, str]] = []
+
+    for country, exchange in _GLOBAL_TOP_MARKETS:
+        cached = _read_scan_cache(country, exchange, max_age_hours=max_age_hours)
+        if cached is not None:
+            results[(country, exchange)] = cached
+        else:
+            pending.append((country, exchange))
+
+    if pending:
+        with ThreadPoolExecutor(max_workers=min(4, len(pending))) as pool:
+            future_map = {
+                pool.submit(
+                    scan_global_market,
+                    country=country,
+                    exchange=exchange,
+                    top_n=4,
+                    discovery_limit=300,
+                    deep_limit=10,
+                ): (country, exchange)
+                for country, exchange in pending
+            }
+            for future in as_completed(future_map):
+                country, exchange = future_map[future]
+                try:
+                    results[(country, exchange)] = future.result()
+                except Exception as exc:
+                    results[(country, exchange)] = {
+                        "status": "ERROR",
+                        "country": country,
+                        "exchange": exchange,
+                        "recommendations": [],
+                        "deepResults": [],
+                        "error": f"{type(exc).__name__}: {str(exc)[:220]}",
+                    }
+
+    candidates: list[dict] = []
+    market_summary: list[dict] = []
+    for country, exchange in _GLOBAL_TOP_MARKETS:
+        result = results.get((country, exchange), {})
+        rows = result.get("recommendations") if isinstance(result.get("recommendations"), list) else []
+        for row in rows:
+            if not isinstance(row, dict) or row.get("call") != "BUY_CANDIDATE":
+                continue
+            if (row.get("evidence") or {}).get("status") != "PASS":
+                continue
+            candidates.append(row)
+        market_summary.append({
+            "country": country,
+            "exchange": exchange,
+            "status": result.get("status") or "UNKNOWN",
+            "recommendationCount": len(rows),
+            "deepAnalyzed": result.get("deepAnalyzed") or len(result.get("deepResults") or []),
+            "screeningCoveragePct": result.get("screeningCoveragePct"),
+            "cache": result.get("scanCache"),
+            "error": result.get("error"),
+        })
+
+    deduped: dict[tuple[str, str, str], dict] = {}
+    for row in candidates:
+        key = (
+            str(row.get("country") or "").upper(),
+            str(row.get("exchange") or "").upper(),
+            str(row.get("ticker") or "").upper(),
+        )
+        if not key[2]:
+            continue
+        current = deduped.get(key)
+        rank = float(row.get("score") or 0.0) * float(row.get("confidence") or 0.0)
+        current_rank = float(current.get("score") or 0.0) * float(current.get("confidence") or 0.0) if current else -999.0
+        if current is None or rank > current_rank:
+            deduped[key] = row
+
+    ranked = sorted(
+        deduped.values(),
+        key=lambda row: (
+            float(row.get("score") or 0.0) * float(row.get("confidence") or 0.0),
+            float(row.get("confidence") or 0.0),
+            float(row.get("score") or 0.0),
+        ),
+        reverse=True,
+    )
+    recommendations = []
+    for index, row in enumerate(ranked[:top_n], start=1):
+        enriched = dict(row)
+        enriched["globalRank"] = index
+        recommendations.append(enriched)
+
+    errors = sum(1 for row in market_summary if row["status"] == "ERROR")
+    status = "NO_RECOMMENDATION" if not recommendations else "PARTIAL_GLOBAL_SCAN" if errors else "GLOBAL_TOP10"
+    return {
+        "status": status,
+        "scope": "US_EUROPE_TURKIYE",
+        "requestedRecommendations": top_n,
+        "recommendationCount": len(recommendations),
+        "marketsScanned": len(_GLOBAL_TOP_MARKETS),
+        "marketErrors": errors,
+        "recommendations": recommendations,
+        "markets": market_summary,
+        "notes": (
+            "Cross-market rank is based on evidence-qualified Kiasha score × confidence. "
+            "It is not padded when fewer than the requested number qualify."
+        ),
     }
