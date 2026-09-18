@@ -12,6 +12,7 @@ on:
       - 'analysis/global_markets/cached_esef.py'
       - 'analysis/global_markets/esef_country.py'
       - 'analysis/global_markets/gleif.py'
+      - 'analysis/global_markets/german_issuer.py'
       - 'analysis/global_markets/cvm.py'
       - 'analysis/global_markets/cvm_resolver.py'
       - 'analysis/global_markets/cvm_itr.py'
