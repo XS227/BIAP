@@ -15,6 +15,14 @@ from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
 from .source_cache import data_root, read_json
 
+_ALLOWED_SOURCE_TYPES = {
+    "official_regulatory_filing",
+    "official_regulatory_xbrl",
+    "official_regulatory_financial_statement",
+    "official_issuer_financial_statement",
+    "official_issuer_fundamentals",
+}
+
 _ALLOWED_FIELDS = {
     "revenue", "revenue_prev", "revenue_yoy_pct", "gross_profit",
     "operating_income", "ebitda", "net_income", "net_margin_pct",
@@ -60,6 +68,9 @@ class VerifiedFilingDropProvider(FundamentalsProvider):
         observed_at = str(record.get("observedAt") or "").strip() or None
         if provider not in self.provider_names or not source_url or not period_end:
             raise GlobalProviderError("verified filing is missing an approved provider, source URL or period end")
+        source_type = str(record.get("sourceType") or "official_regulatory_filing").strip().lower()
+        if source_type not in _ALLOWED_SOURCE_TYPES:
+            raise GlobalProviderError(f"verified filing has unsupported official source type {source_type!r}")
         values = record.get("fundamentals")
         if not isinstance(values, dict):
             raise GlobalProviderError("verified filing has no normalized fundamentals")
@@ -83,7 +94,7 @@ class VerifiedFilingDropProvider(FundamentalsProvider):
         enriched = replace(company, **kwargs)
         return append_source(enriched, SourceEvidence(
             provider=provider,
-            source_type="official_regulatory_filing",
+            source_type=source_type,
             source_id=str(record.get("sourceId") or path.stem),
             source_url=source_url,
             observed_at=observed_at,
