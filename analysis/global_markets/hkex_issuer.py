@@ -42,7 +42,7 @@ def _number(value: str) -> float:
     return float(text)
 
 
-_NUM = r"(?:\(?[0-9][0-9,]*(?:\.[0-9]+)?\)?)"
+_NUM = r"(?:\$?\(?[0-9][0-9,]*(?:\.[0-9]+)?\)?)"
 
 
 def _pair(text: str, label_pattern: str, *, label: str) -> tuple[float, float]:
@@ -91,7 +91,7 @@ def parse_hkex_2025_statements(text: str) -> dict:
     if not all(marker in normalized.upper() for marker in required):
         raise GlobalProviderError("HKEX PDF is missing 2025 consolidated-statement markers")
 
-    revenue, revenue_prev = _pair(normalized, r"\bRevenue\b", label="revenue")
+    revenue, revenue_prev = _pair(normalized, r"(?<!Other )\bRevenue\b(?:\s+5)?", label="revenue")
     ebitda, _ = _pair(
         normalized,
         r"EBITDA\s*\(non-HKFRS measure\)",
@@ -100,7 +100,7 @@ def parse_hkex_2025_statements(text: str) -> dict:
     operating_income, _ = _pair(normalized, r"Operating profit(?:\s+\d+)?", label="operating profit")
     net_income, net_income_prev = _pair(
         normalized,
-        r"Shareholders of HKEX(?:\s+\d+\([a-z]\)\([ivx]+\))?",
+        r"Shareholders of HKEX(?:\s+\d+(?:\([a-z]\))?(?:\([ivx]+\))?)?",
         label="profit attributable to shareholders",
     )
     eps, _ = _pair(normalized, r"Basic earnings per share(?:\s+\d+\([a-z]\))?", label="basic EPS")
