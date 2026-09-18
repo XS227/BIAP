@@ -33,6 +33,9 @@ _GLOBAL_TOP_MARKETS: tuple[tuple[str, str], ...] = (
     ("DK", "NASDAQ_COPENHAGEN"),
     ("FI", "NASDAQ_HELSINKI"),
     ("BE", "EURONEXT_BRUSSELS"),
+    ("IE", "EURONEXT_DUBLIN"),
+    ("PT", "EURONEXT_LISBON"),
+    ("IS", "NASDAQ_ICELAND"),
     ("TR", "BIST"),
 )
 
@@ -186,9 +189,9 @@ def scan_global_top10(
                     scan_global_market,
                     country=country,
                     exchange=exchange,
-                    top_n=4,
-                    discovery_limit=300,
-                    deep_limit=10,
+                    top_n=5,
+                    discovery_limit=500,
+                    deep_limit=15,
                 ): (country, exchange)
                 for country, exchange in pending
             }
