@@ -25,6 +25,8 @@ import {
 import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-market-selection';
 
 type Risk = 'low' | 'medium' | 'high';
+type Objective = 'growth' | 'income' | 'value' | 'capital_preservation';
+type LiquidityNeed = 'low' | 'medium' | 'high';
 type Scope = {
   country: string;
   countryName: string;
@@ -133,6 +135,9 @@ export default function GlobalPortfolioScreen() {
   const [baseCurrency, setBaseCurrency] = useState('EUR');
   const [risk, setRisk] = useState<Risk>('medium');
   const [horizon, setHorizon] = useState('5y');
+  const [objectives, setObjectives] = useState<Objective[]>(['growth', 'value']);
+  const [liquidityNeed, setLiquidityNeed] = useState<LiquidityNeed>('medium');
+  const [drawdownComfort, setDrawdownComfort] = useState('25');
   const [maxPositions, setMaxPositions] = useState('10');
   const [cashReserve, setCashReserve] = useState('15');
   const [loading, setLoading] = useState(false);
@@ -184,10 +189,18 @@ export default function GlobalPortfolioScreen() {
       return previous.length >= 4 ? previous : [...previous, market];
     });
 
+  const toggleObjective = (objective: Objective) =>
+    setObjectives((previous) =>
+      previous.includes(objective)
+        ? previous.length === 1 ? previous : previous.filter((item) => item !== objective)
+        : [...previous, objective],
+    );
+
   const build = async () => {
     const amount = Number(capital.replace(/,/g, ''));
     const positions = Math.max(1, Math.min(30, Number(maxPositions) || 10));
     const reserve = Math.max(0, Math.min(80, Number(cashReserve) || 0));
+    const drawdown = Math.max(0, Math.min(100, Number(drawdownComfort) || 0));
     if (!Number.isFinite(amount) || amount <= 0) {
       setError('Enter a positive capital amount.');
       return;
@@ -298,6 +311,9 @@ export default function GlobalPortfolioScreen() {
             maxSectorPct: 35,
             minCashReservePct: reserve,
             maxPositions: positions,
+            objectives,
+            liquidityNeed,
+            maxDrawdownComfortPct: drawdown,
           },
           unique,
         ),
@@ -359,6 +375,7 @@ export default function GlobalPortfolioScreen() {
           <Text style={[s.section, { color: colors.text }]}>Investor profile</Text>
           <View style={[s.card, { backgroundColor: colors.backgroundElement }]}>
             <View style={s.two}><Field label="Capital" value={capital} onChange={setCapital} colors={colors} /><Field label="Base currency" value={baseCurrency} onChange={setBaseCurrency} colors={colors} /></View>
+
             <Text style={[s.label, { color: colors.textSecondary }]}>Risk tolerance</Text>
             <View style={s.segment}>
               {(['low', 'medium', 'high'] as Risk[]).map((value) => (
@@ -367,14 +384,60 @@ export default function GlobalPortfolioScreen() {
                 </Pressable>
               ))}
             </View>
-            <View style={s.two}><Field label="Horizon" value={horizon} onChange={setHorizon} colors={colors} /><Field label="Max positions" value={maxPositions} onChange={setMaxPositions} colors={colors} /></View>
+
+            <Text style={[s.label, { color: colors.textSecondary }]}>Investment horizon</Text>
+            <View style={s.optionWrap}>
+              {['3m', '1y', '3y', '5y+'].map((value) => (
+                <Pressable key={value} onPress={() => setHorizon(value)} style={[s.optionChip, { backgroundColor: horizon === value ? Brand.primary : colors.backgroundSelected }]}>
+                  <Text style={[s.optionText, { color: horizon === value ? '#fff' : colors.text }]}>{value}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={[s.label, { color: colors.textSecondary }]}>What matters most? Select one or more</Text>
+            <View style={s.optionWrap}>
+              {([
+                ['growth', 'Growth'],
+                ['income', 'Dividend income'],
+                ['value', 'Value'],
+                ['capital_preservation', 'Capital preservation'],
+              ] as Array<[Objective, string]>).map(([value, label]) => {
+                const active = objectives.includes(value);
+                return (
+                  <Pressable key={value} onPress={() => toggleObjective(value)} style={[s.optionChip, { backgroundColor: active ? Brand.primary : colors.backgroundSelected }]}>
+                    <Text style={[s.optionText, { color: active ? '#fff' : colors.text }]}>{active ? '✓ ' : ''}{label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={[s.label, { color: colors.textSecondary }]}>Need quick access to the money?</Text>
+            <View style={s.segment}>
+              {(['low', 'medium', 'high'] as LiquidityNeed[]).map((value) => (
+                <Pressable key={value} onPress={() => setLiquidityNeed(value)} style={[s.segmentBtn, { backgroundColor: liquidityNeed === value ? Brand.primary : colors.backgroundSelected }]}>
+                  <Text style={{ color: liquidityNeed === value ? '#fff' : colors.text, fontFamily: Fonts.sans, fontWeight: '800' }}>{value}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <View style={s.two}>
+              <Field label="Max drawdown you can tolerate (%)" value={drawdownComfort} onChange={setDrawdownComfort} colors={colors} />
+              <Field label="Max positions" value={maxPositions} onChange={setMaxPositions} colors={colors} />
+            </View>
             <Field label="Minimum cash reserve (%)" value={cashReserve} onChange={setCashReserve} colors={colors} />
+            <Text style={[s.body, { color: colors.textSecondary }]}>These answers do not change a stock's objective Kiasha score. They only change whether that stock fits your portfolio.</Text>
           </View>
 
           <Pressable disabled={loading || !scopes.length} onPress={() => { void build(); }} style={[s.primary, { backgroundColor: Brand.primary, opacity: loading ? 0.65 : 1 }]}>
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.primaryText}>Compare markets and build global portfolio</Text>}
           </Pressable>
 
+          {result?.profileAssessment ? <View style={[s.card, { backgroundColor: colors.backgroundElement, marginTop: 10 }]}>
+            <Text style={s.eyebrow}>INVESTOR FIT PROFILE</Text>
+            <Text style={[s.cardTitle, { color: colors.text }]}>{String(result.profileAssessment.label || 'BALANCED').replace(/_/g, ' ')}</Text>
+            <Text style={[s.body, { color: colors.textSecondary }]}>Horizon {result.profileAssessment.horizon || horizon} • Liquidity need {result.profileAssessment.liquidityNeed || liquidityNeed} • Drawdown comfort {result.profileAssessment.maxDrawdownComfortPct ?? drawdownComfort}%</Text>
+            <Text style={[s.body, { color: colors.textSecondary }]}>Priorities: {(result.profileAssessment.objectives || objectives).join(' • ') || 'general'}</Text>
+          </View> : null}
           {notes.length ? <View style={[s.card, { backgroundColor: colors.backgroundElement, marginTop: 8 }]}>{notes.map((note) => <Text key={note} style={[s.tiny, { color: colors.textSecondary }]}>• {note}</Text>)}</View> : null}
           {error ? <Text style={[s.error, { color: Brand.warning }]}>{error}</Text> : null}
 
@@ -490,6 +553,9 @@ const s = StyleSheet.create({
   input: { borderWidth: 1, borderRadius: Radius.md, paddingHorizontal: 10, paddingVertical: 9, fontFamily: Fonts.mono, fontSize: 11 },
   segment: { flexDirection: 'row', gap: 6 },
   segmentBtn: { flex: 1, minHeight: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  optionWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  optionChip: { minHeight: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 11 },
+  optionText: { fontFamily: Fonts.sans, fontSize: 9.5, fontWeight: '800' },
   primary: { minHeight: 49, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
   primaryText: { color: '#fff', fontFamily: Fonts.sans, fontSize: 11, fontWeight: '900' },
   error: { fontFamily: Fonts.sans, fontSize: 9.5, lineHeight: 15, marginTop: 9 },
