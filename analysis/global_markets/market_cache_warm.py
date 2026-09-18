@@ -18,10 +18,10 @@ from .runtime import build_registry
 _TARGETS: dict[tuple[str, str], tuple[str, ...]] = {
     ("US", "NASDAQ"): (
         "AAPL","MSFT","NVDA","AMZN","GOOGL","META","AVGO","COST","NFLX","AMD",
-        "QCOM","CSCO","AMAT","INTC","TXN","ADBE","PEP","TMUS","INTU","BKNG",
+        "QCOM","CSCO","AMAT","INTC","TXN","ADBE","PEP","TMUS","INTU","BKNG","WMT",
     ),
     ("US", "NYSE"): (
-        "JPM","XOM","JNJ","V","MA","WMT","PG","BAC","KO","CVX",
+        "JPM","XOM","JNJ","V","MA","PG","BAC","KO","CVX",
         "CAT","GE","IBM","HD","MRK","ABBV","CRM","ORCL","MCD","DIS",
     ),
     ("GB", "LSE"): (
@@ -46,7 +46,7 @@ _TARGETS: dict[tuple[str, str], tuple[str, ...]] = {
         "VOLV.B","ERIC.B","ATCO.A","ATCO.B","INVE.B","SEB.A","SWED.A","HM.B","SAND","ASSA.B",
     ),
     ("NO", "EURONEXT_OSLO"): (
-        "EQNR","DNB","AKER","MOW","TEL","NHY","YAR","ORK","KOG","STB",
+        "EQNR","DNB","AKER","MOWI","TEL","NHY","YAR","ORK","KOG","STB",
     ),
     ("DK", "NASDAQ_COPENHAGEN"): (
         "NOVO.B","MAERSK.B","DSV","CARL.B","VWS","COLO.B","ORSTED",
