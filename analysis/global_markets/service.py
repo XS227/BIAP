@@ -209,6 +209,11 @@ def _source_plan_payload(country: str) -> dict:
         configured = bool((os.environ.get("BIAP_OPENDART_API_KEY") or "").strip())
         if not configured:
             runtime_note = "OpenDART adapter exists but BIAP_OPENDART_API_KEY is not configured on the server."
+    elif status == "partial":
+        runtime_note = (
+            "A verified official fundamentals adapter is connected for a strict issuer allow-list; "
+            "unsupported tickers remain blocked until an official source is added."
+        )
     elif status == "market-ready":
         runtime_note = "Market routing is available; verified official fundamentals adapter is not connected yet."
     plan["runtimeConfigured"] = configured
