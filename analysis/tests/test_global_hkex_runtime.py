@@ -11,7 +11,8 @@ def test_hong_kong_partial_official_provider_is_registered():
 
     assert isinstance(provider, PersistentFundamentalsProvider)
     assert isinstance(provider.upstream, FallbackFundamentalsProvider)
-    assert isinstance(provider.upstream.primary, HKEXIssuerFundamentalsProvider)
+    assert isinstance(provider.upstream.primary, FallbackFundamentalsProvider)
+    assert isinstance(provider.upstream.primary.primary, HKEXIssuerFundamentalsProvider)
 
 
 def test_hong_kong_source_plan_is_explicitly_partial():
