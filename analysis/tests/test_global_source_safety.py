@@ -42,3 +42,24 @@ def test_verified_filing_drop_accepts_only_with_provenance(tmp_path, monkeypatch
     assert enriched.revenue == 1000
     assert enriched.net_income == 100
     assert enriched.sources[-1].provider == "asx"
+
+
+def test_verified_filing_drop_preserves_issuer_source_type(tmp_path, monkeypatch):
+    monkeypatch.setenv("BIAP_GLOBAL_DATA_DIR", str(tmp_path))
+    folder = tmp_path / "filings" / "SG"
+    folder.mkdir(parents=True)
+    (folder / "S68.json").write_text(
+        '{"verified":true,"sourceProvider":"sgx-official-issuer-financial-information",'
+        '"sourceType":"official_issuer_fundamentals","sourceUrl":"https://investorrelations.sgx.com/financial-information",'
+        '"sourceId":"S68:FY2026","periodEnd":"2026-06-30","observedAt":"2026-08-06T00:00:00Z",'
+        '"currency":"SGD","fundamentals":{"revenue":1559000000,"operating_income":887000000}}',
+        encoding="utf-8",
+    )
+    provider = VerifiedFilingDropProvider(
+        country="SG",
+        provider_names=("sgx-official-issuer-financial-information",),
+    )
+    company = GlobalCompany(country="SG", exchange="SGX", currency="SGD", ticker="S68", name="Singapore Exchange Ltd.")
+    enriched = provider.enrich_fundamentals(company)
+    assert enriched.revenue == 1559000000
+    assert enriched.sources[-1].source_type == "official_issuer_fundamentals"
