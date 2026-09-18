@@ -57,6 +57,15 @@ _TARGETS: dict[tuple[str, str], tuple[str, ...]] = {
     ("BE", "EURONEXT_BRUSSELS"): (
         "ABI","KBC","UCB","SOLB","GBLB",
     ),
+    ("IE", "EURONEXT_DUBLIN"): (
+        "BIRG","RYA",
+    ),
+    ("PT", "EURONEXT_LISBON"): (
+        "EDP","GALP","JMT","BCP",
+    ),
+    ("IS", "NASDAQ_ICELAND"): (
+        "ARION","ISB","ICEAIR",
+    ),
     ("TR", "BIST"): (
         "AKBNK","GARAN","THYAO","ASELS","KCHOL","BIMAS","TUPRS","FROTO","SAHOL","EREGL","ISCTR","TCELL",
     ),
