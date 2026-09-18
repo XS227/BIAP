@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from math import floor
 from typing import Iterable, Mapping, Optional
 
+from .decision_support import preference_adjustment
 from .models import (
     AgentSignal,
     EvidenceAssessment,
@@ -279,6 +280,8 @@ def portfolio_agent(
 
         score, confidence = _candidate_score(candidate)
         score -= _risk_penalty(company, profile.risk_tolerance)
+        suitability_adjustment = preference_adjustment(company, profile)
+        score += suitability_adjustment
         if score < min_score or confidence < min_confidence:
             excluded.append(
                 f"{identity}: below decision threshold score={score:.3f} confidence={confidence:.3f}"
@@ -350,6 +353,7 @@ def portfolio_agent(
                 f"evidence={candidate.evidence.status}; "
                 f"evidenceCoverage={candidate.evidence.coverage:.0%}; "
                 f"score={score:.3f}; confidence={confidence:.3f}; "
+                f"profileFitAdjustment={preference_adjustment(company, profile):+.3f}; "
                 f"fx={fx_rate:.8g}; lot={lot_size}"
             ),
         )
