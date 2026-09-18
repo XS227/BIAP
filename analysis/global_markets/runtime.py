@@ -23,6 +23,7 @@ from .cvm_itr import CVMITRCorroborator
 from .cvm_resolver import CVMResolvedFundamentalsProvider
 from .edinet import EDINETFundamentalsProvider
 from .fallback_fundamentals import FallbackFundamentalsProvider
+from .german_issuer import GermanIssuerFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
 from .kap_current import KAPCurrentFundamentalsProvider
 from .opendart import OpenDARTFundamentalsProvider
@@ -113,6 +114,16 @@ def build_registry() -> ProviderRegistry:
     official_europe = FallbackFundamentalsProvider(esef, sec_foreign_ifrs)
     esef_with_fallback = FallbackFundamentalsProvider(official_europe, public_fundamentals)
     esef_persistent = PersistentFundamentalsProvider(esef_with_fallback)
+
+    # Germany keeps generic regulatory ESEF/SEC first. Siemens and Allianz are
+    # currently absent from the public ESEF index used by BIAP, so an exact,
+    # whitelisted issuer-published annual-results adapter is the next official
+    # fallback. It never applies to other German tickers and never upgrades
+    # Yahoo/vendor data to official evidence.
+    de_issuer = GermanIssuerFundamentalsProvider()
+    de_official = FallbackFundamentalsProvider(official_europe, de_issuer)
+    de_with_fallback = FallbackFundamentalsProvider(de_official, public_fundamentals)
+    de_provider = PersistentFundamentalsProvider(de_with_fallback)
     companies_house_key = (os.environ.get("BIAP_COMPANIES_HOUSE_API_KEY") or "").strip()
     uk_base = (
         CorroboratingFundamentalsProvider(
@@ -124,7 +135,12 @@ def build_registry() -> ProviderRegistry:
     )
     uk_provider = PersistentFundamentalsProvider(uk_base)
     for country in _ESEF_COUNTRIES:
-        provider = uk_provider if country == "GB" else esef_persistent
+        if country == "GB":
+            provider = uk_provider
+        elif country == "DE":
+            provider = de_provider
+        else:
+            provider = esef_persistent
         for exchange in COUNTRY_PACKS[country].exchanges:
             register_fundamentals(country, exchange.code, provider)
 
