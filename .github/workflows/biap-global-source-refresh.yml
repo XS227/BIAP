@@ -29,6 +29,25 @@ jobs:
       VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
       VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build verified issuer drops on runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install -q -r analysis/requirements.txt
+          rm -rf /tmp/biap-global-issuer-drops
+          mkdir -p /tmp/biap-global-issuer-drops
+          PYTHONPATH=analysis BIAP_ISSUER_DROP_OUTPUT=/tmp/biap-global-issuer-drops \
+            python -m global_markets.issuer_drop_sync | tee /tmp/biap-global-issuer-drop-sync.json
+          tar -C /tmp/biap-global-issuer-drops -czf /tmp/biap-global-issuer-drops.tgz .
+          echo "issuer_drop_files=$(find /tmp/biap-global-issuer-drops -type f -name '*.json' | wc -l)"
+
       - name: Configure SSH
         shell: bash
         run: |
@@ -38,6 +57,15 @@ jobs:
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
           chmod 600 ~/.ssh/biap_global_key
           ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Copy verified issuer drops
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          scp -i ~/.ssh/biap_global_key -P "$PORT" -o BatchMode=yes \
+            /tmp/biap-global-issuer-drops.tgz \
+            "$VPS_USER@$VPS_HOST:/tmp/biap-global-issuer-drops.tgz"
 
       - name: Refresh verified Global source caches
         shell: bash
@@ -52,6 +80,11 @@ jobs:
           # uses the already-deployed isolated checkout and never touches Iran.
           export BIAP_GLOBAL_APP_DIR="$APP_DIR"
           export BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global
+          mkdir -p "$BIAP_GLOBAL_DATA_DIR/filings"
+          if [[ -s /tmp/biap-global-issuer-drops.tgz ]]; then
+            tar -xzf /tmp/biap-global-issuer-drops.tgz -C "$BIAP_GLOBAL_DATA_DIR/filings"
+            rm -f /tmp/biap-global-issuer-drops.tgz
+          fi
           bash deploy/sync-global-sources.sh
           echo "SOURCE_REFRESH_HEAD=$(git rev-parse --short HEAD)"
           REMOTE
