@@ -37,6 +37,7 @@ ANALYSIS_REQUIREMENTS: tuple[DataRequirement, ...] = (
 # or authorized ingestion may still be required at deployment time.
 # bridge = existing Iran production path reused read-only.
 # market-ready = exchange routing exists but verified fundamentals adapter remains planned.
+# partial = a strict official adapter exists only for an explicit issuer allow-list.
 SOURCE_PLANS: dict[str, dict] = {
     "IR": {"market": "TSETMC", "filings": "CODAL", "status": "bridge", "notes": "Existing Iran path reused read-only."},
     "US": {"market": "licensed global feed", "filings": "SEC EDGAR/XBRL Company Facts", "status": "connected", "notes": "SEC adapter implemented; descriptive User-Agent is used when no deployment-specific contact is configured."},
@@ -61,7 +62,7 @@ SOURCE_PLANS: dict[str, dict] = {
     "JP": {"market": "Tokyo Stock Exchange / global market feed", "filings": "FSA EDINET API v2", "status": "connected", "notes": "EDINET index/cache/parser implemented; BIAP_EDINET_API_KEY is required for official FSA evidence and daily sync."},
     "KR": {"market": "Korea Exchange / global market feed", "filings": "FSS OpenDART", "status": "connected", "notes": "OpenDART annual statement adapter implemented; BIAP_OPENDART_API_KEY is required for official evidence."},
     "HK": {"market": "HKEX / global market feed", "filings": "HKEXnews", "status": "market-ready", "notes": "Public disclosures exist, but a stable supported machine interface has not yet been promoted to verified ingestion."},
-    "SG": {"market": "SGX / global market feed", "filings": "SGX issuer announcements", "status": "market-ready", "notes": "Public disclosures exist, but a stable supported machine interface has not yet been promoted to verified ingestion."},
+    "SG": {"market": "SGX / global market feed", "filings": "issuer-owned financial results; SGXNet planned", "status": "partial", "notes": "Official issuer-owned fundamentals are connected for Singapore Exchange Limited (S68) only. Other SG tickers remain blocked unless they have a verified source. SGXNet generic ingestion is not enabled."},
     "IN": {"market": "NSE/BSE / global market feed", "filings": "NSE/BSE corporate filings", "status": "market-ready"},
     "SA": {"market": "Saudi Exchange / global market feed", "filings": "Saudi Exchange disclosures", "status": "market-ready"},
     "AE": {"market": "ADX/DFM / global market feed", "filings": "ADX/DFM disclosures", "status": "market-ready"},
