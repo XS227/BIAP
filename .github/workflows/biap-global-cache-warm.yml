@@ -12,6 +12,9 @@ on:
       - 'analysis/global_markets/esef_country.py'
       - 'analysis/global_markets/gleif.py'
       - 'analysis/global_markets/runtime.py'
+      - 'analysis/global_markets/history_store.py'
+      - 'analysis/global_markets/yahoo_chart.py'
+      - 'analysis/global_markets/twelve_data.py'
       - '.github/workflows/biap-global-cache-warm.yml'
 
 concurrency:
@@ -63,9 +66,12 @@ jobs:
           # simply re-read today's normalized cache. Normal request traffic keeps
           # the normal 24h TTL and remains cheap/resilient.
           export BIAP_GLOBAL_FUNDAMENTALS_CACHE_HOURS=0
-          mkdir -p "$BIAP_GLOBAL_DATA_DIR/fundamentals" "$BIAP_GLOBAL_DATA_DIR/cache/sec-edgar"
+          export BIAP_GLOBAL_MARKET_CACHE_HOURS=0
+          mkdir -p "$BIAP_GLOBAL_DATA_DIR/fundamentals" "$BIAP_GLOBAL_DATA_DIR/cache/sec-edgar" "$BIAP_GLOBAL_DATA_DIR/history"
           .venv-global/bin/python -m global_markets.official_cache_warm | tee /tmp/biap-global-cache-warm.json
           echo "fundamentals_latest_files=$(find "$BIAP_GLOBAL_DATA_DIR/fundamentals" -type f -name latest.json 2>/dev/null | wc -l)"
           echo "fundamentals_period_files=$(find "$BIAP_GLOBAL_DATA_DIR/fundamentals" -type f -path '*/history/*.json' 2>/dev/null | wc -l)"
           echo "sec_raw_cache_files=$(find "$BIAP_GLOBAL_DATA_DIR/cache/sec-edgar" -type f -name '*.json' 2>/dev/null | wc -l)"
+          echo "market_history_files=$(find "$BIAP_GLOBAL_DATA_DIR/history" -type f -name '*.json' 2>/dev/null | wc -l)"
+          echo "market_history_points=$(.venv-global/bin/python -c \"import json, pathlib, os; root=pathlib.Path(os.environ[\'BIAP_GLOBAL_DATA_DIR\'])/\'history\'; print(sum(len((json.loads(p.read_text()) or {}).get(\'points\') or []) for p in root.rglob(\'*.json\')))\")"
           REMOTE
