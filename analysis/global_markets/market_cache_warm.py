@@ -2,7 +2,7 @@
 
 This list is a data-coverage set, not an investment recommendation. It expands
 server-side price/history snapshots for large/liquid operating companies across
-US, Europe, Türkiye, Brazil and Japan so cross-market scans are less dependent on first-user
+US, Europe, Türkiye, Brazil, Japan, Singapore and Hong Kong so cross-market scans are less dependent on first-user
 traffic. Official fundamentals remain a separate source layer and Evidence Agent
 still decides whether any company is recommendation-eligible.
 """
@@ -74,6 +74,12 @@ _TARGETS: dict[tuple[str, str], tuple[str, ...]] = {
     ),
     ("JP", "TSE_JP"): (
         "7203","6758","8306","6861","7974","9983","9984","6501","6098","9432",
+    ),
+    ("SG", "SGX"): (
+        "D05","O39","U11","Z74","C6L","S68","BN4","F34","U96","C52",
+    ),
+    ("HK", "HKEX"): (
+        "0700","9988","0005","1299","0388","3690","2318","0941","1810","9999",
     ),
 }
 
