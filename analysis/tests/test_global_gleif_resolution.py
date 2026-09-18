@@ -36,6 +36,21 @@ def test_legal_core_handles_diacritics_and_punctuated_legal_forms():
     assert _legal_core("Enel S.p.A.") == "ENEL"
 
 
+def test_legal_core_handles_german_spelled_out_legal_form():
+    assert _legal_core("Siemens AG") == "SIEMENS"
+    assert _legal_core("Siemens Aktiengesellschaft") == "SIEMENS"
+
+
+def test_german_ag_abbreviation_resolves_to_spelled_out_legal_name(monkeypatch):
+    resolver = GLEIFResolver()
+    rows = [_row("W38RGI023J3WT1HWRP32", "Siemens Aktiengesellschaft", "DE")]
+    monkeypatch.setattr(resolver, "_search", lambda *args, **kwargs: rows)
+
+    match = resolver.resolve_exact_legal_name("Siemens AG", country="DE")
+    assert match.lei == "W38RGI023J3WT1HWRP32"
+    assert match.legal_name == "Siemens Aktiengesellschaft"
+
+
 def test_legal_core_handles_swedish_prefix_form():
     assert _legal_core("Volvo AB") == "VOLVO"
     assert _legal_core("Aktiebolaget Volvo") == "VOLVO"
