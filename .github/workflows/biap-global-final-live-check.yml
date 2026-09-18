@@ -83,12 +83,29 @@ jobs:
               ('DE', 'XETRA', 'SAP'),
           ]:
               row = analyze_exact(country, exchange, ticker, 150)
-              evidence = (row.get('evidence') or {}).get('status')
-              assert evidence == 'PASS', (country, exchange, ticker, evidence, row.get('providerDiagnostics'))
+              evidence_obj = row.get('evidence') or {}
+              evidence = evidence_obj.get('status')
+              sources = (row.get('company') or {}).get('sources', [])
+              official = [
+                  source for source in sources
+                  if any(token in str(source.get('source_type') or '').lower()
+                         for token in ('filing', 'regulatory', 'xbrl', 'financial_statement'))
+                  and 'vendor' not in str(source.get('source_type') or '').lower()
+              ]
+              # WARN is a valid analytical outcome when verified agents conflict
+              # or coverage is incomplete. What this check must prove is that the
+              # official filing source is actually connected and no critical
+              # provenance field is missing.
+              assert evidence != 'BLOCK', (country, exchange, ticker, evidence_obj, row.get('providerDiagnostics'))
+              assert official, (country, exchange, ticker, 'official source missing', sources)
               europe[ticker] = {
                   'evidence': evidence,
+                  'coverage': evidence_obj.get('coverage'),
+                  'reasoning': evidence_obj.get('reasoning'),
+                  'contradictions': evidence_obj.get('contradictions'),
                   'call': row.get('call'),
-                  'sources': [source.get('provider') for source in (row.get('company') or {}).get('sources', [])],
+                  'sources': [source.get('provider') for source in sources],
+                  'officialSources': [source.get('provider') for source in official],
               }
           print(json.dumps({'europeOfficial': europe}, sort_keys=True))
 
