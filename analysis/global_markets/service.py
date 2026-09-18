@@ -195,6 +195,28 @@ def _call(score: float, confidence: float, evidence_status: str) -> str:
     return "HOLD_OR_WATCH"
 
 
+def _source_plan_payload(country: str) -> dict:
+    code = country.strip().upper()
+    plan = dict(SOURCE_PLANS.get(code, {}))
+    status = str(plan.get("status") or "")
+    configured = status not in {"market-ready", ""}
+    runtime_note = None
+    if code == "JP":
+        configured = bool((os.environ.get("BIAP_EDINET_API_KEY") or "").strip())
+        if not configured:
+            runtime_note = "EDINET adapter exists but BIAP_EDINET_API_KEY is not configured on the server."
+    elif code == "KR":
+        configured = bool((os.environ.get("BIAP_OPENDART_API_KEY") or "").strip())
+        if not configured:
+            runtime_note = "OpenDART adapter exists but BIAP_OPENDART_API_KEY is not configured on the server."
+    elif status == "market-ready":
+        runtime_note = "Market routing is available; verified official fundamentals adapter is not connected yet."
+    plan["runtimeConfigured"] = configured
+    if runtime_note:
+        plan["runtimeNote"] = runtime_note
+    return plan
+
+
 def _analysis_payload(enriched, diagnostics: ProviderDiagnostics, signals, evidence, score, confidence) -> dict:
     call = _call(score, confidence, evidence.status)
     return {
@@ -211,7 +233,7 @@ def _analysis_payload(enriched, diagnostics: ProviderDiagnostics, signals, evide
         "score": round(score, 6),
         "confidence": round(confidence, 6),
         "providerDiagnostics": diagnostics.to_dict(),
-        "sourcePlan": dict(SOURCE_PLANS.get(enriched.country.upper(), {})),
+        "sourcePlan": _source_plan_payload(enriched.country),
         "evidence": asdict(evidence),
         "signals": [asdict(signal) for signal in signals],
         "decisionTable": build_decision_table(
