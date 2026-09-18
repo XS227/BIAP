@@ -123,7 +123,12 @@ def build_registry() -> ProviderRegistry:
     # fallback. It never applies to other German tickers and never upgrades
     # Yahoo/vendor data to official evidence.
     de_issuer = GermanIssuerFundamentalsProvider()
-    de_official = FallbackFundamentalsProvider(official_europe, de_issuer)
+    de_drop = VerifiedFilingDropProvider(
+        country="DE",
+        provider_names=(GermanIssuerFundamentalsProvider.provider_id,),
+    )
+    de_issuer_resilient = FallbackFundamentalsProvider(de_issuer, de_drop)
+    de_official = FallbackFundamentalsProvider(official_europe, de_issuer_resilient)
     de_with_fallback = FallbackFundamentalsProvider(de_official, public_fundamentals)
     de_provider = PersistentFundamentalsProvider(de_with_fallback)
     companies_house_key = (os.environ.get("BIAP_COMPANIES_HOUSE_API_KEY") or "").strip()
@@ -165,8 +170,13 @@ def build_registry() -> ProviderRegistry:
     # issuer-owned adapter covers Singapore Exchange Limited (S68) only; every
     # other SG ticker falls back to labelled vendor metrics and remains blocked
     # by Evidence Agent until an official source is added.
+    sg_drop = VerifiedFilingDropProvider(
+        country="SG",
+        provider_names=(SGXIssuerFundamentalsProvider.provider_id,),
+    )
+    sg_official = FallbackFundamentalsProvider(SGXIssuerFundamentalsProvider(), sg_drop)
     sg_issuer = PersistentFundamentalsProvider(
-        FallbackFundamentalsProvider(SGXIssuerFundamentalsProvider(), public_fundamentals)
+        FallbackFundamentalsProvider(sg_official, public_fundamentals)
     )
     for exchange in COUNTRY_PACKS["SG"].exchanges:
         register_fundamentals("SG", exchange.code, sg_issuer)
@@ -175,8 +185,13 @@ def build_registry() -> ProviderRegistry:
     # (0388/388), use its issuer-published consolidated annual statements from
     # the official HKEX Group Investor Relations site. Other HK tickers remain
     # on labelled vendor fundamentals and therefore stay Evidence-BLOCKED.
+    hk_drop = VerifiedFilingDropProvider(
+        country="HK",
+        provider_names=(HKEXIssuerFundamentalsProvider.provider_id,),
+    )
+    hk_official = FallbackFundamentalsProvider(HKEXIssuerFundamentalsProvider(), hk_drop)
     hk_issuer = PersistentFundamentalsProvider(
-        FallbackFundamentalsProvider(HKEXIssuerFundamentalsProvider(), public_fundamentals)
+        FallbackFundamentalsProvider(hk_official, public_fundamentals)
     )
     for exchange in COUNTRY_PACKS["HK"].exchanges:
         register_fundamentals("HK", exchange.code, hk_issuer)
