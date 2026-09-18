@@ -159,6 +159,12 @@ export type GlobalAnalysis = {
   decisionTable?: GlobalDecisionTable;
   company?: GlobalCompanyData;
   providerDiagnostics?: Record<string, unknown>;
+  sourcePlan?: {
+    market?: string;
+    filings?: string;
+    status?: 'connected' | 'bridge' | 'market-ready' | string;
+    notes?: string;
+  };
   screening?: { price?: number; averageVolume?: number; quoteDate?: string; liquidityValue?: number };
   portfolioEligible?: boolean;
   error?: string;
