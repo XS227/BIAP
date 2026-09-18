@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 from global_markets.country_packs import country_catalog, get_exchange
 from global_markets.models import InvestorProfile
 from global_markets.runtime import build_registry
-from global_markets.scan_service import scan_global_market
+from global_markets.scan_service import scan_global_market, scan_global_top10
 from global_markets.service import analyze_company, instrument_seed, portfolio_from_instruments
 from global_markets.source_catalog import SOURCE_PLANS, requirements_payload
 
@@ -43,6 +43,11 @@ class ScanRequest(BaseModel):
     topN: int = Field(default=10, ge=1, le=50)
     discoveryLimit: int = Field(default=1000, ge=10, le=5000)
     deepLimit: int = Field(default=25, ge=1, le=100)
+
+
+class GlobalTop10Request(BaseModel):
+    topN: int = Field(default=10, ge=1, le=25)
+    maxAgeHours: float = Field(default=6.0, ge=0, le=24)
 
 
 class PortfolioProfileRequest(BaseModel):
@@ -292,6 +297,14 @@ def global_scan(req: ScanRequest):
         )
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+
+
+@router.post("/scan-global")
+def global_scan_top10(req: GlobalTop10Request):
+    try:
+        return scan_global_top10(top_n=req.topN, max_age_hours=req.maxAgeHours)
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
 
