@@ -2,7 +2,7 @@
 
 This list is a data-coverage set, not an investment recommendation. It expands
 server-side price/history snapshots for large/liquid operating companies across
-US, Europe, Türkiye and Brazil so cross-market scans are less dependent on first-user
+US, Europe, Türkiye, Brazil and Japan so cross-market scans are less dependent on first-user
 traffic. Official fundamentals remain a separate source layer and Evidence Agent
 still decides whether any company is recommendation-eligible.
 """
@@ -71,6 +71,9 @@ _TARGETS: dict[tuple[str, str], tuple[str, ...]] = {
     ),
     ("BR", "B3"): (
         "PETR3","VALE3","ITUB3","BBDC3","BBAS3","WEGE3","ABEV3","B3SA3","RENT3","SUZB3",
+    ),
+    ("JP", "TSE_JP"): (
+        "7203","6758","8306","6861","7974","9983","9984","6501","6098","9432",
     ),
 }
 
