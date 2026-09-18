@@ -110,3 +110,17 @@ def test_esef_country_filing_never_guesses_when_two_candidates_match(monkeypatch
 
     with pytest.raises(GlobalProviderError, match="ambiguous"):
         provider._resolve_lei(_company("ES", "Banco Santander, S.A.", "SAN"))
+
+
+def test_legal_core_strips_market_share_class_descriptor():
+    assert _legal_core("Aker ASA Series A Shares") == "AKER"
+    assert _legal_core("Example AB Class B Shares") == "EXAMPLE"
+
+
+def test_share_class_display_name_resolves_to_issuer_legal_name(monkeypatch):
+    resolver = GLEIFResolver()
+    rows = [_row("549300EXAMPLE00000001", "Aker ASA", "NO")]
+    monkeypatch.setattr(resolver, "_search", lambda *args, **kwargs: rows)
+
+    match = resolver.resolve_exact_legal_name("Aker ASA Series A Shares", country="NO")
+    assert match.legal_name == "Aker ASA"
