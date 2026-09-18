@@ -145,6 +145,9 @@ class InvestorProfile:
     max_sector_pct: float = 30.0
     min_cash_reserve_pct: float = 10.0
     max_positions: int = 10
+    objectives: tuple[str, ...] = ()
+    liquidity_need: str = "medium"
+    max_drawdown_comfort_pct: Optional[float] = None
 
 
 @dataclass(frozen=True)
