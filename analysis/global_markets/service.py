@@ -21,6 +21,7 @@ from .fx import TwelveDataFXProvider
 from .models import GlobalCompany, InvestorProfile, SourceEvidence
 from .providers import ProviderDiagnostics, ProviderRegistry
 from .runtime import build_registry
+from .source_catalog import SOURCE_PLANS
 from .universe import _ordinary_equity_row
 
 
@@ -210,6 +211,7 @@ def _analysis_payload(enriched, diagnostics: ProviderDiagnostics, signals, evide
         "score": round(score, 6),
         "confidence": round(confidence, 6),
         "providerDiagnostics": diagnostics.to_dict(),
+        "sourcePlan": dict(SOURCE_PLANS.get(enriched.country.upper(), {})),
         "evidence": asdict(evidence),
         "signals": [asdict(signal) for signal in signals],
         "decisionTable": build_decision_table(
