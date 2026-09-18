@@ -132,6 +132,8 @@ export type GlobalDecisionTable = {
   };
   kiasha?: {
     call?: string;
+    newPositionAction?: string;
+    existingHolderAction?: string;
     score?: number;
     confidence?: number;
     evidence?: string;
