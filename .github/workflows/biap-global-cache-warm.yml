@@ -6,6 +6,7 @@ on:
     branches: [feat/biap-global]
     paths:
       - 'analysis/global_markets/official_cache_warm.py'
+      - 'analysis/global_markets/market_cache_warm.py'
       - 'analysis/global_markets/cached_fundamentals.py'
       - 'analysis/global_markets/cached_sec_edgar.py'
       - 'analysis/global_markets/cached_esef.py'
@@ -28,7 +29,7 @@ jobs:
   warm:
     runs-on: ubuntu-latest
     environment: production
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
       VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
@@ -68,6 +69,7 @@ jobs:
           export BIAP_GLOBAL_FUNDAMENTALS_CACHE_HOURS=0
           export BIAP_GLOBAL_MARKET_CACHE_HOURS=0
           mkdir -p "$BIAP_GLOBAL_DATA_DIR/fundamentals" "$BIAP_GLOBAL_DATA_DIR/cache/sec-edgar" "$BIAP_GLOBAL_DATA_DIR/history"
+          .venv-global/bin/python -m global_markets.market_cache_warm | tee /tmp/biap-global-market-cache-warm.json
           .venv-global/bin/python -m global_markets.official_cache_warm | tee /tmp/biap-global-cache-warm.json
           echo "fundamentals_latest_files=$(find "$BIAP_GLOBAL_DATA_DIR/fundamentals" -type f -name latest.json 2>/dev/null | wc -l)"
           echo "fundamentals_period_files=$(find "$BIAP_GLOBAL_DATA_DIR/fundamentals" -type f -path '*/history/*.json' 2>/dev/null | wc -l)"
