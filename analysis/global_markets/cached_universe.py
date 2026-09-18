@@ -16,6 +16,8 @@ from typing import Iterable, Optional
 
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
+from .country_packs import get_exchange
+from .universe import _ordinary_equity_row
 
 # Version 5 invalidates snapshots created while the catalog pager treated the
 # provider's page-local `count` as a universe total. Those snapshots could stop
@@ -149,6 +151,26 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
             currency = str(row.get("currency") or "").strip().upper()
             if not ticker or not currency:
                 continue
+            row_country = str(row.get("country") or "").upper()
+            row_exchange = str(row.get("exchange") or "").upper()
+            try:
+                spec = get_exchange(row_country, row_exchange)
+            except Exception:
+                continue
+            cached_raw = dict(row.get("raw_provider_fields") or {})
+            normalized_row = {
+                "name": str(row.get("name") or ticker),
+                "type": str(row.get("instrument_type") or "Common Stock"),
+                "cfi_code": cached_raw.get("cfi"),
+            }
+            if not _ordinary_equity_row(
+                country=row_country,
+                spec=spec,
+                row=normalized_row,
+                symbol=ticker,
+                currency=currency,
+            ):
+                continue
             original_sources: list[SourceEvidence] = []
             for source in row.get("sources") or []:
                 if not isinstance(source, dict):
@@ -169,7 +191,7 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
                     else f"Persistent snapshot from {upstream}"
                 ),
             )
-            raw = dict(row.get("raw_provider_fields") or {})
+            raw = cached_raw
             raw.update({
                 "catalog_cache": "fallback" if fallback else "fresh",
                 "catalog_cached_at": fetched_at,
