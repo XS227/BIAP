@@ -132,7 +132,8 @@ export default function GlobalStockDetailScreen() {
     ['Current ratio', dm?.currentRatio == null ? '—' : `${n(dm.currentRatio, 2)}x`],
     ['ROE', pct(dm?.roePct)],
     ['ROA', pct(dm?.roaPct)],
-    ['Kiasha', analysis?.call || '—'],
+    ['New position', friendly(decision?.kiasha?.newPositionAction || analysis?.call)],
+    ['If already owned', friendly(decision?.kiasha?.existingHolderAction)],
     ['Evidence', analysis?.evidence?.status || '—'],
   ], [analysis?.call, analysis?.evidence?.status, decision, dm]);
 
