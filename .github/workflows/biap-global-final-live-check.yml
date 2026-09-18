@@ -109,6 +109,21 @@ jobs:
               }
           print(json.dumps({'europeOfficial': europe}, sort_keys=True))
 
+          br = analyze_exact('BR', 'B3', 'VALE3', 180)
+          br_evidence = br.get('evidence') or {}
+          br_sources = (br.get('company') or {}).get('sources', [])
+          assert br_evidence.get('status') != 'BLOCK', (br_evidence, br.get('providerDiagnostics'))
+          assert any('cvm' in str(source.get('provider') or '').lower() for source in br_sources), br_sources
+          print(json.dumps({
+              'brazilOfficial': {
+                  'ticker': 'VALE3',
+                  'evidence': br_evidence.get('status'),
+                  'coverage': br_evidence.get('coverage'),
+                  'call': br.get('call'),
+                  'sources': [source.get('provider') for source in br_sources],
+              }
+          }, sort_keys=True))
+
           portfolio = post('/portfolio', {
               'profile': {
                   'capital': 50000, 'baseCurrency': 'USD', 'riskTolerance': 'low',
@@ -127,7 +142,7 @@ jobs:
           print(json.dumps({'profileAssessment': profile}, sort_keys=True))
 
           global_scan = post('/scan-global', {'topN': 3, 'maxAgeHours': 24}, 420)
-          assert global_scan.get('marketsScanned', 0) >= 17
+          assert global_scan.get('marketsScanned', 0) >= 18
           assert isinstance(global_scan.get('recommendations'), list)
           for row in global_scan.get('recommendations') or []:
               assert row.get('call') == 'BUY_CANDIDATE'
