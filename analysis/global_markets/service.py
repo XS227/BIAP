@@ -16,6 +16,7 @@ from .advanced_agents import run_advanced_agents
 from .agents import PortfolioCandidate, evidence_agent, portfolio_agent
 from .core_agents import run_core_agents
 from .country_packs import get_exchange
+from .decision_support import build_decision_table, profile_assessment
 from .fx import TwelveDataFXProvider
 from .models import GlobalCompany, InvestorProfile
 from .providers import ProviderDiagnostics, ProviderRegistry
@@ -89,6 +90,7 @@ def _call(score: float, confidence: float, evidence_status: str) -> str:
 
 
 def _analysis_payload(enriched, diagnostics: ProviderDiagnostics, signals, evidence, score, confidence) -> dict:
+    call = _call(score, confidence, evidence.status)
     return {
         "identity": enriched.identity(),
         "country": enriched.country,
@@ -99,12 +101,20 @@ def _analysis_payload(enriched, diagnostics: ProviderDiagnostics, signals, evide
         "isin": enriched.isin,
         "lei": enriched.lei,
         "currency": enriched.currency,
-        "call": _call(score, confidence, evidence.status),
+        "call": call,
         "score": round(score, 6),
         "confidence": round(confidence, 6),
         "providerDiagnostics": diagnostics.to_dict(),
         "evidence": asdict(evidence),
         "signals": [asdict(signal) for signal in signals],
+        "decisionTable": build_decision_table(
+            enriched,
+            signals,
+            evidence,
+            call=call,
+            score=score,
+            confidence=confidence,
+        ),
         "company": asdict(enriched),
     }
 
@@ -181,6 +191,7 @@ def portfolio_from_instruments(
     proposal = portfolio_agent(profile, candidates, fx_to_base=rates)
     return {
         "proposal": asdict(proposal),
+        "profileAssessment": profile_assessment(profile),
         "fxToBase": rates,
         "fxErrors": fx_errors,
         "analyses": analyses,
