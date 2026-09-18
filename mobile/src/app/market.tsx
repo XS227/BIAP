@@ -172,7 +172,7 @@ export default function MarketScreen() {
   const runGlobalTop10 = async () => {
     setScanning(true); setScan([]); setScanStatus(''); setScanMode('');
     try {
-      const result = await scanGlobalTop10(10, 6);
+      const result = await scanGlobalTop10(10, 24);
       setScan(result.recommendations || []);
       setScanMode('global');
       setScanStatus(`Global Top 10 • ${result.recommendationCount ?? 0} qualified • ${result.marketsScanned ?? 0} US/Europe/Türkiye markets`);
