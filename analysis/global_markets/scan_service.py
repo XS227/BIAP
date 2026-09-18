@@ -10,6 +10,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
+import os
 from typing import Optional
 
 from .models import GlobalCompany
@@ -19,7 +20,7 @@ from .service import analyze_company
 from .source_cache import data_root, read_json, write_json_atomic
 
 
-_GLOBAL_TOP_MARKETS: tuple[tuple[str, str], ...] = (
+_BASE_GLOBAL_TOP_MARKETS: tuple[tuple[str, str], ...] = (
     ("US", "NASDAQ"),
     ("US", "NYSE"),
     ("GB", "LSE"),
@@ -39,6 +40,22 @@ _GLOBAL_TOP_MARKETS: tuple[tuple[str, str], ...] = (
     ("TR", "BIST"),
     ("BR", "B3"),
 )
+
+
+def _global_top_markets() -> tuple[tuple[str, str], ...]:
+    """Return markets whose official fundamentals path can currently qualify.
+
+    Japan and South Korea are included automatically only when their regulator
+    credentials are configured on the server. This keeps Global Top 10 honest:
+    a market is not advertised as recommendation-capable when Evidence would be
+    forced to BLOCK every stock for missing official filing provenance.
+    """
+    markets = list(_BASE_GLOBAL_TOP_MARKETS)
+    if (os.environ.get("BIAP_EDINET_API_KEY") or "").strip():
+        markets.append(("JP", "TSE_JP"))
+    if (os.environ.get("BIAP_OPENDART_API_KEY") or "").strip():
+        markets.append(("KR", "KRX"))
+    return tuple(markets)
 
 
 def _scan_cache_path(country: str, exchange: str) -> Path:
@@ -173,10 +190,11 @@ def scan_global_top10(
     """
 
     top_n = max(1, min(int(top_n), 25))
+    markets = _global_top_markets()
     results: dict[tuple[str, str], dict] = {}
     pending: list[tuple[str, str]] = []
 
-    for country, exchange in _GLOBAL_TOP_MARKETS:
+    for country, exchange in markets:
         cached = _read_scan_cache(country, exchange, max_age_hours=max_age_hours)
         if cached is not None:
             results[(country, exchange)] = cached
@@ -212,7 +230,7 @@ def scan_global_top10(
 
     candidates: list[dict] = []
     market_summary: list[dict] = []
-    for country, exchange in _GLOBAL_TOP_MARKETS:
+    for country, exchange in markets:
         result = results.get((country, exchange), {})
         rows = result.get("recommendations") if isinstance(result.get("recommendations"), list) else []
         for row in rows:
@@ -266,15 +284,16 @@ def scan_global_top10(
     status = "NO_RECOMMENDATION" if not recommendations else "PARTIAL_GLOBAL_SCAN" if errors else "GLOBAL_TOP10"
     return {
         "status": status,
-        "scope": "US_EUROPE_TURKIYE_BRAZIL",
+        "scope": "CONNECTED_GLOBAL_MARKETS",
         "requestedRecommendations": top_n,
         "recommendationCount": len(recommendations),
-        "marketsScanned": len(_GLOBAL_TOP_MARKETS),
+        "marketsScanned": len(markets),
         "marketErrors": errors,
         "recommendations": recommendations,
         "markets": market_summary,
         "notes": (
             "Cross-market rank is based on evidence-qualified Kiasha score × confidence. "
-            "It is not padded when fewer than the requested number qualify."
+            "Japan/Korea join automatically when their official regulator connectors are configured. "
+            "The list is not padded when fewer than the requested number qualify."
         ),
     }
