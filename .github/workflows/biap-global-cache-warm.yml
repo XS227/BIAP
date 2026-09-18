@@ -58,7 +58,7 @@ jobs:
           ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
           set -euo pipefail
           APP_DIR=/home/ubuntu/biap-global/BIAP
-          WORK_DIR=/tmp/biap-global-cache-warm
+          WORK_DIR=/tmp/biap-global-cache-warm-$
           cd "$APP_DIR"
           git fetch origin feat/biap-global
           git worktree remove --force "$WORK_DIR" 2>/dev/null || rm -rf "$WORK_DIR"
