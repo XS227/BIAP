@@ -19,6 +19,7 @@ from typing import Any, Optional
 import httpx
 
 from .country_packs import ExchangeSpec, get_exchange
+from .history_store import persist_daily_history
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, MarketDataProvider, append_source
 
@@ -233,6 +234,26 @@ class TwelveDataMarketProvider(MarketDataProvider):
         if not closes:
             raise GlobalProviderError(f"no verified close prices returned for {company.identity()}")
         latest = rows[0]
+        persist_daily_history(
+            company,
+            self.provider_id,
+            (
+                {
+                    "date": row.get("datetime"),
+                    "open": self._float(row.get("open")),
+                    "high": self._float(row.get("high")),
+                    "low": self._float(row.get("low")),
+                    "close": self._float(row.get("close")),
+                    "adjusted_close": self._float(row.get("close")),
+                    "volume": self._float(row.get("volume")),
+                }
+                for row in rows
+            ),
+            metadata={
+                "mic": returned_mic or self._query_mic(company),
+                "adjustment": "splits",
+            },
+        )
         enriched = replace(
             company,
             currency=str(meta.get("currency") or company.currency or "").strip() or company.currency,
