@@ -28,6 +28,7 @@ from .kap_current import KAPCurrentFundamentalsProvider
 from .opendart import OpenDARTFundamentalsProvider
 from .providers import ProviderRegistry
 from .regional_yahoo_chart import RegionalYahooChartMarketProvider
+from .sec_foreign_ifrs import SECForeignIFRSFundamentalsProvider
 from .twelve_data import TwelveDataMarketProvider
 from .universe import IranUniverseProvider, TwelveDataUniverseProvider
 from .verified_filing_drop import VerifiedFilingDropProvider
@@ -108,7 +109,9 @@ def build_registry() -> ProviderRegistry:
     # UK can additionally corroborate the legal entity against Companies House
     # when its free API credential has been configured.
     esef = CachedESEFFundamentalsProvider()
-    esef_with_fallback = FallbackFundamentalsProvider(esef, public_fundamentals)
+    sec_foreign_ifrs = SECForeignIFRSFundamentalsProvider(user_agent=sec_user_agent)
+    official_europe = FallbackFundamentalsProvider(esef, sec_foreign_ifrs)
+    esef_with_fallback = FallbackFundamentalsProvider(official_europe, public_fundamentals)
     esef_persistent = PersistentFundamentalsProvider(esef_with_fallback)
     companies_house_key = (os.environ.get("BIAP_COMPANIES_HOUSE_API_KEY") or "").strip()
     uk_base = (
