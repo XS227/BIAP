@@ -103,6 +103,11 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
             ) as client:
                 response = client.get(url)
             response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code if exc.response is not None else "unknown"
+            raise GlobalProviderError(
+                f"German official issuer request failed: HTTP {status}"
+            ) from exc
         except httpx.HTTPError as exc:
             raise GlobalProviderError(
                 f"German official issuer request failed: {type(exc).__name__}"
