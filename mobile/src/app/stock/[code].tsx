@@ -116,6 +116,15 @@ export default function GlobalStockDetailScreen() {
     ['Assets', n(company?.total_assets, 0)], ['Liabilities', n(company?.total_liabilities, 0)], ['Equity', n(company?.total_equity, 0)], ['Operating cash flow', n(company?.operating_cash_flow, 0)], ['Free cash flow', n(company?.free_cash_flow, 0)], ['Debt', n(company?.total_debt, 0)],
   ], [company]);
 
+  const valuationMissing = [
+    company?.market_cap, company?.pe, company?.pb, company?.ev_ebitda,
+    company?.sector_pe, company?.dividend_yield_pct, company?.eps, company?.book_value_per_share,
+  ].every((value) => value == null);
+  const fundamentalsMissing = [
+    company?.revenue, company?.net_income, company?.total_assets, company?.total_liabilities,
+    company?.total_equity, company?.operating_cash_flow, company?.free_cash_flow, company?.total_debt,
+  ].every((value) => value == null);
+
   const decisionRows = useMemo(() => [
     ['Short-term outlook', friendly(decision?.shortTermOutlook)],
     ['Long-term outlook', friendly(decision?.longTermOutlook)],
@@ -151,7 +160,7 @@ export default function GlobalStockDetailScreen() {
 
         <View style={styles.metrics}><Metric label="Kiasha score" value={analysis.score == null ? '—' : n(analysis.score, 3)} colors={colors}/><Metric label="Decision confidence" value={analysis.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`} colors={colors}/><Metric label="Evidence" value={analysis.evidence?.status || '—'} colors={colors}/></View>
 
-        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Kiasha decision</Text><Text style={[styles.body, { color: colors.textSecondary }]}>Kiasha combines the six scoring agent signals after provider normalization, then applies the Evidence/Verification gate. A new BUY candidate is allowed only when evidence status is PASS and confidence clears the threshold.</Text></View>
+        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Kiasha decision</Text><Text style={[styles.body, { color: colors.textSecondary }]}>Kiasha combines the six scoring agent signals after provider normalization, then applies the Evidence/Verification gate. Evidence PASS means the data is sufficiently verified; it is not itself a BUY signal. A new BUY candidate also needs a positive score and enough decision confidence.</Text></View>
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Investor decision table</Text>
         <View style={[styles.card, { backgroundColor: colors.backgroundElement, marginTop: 0 }]}>
@@ -173,10 +182,10 @@ export default function GlobalStockDetailScreen() {
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>{marketRows.map(([label, value]) => <View key={label} style={[styles.dataRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>{label}</Text><Text style={[styles.dataValue, { color: colors.text }]}>{value}</Text></View>)}</View>
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Valuation</Text>
-        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>{valuationRows.map(([label, value]) => <View key={label} style={[styles.dataRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>{label}</Text><Text style={[styles.dataValue, { color: colors.text }]}>{value}</Text></View>)}</View>
+        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>{valuationRows.map(([label, value]) => <View key={label} style={[styles.dataRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>{label}</Text><Text style={[styles.dataValue, { color: colors.text }]}>{value}</Text></View>)}{valuationMissing ? <Text style={[styles.body, { color: colors.textSecondary }]}>Trusted valuation inputs are not available for this instrument yet. BIAP leaves them blank rather than estimating unsupported values.</Text> : null}</View>
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Fundamentals</Text>
-        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>{financialRows.map(([label, value]) => <View key={label} style={[styles.dataRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>{label}</Text><Text style={[styles.dataValue, { color: colors.text }]}>{value}</Text></View>)}</View>
+        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>{financialRows.map(([label, value]) => <View key={label} style={[styles.dataRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>{label}</Text><Text style={[styles.dataValue, { color: colors.text }]}>{value}</Text></View>)}{fundamentalsMissing ? <Text style={[styles.body, { color: colors.textSecondary }]}>No verified filing was matched for this listing. Evidence may BLOCK the decision until official fundamentals are available.</Text> : null}</View>
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Evidence sources</Text>
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>{sources.length ? sources.map((source, index) => <View key={`${source.provider}-${index}`} style={[styles.sourceRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.sourceProvider, { color: colors.text }]}>{source.provider || 'source'}</Text><Text style={[styles.sourceMeta, { color: colors.textSecondary }]}>{source.source_type || 'evidence'} • quality {source.quality == null ? '—' : n(source.quality, 2)}{source.observed_at ? ` • ${source.observed_at}` : ''}</Text></View>) : <Text style={[styles.body, { color: colors.textSecondary }]}>No verified provenance records were returned. Evidence Agent should block a directional recommendation.</Text>}</View>
