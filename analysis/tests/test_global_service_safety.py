@@ -62,7 +62,7 @@ def test_direct_analysis_guard_rejects_leveraged_certificate_name():
 
 
 def test_market_ready_source_plan_is_explicitly_not_runtime_configured():
-    plan = _source_plan_payload("SG")
+    plan = _source_plan_payload("HK")
     assert plan["status"] == "market-ready"
     assert plan["runtimeConfigured"] is False
     assert "not connected" in plan["runtimeNote"].lower()
