@@ -166,6 +166,20 @@ def _legal_core_query(value: str) -> str:
     return " ".join(_legal_core_tokens(value))
 
 
+def _legal_core_queries(value: str) -> tuple[str, ...]:
+    """Conservative API query variants for punctuation-only legal-name gaps."""
+    tokens = _legal_core_tokens(value)
+    if not tokens:
+        return ()
+    variants = [" ".join(tokens)]
+    # French/European names such as L'OREAL may be returned by GLEIF only when
+    # the apostrophe is present, while market catalogs spell "L'Oréal S.A.".
+    # The final identity check still requires an exact legal core and uniqueness.
+    if len(tokens) >= 2 and len(tokens[0]) == 1:
+        variants.append(tokens[0] + "'" + " ".join(tokens[1:]))
+    return tuple(dict.fromkeys(variants))
+
+
 def _jurisdiction_matches(country: Optional[str], jurisdiction: Optional[str]) -> bool:
     wanted = str(country or "").strip().upper()
     actual = str(jurisdiction or "").strip().upper()
@@ -297,11 +311,16 @@ class GLEIFResolver:
         # prefix/suffix legal forms, and one unique LEI must survive (optionally
         # narrowed by the selected issuer jurisdiction).
         core = _legal_core(wanted)
-        query = _legal_core_query(wanted)
-        if len(core) < 4 or not query:
+        queries = _legal_core_queries(wanted)
+        if len(core) < 4 or not queries:
             raise GlobalProviderError(f"GLEIF exact-name resolution for {wanted!r} is unavailable")
 
-        relaxed = [match for match in self._search(query) if _legal_core(match.legal_name) == core]
+        relaxed_by_lei: dict[str, LEIResolution] = {}
+        for query in queries:
+            for match in self._search(query):
+                if _legal_core(match.legal_name) == core:
+                    relaxed_by_lei[match.lei] = match
+        relaxed = list(relaxed_by_lei.values())
         resolved, count = self._unique_or_country(relaxed, country=country)
         if resolved is None:
             raise GlobalProviderError(
