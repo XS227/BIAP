@@ -17,7 +17,7 @@ from typing import Iterable
 from .runtime import build_registry
 
 
-# Coverage probes spanning both US venues, the ESEF/UKSEF countries, KAP and CVM.
+# Coverage probes spanning US, Europe, Türkiye, Brazil and strict issuer-owned official fallbacks.
 # Twelve Data uses dot notation for Nordic share classes (VOLV.B / NOVO.B).
 # Symbols that change/delist simply log a miss; the daily job continues safely.
 _DEFAULT_TARGETS: tuple[tuple[str, str, str], ...] = (
@@ -45,6 +45,7 @@ _DEFAULT_TARGETS: tuple[tuple[str, str, str], ...] = (
     ("TR", "BIST", "THYAO"), ("TR", "BIST", "ASELS"),
     ("TR", "BIST", "KCHOL"), ("TR", "BIST", "BIMAS"),
     ("BR", "B3", "VALE3"), ("BR", "B3", "PETR3"),
+    ("SG", "SGX", "S68"),
 )
 
 
@@ -77,7 +78,7 @@ def _official_financial_sources(company) -> list[str]:
         kind = source.source_type.lower().replace("-", "_")
         if "vendor" in kind or "vendor" in source.provider.lower():
             continue
-        if any(token in kind for token in ("filing", "regulatory", "xbrl", "financial_statement")):
+        if any(token in kind for token in ("filing", "regulatory", "xbrl", "financial_statement", "fundamental")):
             result.append(source.provider)
     return result
 
