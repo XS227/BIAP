@@ -57,6 +57,9 @@ class PortfolioProfileRequest(BaseModel):
     maxSectorPct: float = Field(default=30.0, gt=0, le=100)
     minCashReservePct: float = Field(default=10.0, ge=0, lt=100)
     maxPositions: int = Field(default=10, ge=1, le=50)
+    objectives: list[str] = Field(default_factory=list, max_length=12)
+    liquidityNeed: str = Field(default="medium", min_length=2, max_length=32)
+    maxDrawdownComfortPct: Optional[float] = Field(default=None, ge=0, le=100)
 
 
 class PortfolioRequest(BaseModel):
@@ -315,6 +318,9 @@ def global_portfolio(req: PortfolioRequest):
         max_sector_pct=req.profile.maxSectorPct,
         min_cash_reserve_pct=req.profile.minCashReservePct,
         max_positions=req.profile.maxPositions,
+        objectives=tuple(value.strip().lower() for value in req.profile.objectives if value.strip()),
+        liquidity_need=req.profile.liquidityNeed,
+        max_drawdown_comfort_pct=req.profile.maxDrawdownComfortPct,
     )
     instruments = [_seed(item) for item in req.instruments]
     fx = {currency.upper(): float(rate) for currency, rate in req.fxToBase.items() if float(rate) > 0}
