@@ -60,6 +60,7 @@ export default function MarketScreen() {
   const [selection, setSelection] = useState<GlobalMarketSelection | null>(null);
   const [instruments, setInstruments] = useState<GlobalInstrument[]>([]);
   const [query, setQuery] = useState('');
+  const [submittedQuery, setSubmittedQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingSearch, setLoadingSearch] = useState(false);
@@ -105,7 +106,7 @@ export default function MarketScreen() {
     if (!selection || loading || loadingMore || !hasMore || nextOffset == null) return;
     setLoadingMore(true);
     try {
-      const searchText = query.trim();
+      const searchText = submittedQuery.trim();
       const result = await fetchGlobalInstruments(selection.country, selection.exchange, {
         q: searchText || undefined,
         limit: searchText ? 150 : PAGE_SIZE,
@@ -124,6 +125,8 @@ export default function MarketScreen() {
 
   useFocusEffect(useCallback(() => {
     setLoading(true);
+    setQuery('');
+    setSubmittedQuery('');
     setScan([]);
     setScanStatus('');
     setScanMode('');
@@ -131,18 +134,20 @@ export default function MarketScreen() {
   }, [load]));
 
   const filtered = useMemo(() => {
-    const q = query.trim();
+    const q = submittedQuery.trim();
     if (!q) return instruments;
     return instruments
       .map((item) => ({ item, score: searchScore(item, q) }))
       .filter((entry) => entry.score >= 0)
       .sort((a, b) => b.score - a.score || a.item.ticker.localeCompare(b.item.ticker))
       .map((entry) => entry.item);
-  }, [instruments, query]);
+  }, [instruments, submittedQuery]);
 
   const searchRemote = async () => {
+    const searchText = query.trim();
+    setSubmittedQuery(searchText);
     setLoadingSearch(true);
-    await load(query.trim());
+    await load(searchText);
   };
 
   const runScan = async () => {
@@ -204,7 +209,7 @@ export default function MarketScreen() {
   };
 
   const modeColor = scanMode === 'live' ? Brand.positive : scanMode === 'global' ? Brand.primary : scanMode === 'cached' || scanMode === 'catalog' ? Brand.warning : colors.textSecondary;
-  const listLabel = query.trim()
+  const listLabel = submittedQuery.trim()
     ? `Search results${totalMatched ? ` • ${totalMatched}` : ''}`
     : `Exchange instruments${totalMatched ? ` • ${instruments.length} of ${totalMatched}` : ''}`;
 
@@ -221,14 +226,14 @@ export default function MarketScreen() {
     <FlatList
       data={filtered}
       keyExtractor={(item) => `${item.country}:${item.exchange}:${item.ticker}:${item.isin || ''}`}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(query); }} tintColor={Brand.primary} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(submittedQuery); }} tintColor={Brand.primary} />}
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={styles.list}
       onEndReached={() => { void loadMore(); }}
       onEndReachedThreshold={0.45}
       ListHeaderComponent={<Text style={[styles.listTitle, { color: colors.text }]}>{listLabel}</Text>}
-      ListFooterComponent={loadingMore ? <ActivityIndicator color={Brand.primary} style={{ marginVertical: 18 }} /> : (!query.trim() && totalMatched > 0 && !hasMore ? <Text style={[styles.endText, { color: colors.textSecondary }]}>All {totalMatched} available instruments loaded.</Text> : null)}
-      ListEmptyComponent={loading ? <ActivityIndicator color={Brand.primary} style={{ marginTop: 30 }} /> : <Text style={[styles.empty, { color: colors.textSecondary }]}>{query.trim() ? 'No exact ticker or company-name match on this exchange.' : 'No instruments available from the selected market provider.'}</Text>}
+      ListFooterComponent={loadingMore ? <ActivityIndicator color={Brand.primary} style={{ marginVertical: 18 }} /> : (!submittedQuery.trim() && totalMatched > 0 && !hasMore ? <Text style={[styles.endText, { color: colors.textSecondary }]}>All {totalMatched} available instruments loaded.</Text> : null)}
+      ListEmptyComponent={loading ? <ActivityIndicator color={Brand.primary} style={{ marginTop: 30 }} /> : <Text style={[styles.empty, { color: colors.textSecondary }]}>{submittedQuery.trim() ? 'No exact ticker or company-name match on this exchange.' : 'No instruments available from the selected market provider.'}</Text>}
       renderItem={({ item }) => <Pressable onPress={() => { void openStock(item); }} style={[styles.row, { backgroundColor: colors.backgroundElement }]}><View style={styles.identity}><Text style={[styles.ticker, { color: colors.text }]}>{item.ticker}</Text><Text numberOfLines={1} style={[styles.name, { color: colors.textSecondary }]}>{item.name}</Text><Text style={[styles.meta, { color: colors.textSecondary }]}>{item.mic_code || selection?.mic || item.exchange} • {item.currency}{item.sector ? ` • ${item.sector}` : ''}</Text></View><Text style={[styles.chevron, { color: Brand.primary }]}>›</Text></Pressable>}
     />
   </View></SafeAreaView>;
