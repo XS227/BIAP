@@ -13,7 +13,7 @@ permissions:
 jobs:
   live-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - name: Verify decision table, investor profile and Global Top 10
         shell: bash
@@ -65,6 +65,33 @@ jobs:
               }
           }, sort_keys=True))
 
+          def analyze_exact(country, exchange, ticker, timeout=120):
+              q = urllib.parse.urlencode({'q': ticker, 'limit': 20})
+              catalog = get_json(f'{base}/instruments/{country}/{exchange}?{q}', 60)
+              row = next(item for item in catalog.get('instruments', []) if str(item.get('ticker') or '').upper() == ticker.upper())
+              payload = {
+                  'country': country, 'exchange': exchange, 'ticker': ticker,
+                  'name': row.get('name') or ticker, 'currency': row.get('currency'),
+                  'isin': row.get('isin'), 'lei': row.get('lei'),
+              }
+              return post('/analyze', payload, timeout)
+
+          europe = {}
+          for country, exchange, ticker in [
+              ('NO', 'EURONEXT_OSLO', 'AKER'),
+              ('FR', 'EURONEXT_PARIS', 'OR'),
+              ('DE', 'XETRA', 'SAP'),
+          ]:
+              row = analyze_exact(country, exchange, ticker, 150)
+              evidence = (row.get('evidence') or {}).get('status')
+              assert evidence == 'PASS', (country, exchange, ticker, evidence, row.get('providerDiagnostics'))
+              europe[ticker] = {
+                  'evidence': evidence,
+                  'call': row.get('call'),
+                  'sources': [source.get('provider') for source in (row.get('company') or {}).get('sources', [])],
+              }
+          print(json.dumps({'europeOfficial': europe}, sort_keys=True))
+
           portfolio = post('/portfolio', {
               'profile': {
                   'capital': 50000, 'baseCurrency': 'USD', 'riskTolerance': 'low',
@@ -83,7 +110,7 @@ jobs:
           print(json.dumps({'profileAssessment': profile}, sort_keys=True))
 
           global_scan = post('/scan-global', {'topN': 3, 'maxAgeHours': 24}, 420)
-          assert global_scan.get('marketsScanned', 0) >= 10
+          assert global_scan.get('marketsScanned', 0) >= 17
           assert isinstance(global_scan.get('recommendations'), list)
           for row in global_scan.get('recommendations') or []:
               assert row.get('call') == 'BUY_CANDIDATE'
