@@ -65,11 +65,15 @@ export type GlobalCompanyData = GlobalInstrument & {
   return_6m_pct?: number | null;
   volatility_annualized_pct?: number | null;
   max_drawdown_pct?: number | null;
+  beta?: number | null;
   market_cap?: number | null;
   pe?: number | null;
   pb?: number | null;
   ev_ebitda?: number | null;
   sector_pe?: number | null;
+  dividend_yield_pct?: number | null;
+  eps?: number | null;
+  book_value_per_share?: number | null;
   revenue?: number | null;
   revenue_yoy_pct?: number | null;
   net_income?: number | null;
@@ -91,6 +95,50 @@ export type GlobalCompanyData = GlobalInstrument & {
   }>;
 };
 
+export type GlobalDecisionTable = {
+  shortTermOutlook?: string;
+  longTermOutlook?: string;
+  momentum?: string;
+  riskLevel?: string;
+  drawdownRisk?: string;
+  valuationView?: string;
+  incomeProfile?: string;
+  metrics?: {
+    price?: number | null;
+    position52wPct?: number | null;
+    return1mPct?: number | null;
+    return3mPct?: number | null;
+    return6mPct?: number | null;
+    volatilityAnnualizedPct?: number | null;
+    maxDrawdownPct?: number | null;
+    beta?: number | null;
+    volumeVs30d?: number | null;
+    marketCap?: number | null;
+    pe?: number | null;
+    sectorPe?: number | null;
+    peVsSectorPct?: number | null;
+    pb?: number | null;
+    evEbitda?: number | null;
+    dividendYieldPct?: number | null;
+    eps?: number | null;
+    bookValuePerShare?: number | null;
+    revenueYoyPct?: number | null;
+    netMarginPct?: number | null;
+    freeCashFlow?: number | null;
+    debtToEquity?: number | null;
+    currentRatio?: number | null;
+    roePct?: number | null;
+    roaPct?: number | null;
+  };
+  kiasha?: {
+    call?: string;
+    score?: number;
+    confidence?: number;
+    evidence?: string;
+  };
+  notes?: string;
+};
+
 export type GlobalAnalysis = {
   identity?: string;
   country?: string;
@@ -106,6 +154,7 @@ export type GlobalAnalysis = {
   confidence?: number;
   evidence?: GlobalEvidence;
   signals?: GlobalAgentSignal[];
+  decisionTable?: GlobalDecisionTable;
   company?: GlobalCompanyData;
   providerDiagnostics?: Record<string, unknown>;
   screening?: { price?: number; averageVolume?: number; quoteDate?: string; liquidityValue?: number };
@@ -131,6 +180,27 @@ export type GlobalScanResponse = {
   notes?: string;
 };
 
+export type GlobalTop10Response = {
+  status: string;
+  scope?: string;
+  requestedRecommendations?: number;
+  recommendationCount?: number;
+  marketsScanned?: number;
+  marketErrors?: number;
+  recommendations: GlobalAnalysis[];
+  markets?: Array<{
+    country: string;
+    exchange: string;
+    status: string;
+    recommendationCount?: number;
+    deepAnalyzed?: number;
+    screeningCoveragePct?: number | null;
+    cache?: Record<string, unknown> | null;
+    error?: string | null;
+  }>;
+  notes?: string;
+};
+
 export type GlobalPortfolioProfile = {
   capital: number;
   baseCurrency: string;
@@ -143,9 +213,23 @@ export type GlobalPortfolioProfile = {
   maxSectorPct?: number;
   minCashReservePct?: number;
   maxPositions?: number;
+  objectives?: Array<'growth' | 'income' | 'value' | 'capital_preservation' | string>;
+  liquidityNeed?: 'low' | 'medium' | 'high' | string;
+  maxDrawdownComfortPct?: number | null;
 };
 
 export type GlobalPortfolioResponse = {
+  profileAssessment?: {
+    label?: string;
+    riskTolerance?: string;
+    horizon?: string;
+    objectives?: string[];
+    liquidityNeed?: string;
+    maxDrawdownComfortPct?: number | null;
+    capital?: number;
+    baseCurrency?: string;
+    notes?: string;
+  };
   proposal?: {
     status?: string;
     generated_at?: string;
@@ -267,6 +351,13 @@ export async function scanGlobalMarket(country: string, exchange: string, topN =
     method: 'POST',
     body: JSON.stringify({ country, exchange, topN, discoveryLimit: 1000, deepLimit: 25 }),
   }, 90_000);
+}
+
+export async function scanGlobalTop10(topN = 10, maxAgeHours = 6): Promise<GlobalTop10Response> {
+  return request<GlobalTop10Response>('/global/scan-global', {
+    method: 'POST',
+    body: JSON.stringify({ topN, maxAgeHours }),
+  }, 180_000);
 }
 
 export async function buildGlobalPortfolio(
