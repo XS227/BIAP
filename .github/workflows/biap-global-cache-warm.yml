@@ -12,6 +12,11 @@ on:
       - 'analysis/global_markets/cached_esef.py'
       - 'analysis/global_markets/esef_country.py'
       - 'analysis/global_markets/gleif.py'
+      - 'analysis/global_markets/cvm.py'
+      - 'analysis/global_markets/cvm_resolver.py'
+      - 'analysis/global_markets/cvm_itr.py'
+      - 'analysis/global_markets/cvm_sync.py'
+      - 'analysis/global_markets/cvm_itr_sync.py'
       - 'analysis/global_markets/runtime.py'
       - 'analysis/global_markets/history_store.py'
       - 'analysis/global_markets/yahoo_chart.py'
@@ -45,7 +50,7 @@ jobs:
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
           chmod 600 ~/.ssh/biap_global_key
           ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
-      - name: Warm US Europe and Türkiye server cache
+      - name: Warm connected Global server cache
         shell: bash
         run: |
           set -euo pipefail
@@ -73,7 +78,13 @@ jobs:
           # the normal 24h TTL and remains cheap/resilient.
           export BIAP_GLOBAL_FUNDAMENTALS_CACHE_HOURS=0
           export BIAP_GLOBAL_MARKET_CACHE_HOURS=0
-          mkdir -p "$BIAP_GLOBAL_DATA_DIR/fundamentals" "$BIAP_GLOBAL_DATA_DIR/cache/sec-edgar" "$BIAP_GLOBAL_DATA_DIR/history"
+          mkdir -p "$BIAP_GLOBAL_DATA_DIR/fundamentals" "$BIAP_GLOBAL_DATA_DIR/cache/sec-edgar" "$BIAP_GLOBAL_DATA_DIR/history" "$BIAP_GLOBAL_DATA_DIR/source-index"
+          if ! "$PY" -m global_markets.cvm_sync; then
+            echo "CVM_DFP: refresh failed; existing verified index preserved" >&2
+          fi
+          if ! "$PY" -m global_markets.cvm_itr_sync; then
+            echo "CVM_ITR: refresh failed; existing verified index preserved" >&2
+          fi
           "$PY" -m global_markets.market_cache_warm | tee /tmp/biap-global-market-cache-warm.json
           "$PY" -m global_markets.official_cache_warm | tee /tmp/biap-global-cache-warm.json
           echo "fundamentals_latest_files=$(find "$BIAP_GLOBAL_DATA_DIR/fundamentals" -type f -name latest.json 2>/dev/null | wc -l)"
