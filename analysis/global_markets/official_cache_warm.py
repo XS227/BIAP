@@ -17,7 +17,7 @@ from typing import Iterable
 from .runtime import build_registry
 
 
-# Coverage probes spanning both US venues, the ESEF/UKSEF countries and KAP.
+# Coverage probes spanning both US venues, the ESEF/UKSEF countries, KAP and CVM.
 # Twelve Data uses dot notation for Nordic share classes (VOLV.B / NOVO.B).
 # Symbols that change/delist simply log a miss; the daily job continues safely.
 _DEFAULT_TARGETS: tuple[tuple[str, str, str], ...] = (
@@ -44,6 +44,7 @@ _DEFAULT_TARGETS: tuple[tuple[str, str, str], ...] = (
     ("TR", "BIST", "AKBNK"), ("TR", "BIST", "GARAN"),
     ("TR", "BIST", "THYAO"), ("TR", "BIST", "ASELS"),
     ("TR", "BIST", "KCHOL"), ("TR", "BIST", "BIMAS"),
+    ("BR", "B3", "VALE3"), ("BR", "B3", "PETR4"),
 )
 
 
