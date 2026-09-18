@@ -163,6 +163,8 @@ export type GlobalAnalysis = {
     market?: string;
     filings?: string;
     status?: 'connected' | 'bridge' | 'market-ready' | string;
+    runtimeConfigured?: boolean;
+    runtimeNote?: string;
     notes?: string;
   };
   screening?: { price?: number; averageVolume?: number; quoteDate?: string; liquidityValue?: number };
