@@ -157,6 +157,13 @@ def build_decision_table(
         labels=("LOW", "ELEVATED", "HIGH"),
     )
 
+    holder_action = {
+        "BUY_CANDIDATE": "HOLD_OR_ADD_REVIEW",
+        "HOLD_OR_WATCH": "HOLD_AND_MONITOR",
+        "AVOID_OR_REVIEW": "REDUCE_OR_SELL_REVIEW",
+        "NO_RECOMMENDATION": "NO_ACTION_DATA_INSUFFICIENT",
+    }.get(call, "REVIEW")
+
     return {
         "shortTermOutlook": short_term,
         "longTermOutlook": long_term,
@@ -194,6 +201,8 @@ def build_decision_table(
         },
         "kiasha": {
             "call": call,
+            "newPositionAction": call,
+            "existingHolderAction": holder_action,
             "score": round(float(score), 6),
             "confidence": round(float(confidence), 6),
             "evidence": evidence.status,
