@@ -44,7 +44,7 @@ _DEFAULT_TARGETS: tuple[tuple[str, str, str], ...] = (
     ("TR", "BIST", "AKBNK"), ("TR", "BIST", "GARAN"),
     ("TR", "BIST", "THYAO"), ("TR", "BIST", "ASELS"),
     ("TR", "BIST", "KCHOL"), ("TR", "BIST", "BIMAS"),
-    ("BR", "B3", "VALE3"), ("BR", "B3", "PETR4"),
+    ("BR", "B3", "VALE3"), ("BR", "B3", "PETR3"),
 )
 
 
