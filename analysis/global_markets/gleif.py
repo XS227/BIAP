@@ -74,6 +74,7 @@ _LEGAL_FORM_SUFFIXES: tuple[tuple[str, ...], ...] = (
     ("ASA",),
     ("AS",),
     ("AG",),
+    ("AKTIENGESELLSCHAFT",),
     ("SE",),
     ("SA",),
     ("SPA",),
