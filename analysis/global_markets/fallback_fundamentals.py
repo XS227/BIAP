@@ -34,6 +34,6 @@ class FallbackFundamentalsProvider(FundamentalsProvider):
                 enriched,
                 raw_provider_fields={
                     **enriched.raw_provider_fields,
-                    "fundamentals_primary_error": str(primary_error)[:240],
+                    "fundamentals_primary_error": str(primary_error)[:800],
                 },
             )
