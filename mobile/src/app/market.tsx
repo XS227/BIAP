@@ -175,7 +175,7 @@ export default function MarketScreen() {
       const result = await scanGlobalTop10(10, 24);
       setScan(result.recommendations || []);
       setScanMode('global');
-      setScanStatus(`Global Top 10 • ${result.recommendationCount ?? 0} qualified • ${result.marketsScanned ?? 0} US/Europe/Türkiye markets`);
+      setScanStatus(`Global Top 10 • ${result.recommendationCount ?? 0} qualified • ${result.marketsScanned ?? 0} connected markets`);
     } catch (err) {
       setScanMode('');
       setScanStatus(err instanceof Error ? err.message.slice(0, 220) : 'Global Top 10 scan unavailable.');
