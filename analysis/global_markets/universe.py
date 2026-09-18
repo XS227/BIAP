@@ -66,9 +66,30 @@ def _ordinary_equity_row(*, country: str, spec: ExchangeSpec, row: dict, symbol:
         " WARRANT ", " WARRANTS ", " RIGHTS ", " CERTIFICATE ",
         " PREFERENCE ", " PREFERRED ", " CONVERTIBLE BOND ",
         " ETN ", " ETC ", " STRUCTURED ", " ZERO COUPON ",
-        " MEDIUM TERM ", " DEBT SECURITY ",
+        " MEDIUM TERM ", " DEBT SECURITY ", " UNITS ", " UNIT ",
+        " SPAC ",
     )
-    return not any(token in name for token in rejected_name_tokens)
+    if any(token in name for token in rejected_name_tokens):
+        return False
+
+    # US reference catalogs frequently expose blank-check/SPAC shells as
+    # "Common Stock". They are legal equities but are not operating-company
+    # shares and routinely lack the fundamental history Kiasha is meant to
+    # compare. Keep de-SPAC operating companies (whose current legal name no
+    # longer contains an acquisition-shell marker) while excluding active shells.
+    if country.upper() == "US":
+        acquisition_shell_markers = (
+            " ACQUISITION CORP ", " ACQUISITION CORP. ",
+            " ACQUISITION CORPORATION ", " ACQUISITION COMPANY ",
+            " ACQUISITION CO ", " ACQUISITION CO. ",
+            " ACQUISITION INC ", " ACQUISITION INC. ",
+            " ACQUISITION LTD ", " ACQUISITION LTD. ",
+            " ACQUISITION LIMITED ", " BLANK CHECK ",
+        )
+        if any(marker in name for marker in acquisition_shell_markers):
+            return False
+
+    return True
 
 
 class TwelveDataUniverseProvider(InstrumentUniverseProvider):
