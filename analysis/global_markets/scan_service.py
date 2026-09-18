@@ -1,7 +1,7 @@
 """Public scan orchestration for BIAP Global.
 
 Besides single-exchange scans, this module builds a cached cross-market Top 10
-for the currently finalized US/Europe/Türkiye coverage. The global list never
+for the currently finalized US/Europe/Türkiye/Brazil coverage. The global list never
 pads results: only evidence-qualified BUY_CANDIDATE rows are ranked.
 """
 
@@ -37,6 +37,7 @@ _GLOBAL_TOP_MARKETS: tuple[tuple[str, str], ...] = (
     ("PT", "EURONEXT_LISBON"),
     ("IS", "NASDAQ_ICELAND"),
     ("TR", "BIST"),
+    ("BR", "B3"),
 )
 
 
@@ -165,7 +166,7 @@ def scan_global_top10(
     top_n: int = 10,
     max_age_hours: float = 6.0,
 ) -> dict:
-    """Rank qualified candidates across finalized US, Europe and Türkiye markets.
+    """Rank qualified candidates across finalized US, Europe, Türkiye and Brazil markets.
 
     Per-market scans are persisted and reused for a bounded TTL. This makes the
     global view practical even before a paid all-market batch feed is enabled.
@@ -265,7 +266,7 @@ def scan_global_top10(
     status = "NO_RECOMMENDATION" if not recommendations else "PARTIAL_GLOBAL_SCAN" if errors else "GLOBAL_TOP10"
     return {
         "status": status,
-        "scope": "US_EUROPE_TURKIYE",
+        "scope": "US_EUROPE_TURKIYE_BRAZIL",
         "requestedRecommendations": top_n,
         "recommendationCount": len(recommendations),
         "marketsScanned": len(_GLOBAL_TOP_MARKETS),
