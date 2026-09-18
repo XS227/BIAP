@@ -8,6 +8,7 @@ on:
       - 'analysis/global_markets/official_cache_warm.py'
       - 'analysis/global_markets/market_cache_warm.py'
       - 'analysis/global_markets/cached_fundamentals.py'
+      - 'analysis/global_markets/fallback_fundamentals.py'
       - 'analysis/global_markets/cached_sec_edgar.py'
       - 'analysis/global_markets/cached_esef.py'
       - 'analysis/global_markets/esef_country.py'
