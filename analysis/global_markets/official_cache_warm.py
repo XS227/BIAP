@@ -51,7 +51,12 @@ _DEFAULT_TARGETS: tuple[tuple[str, str, str], ...] = (
 def _targets() -> Iterable[tuple[str, str, str]]:
     raw = (os.environ.get("BIAP_GLOBAL_CACHE_WARM_TARGETS") or "").strip()
     if not raw:
-        return _DEFAULT_TARGETS
+        result = list(_DEFAULT_TARGETS)
+        if (os.environ.get("BIAP_EDINET_API_KEY") or "").strip():
+            result.extend((("JP", "TSE_JP", "7203"), ("JP", "TSE_JP", "6758")))
+        if (os.environ.get("BIAP_OPENDART_API_KEY") or "").strip():
+            result.extend((("KR", "KRX", "005930"), ("KR", "KRX", "000660")))
+        return tuple(result)
     result: list[tuple[str, str, str]] = []
     for item in raw.split(","):
         parts = [part.strip().upper() for part in item.split(":")]
