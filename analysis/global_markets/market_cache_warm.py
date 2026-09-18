@@ -70,7 +70,7 @@ _TARGETS: dict[tuple[str, str], tuple[str, ...]] = {
         "AKBNK","GARAN","THYAO","ASELS","KCHOL","BIMAS","TUPRS","FROTO","SAHOL","EREGL","ISCTR","TCELL",
     ),
     ("BR", "B3"): (
-        "PETR4","VALE3","ITUB4","BBDC4","BBAS3","WEGE3","ABEV3","B3SA3","RENT3","SUZB3",
+        "PETR3","VALE3","ITUB3","BBDC3","BBAS3","WEGE3","ABEV3","B3SA3","RENT3","SUZB3",
     ),
 }
 
