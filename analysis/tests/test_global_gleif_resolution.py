@@ -124,3 +124,19 @@ def test_share_class_display_name_resolves_to_issuer_legal_name(monkeypatch):
 
     match = resolver.resolve_exact_legal_name("Aker ASA Series A Shares", country="NO")
     assert match.legal_name == "Aker ASA"
+
+
+def test_apostrophe_query_variant_can_resolve_loreal(monkeypatch):
+    resolver = GLEIFResolver()
+    queries = []
+
+    def fake_search(text, page_size=100):
+        queries.append(text)
+        if text == "L'OREAL":
+            return [_row("529900JI1GG6F7RKVI53", "L'OREAL", "FR")]
+        return []
+
+    monkeypatch.setattr(resolver, "_search", fake_search)
+    match = resolver.resolve_exact_legal_name("L'Oréal S.A.", country="FR")
+    assert match.lei == "529900JI1GG6F7RKVI53"
+    assert "L'OREAL" in queries
