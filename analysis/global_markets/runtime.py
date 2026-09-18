@@ -30,6 +30,7 @@ from .opendart import OpenDARTFundamentalsProvider
 from .providers import ProviderRegistry
 from .regional_yahoo_chart import RegionalYahooChartMarketProvider
 from .sec_foreign_ifrs import SECForeignIFRSFundamentalsProvider
+from .sgx_issuer import SGXIssuerFundamentalsProvider
 from .twelve_data import TwelveDataMarketProvider
 from .universe import IranUniverseProvider, TwelveDataUniverseProvider
 from .verified_filing_drop import VerifiedFilingDropProvider
@@ -157,6 +158,17 @@ def build_registry() -> ProviderRegistry:
         dart = OpenDARTFundamentalsProvider()
         for exchange in COUNTRY_PACKS["KR"].exchanges:
             register_fundamentals("KR", exchange.code, dart)
+
+    # Singapore: keep SGXNet itself out of generic ingestion until its backend
+    # access/redistribution path is explicitly approved. For now a strict
+    # issuer-owned adapter covers Singapore Exchange Limited (S68) only; every
+    # other SG ticker falls back to labelled vendor metrics and remains blocked
+    # by Evidence Agent until an official source is added.
+    sg_issuer = PersistentFundamentalsProvider(
+        FallbackFundamentalsProvider(SGXIssuerFundamentalsProvider(), public_fundamentals)
+    )
+    for exchange in COUNTRY_PACKS["SG"].exchanges:
+        register_fundamentals("SG", exchange.code, sg_issuer)
 
     # ASX/issuer disclosures are licensing-sensitive. An authorized ingestion
     # job writes normalized verified records to the server filing drop.
