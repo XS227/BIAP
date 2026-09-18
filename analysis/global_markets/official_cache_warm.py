@@ -34,6 +34,7 @@ _DEFAULT_TARGETS: tuple[tuple[str, str, str], ...] = (
     ("IT", "EURONEXT_MILAN", "ENI"), ("IT", "EURONEXT_MILAN", "ENEL"),
     ("SE", "NASDAQ_STOCKHOLM", "VOLV.B"), ("SE", "NASDAQ_STOCKHOLM", "ERIC.B"),
     ("NO", "EURONEXT_OSLO", "EQNR"), ("NO", "EURONEXT_OSLO", "DNB"),
+    ("NO", "EURONEXT_OSLO", "AKER"),
     ("DK", "NASDAQ_COPENHAGEN", "NOVO.B"),
     ("FI", "NASDAQ_HELSINKI", "NOKIA"),
     ("BE", "EURONEXT_BRUSSELS", "ABI"),
