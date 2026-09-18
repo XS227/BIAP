@@ -53,7 +53,7 @@ SOURCE_PLANS: dict[str, dict] = {
     "IE": {"market": "Euronext Dublin / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
     "PT": {"market": "Euronext Lisbon / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
     "IT": {"market": "Euronext Milan / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
-    "DE": {"market": "Xetra/Frankfurt / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
+    "DE": {"market": "Xetra/Frankfurt / global market feed", "filings": "ESEF xBRL + SEC 20-F IFRS fallback + issuer/OAM filings", "status": "connected", "notes": "ESEF is primary. For an exact issuer identity that also files annual IFRS 20-F data with the SEC, BIAP can use verified SEC CompanyFacts as a second official source. Issuers without either machine-readable source remain explicitly blocked rather than being upgraded from vendor metrics."},
     "ES": {"market": "BME / global market feed", "filings": "ESEF xBRL + issuer/OAM filings", "status": "connected"},
     "CH": {"market": "SIX / global market feed", "filings": "SIX + issuer reports", "status": "market-ready"},
     "AU": {"market": "ASX / licensed global feed", "filings": "verified ASX/issuer filing drop", "status": "connected", "notes": "Requires authorized/licensed ingestion; unverified local records are rejected."},
