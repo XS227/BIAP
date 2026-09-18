@@ -1,5 +1,5 @@
 from global_markets.models import GlobalCompany
-from global_markets.service import _derive_metrics, _supported_operating_equity
+from global_markets.service import _derive_metrics, _source_plan_payload, _supported_operating_equity
 
 
 def test_safe_valuation_derivations_use_verified_inputs_only():
@@ -59,3 +59,17 @@ def test_direct_analysis_guard_rejects_leveraged_certificate_name():
         name="BULL VOLV X2 H",
     )
     assert _supported_operating_equity(company) is False
+
+
+def test_market_ready_source_plan_is_explicitly_not_runtime_configured():
+    plan = _source_plan_payload("SG")
+    assert plan["status"] == "market-ready"
+    assert plan["runtimeConfigured"] is False
+    assert "not connected" in plan["runtimeNote"].lower()
+
+
+def test_japan_source_plan_reflects_edinet_key(monkeypatch):
+    monkeypatch.delenv("BIAP_EDINET_API_KEY", raising=False)
+    assert _source_plan_payload("JP")["runtimeConfigured"] is False
+    monkeypatch.setenv("BIAP_EDINET_API_KEY", "configured")
+    assert _source_plan_payload("JP")["runtimeConfigured"] is True
