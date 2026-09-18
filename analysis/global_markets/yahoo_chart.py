@@ -26,6 +26,7 @@ from urllib.parse import quote
 import httpx
 
 from .country_packs import get_exchange
+from .history_store import persist_daily_history
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, MarketDataProvider, append_source
 
@@ -233,6 +234,27 @@ class YahooChartMarketProvider(MarketDataProvider):
         valid_highs = [bar["high"] for bar in bars if isinstance(bar.get("high"), (int, float)) and bar["high"] > 0]
         valid_lows = [bar["low"] for bar in bars if isinstance(bar.get("low"), (int, float)) and bar["low"] > 0]
         recent_volumes = [bar["volume"] for bar in bars[-30:] if isinstance(bar.get("volume"), (int, float)) and bar["volume"] >= 0]
+
+        persist_daily_history(
+            replace(company, currency=currency),
+            self.provider_id,
+            (
+                {
+                    "timestamp": bar.get("timestamp"),
+                    "high": bar.get("high"),
+                    "low": bar.get("low"),
+                    "close": bar.get("close"),
+                    "adjusted_close": bar.get("adjusted"),
+                    "volume": bar.get("volume"),
+                }
+                for bar in bars
+            ),
+            metadata={
+                "vendorSymbol": vendor_symbol,
+                "priceScale": price_scale,
+                "adjustment": "adjusted-close-when-available",
+            },
+        )
 
         enriched = replace(
             company,
