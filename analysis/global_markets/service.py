@@ -18,9 +18,10 @@ from .core_agents import run_core_agents
 from .country_packs import get_exchange
 from .decision_support import build_decision_table, profile_assessment
 from .fx import TwelveDataFXProvider
-from .models import GlobalCompany, InvestorProfile
+from .models import GlobalCompany, InvestorProfile, SourceEvidence
 from .providers import ProviderDiagnostics, ProviderRegistry
 from .runtime import build_registry
+from .universe import _ordinary_equity_row
 
 
 def instrument_seed(
@@ -67,8 +68,112 @@ def _weighted_score(signals) -> tuple[float, float]:
     return weighted / confidence_total, confidence_total / max(1, len(signals))
 
 
+def _supported_operating_equity(company: GlobalCompany) -> bool:
+    try:
+        spec = get_exchange(company.country, company.exchange)
+    except Exception:
+        return False
+    row = {
+        "name": company.name,
+        "type": company.instrument_type or "Common Stock",
+        "cfi_code": company.raw_provider_fields.get("cfi"),
+    }
+    return _ordinary_equity_row(
+        country=company.country,
+        spec=spec,
+        row=row,
+        symbol=company.ticker,
+        currency=company.currency,
+    )
+
+
+def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
+    """Fill mathematically derivable valuation fields without inventing inputs.
+
+    Cross-currency listings are intentionally excluded from per-share valuation
+    derivations because filing EPS/book value and quote price may not share the
+    same currency or share class.
+    """
+    market_cap = company.market_cap
+    book_value_per_share = company.book_value_per_share
+    pe = company.pe
+    pb = company.pb
+    ev_ebitda = company.ev_ebitda
+
+    same_currency = (
+        not company.reporting_currency
+        or company.reporting_currency.upper() == company.currency.upper()
+    )
+    shares = company.shares_outstanding
+    price = company.price
+
+    derived: list[str] = []
+    if market_cap is None and price not in (None, 0) and shares not in (None, 0):
+        market_cap = float(price) * float(shares)
+        derived.append("market_cap=price*shares_outstanding")
+
+    if same_currency and shares not in (None, 0) and company.total_equity is not None and book_value_per_share is None:
+        book_value_per_share = float(company.total_equity) / float(shares)
+        derived.append("book_value_per_share=equity/shares_outstanding")
+
+    if same_currency and price not in (None, 0) and company.eps not in (None, 0) and float(company.eps) > 0 and pe is None:
+        pe = float(price) / float(company.eps)
+        derived.append("pe=price/eps")
+
+    if same_currency and price not in (None, 0) and book_value_per_share not in (None, 0) and float(book_value_per_share) > 0 and pb is None:
+        pb = float(price) / float(book_value_per_share)
+        derived.append("pb=price/book_value_per_share")
+
+    if (
+        same_currency
+        and ev_ebitda is None
+        and market_cap is not None
+        and company.ebitda not in (None, 0)
+        and float(company.ebitda) > 0
+    ):
+        enterprise_value = float(market_cap)
+        if company.total_debt is not None:
+            enterprise_value += float(company.total_debt)
+        if company.cash_and_equivalents is not None:
+            enterprise_value -= float(company.cash_and_equivalents)
+        if enterprise_value > 0:
+            ev_ebitda = enterprise_value / float(company.ebitda)
+            derived.append("ev_ebitda=(market_cap+debt-cash)/ebitda")
+
+    if not derived:
+        return company
+
+    return replace(
+        company,
+        market_cap=market_cap,
+        book_value_per_share=book_value_per_share,
+        pe=pe,
+        pb=pb,
+        ev_ebitda=ev_ebitda,
+        raw_provider_fields={
+            **company.raw_provider_fields,
+            "derived_metrics": derived,
+        },
+        sources=[
+            *company.sources,
+            SourceEvidence(
+                provider="biap-derived-metrics",
+                source_type="derived_valuation_metric",
+                quality=0.9,
+                notes="; ".join(derived),
+            ),
+        ],
+    )
+
+
 def _evaluate(company: GlobalCompany, registry: ProviderRegistry):
+    if not _supported_operating_equity(company):
+        raise ValueError(
+            f"{company.ticker} is not a supported ordinary operating-company equity; "
+            "leveraged/inverse products, units, warrants, SPAC shells and structured securities are excluded"
+        )
     enriched, diagnostics = registry.enrich_best_effort(company)
+    enriched = _derive_metrics(enriched)
     signals = run_core_agents(enriched) + run_advanced_agents(enriched)
     evidence = evidence_agent(enriched, signals)
     raw_score, mean_confidence = _weighted_score(signals)
