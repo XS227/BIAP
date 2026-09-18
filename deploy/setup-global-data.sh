@@ -24,7 +24,10 @@ for path in \
   "$DATA_DIR/filings/US" \
   "$DATA_DIR/filings/EU" \
   "$DATA_DIR/filings/GB" \
+  "$DATA_DIR/filings/DE" \
   "$DATA_DIR/filings/NO" \
+  "$DATA_DIR/filings/SG" \
+  "$DATA_DIR/filings/HK" \
   "$DATA_DIR/filings/JP" \
   "$DATA_DIR/filings/AU" \
   "$DATA_DIR/filings/KR"; do
