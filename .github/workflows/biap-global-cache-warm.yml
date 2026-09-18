@@ -73,5 +73,19 @@ jobs:
           echo "fundamentals_period_files=$(find "$BIAP_GLOBAL_DATA_DIR/fundamentals" -type f -path '*/history/*.json' 2>/dev/null | wc -l)"
           echo "sec_raw_cache_files=$(find "$BIAP_GLOBAL_DATA_DIR/cache/sec-edgar" -type f -name '*.json' 2>/dev/null | wc -l)"
           echo "market_history_files=$(find "$BIAP_GLOBAL_DATA_DIR/history" -type f -name '*.json' 2>/dev/null | wc -l)"
-          echo "market_history_points=$(.venv-global/bin/python -c \"import json, pathlib, os; root=pathlib.Path(os.environ[\'BIAP_GLOBAL_DATA_DIR\'])/\'history\'; print(sum(len((json.loads(p.read_text()) or {}).get(\'points\') or []) for p in root.rglob(\'*.json\')))\")"
+          market_history_points=$(.venv-global/bin/python <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          root = Path(os.environ["BIAP_GLOBAL_DATA_DIR"]) / "history"
+          total = 0
+          for path in root.rglob("*.json"):
+              try:
+                  total += len((json.loads(path.read_text()) or {}).get("points") or [])
+              except Exception:
+                  pass
+          print(total)
+          PY
+          )
+          echo "market_history_points=$market_history_points"
           REMOTE
