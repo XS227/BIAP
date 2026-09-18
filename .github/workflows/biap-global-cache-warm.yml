@@ -6,6 +6,7 @@ on:
     branches: [feat/biap-global]
     paths:
       - 'analysis/global_markets/official_cache_warm.py'
+      - 'analysis/requirements.txt'
       - 'analysis/global_markets/market_cache_warm.py'
       - 'analysis/global_markets/cached_fundamentals.py'
       - 'analysis/global_markets/fallback_fundamentals.py'
@@ -14,6 +15,7 @@ on:
       - 'analysis/global_markets/esef_country.py'
       - 'analysis/global_markets/gleif.py'
       - 'analysis/global_markets/german_issuer.py'
+      - 'analysis/global_markets/hkex_issuer.py'
       - 'analysis/global_markets/sgx_issuer.py'
       - 'analysis/global_markets/cvm.py'
       - 'analysis/global_markets/cvm_resolver.py'
