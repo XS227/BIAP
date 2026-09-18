@@ -24,6 +24,7 @@ from .cvm_resolver import CVMResolvedFundamentalsProvider
 from .edinet import EDINETFundamentalsProvider
 from .fallback_fundamentals import FallbackFundamentalsProvider
 from .german_issuer import GermanIssuerFundamentalsProvider
+from .hkex_issuer import HKEXIssuerFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
 from .kap_current import KAPCurrentFundamentalsProvider
 from .opendart import OpenDARTFundamentalsProvider
@@ -169,6 +170,16 @@ def build_registry() -> ProviderRegistry:
     )
     for exchange in COUNTRY_PACKS["SG"].exchanges:
         register_fundamentals("SG", exchange.code, sg_issuer)
+
+    # Hong Kong: generic HKEXnews ingestion remains separate. For HKEX itself
+    # (0388/388), use its issuer-published consolidated annual statements from
+    # the official HKEX Group Investor Relations site. Other HK tickers remain
+    # on labelled vendor fundamentals and therefore stay Evidence-BLOCKED.
+    hk_issuer = PersistentFundamentalsProvider(
+        FallbackFundamentalsProvider(HKEXIssuerFundamentalsProvider(), public_fundamentals)
+    )
+    for exchange in COUNTRY_PACKS["HK"].exchanges:
+        register_fundamentals("HK", exchange.code, hk_issuer)
 
     # ASX/issuer disclosures are licensing-sensitive. An authorized ingestion
     # job writes normalized verified records to the server filing drop.
