@@ -28,6 +28,10 @@ jobs:
               ('ES', 'BME_MADRID', 'SAN', 'EUR', 'esef-xbrl-cached'),
               ('TR', 'BIST', 'AKBNK', 'TRY', 'kap-official-financial-summary'),
               ('BR', 'B3', 'PETR4', 'BRL', 'cvm-open-data-dfp-resolved'),
+              ('DE', 'XETRA', 'SIE', 'EUR', 'de-official-issuer-financials'),
+              ('DE', 'XETRA', 'ALV', 'EUR', 'de-official-issuer-financials'),
+              ('SG', 'SGX', 'S68', 'SGD', 'sgx-official-issuer-financial-information'),
+              ('HK', 'HKEX', '0388', 'HKD', 'hkex-official-issuer-financial-statements'),
           ]
           for country, exchange, ticker, currency, expected_provider in cases:
               q = urllib.parse.urlencode({'q': ticker, 'limit': 20})
