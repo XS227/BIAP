@@ -43,7 +43,9 @@ jobs:
           python -m pip install -q -r analysis/requirements.txt
           rm -rf /tmp/biap-global-issuer-drops
           mkdir -p /tmp/biap-global-issuer-drops
-          PYTHONPATH=analysis BIAP_ISSUER_DROP_OUTPUT=/tmp/biap-global-issuer-drops \
+          PYTHONPATH=analysis \
+          BIAP_GLOBAL_DATA_DIR=/tmp/biap-global-runner-data \
+          BIAP_ISSUER_DROP_OUTPUT=/tmp/biap-global-issuer-drops \
             python -m global_markets.issuer_drop_sync | tee /tmp/biap-global-issuer-drop-sync.json
           tar -C /tmp/biap-global-issuer-drops -czf /tmp/biap-global-issuer-drops.tgz .
           echo "issuer_drop_files=$(find /tmp/biap-global-issuer-drops -type f -name '*.json' | wc -l)"
@@ -82,7 +84,9 @@ jobs:
           export BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global
           mkdir -p "$BIAP_GLOBAL_DATA_DIR/filings"
           if [[ -s /tmp/biap-global-issuer-drops.tgz ]]; then
-            tar -xzf /tmp/biap-global-issuer-drops.tgz -C "$BIAP_GLOBAL_DATA_DIR/filings"
+            tar --extract --gzip --file=/tmp/biap-global-issuer-drops.tgz \
+              --directory="$BIAP_GLOBAL_DATA_DIR/filings" \
+              --no-same-owner --no-same-permissions --touch
             rm -f /tmp/biap-global-issuer-drops.tgz
           fi
           bash deploy/sync-global-sources.sh
