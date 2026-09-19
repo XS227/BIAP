@@ -63,3 +63,27 @@ def test_verified_filing_drop_preserves_issuer_source_type(tmp_path, monkeypatch
     enriched = provider.enrich_fundamentals(company)
     assert enriched.revenue == 1559000000
     assert enriched.sources[-1].source_type == "official_issuer_fundamentals"
+    assert enriched.raw_provider_fields["verified_filing_verification_mode"] is None
+
+
+def test_verified_filing_drop_exposes_bundled_snapshot_mode(tmp_path, monkeypatch):
+    monkeypatch.setenv("BIAP_GLOBAL_DATA_DIR", str(tmp_path))
+    folder = tmp_path / "filings" / "DE"
+    folder.mkdir(parents=True)
+    (folder / "ALV.json").write_text(
+        '{"verified":true,"verificationMode":"bundled_verified_snapshot",'
+        '"sourceProvider":"de-official-issuer-financials",'
+        '"sourceType":"official_issuer_financial_statement",'
+        '"sourceUrl":"https://www.allianz.com/en/investor_relations/results-reports/financial-statements.html",'
+        '"sourceId":"allianz-fy2025-financial-statements","periodEnd":"2025-12-31",'
+        '"observedAt":"2026-03-13T00:00:00Z","currency":"EUR",'
+        '"fundamentals":{"revenue":102802000000,"net_income":11430000000}}',
+        encoding="utf-8",
+    )
+    provider = VerifiedFilingDropProvider(
+        country="DE",
+        provider_names=("de-official-issuer-financials",),
+    )
+    company = GlobalCompany(country="DE", exchange="XETRA", currency="EUR", ticker="ALV", name="Allianz SE")
+    enriched = provider.enrich_fundamentals(company)
+    assert enriched.raw_provider_fields["verified_filing_verification_mode"] == "bundled_verified_snapshot"
