@@ -88,3 +88,29 @@ def test_german_issuer_adapter_rejects_unlisted_issuer():
     provider = GermanIssuerFundamentalsProvider()
     with pytest.raises(GlobalProviderError, match="no verified German issuer parser"):
         provider.enrich_fundamentals(_company("BAS", "BASF SE"))
+
+
+def test_allianz_falls_back_to_official_annual_report_pdf(monkeypatch):
+    provider = GermanIssuerFundamentalsProvider()
+    text = """
+    Allianz Group Annual Report 2025
+    Cash and cash equivalents 29,854 31,637
+    Total assets 1,024,276 1,044,578
+    Total liabilities 957,928 980,502
+    Total equity 66,349 64,076
+    Insurance revenue 102,802 97,675
+    Net income 11,430 10,540
+    Basic earnings per share (EUR) 27.69 25.20
+    """
+    monkeypatch.setattr(
+        provider,
+        "_get_text",
+        lambda url: (_ for _ in ()).throw(GlobalProviderError("HTTP 403")),
+    )
+    monkeypatch.setattr(provider, "_get_pdf_text", lambda url: " ".join(text.split()))
+
+    enriched = provider.enrich_fundamentals(_company("ALV", "Allianz SE"))
+
+    assert enriched.revenue == 102_802_000_000
+    assert enriched.net_income == 11_430_000_000
+    assert enriched.sources[-1].source_url.endswith("en-allianz-group-annual-report-2025.pdf")
