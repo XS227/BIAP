@@ -5,6 +5,11 @@ on:
     branches: [feat/biap-global]
     paths:
       - '.github/workflows/biap-global-source-refresh.yml'
+      - 'analysis/global_markets/issuer_drop_sync.py'
+      - 'analysis/global_markets/verified_filing_drop.py'
+      - 'analysis/global_markets/german_issuer.py'
+      - 'analysis/global_markets/sgx_issuer.py'
+      - 'analysis/global_markets/hkex_issuer.py'
   workflow_dispatch:
   workflow_run:
     workflows: ["Setup BIAP Global server"]
