@@ -1,22 +1,20 @@
 """Official issuer fundamentals for Singapore Exchange Limited (SGX:S68).
 
-This is deliberately a narrow issuer-owned fallback, not an SGXNet scraper.
-SGX's public company-announcements surface has access/redistribution constraints
-and is therefore not promoted to a generic BIAP ingestion source here.
+BIAP intentionally does not scrape the generic SGXNet disclosure surface here.
+For the exchange operator itself (S68), the adapter consumes SGX Group's own
+FY2026 financial-results PDF from the Investor Relations static-file host.
 
-For S68, BIAP reads the issuer's own public Investor Relations financial-
-information page and accepts only exact FY2026 key-figure labels. If that page
-changes, the adapter fails closed and the Evidence Agent keeps the recommendation
-blocked rather than guessing.
-
-The page reports operating revenue, EBITDA and operating profit as SFRS(I)
-key figures. It also reports an adjusted NPAT series; BIAP intentionally does
-not map that adjusted value to net_income.
+The parser is deliberately narrow and fail-closed:
+* exact SG / SGX / S68 issuer identity;
+* one hard-coded official investorrelations.sgx.com PDF;
+* PDF magic validation before parsing;
+* exact FY2026 headline labels and comparative figures;
+* statutory NPAT is used, never the adjusted NPAT as net_income.
 """
 from __future__ import annotations
 
 from dataclasses import replace
-from html import unescape
+import io
 import re
 
 import httpx
@@ -26,34 +24,65 @@ from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
 
 
-SGX_FINANCIAL_INFORMATION_URL = "https://investorrelations.sgx.com/financial-information"
-SGX_FINANCIAL_INFORMATION_NODE_URL = "https://investorrelations.sgx.com/node/13251"
+SGX_FY2026_RESULTS_URL = (
+    "https://investorrelations.sgx.com/static-files/"
+    "dcbd5905-9373-4dc9-80f5-8dbff6b8d584"
+)
 
 
-def _plain_text(value: str) -> str:
-    text = re.sub(r"(?is)<script[^>]*>.*?</script>", " ", value or "")
-    text = re.sub(r"(?is)<style[^>]*>.*?</style>", " ", text)
-    text = re.sub(r"(?s)<[^>]+>", " ", text)
-    return " ".join(unescape(text).replace("\xa0", " ").split())
-
-
-def _millions(value: str) -> float:
+def _million(value: str) -> float:
     return float(value.replace(",", "").strip()) * 1_000_000.0
 
 
-def _row_values(text: str, label: str) -> tuple[float, float]:
-    pattern = (
-        rf"\b{re.escape(label)}\b\s+"
-        r"([0-9][0-9,]*(?:\.[0-9]+)?)\s+"
-        r"([0-9][0-9,]*(?:\.[0-9]+)?)\s+"
-        r"([0-9][0-9,]*(?:\.[0-9]+)?)\s+"
-        r"([0-9][0-9,]*(?:\.[0-9]+)?)\s+"
-        r"([0-9][0-9,]*(?:\.[0-9]+)?)"
-    )
-    match = re.search(pattern, text, flags=re.IGNORECASE)
+def _required(pattern: str, text: str, *, label: str) -> re.Match[str]:
+    match = re.search(pattern, text, flags=re.IGNORECASE | re.DOTALL)
     if match is None:
-        raise GlobalProviderError(f"SGX issuer page missing verified {label!r} FY22-FY26 row")
-    return _millions(match.group(5)), _millions(match.group(4))
+        raise GlobalProviderError(f"SGX FY2026 results missing verified {label}")
+    return match
+
+
+def parse_sgx_fy2026_results(text: str) -> dict:
+    normalized = " ".join(str(text or "").replace("\u00a0", " ").split())
+    if "FY2026" not in normalized or "Operating revenue" not in normalized:
+        raise GlobalProviderError("SGX FY2026 result markers are missing")
+
+    revenue_match = _required(
+        r"Operating revenue increased\s+\$?[0-9,.]+\s+million.*?"
+        r"to\s+\$?([0-9,.]+)\s+million\s*\(\$?([0-9,.]+)\s+million\)",
+        normalized,
+        label="operating revenue",
+    )
+    ebitda_npat = _required(
+        r"SGX recorded EBITDA of\s+\$?([0-9,.]+)\s+million\s*"
+        r"\(\$?([0-9,.]+)\s+million\)\s+and NPAT of\s+"
+        r"\$?([0-9,.]+)\s+million\s*\(\$?([0-9,.]+)\s+million\)",
+        normalized,
+        label="EBITDA and statutory NPAT",
+    )
+    eps_match = _required(
+        r"EPS was\s+([0-9.]+)\s+cents\s*\(([0-9.]+)\s+cents\)",
+        normalized,
+        label="basic EPS",
+    )
+
+    revenue = _million(revenue_match.group(1))
+    revenue_prev = _million(revenue_match.group(2))
+    ebitda = _million(ebitda_npat.group(1))
+    net_income = _million(ebitda_npat.group(3))
+    net_income_prev = _million(ebitda_npat.group(4))
+
+    return {
+        "revenue": revenue,
+        "revenue_prev": revenue_prev,
+        "revenue_yoy_pct": ((revenue / revenue_prev) - 1.0) * 100.0 if revenue_prev else None,
+        "ebitda": ebitda,
+        "net_income": net_income,
+        "net_margin_pct": (net_income / revenue) * 100.0 if revenue else None,
+        "net_margin_prev_pct": (net_income_prev / revenue_prev) * 100.0 if revenue_prev else None,
+        # The PDF reports cents; GlobalCompany.eps follows the issuer's
+        # reporting currency per share, so convert cents to SGD.
+        "eps": float(eps_match.group(1)) / 100.0,
+    }
 
 
 class SGXIssuerFundamentalsProvider(FundamentalsProvider):
@@ -61,51 +90,8 @@ class SGXIssuerFundamentalsProvider(FundamentalsProvider):
 
     provider_id = "sgx-official-issuer-financial-information"
 
-    def __init__(self, *, timeout: float = 15.0) -> None:
-        self.timeout = max(3.0, float(timeout))
-
-    def _get_text(self) -> str:
-        headers = {
-            "Accept": "text/html,application/xhtml+xml",
-            "Accept-Language": "en-US,en;q=0.9",
-            "User-Agent": (
-                "Mozilla/5.0 (X11; Linux x86_64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/131.0.0.0 Safari/537.36"
-            ),
-        }
-        errors: list[str] = []
-        try:
-            with httpx.Client(
-                timeout=self.timeout,
-                follow_redirects=True,
-                headers=headers,
-            ) as client:
-                for url in (SGX_FINANCIAL_INFORMATION_URL, SGX_FINANCIAL_INFORMATION_NODE_URL):
-                    try:
-                        response = client.get(url)
-                        response.raise_for_status()
-                    except httpx.HTTPStatusError as exc:
-                        status = exc.response.status_code if exc.response is not None else "unknown"
-                        errors.append(f"{url}:HTTP {status}")
-                        continue
-                    except httpx.HTTPError as exc:
-                        errors.append(f"{url}:{type(exc).__name__}")
-                        continue
-                    text = _plain_text(response.text)
-                    # The friendly route can occasionally return a shell while
-                    # Drupal's canonical node route still contains the same
-                    # issuer-published table. Accept only the exact table marker.
-                    if "Operating revenue" in text and all(
-                        marker in text for marker in ("FY22", "FY23", "FY24", "FY25", "FY26")
-                    ):
-                        return text
-                    errors.append(f"{url}:financial-table-missing")
-        except httpx.HTTPError as exc:
-            errors.append(type(exc).__name__)
-        raise GlobalProviderError(
-            "SGX issuer financial table unavailable (" + "; ".join(errors)[:500] + ")"
-        )
+    def __init__(self, *, timeout: float = 25.0) -> None:
+        self.timeout = max(5.0, float(timeout))
 
     @staticmethod
     def _verify_identity(company: GlobalCompany) -> None:
@@ -118,32 +104,64 @@ class SGXIssuerFundamentalsProvider(FundamentalsProvider):
                 f"SGX issuer identity mismatch for S68: {company.name!r}"
             )
 
+    def _get_text(self) -> str:
+        try:
+            with httpx.Client(
+                timeout=self.timeout,
+                follow_redirects=True,
+                headers={
+                    "Accept": "application/pdf,*/*;q=0.8",
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "User-Agent": (
+                        "Mozilla/5.0 (X11; Linux x86_64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/131.0.0.0 Safari/537.36"
+                    ),
+                },
+            ) as client:
+                response = client.get(SGX_FY2026_RESULTS_URL)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code if exc.response is not None else "unknown"
+            raise GlobalProviderError(f"SGX issuer FY2026 PDF request failed: HTTP {status}") from exc
+        except httpx.HTTPError as exc:
+            raise GlobalProviderError(
+                f"SGX issuer FY2026 PDF request failed: {type(exc).__name__}"
+            ) from exc
+
+        body = response.content
+        if not body.startswith(b"%PDF-"):
+            raise GlobalProviderError("SGX FY2026 result response is not a PDF")
+        try:
+            from pypdf import PdfReader
+            reader = PdfReader(io.BytesIO(body))
+            chunks = [(page.extract_text() or "") for page in reader.pages[:8]]
+        except Exception as exc:
+            raise GlobalProviderError(
+                f"SGX FY2026 PDF text extraction failed: {type(exc).__name__}"
+            ) from exc
+        text = "\n".join(chunks)
+        if len(text) < 500:
+            raise GlobalProviderError("SGX FY2026 PDF extracted text is unexpectedly short")
+        return text
+
     def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
         self._verify_identity(company)
-        text = self._get_text()
-        if not all(marker in text for marker in ("FY22", "FY23", "FY24", "FY25", "FY26")):
-            raise GlobalProviderError("SGX issuer page does not expose the verified FY22-FY26 table")
-
-        revenue, revenue_prev = _row_values(text, "Operating revenue")
-        ebitda, _ = _row_values(text, "EBITDA")
-        operating_income, _ = _row_values(text, "Operating profit")
+        metrics = parse_sgx_fy2026_results(self._get_text())
 
         enriched = replace(
             company,
             reporting_currency="SGD",
-            revenue=revenue,
-            revenue_prev=revenue_prev,
-            revenue_yoy_pct=((revenue / revenue_prev) - 1.0) * 100.0 if revenue_prev else None,
-            ebitda=ebitda,
-            operating_income=operating_income,
             filing_period_end="2026-06-30",
             filing_observed_at="2026-08-06T00:00:00+00:00",
             report_scope="consolidated",
             raw_provider_fields={
                 **company.raw_provider_fields,
-                "sgx_issuer_source": "financial_information_fy26",
-                "sgx_adjusted_npat_intentionally_omitted": True,
+                "sgx_issuer_source": "fy2026_group_financial_results",
+                "sgx_statutory_npat_used": True,
+                "sgx_adjusted_npat_used": False,
             },
+            **metrics,
         )
         return append_source(
             enriched,
@@ -151,14 +169,13 @@ class SGXIssuerFundamentalsProvider(FundamentalsProvider):
                 provider=self.provider_id,
                 source_type="official_issuer_fundamentals",
                 source_id="S68:FY2026",
-                source_url=SGX_FINANCIAL_INFORMATION_URL,
+                source_url=SGX_FY2026_RESULTS_URL,
                 observed_at="2026-08-06T00:00:00+00:00",
                 period_end="2026-06-30",
-                quality=0.94,
+                quality=0.96,
                 notes=(
-                    "Singapore Exchange Limited issuer-owned FY2026 key figures; "
-                    "operating revenue, EBITDA and operating profit only. "
-                    "Adjusted NPAT is intentionally not mapped to net_income."
+                    "SGX Group issuer-published FY2026 financial results; "
+                    "statutory operating revenue, EBITDA, NPAT and EPS."
                 ),
             ),
         )
