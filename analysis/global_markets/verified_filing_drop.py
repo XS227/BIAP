@@ -89,6 +89,7 @@ class VerifiedFilingDropProvider(FundamentalsProvider):
                 **company.raw_provider_fields,
                 "verified_filing_path": str(path),
                 "verified_filing_hash": record.get("sha256"),
+                "verified_filing_verification_mode": record.get("verificationMode"),
             },
         })
         enriched = replace(company, **kwargs)
