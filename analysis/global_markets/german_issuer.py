@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from html import unescape
+import io
 import re
 
 import httpx
@@ -36,6 +37,11 @@ _SIEMENS_URL = (
 _ALLIANZ_URL = (
     "https://www.allianz.com/en/investor_relations/results-reports/"
     "financial-statements.html"
+)
+_ALLIANZ_PDF_URL = (
+    "https://www.allianz.com/content/dam/onemarketing/azcom/Allianz_com/"
+    "investor-relations/en/results-reports/annual-report/ar-2025/"
+    "en-allianz-group-annual-report-2025.pdf"
 )
 
 
@@ -117,6 +123,69 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
             raise GlobalProviderError("German official issuer response is unexpectedly short")
         return text
 
+    def _get_pdf_text(self, url: str) -> str:
+        try:
+            with httpx.Client(
+                timeout=max(self.timeout, 30.0),
+                follow_redirects=True,
+                headers={
+                    "Accept": "application/pdf,*/*;q=0.8",
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "User-Agent": (
+                        "Mozilla/5.0 (X11; Linux x86_64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/131.0.0.0 Safari/537.36"
+                    ),
+                },
+            ) as client:
+                response = client.get(url)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code if exc.response is not None else "unknown"
+            raise GlobalProviderError(
+                f"German official issuer PDF request failed: HTTP {status}"
+            ) from exc
+        except httpx.HTTPError as exc:
+            raise GlobalProviderError(
+                f"German official issuer PDF request failed: {type(exc).__name__}"
+            ) from exc
+
+        body = response.content
+        if not body.startswith(b"%PDF-"):
+            raise GlobalProviderError("German official issuer PDF response is not a PDF")
+
+        try:
+            from pypdf import PdfReader
+            reader = PdfReader(io.BytesIO(body))
+            chunks: list[str] = []
+            required = (
+                "Insurance revenue",
+                "Net income",
+                "Total assets",
+                "Total liabilities",
+                "Total equity",
+                "Cash and cash equivalents",
+                "Basic earnings per share",
+            )
+            for page in reader.pages:
+                page_text = page.extract_text() or ""
+                if page_text:
+                    chunks.append(page_text)
+                joined = "\n".join(chunks)
+                if all(marker.lower() in joined.lower() for marker in required):
+                    break
+        except Exception as exc:
+            raise GlobalProviderError(
+                f"German official issuer PDF text extraction failed: {type(exc).__name__}"
+            ) from exc
+
+        text = " ".join("\n".join(chunks).split())
+        if len(text) < 1000:
+            raise GlobalProviderError(
+                "German official issuer PDF extracted text is unexpectedly short"
+            )
+        return text
+
     @staticmethod
     def _identity(company: GlobalCompany) -> str:
         if company.country.strip().upper() != "DE":
@@ -190,12 +259,31 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
         ))
 
     def _allianz(self, company: GlobalCompany) -> GlobalCompany:
-        text = self._get_text(_ALLIANZ_URL)
+        source_url = _ALLIANZ_URL
+        try:
+            text = self._get_text(_ALLIANZ_URL)
+        except GlobalProviderError as html_error:
+            try:
+                text = self._get_pdf_text(_ALLIANZ_PDF_URL)
+                source_url = _ALLIANZ_PDF_URL
+            except GlobalProviderError as pdf_error:
+                raise GlobalProviderError(
+                    "Allianz official sources unavailable "
+                    f"(html={html_error}; pdf={pdf_error})"
+                ) from pdf_error
+
         lower = text.lower()
-        if (
-            "consolidated balance sheet as of december 31, 2025" not in lower
-            or "consolidated income statements 2025" not in lower
-        ):
+        html_markers = (
+            "consolidated balance sheet as of december 31, 2025" in lower
+            and "consolidated income statements 2025" in lower
+        )
+        pdf_markers = (
+            "allianz group" in lower
+            and "insurance revenue" in lower
+            and "basic earnings per share" in lower
+            and "2025" in lower
+        )
+        if not (html_markers or pdf_markers):
             raise GlobalProviderError("Allianz FY2025 issuer source period marker missing")
 
         revenue, revenue_prev = _row_pair(text, "Insurance revenue")
@@ -243,7 +331,7 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
             provider=self.provider_id,
             source_type="official_issuer_financial_statement",
             source_id="allianz-fy2025-financial-statements",
-            source_url=_ALLIANZ_URL,
+            source_url=source_url,
             observed_at="2026-03-13T00:00:00+00:00",
             period_end="2025-12-31",
             quality=0.96,
