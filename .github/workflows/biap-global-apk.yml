@@ -1,4 +1,4 @@
-# Release-candidate trigger: 2026-09-20
+# Install-fix universal build: 2026-09-21
 name: BIAP Global APK
 
 on:
@@ -58,10 +58,9 @@ jobs:
         run: npx expo prebuild --platform android --clean --no-install
       - name: Apply Android network compatibility
         run: python3 scripts/patch-android-network-compat.py
-      - name: Configure arm64 signed preview
+      - name: Configure signed universal preview
         run: |
           test -f android/app/debug.keystore
-          printf '\nreactNativeArchitectures=arm64-v8a\n' >> android/gradle.properties
           python3 - <<'PY'
           from pathlib import Path
           path = Path('android/app/build.gradle')
@@ -75,7 +74,7 @@ jobs:
               text = head + marker + '\n            signingConfig signingConfigs.debug' + tail
               path.write_text(text, encoding='utf-8')
           PY
-      - name: Build arm64 release APK
+      - name: Build universal release APK
         run: |
           chmod +x android/gradlew
           cd android
@@ -88,14 +87,18 @@ jobs:
       - name: Name APK
         run: |
           VERSION=$(node -p "require('./app.json').expo.version")
-          cp android/app/build/outputs/apk/release/app-release.apk "BIAP-Global-${VERSION}-arm64.apk"
-          sha256sum "BIAP-Global-${VERSION}-arm64.apk" > "BIAP-Global-${VERSION}-arm64.apk.sha256"
+          cp android/app/build/outputs/apk/release/app-release.apk "BIAP-Global-${VERSION}-universal.apk"
+          sha256sum "BIAP-Global-${VERSION}-universal.apk" > "BIAP-Global-${VERSION}-universal.apk.sha256"
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          "$AAPT" dump badging "BIAP-Global-${VERSION}-universal.apk" | tee /tmp/biap-global-badging.txt
+          grep -q "package: name='com.biap.global'" /tmp/biap-global-badging.txt
+          grep -q "versionCode='9'" /tmp/biap-global-badging.txt
       - name: Upload preview APK
         uses: actions/upload-artifact@v4
         with:
-          name: biap-global-android-arm64-${{ github.sha }}
+          name: biap-global-android-universal-${{ github.sha }}
           path: |
-            mobile/BIAP-Global-*-arm64.apk
-            mobile/BIAP-Global-*-arm64.apk.sha256
+            mobile/BIAP-Global-*-universal.apk
+            mobile/BIAP-Global-*-universal.apk.sha256
           if-no-files-found: error
           retention-days: 30
