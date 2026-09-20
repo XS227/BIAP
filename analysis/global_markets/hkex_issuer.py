@@ -43,6 +43,7 @@ def _number(value: str) -> float:
 
 
 _NUM = r"(?:\$?\(?[0-9][0-9,]*(?:\.[0-9]+)?\)?)"
+_HKD_MILLION = 1_000_000.0
 
 
 def _pair(text: str, label_pattern: str, *, label: str) -> tuple[float, float]:
@@ -92,17 +93,28 @@ def parse_hkex_2025_statements(text: str) -> dict:
         raise GlobalProviderError("HKEX PDF is missing 2025 consolidated-statement markers")
 
     revenue, revenue_prev = _pair(normalized, r"(?<!Other )\bRevenue\b(?:\s+5)?", label="revenue")
+    revenue *= _HKD_MILLION
+    revenue_prev *= _HKD_MILLION
+
     ebitda, _ = _pair(
         normalized,
         r"EBITDA\s*\(non-HKFRS measure\)",
         label="EBITDA",
     )
+    ebitda *= _HKD_MILLION
+
     operating_income, _ = _pair(normalized, r"Operating profit(?:\s+\d+)?", label="operating profit")
+    operating_income *= _HKD_MILLION
+
     net_income, net_income_prev = _pair(
         normalized,
         r"Shareholders of HKEX(?:\s+\d+(?:\([a-z]\))?(?:\([ivx]+\))?)?",
         label="profit attributable to shareholders",
     )
+    net_income *= _HKD_MILLION
+    net_income_prev *= _HKD_MILLION
+
+    # EPS is reported in HKD per share, not HKD millions.
     eps, _ = _pair(normalized, r"Basic earnings per share(?:\s+\d+\([a-z]\))?", label="basic EPS")
 
     current_assets, total_assets, _, total_assets_prev = _position_row(
@@ -120,16 +132,31 @@ def parse_hkex_2025_statements(text: str) -> dict:
     _, debt_total, _, _ = _position_row(
         normalized, r"Borrowings(?:\s+\d+)?", label="borrowings"
     )
+    current_assets *= _HKD_MILLION
+    total_assets *= _HKD_MILLION
+    total_assets_prev *= _HKD_MILLION
+    current_liabilities *= _HKD_MILLION
+    total_liabilities *= _HKD_MILLION
+    total_liabilities_prev *= _HKD_MILLION
+    total_equity *= _HKD_MILLION
+    total_equity_prev *= _HKD_MILLION
+    cash_current *= _HKD_MILLION
+    cash_total *= _HKD_MILLION
+    debt_total *= _HKD_MILLION
+
     operating_cash_flow, _ = _pair(
         normalized,
         r"Net cash inflow from operating activities",
         label="net cash inflow from operating activities",
     )
+    operating_cash_flow *= _HKD_MILLION
+
     capex, _ = _pair(
         normalized,
         r"Payments for purchases of other fixed assets and intangible assets",
         label="capital expenditure",
     )
+    capex *= _HKD_MILLION
 
     return {
         "revenue": revenue,
