@@ -1,3 +1,4 @@
+# Publish final RC APK: 2026-09-20
 name: Publish BIAP Global APK
 
 # Publishes the latest successful BIAP Global ARM64 build to the public web download path.
