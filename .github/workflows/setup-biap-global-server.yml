@@ -1,3 +1,4 @@
+# Redeploy after HKEX absolute-HKD fix: 2026-09-20
 name: Setup BIAP Global server
 
 on:
