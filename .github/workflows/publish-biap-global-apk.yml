@@ -60,7 +60,10 @@ jobs:
           for run in runs.get('workflow_runs', []):
               artifacts = get_json(base + f"/actions/runs/{run['id']}/artifacts?per_page=100")
               for artifact in artifacts.get('artifacts', []):
-                  if not artifact.get('expired') and artifact.get('name', '').startswith('biap-global-android-arm64-'):
+                  if not artifact.get('expired') and (
+                    artifact.get('name', '').startswith('biap-global-android-universal-')
+                    or artifact.get('name', '').startswith('biap-global-android-arm64-')
+                ):
                       chosen = artifact
                       break
               if chosen:
@@ -82,10 +85,12 @@ jobs:
             -o /tmp/biap-global-apk.zip
           mkdir -p /tmp/biap-global-apk
           unzip -q /tmp/biap-global-apk.zip -d /tmp/biap-global-apk
-          APK="$(find /tmp/biap-global-apk -maxdepth 2 -type f -name 'BIAP-Global-*-arm64.apk' | head -n 1)"
+          APK="$(find /tmp/biap-global-apk -maxdepth 2 -type f \( -name 'BIAP-Global-*-universal.apk' -o -name 'BIAP-Global-*-arm64.apk' \) | head -n 1)"
           test -n "$APK" -a -f "$APK"
+          cp "$APK" /tmp/BIAP-Global-latest.apk
           cp "$APK" /tmp/BIAP-Global-latest-arm64.apk
-          sha256sum /tmp/BIAP-Global-latest-arm64.apk | awk '{print $1}' > /tmp/BIAP-Global-latest-arm64.apk.sha256
+          sha256sum /tmp/BIAP-Global-latest.apk | awk '{print $1}' > /tmp/BIAP-Global-latest.apk.sha256
+          cp /tmp/BIAP-Global-latest.apk.sha256 /tmp/BIAP-Global-latest-arm64.apk.sha256
           printf '%s\n' "$(basename "$APK")" > /tmp/BIAP-Global-latest-arm64.name
           ls -lh /tmp/BIAP-Global-latest-arm64.apk
 
@@ -104,6 +109,8 @@ jobs:
           set -euo pipefail
           PORT="${VPS_PORT:-22}"
           scp -i ~/.ssh/biap_global_key -P "$PORT" -o BatchMode=yes \
+            /tmp/BIAP-Global-latest.apk \
+            /tmp/BIAP-Global-latest.apk.sha256 \
             /tmp/BIAP-Global-latest-arm64.apk \
             /tmp/BIAP-Global-latest-arm64.apk.sha256 \
             /tmp/BIAP-Global-latest-arm64.name \
@@ -114,11 +121,13 @@ jobs:
           WEB_ROOT=/var/www/biap-global-web
           DOWNLOAD_DIR="$WEB_ROOT/download"
           $SUDO install -d -m 0755 "$DOWNLOAD_DIR"
+          $SUDO install -m 0644 /tmp/BIAP-Global-latest.apk "$DOWNLOAD_DIR/BIAP-Global-latest.apk"
+          $SUDO install -m 0644 /tmp/BIAP-Global-latest.apk.sha256 "$DOWNLOAD_DIR/BIAP-Global-latest.apk.sha256"
           $SUDO install -m 0644 /tmp/BIAP-Global-latest-arm64.apk "$DOWNLOAD_DIR/BIAP-Global-latest-arm64.apk"
           $SUDO install -m 0644 /tmp/BIAP-Global-latest-arm64.apk.sha256 "$DOWNLOAD_DIR/BIAP-Global-latest-arm64.apk.sha256"
           $SUDO install -m 0644 /tmp/BIAP-Global-latest-arm64.name "$DOWNLOAD_DIR/BIAP-Global-latest-arm64.name"
-          rm -f /tmp/BIAP-Global-latest-arm64.apk /tmp/BIAP-Global-latest-arm64.apk.sha256 /tmp/BIAP-Global-latest-arm64.name
-          ls -lh "$DOWNLOAD_DIR/BIAP-Global-latest-arm64.apk"
+          rm -f /tmp/BIAP-Global-latest.apk /tmp/BIAP-Global-latest.apk.sha256 /tmp/BIAP-Global-latest-arm64.apk /tmp/BIAP-Global-latest-arm64.apk.sha256 /tmp/BIAP-Global-latest-arm64.name
+          ls -lh "$DOWNLOAD_DIR/BIAP-Global-latest.apk"
           REMOTE
 
       - name: Verify public APK download
@@ -126,10 +135,10 @@ jobs:
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --location --max-time 30 \
-            --range 0-1023 https://biap.dadashi.no/global/download/BIAP-Global-latest-arm64.apk \
+            --range 0-1023 https://biap.dadashi.no/global/download/BIAP-Global-latest.apk \
             -o /tmp/apk-head.bin
           test "$(wc -c < /tmp/apk-head.bin)" -gt 100
           curl --fail --silent --show-error --max-time 15 \
-            https://biap.dadashi.no/global/download/BIAP-Global-latest-arm64.apk.sha256 \
+            https://biap.dadashi.no/global/download/BIAP-Global-latest.apk.sha256 \
             | grep -E '^[0-9a-f]{64}$'
           echo 'BIAP Global APK download is public and reachable.'
