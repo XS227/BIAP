@@ -48,22 +48,25 @@ def _company(ticker: str = "0388", name: str = "Hong Kong Exchanges and Clearing
 def test_parse_hkex_2025_headline_statements():
     m = parse_hkex_2025_statements(STATEMENTS)
 
-    assert m["revenue"] == 23_745
-    assert m["revenue_prev"] == 17_346
+    assert m["revenue"] == 23_745_000_000
+    assert m["revenue_prev"] == 17_346_000_000
     assert round(m["revenue_yoy_pct"], 2) == 36.89
-    assert m["ebitda"] == 22_796
-    assert m["operating_income"] == 21_228
-    assert m["net_income"] == 17_754
-    assert m["total_assets"] == 580_775
-    assert m["total_liabilities"] == 522_046
-    assert m["total_equity"] == 58_729
-    assert m["current_assets"] == 547_221
-    assert m["current_liabilities"] == 518_875
-    assert m["cash_and_equivalents"] == 182_724
-    assert m["operating_cash_flow"] == 25_627
-    assert m["free_cash_flow"] == 23_894
-    assert m["total_debt"] == 398
+    assert m["ebitda"] == 22_796_000_000
+    assert m["operating_income"] == 21_228_000_000
+    assert m["net_income"] == 17_754_000_000
+    assert m["total_assets"] == 580_775_000_000
+    assert m["total_liabilities"] == 522_046_000_000
+    assert m["total_equity"] == 58_729_000_000
+    assert m["current_assets"] == 547_221_000_000
+    assert m["current_liabilities"] == 518_875_000_000
+    assert m["cash_and_equivalents"] == 182_724_000_000
+    assert m["operating_cash_flow"] == 25_627_000_000
+    assert m["free_cash_flow"] == 23_894_000_000
+    assert m["total_debt"] == 398_000_000
     assert m["eps"] == 14.05
+    assert m["comparison"]["total_assets_prev"] == 381_629_000_000
+    assert m["comparison"]["total_liabilities_prev"] == 327_222_000_000
+    assert m["comparison"]["total_equity_prev"] == 54_407_000_000
 
 
 def test_hkex_provider_uses_only_exact_0388_identity(monkeypatch):
@@ -73,8 +76,8 @@ def test_hkex_provider_uses_only_exact_0388_identity(monkeypatch):
 
     enriched = provider.enrich_fundamentals(_company())
 
-    assert enriched.revenue == 23_745
-    assert enriched.net_income == 17_754
+    assert enriched.revenue == 23_745_000_000
+    assert enriched.net_income == 17_754_000_000
     assert enriched.reporting_currency == "HKD"
     assert enriched.filing_period_end == "2025-12-31"
     assert enriched.sources[-1].provider == provider.provider_id
