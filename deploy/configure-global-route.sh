@@ -89,7 +89,10 @@ server {
     # Both paths are supported so APK links remain valid before/after migration.
     location ^~ /download/ {
         alias ${WEB_ROOT}/download/;
-        try_files \$uri =404;
+        types { application/vnd.android.package-archive apk; }
+        default_type application/octet-stream;
+        add_header Content-Disposition "attachment" always;
+        add_header Cache-Control "no-store" always;
     }
     location ^~ /global/download/ {
         alias ${WEB_ROOT}/download/;
@@ -191,7 +194,10 @@ server {
 
     location ^~ /download/ {
         alias ${WEB_ROOT}/download/;
-        try_files \$uri =404;
+        types { application/vnd.android.package-archive apk; }
+        default_type application/octet-stream;
+        add_header Content-Disposition "attachment" always;
+        add_header Cache-Control "no-store" always;
     }
     location ^~ /global/download/ {
         rewrite ^/global/download/(.*)$ /download/\$1 permanent;
@@ -263,6 +269,14 @@ else:
     web_block = f'''    # BIAP_GLOBAL_WEB_ROUTE
     location = /global {{
         return 301 /global/;
+    }}
+
+    location ^~ /global/download/ {{
+        alias {web_root}/download/;
+        types {{ application/vnd.android.package-archive apk; }}
+        default_type application/octet-stream;
+        add_header Content-Disposition "attachment" always;
+        add_header Cache-Control "no-store" always;
     }}
 
     location ^~ /global/ {{
