@@ -122,8 +122,12 @@ jobs:
           WEB_ROOT=/var/www/biap-global-web
           DOWNLOAD_DIR="$WEB_ROOT/download"
           $SUDO install -d -m 0755 "$DOWNLOAD_DIR"
+          VERSIONED_NAME="$(cat /tmp/BIAP-Global-latest-arm64.name)"
+          test -n "$VERSIONED_NAME"
           $SUDO install -m 0644 /tmp/BIAP-Global-latest.apk "$DOWNLOAD_DIR/BIAP-Global-latest.apk"
           $SUDO install -m 0644 /tmp/BIAP-Global-latest.apk.sha256 "$DOWNLOAD_DIR/BIAP-Global-latest.apk.sha256"
+          $SUDO install -m 0644 /tmp/BIAP-Global-latest.apk "$DOWNLOAD_DIR/$VERSIONED_NAME"
+          $SUDO install -m 0644 /tmp/BIAP-Global-latest.apk.sha256 "$DOWNLOAD_DIR/$VERSIONED_NAME.sha256"
           $SUDO install -m 0644 /tmp/BIAP-Global-latest-arm64.apk "$DOWNLOAD_DIR/BIAP-Global-latest-arm64.apk"
           $SUDO install -m 0644 /tmp/BIAP-Global-latest-arm64.apk.sha256 "$DOWNLOAD_DIR/BIAP-Global-latest-arm64.apk.sha256"
           $SUDO install -m 0644 /tmp/BIAP-Global-latest-arm64.name "$DOWNLOAD_DIR/BIAP-Global-latest-arm64.name"
