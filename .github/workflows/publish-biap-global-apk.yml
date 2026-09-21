@@ -145,5 +145,11 @@ jobs:
           test "$(wc -c < /tmp/apk-head.bin)" -gt 100
           curl --fail --silent --show-error --max-time 15 \
             https://biap.dadashi.no/global/download/BIAP-Global-latest.apk.sha256 \
-            | grep -E '^[0-9a-f]{64}$'
-          echo 'BIAP Global APK download is public and reachable.'
+            | grep -E '^[0-9a-f]{64}
+          HEADERS="$(curl --fail --silent --show-error --head --max-time 15 \
+            https://biap.dadashi.no/global/download/BIAP-Global-0.3.6-universal.apk)"
+          printf '%s\n' "$HEADERS"
+          printf '%s\n' "$HEADERS" | grep -Eiq '^content-type: application/vnd\.android\.package-archive'
+          printf '%s\n' "$HEADERS" | grep -Eiq '^content-disposition: attachment; filename=BIAP-Global-0\.3\.6-universal\.apk'
+          printf '%s\n' "$HEADERS" | grep -Eiq '^accept-ranges: bytes'
+          echo 'BIAP Global APK download is public, versioned, and Android attachment headers are valid.'
