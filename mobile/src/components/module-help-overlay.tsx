@@ -148,7 +148,7 @@ export function ModuleHelpOverlay() {
         onPress={() => setVisible(true)}
         style={({ pressed }) => [styles.helpButton, { opacity: pressed ? 0.78 : 1 }]}
       >
-        <Text style={styles.helpButtonText}>? Help</Text>
+        <Text style={styles.helpButtonText}>?</Text>
       </Pressable>
 
       <Modal visible={visible} transparent animationType="slide" onRequestClose={() => setVisible(false)}>
@@ -211,20 +211,22 @@ function Bullet({ text, colors }: { text: string; colors: (typeof Colors)['light
 const styles = StyleSheet.create({
   helpButton: {
     position: 'absolute',
-    left: Spacing.three,
-    bottom: BottomTabInset + Spacing.three,
+    right: Spacing.three,
+    bottom: BottomTabInset + Spacing.two,
     zIndex: 50,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: 10,
-    borderRadius: Radius.xl,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
     backgroundColor: Brand.primary,
     shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    shadowOpacity: 0.13,
+    shadowRadius: 7,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 5,
+    elevation: 4,
   },
-  helpButtonText: { color: '#FFFFFF', fontFamily: Fonts.sans, fontWeight: '700', fontSize: 14 },
+  helpButtonText: { color: '#FFFFFF', fontFamily: Fonts.sans, fontWeight: '900', fontSize: 19, lineHeight: 22 },
   modalRoot: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(4, 8, 20, 0.38)' },
   sheet: { maxHeight: '82%', borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, paddingTop: Spacing.three },
   sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.four, gap: Spacing.three },
