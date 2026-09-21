@@ -27,6 +27,32 @@ function friendly(value: string | null | undefined) {
   return value.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function ratio(numerator: number | null | undefined, denominator: number | null | undefined, pctValue = false) {
+  if (numerator == null || denominator == null || Number(denominator) === 0) return null;
+  const value = Number(numerator) / Number(denominator);
+  return pctValue ? value * 100 : value;
+}
+
+function sourceName(provider: string | null | undefined) {
+  const key = String(provider || '').toLowerCase();
+  if (key.includes('sec-edgar')) return 'SEC EDGAR · Official filing';
+  if (key.includes('esef')) return 'ESEF · Official filing';
+  if (key.includes('yahoo-public-chart')) return key.startsWith('cached:') ? 'Verified market cache' : 'Yahoo · Public market history';
+  if (key.includes('biap-derived-metrics')) return 'BIAP · Derived metrics';
+  if (key.includes('official-issuer')) return 'Issuer · Official financial statement';
+  return provider ? provider.replace(/[-_]/g, ' ') : 'Source';
+}
+
+function sourceTypeName(value: string | null | undefined) {
+  const key = String(value || '').toLowerCase();
+  if (key.includes('official_regulatory')) return 'Official regulatory evidence';
+  if (key.includes('official_issuer')) return 'Official issuer evidence';
+  if (key.includes('daily_market_history_cache')) return 'Verified cached market history';
+  if (key.includes('public_daily_market_history')) return 'Public market history';
+  if (key.includes('derived')) return 'Derived analytical metric';
+  return value ? value.replace(/_/g, ' ') : 'Evidence';
+}
+
 function decisionColor(call: string | undefined, secondary: string) {
   if (call === 'BUY_CANDIDATE') return Brand.positive;
   if (call === 'HOLD_OR_WATCH') return Brand.warning;
@@ -91,7 +117,6 @@ export default function GlobalStockDetailScreen() {
   const company = analysis?.company;
   const sourcePlan = analysis?.sourcePlan;
   const decision = analysis?.decisionTable;
-  const dm = decision?.metrics;
   const signals = Array.isArray(analysis?.signals) ? analysis!.signals! : [];
   const sources = Array.isArray(company?.sources) ? company!.sources! : [];
   const callTone = decisionColor(analysis?.call, colors.textSecondary);
@@ -99,6 +124,30 @@ export default function GlobalStockDetailScreen() {
   const priceTimestamp = company?.price_observed_at;
   const lowPriceWarning = price != null && Number.isFinite(Number(price)) && Number(price) > 0 && Number(price) < 0.1;
   const extremeVolatilityWarning = company?.volatility_annualized_pct != null && Number(company.volatility_annualized_pct) >= 250;
+  const dm = useMemo(() => {
+    const server = decision?.metrics || {};
+    const position52wPct = server.position52wPct ?? (
+      company?.price != null && company?.price_52w_low != null && company?.price_52w_high != null && Number(company.price_52w_high) > Number(company.price_52w_low)
+        ? Math.max(0, Math.min(100, (Number(company.price) - Number(company.price_52w_low)) / (Number(company.price_52w_high) - Number(company.price_52w_low)) * 100))
+        : null
+    );
+    const peVsSectorPct = server.peVsSectorPct ?? (
+      company?.pe != null && Number(company.pe) > 0 && company?.sector_pe != null && Number(company.sector_pe) > 0
+        ? (Number(company.pe) / Number(company.sector_pe) - 1) * 100
+        : null
+    );
+    return {
+      ...server,
+      position52wPct,
+      volumeVs30d: server.volumeVs30d ?? ratio(company?.volume_today, company?.avg_volume_30d),
+      peVsSectorPct,
+      dividendYieldPct: server.dividendYieldPct ?? company?.dividend_yield_pct ?? null,
+      debtToEquity: server.debtToEquity ?? ratio(company?.total_debt, company?.total_equity),
+      currentRatio: server.currentRatio ?? ratio(company?.current_assets, company?.current_liabilities),
+      roePct: server.roePct ?? ratio(company?.net_income, company?.total_equity, true),
+      roaPct: server.roaPct ?? ratio(company?.net_income, company?.total_assets, true),
+    };
+  }, [company, decision?.metrics]);
   const marketRows = useMemo(() => [
     ['Price', price == null ? '—' : `${priceN(price)} ${analysis?.currency || ''}`],
     ['52-week range', company?.price_52w_low == null || company?.price_52w_high == null ? '—' : `${priceN(company.price_52w_low)} – ${priceN(company.price_52w_high)}`],
@@ -127,6 +176,8 @@ export default function GlobalStockDetailScreen() {
   ].every((value) => value == null);
 
   const decisionRows = useMemo(() => [
+    ['Kiasha call', friendly(analysis?.call)],
+    ['Decision confidence', analysis?.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`],
     ['Short-term outlook', friendly(decision?.shortTermOutlook)],
     ['Long-term outlook', friendly(decision?.longTermOutlook)],
     ['Momentum', friendly(decision?.momentum)],
@@ -145,12 +196,12 @@ export default function GlobalStockDetailScreen() {
     ['New position', friendly(decision?.kiasha?.newPositionAction || analysis?.call)],
     ['If already owned', friendly(decision?.kiasha?.existingHolderAction)],
     ['Evidence', analysis?.evidence?.status || '—'],
-  ], [analysis?.call, analysis?.evidence?.status, decision, dm]);
+  ], [analysis?.call, analysis?.confidence, analysis?.evidence?.status, decision, dm]);
 
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} tintColor={Brand.primary} />} contentContainerStyle={styles.content}>
     <View style={styles.maxWidth}>
       <View style={styles.header}><Pressable onPress={() => router.back()} style={[styles.back, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.backText, { color: colors.text }]}>← Back</Text></Pressable><Text style={[styles.headerMeta, { color: colors.textSecondary }]}>Global stock analysis</Text></View>
-      {loading ? <ActivityIndicator color={Brand.primary} style={{ marginTop: 50 }} /> : error ? <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Analysis unavailable</Text><Text style={[styles.body, { color: colors.textSecondary }]}>{error}</Text></View> : analysis ? <>
+      {loading ? <View style={{ marginTop: 50, alignItems: 'center' }}><ActivityIndicator color={Brand.primary} /><Text style={[styles.body, { color: colors.textSecondary, marginTop: 12 }]}>Loading verified market, filing and decision data…</Text></View> : error ? <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Analysis unavailable</Text><Text style={[styles.body, { color: colors.textSecondary }]}>{error}</Text><Pressable onPress={() => { setLoading(true); void load(); }} style={[styles.action, { backgroundColor: Brand.primary }]}><Text style={styles.actionText}>Retry analysis</Text></Pressable></View> : analysis ? <>
         <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}>
           <View style={styles.rowBetween}><View style={{ flex: 1 }}><Text style={[styles.ticker, { color: colors.text }]}>{analysis.ticker}</Text><Text style={[styles.companyName, { color: colors.textSecondary }]}>{analysis.name}</Text><Text style={[styles.identity, { color: colors.textSecondary }]}>{analysis.country} • {analysis.exchange} • {analysis.mic || 'MIC n/a'} • {analysis.currency}</Text></View><View style={[styles.callPill, { borderColor: callTone }]}><Text style={[styles.callText, { color: callTone }]}>{analysis.call}</Text></View></View>
           <View style={styles.priceRow}><Text style={[styles.price, { color: colors.text }]}>{price == null ? '—' : priceN(price)}</Text><Text style={[styles.currency, { color: colors.textSecondary }]}>{analysis.currency}</Text></View>
@@ -165,6 +216,7 @@ export default function GlobalStockDetailScreen() {
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Investor decision table</Text>
         <View style={[styles.card, { backgroundColor: colors.backgroundElement, marginTop: 0 }]}>
+          {!decision ? <View style={[styles.caution, { borderColor: Brand.warning, backgroundColor: colors.backgroundElement }]}><Text style={[styles.cautionTitle, { color: Brand.warning }]}>Decision summary partially unavailable</Text><Text style={[styles.body, { color: colors.textSecondary }]}>Core verified company metrics are still shown below. Pull to refresh or use Retry if the server decision summary did not arrive.</Text></View> : null}
           {decisionRows.map(([label, value]) => <View key={label} style={[styles.dataRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>{label}</Text><Text style={[styles.dataValue, { color: colors.text }]}>{value}</Text></View>)}
           <Text style={[styles.body, { color: colors.textSecondary }]}>The base stock score is the same for every user. Personal risk, horizon, income and growth preferences are applied separately by Portfolio Agent.</Text>
         </View>
@@ -189,7 +241,7 @@ export default function GlobalStockDetailScreen() {
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>{financialRows.map(([label, value]) => <View key={label} style={[styles.dataRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>{label}</Text><Text style={[styles.dataValue, { color: colors.text }]}>{value}</Text></View>)}{fundamentalsMissing ? <Text style={[styles.body, { color: colors.textSecondary }]}>{sourcePlan?.status === 'market-ready' ? `Official filing adapter not connected yet. Planned source: ${sourcePlan.filings || 'issuer/regulator filings'}. Market data can still be analyzed, but Evidence remains blocked without verified fundamentals.` : sourcePlan?.runtimeConfigured === false ? (sourcePlan.runtimeNote || `Official connector exists for ${sourcePlan.filings || 'regulatory filings'}, but it is not configured on this server yet.`) : sourcePlan?.status === 'connected' ? `Official source is connected (${sourcePlan.filings || 'regulatory filings'}), but no verified filing matched this listing yet. Evidence may BLOCK until issuer identity/filing coverage is available.` : 'No verified filing was matched for this listing. Evidence may BLOCK the decision until official fundamentals are available.'}</Text> : null}</View>
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Evidence sources</Text>
-        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>{sources.length ? sources.map((source, index) => <View key={`${source.provider}-${index}`} style={[styles.sourceRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.sourceProvider, { color: colors.text }]}>{source.provider || 'source'}</Text><Text style={[styles.sourceMeta, { color: colors.textSecondary }]}>{source.source_type || 'evidence'} • quality {source.quality == null ? '—' : n(source.quality, 2)}{source.observed_at ? ` • ${source.observed_at}` : ''}</Text></View>) : <Text style={[styles.body, { color: colors.textSecondary }]}>No verified provenance records were returned. Evidence Agent should block a directional recommendation.</Text>}</View>
+        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>{sources.length ? sources.map((source, index) => <View key={`${source.provider}-${index}`} style={[styles.sourceRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.sourceProvider, { color: colors.text }]}>{sourceName(source.provider)}</Text><Text style={[styles.sourceMeta, { color: colors.textSecondary }]}>{sourceTypeName(source.source_type)} • quality {source.quality == null ? '—' : n(source.quality, 2)}{source.observed_at ? ` • ${source.observed_at}` : ''}</Text></View>) : <Text style={[styles.body, { color: colors.textSecondary }]}>No verified provenance records were returned. Evidence Agent should block a directional recommendation.</Text>}</View>
 
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Portfolio Agent</Text><Text style={[styles.body, { color: colors.textSecondary }]}>Portfolio construction is intentionally separate from single-stock analysis. Open the Portfolio tab to combine qualified candidates using capital, base currency, risk tolerance, concentration caps, FX and cash reserve.</Text><Pressable onPress={() => router.push('/portfolio')} style={[styles.action, { backgroundColor: Brand.primary }]}><Text style={styles.actionText}>Open Portfolio Agent</Text></Pressable></View>
 
