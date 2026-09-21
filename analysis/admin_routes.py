@@ -185,15 +185,9 @@ def logout():
 
 @router.get("/app/latest.apk")
 def download_latest_apk(username: str = Depends(require_admin)):
-    release = _mobile_release()
-    if not _MOBILE_APK_PATH.is_file():
-        raise HTTPException(status_code=404, detail="Latest BIAP APK is not published on this server yet")
-    version = release.get("version") or "latest"
-    return FileResponse(
-        _MOBILE_APK_PATH,
-        media_type="application/vnd.android.package-archive",
-        filename=f"BIAP-{version}.apk",
-        headers={"Cache-Control": "no-store"},
+    return RedirectResponse(
+        "https://github.com/XS227/BIAP/releases/latest/download/BIAP.apk",
+        status_code=302,
     )
 
 
@@ -273,12 +267,8 @@ def users_list(username: str = Depends(require_admin)):
     notes_html = "".join(f"<li>{html.escape(note)}</li>" for note in release["changes"])
     if not notes_html:
         notes_html = "<li class='muted'>Ingen release notes registrert.</li>"
-    if _MOBILE_APK_PATH.is_file():
-        download_html = '<a class="btn" href="/admindir/app/latest.apk">Last ned nyeste APK</a>'
-        apk_status = "APK klar på production-serveren."
-    else:
-        download_html = "<span class='muted'>APK bygges/publiseres. Last ned-knappen aktiveres automatisk når CI er ferdig.</span>"
-        apk_status = "APK ikke publisert ennå."
+    download_html = '<a class="btn" href="/admindir/app/latest.apk">Last ned nyeste APK</a>'
+    apk_status = "Stabil APK publiseres automatisk fra siste vellykkede main-build."
 
     rows = ""
     for user in users:
