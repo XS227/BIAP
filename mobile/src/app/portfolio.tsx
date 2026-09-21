@@ -83,6 +83,20 @@ function scanMode(r: ScanWithMode): MarketMode {
   return 'LIVE';
 }
 
+function modeLabel(mode: MarketMode) {
+  if (mode === 'LIVE') return 'Live';
+  if (mode === 'CACHED') return 'Cached';
+  if (mode === 'CATALOG') return 'Catalog only';
+  return 'Unavailable';
+}
+
+function statusLabel(stat: MarketStat) {
+  if (stat.mode === 'CATALOG') return 'Instrument catalog is available; verified price/history is still pending.';
+  if (stat.mode === 'ERROR') return 'This market could not be scanned.';
+  if (stat.mode === 'CACHED') return 'Using a verified saved market snapshot.';
+  return 'Using current verified market data.';
+}
+
 function factorText(a: GlobalAnalysis | undefined) {
   const list = a?.signals || [];
   const positives = [...list]
@@ -329,6 +343,16 @@ export default function GlobalPortfolioScreen() {
   const proposal = result?.proposal;
   const allocations = proposal?.allocations || [];
   const analysisMap = useMemo(() => new Map((result?.analyses || []).map((analysis) => [analysisKey(analysis), analysis])), [result]);
+  const noRecommendationReason = useMemo(() => {
+    if (!proposal || proposal.status !== 'NO_RECOMMENDATION') return '';
+    if (!candidateCount) return 'No stock cleared the current Evidence/Verification and candidate filters.';
+    const limited = stats.filter((market) => market.mode === 'CACHED' && market.coverage < 80);
+    const blocked = stats.reduce((sum, market) => sum + market.block, 0);
+    const warned = stats.reduce((sum, market) => sum + market.warn, 0);
+    if (limited.length) return `The selected market coverage is still limited (${limited.map((market) => `${market.country} ${n(market.coverage, 1)}%`).join(' • ')}). The ${candidateCount} qualified scan inputs were not sufficient to create an allocation under the current profile and evidence rules.`;
+    if (blocked || warned) return `${candidateCount} candidate inputs reached portfolio review, but evidence/risk checks still excluded the final allocation (${blocked} blocked • ${warned} review).`;
+    return 'The qualified candidates did not satisfy the portfolio constraints together (risk, concentration, cash reserve, FX and evidence).';
+  }, [candidateCount, proposal, stats]);
 
   const modeColor = (mode: MarketMode) => {
     if (mode === 'LIVE') return Brand.positive;
@@ -358,7 +382,7 @@ export default function GlobalPortfolioScreen() {
             <Text style={s.eyebrow}>MULTI-MARKET SCOPE • MAX 4</Text>
             <Text style={[s.cardTitle, { color: colors.text }]}>Choose exchanges</Text>
             <Text style={[s.body, { color: colors.textSecondary }]}>Every selected exchange is screened with the same six scoring agents. Evidence/Verification must PASS before a stock can enter the allocation stage.</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={149} decelerationRate="fast" contentContainerStyle={s.chips}>
               {options.map((market) => {
                 const active = scopes.some((x) => scopeKey(x) === scopeKey(market));
                 return (
@@ -369,7 +393,7 @@ export default function GlobalPortfolioScreen() {
                 );
               })}
             </ScrollView>
-            <Text style={[s.tiny, { color: colors.textSecondary }]}>Selected: {scopes.map((x) => `${x.country}/${x.exchangeLabel}`).join(' • ')}</Text>
+            <Text style={[s.tiny, { color: colors.textSecondary }]}>Selected {scopes.length}/4: {scopes.map((x) => `${x.country} · ${x.exchangeLabel}`).join(' • ')}</Text>
           </View>
 
           <Text style={[s.section, { color: colors.text }]}>Investor profile</Text>
@@ -543,7 +567,7 @@ const s = StyleSheet.create({
   cardTitle: { fontFamily: Fonts.sans, fontSize: 14, fontWeight: '900', marginTop: 4 },
   body: { fontFamily: Fonts.sans, fontSize: 9.5, lineHeight: 15, marginTop: 5 },
   chips: { gap: 7, paddingVertical: 10, paddingRight: 6 },
-  chip: { width: 118, borderRadius: Radius.md, padding: 9 },
+  chip: { width: 142, minHeight: 74, borderRadius: Radius.md, padding: 10, justifyContent: 'center' },
   chipCode: { fontFamily: Fonts.mono, fontSize: 11, fontWeight: '900' },
   chipName: { fontFamily: Fonts.sans, fontSize: 8, lineHeight: 11, marginTop: 3 },
   tiny: { fontFamily: Fonts.mono, fontSize: 8, lineHeight: 13 },
@@ -559,7 +583,7 @@ const s = StyleSheet.create({
   primary: { minHeight: 49, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
   primaryText: { color: '#fff', fontFamily: Fonts.sans, fontSize: 11, fontWeight: '900' },
   error: { fontFamily: Fonts.sans, fontSize: 9.5, lineHeight: 15, marginTop: 9 },
-  marketCard: { width: 210, borderRadius: Radius.lg, padding: Spacing.three },
+  marketCard: { width: 250, minHeight: 220, borderRadius: Radius.lg, padding: Spacing.three },
   marketName: { fontFamily: Fonts.sans, fontSize: 11, fontWeight: '900', marginTop: 3, minHeight: 28 },
   marketLine: { fontFamily: Fonts.mono, fontSize: 7.8, marginTop: 5 },
   marketTop: { fontFamily: Fonts.mono, fontSize: 8.5, fontWeight: '800', marginTop: 7 },
