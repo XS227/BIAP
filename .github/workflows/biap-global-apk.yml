@@ -84,6 +84,26 @@ jobs:
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
           test -n "$APKSIGNER"
           "$APKSIGNER" verify --verbose android/app/build/outputs/apk/release/app-release.apk
+      - name: Verify upgrade signer continuity
+        shell: bash
+        run: |
+          set -euo pipefail
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
+          NEW_CERT=$("$APKSIGNER" verify --print-certs android/app/build/outputs/apk/release/app-release.apk | awk -F': ' '/certificate SHA-256 digest/ {print $2; exit}')
+          test -n "$NEW_CERT"
+          echo "New APK signer SHA-256: $NEW_CERT"
+          if curl --fail --silent --show-error --location --max-time 90             https://biap.dadashi.no/global/download/BIAP-Global-latest.apk             -o /tmp/biap-global-current.apk; then
+            OLD_CERT=$("$APKSIGNER" verify --print-certs /tmp/biap-global-current.apk | awk -F': ' '/certificate SHA-256 digest/ {print $2; exit}')
+            test -n "$OLD_CERT"
+            echo "Installed-channel signer SHA-256: $OLD_CERT"
+            test "$NEW_CERT" = "$OLD_CERT" || {
+              echo "::error::APK signer changed; Android would reject an in-place update over the installed BIAP Global build."
+              exit 1
+            }
+            echo "APK signer continuity verified for in-place update."
+          else
+            echo "::warning::Current public APK could not be downloaded; signer continuity comparison skipped."
+          fi
       - name: Name APK
         run: |
           VERSION=$(node -p "require('./app.json').expo.version")
