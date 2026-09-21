@@ -229,13 +229,41 @@ export async function fetchGlobalModuleData(key: string, instrument: GlobalInstr
   const dataset = await getBusinessDataset();
   if (PRIVATE_REQUIRED.has(key)) {
     if (dataset?.rows?.length) return datasetPayload(key, dataset);
+    if (instrument) {
+      try {
+        const analysis = await analyzeGlobalInstrument(instrument);
+        const c = analysis.company;
+        const sourceLabel = providers(c).join(' + ') || 'Global market + official filing adapters';
+        return {
+          available: false,
+          sourceLabel: `${sourceLabel} • private inputs required`,
+          summary: `${TITLES[key] || 'This module'} loaded the verified public baseline for ${analysis.ticker || instrument.ticker}. Customer/product-specific results still require private operational data and are intentionally not inferred from stock-market data.`,
+          metrics: baseMetrics(analysis),
+          bullets: evidenceBullets(analysis),
+          note: 'Public issuer data is shown so the screen is not empty. Connect CSV/Excel, SQL, CRM or an approved company API to calculate customer, journey, pricing or unit-level outputs.',
+          evidenceStatus: analysis.evidence?.status,
+          analysis,
+        };
+      } catch (error) {
+        return {
+          available: false,
+          sourceLabel: 'Private company data required',
+          summary: `${TITLES[key] || 'This module'} needs customer, product or operational data that a stock exchange filing cannot provide.`,
+          metrics: [],
+          bullets: [],
+          note: error instanceof Error
+            ? `Public issuer baseline could not be loaded: ${error.message.slice(0, 180)}. Connect private data for the customer/operational result.`
+            : 'Connect CSV/Excel, SQL, CRM or an approved company API. BIAP will not infer private operational values from share-price data.',
+        };
+      }
+    }
     return {
       available: false,
       sourceLabel: 'Private company data required',
       summary: `${TITLES[key] || 'This module'} needs customer, product or operational data that a stock exchange filing cannot provide.`,
       metrics: [],
       bullets: [],
-      note: 'Connect CSV/Excel, SQL, CRM or an approved company API. BIAP will not infer private operational values from share-price data.',
+      note: 'Select a listed company to load its public baseline, then connect CSV/Excel, SQL, CRM or an approved company API for customer/operational fields.',
     };
   }
 
