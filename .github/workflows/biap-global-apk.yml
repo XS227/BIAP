@@ -1,4 +1,4 @@
-# Install-fix universal build: 2026-09-21
+# UX-fix universal build: 2026-09-22
 name: BIAP Global APK
 
 on:
@@ -92,7 +92,7 @@ jobs:
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
           "$AAPT" dump badging "BIAP-Global-${VERSION}-universal.apk" | tee /tmp/biap-global-badging.txt
           grep -q "package: name='com.biap.global'" /tmp/biap-global-badging.txt
-          grep -q "versionCode='9'" /tmp/biap-global-badging.txt
+          grep -q "versionCode='10'" /tmp/biap-global-badging.txt
       - name: Upload preview APK
         uses: actions/upload-artifact@v4
         with:
