@@ -81,6 +81,8 @@ export type GlobalCompanyData = GlobalInstrument & {
   total_assets?: number | null;
   total_liabilities?: number | null;
   total_equity?: number | null;
+  current_assets?: number | null;
+  current_liabilities?: number | null;
   operating_cash_flow?: number | null;
   free_cash_flow?: number | null;
   total_debt?: number | null;
