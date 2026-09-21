@@ -91,7 +91,9 @@ server {
         alias ${WEB_ROOT}/download/;
         types { application/vnd.android.package-archive apk; }
         default_type application/octet-stream;
-        add_header Content-Disposition "attachment" always;
+        add_header Content-Disposition "attachment; filename=BIAP-Global-0.3.6-universal.apk" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Accept-Ranges "bytes" always;
         add_header Cache-Control "no-store" always;
     }
     location ^~ /global/download/ {
@@ -196,7 +198,9 @@ server {
         alias ${WEB_ROOT}/download/;
         types { application/vnd.android.package-archive apk; }
         default_type application/octet-stream;
-        add_header Content-Disposition "attachment" always;
+        add_header Content-Disposition "attachment; filename=BIAP-Global-0.3.6-universal.apk" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Accept-Ranges "bytes" always;
         add_header Cache-Control "no-store" always;
     }
     location ^~ /global/download/ {
@@ -275,7 +279,9 @@ else:
         alias {web_root}/download/;
         types {{ application/vnd.android.package-archive apk; }}
         default_type application/octet-stream;
-        add_header Content-Disposition "attachment" always;
+        add_header Content-Disposition "attachment; filename=BIAP-Global-0.3.6-universal.apk" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Accept-Ranges "bytes" always;
         add_header Cache-Control "no-store" always;
     }}
 
