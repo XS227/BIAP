@@ -1,14 +1,14 @@
-# Republish universal 0.3.6 after successful build: 2026-09-21
+# Auto-publish successful BIAP Global APK builds: 2026-09-22
 # Publish final RC APK: 2026-09-20
 name: Publish BIAP Global APK
 
 # Publishes the latest successful BIAP Global ARM64 build to the public web download path.
 on:
-  push:
-    branches: [feat/biap-global]
-    paths:
-      - '.github/workflows/publish-biap-global-apk.yml'
   workflow_dispatch:
+  workflow_run:
+    workflows: ["BIAP Global APK"]
+    types: [completed]
+    branches: [feat/biap-global]
 
 concurrency:
   group: publish-biap-global-apk
@@ -20,6 +20,7 @@ permissions:
 
 jobs:
   publish:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 12
@@ -147,9 +148,9 @@ jobs:
             https://biap.dadashi.no/global/download/BIAP-Global-latest.apk.sha256)"
           printf '%s\n' "$HASH" | grep -Eiq '^[0-9a-f]{64}$'
           HEADERS="$(curl --fail --silent --show-error --head --max-time 15 \
-            https://biap.dadashi.no/global/download/BIAP-Global-0.3.6-universal.apk)"
+            https://biap.dadashi.no/global/download/BIAP-Global-0.3.7-universal.apk)"
           printf '%s\n' "$HEADERS"
           printf '%s\n' "$HEADERS" | grep -Eiq '^content-type: application/vnd\.android\.package-archive'
-          printf '%s\n' "$HEADERS" | grep -Eiq '^content-disposition: attachment; filename=BIAP-Global-0\.3\.6-universal\.apk'
+          printf '%s\n' "$HEADERS" | grep -Eiq '^content-disposition: attachment; filename=BIAP-Global-0\.3\.7-universal\.apk'
           printf '%s\n' "$HEADERS" | grep -Eiq '^accept-ranges: bytes'
           echo 'BIAP Global APK download is public, versioned, and Android attachment headers are valid.'
