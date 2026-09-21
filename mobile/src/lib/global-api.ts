@@ -353,7 +353,7 @@ export async function analyzeGlobalInstrument(instrument: GlobalInstrument): Pro
       isin: instrument.isin || undefined,
       lei: instrument.lei || undefined,
     }),
-  }, 60_000);
+  }, 120_000);
 }
 
 export async function scanGlobalMarket(country: string, exchange: string, topN = 10): Promise<GlobalScanResponse> {
