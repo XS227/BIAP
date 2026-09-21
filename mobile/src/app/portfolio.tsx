@@ -148,7 +148,7 @@ export default function GlobalPortfolioScreen() {
   const [capital, setCapital] = useState('50000');
   const [baseCurrency, setBaseCurrency] = useState('EUR');
   const [risk, setRisk] = useState<Risk>('medium');
-  const [horizon, setHorizon] = useState('5y');
+  const [horizon, setHorizon] = useState('5y+');
   const [objectives, setObjectives] = useState<Objective[]>(['growth', 'value']);
   const [liquidityNeed, setLiquidityNeed] = useState<LiquidityNeed>('medium');
   const [drawdownComfort, setDrawdownComfort] = useState('25');
@@ -488,7 +488,7 @@ export default function GlobalPortfolioScreen() {
           {proposal ? <>
             <View style={[s.card, { backgroundColor: colors.backgroundElement, marginTop: 18 }]}>
               <View style={s.between}>
-                <View><Text style={[s.label, { color: colors.textSecondary }]}>PROPOSAL STATUS</Text><Text style={[s.status, { color: proposal.status === 'NO_RECOMMENDATION' ? Brand.warning : Brand.positive }]}>{proposal.status || '—'}</Text></View>
+                <View><Text style={[s.label, { color: colors.textSecondary }]}>PROPOSAL STATUS</Text><Text style={[s.status, { color: proposal.status === 'NO_RECOMMENDATION' ? Brand.warning : Brand.positive }]}>{proposal.status ? String(proposal.status).toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()) : '—'}</Text></View>
                 <View style={{ alignItems: 'flex-end' }}><Text style={[s.label, { color: colors.textSecondary }]}>QUALIFIED INPUTS</Text><Text style={[s.big, { color: colors.text }]}>{candidateCount}</Text></View>
               </View>
               <Text style={[s.body, { color: colors.textSecondary }]}>Invested {n(proposal.invested_pct, 1)}% • Cash {n(proposal.cash_pct, 1)}% • Positions {allocations.length}</Text>
