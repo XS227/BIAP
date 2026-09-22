@@ -1,0 +1,100 @@
+name: BIAP Global FR IT evidence probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-fr-it-evidence-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Probe PEUG ALPJT and Ferrari production evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.parse, urllib.request
+
+          base = 'https://biap.dadashi.no/global-api/global'
+          cases = [
+              ('FR','EURONEXT_PARIS','PEUG','PEUGEOT INVEST'),
+              ('FR','EURONEXT_PARIS','ALPJT','Poujoulat'),
+              ('IT','EURONEXT_MILAN','RACE','Ferrari'),
+          ]
+
+          def norm(v):
+              return ''.join(ch for ch in str(v or '').upper() if ch.isalnum())
+
+          def get(url, timeout=45):
+              with urllib.request.urlopen(url, timeout=timeout) as r:
+                  return json.load(r)
+
+          def post(url, body, timeout=75):
+              req = urllib.request.Request(
+                  url,
+                  data=json.dumps(body).encode('utf-8'),
+                  headers={'Content-Type':'application/json','Accept':'application/json'},
+                  method='POST',
+              )
+              with urllib.request.urlopen(req, timeout=timeout) as r:
+                  return json.load(r)
+
+          for country, exchange, ticker, name in cases:
+              q = urllib.parse.urlencode({'q': ticker, 'limit': 30})
+              cat = get(f'{base}/instruments/{country}/{exchange}?{q}')
+              items = cat.get('instruments') or []
+              item = next((x for x in items if norm(x.get('ticker')) == norm(ticker)), None)
+              if not item:
+                  q = urllib.parse.urlencode({'q': name, 'limit': 30})
+                  cat = get(f'{base}/instruments/{country}/{exchange}?{q}')
+                  items = cat.get('instruments') or []
+                  item = next((x for x in items if name.lower() in str(x.get('name') or '').lower()), None)
+              row = {'requested': ticker, 'country': country, 'exchange': exchange, 'catalogMatch': item}
+              if not item:
+                  print(json.dumps(row, sort_keys=True))
+                  continue
+              payload = post(f'{base}/analyze', {
+                  'country': country,
+                  'exchange': exchange,
+                  'ticker': item.get('ticker') or ticker,
+                  'name': item.get('name') or name,
+                  'currency': item.get('currency') or 'EUR',
+                  'isin': item.get('isin'),
+                  'lei': item.get('lei'),
+              })
+              company = payload.get('company') or {}
+              evidence = payload.get('evidence') or {}
+              diag = payload.get('providerDiagnostics') or {}
+              row.update({
+                  'resolved': company.get('ticker'),
+                  'name': company.get('name'),
+                  'isin': company.get('isin'),
+                  'lei': company.get('lei'),
+                  'price': company.get('price'),
+                  'fundamentalsStatus': diag.get('fundamentalsStatus'),
+                  'fundamentalsProvider': diag.get('fundamentalsProvider'),
+                  'fundamentalsError': diag.get('fundamentalsError'),
+                  'evidenceStatus': evidence.get('status'),
+                  'coverage': evidence.get('coverage'),
+                  'missingCritical': evidence.get('missingCritical'),
+                  'reasoning': evidence.get('reasoning'),
+                  'sources': [
+                      {
+                          'provider': s.get('provider'),
+                          'sourceType': s.get('source_type') or s.get('sourceType'),
+                          'sourceId': s.get('source_id') or s.get('sourceId'),
+                          'quality': s.get('quality'),
+                          'periodEnd': s.get('period_end') or s.get('periodEnd'),
+                      }
+                      for s in (company.get('sources') or [])
+                  ],
+              })
+              print(json.dumps(row, sort_keys=True))
+          PY
