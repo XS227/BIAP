@@ -19,6 +19,14 @@ from .models import GlobalCompany
 from .providers import GlobalProviderError
 
 
+# Strict, country-scoped catalog-display aliases. These are not fuzzy matches:
+# each key is an exact market-catalog issuer label verified against the issuer's
+# legal name before being allowed into GLEIF/ESEF identity resolution.
+_VERIFIED_LEGAL_NAME_ALIASES: dict[tuple[str, str], str] = {
+    ("SE", "HENNES & MAURITZ AB"): "H & M Hennes & Mauritz AB",
+}
+
+
 class CountryAwareESEFFundamentalsProvider(ESEFFundamentalsProvider):
     provider_id = "esef-xbrl-country-aware"
 
@@ -81,8 +89,12 @@ class CountryAwareESEFFundamentalsProvider(ESEFFundamentalsProvider):
         if not company.name or company.name == company.ticker:
             raise GlobalProviderError("ESEF requires a verified LEI or full legal company name")
 
+        lookup_name = _VERIFIED_LEGAL_NAME_ALIASES.get(
+            (company.country.strip().upper(), company.name.strip().upper()),
+            company.name,
+        )
         try:
-            resolution = self.gleif.resolve_exact_legal_name(company.name, country=company.country)
+            resolution = self.gleif.resolve_exact_legal_name(lookup_name, country=company.country)
             return resolution.lei, resolution.legal_name
         except GlobalProviderError as original:
             resolution = self._resolve_by_country_filing(company)
