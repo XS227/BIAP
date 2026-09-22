@@ -101,7 +101,7 @@ def _peer_pe_benchmark(company: GlobalCompany) -> tuple[Optional[float], Optiona
     country = "".join(ch for ch in company.country.upper() if ch.isalnum() or ch in {"-", "_"})
     exchange = "".join(ch for ch in company.exchange.upper() if ch.isalnum() or ch in {"-", "_"})
     wrapper = read_json(data_root() / "scan-cache" / country / f"{exchange}.json", default=None)
-    if not isinstance(wrapper, dict) or wrapper.get("schemaVersion") != 1:
+    if not isinstance(wrapper, dict) or wrapper.get("schemaVersion") not in {1, 2}:
         return None, None, 0
 
     try:
