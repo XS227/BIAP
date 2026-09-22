@@ -69,6 +69,7 @@ class GlobalCompany:
     pb: Optional[float] = None
     ev_ebitda: Optional[float] = None
     dividend_yield_pct: Optional[float] = None
+    dividend_per_share: Optional[float] = None
     eps: Optional[float] = None
     book_value_per_share: Optional[float] = None
 
