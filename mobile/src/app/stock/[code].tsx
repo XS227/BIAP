@@ -168,7 +168,7 @@ export default function GlobalStockDetailScreen() {
     ['Volume / 30d avg.', `${n(company?.volume_today, 0)} / ${n(company?.avg_volume_30d, 0)}`],
   ], [company, price, analysis?.currency]);
   const valuationRows = useMemo(() => [
-    ['Market cap', n(company?.market_cap, 0)], ['P/E', n(company?.pe)], ['P/B', n(company?.pb)], ['EV/EBITDA', n(company?.ev_ebitda)], ['Peer / sector P/E', n(company?.sector_pe)],
+    ['Market cap', n(company?.market_cap, 0)], ['P/E', n(company?.pe)], ['P/B', n(company?.pb)], ['EV/EBITDA', n(company?.ev_ebitda)], ['Peer benchmark P/E', n(company?.sector_pe)],
     ['Dividend yield', pct(company?.dividend_yield_pct)], ['EPS', n(company?.eps)], ['Book value / share', n(company?.book_value_per_share)],
   ], [company]);
   const financialRows = useMemo(() => [
@@ -195,8 +195,8 @@ export default function GlobalStockDetailScreen() {
     ['Drawdown risk', friendly(decision?.drawdownRisk)],
     ['52-week position', pct(dm?.position52wPct)],
     ['Volume vs 30d', dm?.volumeVs30d == null ? '—' : `${n(dm.volumeVs30d, 2)}x`],
-    ['Valuation vs sector', friendly(decision?.valuationView)],
-    ['P/E vs sector', pct(dm?.peVsSectorPct)],
+    ['Valuation vs peers', friendly(decision?.valuationView)],
+    ['P/E vs peer benchmark', pct(dm?.peVsSectorPct)],
     ['Dividend / income', friendly(decision?.incomeProfile)],
     ['Dividend yield', pct(dm?.dividendYieldPct)],
     ['Debt / equity', dm?.debtToEquity == null ? '—' : `${n(dm.debtToEquity, 2)}x`],
