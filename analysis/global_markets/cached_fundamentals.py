@@ -28,6 +28,7 @@ from .providers import FundamentalsProvider, GlobalProviderError, append_source
 _FUNDAMENTAL_FIELDS = (
     "name", "lei", "sector", "industry", "reporting_currency",
     "shares_outstanding", "eps", "book_value_per_share",
+    "dividend_per_share", "dividend_yield_pct",
     "revenue", "revenue_prev", "revenue_yoy_pct", "gross_profit",
     "operating_income", "ebitda", "net_income", "net_margin_pct",
     "net_margin_prev_pct", "total_assets", "total_liabilities",
@@ -131,7 +132,7 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
             payload = json.loads(self._latest_path(company).read_text(encoding="utf-8"))
         except (OSError, ValueError, TypeError):
             return None
-        if not isinstance(payload, dict) or payload.get("schemaVersion") != 1:
+        if not isinstance(payload, dict) or payload.get("schemaVersion") not in {1, 2}:
             return None
         identity = payload.get("identity") if isinstance(payload.get("identity"), dict) else {}
         if str(identity.get("country") or "").upper() != company.country.upper():
@@ -148,6 +149,11 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         return None if fetched is None else max(0.0, (_utc_now() - fetched).total_seconds())
 
     def _is_fresh(self, payload: dict) -> bool:
+        # Schema v2 adds shareholder-return fields such as dividend/share.
+        # A v1 cache can still be used as an outage fallback, but it is never
+        # considered fresh so the next normal request refreshes it once.
+        if payload.get("schemaVersion") != 2:
+            return False
         age = self._age_seconds(payload)
         return age is not None and age <= self.fresh_seconds
 
@@ -155,7 +161,7 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         sources = [asdict(source) for source in _cache_sources(company)]
         official = bool(_official_sources(company))
         payload = {
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "identity": {
                 "country": company.country,
                 "exchange": company.exchange,
