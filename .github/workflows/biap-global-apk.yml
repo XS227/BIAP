@@ -1,4 +1,4 @@
-# Multi-market selector fix build: 2026-09-22
+# Dynamic-version BIAP Global APK build: 2026-09-23
 name: BIAP Global APK
 
 on:
@@ -92,7 +92,9 @@ jobs:
           NEW_CERT=$("$APKSIGNER" verify --print-certs android/app/build/outputs/apk/release/app-release.apk | awk -F': ' '/certificate SHA-256 digest/ {print $2; exit}')
           test -n "$NEW_CERT"
           echo "New APK signer SHA-256: $NEW_CERT"
-          if curl --fail --silent --show-error --location --max-time 90             https://biap.dadashi.no/global/download/BIAP-Global-latest.apk             -o /tmp/biap-global-current.apk; then
+          if curl --fail --silent --show-error --location --max-time 90 \
+            https://biap.dadashi.no/global/download/BIAP-Global-latest.apk \
+            -o /tmp/biap-global-current.apk; then
             OLD_CERT=$("$APKSIGNER" verify --print-certs /tmp/biap-global-current.apk | awk -F': ' '/certificate SHA-256 digest/ {print $2; exit}')
             test -n "$OLD_CERT"
             echo "Installed-channel signer SHA-256: $OLD_CERT"
@@ -107,12 +109,13 @@ jobs:
       - name: Name APK
         run: |
           VERSION=$(node -p "require('./app.json').expo.version")
+          EXPECTED_CODE=$(node -p "require('./app.json').expo.android.versionCode")
           cp android/app/build/outputs/apk/release/app-release.apk "BIAP-Global-${VERSION}-universal.apk"
           sha256sum "BIAP-Global-${VERSION}-universal.apk" > "BIAP-Global-${VERSION}-universal.apk.sha256"
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
           "$AAPT" dump badging "BIAP-Global-${VERSION}-universal.apk" | tee /tmp/biap-global-badging.txt
           grep -q "package: name='com.biap.global'" /tmp/biap-global-badging.txt
-          grep -q "versionCode='14'" /tmp/biap-global-badging.txt
+          grep -q "versionCode='${EXPECTED_CODE}'" /tmp/biap-global-badging.txt
       - name: Upload preview APK
         uses: actions/upload-artifact@v4
         with:
