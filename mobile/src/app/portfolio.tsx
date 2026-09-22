@@ -161,13 +161,20 @@ export default function GlobalPortfolioScreen() {
   const [stats, setStats] = useState<MarketStat[]>([]);
   const [result, setResult] = useState<GlobalPortfolioResponse | null>(null);
   const [candidateCount, setCandidateCount] = useState(0);
+  const [selectionNotice, setSelectionNotice] = useState('');
 
   useFocusEffect(
     useCallback(() => {
       Promise.all([getGlobalMarketSelection(), fetchGlobalCountries()]).then(([selection, catalog]) => {
         setCurrent(selection);
         setCountries(catalog.countries);
-        setScopes((previous) => (previous.length ? previous : [fromSelection(selection)]));
+        const next = fromSelection(selection);
+        setScopes((previous) => {
+          if (!previous.length) return [next];
+          if (previous.some((item) => scopeKey(item) === scopeKey(next))) return previous;
+          if (previous.length < 4) return [...previous, next];
+          return [...previous.slice(0, 3), next];
+        });
       });
     }, []),
   );
@@ -199,8 +206,21 @@ export default function GlobalPortfolioScreen() {
   const toggle = (market: Scope) =>
     setScopes((previous) => {
       const exists = previous.some((x) => scopeKey(x) === scopeKey(market));
-      if (exists) return previous.length === 1 ? previous : previous.filter((x) => scopeKey(x) !== scopeKey(market));
-      return previous.length >= 4 ? previous : [...previous, market];
+      if (exists) {
+        if (previous.length === 1) {
+          setSelectionNotice('At least one market must stay selected.');
+          return previous;
+        }
+        setSelectionNotice(`Removed ${market.country} · ${market.exchangeLabel}`);
+        return previous.filter((x) => scopeKey(x) !== scopeKey(market));
+      }
+      if (previous.length >= 4) {
+        const replaced = previous[previous.length - 1];
+        setSelectionNotice(`Max 4 markets: replaced ${replaced.country} · ${replaced.exchangeLabel} with ${market.country} · ${market.exchangeLabel}.`);
+        return [...previous.slice(0, -1), market];
+      }
+      setSelectionNotice(`Added ${market.country} · ${market.exchangeLabel}`);
+      return [...previous, market];
     });
 
   const toggleObjective = (objective: Objective) =>
@@ -387,13 +407,15 @@ export default function GlobalPortfolioScreen() {
                 const active = scopes.some((x) => scopeKey(x) === scopeKey(market));
                 return (
                   <Pressable key={scopeKey(market)} onPress={() => toggle(market)} style={[s.chip, { backgroundColor: active ? Brand.primary : colors.backgroundSelected }]}>
-                    <Text style={[s.chipCode, { color: active ? '#fff' : colors.text }]}>{market.country}</Text>
+                    <Text style={[s.chipCode, { color: active ? '#fff' : colors.text }]}>{active ? '✓ ' : ''}{market.country}</Text>
                     <Text numberOfLines={2} style={[s.chipName, { color: active ? '#fff' : colors.textSecondary }]}>{market.exchangeLabel}</Text>
                   </Pressable>
                 );
               })}
             </ScrollView>
             <Text style={[s.tiny, { color: colors.textSecondary }]}>Selected {scopes.length}/4: {scopes.map((x) => `${x.country} · ${x.exchangeLabel}`).join(' • ')}</Text>
+            <Text style={[s.tiny, { color: colors.textSecondary, marginTop: 6 }]}>Tap a selected card to remove it. If 4/4 are selected, tapping another market replaces the last selected one.</Text>
+            {selectionNotice ? <Text style={[s.tiny, { color: Brand.primary, marginTop: 6 }]}>{selectionNotice}</Text> : null}
           </View>
 
           <Text style={[s.section, { color: colors.text }]}>Investor profile</Text>
