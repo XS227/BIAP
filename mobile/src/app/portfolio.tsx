@@ -470,15 +470,15 @@ export default function GlobalPortfolioScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>
               {stats.map((market) => (
                 <View key={market.key} style={[s.marketCard, { backgroundColor: colors.backgroundElement }]}>
-                  <View style={s.between}><Text style={s.eyebrow}>{market.country}</Text><Text style={[s.mode, { color: modeColor(market.mode) }]}>{market.mode}</Text></View>
+                  <View style={s.between}><Text style={s.eyebrow}>{market.country}</Text><Text style={[s.mode, { color: modeColor(market.mode) }]}>{modeLabel(market.mode)}</Text></View>
                   <Text style={[s.marketName, { color: colors.text }]}>{market.label}</Text>
-                  <Text style={[s.marketLine, { color: colors.textSecondary }]}>Status {market.status}</Text>
+                  <Text style={[s.marketLine, { color: colors.textSecondary }]}>{statusLabel(market)}</Text>
                   {market.mode === 'CATALOG' ? <Text style={[s.marketLine, { color: Brand.warning }]}>Price/history pending — excluded from portfolio</Text> : <>
-                    <Text style={[s.marketLine, { color: market.coverage < 80 ? Brand.warning : colors.textSecondary }]}>Screening coverage {n(market.coverage, 1)}%{market.coverage < 80 ? ' • LIMITED' : ''}</Text>
-                    <Text style={[s.marketLine, { color: colors.textSecondary }]}>Qualified {market.qualified} • Deep {market.deep}</Text>
-                    <Text style={[s.marketLine, { color: colors.textSecondary }]}>Avg score {n(market.avgScore, 3)} • Conf. {pc(market.avgConfidence)}</Text>
-                    <Text style={[s.marketLine, { color: colors.textSecondary }]}>Evidence P/W/B {market.pass}/{market.warn}/{market.block}</Text>
-                    <Text style={[s.marketTop, { color: colors.text }]}>Top candidate: {market.top}</Text>
+                    <Text style={[s.marketLine, { color: market.coverage < 80 ? Brand.warning : colors.textSecondary }]}>Screened coverage {n(market.coverage, 1)}%{market.coverage < 80 ? ' • limited sample' : ''}</Text>
+                    <Text style={[s.marketLine, { color: colors.textSecondary }]}>Qualified ideas {market.qualified} • Deep analyses {market.deep}</Text>
+                    <Text style={[s.marketLine, { color: colors.textSecondary }]}>Average score {n(market.avgScore, 3)} • confidence {pc(market.avgConfidence)}</Text>
+                    <Text style={[s.marketLine, { color: colors.textSecondary }]}>Evidence {market.pass} pass • {market.warn} review • {market.block} blocked</Text>
+                    <Text style={[s.marketTop, { color: colors.text }]}>Highest-ranked in this scan: {market.top}</Text>
                   </>}
                 </View>
               ))}
