@@ -1,0 +1,91 @@
+name: BIAP Global apply mobile equity guard
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-apply-mobile-equity-guard.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+          fetch-depth: 0
+
+      - name: Patch mobile market and stock detail
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          market_path = Path('mobile/src/app/market.tsx')
+          market = market_path.read_text()
+          old = "import { setSelectedGlobalCompany } from '@/lib/global-company-selection';\n"
+          new = old + "import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';\n"
+          if new not in market:
+              if old not in market: raise SystemExit('market import anchor missing')
+              market = market.replace(old, new, 1)
+
+          old = "      setInstruments(result.instruments || []);\n"
+          new = "      setInstruments((result.instruments || []).filter(isSupportedGlobalEquityInstrument));\n"
+          if old in market:
+              market = market.replace(old, new, 1)
+          elif new not in market:
+              raise SystemExit('market initial result anchor missing')
+
+          old = "      setInstruments((current) => appendUnique(current, result.instruments || []));\n"
+          new = "      setInstruments((current) => appendUnique(current, (result.instruments || []).filter(isSupportedGlobalEquityInstrument)));\n"
+          if old in market:
+              market = market.replace(old, new, 1)
+          elif new not in market:
+              raise SystemExit('market pagination anchor missing')
+
+          old = "    const ticker = item.ticker || '';\n    if (!ticker) return;\n"
+          new = "    const ticker = item.ticker || '';\n    if (!ticker) return;\n    if (!isSupportedGlobalEquityInstrument(item)) {\n      setError(unsupportedGlobalInstrumentMessage(item));\n      return;\n    }\n"
+          if old in market:
+              market = market.replace(old, new, 1)
+          elif new not in market:
+              raise SystemExit('market openStock anchor missing')
+          market_path.write_text(market)
+
+          stock_path = Path('mobile/src/app/stock/[code].tsx')
+          stock = stock_path.read_text()
+          old = "import { getGlobalMarketSelection } from '@/lib/global-market-selection';\n"
+          new = old + "import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';\n"
+          if new not in stock:
+              if old not in stock: raise SystemExit('stock import anchor missing')
+              stock = stock.replace(old, new, 1)
+
+          old = "      const instrument: GlobalInstrument = {\n        country: String(params.country || selected.country).toUpperCase(),\n        exchange: String(params.exchange || selected.exchange),\n        currency: String(params.currency || selected.currency).toUpperCase(),\n        ticker,\n        name: String(params.name || ticker),\n        isin: params.isin ? String(params.isin) : null,\n        lei: params.lei ? String(params.lei) : null,\n      };\n      setAnalysis(await analyzeGlobalInstrument(instrument));\n"
+          new = "      const instrument: GlobalInstrument = {\n        country: String(params.country || selected.country).toUpperCase(),\n        exchange: String(params.exchange || selected.exchange),\n        currency: String(params.currency || selected.currency).toUpperCase(),\n        ticker,\n        name: String(params.name || ticker),\n        isin: params.isin ? String(params.isin) : null,\n        lei: params.lei ? String(params.lei) : null,\n      };\n      if (!isSupportedGlobalEquityInstrument(instrument)) {\n        setAnalysis(null);\n        setError(unsupportedGlobalInstrumentMessage(instrument));\n        return;\n      }\n      setAnalysis(await analyzeGlobalInstrument(instrument));\n"
+          if old in stock:
+              stock = stock.replace(old, new, 1)
+          elif new not in stock:
+              raise SystemExit('stock analysis anchor missing')
+          stock_path.write_text(stock)
+          PY
+
+      - name: Typecheck mobile
+        working-directory: mobile
+        run: |
+          npm ci
+          npx tsc --noEmit
+
+      - name: Commit guard
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'Guard already applied.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add mobile/src/app/market.tsx 'mobile/src/app/stock/[code].tsx'
+          git commit -m 'Filter structured products from mobile stock analysis'
+          git push origin HEAD:feat/biap-global
