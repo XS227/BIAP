@@ -254,6 +254,94 @@ jobs:
               }, sort_keys=True))
           PY
 
+      - name: Nordic completeness diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.parse, urllib.request
+
+          base = 'https://biap.dadashi.no/global-api/global'
+          cases = [
+              ('SE','NASDAQ_STOCKHOLM','VOLV.B'),
+              ('SE','NASDAQ_STOCKHOLM','ERIC.B'),
+              ('SE','NASDAQ_STOCKHOLM','ATCO.B'),
+              ('SE','NASDAQ_STOCKHOLM','INVE.B'),
+              ('SE','NASDAQ_STOCKHOLM','SEB.A'),
+              ('NO','EURONEXT_OSLO','AKSO'),
+              ('NO','EURONEXT_OSLO','EQNR'),
+              ('NO','EURONEXT_OSLO','DNB'),
+          ]
+
+          def norm(v):
+              return ''.join(ch for ch in str(v or '').upper() if ch.isalnum())
+
+          for country, exchange, ticker in cases:
+              q = urllib.parse.urlencode({'q': ticker, 'limit': 30})
+              with urllib.request.urlopen(f'{base}/instruments/{country}/{exchange}?{q}', timeout=45) as response:
+                  catalog = json.load(response)
+              rows = catalog.get('instruments') or []
+              exact = next((row for row in rows if norm(row.get('ticker')) == norm(ticker)), None)
+              if exact is None:
+                  print(json.dumps({'market':f'{country}/{exchange}','ticker':ticker,'catalog':'NOT_FOUND','returned':len(rows)}))
+                  continue
+
+              body = {
+                  'country': country,
+                  'exchange': exchange,
+                  'ticker': exact.get('ticker') or ticker,
+                  'name': exact.get('name') or ticker,
+                  'currency': exact.get('currency'),
+                  'isin': exact.get('isin'),
+                  'lei': exact.get('lei'),
+              }
+              request = urllib.request.Request(
+                  f'{base}/analyze',
+                  data=json.dumps(body).encode('utf-8'),
+                  headers={'Content-Type':'application/json','Accept':'application/json'},
+                  method='POST',
+              )
+              with urllib.request.urlopen(request, timeout=75) as response:
+                  payload = json.load(response)
+
+              company = payload.get('company') or {}
+              diag = payload.get('providerDiagnostics') or {}
+              fundamentals = {
+                  key: company.get(key) for key in (
+                      'revenue','revenue_yoy_pct','net_income','total_assets','total_liabilities',
+                      'total_equity','operating_cash_flow','free_cash_flow','total_debt','eps',
+                      'dividend_yield_pct'
+                  ) if company.get(key) is not None
+              }
+              market = {
+                  key: company.get(key) for key in (
+                      'price','price_52w_high','price_52w_low','return_1m_pct','return_3m_pct',
+                      'return_6m_pct','volatility_annualized_pct','max_drawdown_pct',
+                      'volume_today','avg_volume_30d'
+                  ) if company.get(key) is not None
+              }
+              print(json.dumps({
+                  'market': f'{country}/{exchange}',
+                  'tickerRequested': ticker,
+                  'tickerResolved': exact.get('ticker'),
+                  'name': exact.get('name'),
+                  'isin': exact.get('isin'),
+                  'lei': exact.get('lei'),
+                  'marketStatus': diag.get('marketStatus'),
+                  'marketProvider': diag.get('marketProvider'),
+                  'marketError': diag.get('marketError'),
+                  'fundamentalsStatus': diag.get('fundamentalsStatus'),
+                  'fundamentalsProvider': diag.get('fundamentalsProvider'),
+                  'fundamentalsError': diag.get('fundamentalsError'),
+                  'marketFields': sorted(market),
+                  'fundamentalFields': sorted(fundamentals),
+                  'evidence': (payload.get('evidence') or {}).get('status'),
+                  'coverage': (payload.get('evidence') or {}).get('coverage'),
+                  'call': payload.get('call'),
+                  'sourceProviders': sorted({str(s.get('provider')) for s in (company.get('sources') or [])}),
+              }, sort_keys=True))
+          PY
+
       - name: Live catalog filter smoke
         shell: bash
         run: |
