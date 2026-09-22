@@ -19,6 +19,14 @@ function pct(value: number | undefined) {
   return value == null || !Number.isFinite(value) ? '—' : `${Math.round(value * 100)}%`;
 }
 
+function signalChipLabel(agent: string, vote: number | null | undefined, confidence: number | null | undefined) {
+  const v = Number(vote || 0);
+  const conf = Number(confidence || 0);
+  if (conf <= 0.001) return `${agent} · NO DATA`;
+  if (Math.abs(v) <= 0.001) return `${agent} · NEUTRAL`;
+  return `${agent} ${v > 0 ? '+' : ''}${v.toFixed(2)}`;
+}
+
 export default function KiashaGlobalScreen() {
   const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
   const [selection, setSelection] = useState<GlobalMarketSelection | null>(null);
@@ -125,7 +133,7 @@ export default function KiashaGlobalScreen() {
             const signals = Array.isArray(pick.signals) ? pick.signals : [];
             return <Pressable key={`${pick.ticker}-${index}`} onPress={() => { void open(pick); }} style={[styles.pick, { backgroundColor: colors.backgroundElement }]}>
               <View style={styles.pickTop}><View style={[styles.rank, { backgroundColor: Brand.primary }]}><Text style={styles.rankText}>#{index + 1}</Text></View><View style={{ flex: 1 }}><Text style={[styles.ticker, { color: colors.text }]}>{pick.ticker}</Text><Text numberOfLines={1} style={[styles.name, { color: colors.textSecondary }]}>{pick.name}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.call, { color: c }]}>{pick.call}</Text><Text style={[styles.conf, { color: colors.textSecondary }]}>{pct(pick.confidence)} confidence</Text></View></View>
-              <View style={styles.agentRow}>{signals.map((signal) => <View key={signal.agent} style={[styles.agentChip, { borderColor: colors.backgroundSelected }]}><Text style={[styles.agentChipText, { color: signal.vote >= .25 ? Brand.positive : signal.vote <= -.25 ? Brand.negative : colors.textSecondary }]}>{signal.agent} {signal.vote >= 0 ? '+' : ''}{Number(signal.vote || 0).toFixed(2)}</Text></View>)}</View>
+              <View style={styles.agentRow}>{signals.map((signal) => <View key={signal.agent} style={[styles.agentChip, { borderColor: colors.backgroundSelected }]}><Text style={[styles.agentChipText, { color: signal.vote >= .25 ? Brand.positive : signal.vote <= -.25 ? Brand.negative : colors.textSecondary }]}>{signalChipLabel(signal.agent, signal.vote, signal.confidence)}</Text></View>)}</View>
               <Text style={[styles.pickMeta, { color: colors.textSecondary }]}>Score {pick.score == null ? '—' : pick.score.toFixed(3)} • Evidence {pick.evidence?.status || '—'} • tap for full analysis</Text>
             </Pressable>;
           }) : <>
