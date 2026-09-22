@@ -5,6 +5,7 @@ import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing 
 import { fetchGlobalInstruments, GlobalAnalysis, GlobalInstrument, scanGlobalMarket, scanGlobalTop10 } from '@/lib/global-api';
 import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-market-selection';
 import { setSelectedGlobalCompany } from '@/lib/global-company-selection';
+import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
 
 const PAGE_SIZE = 80;
 
@@ -85,7 +86,7 @@ export default function MarketScreen() {
         limit: searchText ? 150 : PAGE_SIZE,
         offset: 0,
       });
-      setInstruments(result.instruments || []);
+      setInstruments((result.instruments || []).filter(isSupportedGlobalEquityInstrument));
       setTotalMatched(result.totalMatched || 0);
       setHasMore(Boolean(result.hasMore));
       setNextOffset(result.nextOffset ?? null);
@@ -112,7 +113,7 @@ export default function MarketScreen() {
         limit: searchText ? 150 : PAGE_SIZE,
         offset: nextOffset,
       });
-      setInstruments((current) => appendUnique(current, result.instruments || []));
+      setInstruments((current) => appendUnique(current, (result.instruments || []).filter(isSupportedGlobalEquityInstrument)));
       setTotalMatched(result.totalMatched || totalMatched);
       setHasMore(Boolean(result.hasMore));
       setNextOffset(result.nextOffset ?? null);
@@ -191,6 +192,10 @@ export default function MarketScreen() {
     if (!selection) return;
     const ticker = item.ticker || '';
     if (!ticker) return;
+    if (!isSupportedGlobalEquityInstrument(item)) {
+      setError(unsupportedGlobalInstrumentMessage(item));
+      return;
+    }
     const instrument: GlobalInstrument = {
       country: item.country || selection.country,
       exchange: item.exchange || selection.exchange,

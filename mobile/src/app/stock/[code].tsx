@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { analyzeGlobalInstrument, GlobalAnalysis, GlobalAgentSignal, GlobalInstrument } from '@/lib/global-api';
 import { getGlobalMarketSelection } from '@/lib/global-market-selection';
+import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
 
 function n(value: number | null | undefined, digits = 2) {
   if (value == null || !Number.isFinite(Number(value))) return '—';
@@ -113,6 +114,11 @@ export default function GlobalStockDetailScreen() {
         isin: params.isin ? String(params.isin) : null,
         lei: params.lei ? String(params.lei) : null,
       };
+      if (!isSupportedGlobalEquityInstrument(instrument)) {
+        setAnalysis(null);
+        setError(unsupportedGlobalInstrumentMessage(instrument));
+        return;
+      }
       setAnalysis(await analyzeGlobalInstrument(instrument));
     } catch (err) {
       setAnalysis(null);
