@@ -4,6 +4,10 @@ name: Publish BIAP Global APK
 
 # Publishes the latest successful BIAP Global ARM64 build to the public web download path.
 on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/publish-biap-global-apk.yml'
   workflow_dispatch:
   workflow_run:
     workflows: ["BIAP Global APK"]
