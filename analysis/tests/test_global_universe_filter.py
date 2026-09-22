@@ -63,3 +63,17 @@ def test_leveraged_bull_certificate_is_not_an_equity():
         },
         symbol="BULL VOLV X2 H", currency="SEK",
     )
+
+
+def test_stockholm_minifuture_symbol_is_not_treated_as_company_equity():
+    spec = get_exchange("SE", "NASDAQ_STOCKHOLM")
+    assert not _ordinary_equity_row(
+        country="SE", spec=spec,
+        row={
+            "name": "MINI.S.DAX.AVA.919",
+            "type": "Common Stock",
+            "currency": "SEK",
+            "mic_code": "XSTO",
+        },
+        symbol="MINI.S.DAX.AVA.919", currency="SEK",
+    )
