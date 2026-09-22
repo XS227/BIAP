@@ -58,6 +58,19 @@ def _ordinary_equity_row(*, country: str, spec: ExchangeSpec, row: dict, symbol:
     if ".PR." in ticker or ticker.endswith(".PR") or ".RT." in ticker or ticker.endswith(".RT"):
         return False
 
+    # Nordic/European reference feeds can misclassify exchange-traded
+    # certificates/minifutures as Common Stock. Their symbols often encode
+    # the product family/issuer even when the name field is unhelpful.
+    structured_symbol_patterns = (
+        r"^MINI[ .]",
+        r"^(?:BULL|BEAR)[ .]",
+        r"^TURBO[ .]",
+        r"^WARRANT[ .]",
+        r"[.]AVA[.]",
+    )
+    if any(re.search(pattern, ticker) for pattern in structured_symbol_patterns):
+        return False
+
     if country.upper() == "GB" and ticker[0].isdigit():
         return False
 
