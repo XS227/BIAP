@@ -20,6 +20,9 @@ from .service import analyze_company
 from .source_cache import data_root, read_json, write_json_atomic
 
 
+_SCAN_CACHE_SCHEMA_VERSION = 2
+
+
 _BASE_GLOBAL_TOP_MARKETS: tuple[tuple[str, str], ...] = (
     ("US", "NASDAQ"),
     ("US", "NYSE"),
@@ -66,7 +69,7 @@ def _scan_cache_path(country: str, exchange: str) -> Path:
 
 def _write_scan_cache(country: str, exchange: str, payload: dict) -> None:
     wrapper = {
-        "schemaVersion": 1,
+        "schemaVersion": _SCAN_CACHE_SCHEMA_VERSION,
         "cachedAt": datetime.now(timezone.utc).isoformat(),
         "country": country.upper(),
         "exchange": exchange.upper(),
@@ -80,7 +83,7 @@ def _write_scan_cache(country: str, exchange: str, payload: dict) -> None:
 
 def _read_scan_cache(country: str, exchange: str, *, max_age_hours: float) -> Optional[dict]:
     wrapper = read_json(_scan_cache_path(country, exchange), default=None)
-    if not isinstance(wrapper, dict) or wrapper.get("schemaVersion") != 1:
+    if not isinstance(wrapper, dict) or wrapper.get("schemaVersion") != _SCAN_CACHE_SCHEMA_VERSION:
         return None
     payload = wrapper.get("payload")
     if not isinstance(payload, dict):
