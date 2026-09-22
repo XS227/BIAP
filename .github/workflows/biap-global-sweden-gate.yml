@@ -20,11 +20,12 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json, urllib.parse, urllib.request, urllib.error
+          import json, urllib.parse, urllib.request
           from pathlib import Path
 
           base = 'https://biap.dadashi.no/global-api/global'
           cases = ['VOLV.B','ERIC.B','ATCO.A','ATCO.B','INVE.B','SEB.A','SWED.A','HM.B','SAND','ASSA.B']
+          rejected_cases = ['MINI.S.DAX.AVA.919']
           metric_names = (
               'revenue','revenue_yoy_pct','net_income','total_assets','total_liabilities',
               'total_equity','operating_cash_flow','free_cash_flow','total_debt','eps',
@@ -51,13 +52,13 @@ jobs:
               'market': 'SE/NASDAQ_STOCKHOLM',
               'catalog': None,
               'cases': [],
+              'rejectedCases': [],
               'summary': {},
           }
 
           try:
               countries = get_json(f'{base}/countries', 30)
-              sweden = next((row for row in countries.get('countries', []) if row.get('country') == 'SE'), None)
-              report['catalog'] = sweden
+              report['catalog'] = next((row for row in countries.get('countries', []) if row.get('country') == 'SE'), None)
           except Exception as exc:
               report['catalogError'] = f'{type(exc).__name__}: {exc}'
 
@@ -114,7 +115,29 @@ jobs:
                   row['error'] = f'{type(exc).__name__}: {exc}'
               report['cases'].append(row)
 
+          for ticker in rejected_cases:
+              row = {'tickerRequested': ticker}
+              try:
+                  q = urllib.parse.urlencode({'q': ticker, 'limit': 30})
+                  catalog = get_json(f'{base}/instruments/SE/NASDAQ_STOCKHOLM?{q}', 45)
+                  candidates = catalog.get('instruments') or []
+                  exact = next((item for item in candidates if norm(item.get('ticker')) == norm(ticker)), None)
+                  row.update({
+                      'catalogReturned': len(candidates),
+                      'rejected': exact is None,
+                      'unexpectedMatch': exact,
+                      'sampleReturned': [
+                          {'ticker': item.get('ticker'), 'name': item.get('name')}
+                          for item in candidates[:10]
+                      ],
+                  })
+              except Exception as exc:
+                  row['rejected'] = False
+                  row['error'] = f'{type(exc).__name__}: {exc}'
+              report['rejectedCases'].append(row)
+
           rows = report['cases']
+          rejected = report['rejectedCases']
           report['summary'] = {
               'requested': len(rows),
               'catalogFound': sum(r.get('catalogStatus') == 'FOUND' for r in rows),
@@ -122,11 +145,28 @@ jobs:
               'priceOk': sum(isinstance(r.get('price'), (int, float)) and r.get('price', 0) > 0 for r in rows),
               'fundamentalsOk': sum(bool(r.get('fundamentalFields')) for r in rows),
               'evidencePassOrWarn': sum(r.get('evidenceStatus') in {'PASS','WARN'} for r in rows),
+              'structuredRejected': sum(r.get('rejected') is True for r in rejected),
+              'structuredRequested': len(rejected),
           }
           Path('sweden-production-report.json').write_text(json.dumps(report, indent=2, sort_keys=True), encoding='utf-8')
           print(json.dumps(report['summary'], sort_keys=True))
-          for row in rows:
+          for row in rows + rejected:
               print(json.dumps(row, sort_keys=True))
+
+          summary = report['summary']
+          failures = []
+          if summary['catalogFound'] != summary['requested']:
+              failures.append('catalog')
+          if summary['analysisOk'] != summary['requested']:
+              failures.append('analysis')
+          if summary['priceOk'] != summary['requested']:
+              failures.append('price')
+          if summary['fundamentalsOk'] != summary['requested']:
+              failures.append('fundamentals')
+          if summary['structuredRejected'] != summary['structuredRequested']:
+              failures.append('structured-product-filter')
+          if failures:
+              raise SystemExit('Sweden production gate failed: ' + ', '.join(failures))
           PY
 
       - name: Upload Sweden report
