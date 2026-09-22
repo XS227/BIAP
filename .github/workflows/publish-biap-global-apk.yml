@@ -1,12 +1,7 @@
-# Publish BIAP Global 0.3.11 selector fix: 2026-09-22
-# Publish BIAP Global 0.3.10 consistency build: 2026-09-22
-# Republish BIAP Global 0.3.9 after completed build: 2026-09-22
-# Auto-publish successful BIAP Global APK builds: 2026-09-22
-# Publish final RC APK: 2026-09-20
-# Republish BIAP Global 0.3.8 after successful universal build: 2026-09-22
+# Dynamic-version BIAP Global APK publisher: 2026-09-23
 name: Publish BIAP Global APK
 
-# Publishes the latest successful BIAP Global ARM64 build to the public web download path.
+# Publishes the latest successful BIAP Global universal/ARM64 build to the public web download path.
 on:
   push:
     branches: [feat/biap-global]
@@ -73,15 +68,14 @@ jobs:
                   if not artifact.get('expired') and (
                     artifact.get('name', '').startswith('biap-global-android-universal-')
                     or artifact.get('name', '').startswith('biap-global-android-arm64-')
-                ):
+                  ):
                       chosen = artifact
                       break
               if chosen:
                   break
           if not chosen:
-              raise SystemExit('No non-expired successful BIAP Global ARM64 APK artifact found')
+              raise SystemExit('No non-expired successful BIAP Global APK artifact found')
 
-          print(chosen['id'])
           with open('/tmp/biap-global-artifact-id', 'w', encoding='utf-8') as fh:
               fh.write(str(chosen['id']))
           PY
@@ -93,6 +87,7 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" \
             -o /tmp/biap-global-apk.zip
+          rm -rf /tmp/biap-global-apk
           mkdir -p /tmp/biap-global-apk
           unzip -q /tmp/biap-global-apk.zip -d /tmp/biap-global-apk
           APK="$(find /tmp/biap-global-apk -maxdepth 2 -type f \( -name 'BIAP-Global-*-universal.apk' -o -name 'BIAP-Global-*-arm64.apk' \) | head -n 1)"
@@ -148,6 +143,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          VERSIONED_NAME="$(cat /tmp/BIAP-Global-latest-arm64.name)"
+          test -n "$VERSIONED_NAME"
           curl --fail --silent --show-error --location --max-time 30 \
             --range 0-1023 https://biap.dadashi.no/global/download/BIAP-Global-latest.apk \
             -o /tmp/apk-head.bin
@@ -156,9 +153,9 @@ jobs:
             https://biap.dadashi.no/global/download/BIAP-Global-latest.apk.sha256)"
           printf '%s\n' "$HASH" | grep -Eiq '^[0-9a-f]{64}$'
           HEADERS="$(curl --fail --silent --show-error --head --max-time 15 \
-            https://biap.dadashi.no/global/download/BIAP-Global-0.3.11-universal.apk)"
+            "https://biap.dadashi.no/global/download/$VERSIONED_NAME")"
           printf '%s\n' "$HEADERS"
           printf '%s\n' "$HEADERS" | grep -Eiq '^content-type: application/vnd\.android\.package-archive'
-          printf '%s\n' "$HEADERS" | grep -Eiq '^content-disposition: attachment; filename=BIAP-Global-0\.3\.11-universal\.apk'
+          printf '%s\n' "$HEADERS" | grep -Fiq "content-disposition: attachment; filename=$VERSIONED_NAME"
           printf '%s\n' "$HEADERS" | grep -Eiq '^accept-ranges: bytes'
-          echo 'BIAP Global APK download is public, versioned, and Android attachment headers are valid.'
+          echo "BIAP Global APK download is public and verified: $VERSIONED_NAME"
