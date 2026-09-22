@@ -70,13 +70,23 @@ function Metric({ label, value, colors }: { label: string; value: string; colors
   return <View style={[styles.metric, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.metricValue, { color: colors.text }]}>{value}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{label}</Text></View>;
 }
 
+function signalDisplay(signal: GlobalAgentSignal) {
+  const confidence = Number(signal.confidence || 0);
+  const vote = Number(signal.vote || 0);
+  if (confidence <= 0.001) return 'NO DATA';
+  if (Math.abs(vote) <= 0.001) return 'NEUTRAL';
+  return `${vote > 0 ? '+' : ''}${n(vote, 3)}`;
+}
+
 function AgentCard({ signal, colors }: { signal: GlobalAgentSignal; colors: typeof Colors.light | typeof Colors.dark }) {
   const tone = signalColor(signal, colors.textSecondary);
   const name = signal.agent.charAt(0).toUpperCase() + signal.agent.slice(1);
+  const label = signalDisplay(signal);
+  const hasData = Number(signal.confidence || 0) > 0.001;
   return <View style={[styles.agentCard, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
-    <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>{name} Agent</Text><Text style={[styles.agentVote, { color: tone }]}>{signal.vote >= 0 ? '+' : ''}{n(signal.vote, 3)}</Text></View>
-    <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Confidence {Math.round((signal.confidence || 0) * 100)}%</Text>
-    <Text style={[styles.agentReason, { color: colors.textSecondary }]}>{signal.reasoning || 'No verified signal.'}</Text>
+    <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>{name} Agent</Text><Text style={[styles.agentVote, { color: tone }]}>{label}</Text></View>
+    <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>{hasData ? `Confidence ${Math.round((signal.confidence || 0) * 100)}% • verified inputs available` : 'No verified inputs available'}</Text>
+    <Text style={[styles.agentReason, { color: colors.textSecondary }]}>{signal.reasoning || (hasData ? 'Verified inputs produced a neutral signal.' : 'No verified signal data.')}</Text>
   </View>;
 }
 
