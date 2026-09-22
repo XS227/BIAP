@@ -333,6 +333,7 @@ jobs:
                   'fundamentalsStatus': diag.get('fundamentalsStatus'),
                   'fundamentalsProvider': diag.get('fundamentalsProvider'),
                   'fundamentalsError': diag.get('fundamentalsError'),
+                  'fundamentalsPrimaryError': (company.get('raw_provider_fields') or {}).get('fundamentals_primary_error'),
                   'marketFields': sorted(market),
                   'fundamentalFields': sorted(fundamentals),
                   'evidence': (payload.get('evidence') or {}).get('status'),
