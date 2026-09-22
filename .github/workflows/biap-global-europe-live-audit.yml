@@ -55,7 +55,6 @@ jobs:
                   items = catalog.get('instruments') or []
                   exact = next((x for x in items if norm(x.get('ticker')) == norm(ticker)), None)
                   if not exact:
-                      # Company-name fallback catches venue-specific ticker spellings.
                       q2 = urllib.parse.urlencode({'q':company_name,'limit':30})
                       catalog2 = get(f'{base}/instruments/{country}/{exchange}?{q2}')
                       items2 = catalog2.get('instruments') or []
@@ -90,7 +89,7 @@ jobs:
 
           summary = {
               'markets':len(report),
-              'catalogOk':sum(r.get('resolved') for r in report),
+              'catalogOk':sum(bool(r.get('resolved')) for r in report),
               'analysisOk':sum(r.get('status') == 'OK' for r in report),
               'priceOk':sum(isinstance(r.get('price'),(int,float)) and r.get('price',0)>0 for r in report),
               'fundamentalsOk':sum(bool(r.get('fundamentalFields')) for r in report),
