@@ -1,5 +1,6 @@
 # Auto-publish successful BIAP Global APK builds: 2026-09-22
 # Publish final RC APK: 2026-09-20
+# Republish BIAP Global 0.3.8 after successful universal build: 2026-09-22
 name: Publish BIAP Global APK
 
 # Publishes the latest successful BIAP Global ARM64 build to the public web download path.
