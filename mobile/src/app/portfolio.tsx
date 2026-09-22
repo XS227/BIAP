@@ -489,12 +489,22 @@ export default function GlobalPortfolioScreen() {
             <View style={[s.card, { backgroundColor: colors.backgroundElement, marginTop: 18 }]}>
               <View style={s.between}>
                 <View><Text style={[s.label, { color: colors.textSecondary }]}>PROPOSAL STATUS</Text><Text style={[s.status, { color: proposal.status === 'NO_RECOMMENDATION' ? Brand.warning : Brand.positive }]}>{proposal.status ? String(proposal.status).toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()) : '—'}</Text></View>
-                <View style={{ alignItems: 'flex-end' }}><Text style={[s.label, { color: colors.textSecondary }]}>QUALIFIED INPUTS</Text><Text style={[s.big, { color: colors.text }]}>{candidateCount}</Text></View>
+                <View style={{ alignItems: 'flex-end' }}><Text style={[s.label, { color: colors.textSecondary }]}>PORTFOLIO INPUTS</Text><Text style={[s.big, { color: colors.text }]}>{candidateCount}</Text></View>
               </View>
               <Text style={[s.body, { color: colors.textSecondary }]}>Invested {n(proposal.invested_pct, 1)}% • Cash {n(proposal.cash_pct, 1)}% • Positions {allocations.length}</Text>
             </View>
 
+            {proposal.status === 'NO_RECOMMENDATION' ? <View style={[s.card, { backgroundColor: colors.backgroundElement, marginTop: 10, borderWidth: 1, borderColor: Brand.warning }]}>
+              <Text style={[s.cardTitle, { color: colors.text }]}>Why no portfolio was created</Text>
+              <Text style={[s.body, { color: colors.textSecondary }]}>{noRecommendationReason}</Text>
+              <Text style={[s.body, { color: colors.textSecondary, marginTop: 6 }]}>Try selecting 2–4 markets for broader comparison, or refresh later when verified coverage is larger. BIAP will not force an allocation just to fill the table.</Text>
+            </View> : null}
+
             <Text style={[s.section, { color: colors.text }]}>Proposed allocations</Text>
+            {!allocations.length ? <View style={[s.card, { backgroundColor: colors.backgroundElement }]}>
+              <Text style={[s.cardTitle, { color: colors.text }]}>No allocation rows</Text>
+              <Text style={[s.body, { color: colors.textSecondary }]}>There are no evidence-qualified positions under the current market coverage and investor constraints. This is a valid result, not an empty-screen error.</Text>
+            </View> : null}
             {allocations.map((allocation, index) => {
               const analysis = analysisMap.get(`${allocation.country || ''}:${allocation.exchange || ''}:${allocation.ticker || ''}`);
               const factors = factorText(analysis);
