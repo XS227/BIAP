@@ -195,6 +195,22 @@ jobs:
             sleep 2
           done
           curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8091/health >/dev/null
+
+          # Regression guard: structured certificates/minifutures mislabelled as
+          # Common Stock by reference vendors must not appear in the equity universe.
+          curl --fail --silent --show-error --max-time 20 \
+            'http://127.0.0.1:8091/global/instruments/SE/NASDAQ_STOCKHOLM?q=MINI.S.DAX.AVA.919&limit=20&offset=0' \
+            > /tmp/biap-se-structured.json
+          python3 - <<'PY'
+          import json
+          payload = json.load(open('/tmp/biap-se-structured.json', encoding='utf-8'))
+          rows = payload.get('instruments') or []
+          bad = [r for r in rows if str(r.get('ticker') or '').upper().startswith('MINI.')]
+          if bad:
+              raise SystemExit(f"structured product leaked into Stockholm equity universe: {bad[:2]}")
+          print("Stockholm structured-product filter OK")
+          PY
+
           bash deploy/configure-global-route.sh
           $SUDO systemctl list-timers --all biap-global-source-sync.timer --no-pager || true
           echo "Global checkout: $(git rev-parse --short HEAD)"
