@@ -180,6 +180,13 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         debt_total = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligations", "LongTermDebt"))
         interest = self._latest(gaap, ("InterestExpenseNonOperating", "InterestExpenseDebt"))
         eps = self._latest(gaap, ("EarningsPerShareDiluted", "EarningsPerShareBasic"))
+        dividend_per_share = self._latest(
+            gaap,
+            (
+                "CommonStockDividendsPerShareDeclared",
+                "CommonStockDividendsPerShareCashPaid",
+            ),
+        )
         # Only use a US-GAAP shares-count concept here. Do not substitute equity
         # or paid-in-capital dollar concepts, which would silently corrupt market cap.
         shares = self._latest(gaap, ("CommonStockSharesOutstanding",))
@@ -223,6 +230,7 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             total_debt=total_debt,
             interest_expense=self._value(interest),
             eps=self._value(eps),
+            dividend_per_share=self._value(dividend_per_share),
             shares_outstanding=company.shares_outstanding or self._value(shares),
             filing_period_end=period_end,
             filing_observed_at=filed_at,
