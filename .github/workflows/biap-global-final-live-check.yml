@@ -1,4 +1,4 @@
-# AAPL decision-table regression trigger: 2026-09-22
+# AAPL dividend and peer-comparison regression: 2026-09-22
 name: BIAP Global final decision-support live check
 
 on:
@@ -48,7 +48,15 @@ jobs:
               'isin': aapl.get('isin'), 'lei': aapl.get('lei'),
           }
 
-          analysis = post('/analyze', instrument, 90)
+          # Refresh a bounded NASDAQ scan first so the peer P/E benchmark uses
+          # a recent persisted comparison set rather than a hard-coded multiple.
+          us_scan = post('/scan', {
+              'country': 'US', 'exchange': 'NASDAQ', 'topN': 3,
+              'discoveryLimit': 250, 'deepLimit': 25,
+          }, 240)
+          assert isinstance(us_scan.get('deepResults'), list)
+
+          analysis = post('/analyze', instrument, 120)
           decision = analysis.get('decisionTable') or {}
           metrics = decision.get('metrics') or {}
           company = analysis.get('company') or {}
@@ -61,6 +69,12 @@ jobs:
           assert company.get('revenue') is not None
           assert company.get('net_income') is not None
           assert company.get('total_assets') is not None
+          assert company.get('dividend_per_share') is not None, company
+          assert metrics.get('dividendYieldPct') is not None and metrics.get('dividendYieldPct') > 0, metrics
+          assert metrics.get('sectorPe') is not None and metrics.get('sectorPe') > 0, metrics
+          assert metrics.get('peVsSectorPct') is not None, metrics
+          comparison = next((row for row in analysis.get('signals', []) if row.get('agent') == 'comparison'), {})
+          assert comparison.get('confidence', 0) >= 0.6, comparison
           assert (decision.get('kiasha') or {}).get('call') == analysis.get('call')
           assert analysis.get('evidence', {}).get('status') in {'PASS', 'WARN', 'BLOCK'}
           print(json.dumps({
@@ -74,6 +88,10 @@ jobs:
                   'position52wPct': metrics.get('position52wPct'),
                   'revenue': company.get('revenue'),
                   'netIncome': company.get('net_income'),
+                  'dividendPerShare': company.get('dividend_per_share'),
+                  'dividendYieldPct': metrics.get('dividendYieldPct'),
+                  'peerPe': metrics.get('sectorPe'),
+                  'peVsPeerPct': metrics.get('peVsSectorPct'),
               }
           }, sort_keys=True))
 
