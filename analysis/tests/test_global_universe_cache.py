@@ -73,3 +73,34 @@ def test_failed_empty_refresh_never_overwrites_good_snapshot(tmp_path: Path):
     empty_provider = PersistentUniverseProvider(EmptyUniverse(), data_dir=str(tmp_path), fresh_hours=0)
     rows = list(empty_provider.list_instruments(country="GB", exchange="LSE"))
     assert rows[0].ticker == "TEST"
+
+
+def test_cached_structured_product_is_filtered_from_stock_universe(tmp_path: Path):
+    class SwedishUniverse(InstrumentUniverseProvider):
+        provider_id = "fake-se-universe"
+
+        def list_instruments(self, *, country=None, exchange=None):
+            return [
+                GlobalCompany(
+                    country="SE",
+                    exchange="NASDAQ_STOCKHOLM",
+                    currency="SEK",
+                    ticker="ERIC.B",
+                    name="Ericsson B",
+                    mic_code="XSTO",
+                    instrument_type="Common Stock",
+                ),
+                GlobalCompany(
+                    country="SE",
+                    exchange="NASDAQ_STOCKHOLM",
+                    currency="SEK",
+                    ticker="MINI.S.DAX.AVA.919",
+                    name="MINI.S.DAX.AVA.919",
+                    mic_code="XSTO",
+                    instrument_type="Common Stock",
+                ),
+            ]
+
+    provider = PersistentUniverseProvider(SwedishUniverse(), data_dir=str(tmp_path), fresh_hours=12)
+    rows = list(provider.refresh(country="SE", exchange="NASDAQ_STOCKHOLM"))
+    assert [row.ticker for row in rows] == ["ERIC.B"]
