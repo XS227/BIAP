@@ -170,3 +170,19 @@ def test_apostrophe_query_variant_can_resolve_loreal(monkeypatch):
     match = resolver.resolve_exact_legal_name("L'Oréal S.A.", country="FR")
     assert match.lei == "529900JI1GG6F7RKVI53"
     assert "L'OREAL" in queries
+
+
+def test_esef_uses_verified_hm_catalog_alias(monkeypatch):
+    provider = CountryAwareESEFFundamentalsProvider()
+    seen = []
+
+    def fake_resolve(name, country=None):
+        seen.append((name, country))
+        assert name == "H & M Hennes & Mauritz AB"
+        return _row("529900O5RR7R39FRDM42", "H & M Hennes & Mauritz AB", "SE")
+
+    monkeypatch.setattr(provider.gleif, "resolve_exact_legal_name", fake_resolve)
+    lei, legal_name = provider._resolve_lei(_company("SE", "Hennes & Mauritz AB", "HM.B"))
+    assert lei == "529900O5RR7R39FRDM42"
+    assert legal_name == "H & M Hennes & Mauritz AB"
+    assert seen == [("H & M Hennes & Mauritz AB", "SE")]
