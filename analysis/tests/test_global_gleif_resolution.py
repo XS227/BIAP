@@ -54,6 +54,21 @@ def test_german_ag_abbreviation_resolves_to_spelled_out_legal_name(monkeypatch):
 def test_legal_core_handles_swedish_prefix_form():
     assert _legal_core("Volvo AB") == "VOLVO"
     assert _legal_core("Aktiebolaget Volvo") == "VOLVO"
+    assert _legal_core("Atlas Copco Aktiebolag") == "ATLASCOPCO"
+    assert _legal_core("Investor AB (publ)") == "INVESTOR"
+    assert _legal_core("Atlas Copco AB ser. B") == "ATLASCOPCO"
+
+
+def test_swedish_abbreviation_resolves_to_aktiebolag_legal_name(monkeypatch):
+    resolver = GLEIFResolver()
+    rows = [
+        _row("213800T8PC8Q4FYJZR07", "ATLAS COPCO AKTIEBOLAG", "SE"),
+        _row("54930088FQENVUEVRG70", "ATLAS COPCO LIMITED", "GB"),
+    ]
+    monkeypatch.setattr(resolver, "_search", lambda *args, **kwargs: rows)
+
+    match = resolver.resolve_exact_legal_name("Atlas Copco AB", country="SE")
+    assert match.lei == "213800T8PC8Q4FYJZR07"
 
 
 def test_exact_duplicate_is_safely_narrowed_by_legal_jurisdiction(monkeypatch):
