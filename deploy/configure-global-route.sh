@@ -38,7 +38,7 @@ if marker not in text:
           <div class="eyebrow">FULL ANDROID EXPERIENCE</div>
           <h2 style="margin:7px 0 7px;font-size:22px">Get the full BIAP Global app</h2>
           <p style="margin:0;color:#9aa7bb;font-size:12px;line-height:1.65;max-width:760px">The web version is intentionally lightweight. The Android app includes the broader BIAP experience with Home, Market, full Stock Analysis, Kiasha AI Agents, Portfolio Agent and the extended module layer.</p>
-          <div style="margin-top:9px;color:#8291aa;font-size:10px">BIAP Global 0.3.9 · Android Universal · about 101 MB</div>
+          <div style="margin-top:9px;color:#8291aa;font-size:10px">BIAP Global 0.3.10 · Android Universal · about 101 MB</div>
         </div>
         <div style="display:flex;gap:9px;flex-wrap:wrap">
           <a href="/global/download/BIAP-Global-latest.apk" download style="display:inline-flex;align-items:center;justify-content:center;border-radius:12px;padding:12px 17px;background:linear-gradient(135deg,#3d7cff,#2754d9);color:#fff;font-weight:900;font-size:12px;text-decoration:none">Download Android APK</a>
@@ -52,8 +52,8 @@ if marker not in text:
     path.write_text(text, encoding="utf-8")
 else:
     text = text.replace("/global/download/BIAP-Global-latest-arm64.apk", "/global/download/BIAP-Global-latest.apk")
-    text = text.replace("BIAP Global 0.3.5 · Android ARM64 · about 45 MB", "BIAP Global 0.3.9 · Android Universal · about 101 MB")
-    text = text.replace("BIAP Global 0.3.6 · Android Universal · about 101 MB", "BIAP Global 0.3.9 · Android Universal · about 101 MB")
+    text = text.replace("BIAP Global 0.3.5 · Android ARM64 · about 45 MB", "BIAP Global 0.3.10 · Android Universal · about 101 MB")
+    text = text.replace("BIAP Global 0.3.6 · Android Universal · about 101 MB", "BIAP Global 0.3.10 · Android Universal · about 101 MB")
     path.write_text(text, encoding="utf-8")
 PY
 else
@@ -96,7 +96,7 @@ server {
         alias ${WEB_ROOT}/download/;
         types { application/vnd.android.package-archive apk; }
         default_type application/octet-stream;
-        add_header Content-Disposition "attachment; filename=BIAP-Global-0.3.9-universal.apk" always;
+        add_header Content-Disposition "attachment; filename=BIAP-Global-0.3.10-universal.apk" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header Accept-Ranges "bytes" always;
         add_header Cache-Control "no-store" always;
@@ -203,7 +203,7 @@ server {
         alias ${WEB_ROOT}/download/;
         types { application/vnd.android.package-archive apk; }
         default_type application/octet-stream;
-        add_header Content-Disposition "attachment; filename=BIAP-Global-0.3.9-universal.apk" always;
+        add_header Content-Disposition "attachment; filename=BIAP-Global-0.3.10-universal.apk" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header Accept-Ranges "bytes" always;
         add_header Cache-Control "no-store" always;
@@ -284,7 +284,7 @@ else:
         alias {web_root}/download/;
         types {{ application/vnd.android.package-archive apk; }}
         default_type application/octet-stream;
-        add_header Content-Disposition "attachment; filename=BIAP-Global-0.3.9-universal.apk" always;
+        add_header Content-Disposition "attachment; filename=BIAP-Global-0.3.10-universal.apk" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header Accept-Ranges "bytes" always;
         add_header Cache-Control "no-store" always;
