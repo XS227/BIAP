@@ -206,7 +206,23 @@ class GlobalMarketScanner:
             key=lambda result: float(result.get("score") or 0.0) * float(result.get("confidence") or 0.0),
             reverse=True,
         )
-        return buys[:top_n]
+        unique: list[dict] = []
+        seen: set[tuple[str, str, str]] = set()
+        for result in buys:
+            company = result.get("company") if isinstance(result.get("company"), dict) else {}
+            key = (
+                str(result.get("country") or company.get("country") or "").strip().upper(),
+                str(result.get("exchange") or company.get("exchange") or "").strip().upper(),
+                str(result.get("ticker") or company.get("ticker") or "").strip().upper(),
+            )
+            if key[2] and key in seen:
+                continue
+            if key[2]:
+                seen.add(key)
+            unique.append(result)
+            if len(unique) >= top_n:
+                break
+        return unique
 
     def scan(
         self,
