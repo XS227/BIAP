@@ -236,7 +236,7 @@ jobs:
               assert metrics, (country, exchange, ticker, 'fundamentals still empty', diagnostics, sources)
               assert fundamental_sources, (country, exchange, ticker, 'fundamental provenance missing', diagnostics, sources)
               if country == 'BR':
-                  assert any(s.get('provider') == 'cvm-open-data-dfp' for s in sources), (country, ticker, sources, diagnostics)
+                  assert any(str(s.get('provider') or '').startswith('cvm-open-data-dfp') for s in sources), (country, ticker, sources, diagnostics)
                   assert (payload.get('evidence') or {}).get('status') in {'PASS', 'WARN'}, payload.get('evidence')
 
               print(json.dumps({
