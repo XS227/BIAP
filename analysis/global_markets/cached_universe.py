@@ -19,11 +19,10 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
 
-# Version 5 invalidates snapshots created while the catalog pager treated the
-# provider's page-local `count` as a universe total. Those snapshots could stop
-# after the first alphabetical page (commonly A/B). A fresh snapshot is required
-# so browsing and server-side search cover all retrievable provider pages.
-CACHE_SCHEMA_VERSION = 5
+# Version 6 also invalidates snapshots that could contain structured products
+# misclassified by upstream reference catalogs as Common Stock. Fresh snapshots
+# contain only supported ordinary operating-company equities.
+CACHE_SCHEMA_VERSION = 6
 
 
 def _utc_now() -> datetime:
