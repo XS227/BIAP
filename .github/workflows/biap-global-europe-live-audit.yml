@@ -1,0 +1,110 @@
+name: BIAP Global Europe live audit
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-europe-live-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Probe representative equities across European markets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.parse, urllib.request
+          from pathlib import Path
+
+          base = 'https://biap.dadashi.no/global-api/global'
+          cases = [
+              ('SE','NASDAQ_STOCKHOLM','HM.B','Hennes & Mauritz'),
+              ('NO','EURONEXT_OSLO','EQNR','Equinor'),
+              ('DK','NASDAQ_COPENHAGEN','NOVO.B','Novo Nordisk'),
+              ('FI','NASDAQ_HELSINKI','NOKIA','Nokia'),
+              ('NL','EURONEXT_AMSTERDAM','ASML','ASML'),
+              ('FR','EURONEXT_PARIS','MC','LVMH'),
+              ('DE','XETRA','SAP','SAP'),
+              ('GB','LSE','SHEL','Shell'),
+              ('IT','EURONEXT_MILAN','ENI','Eni'),
+              ('ES','BME_MADRID','SAN','Santander'),
+              ('CH','SIX','NESN','Nestle'),
+          ]
+          metrics = ('revenue','net_income','total_assets','total_equity','operating_cash_flow','eps')
+
+          def norm(v): return ''.join(ch for ch in str(v or '').upper() if ch.isalnum())
+          def get(url, timeout=45):
+              with urllib.request.urlopen(url, timeout=timeout) as r: return json.load(r)
+          def post(url, body, timeout=75):
+              req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={'Content-Type':'application/json','Accept':'application/json'}, method='POST')
+              with urllib.request.urlopen(req, timeout=timeout) as r: return json.load(r)
+
+          report = []
+          for country, exchange, ticker, company_name in cases:
+              row = {'country':country,'exchange':exchange,'requested':ticker,'company':company_name}
+              try:
+                  q = urllib.parse.urlencode({'q':ticker,'limit':30})
+                  catalog = get(f'{base}/instruments/{country}/{exchange}?{q}')
+                  items = catalog.get('instruments') or []
+                  exact = next((x for x in items if norm(x.get('ticker')) == norm(ticker)), None)
+                  if not exact:
+                      # Company-name fallback catches venue-specific ticker spellings.
+                      q2 = urllib.parse.urlencode({'q':company_name,'limit':30})
+                      catalog2 = get(f'{base}/instruments/{country}/{exchange}?{q2}')
+                      items2 = catalog2.get('instruments') or []
+                      exact = next((x for x in items2 if company_name.lower() in str(x.get('name') or '').lower()), None)
+                      items += items2
+                  row['catalogCount'] = len(items)
+                  if not exact:
+                      row['status'] = 'CATALOG_MISS'
+                      report.append(row); continue
+                  row.update({'resolved':exact.get('ticker'),'name':exact.get('name'),'currency':exact.get('currency'),'isin':exact.get('isin'),'lei':exact.get('lei')})
+                  payload = post(f'{base}/analyze', {
+                      'country':country,'exchange':exchange,'ticker':exact.get('ticker') or ticker,
+                      'name':exact.get('name') or company_name,'currency':exact.get('currency') or '',
+                      'isin':exact.get('isin'),'lei':exact.get('lei'),
+                  })
+                  company = payload.get('company') or {}
+                  diag = payload.get('providerDiagnostics') or {}
+                  fields = [m for m in metrics if company.get(m) is not None]
+                  row.update({
+                      'status':'OK',
+                      'price':company.get('price'),
+                      'marketStatus':diag.get('marketStatus'),
+                      'fundamentalsStatus':diag.get('fundamentalsStatus'),
+                      'fundamentalFields':fields,
+                      'evidenceStatus':(payload.get('evidence') or {}).get('status'),
+                      'coverage':(payload.get('evidence') or {}).get('coverage'),
+                      'call':payload.get('call'),
+                  })
+              except Exception as exc:
+                  row.update({'status':'ERROR','error':f'{type(exc).__name__}: {exc}'})
+              report.append(row)
+
+          summary = {
+              'markets':len(report),
+              'catalogOk':sum(r.get('resolved') for r in report),
+              'analysisOk':sum(r.get('status') == 'OK' for r in report),
+              'priceOk':sum(isinstance(r.get('price'),(int,float)) and r.get('price',0)>0 for r in report),
+              'fundamentalsOk':sum(bool(r.get('fundamentalFields')) for r in report),
+              'evidencePassOrWarn':sum(r.get('evidenceStatus') in {'PASS','WARN'} for r in report),
+          }
+          out = {'summary':summary,'markets':report}
+          Path('europe-live-audit.json').write_text(json.dumps(out, indent=2, sort_keys=True))
+          print(json.dumps(summary, sort_keys=True))
+          for row in report: print(json.dumps(row, sort_keys=True))
+          PY
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: europe-live-audit
+          path: europe-live-audit.json
+          if-no-files-found: error
