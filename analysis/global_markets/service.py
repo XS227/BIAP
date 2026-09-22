@@ -9,7 +9,9 @@ refuses to force a directional call when verification/confidence is insufficient
 from __future__ import annotations
 
 from dataclasses import asdict, replace
+from datetime import datetime, timezone
 import os
+from statistics import median
 from typing import Iterable, Optional
 
 from .advanced_agents import run_advanced_agents
@@ -21,6 +23,7 @@ from .fx import TwelveDataFXProvider
 from .models import GlobalCompany, InvestorProfile, SourceEvidence
 from .providers import ProviderDiagnostics, ProviderRegistry
 from .runtime import build_registry
+from .source_cache import data_root, read_json
 from .source_catalog import SOURCE_PLANS
 from .universe import _ordinary_equity_row
 
@@ -88,6 +91,63 @@ def _supported_operating_equity(company: GlobalCompany) -> bool:
     )
 
 
+def _peer_pe_benchmark(company: GlobalCompany) -> tuple[Optional[float], Optional[str], int]:
+    """Return a recent derived peer P/E benchmark from the persisted market scan.
+
+    This is deliberately a comparison metric, never official filing evidence.
+    Same-sector peers are preferred when at least three valid peers exist;
+    otherwise a broader same-exchange median requires at least five peers.
+    """
+    country = "".join(ch for ch in company.country.upper() if ch.isalnum() or ch in {"-", "_"})
+    exchange = "".join(ch for ch in company.exchange.upper() if ch.isalnum() or ch in {"-", "_"})
+    wrapper = read_json(data_root() / "scan-cache" / country / f"{exchange}.json", default=None)
+    if not isinstance(wrapper, dict) or wrapper.get("schemaVersion") != 1:
+        return None, None, 0
+
+    try:
+        cached_at = datetime.fromisoformat(str(wrapper.get("cachedAt") or "").replace("Z", "+00:00"))
+        if cached_at.tzinfo is None:
+            cached_at = cached_at.replace(tzinfo=timezone.utc)
+        age_hours = (datetime.now(timezone.utc) - cached_at.astimezone(timezone.utc)).total_seconds() / 3600.0
+    except ValueError:
+        return None, None, 0
+    if age_hours < 0 or age_hours > 24:
+        return None, None, 0
+
+    payload = wrapper.get("payload")
+    rows = payload.get("deepResults") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return None, None, 0
+
+    same_sector: list[float] = []
+    same_market: list[float] = []
+    target_sector = (company.sector or "").strip().casefold()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        peer = row.get("company")
+        if not isinstance(peer, dict):
+            continue
+        if str(peer.get("ticker") or "").strip().upper() == company.ticker.strip().upper():
+            continue
+        try:
+            pe = float(peer.get("pe"))
+        except (TypeError, ValueError):
+            continue
+        if not (0 < pe < 500):
+            continue
+        same_market.append(pe)
+        peer_sector = str(peer.get("sector") or "").strip().casefold()
+        if target_sector and peer_sector and peer_sector == target_sector:
+            same_sector.append(pe)
+
+    if len(same_sector) >= 3:
+        return float(median(same_sector)), "same_sector_scan_median", len(same_sector)
+    if len(same_market) >= 5:
+        return float(median(same_market)), "same_exchange_scan_median", len(same_market)
+    return None, None, 0
+
+
 def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
     """Fill mathematically derivable valuation fields without inventing inputs.
 
@@ -100,6 +160,8 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
     pe = company.pe
     pb = company.pb
     ev_ebitda = company.ev_ebitda
+    dividend_yield_pct = company.dividend_yield_pct
+    sector_pe = company.sector_pe
 
     same_currency = (
         not company.reporting_currency
@@ -120,6 +182,24 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
     if same_currency and price not in (None, 0) and company.eps not in (None, 0) and float(company.eps) > 0 and pe is None:
         pe = float(price) / float(company.eps)
         derived.append("pe=price/eps")
+
+    if (
+        same_currency
+        and dividend_yield_pct is None
+        and price not in (None, 0)
+        and company.dividend_per_share is not None
+        and float(company.dividend_per_share) >= 0
+    ):
+        dividend_yield_pct = float(company.dividend_per_share) / float(price) * 100.0
+        derived.append("dividend_yield_pct=annual_dividend_per_share/price")
+
+    peer_scope = None
+    peer_count = 0
+    if sector_pe is None:
+        peer_pe, peer_scope, peer_count = _peer_pe_benchmark(company)
+        if peer_pe is not None:
+            sector_pe = peer_pe
+            derived.append(f"sector_pe={peer_scope}")
 
     if same_currency and price not in (None, 0) and book_value_per_share not in (None, 0) and float(book_value_per_share) > 0 and pb is None:
         pb = float(price) / float(book_value_per_share)
@@ -149,11 +229,14 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
         market_cap=market_cap,
         book_value_per_share=book_value_per_share,
         pe=pe,
+        sector_pe=sector_pe,
         pb=pb,
         ev_ebitda=ev_ebitda,
+        dividend_yield_pct=dividend_yield_pct,
         raw_provider_fields={
             **company.raw_provider_fields,
             "derived_metrics": derived,
+            **({"peer_pe_benchmark_scope": peer_scope, "peer_pe_benchmark_count": peer_count} if peer_scope else {}),
         },
         sources=[
             *company.sources,
