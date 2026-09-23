@@ -22,6 +22,7 @@ from .country_packs import COUNTRY_PACKS
 from .cvm_itr import CVMITRCorroborator
 from .cvm_resolver import CVMResolvedFundamentalsProvider
 from .edinet import EDINETFundamentalsProvider
+from .esma_firds_universe import ESMAFIRDSOpenFIGIUniverseProvider
 from .fallback_fundamentals import FallbackFundamentalsProvider
 from .german_issuer import GermanIssuerFundamentalsProvider
 from .hkex_issuer import HKEXIssuerFundamentalsProvider
@@ -74,6 +75,17 @@ def build_registry() -> ProviderRegistry:
 
     asx_universe = PersistentUniverseProvider(ASXUniverseProvider())
     registry.register_universe("AU", "ASX", asx_universe)
+
+    # France and Italy: ESMA FIRDS is the authoritative regulated/native common-
+    # share membership source. OpenFIGI is used only to resolve the local ticker.
+    # Cache for one FIRDS full-file cycle so an app request never has to resolve
+    # hundreds of ISINs synchronously under the unauthenticated OpenFIGI limit.
+    firds_eu = PersistentUniverseProvider(
+        ESMAFIRDSOpenFIGIUniverseProvider(),
+        fresh_hours=168,
+    )
+    registry.register_universe("FR", "EURONEXT_PARIS", firds_eu)
+    registry.register_universe("IT", "EURONEXT_MILAN", firds_eu)
 
     # Licensed Twelve Data remains the preferred market source. Without a
     # licensed credential, BIAP uses a lower-trust public EOD fallback only on

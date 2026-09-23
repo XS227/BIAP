@@ -19,10 +19,10 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
 
-# Version 8 invalidates pre-strict-MIC snapshots. Earlier caches could contain
-# instruments whose exchange membership was inferred from a broad country/text
-# query instead of being proven by an accepted venue MIC.
-CACHE_SCHEMA_VERSION = 9
+# Version 10 invalidates pre-FIRDS France/Italy snapshots. Those older caches
+# could be MIC-correct yet still include secondary/cross-listed lines. Current
+# official-market caches preserve authoritative membership and resolver coverage.
+CACHE_SCHEMA_VERSION = 10
 
 
 def _utc_now() -> datetime:

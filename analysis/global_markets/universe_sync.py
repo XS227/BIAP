@@ -90,6 +90,18 @@ def main() -> int:
     for country, exchange in _targets():
         try:
             provider = registry.universe(country, exchange)
+            upstream = getattr(provider, "upstream", provider)
+            upstream_id = str(getattr(upstream, "provider_id", ""))
+            if upstream_id == "official-esma-firds-universe" and hasattr(provider, "snapshot_info"):
+                existing = provider.snapshot_info(country=country, exchange=exchange)
+                if isinstance(existing, dict) and existing.get("available") and existing.get("fresh"):
+                    print(
+                        f"UNIVERSE_SYNC skip-fresh {country}:{exchange} "
+                        f"official={existing.get('officialCount')} resolved={existing.get('resolvedCount')} "
+                        f"coverage={existing.get('resolutionCoveragePct')}%"
+                    )
+                    ok += 1
+                    continue
             if hasattr(provider, "refresh"):
                 rows = provider.refresh(country=country, exchange=exchange)
             else:
@@ -99,6 +111,9 @@ def main() -> int:
             info = provider.snapshot_info(country=country, exchange=exchange) if hasattr(provider, "snapshot_info") else {}
             print(
                 f"UNIVERSE_SYNC ok {country}:{exchange} count={len(rows)} "
+                f"official={info.get('officialCount') if isinstance(info, dict) else None} "
+                f"resolved={info.get('resolvedCount') if isinstance(info, dict) else None} "
+                f"coverage={info.get('resolutionCoveragePct') if isinstance(info, dict) else None}% "
                 f"cached_at={info.get('fetchedAt') if isinstance(info, dict) else None}"
             )
             ok += 1
