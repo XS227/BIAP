@@ -231,12 +231,16 @@ class GlobalMarketScanner:
         market_source: str,
         partial_universe: bool,
         screening_errors: list[str],
+        universe_authoritative: bool,
+        universe_source: str,
     ) -> dict:
         pack = get_country_pack(country)
         market_coverage = 0.0 if universe_count <= 0 else 100.0 * screened_count / universe_count
         verified_fundamentals = self._verified_fundamental_count(deep_results)
         fundamental_coverage = 0.0 if not deep_results else 100.0 * verified_fundamentals / len(deep_results)
         reasons: list[str] = []
+        if not universe_authoritative:
+            reasons.append("authoritative_universe_unavailable")
         if not live_market_data:
             reasons.append("full_market_source_unavailable")
         if partial_universe:
@@ -251,7 +255,8 @@ class GlobalMarketScanner:
         return {
             "status": "READY" if ranking_eligible else "BLOCKED" if not live_market_data else "PARTIAL",
             "rankingEligible": ranking_eligible,
-            "universeSource": "ordinary-equity exchange catalog",
+            "universeSource": universe_source,
+            "universeAuthoritative": universe_authoritative,
             "marketSource": market_source if live_market_data else "stored market records only",
             "fundamentalsSource": pack.official_evidence_source,
             "eligibleEquities": universe_count,
@@ -314,12 +319,21 @@ class GlobalMarketScanner:
 
         registry = build_registry()
         universe_provider = registry.universe(country, spec.code)
+        universe_provider_id = str(getattr(universe_provider, "provider_id", "unknown"))
+        authority_allow = {item.strip().upper() for item in (os.environ.get("BIAP_GLOBAL_AUTHORITATIVE_UNIVERSE_MARKETS") or "").split(",") if item.strip()}
+        market_key = f"{country.upper()}:{spec.code.upper()}"
+        # Reference/demo catalogs are useful for search, but cannot prove the
+        # exact regulated/native segment (e.g. XMIL also exposes GEM cross-listings).
+        # Ranking is released only after an authoritative exchange universe is wired
+        # or the specific market has been explicitly validated and allow-listed.
+        universe_authoritative = universe_provider_id.startswith("official-") or market_key in authority_allow
+        universe_source = universe_provider_id
         universe = list(universe_provider.list_instruments(country=country.upper(), exchange=spec.code))
         discovered_count = len(universe)
         selected_universe = universe[:discovery_limit]
         partial = discovered_count > discovery_limit
 
-        if not self.market_api_key:
+        if not self.market_api_key and self.eodhd_bulk is None:
             market_provider = registry.market(country, spec.code)
             cached_companies = market_provider.cached_companies(country=country.upper(), exchange=spec.code) if hasattr(market_provider, "cached_companies") else []
             allowed_tickers = {item.ticker.upper() for item in selected_universe}
@@ -332,6 +346,7 @@ class GlobalMarketScanner:
                 country=country.upper(), exchange=spec.code, universe_count=discovered_count,
                 screened_count=len(cached_quotes), deep_results=deep_results, live_market_data=False,
                 market_source="stored market records only", partial_universe=partial, screening_errors=[],
+                universe_authoritative=universe_authoritative, universe_source=universe_source,
             )
             return {
                 "status": "MARKET_DATA_REQUIRED" if not cached_quotes else "CACHED_REFERENCE_ONLY",
@@ -369,6 +384,7 @@ class GlobalMarketScanner:
             country=country.upper(), exchange=spec.code, universe_count=discovered_count,
             screened_count=len(quotes), deep_results=deep_results, live_market_data=True,
             market_source=market_source, partial_universe=partial, screening_errors=screening_errors,
+            universe_authoritative=universe_authoritative, universe_source=universe_source,
         )
         recommendations = self._recommendations(deep_results, top_n) if readiness["rankingEligible"] else []
         if readiness["rankingEligible"]:
