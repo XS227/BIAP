@@ -18,6 +18,7 @@ import zipfile
 import requests
 
 from .country_packs import ExchangeSpec, get_exchange
+from .euronext_live import EuronextLiveRegulatedClient
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
 
@@ -116,6 +117,7 @@ class ESMAFIRDSOpenFIGIUniverseProvider(InstrumentUniverseProvider):
         ) or ""
         self.openfigi_api_key = self.openfigi_api_key.strip()
         self.last_metadata: dict = {}
+        self.euronext_directory = EuronextLiveRegulatedClient(timeout=self.timeout)
 
     @staticmethod
     def supported(country: str, exchange: str) -> bool:
@@ -233,7 +235,7 @@ class ESMAFIRDSOpenFIGIUniverseProvider(InstrumentUniverseProvider):
             return payload
         raise GlobalProviderError("OpenFIGI rate limit did not recover")
 
-    def _resolve(self, identities: list[dict], *, native_mic: str) -> tuple[dict[str, dict], dict[str, str], dict[str, list[str]]]:
+    def _resolve_openfigi(self, identities: list[dict], *, native_mic: str) -> tuple[dict[str, dict], dict[str, str], dict[str, list[str]]]:
         resolved: dict[str, dict] = {}
         missing: dict[str, str] = {}
         ambiguous: dict[str, list[str]] = {}
@@ -281,6 +283,43 @@ class ESMAFIRDSOpenFIGIUniverseProvider(InstrumentUniverseProvider):
                 time.sleep(pause)
         return resolved, missing, ambiguous
 
+    def _resolve(self, identities: list[dict], *, native_mic: str):
+        # Keep the historical internal signature so existing provider subclasses
+        # and tests remain compatible. Country/exchange are unambiguously inferred
+        # from the configured FIRDS native MIC.
+        pair = next((key for key, mic in _NATIVE_MIC.items() if mic.upper() == native_mic.upper()), None)
+        country, exchange = pair if pair else ("", "")
+        resolved: dict[str, dict] = {}
+        missing: dict[str, str] = {}
+        ambiguous: dict[str, list[str]] = {}
+        metadata: dict = {"directoryMatched": 0, "openfigiMatched": 0}
+
+        unresolved_identities = identities
+        if self.euronext_directory.supported(country, exchange):
+            try:
+                directory_resolved, directory_metadata = self.euronext_directory.resolve_isins(
+                    identities, country=country, exchange=exchange
+                )
+                resolved.update(directory_resolved)
+                metadata.update(directory_metadata)
+                metadata["directoryMatched"] = len(directory_resolved)
+                unresolved_identities = [
+                    row for row in identities if str(row.get("isin") or "").upper() not in resolved
+                ]
+            except GlobalProviderError as exc:
+                metadata["directoryError"] = str(exc)[:260]
+
+        if unresolved_identities:
+            figi_resolved, missing, figi_ambiguous = self._resolve_openfigi(
+                unresolved_identities, native_mic=native_mic
+            )
+            for mapping in figi_resolved.values():
+                mapping["resolver"] = "openfigi-ticker-resolver"
+            resolved.update(figi_resolved)
+            ambiguous.update(figi_ambiguous)
+            metadata["openfigiMatched"] = len(figi_resolved)
+        return resolved, missing, ambiguous, metadata
+
     def list_instruments(self, *, country: Optional[str] = None, exchange: Optional[str] = None):
         if not country or not exchange or not self.supported(country, exchange):
             raise GlobalProviderError(f"FIRDS universe is not configured for {country}/{exchange}")
@@ -288,7 +327,13 @@ class ESMAFIRDSOpenFIGIUniverseProvider(InstrumentUniverseProvider):
         exchange = exchange.upper()
         native_mic = _NATIVE_MIC[(country, exchange)]
         publication_date, identities = self._identities(country=country, exchange=exchange)
-        resolved, missing, ambiguous = self._resolve(identities, native_mic=native_mic)
+        resolution = self._resolve(identities, native_mic=native_mic)
+        # Older/custom subclasses may still return the historical three-tuple.
+        if len(resolution) == 3:
+            resolved, missing, ambiguous = resolution
+            resolver_metadata = {}
+        else:
+            resolved, missing, ambiguous, resolver_metadata = resolution
         official_count = len(identities)
         resolved_count = len(resolved)
         coverage = round(100.0 * resolved_count / official_count, 2) if official_count else 0.0
@@ -299,7 +344,8 @@ class ESMAFIRDSOpenFIGIUniverseProvider(InstrumentUniverseProvider):
             "publicationDate": publication_date,
             "nativeMic": native_mic,
             "identitySource": "ESMA FIRDS FULINS equity full files",
-            "tickerResolver": "OpenFIGI",
+            "tickerResolver": "Euronext Live regulated directory + OpenFIGI fallback" if self.euronext_directory.supported(country, exchange) else "OpenFIGI",
+            **resolver_metadata,
             "missingResolverCount": len(missing),
             "ambiguousResolverCount": len(ambiguous),
             "missingResolverSample": list(missing.items())[:20],
@@ -348,13 +394,21 @@ class ESMAFIRDSOpenFIGIUniverseProvider(InstrumentUniverseProvider):
                         notes=f"ESMA FIRDS {publication_date}; native common share where actualVenue == relevantVenue == {native_mic}.",
                     ),
                     SourceEvidence(
-                        provider="openfigi-ticker-resolver",
+                        provider=str(mapping.get("resolver") or "openfigi-ticker-resolver"),
                         source_type="instrument_identifier_mapping",
                         source_id=str(mapping.get("figi") or isin),
-                        source_url="https://api.openfigi.com/v3/mapping",
+                        source_url=(
+                            "https://live.euronext.com/en/products/equities/regulated/list"
+                            if mapping.get("resolver") == "official-euronext-live-regulated"
+                            else "https://api.openfigi.com/v3/mapping"
+                        ),
                         observed_at=observed,
-                        quality=0.9,
-                        notes="Ticker resolution only; does not determine market membership.",
+                        quality=1.0 if mapping.get("resolver") == "official-euronext-live-regulated" else 0.9,
+                        notes=(
+                            "Official Euronext regulated-directory ISIN-to-symbol mapping; market membership remains defined by FIRDS."
+                            if mapping.get("resolver") == "official-euronext-live-regulated"
+                            else "Ticker resolution only; does not determine market membership."
+                        ),
                     ),
                 ],
             ))
