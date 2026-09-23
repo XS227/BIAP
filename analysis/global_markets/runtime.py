@@ -86,6 +86,11 @@ def build_registry() -> ProviderRegistry:
     )
     registry.register_universe("FR", "EURONEXT_PARIS", firds_eu)
     registry.register_universe("IT", "EURONEXT_MILAN", firds_eu)
+    registry.register_universe("NL", "EURONEXT_AMSTERDAM", firds_eu)
+    registry.register_universe("BE", "EURONEXT_BRUSSELS", firds_eu)
+    registry.register_universe("PT", "EURONEXT_LISBON", firds_eu)
+    registry.register_universe("NO", "EURONEXT_OSLO", firds_eu)
+    registry.register_universe("ES", "BME_MADRID", firds_eu)
 
     # Licensed Twelve Data remains the preferred market source. Without a
     # licensed credential, BIAP uses a lower-trust public EOD fallback only on

@@ -85,6 +85,10 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
             return None
         if str(payload.get("exchange") or "").upper() != exchange.upper():
             return None
+        expected_provider = str(getattr(self.upstream, "provider_id", "") or "")
+        cached_provider = str(payload.get("provider") or "")
+        if expected_provider and cached_provider != expected_provider:
+            return None
         if not isinstance(payload.get("instruments"), list):
             return None
         return payload
