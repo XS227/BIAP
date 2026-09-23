@@ -361,11 +361,11 @@ export async function analyzeGlobalInstrument(instrument: GlobalInstrument): Pro
 export async function scanGlobalMarket(country: string, exchange: string, topN = 10): Promise<GlobalScanResponse> {
   return request<GlobalScanResponse>('/global/scan', {
     method: 'POST',
-    body: JSON.stringify({ country, exchange, topN, discoveryLimit: 1000, deepLimit: 25 }),
+    body: JSON.stringify({ country, exchange, topN, discoveryLimit: 5000, deepLimit: 75 }),
   }, 90_000);
 }
 
-export async function scanGlobalTop10(topN = 10, maxAgeHours = 6): Promise<GlobalTop10Response> {
+export async function scanGlobalTop10(topN = 10, maxAgeHours = 0.5): Promise<GlobalTop10Response> {
   return request<GlobalTop10Response>('/global/scan-global', {
     method: 'POST',
     body: JSON.stringify({ topN, maxAgeHours }),

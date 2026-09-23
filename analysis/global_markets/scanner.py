@@ -17,7 +17,7 @@ from typing import Any, Optional
 
 import httpx
 
-from .country_packs import ExchangeSpec, get_exchange
+from .country_packs import ExchangeSpec, get_country_pack, get_exchange
 from .models import GlobalCompany
 from .providers import GlobalProviderError
 from .runtime import build_registry
@@ -30,6 +30,8 @@ class GlobalMarketScanner:
         self.batch_size = max(1, min(int(batch_size), 200))
         self.market_api_key = (os.environ.get("BIAP_GLOBAL_MARKET_API_KEY") or "").strip()
         self.market_base = os.environ.get("BIAP_GLOBAL_MARKET_BASE", "https://api.twelvedata.com").rstrip("/")
+        self.min_market_coverage_pct = max(0.0, min(100.0, float(os.environ.get("BIAP_GLOBAL_MIN_MARKET_COVERAGE_PCT", "90"))))
+        self.min_fundamental_coverage_pct = max(0.0, min(100.0, float(os.environ.get("BIAP_GLOBAL_MIN_FUNDAMENTAL_COVERAGE_PCT", "70"))))
 
     @staticmethod
     def _float(value: Any) -> Optional[float]:
@@ -200,8 +202,73 @@ class GlobalMarketScanner:
         return deep_results
 
     @staticmethod
+    def _verified_fundamental_count(deep_results: list[dict]) -> int:
+        verified = 0
+        for result in deep_results:
+            evidence = result.get("evidence") if isinstance(result.get("evidence"), dict) else {}
+            missing = evidence.get("missing_critical") or evidence.get("missingCritical") or []
+            if not isinstance(missing, (list, tuple)):
+                missing = []
+            reasoning = str(evidence.get("reasoning") or "")
+            if "fundamental_source" not in missing and "missing=fundamental_source" not in reasoning:
+                company = result.get("company") if isinstance(result.get("company"), dict) else {}
+                if company:
+                    verified += 1
+        return verified
+
+    def _readiness(
+        self,
+        *,
+        country: str,
+        exchange: str,
+        universe_count: int,
+        screened_count: int,
+        deep_results: list[dict],
+        live_market_data: bool,
+        partial_universe: bool,
+        screening_errors: list[str],
+    ) -> dict:
+        pack = get_country_pack(country)
+        market_coverage = 0.0 if universe_count <= 0 else 100.0 * screened_count / universe_count
+        verified_fundamentals = self._verified_fundamental_count(deep_results)
+        fundamental_coverage = 0.0 if not deep_results else 100.0 * verified_fundamentals / len(deep_results)
+        reasons: list[str] = []
+        if not live_market_data:
+            reasons.append("live_batch_market_source_unavailable")
+        if partial_universe:
+            reasons.append("universe_discovery_truncated")
+        if market_coverage < self.min_market_coverage_pct:
+            reasons.append("market_coverage_below_threshold")
+        if deep_results and fundamental_coverage < self.min_fundamental_coverage_pct:
+            reasons.append("official_fundamental_coverage_below_threshold")
+        if screening_errors:
+            reasons.append("market_data_batch_errors")
+        ranking_eligible = not reasons and universe_count > 0 and bool(deep_results)
+        return {
+            "status": "READY" if ranking_eligible else "BLOCKED" if not live_market_data else "PARTIAL",
+            "rankingEligible": ranking_eligible,
+            "universeSource": "ordinary-equity exchange catalog",
+            "marketSource": "licensed live batch market feed" if live_market_data else "stored market records only",
+            "fundamentalsSource": pack.official_evidence_source,
+            "eligibleEquities": universe_count,
+            "screenedEquities": screened_count,
+            "marketCoveragePct": round(market_coverage, 2),
+            "deepAnalyzed": len(deep_results),
+            "verifiedFundamentals": verified_fundamentals,
+            "fundamentalCoveragePct": round(fundamental_coverage, 2),
+            "requiredMarketCoveragePct": self.min_market_coverage_pct,
+            "requiredFundamentalCoveragePct": self.min_fundamental_coverage_pct,
+            "reasons": reasons,
+        }
+
+    @staticmethod
     def _recommendations(deep_results: list[dict], top_n: int) -> list[dict]:
-        buys = [result for result in deep_results if result.get("call") == "BUY_CANDIDATE"]
+        buys = [
+            result for result in deep_results
+            if result.get("call") == "BUY_CANDIDATE"
+            and isinstance(result.get("evidence"), dict)
+            and result["evidence"].get("status") == "PASS"
+        ]
         buys.sort(
             key=lambda result: float(result.get("score") or 0.0) * float(result.get("confidence") or 0.0),
             reverse=True,
@@ -253,50 +320,36 @@ class GlobalMarketScanner:
             cached_companies = market_provider.cached_companies(country=country.upper(), exchange=spec.code) if hasattr(market_provider, "cached_companies") else []
             allowed_tickers = {item.ticker.upper() for item in selected_universe}
             cached_quotes = self._cached_quotes(cached_companies, allowed_tickers)
-            if not cached_quotes:
-                return {
-                    "status": "MARKET_DATA_REQUIRED",
-                    "country": country.upper(),
-                    "exchange": spec.code,
-                    "mic": spec.mic,
-                    "requestedRecommendations": top_n,
-                    "recommendationCount": 0,
-                    "universeDiscovered": discovered_count,
-                    "universeScreened": 0,
-                    "quotesUsable": 0,
-                    "deepAnalyzed": 0,
-                    "screeningCoveragePct": 0.0,
-                    "screeningErrors": ["Reference catalog is available; no verified price/history snapshot exists yet."],
-                    "recommendations": [],
-                    "deepResults": [],
-                    "catalogOnly": True,
-                    "cachedMarketData": False,
-                    "notes": "Configure a market-data credential once to seed verified snapshots. BIAP will not produce BUY candidates from catalog metadata alone.",
-                }
-
             ranked = sorted(cached_quotes, key=self._screen_rank, reverse=True)
             shortlist_tickers = [row["ticker"] for row in ranked[:deep_limit]]
             quote_by_ticker = {row["ticker"]: row for row in cached_quotes}
-            deep_results = self._deep_results(shortlist_tickers, selected_universe, quote_by_ticker, registry)
-            recommendations = self._recommendations(deep_results, top_n)
+            deep_results = self._deep_results(shortlist_tickers, selected_universe, quote_by_ticker, registry) if cached_quotes else []
+            readiness = self._readiness(
+                country=country.upper(), exchange=spec.code, universe_count=discovered_count,
+                screened_count=len(cached_quotes), deep_results=deep_results, live_market_data=False,
+                partial_universe=partial, screening_errors=[],
+            )
             return {
-                "status": "CACHED_SCAN" if recommendations else "CACHED_NO_RECOMMENDATION",
+                "status": "MARKET_DATA_REQUIRED" if not cached_quotes else "CACHED_REFERENCE_ONLY",
                 "country": country.upper(),
                 "exchange": spec.code,
                 "mic": spec.mic,
                 "requestedRecommendations": top_n,
-                "recommendationCount": len(recommendations),
+                "recommendationCount": 0,
                 "universeDiscovered": discovered_count,
                 "universeScreened": len(cached_quotes),
                 "quotesUsable": len(cached_quotes),
                 "deepAnalyzed": len(deep_results),
-                "screeningCoveragePct": round(100.0 * len(cached_quotes) / discovered_count, 2) if discovered_count else 0.0,
-                "screeningErrors": ["Live price/history feed unavailable; scan used persisted verified market snapshots."],
-                "recommendations": recommendations,
+                "screeningCoveragePct": readiness["marketCoveragePct"],
+                "fundamentalCoveragePct": readiness["fundamentalCoveragePct"],
+                "screeningErrors": ["Fresh full-exchange batch market data is unavailable. Stored records are diagnostic only and cannot produce a market ranking."],
+                "recommendations": [],
                 "deepResults": deep_results,
-                "catalogOnly": False,
-                "cachedMarketData": True,
-                "notes": "Cached scan only. EvidenceAgent preserves original price timestamps and blocks stale or incomplete evidence.",
+                "catalogOnly": not bool(cached_quotes),
+                "cachedMarketData": bool(cached_quotes),
+                "rankingEligible": False,
+                "dataReadiness": readiness,
+                "notes": "No Top Market result is emitted from stored records. Restore a complete live market source, then rescan the ordinary-equity universe.",
             }
 
         quotes, screening_errors = self._batch_quotes(selected_universe, country.upper(), spec)
@@ -304,10 +357,16 @@ class GlobalMarketScanner:
         ranked = sorted(quotes, key=self._screen_rank, reverse=True)
         shortlist_tickers = [row["ticker"] for row in ranked[:deep_limit]]
         deep_results = self._deep_results(shortlist_tickers, selected_universe, quote_by_ticker, registry)
-        recommendations = self._recommendations(deep_results, top_n)
-        status = "PARTIAL_SCAN" if partial or screening_errors else "COMPLETE_SCAN"
-        if not recommendations:
-            status = "NO_RECOMMENDATION" if status == "COMPLETE_SCAN" else status
+        readiness = self._readiness(
+            country=country.upper(), exchange=spec.code, universe_count=discovered_count,
+            screened_count=len(quotes), deep_results=deep_results, live_market_data=True,
+            partial_universe=partial, screening_errors=screening_errors,
+        )
+        recommendations = self._recommendations(deep_results, top_n) if readiness["rankingEligible"] else []
+        if readiness["rankingEligible"]:
+            status = "COMPLETE_SCAN" if recommendations else "NO_RECOMMENDATION"
+        else:
+            status = "INSUFFICIENT_MARKET_COVERAGE"
 
         return {
             "status": status,
@@ -317,15 +376,22 @@ class GlobalMarketScanner:
             "requestedRecommendations": top_n,
             "recommendationCount": len(recommendations),
             "universeDiscovered": discovered_count,
-            "universeScreened": len(selected_universe),
+            "universeScreened": len(quotes),
             "quotesUsable": len(quotes),
             "deepAnalyzed": len(deep_results),
-            "screeningCoveragePct": round(100.0 * len(selected_universe) / discovered_count, 2) if discovered_count else 0.0,
+            "screeningCoveragePct": readiness["marketCoveragePct"],
+            "fundamentalCoveragePct": readiness["fundamentalCoveragePct"],
             "screeningErrors": screening_errors,
             "recommendations": recommendations,
             "deepResults": deep_results,
             "cachedMarketData": False,
-            "notes": "Stage 1 ranks tradability only; BUY_CANDIDATE requires deep evidence/agent gates. Results are not padded to top_n.",
+            "rankingEligible": readiness["rankingEligible"],
+            "dataReadiness": readiness,
+            "notes": (
+                "Ranking is released only when the ordinary-equity universe has broad fresh market coverage "
+                "and the deep shortlist has sufficient official fundamental provenance. Stage 1 covers the exchange; "
+                "Stage 2 applies all BIAP evidence and agent gates."
+            ),
         }
 
     def _scan_iran(self, *, exchange: str, top_n: int, deep_limit: int) -> dict:

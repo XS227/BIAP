@@ -41,13 +41,13 @@ class ScanRequest(BaseModel):
     country: str = Field(min_length=2, max_length=2)
     exchange: str = Field(min_length=2, max_length=64)
     topN: int = Field(default=10, ge=1, le=50)
-    discoveryLimit: int = Field(default=1000, ge=10, le=5000)
-    deepLimit: int = Field(default=25, ge=1, le=100)
+    discoveryLimit: int = Field(default=5000, ge=10, le=5000)
+    deepLimit: int = Field(default=75, ge=1, le=200)
 
 
 class GlobalTop10Request(BaseModel):
     topN: int = Field(default=10, ge=1, le=25)
-    maxAgeHours: float = Field(default=6.0, ge=0, le=24)
+    maxAgeHours: float = Field(default=0.5, ge=0, le=6)
 
 
 class PortfolioProfileRequest(BaseModel):

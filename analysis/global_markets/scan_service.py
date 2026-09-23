@@ -20,7 +20,7 @@ from .service import analyze_company
 from .source_cache import data_root, read_json, write_json_atomic
 
 
-_SCAN_CACHE_SCHEMA_VERSION = 2
+_SCAN_CACHE_SCHEMA_VERSION = 3
 
 
 _BASE_GLOBAL_TOP_MARKETS: tuple[tuple[str, str], ...] = (
@@ -184,7 +184,7 @@ def scan_global_market(
 def scan_global_top10(
     *,
     top_n: int = 10,
-    max_age_hours: float = 6.0,
+    max_age_hours: float = 0.5,
 ) -> dict:
     """Rank qualified candidates across finalized US, Europe, Türkiye and Brazil markets.
 
@@ -212,8 +212,8 @@ def scan_global_top10(
                     country=country,
                     exchange=exchange,
                     top_n=5,
-                    discovery_limit=500,
-                    deep_limit=15,
+                    discovery_limit=5000,
+                    deep_limit=50,
                 ): (country, exchange)
                 for country, exchange in pending
             }
@@ -236,19 +236,26 @@ def scan_global_top10(
     for country, exchange in markets:
         result = results.get((country, exchange), {})
         rows = result.get("recommendations") if isinstance(result.get("recommendations"), list) else []
-        for row in rows:
-            if not isinstance(row, dict) or row.get("call") != "BUY_CANDIDATE":
-                continue
-            if (row.get("evidence") or {}).get("status") != "PASS":
-                continue
-            candidates.append(row)
+        ranking_eligible = bool(result.get("rankingEligible"))
+        if ranking_eligible:
+            for row in rows:
+                if not isinstance(row, dict) or row.get("call") != "BUY_CANDIDATE":
+                    continue
+                if (row.get("evidence") or {}).get("status") != "PASS":
+                    continue
+                candidates.append(row)
         market_summary.append({
             "country": country,
             "exchange": exchange,
             "status": result.get("status") or "UNKNOWN",
-            "recommendationCount": len(rows),
+            "rankingEligible": ranking_eligible,
+            "recommendationCount": len(rows) if ranking_eligible else 0,
+            "eligibleEquities": result.get("universeDiscovered") or 0,
+            "screenedEquities": result.get("universeScreened") or 0,
             "deepAnalyzed": result.get("deepAnalyzed") or len(result.get("deepResults") or []),
             "screeningCoveragePct": result.get("screeningCoveragePct"),
+            "fundamentalCoveragePct": result.get("fundamentalCoveragePct"),
+            "dataReadiness": result.get("dataReadiness"),
             "cache": result.get("scanCache"),
             "error": result.get("error"),
         })
@@ -284,19 +291,41 @@ def scan_global_top10(
         recommendations.append(enriched)
 
     errors = sum(1 for row in market_summary if row["status"] == "ERROR")
-    status = "NO_RECOMMENDATION" if not recommendations else "PARTIAL_GLOBAL_SCAN" if errors else "GLOBAL_TOP10"
+    eligible_markets = sum(1 for row in market_summary if row.get("rankingEligible"))
+    total_equities = sum(int(row.get("eligibleEquities") or 0) for row in market_summary)
+    screened_equities = sum(int(row.get("screenedEquities") or 0) for row in market_summary)
+    eligible_equities = sum(int(row.get("eligibleEquities") or 0) for row in market_summary if row.get("rankingEligible"))
+    eligible_screened = sum(int(row.get("screenedEquities") or 0) for row in market_summary if row.get("rankingEligible"))
+    deep_total = sum(int(row.get("deepAnalyzed") or 0) for row in market_summary)
+    connected_coverage = 0.0 if total_equities <= 0 else round(100.0 * screened_equities / total_equities, 2)
+    eligible_coverage = 0.0 if eligible_equities <= 0 else round(100.0 * eligible_screened / eligible_equities, 2)
+    if eligible_markets == 0:
+        status = "GLOBAL_DATA_INCOMPLETE"
+        recommendations = []
+    elif not recommendations:
+        status = "NO_RECOMMENDATION"
+    elif eligible_markets < len(markets):
+        status = "PARTIAL_GLOBAL_SCAN"
+    else:
+        status = "GLOBAL_TOP10"
     return {
         "status": status,
-        "scope": "CONNECTED_GLOBAL_MARKETS",
+        "scope": "COVERAGE_QUALIFIED_GLOBAL_MARKETS",
         "requestedRecommendations": top_n,
         "recommendationCount": len(recommendations),
         "marketsScanned": len(markets),
+        "marketsEligible": eligible_markets,
+        "marketsExcluded": len(markets) - eligible_markets,
         "marketErrors": errors,
+        "eligibleEquities": eligible_equities,
+        "screenedEquities": eligible_screened,
+        "deepAnalyzed": deep_total,
+        "globalCoveragePct": eligible_coverage,
+        "connectedCoveragePct": connected_coverage,
         "recommendations": recommendations,
         "markets": market_summary,
         "notes": (
-            "Cross-market rank is based on evidence-qualified Kiasha score × confidence. "
-            "Japan/Korea join automatically when their official regulator connectors are configured. "
-            "The list is not padded when fewer than the requested number qualify."
+            "Global ranking uses only markets that pass full-market coverage and official-fundamental readiness gates. "
+            "Stored or partial market records cannot enter Global Top 10. Cache is a short-lived performance layer, not a source of ranking eligibility."
         ),
     }

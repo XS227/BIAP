@@ -22,7 +22,7 @@ from .universe import _ordinary_equity_row
 # Version 6 also invalidates snapshots that could contain structured products
 # misclassified by upstream reference catalogs as Common Stock. Fresh snapshots
 # contain only supported ordinary operating-company equities.
-CACHE_SCHEMA_VERSION = 6
+CACHE_SCHEMA_VERSION = 7
 
 
 def _utc_now() -> datetime:

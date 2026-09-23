@@ -58,6 +58,9 @@ def _ordinary_equity_row(*, country: str, spec: ExchangeSpec, row: dict, symbol:
     if ".PR." in ticker or ticker.endswith(".PR") or ".RT." in ticker or ticker.endswith(".RT"):
         return False
 
+    if country.upper() in {"FR", "IT", "NL", "BE", "IE", "PT", "ES"} and re.fullmatch(r"[0-9]{4,}[A-Z]?", ticker):
+        return False
+
     # Nordic/European reference feeds can misclassify exchange-traded
     # certificates/minifutures as Common Stock. Their symbols often encode
     # the product family/issuer even when the name field is unhelpful.
@@ -81,9 +84,12 @@ def _ordinary_equity_row(*, country: str, spec: ExchangeSpec, row: dict, symbol:
         " PREFERENCE ", " PREFERRED ", " CONVERTIBLE BOND ",
         " ETN ", " ETC ", " STRUCTURED ", " ZERO COUPON ",
         " MEDIUM TERM ", " DEBT SECURITY ", " UNITS ", " UNIT ",
-        " SPAC ",
+        " PFANDBRIEF ", " DEBENTURE ", " OBLIGATION ", " FIXED RATE ",
+        " TREASURY ", " MATURITY ", " SPAC ",
     )
     if any(token in name for token in rejected_name_tokens):
+        return False
+    if "%" in name and re.search(r"\b20[2-9][0-9]\b", name):
         return False
 
     # Leveraged/inverse exchange products and certificates can be mislabeled by
