@@ -2,6 +2,9 @@
 Description=Daily BIAP Global official source sync
 
 [Timer]
+# Run shortly after this timer is activated/redeployed so the first app user
+# never has to build a cold authoritative exchange universe synchronously.
+OnActiveSec=60s
 OnCalendar=*-*-* 03:25:00
 Persistent=true
 RandomizedDelaySec=900
