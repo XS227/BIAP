@@ -1,0 +1,25 @@
+name: BIAP Global official universe probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-official-universe-probe.yml'
+      - 'tools/probe_official_universes.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - name: Install probe dependencies
+        run: python -m pip install -q requests 'xlrd>=2,<3'
+      - name: Probe official universe sources
+        run: python tools/probe_official_universes.py
