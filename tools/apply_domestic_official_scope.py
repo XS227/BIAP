@@ -55,3 +55,10 @@ replace_once(
     "CACHE_SCHEMA_VERSION = 8\n",
     "CACHE_SCHEMA_VERSION = 9\n",
 )
+
+# Keep the explicit cache-version regression test aligned with the semantic bump.
+replace_once(
+    "analysis/tests/test_global_universe_cache_v8.py",
+    "def test_universe_cache_schema_is_v8():\n    assert CACHE_SCHEMA_VERSION == 8\n",
+    "def test_universe_cache_schema_is_v9():\n    assert CACHE_SCHEMA_VERSION == 9\n",
+)
