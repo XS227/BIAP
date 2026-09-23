@@ -1,0 +1,23 @@
+name: BIAP Global Euronext JSON gateway probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-euronext-json-gateway-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - run: python -m pip install -q requests
+      - name: Probe official Euronext regulated JSON and download gateways
+        run: python tools/probe_euronext_json_gateway.py
