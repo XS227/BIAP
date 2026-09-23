@@ -167,21 +167,26 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
 
     def _get_page(self, *, country: str, spec: ExchangeSpec, page: int, outputsize: int) -> dict:
         common = {"page": page, "outputsize": outputsize, "format": "JSON", "type": "Common Stock"}
-        candidates: list[dict] = []
 
+        # A venue MIC is stronger identity evidence than a free-text exchange
+        # label. Never replace a valid MIC-scoped page merely because a broader
+        # country/exchange query happens to return more rows. Some vendor tiers
+        # ignore the exchange label and can otherwise contaminate one market
+        # with thousands of unrelated instruments.
         if spec.mic:
-            candidates.append(self._request({**common, "mic_code": spec.mic}))
+            try:
+                mic_payload = self._request({**common, "mic_code": spec.mic})
+                if self._payload_score(mic_payload)[0] > 0:
+                    return mic_payload
+            except GlobalProviderError:
+                pass
 
         country_name = get_country_pack(country).name
         try:
-            candidates.append(self._request({**common, "country": country_name, "exchange": spec.label}))
-        except GlobalProviderError:
-            if not candidates:
-                raise
-
-        if not candidates:
-            raise GlobalProviderError(f"no reference-data lookup strategy for {country}/{spec.code}")
-        return max(candidates, key=self._payload_score)
+            fallback = self._request({**common, "country": country_name, "exchange": spec.label})
+        except GlobalProviderError as exc:
+            raise GlobalProviderError(f"no reference-data lookup strategy for {country}/{spec.code}") from exc
+        return fallback
 
     def _company_from_row(self, *, country: str, spec: ExchangeSpec, row: dict) -> Optional[GlobalCompany]:
         symbol = str(row.get("symbol") or "").strip()
@@ -189,7 +194,11 @@ class TwelveDataUniverseProvider(InstrumentUniverseProvider):
             return None
         returned_mic = str(row.get("mic_code") or "").strip().upper() or None
         accepted_mics = set(spec.accepted_mics)
-        if accepted_mics and returned_mic and returned_mic not in accepted_mics:
+        # A configured exchange must be proven by MIC. Missing venue identity
+        # is not enough evidence for full-market ranking and is rejected.
+        if accepted_mics and not returned_mic:
+            return None
+        if accepted_mics and returned_mic not in accepted_mics:
             return None
         currency = str(row.get("currency") or (spec.currencies[0] if spec.currencies else "")).strip().upper()
         if not currency:
