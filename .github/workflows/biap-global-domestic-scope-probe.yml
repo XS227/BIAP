@@ -1,0 +1,51 @@
+name: BIAP Global domestic universe scope probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-domestic-scope-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - name: Install dependencies
+        working-directory: analysis
+        run: python -m pip install -q -r requirements.txt
+      - name: Inspect official domestic identity fields
+        working-directory: analysis
+        env:
+          PYTHONPATH: .
+        run: |
+          python - <<'PY'
+          from collections import Counter
+          from global_markets.official_universe import DeutscheBoerseUniverseProvider, ASXUniverseProvider
+
+          de = DeutscheBoerseUniverseProvider(timeout=45)
+          for exchange in ('XETRA','FRANKFURT'):
+              rows=list(de.list_instruments(country='DE', exchange=exchange))
+              country=Counter(str(r.raw_provider_fields.get('country_of_issue') or '').strip().upper() for r in rows)
+              primary=Counter(str(r.raw_provider_fields.get('primary_market_mic') or '').strip().upper() for r in rows)
+              print(exchange, 'total', len(rows))
+              print(exchange, 'country_of_issue top25', country.most_common(25))
+              print(exchange, 'primary_market_mic top25', primary.most_common(25))
+              for ticker in ('SAP','SIE','ALV','BMW','MBG','VOW3'):
+                  hit=next((r for r in rows if r.ticker==ticker),None)
+                  if hit:
+                      print(exchange, ticker, hit.name, hit.isin, hit.raw_provider_fields)
+          asx=list(ASXUniverseProvider(timeout=45).list_instruments(country='AU', exchange='ASX'))
+          prefixes=Counter((r.isin or '')[:2] for r in asx)
+          print('ASX total',len(asx),'ISIN country prefixes',prefixes.most_common(25))
+          for ticker in ('BHP','CBA','CSL','WES','WOW'):
+              hit=next((r for r in asx if r.ticker==ticker),None)
+              if hit: print('ASX',ticker,hit.name,hit.isin,hit.raw_provider_fields)
+          PY
