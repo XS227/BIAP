@@ -87,7 +87,9 @@ def parse_deutsche_boerse_csv(
         if not ticker or not name or ticker in seen:
             continue
         if len(isin) != 12 or not isin.isalnum():
-            isin = None
+            continue
+        if country.upper() == "DE" and not isin.startswith("DE"):
+            continue
         seen.add(ticker)
         result.append(GlobalCompany(
             country=country.upper(),
@@ -106,6 +108,7 @@ def parse_deutsche_boerse_csv(
                 "primary_market_mic": str(row.get("Primary Market MIC Code") or "").strip().upper() or None,
                 "market_segment": str(row.get("Market Segment") or "").strip() or None,
                 "country_of_issue": str(row.get("Country Of Issue") or "").strip() or None,
+                "domestic_scope": f"ISIN:{country.upper()}",
             },
             sources=[SourceEvidence(
                 provider="official-deutsche-boerse-t7-universe",
@@ -114,7 +117,7 @@ def parse_deutsche_boerse_csv(
                 source_url=source_url,
                 observed_at=observed,
                 quality=1.0,
-                notes="Deutsche Boerse T7 official All tradable instruments; active common stock only.",
+                notes="Deutsche Boerse T7 official All tradable instruments; active common stock, domestic ISIN scope only.",
             )],
         ))
     if not result:
@@ -143,6 +146,8 @@ def parse_asx_rows(rows: Iterable[Iterable[object]], *, source_url: str) -> list
             continue
         if len(isin) != 12 or not isin.isalnum():
             continue
+        if not isin.startswith("AU"):
+            continue
         seen.add(ticker)
         result.append(GlobalCompany(
             country="AU",
@@ -156,6 +161,7 @@ def parse_asx_rows(rows: Iterable[Iterable[object]], *, source_url: str) -> list
             raw_provider_fields={
                 "official_universe": True,
                 "asx_security_type": security_type,
+                "domestic_scope": "ISIN:AU",
             },
             sources=[SourceEvidence(
                 provider="official-asx-isin-universe",
@@ -164,7 +170,7 @@ def parse_asx_rows(rows: Iterable[Iterable[object]], *, source_url: str) -> list
                 source_url=source_url,
                 observed_at=observed,
                 quality=1.0,
-                notes="ASX complete ISIN directory; ordinary fully-paid securities only.",
+                notes="ASX complete ISIN directory; ordinary fully-paid Australian-ISIN securities only.",
             )],
         ))
     if not result:
