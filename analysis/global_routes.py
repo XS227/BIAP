@@ -231,6 +231,16 @@ def global_instruments(
         except Exception as exc:
             raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
 
+    # list_instruments() may have created/refreshed the persistent snapshot.
+    # Re-read metadata after that operation so a single API response cannot
+    # simultaneously return official instruments while claiming catalog
+    # availability is false/stale from the pre-refresh state.
+    if hasattr(provider, "snapshot_info"):
+        try:
+            snapshot_info = provider.snapshot_info(country=country.upper(), exchange=spec.code)
+        except Exception:
+            pass
+
     total = len(instruments)
     page = instruments[offset:offset + limit]
     next_offset = offset + len(page)
