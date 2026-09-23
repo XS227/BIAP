@@ -16,17 +16,6 @@ def local(tag: str) -> str:
     return tag.rsplit("}", 1)[-1]
 
 
-def child_texts(element: ET.Element) -> dict[str, str]:
-    out: dict[str, str] = {}
-    for node in element.iter():
-        if node is element:
-            continue
-        text = (node.text or "").strip()
-        if text:
-            out[local(node.tag)] = text
-    return out
-
-
 def main() -> None:
     today = datetime.now(timezone.utc).date()
     start = today - timedelta(days=20)
@@ -40,49 +29,57 @@ def main() -> None:
     }
     r = requests.get(SOLR, params=params, headers=HEADERS, timeout=45)
     r.raise_for_status()
-    payload = r.json()
-    docs = (payload.get("response") or {}).get("docs") or []
+    docs = (r.json().get("response") or {}).get("docs") or []
     equities = []
     for doc in docs:
         name = str(doc.get("file_name") or doc.get("download_link") or "")
-        if str(doc.get("file_type") or "").upper() != "FULINS":
-            continue
-        if "FULINS_E_" not in name.upper():
-            continue
-        equities.append({
-            "publication_date": doc.get("publication_date"),
-            "file_name": doc.get("file_name"),
-            "download_link": doc.get("download_link"),
-            "checksum": doc.get("checksum"),
-        })
-    equities.sort(key=lambda x: str(x.get("publication_date") or ""), reverse=True)
+        if str(doc.get("file_type") or "").upper() == "FULINS" and "FULINS_E_" in name.upper():
+            equities.append({
+                "publication_date": doc.get("publication_date"),
+                "file_name": doc.get("file_name"),
+                "download_link": doc.get("download_link"),
+                "checksum": doc.get("checksum"),
+            })
+    equities.sort(key=lambda x: (str(x.get("publication_date") or ""), str(x.get("file_name") or "")), reverse=True)
     latest_date = str(equities[0]["publication_date"])[:10] if equities else None
-    latest = [x for x in equities if str(x.get("publication_date") or "")[:10] == latest_date]
+    latest = sorted([x for x in equities if str(x.get("publication_date") or "")[:10] == latest_date], key=lambda x: str(x["file_name"]))
     print(json.dumps({"latest_date": latest_date, "files": latest}, indent=2))
     if not latest:
         raise SystemExit("No recent FULINS_E files found")
 
-    # Inspect one current equity file so BIAP's parser is based on the current
-    # official schema rather than guessed tag names.
-    url = latest[0]["download_link"]
-    response = requests.get(url, headers={**HEADERS, "Accept": "application/zip"}, timeout=120)
-    response.raise_for_status()
-    print("DOWNLOAD", url, "bytes=", len(response.content), "content_type=", response.headers.get("content-type"))
-    with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
-        names = zf.namelist()
-        print("ZIP_NAMES", names)
-        xml_name = next((name for name in names if name.lower().endswith(".xml")), names[0])
-        records = []
-        with zf.open(xml_name) as fh:
-            for event, elem in ET.iterparse(fh, events=("end",)):
-                if local(elem.tag) in {"RefData", "FinInstrm", "Rcrd"}:
-                    values = child_texts(elem)
-                    if any(k in values for k in ("Id", "FinInstrmId", "TradgVn", "ClssfctnTp")):
-                        records.append(values)
-                        if len(records) >= 5:
-                            break
+    wanted = {"XPAR", "XMIL", "XAMS", "XBRU", "XDUB", "XLIS"}
+    found: dict[str, str] = {}
+    first_raw = None
+
+    for item in latest:
+        url = item["download_link"]
+        response = requests.get(url, headers={**HEADERS, "Accept": "application/zip"}, timeout=120)
+        response.raise_for_status()
+        print("DOWNLOAD", url, "bytes=", len(response.content), "content_type=", response.headers.get("content-type"))
+        with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
+            xml_name = next(name for name in zf.namelist() if name.lower().endswith(".xml"))
+            with zf.open(xml_name) as fh:
+                for _, elem in ET.iterparse(fh, events=("end",)):
+                    if local(elem.tag) != "RefData":
+                        continue
+                    raw = ET.tostring(elem, encoding="unicode")
+                    if first_raw is None:
+                        first_raw = raw
+                    for mic in wanted - found.keys():
+                        if f">{mic}<" in raw:
+                            found[mic] = raw
                     elem.clear()
-        print("SAMPLE_RECORDS", json.dumps(records, indent=2, ensure_ascii=False)[:12000])
+                    if found.keys() >= wanted:
+                        break
+        if found.keys() >= wanted:
+            break
+
+    print("FIRST_REFDATA_XML")
+    print((first_raw or "NO_RECORD")[:12000])
+    for mic in sorted(wanted):
+        print(f"VENUE_{mic}_REFDATA_XML")
+        print(found.get(mic, "NOT_FOUND")[:16000])
+    print("FOUND_VENUES", sorted(found))
 
 
 if __name__ == "__main__":
