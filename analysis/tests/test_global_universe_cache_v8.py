@@ -12,8 +12,8 @@ class EmptyUniverse(InstrumentUniverseProvider):
         return []
 
 
-def test_universe_cache_schema_is_v10():
-    assert CACHE_SCHEMA_VERSION == 10
+def test_universe_cache_schema_is_v11():
+    assert CACHE_SCHEMA_VERSION == 11
 
 
 def test_v7_cache_is_invalidated(tmp_path: Path):

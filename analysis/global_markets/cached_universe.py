@@ -19,10 +19,11 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
 
-# Version 10 invalidates pre-FIRDS France/Italy snapshots. Those older caches
-# could be MIC-correct yet still include secondary/cross-listed lines. Current
-# official-market caches preserve authoritative membership and resolver coverage.
-CACHE_SCHEMA_VERSION = 10
+# Version 11 invalidates FIRDS snapshots built before the official Euronext
+# regulated-directory resolver was integrated. Membership remains FIRDS-defined;
+# refreshed snapshots resolve local symbols from Euronext first and use OpenFIGI
+# only for exact FIRDS ISINs missing from the official directory.
+CACHE_SCHEMA_VERSION = 11
 
 
 def _utc_now() -> datetime:
