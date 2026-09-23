@@ -35,7 +35,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add analysis/global_markets/cached_universe.py analysis/tests/test_global_universe_cache_schema.py
+          git add analysis/global_markets/cached_universe.py analysis/tests/test_global_universe_cache_schema.py analysis/tests/test_global_universe_cache_v8.py
           git diff --cached --quiet && exit 0
           git commit -m 'Invalidate pre-Euronext FIRDS resolver caches'
           git push origin HEAD:feat/biap-global
