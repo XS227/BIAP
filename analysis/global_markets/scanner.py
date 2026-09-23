@@ -331,9 +331,16 @@ class GlobalMarketScanner:
         universe_authoritative = authoritative_provider_id.startswith("official-") or market_key in authority_allow
         universe_source = authoritative_provider_id
         universe = list(universe_provider.list_instruments(country=country.upper(), exchange=spec.code))
-        discovered_count = len(universe)
+        resolved_count = len(universe)
+        snapshot_info_fn = getattr(universe_provider, "snapshot_info", None)
+        universe_info = snapshot_info_fn(country=country.upper(), exchange=spec.code) if callable(snapshot_info_fn) else {}
+        try:
+            official_count = max(resolved_count, int((universe_info or {}).get("officialCount") or resolved_count))
+        except (TypeError, ValueError):
+            official_count = resolved_count
+        discovered_count = official_count
         selected_universe = universe[:discovery_limit]
-        partial = discovered_count > discovery_limit
+        partial = official_count > discovery_limit
 
         if not self.market_api_key and self.eodhd_bulk is None:
             market_provider = registry.market(country, spec.code)
@@ -358,6 +365,7 @@ class GlobalMarketScanner:
                 "requestedRecommendations": top_n,
                 "recommendationCount": 0,
                 "universeDiscovered": discovered_count,
+                "universeResolved": resolved_count,
                 "universeScreened": len(cached_quotes),
                 "quotesUsable": len(cached_quotes),
                 "deepAnalyzed": len(deep_results),
@@ -402,6 +410,7 @@ class GlobalMarketScanner:
             "requestedRecommendations": top_n,
             "recommendationCount": len(recommendations),
             "universeDiscovered": discovered_count,
+            "universeResolved": resolved_count,
             "universeScreened": len(quotes),
             "quotesUsable": len(quotes),
             "deepAnalyzed": len(deep_results),

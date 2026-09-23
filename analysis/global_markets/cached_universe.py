@@ -124,6 +124,15 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
         path = self._path(country, exchange)
         path.parent.mkdir(parents=True, exist_ok=True)
         now = _utc_now().isoformat()
+        upstream_metadata = getattr(self.upstream, "last_metadata", {})
+        metadata = dict(upstream_metadata) if isinstance(upstream_metadata, dict) else {}
+        try:
+            official_count = max(len(rows), int(metadata.get("officialCount") or len(rows)))
+        except (TypeError, ValueError):
+            official_count = len(rows)
+        metadata["officialCount"] = official_count
+        metadata["resolvedCount"] = len(rows)
+        metadata["resolutionCoveragePct"] = round(100.0 * len(rows) / official_count, 2) if official_count else 0.0
         payload = {
             "schemaVersion": CACHE_SCHEMA_VERSION,
             "country": country.upper(),
@@ -131,6 +140,7 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
             "provider": self.upstream.provider_id,
             "fetchedAt": now,
             "count": len(rows),
+            "metadata": metadata,
             "instruments": [self._row(row) for row in rows],
         }
         temporary = path.with_suffix(path.suffix + ".tmp")
@@ -227,11 +237,26 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
         if payload is None:
             return {"available": False, "provider": self.upstream.provider_id}
         age = self._age_seconds(payload)
+        metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+        count = int(payload.get("count") or 0)
+        try:
+            official_count = max(count, int(metadata.get("officialCount") or count))
+        except (TypeError, ValueError):
+            official_count = count
+        try:
+            resolved_count = int(metadata.get("resolvedCount") or count)
+        except (TypeError, ValueError):
+            resolved_count = count
+        coverage = round(100.0 * resolved_count / official_count, 2) if official_count else 0.0
         return {
             "available": True,
             "provider": str(payload.get("provider") or self.upstream.provider_id),
             "fetchedAt": payload.get("fetchedAt"),
-            "count": int(payload.get("count") or 0),
+            "count": count,
+            "officialCount": official_count,
+            "resolvedCount": resolved_count,
+            "resolutionCoveragePct": coverage,
+            "metadata": metadata,
             "ageHours": None if age is None else round(age / 3600.0, 2),
             "fresh": self._is_fresh(payload),
             "schemaVersion": CACHE_SCHEMA_VERSION,
