@@ -186,6 +186,23 @@ export type GlobalScanResponse = {
   quotesUsable?: number;
   deepAnalyzed?: number;
   screeningCoveragePct?: number;
+  fundamentalCoveragePct?: number;
+  rankingEligible?: boolean;
+  dataReadiness?: {
+    status?: string;
+    rankingEligible?: boolean;
+    eligibleEquities?: number;
+    screenedEquities?: number;
+    marketCoveragePct?: number;
+    deepAnalyzed?: number;
+    verifiedFundamentals?: number;
+    fundamentalCoveragePct?: number;
+    requiredMarketCoveragePct?: number;
+    requiredFundamentalCoveragePct?: number;
+    reasons?: string[];
+    marketSource?: string;
+    fundamentalsSource?: string;
+  };
   recommendations: GlobalAnalysis[];
   deepResults?: GlobalAnalysis[];
   screeningErrors?: string[];
@@ -198,7 +215,14 @@ export type GlobalTop10Response = {
   requestedRecommendations?: number;
   recommendationCount?: number;
   marketsScanned?: number;
+  marketsEligible?: number;
+  marketsExcluded?: number;
   marketErrors?: number;
+  eligibleEquities?: number;
+  screenedEquities?: number;
+  deepAnalyzed?: number;
+  globalCoveragePct?: number;
+  connectedCoveragePct?: number;
   recommendations: GlobalAnalysis[];
   markets?: Array<{
     country: string;

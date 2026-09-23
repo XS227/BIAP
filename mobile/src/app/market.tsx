@@ -157,17 +157,22 @@ export default function MarketScreen() {
     try {
       const result = await scanGlobalMarket(selection.country, selection.exchange, 10);
       const extended = result as typeof result & { catalogOnly?: boolean; cachedMarketData?: boolean };
-      setScan(result.recommendations || []);
+      const rankingEligible = result.rankingEligible === true;
+      setScan(rankingEligible ? (result.recommendations || []) : []);
+      const marketCoverage = result.screeningCoveragePct == null ? '—' : `${Number(result.screeningCoveragePct).toFixed(1)}%`;
+      const fundamentalCoverage = result.fundamentalCoveragePct == null ? '—' : `${Number(result.fundamentalCoveragePct).toFixed(1)}%`;
       if (extended.catalogOnly || result.status === 'MARKET_DATA_REQUIRED') {
         setScanMode('catalog');
-        setScanStatus(`Catalog available • ${(result.universeDiscovered ?? totalMatched) || instruments.length} instruments • verified price/history feed pending`);
+        setScanStatus(`Ranking blocked • ${(result.universeDiscovered ?? totalMatched) || instruments.length} eligible equities • fresh market feed unavailable`);
       } else if (extended.cachedMarketData || result.status.startsWith('CACHED_')) {
         setScanMode('cached');
-        const coverage = result.screeningCoveragePct == null ? '' : ` • ${Number(result.screeningCoveragePct).toFixed(1)}% coverage`;
-        setScanStatus(`Cached market data • ${result.recommendationCount ?? 0} qualified • ${result.deepAnalyzed ?? 0} deep analyses${coverage}`);
+        setScanStatus(`Ranking blocked • stored market records only • market coverage ${marketCoverage} • verified fundamentals ${fundamentalCoverage}`);
+      } else if (!rankingEligible) {
+        setScanMode('cached');
+        setScanStatus(`Ranking blocked • ${result.universeScreened ?? 0}/${result.universeDiscovered ?? 0} equities screened • market coverage ${marketCoverage} • verified fundamentals ${fundamentalCoverage}`);
       } else {
         setScanMode('live');
-        setScanStatus(`Live market data • ${result.recommendationCount ?? 0} qualified • ${result.deepAnalyzed ?? 0} deep analyses`);
+        setScanStatus(`This market • ${result.recommendationCount ?? 0} qualified • ${result.universeScreened ?? 0}/${result.universeDiscovered ?? 0} equities screened • ${marketCoverage} coverage`);
       }
     } catch (err) {
       setScanMode('');
@@ -179,9 +184,15 @@ export default function MarketScreen() {
     setScanning(true); setScan([]); setScanStatus(''); setScanMode('');
     try {
       const result = await scanGlobalTop10(10, 0.5);
-      setScan(result.recommendations || []);
-      setScanMode('global');
-      setScanStatus(`Global Top 10 • ${result.recommendationCount ?? 0} qualified • ${result.marketsScanned ?? 0} connected markets`);
+      const globallyReady = (result.marketsEligible ?? 0) > 0 && result.status !== 'GLOBAL_DATA_INCOMPLETE';
+      setScan(globallyReady ? (result.recommendations || []) : []);
+      setScanMode(globallyReady ? 'global' : 'cached');
+      const coverage = result.globalCoveragePct == null ? '—' : `${Number(result.globalCoveragePct).toFixed(1)}%`;
+      if (!globallyReady) {
+        setScanStatus(`Global ranking blocked • ${result.marketsEligible ?? 0}/${result.marketsScanned ?? 0} markets ready • ${result.marketsExcluded ?? result.marketsScanned ?? 0} excluded`);
+      } else {
+        setScanStatus(`Global Top 10 • ${result.recommendationCount ?? 0} qualified • ${result.marketsEligible ?? 0}/${result.marketsScanned ?? 0} markets ready • ${result.screenedEquities ?? 0}/${result.eligibleEquities ?? 0} equities screened • ${coverage} coverage`);
+      }
     } catch (err) {
       setScanMode('');
       setScanStatus(err instanceof Error ? err.message.slice(0, 220) : 'Global Top 10 scan unavailable.');
@@ -216,7 +227,7 @@ export default function MarketScreen() {
   const modeColor = scanMode === 'live' ? Brand.positive : scanMode === 'global' ? Brand.primary : scanMode === 'cached' || scanMode === 'catalog' ? Brand.warning : colors.textSecondary;
   const listLabel = submittedQuery.trim()
     ? `Search results${totalMatched ? ` • ${totalMatched}` : ''}`
-    : `Exchange instruments${totalMatched ? ` • ${instruments.length} of ${totalMatched}` : ''}`;
+    : `Ordinary equities${totalMatched ? ` • ${instruments.length} of ${totalMatched}` : ''}`;
 
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><View style={[styles.container, { backgroundColor: colors.background }]}>
     <View style={styles.header}><View style={styles.headerTop}><View style={{ flex: 1 }}><Text style={[styles.title, { color: colors.text }]}>Market</Text><Text style={[styles.subtitle, { color: colors.textSecondary }]}>{selection ? `${selection.countryName} • ${selection.exchangeLabel}` : 'Loading market context…'}</Text></View><Pressable onPress={() => router.push('/global')} style={[styles.changeButton, { borderColor: Brand.primary }]}><Text style={styles.changeButtonText}>Change market</Text></Pressable></View>{selection ? <Text style={[styles.contextLine, { color: colors.textSecondary }]}>{selection.mic || selection.exchange} • {selection.currency} • one BIAP engine</Text> : null}</View>
