@@ -389,7 +389,7 @@ export async function scanGlobalMarket(country: string, exchange: string, topN =
   }, 90_000);
 }
 
-export async function scanGlobalTop10(topN = 10, maxAgeHours = 0.5): Promise<GlobalTop10Response> {
+export async function scanGlobalTop10(topN = 10, maxAgeHours = 30): Promise<GlobalTop10Response> {
   return request<GlobalTop10Response>('/global/scan-global', {
     method: 'POST',
     body: JSON.stringify({ topN, maxAgeHours }),

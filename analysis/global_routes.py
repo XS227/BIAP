@@ -47,7 +47,7 @@ class ScanRequest(BaseModel):
 
 class GlobalTop10Request(BaseModel):
     topN: int = Field(default=10, ge=1, le=25)
-    maxAgeHours: float = Field(default=0.5, ge=0, le=6)
+    maxAgeHours: float = Field(default=30.0, ge=0, le=36)
 
 
 class PortfolioProfileRequest(BaseModel):
@@ -257,15 +257,19 @@ def global_requirements():
 @router.get("/status")
 def global_status():
     live_switch_requested = os.environ.get("BIAP_GLOBAL_LIVE_TRADING_ENABLED", "false").strip().lower() == "true"
-    market_configured = bool(os.environ.get("BIAP_GLOBAL_MARKET_API_KEY"))
+    twelve_data_configured = bool((os.environ.get("BIAP_GLOBAL_MARKET_API_KEY") or "").strip())
+    eodhd_bulk_configured = bool((os.environ.get("BIAP_EODHD_API_TOKEN") or "").strip())
+    market_configured = twelve_data_configured or eodhd_bulk_configured
     return {
         "mode": "research-paper-first",
         "liveTrading": False,
         "liveBrokerConnected": False,
         "liveTradingSwitchRequested": live_switch_requested,
         "marketProviderConfigured": market_configured,
-        "marketProviderMode": "licensed-live-plus-persistent-cache" if market_configured else "public-eod-fallback-plus-persistent-cache",
+        "marketProviderMode": ("eodhd-whole-exchange-eod" if eodhd_bulk_configured else "twelve-data-batch" if twelve_data_configured else "public-eod-fallback-plus-persistent-cache"),
         "licensedMarketFeedConfigured": market_configured,
+        "twelveDataBatchConfigured": twelve_data_configured,
+        "eodhdBulkEodConfigured": eodhd_bulk_configured,
         "publicMarketFallbackConfigured": True,
         "marketCacheConfigured": True,
         "marketCacheHours": float(os.environ.get("BIAP_GLOBAL_MARKET_CACHE_HOURS", "6")),

@@ -183,7 +183,7 @@ export default function MarketScreen() {
   const runGlobalTop10 = async () => {
     setScanning(true); setScan([]); setScanStatus(''); setScanMode('');
     try {
-      const result = await scanGlobalTop10(10, 0.5);
+      const result = await scanGlobalTop10(10, 30);
       const globallyReady = (result.marketsEligible ?? 0) > 0 && result.status !== 'GLOBAL_DATA_INCOMPLETE';
       setScan(globallyReady ? (result.recommendations || []) : []);
       setScanMode(globallyReady ? 'global' : 'cached');

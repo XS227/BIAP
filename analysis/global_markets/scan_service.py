@@ -184,7 +184,7 @@ def scan_global_market(
 def scan_global_top10(
     *,
     top_n: int = 10,
-    max_age_hours: float = 0.5,
+    max_age_hours: float = 30.0,
 ) -> dict:
     """Rank qualified candidates across finalized US, Europe, Türkiye and Brazil markets.
 

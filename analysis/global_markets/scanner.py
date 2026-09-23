@@ -18,6 +18,7 @@ from typing import Any, Optional
 import httpx
 
 from .country_packs import ExchangeSpec, get_country_pack, get_exchange
+from .eodhd_bulk import EODHDBulkEODProvider
 from .models import GlobalCompany
 from .providers import GlobalProviderError
 from .runtime import build_registry
@@ -29,6 +30,8 @@ class GlobalMarketScanner:
         self.timeout = max(5.0, float(timeout))
         self.batch_size = max(1, min(int(batch_size), 200))
         self.market_api_key = (os.environ.get("BIAP_GLOBAL_MARKET_API_KEY") or "").strip()
+        self.eodhd_api_token = (os.environ.get("BIAP_EODHD_API_TOKEN") or "").strip()
+        self.eodhd_bulk = EODHDBulkEODProvider(self.eodhd_api_token, timeout=max(20.0, self.timeout)) if self.eodhd_api_token else None
         self.market_base = os.environ.get("BIAP_GLOBAL_MARKET_BASE", "https://api.twelvedata.com").rstrip("/")
         self.min_market_coverage_pct = max(0.0, min(100.0, float(os.environ.get("BIAP_GLOBAL_MIN_MARKET_COVERAGE_PCT", "90"))))
         self.min_fundamental_coverage_pct = max(0.0, min(100.0, float(os.environ.get("BIAP_GLOBAL_MIN_FUNDAMENTAL_COVERAGE_PCT", "70"))))
@@ -51,7 +54,7 @@ class GlobalMarketScanner:
             return None
 
     def _batch_quote_request(self, symbols: list[str], country: str, spec: ExchangeSpec, *, use_mic: bool) -> dict:
-        if not self.market_api_key:
+        if not self.market_api_key and self.eodhd_bulk is None:
             raise GlobalProviderError("BIAP_GLOBAL_MARKET_API_KEY is required for live non-Iran market scanning")
         params: dict[str, Any] = {
             "symbol": ",".join(symbols),
@@ -225,6 +228,7 @@ class GlobalMarketScanner:
         screened_count: int,
         deep_results: list[dict],
         live_market_data: bool,
+        market_source: str,
         partial_universe: bool,
         screening_errors: list[str],
     ) -> dict:
@@ -234,7 +238,7 @@ class GlobalMarketScanner:
         fundamental_coverage = 0.0 if not deep_results else 100.0 * verified_fundamentals / len(deep_results)
         reasons: list[str] = []
         if not live_market_data:
-            reasons.append("live_batch_market_source_unavailable")
+            reasons.append("full_market_source_unavailable")
         if partial_universe:
             reasons.append("universe_discovery_truncated")
         if market_coverage < self.min_market_coverage_pct:
@@ -248,7 +252,7 @@ class GlobalMarketScanner:
             "status": "READY" if ranking_eligible else "BLOCKED" if not live_market_data else "PARTIAL",
             "rankingEligible": ranking_eligible,
             "universeSource": "ordinary-equity exchange catalog",
-            "marketSource": "licensed live batch market feed" if live_market_data else "stored market records only",
+            "marketSource": market_source if live_market_data else "stored market records only",
             "fundamentalsSource": pack.official_evidence_source,
             "eligibleEquities": universe_count,
             "screenedEquities": screened_count,
@@ -327,7 +331,7 @@ class GlobalMarketScanner:
             readiness = self._readiness(
                 country=country.upper(), exchange=spec.code, universe_count=discovered_count,
                 screened_count=len(cached_quotes), deep_results=deep_results, live_market_data=False,
-                partial_universe=partial, screening_errors=[],
+                market_source="stored market records only", partial_universe=partial, screening_errors=[],
             )
             return {
                 "status": "MARKET_DATA_REQUIRED" if not cached_quotes else "CACHED_REFERENCE_ONLY",
@@ -352,7 +356,11 @@ class GlobalMarketScanner:
                 "notes": "No Top Market result is emitted from stored records. Restore a complete live market source, then rescan the ordinary-equity universe.",
             }
 
-        quotes, screening_errors = self._batch_quotes(selected_universe, country.upper(), spec)
+        if self.eodhd_bulk is not None:
+            quotes, screening_errors, market_source = self.eodhd_bulk.batch_quotes(selected_universe, country.upper(), spec)
+        else:
+            quotes, screening_errors = self._batch_quotes(selected_universe, country.upper(), spec)
+            market_source = "Twelve Data licensed batch market feed"
         quote_by_ticker = {row["ticker"]: row for row in quotes}
         ranked = sorted(quotes, key=self._screen_rank, reverse=True)
         shortlist_tickers = [row["ticker"] for row in ranked[:deep_limit]]
@@ -360,7 +368,7 @@ class GlobalMarketScanner:
         readiness = self._readiness(
             country=country.upper(), exchange=spec.code, universe_count=discovered_count,
             screened_count=len(quotes), deep_results=deep_results, live_market_data=True,
-            partial_universe=partial, screening_errors=screening_errors,
+            market_source=market_source, partial_universe=partial, screening_errors=screening_errors,
         )
         recommendations = self._recommendations(deep_results, top_n) if readiness["rankingEligible"] else []
         if readiness["rankingEligible"]:

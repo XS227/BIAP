@@ -22,11 +22,11 @@ if ! "$PY" -m global_markets.universe_sync; then
   echo "UNIVERSE_SYNC: no market refreshed this run; existing snapshots preserved" >&2
 fi
 
-# Expand the daily public-EOD/history cache for a broader set of liquid
-# operating companies. This is market-history coverage only, not a recommendation
-# list. Failures never erase existing snapshots.
-if ! "$PY" -m global_markets.market_cache_warm; then
-  echo "MARKET_CACHE_WARM: refresh degraded; existing market history preserved" >&2
+# Refresh the actual connected exchanges from the complete ordinary-equity
+# universe. This replaces the old hand-maintained famous-ticker warmer. The scan
+# cache is the daily market artifact used by This Market and Global Top 10.
+if ! "$PY" -m global_markets.global_scan_refresh; then
+  echo "GLOBAL_SCAN_REFRESH: refresh degraded; existing complete scan caches preserved" >&2
 fi
 
 # Build an outage-safe baseline for US, ESEF/UKSEF Europe and Türkiye. The job
