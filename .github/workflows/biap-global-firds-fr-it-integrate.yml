@@ -1,0 +1,64 @@
+name: BIAP Global FIRDS France Italy integration
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-firds-fr-it-integrate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+          fetch-depth: 0
+
+      - name: Apply FIRDS runtime integration
+        run: python tools/apply_firds_fr_it_integration.py
+
+      - name: Install backend dependencies
+        working-directory: analysis
+        run: python -m pip install -q -r requirements.txt
+
+      - name: Compile and test Global backend
+        working-directory: analysis
+        env:
+          PYTHONPATH: .
+        run: |
+          python -m compileall -q global_markets global_routes.py global_api_server.py
+          pytest -q tests/test_global_*.py
+
+      - name: Verify registry authority wiring without network refresh
+        working-directory: analysis
+        env:
+          PYTHONPATH: .
+        run: |
+          python - <<'PY'
+          from global_markets.runtime import build_registry
+          from global_markets.cached_universe import CACHE_SCHEMA_VERSION
+
+          registry=build_registry()
+          for country,exchange in [('FR','EURONEXT_PARIS'),('IT','EURONEXT_MILAN')]:
+              provider=registry.universe(country,exchange)
+              upstream=getattr(provider,'upstream',provider)
+              print(country,exchange,'wrapper=',getattr(provider,'provider_id',None),'upstream=',getattr(upstream,'provider_id',None),'fresh_seconds=',getattr(provider,'fresh_seconds',None))
+              assert getattr(upstream,'provider_id',None)=='official-esma-firds-universe'
+              assert getattr(provider,'fresh_seconds',0) >= 167*3600
+          assert CACHE_SCHEMA_VERSION == 10
+          PY
+
+      - name: Commit FIRDS runtime integration
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add analysis/global_markets/runtime.py analysis/global_markets/cached_universe.py analysis/global_markets/universe_sync.py analysis/tests/test_global_universe_cache_v8.py
+          git diff --cached --quiet && exit 0
+          git commit -m 'Use FIRDS authoritative universes for France and Italy'
+          git push origin HEAD:feat/biap-global
