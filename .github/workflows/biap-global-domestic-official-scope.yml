@@ -5,6 +5,8 @@ on:
     branches: [feat/biap-global]
     paths:
       - '.github/workflows/biap-global-domestic-official-scope.yml'
+      - 'tools/apply_domestic_official_scope.py'
+      - 'analysis/tests/test_global_domestic_official_universe.py'
   workflow_dispatch:
 
 permissions:
@@ -66,7 +68,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add analysis/global_markets/official_universe.py analysis/global_markets/cached_universe.py
+          git add analysis/global_markets/official_universe.py analysis/global_markets/cached_universe.py analysis/tests/test_global_universe_cache_v8.py
           git diff --cached --quiet && exit 0
           git commit -m 'Scope official market universes to domestic equities'
           git push origin HEAD:feat/biap-global
