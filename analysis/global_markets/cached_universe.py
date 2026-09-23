@@ -19,10 +19,10 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
 
-# Version 6 also invalidates snapshots that could contain structured products
-# misclassified by upstream reference catalogs as Common Stock. Fresh snapshots
-# contain only supported ordinary operating-company equities.
-CACHE_SCHEMA_VERSION = 7
+# Version 8 invalidates pre-strict-MIC snapshots. Earlier caches could contain
+# instruments whose exchange membership was inferred from a broad country/text
+# query instead of being proven by an accepted venue MIC.
+CACHE_SCHEMA_VERSION = 8
 
 
 def _utc_now() -> datetime:
@@ -169,6 +169,13 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
                 symbol=ticker,
                 currency=currency,
             ):
+                continue
+            # Cached venue membership must be just as strict as live discovery.
+            # A configured exchange is not trusted unless its cached MIC proves
+            # membership in that venue's accepted MIC set.
+            cached_mic = str(row.get("mic_code") or "").strip().upper()
+            accepted_mics = set(spec.accepted_mics)
+            if accepted_mics and (not cached_mic or cached_mic not in accepted_mics):
                 continue
             original_sources: list[SourceEvidence] = []
             for source in row.get("sources") or []:
