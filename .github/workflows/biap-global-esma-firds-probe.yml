@@ -1,0 +1,23 @@
+name: BIAP Global ESMA FIRDS probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-esma-firds-probe.yml'
+      - 'tools/probe_esma_firds_equities.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - run: python -m pip install -q requests
+      - run: python tools/probe_esma_firds_equities.py
