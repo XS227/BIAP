@@ -1,0 +1,53 @@
+name: BIAP Global Dublin Common Stock filter probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-dublin-filter-id-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: python -m pip install -q requests beautifulsoup4
+      - name: Map Euronext filter labels to form control ids
+        run: |
+          python3 - <<'PY'
+          import json,re,requests
+          from bs4 import BeautifulSoup
+          url='https://live.euronext.com/en/products/equities/regulated/list'
+          r=requests.get(url,timeout=45,headers={'User-Agent':'BIAP Dublin filter-id probe'})
+          r.raise_for_status()
+          soup=BeautifulSoup(r.text,'html.parser')
+          result=[]
+          for label in soup.find_all('label'):
+              text=label.get_text(' ',strip=True)
+              if not text: continue
+              target=label.get('for')
+              control=soup.find(id=target) if target else None
+              if any(k in text.lower() for k in ('common stock','euronext dublin','local securities')):
+                  result.append({
+                      'label':text,'for':target,
+                      'control': None if control is None else {
+                          'tag':control.name,'name':control.get('name'),'value':control.get('value'),
+                          'id':control.get('id'),'data':{k:v for k,v in control.attrs.items() if str(k).startswith('data-')}
+                      }
+                  })
+          # Also dump every issueType control with its immediately-associated label.
+          issue=[]
+          for control in soup.find_all(['input','select']):
+              name=str(control.get('name') or '')
+              cid=str(control.get('id') or '')
+              if 'issuetype' not in (name+cid).lower(): continue
+              lab=soup.find('label',attrs={'for':cid})
+              issue.append({'name':name,'id':cid,'value':control.get('value'),'label':lab.get_text(' ',strip=True) if lab else None})
+          print(json.dumps({'matched':result,'issueTypeControls':issue},indent=2,ensure_ascii=False))
+          common=[x for x in issue if (x.get('label') or '').strip().lower()=='common stock']
+          assert common, issue
+          PY
