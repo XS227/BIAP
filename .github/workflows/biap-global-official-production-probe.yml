@@ -1,0 +1,62 @@
+name: BIAP Global official production probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-official-production-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Probe public production API
+        run: |
+          python - <<'PY'
+          import json, urllib.parse, urllib.request
+
+          base='https://biap.dadashi.no/global-api/global'
+          def get(path, params=None):
+              url=base+path
+              if params: url += '?' + urllib.parse.urlencode(params)
+              req=urllib.request.Request(url,headers={'Accept':'application/json','User-Agent':'BIAP-official-production-probe'})
+              with urllib.request.urlopen(req,timeout=120) as r: return json.load(r)
+
+          def catalog(country,exchange):
+              return get(f'/instruments/{country}/{exchange}',{'limit':5})
+          def search(country,exchange,q):
+              return get(f'/instruments/{country}/{exchange}',{'q':q,'limit':20})
+
+          results={}
+          for key,country,exchange in [
+              ('xetra','DE','XETRA'),('frankfurt','DE','FRANKFURT'),('asx','AU','ASX')
+          ]:
+              row=catalog(country,exchange)
+              results[key]={
+                  'totalMatched':row.get('totalMatched'),
+                  'returned':row.get('returned'),
+                  'catalog':row.get('catalog'),
+                  'sample':[(x.get('ticker'),x.get('name'),x.get('isin'),x.get('mic_code') or x.get('mic')) for x in row.get('instruments',[])],
+              }
+
+          checks={
+              'xetra_sap':search('DE','XETRA','SAP'),
+              'xetra_strabag':search('DE','XETRA','XD4'),
+              'frankfurt_sap':search('DE','FRANKFURT','SAP'),
+              'asx_bhp':search('AU','ASX','BHP'),
+          }
+          print(json.dumps({'markets':results,'checks':{k:{'totalMatched':v.get('totalMatched'),'tickers':[x.get('ticker') for x in v.get('instruments',[])]} for k,v in checks.items()}},indent=2))
+
+          assert 300 <= int(results['xetra']['totalMatched']) <= 700, results['xetra']
+          assert 300 <= int(results['frankfurt']['totalMatched']) <= 800, results['frankfurt']
+          assert 1500 <= int(results['asx']['totalMatched']) <= 2200, results['asx']
+          assert checks['xetra_sap'].get('totalMatched',0) >= 1
+          assert checks['frankfurt_sap'].get('totalMatched',0) >= 1
+          assert checks['asx_bhp'].get('totalMatched',0) >= 1
+          assert checks['xetra_strabag'].get('totalMatched',0) == 0, checks['xetra_strabag']
+          PY
