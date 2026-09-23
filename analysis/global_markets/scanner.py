@@ -320,14 +320,16 @@ class GlobalMarketScanner:
         registry = build_registry()
         universe_provider = registry.universe(country, spec.code)
         universe_provider_id = str(getattr(universe_provider, "provider_id", "unknown"))
+        upstream_universe = getattr(universe_provider, "upstream", universe_provider)
+        authoritative_provider_id = str(getattr(upstream_universe, "provider_id", universe_provider_id))
         authority_allow = {item.strip().upper() for item in (os.environ.get("BIAP_GLOBAL_AUTHORITATIVE_UNIVERSE_MARKETS") or "").split(",") if item.strip()}
         market_key = f"{country.upper()}:{spec.code.upper()}"
         # Reference/demo catalogs are useful for search, but cannot prove the
         # exact regulated/native segment (e.g. XMIL also exposes GEM cross-listings).
-        # Ranking is released only after an authoritative exchange universe is wired
-        # or the specific market has been explicitly validated and allow-listed.
-        universe_authoritative = universe_provider_id.startswith("official-") or market_key in authority_allow
-        universe_source = universe_provider_id
+        # A cached official exchange file remains authoritative because the cache
+        # preserves the upstream identity and freshness metadata.
+        universe_authoritative = authoritative_provider_id.startswith("official-") or market_key in authority_allow
+        universe_source = authoritative_provider_id
         universe = list(universe_provider.list_instruments(country=country.upper(), exchange=spec.code))
         discovered_count = len(universe)
         selected_universe = universe[:discovery_limit]

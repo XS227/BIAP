@@ -28,6 +28,7 @@ from .hkex_issuer import HKEXIssuerFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
 from .kap_current import KAPCurrentFundamentalsProvider
 from .opendart import OpenDARTFundamentalsProvider
+from .official_universe import ASXUniverseProvider, DeutscheBoerseUniverseProvider
 from .providers import ProviderRegistry
 from .regional_yahoo_chart import RegionalYahooChartMarketProvider
 from .sec_foreign_ifrs import SECForeignIFRSFundamentalsProvider
@@ -52,15 +53,27 @@ def build_registry() -> ProviderRegistry:
         registry.register_market("IR", exchange.code, iran)
         registry.register_fundamentals("IR", exchange.code, iran)
 
-    # Reference catalog is safe to register independently from the price feed.
-    universe = PersistentUniverseProvider(
+    # Reference catalog remains useful for search/discovery on markets where an
+    # official listing source has not yet been integrated. It is never enough,
+    # by itself, to make a market ranking authoritative.
+    reference_universe = PersistentUniverseProvider(
         TwelveDataUniverseProvider(api_key=os.environ.get("BIAP_GLOBAL_MARKET_API_KEY") or "demo")
     )
     for country, pack in COUNTRY_PACKS.items():
         if country == "IR":
             continue
         for exchange in pack.exchanges:
-            registry.register_universe(country, exchange.code, universe)
+            registry.register_universe(country, exchange.code, reference_universe)
+
+    # Authoritative listing universes override the vendor reference catalog.
+    # Deutsche Boerse publishes current T7 instrument reference files for Xetra
+    # and Frankfurt. ASX publishes the complete listed-company ISIN directory.
+    de_universe = PersistentUniverseProvider(DeutscheBoerseUniverseProvider())
+    registry.register_universe("DE", "XETRA", de_universe)
+    registry.register_universe("DE", "FRANKFURT", de_universe)
+
+    asx_universe = PersistentUniverseProvider(ASXUniverseProvider())
+    registry.register_universe("AU", "ASX", asx_universe)
 
     # Licensed Twelve Data remains the preferred market source. Without a
     # licensed credential, BIAP uses a lower-trust public EOD fallback only on
