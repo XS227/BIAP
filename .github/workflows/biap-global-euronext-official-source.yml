@@ -1,0 +1,41 @@
+name: BIAP Global official Euronext source
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-euronext-official-source.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+          fetch-depth: 0
+      - name: Apply official Euronext source patch
+        run: python tools/apply_euronext_official_market_source.py
+      - name: Install backend dependencies
+        working-directory: analysis
+        run: python -m pip install -q -r requirements.txt
+      - name: Compile and test Global backend
+        working-directory: analysis
+        env:
+          PYTHONPATH: .
+        run: |
+          python -m compileall -q global_markets global_routes.py global_api_server.py
+          pytest -q tests/test_global_*.py
+      - name: Commit official Euronext integration
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add analysis/global_markets/euronext_live.py analysis/global_markets/esma_firds_universe.py analysis/global_markets/scanner.py analysis/tests/test_global_euronext_live.py
+          git diff --cached --quiet && exit 0
+          git commit -m 'Use official Euronext directory and EOD for regulated markets'
+          git push origin HEAD:feat/biap-global
