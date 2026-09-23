@@ -1,0 +1,63 @@
+name: BIAP Global Dublin Common Stock gateway probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-dublin-common-stock-gateway-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: python -m pip install -q requests
+      - name: Probe Dublin Common Stock official filters
+        run: |
+          python3 - <<'PY'
+          import json,requests
+          from urllib.parse import urlencode
+
+          base='https://live.euronext.com'
+          headers={
+              'User-Agent':'BIAP Dublin common-stock gateway probe',
+              'Referer':'https://live.euronext.com/en/products/equities/regulated/list',
+              'X-Requested-With':'XMLHttpRequest',
+          }
+          s=requests.Session()
+          s.get(headers['Referer'],headers=headers,timeout=45).raise_for_status()
+          probes=[]
+
+          variants=[
+              ('filter-get', '/en/product_directory/filter/stocks-euronext-regulated', {
+                  'mics':'XMSM','market[08][08]':'08','issueType[101][101]':'101'}),
+              ('data-get', '/en/product_directory/data/stocks-euronext-regulated', {
+                  'mics':'XMSM','market[08][08]':'08','issueType[101][101]':'101','iDisplayStart':0,'iDisplayLength':100}),
+              ('download-get', '/en/product_directory/data/stocks-euronext-regulated/download', {
+                  'mics':'XMSM','market[08][08]':'08','issueType[101][101]':'101'}),
+          ]
+          for name,path,params in variants:
+              r=s.get(base+path,params=params,headers=headers,timeout=60)
+              item={'name':name,'status':r.status_code,'url':r.url,'contentType':r.headers.get('content-type'),'bytes':len(r.content)}
+              try:
+                  p=r.json()
+                  item['jsonType']=type(p).__name__
+                  if isinstance(p,dict):
+                      item['keys']=list(p.keys())[:50]
+                      for k in ('data','aaData','recordsTotal','recordsFiltered','count','total'):
+                          if k in p:
+                              item[k]=len(p[k]) if isinstance(p[k],list) else p[k]
+                      rows=p.get('data') if isinstance(p.get('data'),list) else p.get('aaData')
+                      if isinstance(rows,list): item['sample']=rows[:20]
+                  elif isinstance(p,list):
+                      item['count']=len(p);item['sample']=p[:20]
+              except Exception:
+                  lines=[line for line in r.text.splitlines() if line.strip()]
+                  item['textSample']=lines[:30]
+              probes.append(item)
+          print(json.dumps(probes,indent=2,ensure_ascii=False,default=str))
+          PY
