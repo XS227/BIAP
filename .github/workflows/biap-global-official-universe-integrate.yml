@@ -1,0 +1,79 @@
+name: BIAP Global official universe integration
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-official-universe-integrate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+          fetch-depth: 0
+
+      - name: Apply official universe integration
+        run: python tools/apply_official_universe_integration.py
+
+      - name: Install backend dependencies
+        working-directory: analysis
+        run: python -m pip install -q -r requirements.txt
+
+      - name: Compile Global backend
+        working-directory: analysis
+        run: python -m compileall -q global_markets global_routes.py global_api_server.py
+
+      - name: Run Global backend tests
+        working-directory: analysis
+        env:
+          PYTHONPATH: .
+        run: pytest -q tests/test_global_*.py
+
+      - name: Validate official sources live
+        working-directory: analysis
+        env:
+          PYTHONPATH: .
+        run: |
+          python - <<'PY'
+          from global_markets.official_universe import ASXUniverseProvider, DeutscheBoerseUniverseProvider
+
+          de = DeutscheBoerseUniverseProvider(timeout=45)
+          xetra = list(de.list_instruments(country='DE', exchange='XETRA'))
+          frankfurt = list(de.list_instruments(country='DE', exchange='FRANKFURT'))
+          asx = list(ASXUniverseProvider(timeout=45).list_instruments(country='AU', exchange='ASX'))
+
+          def report(name, rows):
+              print(name, 'count=', len(rows), 'sample=', [(r.ticker, r.name, r.isin, r.mic_code) for r in rows[:10]])
+
+          report('XETRA', xetra)
+          report('FRANKFURT', frankfurt)
+          report('ASX', asx)
+
+          assert len(xetra) > 300, f'Xetra official common-stock universe unexpectedly small: {len(xetra)}'
+          assert len(frankfurt) > 300, f'Frankfurt official common-stock universe unexpectedly small: {len(frankfurt)}'
+          assert len(asx) > 500, f'ASX official ordinary-equity universe unexpectedly small: {len(asx)}'
+
+          xetra_tickers = {r.ticker for r in xetra}
+          asx_tickers = {r.ticker for r in asx}
+          assert 'SAP' in xetra_tickers, 'SAP missing from official Xetra universe'
+          assert {'BHP', 'CBA'} <= asx_tickers, 'BHP/CBA missing from official ASX universe'
+          assert all(r.sources and r.sources[0].source_type == 'official_exchange_universe' for r in xetra[:50])
+          assert all(r.sources and r.sources[0].source_type == 'official_exchange_universe' for r in asx[:50])
+          PY
+
+      - name: Commit integration
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add analysis/global_markets/runtime.py analysis/global_markets/scanner.py
+          git diff --cached --quiet && exit 0
+          git commit -m 'Use official Xetra Frankfurt and ASX universes'
+          git push origin HEAD:feat/biap-global
