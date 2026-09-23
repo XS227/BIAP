@@ -1,0 +1,158 @@
+name: BIAP Global production readiness probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-production-readiness-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Probe production
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import urllib.parse
+          import urllib.request
+          import urllib.error
+          from pathlib import Path
+
+          base = 'https://biap.dadashi.no/global-api/global'
+          root = 'https://biap.dadashi.no/global/download'
+
+          def get_json(url, timeout=60):
+              req = urllib.request.Request(url, headers={'Accept':'application/json','User-Agent':'BIAP-production-probe'})
+              with urllib.request.urlopen(req, timeout=timeout) as r:
+                  return json.load(r)
+
+          def get_text(url, timeout=45):
+              req = urllib.request.Request(url, headers={'User-Agent':'BIAP-production-probe'})
+              with urllib.request.urlopen(req, timeout=timeout) as r:
+                  return r.read().decode('utf-8', 'replace').strip()
+
+          def post_json(path, body, timeout=180):
+              req = urllib.request.Request(
+                  base + path,
+                  data=json.dumps(body).encode('utf-8'),
+                  headers={'Content-Type':'application/json','Accept':'application/json','User-Agent':'BIAP-production-probe'},
+                  method='POST',
+              )
+              with urllib.request.urlopen(req, timeout=timeout) as r:
+                  return json.load(r)
+
+          report = {'status':None, 'catalogChecks':{}, 'marketScans':{}, 'globalScan':None, 'apk':{}}
+
+          report['status'] = get_json(base + '/status')
+
+          for key, country, exchange, query in [
+              ('fr_bond_like','FR','EURONEXT_PARIS','0112N'),
+              ('fr_peugeot','FR','EURONEXT_PARIS','PEUG'),
+              ('se_structured','SE','NASDAQ_STOCKHOLM','MINI.S.DAX.AVA.919'),
+              ('se_hm','SE','NASDAQ_STOCKHOLM','HM.B'),
+          ]:
+              q = urllib.parse.urlencode({'q':query,'limit':20})
+              try:
+                  data = get_json(f'{base}/instruments/{country}/{exchange}?{q}')
+                  report['catalogChecks'][key] = {
+                      'query':query,
+                      'totalMatched':data.get('totalMatched'),
+                      'returned':data.get('returned'),
+                      'tickers':[x.get('ticker') for x in (data.get('instruments') or [])],
+                      'names':[x.get('name') for x in (data.get('instruments') or [])],
+                      'catalog':data.get('catalog'),
+                  }
+              except Exception as exc:
+                  report['catalogChecks'][key] = {'query':query,'error':f'{type(exc).__name__}: {exc}'}
+
+          for key, country, exchange in [
+              ('france','FR','EURONEXT_PARIS'),
+              ('sweden','SE','NASDAQ_STOCKHOLM'),
+          ]:
+              try:
+                  data = post_json('/scan', {
+                      'country':country,
+                      'exchange':exchange,
+                      'topN':10,
+                      'discoveryLimit':5000,
+                      'deepLimit':10,
+                  })
+                  report['marketScans'][key] = {
+                      'status':data.get('status'),
+                      'rankingEligible':data.get('rankingEligible'),
+                      'marketSource':data.get('marketSource'),
+                      'universeDiscovered':data.get('universeDiscovered'),
+                      'universeScreened':data.get('universeScreened'),
+                      'screeningCoveragePct':data.get('screeningCoveragePct'),
+                      'fundamentalCoveragePct':data.get('fundamentalCoveragePct'),
+                      'deepAnalyzed':data.get('deepAnalyzed'),
+                      'recommendationCount':data.get('recommendationCount'),
+                      'rankingBlockedReasons':data.get('rankingBlockedReasons'),
+                      'topTickers':[x.get('ticker') for x in (data.get('recommendations') or data.get('top') or [])[:10]],
+                  }
+              except Exception as exc:
+                  report['marketScans'][key] = {'error':f'{type(exc).__name__}: {exc}'}
+
+          try:
+              data = post_json('/scan-global', {'topN':10,'maxAgeHours':30}, timeout=240)
+              report['globalScan'] = {
+                  'status':data.get('status'),
+                  'rankingEligible':data.get('rankingEligible'),
+                  'connectedMarkets':data.get('connectedMarkets'),
+                  'readyMarkets':data.get('readyMarkets'),
+                  'excludedMarkets':data.get('excludedMarkets'),
+                  'qualified':data.get('qualified') or data.get('recommendationCount'),
+                  'eligibleEquities':data.get('eligibleEquities'),
+                  'screenedEquities':data.get('screenedEquities'),
+                  'screeningCoveragePct':data.get('screeningCoveragePct'),
+                  'rankingBlockedReasons':data.get('rankingBlockedReasons'),
+                  'topTickers':[x.get('ticker') for x in (data.get('recommendations') or data.get('top10') or data.get('top') or [])[:10]],
+                  'marketSummaries':data.get('marketSummaries') or data.get('markets'),
+              }
+          except Exception as exc:
+              report['globalScan'] = {'error':f'{type(exc).__name__}: {exc}'}
+
+          for key, filename in [
+              ('versionedName','BIAP-Global-latest-arm64.name'),
+              ('sha256','BIAP-Global-latest.apk.sha256'),
+          ]:
+              try:
+                  report['apk'][key] = get_text(f'{root}/{filename}')
+              except Exception as exc:
+                  report['apk'][key] = f'ERROR {type(exc).__name__}: {exc}'
+
+          try:
+              req = urllib.request.Request(f'{root}/BIAP-Global-latest.apk', method='HEAD', headers={'User-Agent':'BIAP-production-probe'})
+              with urllib.request.urlopen(req, timeout=45) as r:
+                  report['apk']['httpStatus'] = r.status
+                  report['apk']['contentLength'] = r.headers.get('Content-Length')
+                  report['apk']['contentType'] = r.headers.get('Content-Type')
+                  report['apk']['lastModified'] = r.headers.get('Last-Modified')
+          except Exception as exc:
+              report['apk']['headError'] = f'{type(exc).__name__}: {exc}'
+
+          Path('biap-global-production-readiness.json').write_text(json.dumps(report, indent=2, sort_keys=True), encoding='utf-8')
+          print(json.dumps({
+              'status': report['status'],
+              'catalogChecks': report['catalogChecks'],
+              'marketScans': report['marketScans'],
+              'globalScan': report['globalScan'],
+              'apk': report['apk'],
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Upload readiness report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: biap-global-production-readiness
+          path: biap-global-production-readiness.json
+          if-no-files-found: error
