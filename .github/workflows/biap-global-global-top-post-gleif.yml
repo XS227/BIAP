@@ -1,0 +1,53 @@
+name: BIAP Global Top production readiness after GLEIF
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-global-top-post-gleif.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Probe production Global Top 10 readiness
+        run: |
+          python - <<'PY'
+          import json, urllib.request
+          url='https://biap.dadashi.no/global-api/global/scan-global'
+          body=json.dumps({'topN':10,'maxAgeHours':30}).encode()
+          req=urllib.request.Request(url,data=body,headers={'Content-Type':'application/json','Accept':'application/json','User-Agent':'BIAP Global production readiness'})
+          with urllib.request.urlopen(req,timeout=1200) as r:
+              p=json.load(r)
+          print('GLOBAL',json.dumps({k:p.get(k) for k in (
+              'status','recommendationCount','marketsScanned','marketsEligible','marketsExcluded',
+              'marketErrors','eligibleEquities','screenedEquities','deepAnalyzed',
+              'globalCoveragePct','connectedCoveragePct'
+          )},sort_keys=True))
+          for row in p.get('markets') or []:
+              dr=row.get('dataReadiness') or {}
+              print('MARKET',json.dumps({
+                  'country':row.get('country'),'exchange':row.get('exchange'),
+                  'status':row.get('status'),'rankingEligible':row.get('rankingEligible'),
+                  'eligibleEquities':dr.get('eligibleEquities') or row.get('eligibleEquities'),
+                  'marketCoveragePct':dr.get('marketCoveragePct') or row.get('screeningCoveragePct'),
+                  'fundamentalCoveragePct':dr.get('fundamentalCoveragePct') or row.get('fundamentalCoveragePct'),
+                  'universeSource':dr.get('universeSource'),
+                  'marketSource':dr.get('marketSource'),
+                  'reasons':dr.get('reasons'),
+                  'error':row.get('error'),
+              },ensure_ascii=False,sort_keys=True))
+          for row in p.get('recommendations') or []:
+              c=row.get('company') if isinstance(row.get('company'),dict) else {}
+              print('TOP',json.dumps({
+                  'rank':row.get('globalRank'),'country':row.get('country') or c.get('country'),
+                  'exchange':row.get('exchange') or c.get('exchange'),'ticker':row.get('ticker') or c.get('ticker'),
+                  'call':row.get('call'),'score':row.get('score'),'confidence':row.get('confidence'),
+                  'evidence':(row.get('evidence') or {}).get('status'),
+              },sort_keys=True))
+          PY
