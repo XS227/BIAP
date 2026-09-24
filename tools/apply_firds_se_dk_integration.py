@@ -33,6 +33,18 @@ replace_once(
     'def test_universe_cache_schema_is_v12():\n    assert CACHE_SCHEMA_VERSION == 12\n'
 )
 
+replace_once(
+    "analysis/tests/test_global_universe_cache_schema.py",
+    'def test_global_universe_cache_schema_is_euronext_resolver_v11():\n    assert CACHE_SCHEMA_VERSION == 11\n',
+    'def test_global_universe_cache_schema_is_firds_nordics_v12():\n    assert CACHE_SCHEMA_VERSION == 12\n'
+)
+
+replace_once(
+    "analysis/tests/test_global_firds_europe_batch2.py",
+    '''def test_suspect_nordic_markets_are_not_promoted_to_firds_yet():\n    registry = build_registry()\n    for country, exchange in [\n        ("SE", "NASDAQ_STOCKHOLM"),\n        ("DK", "NASDAQ_COPENHAGEN"),\n        ("FI", "NASDAQ_HELSINKI"),\n        ("IS", "NASDAQ_ICELAND"),\n        ("IE", "EURONEXT_DUBLIN"),\n    ]:\n        provider = registry.universe(country, exchange)\n        upstream = getattr(provider, "upstream", provider)\n        assert getattr(upstream, "provider_id", None) != "official-esma-firds-universe"\n''',
+    '''def test_only_unresolved_markets_remain_outside_firds():\n    registry = build_registry()\n    for country, exchange in [\n        ("FI", "NASDAQ_HELSINKI"),\n        ("IS", "NASDAQ_ICELAND"),\n        ("IE", "EURONEXT_DUBLIN"),\n    ]:\n        provider = registry.universe(country, exchange)\n        upstream = getattr(provider, "upstream", provider)\n        assert getattr(upstream, "provider_id", None) != "official-esma-firds-universe"\n'''
+)
+
 Path("analysis/tests/test_global_firds_se_dk.py").write_text("""from global_markets.esma_firds_universe import ESMAFIRDSOpenFIGIUniverseProvider
 from global_markets.runtime import build_registry
 
