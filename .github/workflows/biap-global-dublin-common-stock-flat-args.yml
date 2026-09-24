@@ -1,0 +1,56 @@
+name: BIAP Global Dublin Common Stock flat args
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-dublin-common-stock-flat-args.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: python -m pip install -q requests
+      - name: Probe normalized Euronext Common Stock filter
+        run: |
+          python3 - <<'PY'
+          import csv,io,json,requests
+          base='https://live.euronext.com'
+          page=base+'/en/products/equities/regulated/list'
+          headers={'User-Agent':'BIAP Dublin official Common Stock probe','Referer':page}
+          s=requests.Session();s.get(page,headers=headers,timeout=45).raise_for_status()
+          out={}
+          # Official filter gateway uses flattened args after serializeObject().
+          rf=s.get(base+'/en/product_directory/filter/stocks-euronext-regulated',params={
+              'mics':'XMSM','market':'08','issueType':'101','ajax':'true'
+          },headers={**headers,'X-Requested-With':'XMLHttpRequest','Accept':'application/json'},timeout=45)
+          out['filter']={'status':rf.status_code,'contentType':rf.headers.get('content-type'),'bytes':len(rf.content)}
+          try:
+              fp=rf.json();out['filter']['keys']=list(fp.keys()) if isinstance(fp,dict) else None
+              out['filter']['issueTypeResults']=(fp.get('results') or {}).get('issueType') if isinstance(fp,dict) else None
+              out['filter']['marketResults']=(fp.get('results') or {}).get('market') if isinstance(fp,dict) else None
+          except Exception:
+              out['filter']['text']=rf.text[:1000]
+
+          rd=s.get(base+'/en/product_directory/data/stocks-euronext-regulated/download',params={
+              'mics':'XMSM','market':'08','issueType':'101'
+          },headers={**headers,'Accept':'text/csv,*/*'},timeout=60)
+          out['download']={'status':rd.status_code,'contentType':rd.headers.get('content-type'),'bytes':len(rd.content),'url':rd.url}
+          text=rd.content.decode('utf-8-sig',errors='replace')
+          reader=csv.DictReader(io.StringIO(text),delimiter=';')
+          rows=[]
+          for raw in reader:
+              isin=str(raw.get('ISIN') or '').strip().upper();symbol=str(raw.get('Symbol') or '').strip().upper()
+              if len(isin)==12 and isin.isalnum() and symbol:
+                  rows.append({'name':str(raw.get('Name') or '').strip(),'isin':isin,'symbol':symbol,'market':str(raw.get('Market') or '').strip(),'currency':str(raw.get('Currency') or '').strip(),'last':raw.get('last Price'),'volume':raw.get('Volume')})
+          out['download']['count']=len(rows);out['download']['rows']=rows
+          print(json.dumps(out,indent=2,ensure_ascii=False))
+          assert rf.status_code==200, out
+          assert rd.status_code==200, out
+          assert len(rows)>0, out
+          PY
