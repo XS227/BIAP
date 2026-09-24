@@ -1,0 +1,65 @@
+name: BIAP Global B3 instrument XML shape probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-b3-instrument-xml-shape.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Inspect current B3 BVBG.028.02 instrument record shapes
+        run: |
+          python - <<'PY'
+          import io,json,zipfile,requests,xml.etree.ElementTree as ET
+          from datetime import date,timedelta
+          page='https://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/boletins-diarios/pesquisa-por-pregao/pesquisa-por-pregao/'
+          endpoint='https://www.b3.com.br/pesquisapregao/download'
+          s=requests.Session(); s.headers.update({'User-Agent':'Mozilla/5.0 BIAP-Global B3 XML shape'})
+          s.get(page,timeout=90)
+          content=None; chosen=None
+          for back in range(0,4):
+              d=date.today()-timedelta(days=back); fn=f'IN{d:%y%m%d}.zip'
+              try:
+                  r=s.get(endpoint,params={'filelist':fn},timeout=(30,240))
+                  if r.status_code==200 and len(r.content)>1000000:
+                      content=r.content; chosen=fn; break
+              except Exception as exc:
+                  print('ERR',fn,type(exc).__name__,str(exc)[:160])
+          if content is None: raise SystemExit('no current IN file')
+          outer=zipfile.ZipFile(io.BytesIO(content))
+          nested=outer.read(outer.namelist()[0])
+          inner=zipfile.ZipFile(io.BytesIO(nested))
+          xml_name=max(inner.namelist(), key=lambda n: inner.getinfo(n).file_size)
+          print('FILE',chosen,xml_name,inner.getinfo(xml_name).file_size)
+          def local(tag): return tag.rsplit('}',1)[-1]
+          def flatten(elem, prefix='', out=None):
+              out={} if out is None else out
+              kids=list(elem)
+              if not kids:
+                  val=(elem.text or '').strip()
+                  if val: out[prefix or local(elem.tag)]=val
+                  return out
+              for child in kids:
+                  key=f"{prefix}.{local(child.tag)}" if prefix else local(child.tag)
+                  flatten(child,key,out)
+              return out
+          shown=0
+          with inner.open(xml_name) as fh:
+              for ev,elem in ET.iterparse(fh,events=('end',)):
+                  if local(elem.tag)!='InstrmInf':
+                      continue
+                  row=flatten(elem)
+                  # Print first examples of each block/category while bounded.
+                  print('RECORD',json.dumps(dict(list(row.items())[:80]),ensure_ascii=False))
+                  shown+=1
+                  elem.clear()
+                  if shown>=12: break
+          PY
