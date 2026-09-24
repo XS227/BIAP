@@ -182,6 +182,17 @@ jobs:
           fi
           rm -f /tmp/biap-global-provider.env
           chmod 600 analysis/.env.global
+
+          # Authoritative FIRDS markets must be warmed before the public service
+          # receives requests. A new cache schema intentionally invalidates old
+          # vendor snapshots, so the first app request must never pay the FIRDS
+          # download + ticker-resolution cost.
+          set -a
+          source analysis/.env.global
+          set +a
+          BIAP_GLOBAL_UNIVERSE_SYNC_MARKETS=SE:NASDAQ_STOCKHOLM timeout 360 analysis/.venv-global/bin/python -m global_markets.universe_sync
+          BIAP_GLOBAL_UNIVERSE_SYNC_MARKETS=DK:NASDAQ_COPENHAGEN timeout 360 analysis/.venv-global/bin/python -m global_markets.universe_sync
+
           if [[ "$(id -u)" -eq 0 ]]; then SUDO=""; else SUDO="sudo -n"; fi
           $SUDO install -m 0644 deploy/systemd/biap-global.service /etc/systemd/system/biap-global.service
           $SUDO install -m 0644 deploy/systemd/biap-global-source-sync.service /etc/systemd/system/biap-global-source-sync.service
@@ -198,7 +209,7 @@ jobs:
 
           # Regression guard: structured certificates/minifutures mislabelled as
           # Common Stock by reference vendors must not appear in the equity universe.
-          curl --fail --silent --show-error --max-time 20 \
+          curl --fail --silent --show-error --max-time 30 \
             'http://127.0.0.1:8091/global/instruments/SE/NASDAQ_STOCKHOLM?q=MINI.S.DAX.AVA.919&limit=20&offset=0' \
             > /tmp/biap-se-structured.json
           python3 - <<'PY'
