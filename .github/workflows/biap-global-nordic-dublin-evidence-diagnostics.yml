@@ -1,0 +1,64 @@
+name: BIAP Global Nordic Dublin evidence diagnostics
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-nordic-dublin-evidence-diagnostics.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+
+      - name: Locate status consumers
+        run: |
+          grep -R "INSUFFICIENT_MARKET_COVERAGE" -n analysis mobile || true
+
+      - name: Inspect production deep evidence gaps
+        run: |
+          python - <<'PY'
+          import json, requests
+          base='https://biap.dadashi.no/global-api/global'
+          targets=[
+              ('SE','NASDAQ_STOCKHOLM'),
+              ('DK','NASDAQ_COPENHAGEN'),
+              ('IS','NASDAQ_ICELAND'),
+              ('IE','EURONEXT_DUBLIN'),
+          ]
+          s=requests.Session()
+          s.headers.update({'User-Agent':'BIAP Global evidence diagnostic'})
+          for country,exchange in targets:
+              r=s.post(base+'/scan',json={
+                  'country':country,'exchange':exchange,
+                  'topN':3,'discoveryLimit':1000,'deepLimit':10
+              },timeout=240)
+              r.raise_for_status()
+              p=r.json()
+              print('\nMARKET',country,exchange,json.dumps(p.get('dataReadiness') or {},ensure_ascii=False,sort_keys=True))
+              for item in p.get('deepResults') or []:
+                  company=item.get('company') if isinstance(item.get('company'),dict) else {}
+                  evidence=item.get('evidence') if isinstance(item.get('evidence'),dict) else {}
+                  sources=company.get('sources') if isinstance(company,dict) else []
+                  print('DEEP',json.dumps({
+                      'ticker':item.get('ticker') or company.get('ticker'),
+                      'name':company.get('name'),
+                      'isin':company.get('isin'),
+                      'lei':company.get('lei'),
+                      'call':item.get('call'),
+                      'evidenceStatus':evidence.get('status'),
+                      'missing':evidence.get('missing_critical') or evidence.get('missingCritical'),
+                      'reasoning':evidence.get('reasoning'),
+                      'fundamentalsProvider':(company.get('raw_provider_fields') or {}).get('fundamentals_provider'),
+                      'sourceTypes':sorted({str(x.get('source_type')) for x in (sources or []) if isinstance(x,dict)}),
+                      'sourceProviders':sorted({str(x.get('provider')) for x in (sources or []) if isinstance(x,dict)}),
+                  },ensure_ascii=False,sort_keys=True))
+          PY
