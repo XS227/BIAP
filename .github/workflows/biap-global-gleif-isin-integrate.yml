@@ -1,0 +1,41 @@
+name: BIAP Global GLEIF ISIN ESEF integration
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-gleif-isin-integrate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+          fetch-depth: 0
+      - name: Apply ISIN to LEI integration
+        run: python tools/apply_gleif_isin_esef.py
+      - name: Install backend dependencies
+        working-directory: analysis
+        run: python -m pip install -q -r requirements.txt
+      - name: Compile and run Global tests
+        working-directory: analysis
+        env:
+          PYTHONPATH: .
+        run: |
+          python -m compileall -q global_markets global_routes.py global_api_server.py
+          pytest -q tests/test_global_*.py
+      - name: Commit integration
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add analysis/global_markets/gleif.py analysis/global_markets/esef_country.py analysis/tests/test_global_gleif_resolution.py
+          git diff --cached --quiet && exit 0
+          git commit -m 'Resolve ESEF issuers through certified GLEIF ISIN mappings'
+          git push origin HEAD:feat/biap-global
