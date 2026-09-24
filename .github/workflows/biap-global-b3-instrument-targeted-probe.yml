@@ -1,0 +1,58 @@
+name: BIAP Global B3 full instruments targeted probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-b3-instrument-targeted-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Download latest official B3 BVBG.028.02 instrument file
+        run: |
+          python - <<'PY'
+          import io,json,zipfile,requests
+          from datetime import date,timedelta
+          page='https://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/boletins-diarios/pesquisa-por-pregao/pesquisa-por-pregao/'
+          endpoint='https://www.b3.com.br/pesquisapregao/download'
+          s=requests.Session()
+          s.headers.update({'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) BIAP-Global B3 instruments'})
+          p=s.get(page,timeout=90)
+          print('PAGE',p.status_code,len(p.content))
+          for back in range(0,5):
+              d=date.today()-timedelta(days=back)
+              fn=f'IN{d:%y%m%d}.zip'
+              try:
+                  with s.get(endpoint,params={'filelist':fn},timeout=(30,240),stream=True) as r:
+                      chunks=[]
+                      size=0
+                      for chunk in r.iter_content(1024*1024):
+                          if chunk:
+                              chunks.append(chunk); size+=len(chunk)
+                      content=b''.join(chunks)
+                  print('TRY',fn,r.status_code,size,r.headers.get('content-type'))
+                  if r.status_code != 200: continue
+                  outer=zipfile.ZipFile(io.BytesIO(content))
+                  names=outer.namelist()
+                  print('OUTER',json.dumps({'filename':fn,'count':len(names),'names':names[:12],'sizes':[outer.getinfo(n).file_size for n in names[:12]]}))
+                  # B3 instrument package is commonly nested. Inspect the newest/largest nested zip/XML only.
+                  parsed=[]
+                  for n in names:
+                      raw=outer.read(n)
+                      if zipfile.is_zipfile(io.BytesIO(raw)):
+                          inner=zipfile.ZipFile(io.BytesIO(raw))
+                          parsed.append({'outer':n,'innerCount':len(inner.namelist()),'innerNames':inner.namelist()[:8],'innerSizes':[inner.getinfo(x).file_size for x in inner.namelist()[:8]]})
+                      else:
+                          parsed.append({'outer':n,'head':raw[:100].decode('utf-8','replace')})
+                  print('NESTED',json.dumps(parsed[:5],ensure_ascii=False))
+                  break
+              except Exception as exc:
+                  print('ERR',fn,type(exc).__name__,str(exc)[:300])
+          PY
