@@ -15,80 +15,49 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Probe Nasdaq Nordic main-market API and Euronext regulated CSV
+      - name: Inspect Nasdaq Nordic API filters and exchange selectors
         run: |
           python - <<'PY'
-          import csv, io, json, requests
-
+          import json, requests
+          base='https://api.nasdaq.com/api/nordic/screener/shares'
           headers={
               'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36',
               'Accept':'application/json,text/plain,*/*',
               'Accept-Language':'en-US,en;q=0.9',
           }
+          common=[('category','MAIN_MARKET'),('tableonly','true'),('page','1'),('size','1000'),
+                  ('segment','LARGE_CAP'),('segment','MID_CAP'),('segment','SPAC'),('segment','SMALL_CAP'),('lang','en')]
 
-          out={'nasdaq':{},'euronext':{}}
-
-          nurl='https://api.nasdaq.com/api/nordic/screener/shares'
-          params=[
-              ('category','MAIN_MARKET'),('tableonly','true'),('page','1'),('size','1000'),
-              ('segment','LARGE_CAP'),('segment','MID_CAP'),('segment','SPAC'),('segment','SMALL_CAP'),('lang','en')
-          ]
-          r=requests.get(nurl,params=params,headers=headers,timeout=45)
-          out['nasdaq']['status']=r.status_code
-          out['nasdaq']['contentType']=r.headers.get('content-type')
-          out['nasdaq']['bytes']=len(r.content)
-          if r.ok:
-              p=r.json()
-              out['nasdaq']['topKeys']=list(p.keys()) if isinstance(p,dict) else []
-              data=p.get('data') if isinstance(p,dict) else {}
-              il=(data or {}).get('instrumentListing') or {}
+          def get(extra=()):
+              r=requests.get(base,params=common+list(extra),headers=headers,timeout=45)
+              obj={'status':r.status_code,'url':r.url,'bytes':len(r.content)}
+              if not r.ok:
+                  obj['text']=r.text[:500]; return obj
+              p=r.json(); data=p.get('data') or {}; il=data.get('instrumentListing') or {}
               rows=il.get('rows') or []
-              out['nasdaq']['rowCount']=len(rows)
-              out['nasdaq']['headers']=il.get('headers')
-              out['nasdaq']['sample']=rows[:5]
-              markets={}
-              for row in rows:
-                  if not isinstance(row,dict): continue
-                  blob=' | '.join(str(v) for v in row.values())
-                  for label in ('Stockholm','Helsinki','Copenhagen','Iceland'):
-                      if label.lower() in blob.lower():
-                          markets[label]=markets.get(label,0)+1
-              out['nasdaq']['marketTextCounts']=markets
+              obj['dataKeys']=list(data.keys())
+              obj['listingKeys']=list(il.keys())
+              obj['rowCount']=len(rows)
+              obj['meta']={k:v for k,v in data.items() if k!='instrumentListing'}
+              obj['listingMeta']={k:v for k,v in il.items() if k not in ('rows','headers')}
+              wanted={}
+              for needle in ('NOKIA','KONE','MAERSK','NOVO','VOLVO','ERICSSON','MAREL','ARION','ICELANDAIR','SÍMINN','SIMINN'):
+                  hits=[x for x in rows if needle in (str(x.get('fullName',''))+' '+str(x.get('symbol',''))).upper()]
+                  if hits: wanted[needle]=hits[:3]
+              obj['knownHits']=wanted
+              obj['sample']=rows[:2]
+              return obj
 
-          eheaders={
-              'User-Agent':'BIAP Global official universe probe (+https://setai.no)',
-              'Accept':'text/csv,*/*',
-              'Referer':'https://live.euronext.com/en/products/equities/regulated/list',
+          cases={
+              'base':(),
+              'market_Helsinki':(('market','Helsinki'),),
+              'market_Stockholm':(('market','Stockholm'),),
+              'market_Copenhagen':(('market','Copenhagen'),),
+              'market_Iceland':(('market','Iceland'),),
+              'exchange_Helsinki':(('exchange','Helsinki'),),
+              'country_Finland':(('country','Finland'),),
+              'mic_XHEL':(('mic','XHEL'),),
           }
-          eurl='https://live.euronext.com/en/product_directory/data/stocks-euronext-regulated/download'
-          er=requests.get(eurl,headers=eheaders,timeout=60)
-          out['euronext']['status']=er.status_code
-          out['euronext']['contentType']=er.headers.get('content-type')
-          out['euronext']['bytes']=len(er.content)
-          if er.ok:
-              text=er.content.decode('utf-8-sig',errors='replace')
-              rows=[]
-              try:
-                  rd=csv.DictReader(io.StringIO(text),delimiter=';')
-                  rows=[x for x in rd if isinstance(x,dict)]
-              except Exception as exc:
-                  out['euronext']['csvError']=repr(exc)
-              usable=[]
-              markets={}
-              dublin=[]
-              for raw in rows:
-                  isin=str(raw.get('ISIN') or '').strip().upper()
-                  sym=str(raw.get('Symbol') or '').strip().upper()
-                  market=str(raw.get('Market') or '').strip()
-                  if len(isin)==12 and isin.isalnum() and sym:
-                      usable.append(raw)
-                      markets[market]=markets.get(market,0)+1
-                      if 'Dublin' in market or 'Ireland' in market or 'XMSM' in market:
-                          dublin.append({k:raw.get(k) for k in ('Name','ISIN','Symbol','Market','Currency')})
-              out['euronext']['usableRows']=len(usable)
-              out['euronext']['marketCounts']=markets
-              out['euronext']['dublinCount']=len(dublin)
-              out['euronext']['dublinSample']=dublin[:20]
-
-          print(json.dumps(out,indent=2,ensure_ascii=False))
+          out={k:get(v) for k,v in cases.items()}
+          print(json.dumps(out,indent=2,ensure_ascii=False)[:60000])
           PY
