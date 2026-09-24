@@ -190,8 +190,8 @@ jobs:
           set -a
           source analysis/.env.global
           set +a
-          BIAP_GLOBAL_UNIVERSE_SYNC_MARKETS=SE:NASDAQ_STOCKHOLM timeout 360 analysis/.venv-global/bin/python -m global_markets.universe_sync
-          BIAP_GLOBAL_UNIVERSE_SYNC_MARKETS=DK:NASDAQ_COPENHAGEN timeout 360 analysis/.venv-global/bin/python -m global_markets.universe_sync
+          PYTHONPATH=analysis BIAP_GLOBAL_UNIVERSE_SYNC_MARKETS=SE:NASDAQ_STOCKHOLM timeout 360 analysis/.venv-global/bin/python -m global_markets.universe_sync
+          PYTHONPATH=analysis BIAP_GLOBAL_UNIVERSE_SYNC_MARKETS=DK:NASDAQ_COPENHAGEN timeout 360 analysis/.venv-global/bin/python -m global_markets.universe_sync
 
           if [[ "$(id -u)" -eq 0 ]]; then SUDO=""; else SUDO="sudo -n"; fi
           $SUDO install -m 0644 deploy/systemd/biap-global.service /etc/systemd/system/biap-global.service
