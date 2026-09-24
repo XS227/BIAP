@@ -1,0 +1,45 @@
+name: BIAP Global B3 production verification
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-b3-production-verify.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Verify B3 full-market production scan
+        run: |
+          python - <<'PY'
+          import json, urllib.request
+          base='https://biap.dadashi.no/global-api/global'
+          body=json.dumps({'country':'BR','exchange':'B3','topN':5,'discoveryLimit':5000,'deepLimit':20}).encode()
+          req=urllib.request.Request(base+'/scan',data=body,headers={'Content-Type':'application/json','Accept':'application/json','User-Agent':'BIAP B3 production verify'})
+          with urllib.request.urlopen(req,timeout=1200) as r:
+              p=json.load(r)
+          print('B3',json.dumps({
+              'status':p.get('status'),'rankingEligible':p.get('rankingEligible'),
+              'universeDiscovered':p.get('universeDiscovered'),'universeScreened':p.get('universeScreened'),
+              'screeningCoveragePct':p.get('screeningCoveragePct'),
+              'fundamentalCoveragePct':p.get('fundamentalCoveragePct'),
+              'recommendationCount':p.get('recommendationCount'),
+              'dataReadiness':p.get('dataReadiness'),
+              'screeningErrors':p.get('screeningErrors'),
+          },ensure_ascii=False,sort_keys=True))
+          for item in (p.get('deepResults') or [])[:20]:
+              c=item.get('company') if isinstance(item.get('company'),dict) else {}
+              e=item.get('evidence') if isinstance(item.get('evidence'),dict) else {}
+              print('DEEP',json.dumps({
+                  'ticker':item.get('ticker') or c.get('ticker'),'name':c.get('name'),
+                  'isin':c.get('isin'),'call':item.get('call'),
+                  'evidence':e.get('status'),'missing':e.get('missing_critical') or e.get('missingCritical'),
+                  'providers':sorted({str(x.get('provider')) for x in (c.get('sources') or []) if isinstance(x,dict)})
+              },ensure_ascii=False,sort_keys=True))
+          PY
