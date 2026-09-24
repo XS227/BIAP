@@ -19,8 +19,8 @@ from typing import Iterable, Optional
 import requests
 
 from .country_packs import ExchangeSpec
-from .models import GlobalCompany
-from .providers import GlobalProviderError
+from .models import GlobalCompany, SourceEvidence
+from .providers import GlobalProviderError, InstrumentUniverseProvider
 
 
 _BASE = "https://live.euronext.com"
@@ -40,6 +40,11 @@ _MARKETS: dict[tuple[str, str], str] = {
     # EOD source, but ranking remains blocked until its authoritative common-share
     # membership is independently validated in the BIAP universe layer.
     ("IE", "EURONEXT_DUBLIN"): "XMSM",
+}
+
+
+_EXACT_MARKET_NAMES: dict[tuple[str, str], str] = {
+    ("IE", "EURONEXT_DUBLIN"): "Euronext Dublin",
 }
 
 
@@ -84,9 +89,14 @@ class EuronextLiveRegulatedClient:
             "Referer": _PAGE,
         }
         try:
+            # Dublin's XMSM-filtered download gateway is intermittently broken
+            # upstream. The unfiltered regulated-stocks CSV is healthy and carries
+            # an exact Market column, so Dublin is selected from that authoritative
+            # full file instead of falling back to a vendor catalog.
+            params = None if (country.upper(), exchange.upper()) == ("IE", "EURONEXT_DUBLIN") else {"mics": mic}
             response = requests.get(
                 _DOWNLOAD,
-                params={"mics": mic},
+                params=params,
                 headers=headers,
                 timeout=self.timeout,
             )
@@ -120,6 +130,9 @@ class EuronextLiveRegulatedClient:
                 "close": _float(raw.get("Closing Price")),
                 "mic": mic,
             })
+        exact_market = _EXACT_MARKET_NAMES.get((country.upper(), exchange.upper()))
+        if exact_market:
+            rows = [row for row in rows if str(row.get("market") or "").strip() == exact_market]
         if not rows:
             raise GlobalProviderError(f"Euronext regulated directory returned no usable rows for {country}/{exchange}")
         return mic, rows
@@ -207,3 +220,66 @@ class EuronextLiveRegulatedClient:
         if not quotes:
             errors.append(f"Euronext regulated EOD returned no usable FIRDS-universe matches for {country}/{spec.code}")
         return quotes, errors, f"Euronext regulated official EOD ({mic})"
+
+
+class EuronextRegulatedUniverseProvider(InstrumentUniverseProvider):
+    """Authoritative regulated-stock membership for Euronext Dublin."""
+
+    provider_id = "official-euronext-regulated-universe"
+
+    def __init__(self, *, timeout: float = 45.0) -> None:
+        self.client = EuronextLiveRegulatedClient(timeout=timeout)
+        self.last_metadata: dict = {}
+
+    @staticmethod
+    def supported(country: str, exchange: str) -> bool:
+        return (country.upper(), exchange.upper()) == ("IE", "EURONEXT_DUBLIN")
+
+    def list_instruments(self, *, country=None, exchange=None):
+        if not country or not exchange or not self.supported(country, exchange):
+            raise GlobalProviderError(f"Euronext regulated universe is not configured for {country}/{exchange}")
+        country = country.upper()
+        exchange = exchange.upper()
+        mic, rows = self.client._download(country=country, exchange=exchange)
+        observed = datetime.now().astimezone().isoformat()
+        result: list[GlobalCompany] = []
+        for row in rows:
+            isin = _valid_isin(row.get("isin"))
+            ticker = str(row.get("symbol") or "").strip().upper()
+            currency = str(row.get("currency") or "").strip().upper()
+            if not isin or not ticker or not currency:
+                continue
+            result.append(GlobalCompany(
+                country=country,
+                exchange=exchange,
+                currency=currency,
+                ticker=ticker,
+                name=str(row.get("name") or ticker).strip(),
+                mic_code=mic,
+                isin=isin,
+                instrument_type="Common Stock",
+                raw_provider_fields={
+                    "official_universe": True,
+                    "euronext_market": row.get("market"),
+                    "euronext_regulated_directory": True,
+                },
+                sources=[SourceEvidence(
+                    provider=self.provider_id,
+                    source_type="official_exchange_universe",
+                    source_id=f"EURONEXT:{isin}:{mic}",
+                    source_url=_DOWNLOAD,
+                    observed_at=observed,
+                    quality=1.0,
+                    notes="Exact Euronext Dublin regulated-stock directory membership.",
+                )],
+            ))
+        if not result:
+            raise GlobalProviderError("Euronext Dublin official universe normalized no instruments")
+        self.last_metadata = {
+            "officialCount": len(result),
+            "resolvedCount": len(result),
+            "resolutionCoveragePct": 100.0,
+            "nativeMic": mic,
+            "identitySource": "Euronext regulated stocks official CSV",
+        }
+        return result

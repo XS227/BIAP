@@ -23,6 +23,8 @@ from .cvm_itr import CVMITRCorroborator
 from .cvm_resolver import CVMResolvedFundamentalsProvider
 from .edinet import EDINETFundamentalsProvider
 from .esma_firds_universe import ESMAFIRDSOpenFIGIUniverseProvider
+from .euronext_live import EuronextRegulatedUniverseProvider
+from .nasdaq_nordic import NasdaqNordicUniverseProvider
 from .fallback_fundamentals import FallbackFundamentalsProvider
 from .german_issuer import GermanIssuerFundamentalsProvider
 from .hkex_issuer import HKEXIssuerFundamentalsProvider
@@ -91,8 +93,24 @@ def build_registry() -> ProviderRegistry:
     registry.register_universe("PT", "EURONEXT_LISBON", firds_eu)
     registry.register_universe("NO", "EURONEXT_OSLO", firds_eu)
     registry.register_universe("ES", "BME_MADRID", firds_eu)
-    registry.register_universe("SE", "NASDAQ_STOCKHOLM", firds_eu)
-    registry.register_universe("DK", "NASDAQ_COPENHAGEN", firds_eu)
+
+    nasdaq_nordic = PersistentUniverseProvider(
+        NasdaqNordicUniverseProvider(),
+        fresh_hours=12,
+    )
+    for country, exchange in (
+        ("SE", "NASDAQ_STOCKHOLM"),
+        ("DK", "NASDAQ_COPENHAGEN"),
+        ("FI", "NASDAQ_HELSINKI"),
+        ("IS", "NASDAQ_ICELAND"),
+    ):
+        registry.register_universe(country, exchange, nasdaq_nordic)
+
+    dublin_universe = PersistentUniverseProvider(
+        EuronextRegulatedUniverseProvider(),
+        fresh_hours=12,
+    )
+    registry.register_universe("IE", "EURONEXT_DUBLIN", dublin_universe)
 
     # Licensed Twelve Data remains the preferred market source. Without a
     # licensed credential, BIAP uses a lower-trust public EOD fallback only on

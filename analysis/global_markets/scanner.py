@@ -21,6 +21,7 @@ from .country_packs import ExchangeSpec, get_country_pack, get_exchange
 from .eodhd_bulk import EODHDBulkEODProvider
 from .euronext_live import EuronextLiveRegulatedClient
 from .models import GlobalCompany
+from .nasdaq_nordic import NasdaqNordicOfficialClient
 from .providers import GlobalProviderError
 from .runtime import build_registry
 from .service import analyze_company
@@ -34,6 +35,7 @@ class GlobalMarketScanner:
         self.eodhd_api_token = (os.environ.get("BIAP_EODHD_API_TOKEN") or "").strip()
         self.eodhd_bulk = EODHDBulkEODProvider(self.eodhd_api_token, timeout=max(20.0, self.timeout)) if self.eodhd_api_token else None
         self.euronext_live = EuronextLiveRegulatedClient(timeout=max(20.0, self.timeout))
+        self.nasdaq_nordic = NasdaqNordicOfficialClient(timeout=max(20.0, self.timeout))
         self.market_base = os.environ.get("BIAP_GLOBAL_MARKET_BASE", "https://api.twelvedata.com").rstrip("/")
         self.min_market_coverage_pct = max(0.0, min(100.0, float(os.environ.get("BIAP_GLOBAL_MIN_MARKET_COVERAGE_PCT", "90"))))
         self.min_fundamental_coverage_pct = max(0.0, min(100.0, float(os.environ.get("BIAP_GLOBAL_MIN_FUNDAMENTAL_COVERAGE_PCT", "70"))))
@@ -344,7 +346,11 @@ class GlobalMarketScanner:
         selected_universe = universe[:discovery_limit]
         partial = official_count > discovery_limit
 
-        if not self.market_api_key and self.eodhd_bulk is None and not self.euronext_live.supported(country.upper(), spec.code):
+        official_market_source = (
+            self.euronext_live.supported(country.upper(), spec.code)
+            or self.nasdaq_nordic.supported(country.upper(), spec.code)
+        )
+        if not self.market_api_key and self.eodhd_bulk is None and not official_market_source:
             market_provider = registry.market(country, spec.code)
             cached_companies = market_provider.cached_companies(country=country.upper(), exchange=spec.code) if hasattr(market_provider, "cached_companies") else []
             allowed_tickers = {item.ticker.upper() for item in selected_universe}
@@ -383,7 +389,9 @@ class GlobalMarketScanner:
                 "notes": "No Top Market result is emitted from stored records. Restore a complete live market source, then rescan the ordinary-equity universe.",
             }
 
-        if self.euronext_live.supported(country.upper(), spec.code):
+        if self.nasdaq_nordic.supported(country.upper(), spec.code):
+            quotes, screening_errors, market_source = self.nasdaq_nordic.batch_quotes(selected_universe, country.upper(), spec)
+        elif self.euronext_live.supported(country.upper(), spec.code):
             quotes, screening_errors, market_source = self.euronext_live.batch_quotes(selected_universe, country.upper(), spec)
         elif self.eodhd_bulk is not None:
             quotes, screening_errors, market_source = self.eodhd_bulk.batch_quotes(selected_universe, country.upper(), spec)

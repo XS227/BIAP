@@ -19,10 +19,10 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
 
-# Version 12 extends authoritative FIRDS membership to Sweden and Denmark.
-# Old vendor/reference snapshots for XSTO/XCSE must not survive this semantic
-# change; all authoritative market caches are rebuilt under the same schema.
-CACHE_SCHEMA_VERSION = 12
+# Version 13 replaces incomplete FIRDS Nordic membership with Nasdaq's own
+# Main Market screener for STO/CPH/HEL/ICE and wires Euronext's official Dublin
+# regulated-stock directory. Older snapshots must not survive this source change.
+CACHE_SCHEMA_VERSION = 13
 
 
 def _utc_now() -> datetime:
