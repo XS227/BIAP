@@ -19,11 +19,10 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
 
-# Version 11 invalidates FIRDS snapshots built before the official Euronext
-# regulated-directory resolver was integrated. Membership remains FIRDS-defined;
-# refreshed snapshots resolve local symbols from Euronext first and use OpenFIGI
-# only for exact FIRDS ISINs missing from the official directory.
-CACHE_SCHEMA_VERSION = 11
+# Version 12 extends authoritative FIRDS membership to Sweden and Denmark.
+# Old vendor/reference snapshots for XSTO/XCSE must not survive this semantic
+# change; all authoritative market caches are rebuilt under the same schema.
+CACHE_SCHEMA_VERSION = 12
 
 
 def _utc_now() -> datetime:

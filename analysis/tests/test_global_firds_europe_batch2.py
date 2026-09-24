@@ -30,11 +30,9 @@ def test_firds_batch2_registry_is_authoritative():
         assert getattr(provider, "fresh_seconds", 0) >= 167 * 3600
 
 
-def test_suspect_nordic_markets_are_not_promoted_to_firds_yet():
+def test_only_unresolved_markets_remain_outside_firds():
     registry = build_registry()
     for country, exchange in [
-        ("SE", "NASDAQ_STOCKHOLM"),
-        ("DK", "NASDAQ_COPENHAGEN"),
         ("FI", "NASDAQ_HELSINKI"),
         ("IS", "NASDAQ_ICELAND"),
         ("IE", "EURONEXT_DUBLIN"),
