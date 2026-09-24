@@ -15,49 +15,35 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Inspect Nasdaq Nordic API filters and exchange selectors
+      - name: Read official Nasdaq Nordic screener filters
         run: |
           python - <<'PY'
           import json, requests
-          base='https://api.nasdaq.com/api/nordic/screener/shares'
+          url='https://api.nasdaq.com/api/nordic/screener/shares'
           headers={
-              'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36',
-              'Accept':'application/json,text/plain,*/*',
-              'Accept-Language':'en-US,en;q=0.9',
+            'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36',
+            'Accept':'application/json,text/plain,*/*',
+            'Accept-Language':'en-US,en;q=0.9'
           }
-          common=[('category','MAIN_MARKET'),('tableonly','true'),('page','1'),('size','1000'),
-                  ('segment','LARGE_CAP'),('segment','MID_CAP'),('segment','SPAC'),('segment','SMALL_CAP'),('lang','en')]
-
-          def get(extra=()):
-              r=requests.get(base,params=common+list(extra),headers=headers,timeout=45)
-              obj={'status':r.status_code,'url':r.url,'bytes':len(r.content)}
-              if not r.ok:
-                  obj['text']=r.text[:500]; return obj
-              p=r.json(); data=p.get('data') or {}; il=data.get('instrumentListing') or {}
-              rows=il.get('rows') or []
-              obj['dataKeys']=list(data.keys())
-              obj['listingKeys']=list(il.keys())
-              obj['rowCount']=len(rows)
-              obj['meta']={k:v for k,v in data.items() if k!='instrumentListing'}
-              obj['listingMeta']={k:v for k,v in il.items() if k not in ('rows','headers')}
-              wanted={}
-              for needle in ('NOKIA','KONE','MAERSK','NOVO','VOLVO','ERICSSON','MAREL','ARION','ICELANDAIR','SÍMINN','SIMINN'):
-                  hits=[x for x in rows if needle in (str(x.get('fullName',''))+' '+str(x.get('symbol',''))).upper()]
-                  if hits: wanted[needle]=hits[:3]
-              obj['knownHits']=wanted
-              obj['sample']=rows[:2]
-              return obj
-
-          cases={
-              'base':(),
-              'market_Helsinki':(('market','Helsinki'),),
-              'market_Stockholm':(('market','Stockholm'),),
-              'market_Copenhagen':(('market','Copenhagen'),),
-              'market_Iceland':(('market','Iceland'),),
-              'exchange_Helsinki':(('exchange','Helsinki'),),
-              'country_Finland':(('country','Finland'),),
-              'mic_XHEL':(('mic','XHEL'),),
+          variants={
+            'no_tableonly':[('category','MAIN_MARKET'),('page','1'),('size','5'),('lang','en')],
+            'tableonly_false':[('category','MAIN_MARKET'),('tableonly','false'),('page','1'),('size','5'),('lang','en')],
+            'no_category':[('page','1'),('size','5'),('lang','en')],
           }
-          out={k:get(v) for k,v in cases.items()}
-          print(json.dumps(out,indent=2,ensure_ascii=False)[:60000])
+          out={}
+          for name,params in variants.items():
+            r=requests.get(url,params=params,headers=headers,timeout=45)
+            item={'status':r.status_code,'url':r.url,'bytes':len(r.content)}
+            if r.ok:
+              p=r.json(); data=p.get('data') or {}
+              item['dataKeys']=list(data.keys())
+              item['filters']=data.get('filters')
+              item['pagination']=data.get('pagination')
+              il=data.get('instrumentListing') or {}
+              item['rowCount']=len(il.get('rows') or [])
+              item['sample']=(il.get('rows') or [])[:2]
+            else:
+              item['text']=r.text[:1000]
+            out[name]=item
+          print(json.dumps(out,indent=2,ensure_ascii=False)[:80000])
           PY
