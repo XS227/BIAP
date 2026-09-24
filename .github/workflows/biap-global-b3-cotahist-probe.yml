@@ -1,0 +1,57 @@
+name: BIAP Global B3 COTAHIST official probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-b3-cotahist-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Probe official daily COTAHIST
+        run: |
+          python - <<'PY'
+          import io,json,zipfile,requests
+          from datetime import date,timedelta
+          base='https://bvmf.bmfbovespa.com.br/InstDados/SerHist/'
+          s=requests.Session()
+          s.headers.update({'User-Agent':'Mozilla/5.0 BIAP-Global official-B3-COTAHIST'})
+          for back in range(0,8):
+              d=date.today()-timedelta(days=back)
+              fn=f'COTAHIST_D{d:%d%m%Y}.ZIP'
+              try:
+                  r=s.get(base+fn,timeout=25)
+              except Exception as exc:
+                  print('TRY',fn,type(exc).__name__,str(exc)[:100]); continue
+              print('TRY',fn,r.status_code,len(r.content),r.headers.get('content-type'))
+              if r.status_code != 200: continue
+              try:
+                  z=zipfile.ZipFile(io.BytesIO(r.content))
+              except Exception: continue
+              name=z.namelist()[0]
+              raw=z.read(name).decode('latin-1')
+              rows=[]
+              for line in raw.splitlines():
+                  if len(line)<245 or line[:2] != '01': continue
+                  codbdi=line[10:12]
+                  ticker=line[12:24].strip()
+                  tpmerc=line[24:27]
+                  issuer=line[27:39].strip()
+                  spec=line[39:49].strip()
+                  close=int(line[108:121] or '0')/100
+                  trades=int(line[147:152] or '0')
+                  qty=int(line[152:170] or '0')
+                  value=int(line[170:188] or '0')/100
+                  isin=line[230:242].strip()
+                  if codbdi=='02' and tpmerc=='010' and (spec.startswith('ON') or spec.startswith('PN') or spec.startswith('UNT')):
+                      rows.append({'ticker':ticker,'name':issuer,'spec':spec,'close':close,'trades':trades,'qty':qty,'value':value,'isin':isin})
+              print('FOUND',json.dumps({'date':d.isoformat(),'file':fn,'text':name,'nativeEquities':len(rows),'sample':rows[:12]},ensure_ascii=False))
+              break
+          PY
