@@ -1,4 +1,5 @@
 name: BIAP Global official Nordic Dublin integration
+# retry after v13 legacy cache assertion update
 
 on:
   push:
