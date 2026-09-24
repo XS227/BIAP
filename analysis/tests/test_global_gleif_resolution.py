@@ -19,7 +19,7 @@ def _row(lei: str, name: str, country: str | None) -> LEIResolution:
     )
 
 
-def _company(country: str, name: str, ticker: str = "TEST") -> GlobalCompany:
+def _company(country: str, name: str, ticker: str = "TEST", isin: str | None = None) -> GlobalCompany:
     return GlobalCompany(
         country=country,
         exchange="TEST_EXCHANGE",
@@ -27,7 +27,56 @@ def _company(country: str, name: str, ticker: str = "TEST") -> GlobalCompany:
         currency="EUR",
         ticker=ticker,
         name=name,
+        isin=isin,
     )
+
+
+def test_gleif_resolves_unique_active_issuer_by_isin(monkeypatch):
+    resolver = GLEIFResolver()
+
+    def fake_get(path, params=None):
+        assert path == "lei-records"
+        assert params["filter[isin]"] == "SE0000106270"
+        return {
+            "data": [{
+                "id": "529900O5RR7R39FRDM42",
+                "attributes": {
+                    "entity": {
+                        "legalName": {"name": "H & M Hennes & Mauritz AB"},
+                        "status": "ACTIVE",
+                        "legalJurisdiction": "SE",
+                    },
+                    "registration": {"status": "ISSUED"},
+                },
+            }]
+        }
+
+    monkeypatch.setattr(resolver, "_get", fake_get)
+    match = resolver.resolve_isin("SE0000106270", country="SE")
+    assert match.lei == "529900O5RR7R39FRDM42"
+    assert match.legal_name == "H & M Hennes & Mauritz AB"
+
+
+def test_esef_prefers_isin_to_lei_before_display_name(monkeypatch):
+    provider = CountryAwareESEFFundamentalsProvider()
+    seen = []
+
+    def fake_isin(isin, country=None):
+        seen.append((isin, country))
+        return _row("635400BR2ROC1FVEBQ56", "Ryanair Holdings Public Limited Company", "IE")
+
+    monkeypatch.setattr(provider.gleif, "resolve_isin", fake_isin)
+    monkeypatch.setattr(
+        provider.gleif,
+        "resolve_exact_legal_name",
+        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("name fallback should not run")),
+    )
+    lei, legal_name = provider._resolve_lei(
+        _company("IE", "RYANAIR HOLD. PLC", "RYA", isin="IE00BYTBXV33")
+    )
+    assert lei == "635400BR2ROC1FVEBQ56"
+    assert legal_name == "Ryanair Holdings Public Limited Company"
+    assert seen == [("IE00BYTBXV33", "IE")]
 
 
 def test_legal_core_handles_diacritics_and_punctuated_legal_forms():

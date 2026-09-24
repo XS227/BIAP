@@ -276,6 +276,39 @@ class GLEIFResolver:
             raise GlobalProviderError(f"GLEIF entity for {wanted} is not active/usable")
         return resolution
 
+    def resolve_isin(self, isin: str, *, country: Optional[str] = None) -> LEIResolution:
+        """Resolve an issuer LEI from GLEIF's certified ISIN mapping.
+
+        ISIN is a stronger issuer-identity key than a market display name. We
+        still require one unique active/usable LEI (optionally narrowed by legal
+        jurisdiction); ambiguous mappings remain blocked.
+        """
+        wanted = str(isin or "").strip().upper()
+        if len(wanted) != 12 or not wanted.isalnum():
+            raise GlobalProviderError("invalid ISIN format")
+        payload = self._get(
+            "lei-records",
+            {
+                "filter[isin]": wanted,
+                "page[size]": 100,
+                "page[number]": 1,
+            },
+        )
+        rows = payload.get("data")
+        if not isinstance(rows, list):
+            raise GlobalProviderError("GLEIF ISIN search returned no data list")
+        matches: list[LEIResolution] = []
+        for row in rows:
+            resolution = self._resolution(row)
+            if resolution is not None and self._usable(resolution):
+                matches.append(resolution)
+        resolved, count = self._unique_or_country(matches, country=country)
+        if resolved is None:
+            raise GlobalProviderError(
+                f"GLEIF ISIN resolution for {wanted!r} is ambiguous/unavailable ({count} active matches)"
+            )
+        return resolved
+
     def _search(self, text: str, *, page_size: int = 100) -> list[LEIResolution]:
         payload = self._get(
             "lei-records",

@@ -86,6 +86,20 @@ class CountryAwareESEFFundamentalsProvider(ESEFFundamentalsProvider):
         if company.lei:
             resolution = self.gleif.verify_lei(company.lei)
             return resolution.lei, resolution.legal_name
+
+        # Prefer the regulator/numbering-agency identity chain over display-name
+        # matching. GLEIF exposes certified ISIN->LEI mappings; when present and
+        # unique this avoids brittle issuer-name aliases (share classes,
+        # abbreviations, punctuation and local legal forms).
+        if company.isin:
+            try:
+                resolution = self.gleif.resolve_isin(company.isin, country=company.country)
+                return resolution.lei, resolution.legal_name
+            except GlobalProviderError:
+                # Not every legacy ISIN is mapped by participating NNAs yet.
+                # Fall back conservatively to the existing exact-name resolver.
+                pass
+
         if not company.name or company.name == company.ticker:
             raise GlobalProviderError("ESEF requires a verified LEI or full legal company name")
 
