@@ -184,14 +184,19 @@ export default function MarketScreen() {
     setScanning(true); setScan([]); setScanStatus(''); setScanMode('');
     try {
       const result = await scanGlobalTop10(10, 30);
-      const globallyReady = (result.marketsEligible ?? 0) > 0 && result.status !== 'GLOBAL_DATA_INCOMPLETE';
+      const readyMarkets = result.marketsEligible ?? 0;
+      const scannedMarkets = result.marketsScanned ?? 0;
+      const globallyReady = readyMarkets > 0 && result.status !== 'GLOBAL_DATA_INCOMPLETE';
+      const completeGlobalScope = scannedMarkets > 0 && readyMarkets === scannedMarkets;
       setScan(globallyReady ? (result.recommendations || []) : []);
       setScanMode(globallyReady ? 'global' : 'cached');
       const coverage = result.globalCoveragePct == null ? '—' : `${Number(result.globalCoveragePct).toFixed(1)}%`;
       if (!globallyReady) {
-        setScanStatus(`Global ranking blocked • ${result.marketsEligible ?? 0}/${result.marketsScanned ?? 0} markets ready • ${result.marketsExcluded ?? result.marketsScanned ?? 0} excluded`);
+        setScanStatus(`Global ranking blocked • ${readyMarkets}/${scannedMarkets} markets ready • ${result.marketsExcluded ?? scannedMarkets} excluded`);
+      } else if (!completeGlobalScope) {
+        setScanStatus(`Partial global scan • ${readyMarkets}/${scannedMarkets} markets ready • ${result.recommendationCount ?? 0} qualified in ready markets • ${result.screenedEquities ?? 0}/${result.eligibleEquities ?? 0} equities screened • ${coverage} ready-market coverage`);
       } else {
-        setScanStatus(`Global Top 10 • ${result.recommendationCount ?? 0} qualified • ${result.marketsEligible ?? 0}/${result.marketsScanned ?? 0} markets ready • ${result.screenedEquities ?? 0}/${result.eligibleEquities ?? 0} equities screened • ${coverage} coverage`);
+        setScanStatus(`Global Top 10 • ${result.recommendationCount ?? 0} qualified • all ${scannedMarkets} markets ready • ${result.screenedEquities ?? 0}/${result.eligibleEquities ?? 0} equities screened • ${coverage} coverage`);
       }
     } catch (err) {
       setScanMode('');

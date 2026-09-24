@@ -181,6 +181,15 @@ def scan_global_market(
     }
 
 
+def _global_scan_status(*, eligible_markets: int, total_markets: int, recommendation_count: int) -> str:
+    """Describe global scope without overstating incomplete market coverage."""
+    if eligible_markets <= 0:
+        return "GLOBAL_DATA_INCOMPLETE"
+    if eligible_markets < total_markets:
+        return "PARTIAL_GLOBAL_SCAN" if recommendation_count > 0 else "PARTIAL_GLOBAL_NO_RECOMMENDATION"
+    return "GLOBAL_TOP10" if recommendation_count > 0 else "NO_RECOMMENDATION"
+
+
 def scan_global_top10(
     *,
     top_n: int = 10,
@@ -299,15 +308,13 @@ def scan_global_top10(
     deep_total = sum(int(row.get("deepAnalyzed") or 0) for row in market_summary)
     connected_coverage = 0.0 if total_equities <= 0 else round(100.0 * screened_equities / total_equities, 2)
     eligible_coverage = 0.0 if eligible_equities <= 0 else round(100.0 * eligible_screened / eligible_equities, 2)
+    status = _global_scan_status(
+        eligible_markets=eligible_markets,
+        total_markets=len(markets),
+        recommendation_count=len(recommendations),
+    )
     if eligible_markets == 0:
-        status = "GLOBAL_DATA_INCOMPLETE"
         recommendations = []
-    elif not recommendations:
-        status = "NO_RECOMMENDATION"
-    elif eligible_markets < len(markets):
-        status = "PARTIAL_GLOBAL_SCAN"
-    else:
-        status = "GLOBAL_TOP10"
     return {
         "status": status,
         "scope": "COVERAGE_QUALIFIED_GLOBAL_MARKETS",
