@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Read official Nasdaq Nordic screener filters
+      - name: Count official Nasdaq Nordic main markets
         run: |
           python - <<'PY'
           import json, requests
@@ -25,25 +25,28 @@ jobs:
             'Accept':'application/json,text/plain,*/*',
             'Accept-Language':'en-US,en;q=0.9'
           }
-          variants={
-            'no_tableonly':[('category','MAIN_MARKET'),('page','1'),('size','5'),('lang','en')],
-            'tableonly_false':[('category','MAIN_MARKET'),('tableonly','false'),('page','1'),('size','5'),('lang','en')],
-            'no_category':[('page','1'),('size','5'),('lang','en')],
-          }
           out={}
-          for name,params in variants.items():
+          for code in ('CPH','STO','HEL','ICE'):
+            params=[
+              ('category','MAIN_MARKET'),('tableonly','true'),('page','1'),('size','1000'),
+              ('segment','LARGE_CAP'),('segment','MID_CAP'),('segment','SMALL_CAP'),('segment','SPAC'),
+              ('market',code),('lang','en')
+            ]
             r=requests.get(url,params=params,headers=headers,timeout=45)
             item={'status':r.status_code,'url':r.url,'bytes':len(r.content)}
             if r.ok:
-              p=r.json(); data=p.get('data') or {}
-              item['dataKeys']=list(data.keys())
-              item['filters']=data.get('filters')
-              item['pagination']=data.get('pagination')
-              il=data.get('instrumentListing') or {}
-              item['rowCount']=len(il.get('rows') or [])
-              item['sample']=(il.get('rows') or [])[:2]
+              p=r.json(); data=p.get('data') or {}; il=data.get('instrumentListing') or {}; rows=il.get('rows') or []
+              item['total']=(data.get('pagination') or {}).get('total')
+              item['rows']=len(rows)
+              item['currencies']={}
+              item['sample']=[]
+              for row in rows:
+                c=str(row.get('currency') or '')
+                item['currencies'][c]=item['currencies'].get(c,0)+1
+              for row in rows[:8]:
+                item['sample'].append({k:row.get(k) for k in ('fullName','symbol','isin','currency','orderbookId','assetClass')})
             else:
-              item['text']=r.text[:1000]
-            out[name]=item
-          print(json.dumps(out,indent=2,ensure_ascii=False)[:80000])
+              item['text']=r.text[:500]
+            out[code]=item
+          print(json.dumps(out,indent=2,ensure_ascii=False))
           PY
