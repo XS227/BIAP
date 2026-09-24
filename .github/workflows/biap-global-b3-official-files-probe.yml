@@ -1,0 +1,52 @@
+name: BIAP Global B3 official daily files probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-b3-official-files-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Probe B3 official instrument and equities EOD downloads
+        run: |
+          python - <<'PY'
+          import io,json,zipfile
+          from datetime import date,timedelta
+          import requests
+
+          page='https://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/boletins-diarios/pesquisa-por-pregao/pesquisa-por-pregao/'
+          download='https://www.b3.com.br/pesquisapregao/download'
+          s=requests.Session()
+          s.headers.update({'User-Agent':'Mozilla/5.0 BIAP-Global official-B3-probe'})
+          p=s.get(page,timeout=30)
+          print('PAGE',p.status_code,len(p.content),s.cookies.get_dict())
+
+          days=[date.today()-timedelta(days=i) for i in range(0,8)]
+          for prefix in ('SPRE','IN'):
+              found=False
+              for d in days:
+                  filename=f"{prefix}{d:%y%m%d}.zip"
+                  r=s.get(download,params={'filelist':filename},timeout=60)
+                  row={'prefix':prefix,'date':d.isoformat(),'filename':filename,'status':r.status_code,'bytes':len(r.content),'type':r.headers.get('content-type')}
+                  try:
+                      z=zipfile.ZipFile(io.BytesIO(r.content))
+                      row['zipNames']=z.namelist()[:8]
+                      row['zipCount']=len(z.namelist())
+                      row['firstSizes']=[z.getinfo(n).file_size for n in z.namelist()[:5]]
+                      row['validZip']=True
+                      found=True
+                  except Exception as exc:
+                      row['validZip']=False
+                      row['head']=r.content[:120].decode('utf-8','replace')
+                  print(json.dumps(row,ensure_ascii=False,sort_keys=True))
+                  if found:
+                      break
+          PY
