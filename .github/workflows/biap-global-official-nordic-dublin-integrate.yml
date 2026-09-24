@@ -1,0 +1,98 @@
+name: BIAP Global official Nordic Dublin integration
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-official-nordic-dublin-integrate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+          fetch-depth: 0
+
+      - name: Apply official Nordic and Dublin source patch
+        run: python tools/apply_official_nordic_dublin_sources.py
+
+      - name: Install backend dependencies
+        working-directory: analysis
+        run: python -m pip install -q -r requirements.txt
+
+      - name: Compile and run Global backend tests
+        working-directory: analysis
+        env:
+          PYTHONPATH: .
+        run: |
+          python -m compileall -q global_markets global_routes.py global_api_server.py
+          pytest -q tests/test_global_*.py
+
+      - name: Verify authoritative runtime wiring
+        working-directory: analysis
+        env:
+          PYTHONPATH: .
+        run: |
+          python - <<'PY'
+          from global_markets.cached_universe import CACHE_SCHEMA_VERSION
+          from global_markets.runtime import build_registry
+
+          registry = build_registry()
+          expected = {
+              ('SE','NASDAQ_STOCKHOLM'): 'official-nasdaq-nordic-main-market',
+              ('DK','NASDAQ_COPENHAGEN'): 'official-nasdaq-nordic-main-market',
+              ('FI','NASDAQ_HELSINKI'): 'official-nasdaq-nordic-main-market',
+              ('IS','NASDAQ_ICELAND'): 'official-nasdaq-nordic-main-market',
+              ('IE','EURONEXT_DUBLIN'): 'official-euronext-regulated-universe',
+          }
+          for key, provider_id in expected.items():
+              wrapper = registry.universe(*key)
+              upstream = getattr(wrapper, 'upstream', wrapper)
+              actual = getattr(upstream, 'provider_id', None)
+              print(key, actual)
+              assert actual == provider_id
+          assert CACHE_SCHEMA_VERSION == 13
+          PY
+
+      - name: Live source smoke counts
+        working-directory: analysis
+        env:
+          PYTHONPATH: .
+        run: |
+          python - <<'PY'
+          from global_markets.nasdaq_nordic import NasdaqNordicUniverseProvider
+          from global_markets.euronext_live import EuronextRegulatedUniverseProvider
+
+          nordic = NasdaqNordicUniverseProvider(timeout=45)
+          floors = {
+              ('SE','NASDAQ_STOCKHOLM'): 350,
+              ('DK','NASDAQ_COPENHAGEN'): 100,
+              ('FI','NASDAQ_HELSINKI'): 120,
+              ('IS','NASDAQ_ICELAND'): 20,
+          }
+          for key, floor in floors.items():
+              rows = list(nordic.list_instruments(country=key[0], exchange=key[1]))
+              print(key, len(rows))
+              assert len(rows) >= floor
+
+          dublin = EuronextRegulatedUniverseProvider(timeout=60)
+          rows = list(dublin.list_instruments(country='IE', exchange='EURONEXT_DUBLIN'))
+          print(('IE','EURONEXT_DUBLIN'), len(rows))
+          assert len(rows) >= 10
+          PY
+
+      - name: Commit official sources
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add             analysis/global_markets/nasdaq_nordic.py             analysis/global_markets/euronext_live.py             analysis/global_markets/runtime.py             analysis/global_markets/scanner.py             analysis/global_markets/country_packs.py             analysis/global_markets/cached_universe.py             analysis/tests/test_global_firds_se_dk.py             analysis/tests/test_global_official_nordic_dublin.py             analysis/tests/test_global_universe_cache_schema.py
+          git diff --cached --quiet && exit 0
+          git commit -m 'Use official Nasdaq Nordic and Euronext Dublin universes'
+          git push origin HEAD:feat/biap-global
