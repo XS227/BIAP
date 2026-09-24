@@ -573,3 +573,11 @@ def test_dublin_provider_support_scope_is_explicit():
     assert provider.supported("IE", "EURONEXT_DUBLIN")
     assert not provider.supported("FR", "EURONEXT_PARIS")
 ''', encoding="utf-8")
+
+
+# Legacy cache regression file also tracks the current schema number.
+replace_once(
+    "analysis/tests/test_global_universe_cache_v8.py",
+    "def test_universe_cache_schema_is_v12():\n    assert CACHE_SCHEMA_VERSION == 12\n",
+    "def test_universe_cache_schema_is_v13():\n    assert CACHE_SCHEMA_VERSION == 13\n",
+)
