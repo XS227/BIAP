@@ -121,7 +121,7 @@ COUNTRY_PACKS: dict[str, CountryPack] = {
         E("ADX", "Abu Dhabi Securities Exchange", ("AED",)),
         E("DFM", "Dubai Financial Market", ("AED",)),
     ), "twelve-data", "uae-exchange-filings", "uae-exchange-filings", "ADX/DFM issuer disclosures", (), "broker-adapter"),
-    "TR": CountryPack("TR", "Türkiye", (E("BIST", "Borsa Istanbul", ("TRY",), "XIST"),), "twelve-data", "kap", "kap", "KAP Public Disclosure Platform", ("BIST100",), "broker-adapter"),
+    "TR": CountryPack("TR", "Türkiye", (E("BIST", "Borsa Istanbul", ("TRY",), "XIST"),), "bist-official-daily-bulletin", "kap", "kap", "Borsa Istanbul + KAP Public Disclosure Platform", ("BIST100",), "broker-adapter"),
     "ZA": CountryPack("ZA", "South Africa", (E("JSE", "Johannesburg Stock Exchange", ("ZAR",), "XJSE"),), "twelve-data", "jse-sens", "jse-sens", "JSE SENS/issuer reports", ("TOP40",), "broker-adapter"),
     "BR": CountryPack("BR", "Brazil", (E("B3", "B3 Brasil Bolsa Balcão", ("BRL",), "BVMF"),), "twelve-data", "cvm-open-data", "cvm-open-data", "CVM open data + issuer filings", ("IBOV",), "broker-adapter"),
 }
