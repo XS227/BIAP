@@ -31,8 +31,12 @@ jobs:
             'Referer':'https://www.bseindia.com/corporates/List_Scrips.html',
             'Origin':'https://www.bseindia.com',
           }
-          r=requests.get(url,params=params,headers=headers,timeout=60)
-          print('status',r.status_code,'bytes',len(r.content),'type',r.headers.get('content-type'),'url',r.url)
+          s=requests.Session()
+          s.headers.update({'User-Agent':headers['User-Agent'],'Accept-Language':'en-US,en;q=0.9'})
+          warm=s.get('https://www.bseindia.com/corporates/List_Scrips.html',timeout=60)
+          print('warm status',warm.status_code,'cookies',list(s.cookies.keys()))
+          r=s.get(url,params=params,headers=headers,timeout=60)
+          print('status',r.status_code,'bytes',len(r.content),'type',r.headers.get('content-type'),'url',r.url,'body',r.text[:300])
           r.raise_for_status()
           data=r.json()
           print('payload type',type(data).__name__)
