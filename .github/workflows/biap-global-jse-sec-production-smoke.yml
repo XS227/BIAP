@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -q requests
-      - name: Verify current JSE SEC IFRS evidence
+      - name: Verify current Sibanye and Harmony SEC IFRS evidence
         shell: bash
         run: |
           python - <<'PY'
@@ -27,29 +27,55 @@ jobs:
           base='https://biap.dadashi.no/global-api/global'
           s=requests.Session()
 
-          for ticker in ('GFI','SSW'):
+          expected={'SSW':'2025-12-31','HAR':'2025-06-30'}
+          for ticker,period in expected.items():
               r=s.get(base+'/instruments/ZA/JSE',params={'q':ticker,'limit':5},timeout=90)
               print('SEARCH',ticker,r.status_code,r.text[:10000])
               r.raise_for_status()
               rows=r.json().get('instruments') or []
               exact=[x for x in rows if str(x.get('ticker') or '').upper()==ticker]
-              if not exact:
-                  print('NO_EXACT',ticker,rows)
-                  continue
+              assert exact, rows
               row=exact[0]
               payload={'country':'ZA','exchange':'JSE','ticker':ticker,'name':row.get('name'),
-                       'currency':row.get('currency') or 'ZAR','isin':row.get('isin'),'lei':row.get('lei')}
+                       'currency':row.get('currency') or 'ZAR','isin':row.get('isin'),'lei':row.get('lei'),
+                       'raw_provider_fields':row.get('raw_provider_fields') or {}}
               a=s.post(base+'/analyze',json=payload,timeout=180)
               print('ANALYZE',ticker,a.status_code,a.text[:35000])
               a.raise_for_status()
               data=a.json(); company=data.get('company') or {}; sources=company.get('sources') or []
-              if ticker == 'GFI':
-                  assert any(x.get('provider')=='sec-edgar-foreign-ifrs-cached' for x in sources), sources
-                  assert any(x.get('source_type')=='official_regulatory_xbrl' for x in sources), sources
-                  assert company.get('net_income') is not None, company
-                  assert company.get('total_assets') is not None, company
-                  assert company.get('filing_period_end') and company.get('filing_period_end') >= '2025-01-01', company
-                  evidence=data.get('evidence') or {}
-                  assert 'fundamental_source' not in (evidence.get('missing_critical') or []), evidence
-                  print('OK GFI JSE SEC IFRS',company.get('filing_period_end'),evidence.get('status'))
+              assert any(x.get('provider')=='sec-edgar-foreign-ifrs-cached' for x in sources), sources
+              assert any(x.get('source_type')=='official_regulatory_xbrl' for x in sources), sources
+              assert company.get('net_income') is not None, company
+              assert company.get('total_assets') is not None, company
+              assert company.get('filing_period_end') == period, company
+              evidence=data.get('evidence') or {}
+              missing=evidence.get('missing_critical') or []
+              assert 'fundamental_source' not in missing, evidence
+              assert evidence.get('status') in {'PASS','WARN'}, evidence
+              print('OK',ticker,'JSE SEC IFRS',company.get('filing_period_end'),evidence.get('status'),missing)
+
+          # Gold Fields standard CompanyFacts currently tops out at FY2024 for
+          # the required annual IFRS concepts. The stale-data guard must keep it
+          # blocked instead of promoting a recently cached obsolete filing.
+          ticker='GFI'
+          r=s.get(base+'/instruments/ZA/JSE',params={'q':ticker,'limit':5},timeout=90)
+          r.raise_for_status()
+          rows=r.json().get('instruments') or []
+          exact=[x for x in rows if str(x.get('ticker') or '').upper()==ticker]
+          assert exact, rows
+          row=exact[0]
+          payload={'country':'ZA','exchange':'JSE','ticker':ticker,'name':row.get('name'),
+                   'currency':row.get('currency') or 'ZAR','isin':row.get('isin'),'lei':row.get('lei')}
+          a=s.post(base+'/analyze',json=payload,timeout=180)
+          print('STALE_GUARD GFI',a.status_code,a.text[:30000])
+          a.raise_for_status()
+          data=a.json(); company=data.get('company') or {}; sources=company.get('sources') or []
+          assert not any(x.get('provider')=='sec-edgar-foreign-ifrs-cached' for x in sources), sources
+          evidence=data.get('evidence') or {}
+          missing=evidence.get('missing_critical') or []
+          assert 'fundamental_source' in missing, evidence
+          assert evidence.get('status') == 'BLOCK', evidence
+          err=str((company.get('raw_provider_fields') or {}).get('fundamentals_primary_error') or '')
+          assert 'stale' in err.lower(), err
+          print('OK GFI stale SEC annual data blocked',missing,err)
           PY
