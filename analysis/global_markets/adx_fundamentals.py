@@ -5,7 +5,7 @@ Each Financial Report row links to the issuer-filed document on the ADX CDN and
 also carries a structured headline table. BIAP verifies the linked PDF, parses
 only conservative headline fields from the ADX disclosure metadata, and
 cross-checks annual profit/equity/EPS against ADX's structured balance-summary
-endpoint. Ambiguous or missing values stay missing.
+endpoint. Ambiguous or missing values stay missing; vendor fallback never upgrades provenance.
 """
 from __future__ import annotations
 
