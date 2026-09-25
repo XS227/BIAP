@@ -12,6 +12,7 @@ from dataclasses import replace
 from datetime import datetime, timezone
 import io
 import json
+import html
 import re
 from typing import Optional
 from urllib.parse import urljoin
@@ -123,7 +124,7 @@ class NZXIssuerFundamentalsProvider(FundamentalsProvider):
         annual: Optional[dict] = None
         annual_url = ""
         annual_date = ""
-        for url in links[:80]:
+        for url in links[:12]:
             try:
                 page = requests.get(url, headers=headers, timeout=self.timeout)
                 page.raise_for_status()
