@@ -248,12 +248,14 @@ jobs:
               except Exception:
                   payload = {}
               rows = payload.get("instruments") if isinstance(payload, dict) else []
-              novn = next(
-                  (row for row in rows or [] if str((row or {}).get("ticker") or "").upper() == "NOVN"),
-                  None,
-              )
-              alias = str(((novn or {}).get("raw_provider_fields") or {}).get("sec_ticker_alias") or "").upper()
-              if alias != "NVS":
+              required = {"NOVN": "NVS", "UBSG": "UBS", "ABBN": "ABB"}
+              aliases = {
+                  str((row or {}).get("ticker") or "").upper():
+                  str((((row or {}).get("raw_provider_fields") or {}).get("sec_ticker_alias") or "")).upper()
+                  for row in rows or []
+                  if isinstance(row, dict)
+              }
+              if any(aliases.get(ticker) != alias for ticker, alias in required.items()):
                   path.unlink(missing_ok=True)
                   removed = 1
           print(f"SIX pre-SEC-alias universe snapshots removed: {removed}")
