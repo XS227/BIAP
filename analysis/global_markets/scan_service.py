@@ -7,7 +7,6 @@ pads results: only evidence-qualified BUY_CANDIDATE rows are ranked.
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 import os
@@ -195,50 +194,36 @@ def scan_global_top10(
     top_n: int = 10,
     max_age_hours: float = 30.0,
 ) -> dict:
-    """Rank qualified candidates across finalized US, Europe, Türkiye and Brazil markets.
+    """Rank qualified candidates from fresh scheduled per-market scan artifacts.
 
-    Per-market scans are persisted and reused for a bounded TTL. This makes the
-    global view practical even before a paid all-market batch feed is enabled.
+    This function performs no network discovery or deep analysis. Expensive
+    full-market work belongs to the scheduled refresh job so the mobile request
+    stays fast and cannot cross the reverse-proxy timeout.
     """
 
     top_n = max(1, min(int(top_n), 25))
     markets = _global_top_markets()
     results: dict[tuple[str, str], dict] = {}
-    pending: list[tuple[str, str]] = []
 
+    # Global Top is a read path, never a full-market refresh path. Starting
+    # exchange scans inside an HTTP request caused gateway timeouts once the
+    # connected universe grew. The scheduled global_scan_refresh job is solely
+    # responsible for expensive discovery/deep analysis; this endpoint consumes
+    # only fresh scan artifacts and excludes missing/stale markets honestly.
     for country, exchange in markets:
         cached = _read_scan_cache(country, exchange, max_age_hours=max_age_hours)
         if cached is not None:
             results[(country, exchange)] = cached
         else:
-            pending.append((country, exchange))
-
-    if pending:
-        with ThreadPoolExecutor(max_workers=min(4, len(pending))) as pool:
-            future_map = {
-                pool.submit(
-                    scan_global_market,
-                    country=country,
-                    exchange=exchange,
-                    top_n=5,
-                    discovery_limit=5000,
-                    deep_limit=50,
-                ): (country, exchange)
-                for country, exchange in pending
+            results[(country, exchange)] = {
+                "status": "SCAN_CACHE_MISSING",
+                "country": country,
+                "exchange": exchange,
+                "rankingEligible": False,
+                "recommendations": [],
+                "deepResults": [],
+                "error": "Fresh daily full-market scan cache is unavailable; scheduled refresh required.",
             }
-            for future in as_completed(future_map):
-                country, exchange = future_map[future]
-                try:
-                    results[(country, exchange)] = future.result()
-                except Exception as exc:
-                    results[(country, exchange)] = {
-                        "status": "ERROR",
-                        "country": country,
-                        "exchange": exchange,
-                        "recommendations": [],
-                        "deepResults": [],
-                        "error": f"{type(exc).__name__}: {str(exc)[:220]}",
-                    }
 
     candidates: list[dict] = []
     market_summary: list[dict] = []
@@ -318,6 +303,7 @@ def scan_global_top10(
     return {
         "status": status,
         "scope": "COVERAGE_QUALIFIED_GLOBAL_MARKETS",
+        "refreshPolicy": "SCHEDULED_CACHE_ONLY",
         "requestedRecommendations": top_n,
         "recommendationCount": len(recommendations),
         "marketsScanned": len(markets),
@@ -333,6 +319,6 @@ def scan_global_top10(
         "markets": market_summary,
         "notes": (
             "Global ranking uses only markets that pass full-market coverage and official-fundamental readiness gates. "
-            "Stored or partial market records cannot enter Global Top 10. Cache is a short-lived performance layer, not a source of ranking eligibility."
+            "Stored or partial market records cannot enter Global Top 10. Full-market refresh runs out-of-band; user requests only read fresh scan artifacts."
         ),
     }
