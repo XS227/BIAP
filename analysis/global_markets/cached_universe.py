@@ -19,10 +19,10 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
 
-# Version 13 replaces incomplete FIRDS Nordic membership with Nasdaq's own
-# Main Market screener for STO/CPH/HEL/ICE and wires Euronext's official Dublin
-# regulated-stock directory. Older snapshots must not survive this source change.
-CACHE_SCHEMA_VERSION = 13
+# Version 14 replaces Türkiye's reference/demo catalog with Borsa Istanbul's
+# official Daily Bulletin ordinary-equity universe. Older BIST snapshots must
+# not survive the authoritative source change.
+CACHE_SCHEMA_VERSION = 14
 
 
 def _utc_now() -> datetime:
