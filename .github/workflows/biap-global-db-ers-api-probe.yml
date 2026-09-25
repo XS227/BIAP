@@ -1,0 +1,72 @@
+name: BIAP Global Deutsche Boerse ERS API probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-db-ers-api-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Discover official Deutsche Boerse company-details API
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import re, requests, urllib.parse
+          page='https://live.deutsche-boerse.com/equity/sap-se/company-details'
+          h={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131 Safari/537.36'}
+          s=requests.Session()
+          r=s.get(page,headers=h,timeout=45)
+          print('PAGE',r.status_code,len(r.text),r.url)
+          r.raise_for_status()
+          html=r.text
+          scripts=[]
+          for src in re.findall(r'<script[^>]+src=["\']([^"\']+)["\']',html,re.I):
+              url=urllib.parse.urljoin(page,src)
+              if url not in scripts:
+                  scripts.append(url)
+          print('SCRIPTS',len(scripts))
+          needles=('api.live.deutsche-boerse.com','company-report','company_report','companyreports',
+                   'companyDetails','company-details','financial-report','financialReport',
+                   'issuer','erscontent','reports')
+          hits=[]
+          for i,url in enumerate(scripts):
+              try:
+                  rr=s.get(url,headers=h,timeout=45)
+                  if rr.status_code != 200:
+                      continue
+                  text=rr.text
+              except Exception as e:
+                  print('SCRIPT_ERR',url,type(e).__name__)
+                  continue
+              low=text.lower()
+              if not any(n.lower() in low for n in needles):
+                  continue
+              print('SCRIPT',i,url,'LEN',len(text))
+              # Print compact windows around API base / report-related strings.
+              for pattern in (
+                  r'https://api\.live\.deutsche-boerse\.com[^"\'\\ ]*',
+                  r'/v1/[^"\'\\ ]*(?:report|company|issuer)[^"\'\\ ]*',
+                  r'[^"\']{0,180}(?:companyreports|company-reports|financialreports|financial-reports|erscontent)[^"\']{0,260}',
+              ):
+                  for m in re.finditer(pattern,text,re.I):
+                      frag=' '.join(m.group(0).split())
+                      if frag not in hits:
+                          hits.append(frag)
+                          print('HIT',frag[:900])
+                          if len(hits)>=120:
+                              break
+                  if len(hits)>=120:
+                      break
+              if len(hits)>=120:
+                  break
+          print('TOTAL_HITS',len(hits))
+          PY
