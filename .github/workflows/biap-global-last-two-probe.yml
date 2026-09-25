@@ -77,45 +77,23 @@ jobs:
                   if any(k in low for k in ('issuercompany','issuer-directory','companydir','ajax','resourceurl','marketwatch','symbol','getcompanies','security')):
                       print('SA_TOKEN',name,token[:700])
           PY
-      - name: Configure SSH
+      - name: Inspect official BSE SCRIP master
         shell: bash
         run: |
-          set -euo pipefail
-          test -n "$VPS_SSH_KEY"
-          mkdir -p ~/.ssh
-          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
-          chmod 600 ~/.ssh/biap_global_key
-          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
-      - name: Probe same sources from production network
-        shell: bash
-        run: |
-          set -euo pipefail
-          ssh -i ~/.ssh/biap_global_key -p "${VPS_PORT:-22}" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'python3 - <<'"'"'PY'"'"'
-          import re,requests,urllib.parse
-          H={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36','Accept-Language':'en-US,en;q=0.9'}
-          urls=[
-            ('BSE_MEMBERS','https://www.bseindia.com/members/index.aspx'),
-            ('BSE_BHAV','https://www.bseindia.com/markets/MarketInfo/BhavCopy.aspx'),
-            ('BSE_SCRIP1','https://www.bseindia.com/downloads1/SCRIP.zip'),
-            ('BSE_SCRIP2','https://www.bseindia.com/download/BhavCopy/Equity/SCRIP.zip'),
-            ('BSE_SCRIP3','https://www.bseindia.com/markets/MarketInfo/SCRIP.zip'),
-            ('BSE_SCRIP4','https://www.bseindia.com/downloads/SCRIP.zip'),
-            ('SA_HOME','https://www.saudiexchange.sa/wps/portal/saudiexchange/home?locale=en'),
-            ('SA_MAIN','https://www.saudiexchange.sa/wps/portal/saudiexchange/ourmarkets/main-market-watch?locale=en'),
-            ('SA_PARTICIPANTS','https://www.saudiexchange.sa/wps/portal/saudiexchange/trading/participants-directory?locale=en'),
-          ]
-          for name,url in urls:
-              try:
-                  r=requests.get(url,headers={**H,'Referer':'https://www.bseindia.com/' if name.startswith('BSE') else 'https://www.saudiexchange.sa/'},timeout=45)
-                  print('\n###',name,'STATUS',r.status_code,'BYTES',len(r.content),'TYPE',r.headers.get('content-type'),'URL',r.url)
-                  if 'text/html' in (r.headers.get('content-type') or ''):
-                      text=r.text
-                      print(text[:1000].replace('\n',' '))
-                      for pat in (r'href=["\']([^"\']*(?:scrip|bhav|master)[^"\']*)',r'src=["\']([^"\']+\.js[^"\']*)'):
-                          for m in re.finditer(pat,text,re.I):
-                              print(name,'MATCH',urllib.parse.urljoin(r.url,m.group(1)))
-                  else:
-                      print(repr(r.content[:500]))
-              except Exception as e:
-                  print(name,'ERROR',type(e).__name__,e)
-          PY'
+          python - <<'PY'
+          import io,zipfile,requests,csv
+          url='https://www.bseindia.com/downloads/SCRIP.zip'
+          r=requests.get(url,headers={'User-Agent':'Mozilla/5.0','Referer':'https://www.bseindia.com/'},timeout=60)
+          r.raise_for_status()
+          z=zipfile.ZipFile(io.BytesIO(r.content))
+          names=z.namelist()
+          print('BSE_ZIP_FILES',names[:20],'COUNT',len(names))
+          csvs=[n for n in names if n.lower().endswith('.csv')]
+          print('BSE_CSVS',csvs[:20])
+          for name in csvs[:3]:
+              data=z.read(name)
+              text=data.decode('latin-1',errors='replace')
+              lines=text.splitlines()
+              print('BSE_FILE',name,'LINES',len(lines))
+              for line in lines[:8]: print('BSE_ROW',line[:2000])
+          PY
