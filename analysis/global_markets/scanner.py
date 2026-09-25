@@ -10,6 +10,7 @@ and can block stale data. Results are never padded or fabricated.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date
 import math
 import os
@@ -21,7 +22,7 @@ from .b3_official import B3OfficialClient
 from .country_packs import ExchangeSpec, get_country_pack, get_exchange
 from .eodhd_bulk import EODHDBulkEODProvider
 from .euronext_live import EuronextLiveRegulatedClient
-from .models import GlobalCompany
+from .models import GlobalCompany, SourceEvidence
 from .nasdaq_nordic import NasdaqNordicOfficialClient
 from .providers import GlobalProviderError
 from .runtime import build_registry
@@ -183,6 +184,61 @@ class GlobalMarketScanner:
         return liquidity_score, range_neutrality
 
     @staticmethod
+    def _seed_screening_quote(company: GlobalCompany, quote: Optional[dict]) -> GlobalCompany:
+        """Carry a verified stage-one quote into stage-two enrichment.
+
+        Whole-market scanners already verified the listing/price against their
+        exchange-wide source. Stage two may still enrich with history, but a
+        vendor-history outage must not erase the official current price that
+        selected the candidate in stage one.
+        """
+        if not isinstance(quote, dict):
+            return company
+        try:
+            price = float(quote.get("price"))
+        except (TypeError, ValueError):
+            return company
+        provider = str(quote.get("provider") or "").strip()
+        if price <= 0 or not provider or quote.get("cache"):
+            return company
+
+        quote_date = str(quote.get("quoteDate") or "").strip()
+        observed_at = None
+        if quote_date:
+            observed_at = (
+                quote_date
+                if "T" in quote_date
+                else f"{quote_date[:10]}T00:00:00+00:00"
+            )
+        try:
+            volume = float(quote.get("averageVolume") or 0.0)
+        except (TypeError, ValueError):
+            volume = 0.0
+
+        official = provider.lower().startswith("official-")
+        source = SourceEvidence(
+            provider=provider,
+            source_type="official_exchange_market_quote" if official else "verified_market_price_quote",
+            source_id=f"{company.country}:{company.exchange}:{company.ticker}:{quote_date or 'latest'}",
+            observed_at=observed_at,
+            quality=1.0 if official else 0.90,
+            notes="Stage-one full-market screening quote carried into deep analysis.",
+        )
+        return replace(
+            company,
+            price=price,
+            price_observed_at=observed_at or company.price_observed_at,
+            volume_today=max(0.0, volume) if volume else company.volume_today,
+            raw_provider_fields={
+                **company.raw_provider_fields,
+                "stage_one_market_provider": provider,
+                "stage_one_quote_date": quote_date or None,
+                "stage_one_liquidity_value": quote.get("liquidityValue"),
+            },
+            sources=[*company.sources, source],
+        )
+
+    @staticmethod
     def _deep_results(
         shortlist_tickers: list[str],
         selected_universe: list[GlobalCompany],
@@ -195,6 +251,8 @@ class GlobalMarketScanner:
             company = instrument_by_ticker.get(ticker)
             if company is None:
                 continue
+            quote = quote_by_ticker.get(ticker)
+            company = GlobalMarketScanner._seed_screening_quote(company, quote)
             try:
                 result = analyze_company(company, registry=registry)
             except Exception as exc:
@@ -206,7 +264,7 @@ class GlobalMarketScanner:
                     "error": str(exc)[:300],
                 })
                 continue
-            result["screening"] = quote_by_ticker.get(ticker)
+            result["screening"] = quote
             deep_results.append(result)
         return deep_results
 
