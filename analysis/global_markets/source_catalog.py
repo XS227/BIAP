@@ -41,7 +41,7 @@ ANALYSIS_REQUIREMENTS: tuple[DataRequirement, ...] = (
 SOURCE_PLANS: dict[str, dict] = {
     "IR": {"market": "TSETMC", "filings": "CODAL", "status": "bridge", "notes": "Existing Iran path reused read-only."},
     "US": {"market": "licensed global feed", "filings": "SEC EDGAR/XBRL Company Facts", "status": "connected", "notes": "SEC adapter implemented; descriptive User-Agent is used when no deployment-specific contact is configured."},
-    "CA": {"market": "global market feed", "filings": "SEDAR+", "status": "market-ready", "notes": "Public filings are available, but no stable machine-readable official financial-statement adapter is connected yet."},
+    "CA": {"market": "TMX universe / global market feed", "filings": "SEC 40-F IFRS CompanyFacts + SEDAR+ planned", "status": "partial", "notes": "Exact Canadian issuer identities that also file audited IFRS annual data with the SEC on Form 40-F are connected through official CompanyFacts. Other TSX/TSXV issuers remain blocked until a verified SEDAR+ or issuer filing source is connected."},
     "GB": {"market": "LSE / licensed global feed", "filings": "UKSEF/ESEF + Companies House corroboration", "status": "connected", "notes": "ESEF fundamentals are connected. Companies House legal-entity corroboration is automatically added when BIAP_COMPANIES_HOUSE_API_KEY is configured."},
     "SE": {"market": "Nasdaq Nordic / global market feed", "filings": "ESEF xBRL + issuer/Nasdaq corroboration", "status": "connected"},
     "NO": {"market": "Euronext Oslo / global market feed", "filings": "ESEF xBRL + issuer/Euronext corroboration", "status": "connected"},
