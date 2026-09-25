@@ -19,10 +19,10 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
 
-# Version 21 replaces vendor reference catalogs for India/NSE and Korea/KRX
-# with official NSE and KRX/KIND ordinary-equity universes. Older snapshots may
-# contain non-native or non-equity instruments and must be rebuilt.
-CACHE_SCHEMA_VERSION = 21
+# Version 22 replaces the Hong Kong vendor reference catalog with HKEX's
+# official primary-HKD Main Board/GEM ordinary-equity universe. Older HK caches
+# may contain warrants, ETPs, debt or duplicate RMB counters and must be rebuilt.
+CACHE_SCHEMA_VERSION = 22
 
 
 def _utc_now() -> datetime:
