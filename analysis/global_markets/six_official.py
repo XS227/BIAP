@@ -32,6 +32,12 @@ _ORDINARY_SHARE_NAMES = {
     "ORDINARY SHARE",
 }
 
+# Strictly verified US ADR ticker aliases used only to reach the issuer's SEC
+# CompanyFacts record. Legal-name equality is still required by the SEC adapter.
+_SEC_TICKER_ALIASES = {
+    "NOVN": "NVS",  # Novartis AG
+}
+
 
 def _clean(value: object) -> str:
     return str(value or "").strip()
@@ -99,6 +105,7 @@ def parse_six_equity_items(items: Iterable[dict]) -> list[GlobalCompany]:
                 "six_primary_listing": True,
                 "six_first_listing_date": item.get("firstListingDate"),
                 "six_last_listing_date": item.get("lastListingDate"),
+                "sec_ticker_alias": _SEC_TICKER_ALIASES.get(ticker),
                 "domestic_scope": "SIX country CH + primary listing + ordinary share class",
             },
             sources=[SourceEvidence(
