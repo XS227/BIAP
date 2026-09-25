@@ -1,6 +1,4 @@
 from __future__ import annotations
-import gzip
-import json
 import re
 from urllib.parse import urljoin
 import requests
@@ -16,37 +14,38 @@ def get(url,timeout=40):
     return r
 
 base="https://mfs.deutsche-boerse.com/DETR-posttrade"
-try:
-    r=get(base)
-    print("DIR_HEAD",r.text[:5000])
-    hrefs=re.findall(r'href=["\']([^"\']+)["\']',r.text,re.I)
-    gz=[urljoin(r.url,h) for h in hrefs if ".gz" in h.lower()]
-    print("GZ_COUNT",len(gz))
-    print("GZ_LAST",gz[-20:])
-    if gz:
-        rr=get(gz[-1],60)
-        raw=gzip.decompress(rr.content)
-        print("JSON_LEN",len(raw))
-        print("JSON_HEAD",raw[:5000].decode("utf-8",errors="replace"))
-        try:
-            obj=json.loads(raw)
-            print("JSON_TYPE",type(obj).__name__)
-            if isinstance(obj,dict):
-                print("JSON_KEYS",list(obj.keys())[:50])
-        except Exception as exc:
-            print("JSON_PARSE_ERR",type(exc).__name__,str(exc))
-except Exception as exc:
-    print("MFS_ERR",type(exc).__name__,str(exc)[:500])
+r=get(base)
+html=r.text
+scripts=re.findall(r'<script[^>]+src=["\']([^"\']+)["\']',html,re.I)
+print("SCRIPT_COUNT",len(scripts))
+for src in scripts:
+    url=urljoin(r.url,src)
+    print("SCRIPT",url)
+    try:
+        js=get(url,30).text
+    except Exception as exc:
+        print("SCRIPT_ERR",type(exc).__name__,str(exc)[:180])
+        continue
+    low=js.lower()
+    if any(token in low for token in ("dynfilelist","daily-files","fetch(","ajax","json","filelist","mifid")):
+        print("INTERESTING_JS",url)
+        for token in ("dynFileList","daily-files","fetch(","ajax","json","fileList","serviceUrl","api"):
+            idx=js.find(token)
+            if idx>=0:
+                print("SNIP",token,js[max(0,idx-1000):idx+2500])
 
-# Discover static-reference download URL and print first lines/headers.
+print("HTML_ENDPOINT_LIKE")
+for pattern in (
+    r'https?://[^"\'<> ]+',
+    r'["\']([^"\']*(?:json|api|files|list)[^"\']*)["\']',
+):
+    vals=re.findall(pattern,html,re.I)
+    print(pattern, vals[:100])
+
 page="https://www.cashmarket.deutsche-boerse.com/cash-en/trading/Tradable-Instruments-Xetra/Downloads/xetra-downloads"
-r=get(page)
-hrefs=re.findall(r'href=["\']([^"\']+)["\']',r.text,re.I)
-for token in ("t7-xetr-staticinstrumentreferencedata.csv","t7-xetr-alltradableinstruments.csv"):
-    link=next((urljoin(page,h) for h in hrefs if token in h.lower()),None)
-    print("TOKEN",token,"URL",link)
-    if link:
-        rr=get(link)
-        text=rr.content.decode("utf-8-sig",errors="replace")
-        print("CSV_HEAD",token)
-        print("\n".join(text.splitlines()[:8]))
+rp=get(page)
+hrefs=re.findall(r'href=["\']([^"\']+)["\']',rp.text,re.I)
+print("STATIC_LIKE")
+for h in hrefs:
+    if any(tok in h.lower() for tok in ("static","reference","instrument")):
+        print(urljoin(page,h))
