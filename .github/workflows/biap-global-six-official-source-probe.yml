@@ -1,0 +1,58 @@
+name: BIAP Global SIX official source probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-six-official-source-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Inspect SIX equity issuer table internals
+        run: |
+          python -m pip install -q requests beautifulsoup4
+          python - <<'PY'
+          import json,re
+          from urllib.parse import urljoin
+          import requests
+          from bs4 import BeautifulSoup
+
+          url="https://www.six-group.com/en/market-data/shares/companies.html"
+          s=requests.Session()
+          s.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36","Accept-Language":"en-US,en;q=0.9"})
+          r=s.get(url,timeout=40)
+          print("PAGE",r.status_code,r.url,r.headers.get("content-type"),len(r.content))
+          html=r.text
+          soup=BeautifulSoup(html,"html.parser")
+          for a in soup.find_all(["a","button"],href=True):
+              href=urljoin(r.url,a.get("href"))
+              text=" ".join(a.stripped_strings)
+              low=(href+" "+text).lower()
+              if any(k in low for k in ["csv","download","companies","issuer","shares"]):
+                  print("LINK",json.dumps({"text":text[:120],"href":href},ensure_ascii=False))
+          scripts=[urljoin(r.url,x.get("src")) for x in soup.find_all("script",src=True)]
+          print("SCRIPTS",json.dumps(scripts,indent=2))
+          needles=["csv","companies","equity issuer","primarylisting","primary listing","download"]
+          for src in scripts:
+              try:
+                  js=s.get(src,timeout=25)
+              except Exception as e:
+                  continue
+              body=js.text
+              if any(n in body.lower() for n in needles):
+                  print("\nSCRIPT",src,js.status_code,len(body))
+                  for n in needles:
+                      pos=body.lower().find(n)
+                      if pos>=0:
+                          print("NEEDLE",n,body[max(0,pos-1800):pos+5000])
+          patterns=sorted(set(re.findall(r'https?://[^"\'<> ]+|/[^"\'<> ]*(?:csv|api|download|companies|share)[^"\'<> ]*',html,flags=re.I)))
+          for p in patterns[:300]:
+              print("PATTERN",p[:1000])
+          PY
