@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from global_markets.adx_fundamentals import (
     parse_adx_disclosure_metrics,
     parse_adx_financial_summary,
@@ -61,9 +63,9 @@ def test_adx_selects_latest_annual_financial_report_and_parses_metrics():
     selected = select_latest_adx_annual_report(payload, "ALDAR")
     assert selected["urlEn"].endswith("4692155")
     metrics = parse_adx_disclosure_metrics(selected)
-    assert metrics["revenue"] == 33_818_000_000.0
-    assert metrics["revenue_prev"] == 22_998_000_000.0
+    assert metrics["revenue"] == pytest.approx(33_818_000_000.0)
+    assert metrics["revenue_prev"] == pytest.approx(22_998_000_000.0)
     assert metrics["revenue_yoy_pct"] == 47.0
-    assert metrics["net_income"] == 8_834_000_000.0
+    assert metrics["net_income"] == pytest.approx(8_834_000_000.0)
     assert metrics["eps"] == 0.955
-    assert metrics["cash_and_equivalents"] == 14_161_000_000.0
+    assert metrics["cash_and_equivalents"] == pytest.approx(14_161_000_000.0)
