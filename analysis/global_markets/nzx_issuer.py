@@ -24,7 +24,7 @@ from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
 
 
-_PROVIDER_ID = "official-nzx-issuer-annual-report-v2"
+_PROVIDER_ID = "official-nzx-issuer-annual-report-v3"
 _COMPANY_PAGE = "https://new.nzx.com/companies/{ticker}/announcements"
 _USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 BIAP-Global"
 _SUPPORTED = {"NZX"}
@@ -132,7 +132,14 @@ class NZXIssuerFundamentalsProvider(FundamentalsProvider):
                 continue
             if not any(token in label for token in ("annual report", "full year", "financial results", "annual results")):
                 continue
-            url = urljoin(company_url, href)
+            resolved = urljoin(company_url, href)
+            match = re.search(r"/announcements/(\d+)", resolved)
+            if not match:
+                continue
+            # The canonical www announcement route exposes the stable public
+            # Next.js payload and attachments; new.nzx.com listing links can
+            # otherwise render a different shell in server-side requests.
+            url = f"https://www.nzx.com/announcements/{match.group(1)}"
             if url not in links:
                 links.append(url)
         if not links:
