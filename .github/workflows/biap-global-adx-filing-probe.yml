@@ -54,6 +54,17 @@ jobs:
             'Content-Type':'application/json','X-Correlation-ID':'biap-global-adx-filing-probe',
             'adx-Gateway-APIKey':key,'Referer':PAGE,
           }
+          # The financial-reports component calls the generic news API with
+          # categoryName=efid, categoryValue=<symbol>, recordCount=100.
+          for value in ('ALDAR','aldar'):
+              url='https://apigateway.adx.ae/adx/tradings/1.1/news'
+              p={'categoryName':'efid','categoryValue':value,'recordCount':'100'}
+              try:
+                  r=requests.get(url,params=p,headers=H,timeout=35)
+                  print('EFID',p,'STATUS',r.status_code,'BYTES',len(r.content),'BODY',repr(r.text[:30000]))
+              except Exception as e:
+                  print('EFID_ERR',p,type(e).__name__,e)
+
           # Candidate official endpoints discovered in the application mapping.
           tests=[
             ('documents','https://apigateway.adx.ae/adx/dms/1.1/document'),
