@@ -35,6 +35,7 @@ from .hkex_official import HKEXOfficialUniverseProvider
 from .india_official import NSEOfficialUniverseProvider
 from .iran_adapter import IranLegacyProvider
 from .jpx_official import JPXOfficialUniverseProvider
+from .jse_official import JSEOfficialUniverseProvider
 from .krx_official import KRXKINDOfficialUniverseProvider
 from .kap_current import KAPCurrentFundamentalsProvider
 from .lse_official import LSEOfficialUniverseProvider
@@ -138,6 +139,12 @@ def build_registry() -> ProviderRegistry:
         fresh_hours=12,
     )
     registry.register_universe("HK", "HKEX", hkex_universe)
+
+    jse_universe = PersistentUniverseProvider(
+        JSEOfficialUniverseProvider(),
+        fresh_hours=24,
+    )
+    registry.register_universe("ZA", "JSE", jse_universe)
 
     six_universe = PersistentUniverseProvider(
         SIXOfficialUniverseProvider(),
