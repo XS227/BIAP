@@ -19,10 +19,10 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
 
-# Version 14 replaces Türkiye's reference/demo catalog with Borsa Istanbul's
-# official Daily Bulletin ordinary-equity universe. Older BIST snapshots must
-# not survive the authoritative source change.
-CACHE_SCHEMA_VERSION = 14
+# Version 15 replaces the UK reference/demo catalog with the official London
+# Stock Exchange Main Market universe. Older LSE snapshots must not survive the
+# authoritative source change.
+CACHE_SCHEMA_VERSION = 15
 
 
 def _utc_now() -> datetime:
