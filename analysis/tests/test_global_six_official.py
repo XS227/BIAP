@@ -34,10 +34,26 @@ def test_six_parser_keeps_swiss_primary_registered_share():
     assert rows[0].raw_provider_fields["official_universe"] is True
 
 
+def test_six_parser_normalizes_bearer_share_code_even_when_public_label_is_masked():
+    rows = parse_six_equity_items([
+        item(
+            company="Roche Holding AG",
+            isin="CH0012032113",
+            valorSymbol="RO",
+            classOfShareCode="BS",
+            classOfShare="***",
+        )
+    ])
+    assert len(rows) == 1
+    assert rows[0].ticker == "RO"
+    assert rows[0].raw_provider_fields["six_class_of_share"] == "Bearer Share"
+    assert rows[0].raw_provider_fields["six_source_class_of_share"] == "***"
+
+
 @pytest.mark.parametrize("bad", [
     item(company="3M Company", isin="US88579Y1010", valorSymbol="MMM", country="US", primaryListing=False),
-    item(valorSymbol="PART", isin="CH0000000001", classOfShare="Participation Certificate"),
-    item(valorSymbol="UNK", isin="CH0000000002", classOfShare="***"),
+    item(valorSymbol="PART", isin="CH0000000001", classOfShareCode="PC", classOfShare="Participation Certificate"),
+    item(valorSymbol="UNK", isin="CH0000000002", classOfShareCode="XX", classOfShare="***"),
     item(valorSymbol="SECOND", isin="CH0000000003", secondLineReasonCode="SECOND_LINE"),
     item(valorSymbol="NOTPRIMARY", isin="CH0000000004", primaryListing=False),
 ])
