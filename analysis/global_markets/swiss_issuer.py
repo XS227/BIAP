@@ -4,7 +4,7 @@ Switzerland has no single public machine-readable annual-statement feed covering
 all SIX issuers. This adapter is intentionally narrow: it supports Nestlé S.A.
 (NESN) only and reads the issuer-published consolidated annual financial
 statements linked from Nestlé's official investor-relations Annual Report page.
-Other Swiss issuers remain vendor-display-only until separately verified.
+Other Swiss issuers remain vendor-display-only until separately verified. PDF AES support is installed for issuer statements.
 """
 from __future__ import annotations
 
