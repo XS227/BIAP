@@ -1,0 +1,47 @@
+name: BIAP Global refresh ready Euronext caches
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-refresh-ready-euronext-caches.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Refresh production scan caches
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, urllib.request
+          base='https://biap.dadashi.no/global-api/global/scan'
+          markets=[
+            ('FR','EURONEXT_PARIS'),('NL','EURONEXT_AMSTERDAM'),
+            ('IT','EURONEXT_MILAN'),('NO','EURONEXT_OSLO'),
+            ('BE','EURONEXT_BRUSSELS'),('PT','EURONEXT_LISBON'),
+          ]
+          for country,exchange in markets:
+              body=json.dumps({
+                  'country':country,'exchange':exchange,
+                  'topN':5,'discoveryLimit':5000,'deepLimit':10,
+              }).encode()
+              req=urllib.request.Request(
+                  base,data=body,
+                  headers={'Content-Type':'application/json','Accept':'application/json','User-Agent':'BIAP scheduled cache refresh'},
+              )
+              with urllib.request.urlopen(req,timeout=180) as response:
+                  data=json.load(response)
+              summary={k:data.get(k) for k in (
+                  'status','rankingEligible','universeDiscovered','universeScreened',
+                  'screeningCoveragePct','fundamentalCoveragePct','recommendationCount'
+              )}
+              print(country,exchange,json.dumps(summary,ensure_ascii=False))
+              assert data.get('rankingEligible') is True, data.get('dataReadiness')
+          PY
