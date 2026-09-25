@@ -34,9 +34,8 @@ jobs:
               if url not in scripts:
                   scripts.append(url)
           print('SCRIPTS',len(scripts))
-          needles=('api.live.deutsche-boerse.com','company-report','company_report','companyreports',
-                   'companyDetails','company-details','financial-report','financialReport',
-                   'issuer','erscontent','reports')
+          needles=('X-Security','x-security','Client-Date','client-date','X-Request-Datetime',
+                   'mdstokenservice','X-Client-TraceId','x-client-traceid')
           hits=[]
           for i,url in enumerate(scripts):
               try:
@@ -53,9 +52,7 @@ jobs:
               print('SCRIPT',i,url,'LEN',len(text))
               # Print compact windows around API base / report-related strings.
               for pattern in (
-                  r'https://api\.live\.deutsche-boerse\.com[^"\'\\ ]*',
-                  r'/v1/[^"\'\\ ]*(?:report|company|issuer)[^"\'\\ ]*',
-                  r'[^"\']{0,180}(?:companyreports|company-reports|financialreports|financial-reports|erscontent)[^"\']{0,260}',
+                  r'[^"\']{0,500}(?:X-Security|x-security|Client-Date|client-date|X-Request-Datetime|mdstokenservice|X-Client-TraceId)[^"\']{0,1000}',
               ):
                   for m in re.finditer(pattern,text,re.I):
                       frag=' '.join(m.group(0).split())
