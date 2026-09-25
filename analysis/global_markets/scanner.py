@@ -30,6 +30,7 @@ from .providers import GlobalProviderError
 from .runtime import build_registry
 from .service import analyze_company
 from .us_official import NasdaqUSFullScreenerClient
+from .xetra_delayed import DeutscheBoerseXetraDelayedClient
 
 
 class GlobalMarketScanner:
@@ -45,6 +46,7 @@ class GlobalMarketScanner:
         self.bme_official = BMEOfficialDailyClient(timeout=max(30.0, self.timeout))
         self.bist_official = BISTOfficialDailyClient(timeout=max(30.0, self.timeout))
         self.us_screener = NasdaqUSFullScreenerClient(timeout=max(45.0, self.timeout))
+        self.xetra_delayed = DeutscheBoerseXetraDelayedClient(timeout=max(90.0, self.timeout))
         self.market_base = os.environ.get("BIAP_GLOBAL_MARKET_BASE", "https://api.twelvedata.com").rstrip("/")
         self.min_market_coverage_pct = max(0.0, min(100.0, float(os.environ.get("BIAP_GLOBAL_MIN_MARKET_COVERAGE_PCT", "90"))))
         self.min_fundamental_coverage_pct = max(0.0, min(100.0, float(os.environ.get("BIAP_GLOBAL_MIN_FUNDAMENTAL_COVERAGE_PCT", "70"))))
@@ -420,6 +422,7 @@ class GlobalMarketScanner:
             or self.bme_official.supported(country.upper(), spec.code)
             or self.bist_official.supported(country.upper(), spec.code)
             or self.us_screener.supported(country.upper(), spec.code)
+            or self.xetra_delayed.supported(country.upper(), spec.code)
         )
         if not self.market_api_key and self.eodhd_bulk is None and not official_market_source:
             market_provider = registry.market(country, spec.code)
@@ -470,6 +473,8 @@ class GlobalMarketScanner:
             quotes, screening_errors, market_source = self.bist_official.batch_quotes(selected_universe, country.upper(), spec)
         elif self.us_screener.supported(country.upper(), spec.code):
             quotes, screening_errors, market_source = self.us_screener.batch_quotes(selected_universe, country.upper(), spec)
+        elif self.xetra_delayed.supported(country.upper(), spec.code):
+            quotes, screening_errors, market_source = self.xetra_delayed.batch_quotes(selected_universe, country.upper(), spec)
         elif self.euronext_live.supported(country.upper(), spec.code):
             quotes, screening_errors, market_source = self.euronext_live.batch_quotes(selected_universe, country.upper(), spec)
         elif self.eodhd_bulk is not None:
