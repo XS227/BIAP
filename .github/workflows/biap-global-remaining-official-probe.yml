@@ -91,7 +91,7 @@ jobs:
           dfmeq=show('DFM_EQUITY_JS','https://www.dfm.ae/_nuxt/1MVZm7XQ.js')
           if dfmeq:
               js=dfmeq.text
-              print('DFM_EQUITY_URLS', sorted(set(re.findall(r'https?://[^"'\\s]+',js)))[:100])
+              print('DFM_EQUITY_LEN',len(js))
               for needle in ('listed','securit','equities','apiBaseUrl','getSecurities','symbol'):
                   for m in list(re.finditer(needle,js,re.I))[:20]:
                       print('DFM_EQ_CTX',needle,js[max(0,m.start()-700):m.start()+1200])
@@ -107,7 +107,7 @@ jobs:
               js=rr.text
               if any(k in js.lower() for k in ('issuers-directory','apigateway.adx','issuer directory','getissuers','securitiesdirectory')):
                   print('ADX_BUNDLE',src,'BYTES',len(js))
-                  print('ADX_URLS',sorted(set(re.findall(r'https?://[^"'\\s]+',js)))[:100])
+                  print('ADX_BUNDLE_LEN',len(js))
                   for needle in ('issuers-directory','apigateway','issuer','directory','securities'):
                       for m in list(re.finditer(needle,js,re.I))[:20]:
                           print('ADX_BUNDLE_CTX',needle,js[max(0,m.start()-700):m.start()+1200])
