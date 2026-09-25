@@ -1,4 +1,4 @@
-"""SEC 20-F IFRS fallback for non-US issuers listed in BIAP Global.
+"""SEC annual IFRS fallback for non-US issuers listed in BIAP Global.
 
 Some European issuers (for example SAP) file audited IFRS financial statements
 with the U.S. SEC as foreign private issuers even when their local ESEF package
@@ -6,7 +6,7 @@ is not mirrored by filings.xbrl.org. This adapter is deliberately conservative:
 
 * ticker lookup must resolve in the SEC public mapping;
 * SEC entity legal-name core must exactly match the selected company;
-* only standard ifrs-full facts from annual 20-F/20-F-A filings are used;
+* only standard ifrs-full facts from annual 20-F/20-F-A or 40-F/40-F-A filings are used;
 * missing concepts remain None and no vendor metric is promoted to official.
 
 Raw SEC companyfacts responses are inherited from the existing persistent SEC
@@ -25,7 +25,7 @@ from .sec_edgar import SEC_FACTS_BASE
 
 
 class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
-    provider_id = "sec-edgar-20f-ifrs-cached"
+    provider_id = "sec-edgar-foreign-ifrs-cached"
 
     @staticmethod
     def _facts(payload: dict) -> dict:
@@ -45,7 +45,7 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
             if not isinstance(entries, list):
                 continue
             for raw in entries:
-                if not isinstance(raw, dict) or raw.get("form") not in {"20-F", "20-F/A"}:
+                if not isinstance(raw, dict) or raw.get("form") not in {"20-F", "20-F/A", "40-F", "40-F/A"}:
                     continue
                 if raw.get("fp") not in {None, "FY"} or not isinstance(raw.get("val"), (int, float)):
                     continue
@@ -123,6 +123,7 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
         period_end = (str(period_row.get("end") or "") or None) if period_row else None
         filed_at = (str(period_row.get("filed") or "") or None) if period_row else None
         reporting_currency = self._currency(period_row) or company.reporting_currency
+        filing_form = str((period_row or {}).get("form") or "").strip() or None
 
         enriched = replace(
             company,
@@ -149,7 +150,7 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
             eps=self._value(eps),
             filing_period_end=period_end,
             filing_observed_at=filed_at,
-            raw_provider_fields={**company.raw_provider_fields, "sec_cik": cik, "sec_form": "20-F"},
+            raw_provider_fields={**company.raw_provider_fields, "sec_cik": cik, "sec_form": filing_form},
         )
         return append_source(
             enriched,
@@ -161,6 +162,6 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
                 observed_at=filed_at,
                 period_end=period_end,
                 quality=1.0,
-                notes="standard IFRS facts from SEC companyfacts; annual 20-F/20-F-A only; issuer legal-name core verified",
+                notes="standard IFRS facts from SEC companyfacts; annual 20-F/40-F and amendments only; issuer legal-name core verified",
             ),
         )
