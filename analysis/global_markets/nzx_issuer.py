@@ -206,9 +206,19 @@ class NZXIssuerFundamentalsProvider(FundamentalsProvider):
 
         metrics = parse_nzx_limited_annual_report(text)
         title = str((annual["announcement"].get("summary") or {}).get("title") or "")
-        years = [int(x) for x in re.findall(r"\b20\d{2}\b", title + " " + text[:15000])]
-        year = max((y for y in years if y <= datetime.now(timezone.utc).year), default=None)
+        # The announcement title names the reporting year; do not infer it
+        # from arbitrary years elsewhere in the PDF (for example publication
+        # or governance dates in the following calendar year).
+        title_years = [int(x) for x in re.findall(r"\b20\d{2}\b", title)]
+        year = max(title_years, default=None)
         if year is None:
+            period_match = re.search(
+                r"(?:year|12\s+months)\s+ended[^\n]{0,80}?\b(20\d{2})\b",
+                text[:30000],
+                re.I,
+            )
+            year = int(period_match.group(1)) if period_match else None
+        if year is None or year > datetime.now(timezone.utc).year:
             raise GlobalProviderError("NZX annual-report period year could not be verified")
 
         revenue = metrics["revenue"]
