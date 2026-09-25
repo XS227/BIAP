@@ -36,6 +36,8 @@ _ORDINARY_SHARE_NAMES = {
 # CompanyFacts record. Legal-name equality is still required by the SEC adapter.
 _SEC_TICKER_ALIASES = {
     "NOVN": "NVS",  # Novartis AG
+    "UBSG": "UBS",  # UBS Group AG
+    "ABBN": "ABB",  # ABB Ltd
 }
 
 
