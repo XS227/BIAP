@@ -193,32 +193,12 @@ class SwissIssuerFundamentalsProvider(FundamentalsProvider):
         headers = {
             "User-Agent": _USER_AGENT,
             "Accept-Language": "en-US,en;q=0.9",
+            "Referer": _ANNUAL_PAGE,
         }
-        try:
-            page = requests.get(_ANNUAL_PAGE, headers=headers, timeout=self.timeout)
-            page.raise_for_status()
-        except requests.RequestException as exc:
-            raise GlobalProviderError(f"Nestlé annual-report page request failed: {type(exc).__name__}") from exc
-
-        candidates = re.findall(
-            r'href=["\']([^"\']*financial-statements-(20\d{2})-en\.pdf)["\']',
-            page.text,
-            re.I,
-        )
-        if not candidates:
-            candidates = re.findall(
-                r'href=["\']([^"\']*corp-governance-compensation-financial-statements-(20\d{2})-en\.pdf)["\']',
-                page.text,
-                re.I,
-            )
-        if not candidates:
-            raise GlobalProviderError("Nestlé investor page has no annual Financial Statements PDF")
-
-        href, year_text = max(candidates, key=lambda item: int(item[1]))
-        year = int(year_text)
+        year = max(_KNOWN_REPORTS)
         if year > datetime.now(timezone.utc).year:
             raise GlobalProviderError("Nestlé annual Financial Statements year is in the future")
-        pdf_url = urljoin(_ANNUAL_PAGE, href)
+        pdf_url = _KNOWN_REPORTS[year]
 
         try:
             response = requests.get(pdf_url, headers=headers, timeout=self.timeout)
