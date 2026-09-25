@@ -1,0 +1,80 @@
+name: BIAP Global ADX filing source probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-adx-filing-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests
+      - name: Trace official ADX company financial-report source
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re,requests,urllib.parse
+          UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36'
+          PAGE='https://www.adx.ae/main-market/company-profile/financial-reports?secCode=ALDAR&symbols=ALDAR'
+          html=requests.get(PAGE,headers={'User-Agent':UA},timeout=45).text
+          print('PAGE_STATUS',len(html))
+          srcs=[urllib.parse.urljoin(PAGE,x) for x in re.findall(r'<script[^>]+src=["\']([^"\']+)',html,re.I)]
+          print('SCRIPT_COUNT',len(srcs))
+          merged=[]
+          for src in srcs:
+              try:
+                  body=requests.get(src,headers={'User-Agent':UA},timeout=30).text
+              except Exception:
+                  continue
+              merged.append(body)
+              if any(x in body for x in ('GetAllDocumnetsListV2','GetCompanyDisclosureV2','FinancialReports','financial-reports','document')):
+                  print('FOUND',src,'BYTES',len(body))
+                  for needle in ('GetAllDocumnetsListV2','GetAllDocumnetsList','GetCompanyDisclosureV2','GetCompanyDisclosure','FinancialReports','financial-reports'):
+                      for m in list(re.finditer(re.escape(needle),body))[:30]:
+                          ctx=body[max(0,m.start()-4500):m.start()+6500]
+                          if 'callIdentifier' in ctx or 'urlExt' in ctx or 'method:' in ctx or '/adx/' in ctx:
+                              print('CTX',needle,ctx)
+          text='\n'.join(merged)
+          km=re.search(r'adx-Gateway-APIKey["\']?:["\']([^"\']+)',text,re.I)
+          if not km:
+              raise SystemExit('public gateway key missing')
+          key=km.group(1)
+          H={
+            'User-Agent':UA,'Accept':'application/json','Channel-ID':'OSS WEB',
+            'Content-Type':'application/json','X-Correlation-ID':'biap-global-adx-filing-probe',
+            'adx-Gateway-APIKey':key,'Referer':PAGE,
+          }
+          # Candidate official endpoints discovered in the application mapping.
+          tests=[
+            ('documents','https://apigateway.adx.ae/adx/dms/1.1/document'),
+            ('news','https://apigateway.adx.ae/adx/tradings/1.1/news/category'),
+          ]
+          variants=[
+            {},
+            {'symbol':'ALDAR'},
+            {'securityCode':'ALDAR'},
+            {'secCode':'ALDAR'},
+            {'symbols':'ALDAR'},
+            {'symbol':'ALDAR','category':'financial-reports'},
+            {'symbol':'ALDAR','category':'Financial Reports'},
+            {'symbol':'ALDAR','pageNo':'1','pageSize':'20'},
+          ]
+          for label,url in tests:
+              for p in variants:
+                  try:
+                      r=requests.get(url,params=p,headers=H,timeout=35)
+                      if r.status_code < 500:
+                          print('PROBE',label,p,'STATUS',r.status_code,'BYTES',len(r.content),'BODY',repr(r.text[:10000]))
+                  except Exception as e:
+                      print('ERR',label,p,type(e).__name__,e)
+          PY
