@@ -50,7 +50,7 @@ def _gbp_price(value: object, currency: object) -> Optional[float]:
     if number is None:
         return None
     ccy = str(currency or "").strip().upper()
-    if ccy in {"GBX", "GBPX", "GBp".upper()}:
+    if ccy in {"GBX", "GBPX"}:
         return number / 100.0
     if ccy == "GBP":
         return number
