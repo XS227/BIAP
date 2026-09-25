@@ -1,0 +1,51 @@
+name: BIAP Global NZX fundamentals probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-nzx-fundamentals-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests beautifulsoup4
+      - name: Probe official NZX annual result announcement structure
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re,requests,urllib.parse,json
+          from bs4 import BeautifulSoup
+          H={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36','Accept-Language':'en-NZ,en;q=0.9'}
+          for ident in ('468191','468297','468113'):
+              url='https://www.nzx.com/announcements/'+ident
+              r=requests.get(url,headers=H,timeout=45)
+              print('\n### ANN',ident,'STATUS',r.status_code,'BYTES',len(r.content),'TYPE',r.headers.get('content-type'))
+              print(r.text[:900].replace('\n',' '))
+              if not r.ok: continue
+              soup=BeautifulSoup(r.text,'html.parser')
+              for a in soup.find_all('a',href=True):
+                  href=urllib.parse.urljoin(r.url,a['href'])
+                  txt=' '.join(a.stripped_strings)
+                  low=(href+' '+txt).lower()
+                  if any(k in low for k in ('annual','financial','result','attachment','download','pdf','document')):
+                      print('LINK',ident,txt[:180],href)
+              for s in soup.find_all('script'):
+                  body=s.string or s.get_text(' ',strip=True)
+                  if not body: continue
+                  if any(k in body.lower() for k in ('attachment','announcement','document','download')):
+                      print('SCRIPT_CTX',ident,body[:12000])
+              for m in re.finditer(r'https?://[^"\'<> ]+',r.text):
+                  u=m.group(0).replace('&amp;','&')
+                  if any(k in u.lower() for k in ('attachment','download','document','announc','pdf')):
+                      print('URL',ident,u[:800])
+          PY
