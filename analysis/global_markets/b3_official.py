@@ -17,6 +17,7 @@ import shutil
 import tempfile
 from typing import Iterable, Optional
 import xml.etree.ElementTree as ET
+import xml.sax
 import zipfile
 
 import requests
@@ -113,6 +114,66 @@ def parse_b3_equity_info(eqty: ET.Element, *, as_of: date) -> Optional[dict]:
         "tradingStartDate": start or None,
         "tradingEndDate": end or None,
     }
+
+
+class _B3EquitySAXHandler(xml.sax.handler.ContentHandler):
+    """Constant-memory parser for EqyInf records in B3's cumulative BVBG XML."""
+
+    def __init__(self, *, as_of: date) -> None:
+        super().__init__()
+        self.as_of = as_of
+        self.rows: dict[tuple[str, str], dict] = {}
+        self._inside = False
+        self._depth = 0
+        self._field: Optional[str] = None
+        self._parts: list[str] = []
+        self._fields: dict[str, str] = {}
+
+    @staticmethod
+    def _name(value: str) -> str:
+        return value.rsplit(":", 1)[-1]
+
+    def startElement(self, name, attrs):  # noqa: N802 - SAX API name
+        local = self._name(name)
+        if not self._inside:
+            if local == "EqtyInf":
+                self._inside = True
+                self._depth = 0
+                self._field = None
+                self._parts = []
+                self._fields = {}
+            return
+        self._depth += 1
+        if self._depth == 1:
+            self._field = local
+            self._parts = []
+
+    def characters(self, content):
+        if self._inside and self._field is not None:
+            self._parts.append(content)
+
+    def endElement(self, name):  # noqa: N802 - SAX API name
+        local = self._name(name)
+        if not self._inside:
+            return
+        if local == "EqtyInf" and self._depth == 0:
+            eqty = ET.Element("EqtyInf")
+            for key, value in self._fields.items():
+                child = ET.SubElement(eqty, key)
+                child.text = value
+            row = parse_b3_equity_info(eqty, as_of=self.as_of)
+            if row:
+                self.rows[(row["ticker"], row["isin"])] = row
+            self._inside = False
+            self._field = None
+            self._parts = []
+            self._fields = {}
+            return
+        if self._depth == 1 and self._field == local:
+            self._fields[local] = "".join(self._parts).strip()
+            self._field = None
+            self._parts = []
+        self._depth = max(0, self._depth - 1)
 
 
 def parse_cotahist_equity_line(line: str) -> Optional[dict]:
@@ -246,39 +307,28 @@ class B3OfficialClient:
 
     def instrument_rows(self) -> tuple[date, list[dict]]:
         report_date, archive_path, xml_name = self._instrument_archive()
-        rows: dict[tuple[str, str], dict] = {}
         try:
+            handler = _B3EquitySAXHandler(as_of=report_date)
+            parser = xml.sax.make_parser()
+            parser.setContentHandler(handler)
+            # Namespace processing is unnecessary here because the handler strips
+            # any XML prefix from qnames. Disabling external entities also keeps
+            # the official-file parser deterministic and network-isolated.
+            try:
+                parser.setFeature(xml.sax.handler.feature_external_ges, False)
+            except (xml.sax.SAXNotRecognizedException, xml.sax.SAXNotSupportedException):
+                pass
             with zipfile.ZipFile(archive_path) as archive:
                 with archive.open(xml_name) as fh:
-                    # Keep a parent stack so processed InstrmInf nodes are removed
-                    # from the live XML tree. elem.clear() alone leaves millions of
-                    # empty child objects attached to their parent and can OOM a
-                    # small production host on B3's cumulative BVBG snapshot.
-                    stack: list[ET.Element] = []
-                    for event, elem in ET.iterparse(fh, events=("start", "end")):
-                        if event == "start":
-                            stack.append(elem)
-                            continue
-                        if _local(elem.tag) == "InstrmInf":
-                            eqty = _child(elem, "EqtyInf")
-                            if eqty is not None:
-                                row = parse_b3_equity_info(eqty, as_of=report_date)
-                                if row:
-                                    rows[(row["ticker"], row["isin"])] = row
-                            elem.clear()
-                            if len(stack) >= 2:
-                                try:
-                                    stack[-2].remove(elem)
-                                except ValueError:
-                                    pass
-                        if stack:
-                            stack.pop()
+                    parser.parse(fh)
+            result = list(handler.rows.values())
+        except (xml.sax.SAXException, OSError, zipfile.BadZipFile) as exc:
+            raise GlobalProviderError(f"B3 BVBG.028.02 XML parse failed: {type(exc).__name__}") from exc
         finally:
             try:
                 os.unlink(archive_path)
             except OSError:
                 pass
-        result = list(rows.values())
         if not result:
             raise GlobalProviderError("B3 BVBG.028.02 normalized no eligible native equities")
         return report_date, result
