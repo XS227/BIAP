@@ -15,44 +15,47 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - name: Inspect SIX issuer React data endpoints
+      - name: Probe SIX official equity issuer JSON and CSV
         run: |
-          python -m pip install -q requests beautifulsoup4
+          python -m pip install -q requests
           python - <<'PY'
-          import json,re
-          from urllib.parse import urljoin
-          import requests
-          from bs4 import BeautifulSoup
-
-          page="https://www.six-group.com/en/market-data/shares/companies.html"
+          import csv, io, json, requests
+          base="https://www.six-group.com"
           s=requests.Session()
-          s.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36","Accept-Language":"en-US,en;q=0.9"})
-          r=s.get(page,timeout=40)
-          soup=BeautifulSoup(r.text,"html.parser")
-          scripts=[urljoin(r.url,x.get("src")) for x in soup.find_all("script",src=True)]
-          target=next(x for x in scripts if "shares-list-of-companies" in x)
-          js=s.get(target,timeout=40)
-          print("TARGET",target,js.status_code,len(js.text))
-          body=js.text
-          # Print string literals and nearby contexts that look like data/API/CSV routes.
-          strings=sorted(set(re.findall(r'["\']([^"\']{4,400})["\']',body)))
-          for val in strings:
-              low=val.lower()
-              if any(k in low for k in ["http","api","csv","companies","issuer","download","share"]):
-                  print("STRING",val[:1000])
-          for needle in ["axios","fetch(","csv","download","companies","primaryListing","primary_listing","api/"]:
-              start=0
-              while True:
-                  pos=body.find(needle,start)
-                  if pos<0: break
-                  print("\nCTX",needle,pos,body[max(0,pos-1200):pos+2800])
-                  start=pos+len(needle)
-                  if start>pos+20000: break
-          # Extract likely relative endpoint tokens.
-          for pat in [
-              r'/[^"\' ]+(?:\.json|\.csv|/search|/list|/companies)[^"\' ]*',
-              r'https?://[^"\' ]+',
-          ]:
-              for val in sorted(set(re.findall(pat,body))):
-                  print("ENDPOINT",val[:1000])
+          s.headers.update({
+              "User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36",
+              "Accept-Language":"en-US,en;q=0.9",
+              "Referer":"https://www.six-group.com/en/market-data/shares/companies.html",
+          })
+          for path in (
+              "/sheldon/equity_issuers/v1/equity_issuers.json",
+              "/sheldon/equity_issuers/v1/equity_issuers.csv",
+          ):
+              r=s.get(base+path,timeout=40)
+              print("\nURL",path,"status",r.status_code,"type",r.headers.get("content-type"),"bytes",len(r.content))
+              r.raise_for_status()
+              if path.endswith(".json"):
+                  p=r.json()
+                  print("TOP_KEYS",list(p)[:20] if isinstance(p,dict) else type(p).__name__)
+                  rows=p.get("itemList") if isinstance(p,dict) else None
+                  print("COUNT",len(rows or []))
+                  print("SAMPLE",json.dumps((rows or [])[:12],ensure_ascii=False,indent=2))
+                  ch=[x for x in (rows or []) if str(x.get("country") or "").upper() in {"CH","SWITZERLAND"}]
+                  primary=[x for x in ch if x.get("primaryListing") is True]
+                  print("CH_COUNT",len(ch),"CH_PRIMARY",len(primary))
+                  print("CH_PRIMARY_SAMPLE",json.dumps(primary[:20],ensure_ascii=False,indent=2))
+                  print("CLASS_COUNTS",json.dumps({
+                      str(k):sum(1 for x in primary if x.get("classOfShare")==k)
+                      for k in sorted({x.get("classOfShare") for x in primary},key=lambda z:str(z))
+                  },ensure_ascii=False,indent=2))
+                  print("CURRENCY_COUNTS",json.dumps({
+                      str(k):sum(1 for x in primary if x.get("tradingCurrency")==k)
+                      for k in sorted({x.get("tradingCurrency") for x in primary},key=lambda z:str(z))
+                  },ensure_ascii=False,indent=2))
+              else:
+                  text=r.content.decode("utf-8-sig","replace")
+                  reader=csv.reader(io.StringIO(text))
+                  for i,row in enumerate(reader):
+                      print("CSV_ROW",i+1,json.dumps(row,ensure_ascii=False))
+                      if i>=8: break
           PY
