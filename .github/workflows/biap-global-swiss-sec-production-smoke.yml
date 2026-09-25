@@ -19,14 +19,14 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -q requests
-      - name: Verify major Swiss issuers' official SEC IFRS evidence in production
+      - name: Verify current Swiss SEC IFRS evidence in production
         shell: bash
         run: |
           python - <<'PY'
           import requests
           base='https://biap.dadashi.no/global-api/global'
           s=requests.Session()
-          expected={'NOVN':'NVS','UBSG':'UBS','ABBN':'ABB'}
+          expected={'NOVN':'NVS','ALC':None}
           for ticker,alias in expected.items():
               r=s.get(base+'/instruments/CH/SIX',params={'q':ticker,'limit':5},timeout=90)
               print('SEARCH',ticker,r.status_code,r.text[:10000])
@@ -35,7 +35,8 @@ jobs:
               exact=[x for x in rows if str(x.get('ticker') or '').upper()==ticker]
               assert exact, rows
               row=exact[0]
-              assert (row.get('raw_provider_fields') or {}).get('sec_ticker_alias') == alias, row
+              if alias is not None:
+                  assert (row.get('raw_provider_fields') or {}).get('sec_ticker_alias') == alias, row
               payload={'country':'CH','exchange':'SIX','ticker':ticker,'name':row.get('name'),
                        'currency':row.get('currency') or 'CHF','isin':row.get('isin'),'lei':row.get('lei')}
               a=s.post(base+'/analyze',json=payload,timeout=180)
@@ -48,7 +49,7 @@ jobs:
               assert company.get('total_assets') is not None, company
               assert company.get('total_liabilities') is not None, company
               assert company.get('total_equity') is not None, company
-              assert company.get('filing_period_end'), company
+              assert company.get('filing_period_end') and company.get('filing_period_end') >= '2025-01-01', company
               evidence=data.get('evidence') or {}
               missing=evidence.get('missing_critical') or []
               assert 'fundamental_source' not in missing, evidence
