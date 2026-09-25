@@ -12,6 +12,9 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
 import io
+import os
+import shutil
+import tempfile
 from typing import Iterable, Optional
 import xml.etree.ElementTree as ET
 import zipfile
@@ -168,7 +171,8 @@ class B3OfficialClient:
         session.headers.update({"User-Agent": _USER_AGENT, "Accept": "*/*"})
         return session
 
-    def _instrument_archive(self) -> tuple[date, zipfile.ZipFile, str]:
+    def _instrument_archive(self) -> tuple[date, str, str]:
+        """Download the nested BVBG archive to disk instead of buffering it in RAM."""
         session = self._session()
         try:
             page = session.get(_PAGE, timeout=max(30.0, self.timeout))
@@ -181,48 +185,85 @@ class B3OfficialClient:
         for back in range(0, 8):
             report_date = today - timedelta(days=back)
             filename = f"IN{report_date:%y%m%d}.zip"
+            outer_path: Optional[str] = None
+            inner_path: Optional[str] = None
             try:
-                response = session.get(
+                with session.get(
                     _DOWNLOAD,
                     params={"filelist": filename},
+                    stream=True,
                     timeout=(30.0, max(240.0, self.timeout)),
-                )
-                response.raise_for_status()
-                if len(response.content) < 1_000_000:
+                ) as response:
+                    response.raise_for_status()
+                    size = 0
+                    with tempfile.NamedTemporaryFile(prefix="biap-b3-outer-", suffix=".zip", delete=False) as target:
+                        outer_path = target.name
+                        for chunk in response.iter_content(chunk_size=1024 * 1024):
+                            if not chunk:
+                                continue
+                            target.write(chunk)
+                            size += len(chunk)
+                if size < 1_000_000:
                     last_error = f"{filename}: undersized payload"
+                    if outer_path:
+                        os.unlink(outer_path)
                     continue
-                outer = zipfile.ZipFile(io.BytesIO(response.content))
-                outer_name = outer.namelist()[0]
-                nested = outer.read(outer_name)
-                inner = zipfile.ZipFile(io.BytesIO(nested))
-                xml_names = [name for name in inner.namelist() if name.lower().endswith(".xml")]
-                if not xml_names:
-                    last_error = f"{filename}: no XML"
-                    continue
-                # BVBG.028 snapshots are cumulative. The largest XML is the final
-                # snapshot on the observed public file used by B3.
-                xml_name = max(xml_names, key=lambda name: inner.getinfo(name).file_size)
-                return report_date, inner, xml_name
-            except (requests.RequestException, zipfile.BadZipFile, IndexError) as exc:
+
+                with zipfile.ZipFile(outer_path) as outer:
+                    names = outer.namelist()
+                    if not names:
+                        raise zipfile.BadZipFile("empty outer archive")
+                    with outer.open(names[0]) as source, tempfile.NamedTemporaryFile(
+                        prefix="biap-b3-inner-", suffix=".zip", delete=False
+                    ) as target:
+                        inner_path = target.name
+                        shutil.copyfileobj(source, target, length=1024 * 1024)
+
+                with zipfile.ZipFile(inner_path) as inner:
+                    xml_names = [name for name in inner.namelist() if name.lower().endswith(".xml")]
+                    if not xml_names:
+                        last_error = f"{filename}: no XML"
+                        os.unlink(inner_path)
+                        inner_path = None
+                        continue
+                    # BVBG.028 snapshots are cumulative. The largest XML is the final
+                    # snapshot on the observed public file used by B3.
+                    xml_name = max(xml_names, key=lambda name: inner.getinfo(name).file_size)
+
+                if outer_path:
+                    os.unlink(outer_path)
+                    outer_path = None
+                return report_date, inner_path, xml_name
+            except (requests.RequestException, zipfile.BadZipFile, IndexError, OSError) as exc:
                 last_error = f"{filename}: {type(exc).__name__}"
+                for path in (outer_path, inner_path):
+                    if path:
+                        try:
+                            os.unlink(path)
+                        except OSError:
+                            pass
         raise GlobalProviderError(f"B3 BVBG.028.02 unavailable: {last_error}")
 
     def instrument_rows(self) -> tuple[date, list[dict]]:
-        report_date, archive, xml_name = self._instrument_archive()
+        report_date, archive_path, xml_name = self._instrument_archive()
         rows: dict[tuple[str, str], dict] = {}
         try:
-            with archive.open(xml_name) as fh:
-                for _, elem in ET.iterparse(fh, events=("end",)):
-                    if _local(elem.tag) != "InstrmInf":
-                        continue
-                    eqty = _child(elem, "EqtyInf")
-                    if eqty is not None:
-                        row = parse_b3_equity_info(eqty, as_of=report_date)
-                        if row:
-                            rows[(row["ticker"], row["isin"])] = row
-                    elem.clear()
+            with zipfile.ZipFile(archive_path) as archive:
+                with archive.open(xml_name) as fh:
+                    for _, elem in ET.iterparse(fh, events=("end",)):
+                        if _local(elem.tag) != "InstrmInf":
+                            continue
+                        eqty = _child(elem, "EqtyInf")
+                        if eqty is not None:
+                            row = parse_b3_equity_info(eqty, as_of=report_date)
+                            if row:
+                                rows[(row["ticker"], row["isin"])] = row
+                        elem.clear()
         finally:
-            archive.close()
+            try:
+                os.unlink(archive_path)
+            except OSError:
+                pass
         result = list(rows.values())
         if not result:
             raise GlobalProviderError("B3 BVBG.028.02 normalized no eligible native equities")
@@ -235,21 +276,43 @@ class B3OfficialClient:
         for back in range(0, 10):
             report_date = today - timedelta(days=back)
             filename = f"COTAHIST_D{report_date:%d%m%Y}.ZIP"
+            archive_path: Optional[str] = None
             try:
-                response = session.get(_COTAHIST_BASE + filename, timeout=max(25.0, self.timeout))
-                if response.status_code == 404:
-                    continue
-                response.raise_for_status()
-                archive = zipfile.ZipFile(io.BytesIO(response.content))
-                name = archive.namelist()[0]
-                text = archive.read(name).decode("latin-1")
-            except (requests.RequestException, zipfile.BadZipFile, IndexError, UnicodeError) as exc:
+                with session.get(
+                    _COTAHIST_BASE + filename,
+                    stream=True,
+                    timeout=(20.0, max(90.0, self.timeout)),
+                ) as response:
+                    if response.status_code == 404:
+                        continue
+                    response.raise_for_status()
+                    with tempfile.NamedTemporaryFile(prefix="biap-b3-cotahist-", suffix=".zip", delete=False) as target:
+                        archive_path = target.name
+                        for chunk in response.iter_content(chunk_size=1024 * 1024):
+                            if chunk:
+                                target.write(chunk)
+
+                rows: list[dict] = []
+                with zipfile.ZipFile(archive_path) as archive:
+                    names = archive.namelist()
+                    if not names:
+                        raise zipfile.BadZipFile("empty COTAHIST archive")
+                    with archive.open(names[0]) as raw, io.TextIOWrapper(raw, encoding="latin-1", newline="") as text:
+                        for line in text:
+                            row = parse_cotahist_equity_line(line.rstrip("\r\n"))
+                            if row:
+                                rows.append(row)
+                if rows:
+                    return report_date, rows
+                last_error = f"{filename}: no eligible rows"
+            except (requests.RequestException, zipfile.BadZipFile, IndexError, UnicodeError, OSError) as exc:
                 last_error = f"{filename}: {type(exc).__name__}"
-                continue
-            rows = [row for line in text.splitlines() if (row := parse_cotahist_equity_line(line))]
-            if rows:
-                return report_date, rows
-            last_error = f"{filename}: no eligible rows"
+            finally:
+                if archive_path:
+                    try:
+                        os.unlink(archive_path)
+                    except OSError:
+                        pass
         raise GlobalProviderError(f"B3 COTAHIST unavailable: {last_error}")
 
     def batch_quotes(
