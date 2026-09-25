@@ -62,4 +62,20 @@ jobs:
               reader=PdfReader(io.BytesIO(rr.content))
               text='\n'.join((p.extract_text() or '') for p in reader.pages[:20])
               print('PDF_TEXT',name,text[:25000])
+          # Inspect NZX Limited audited annual report around primary statements.
+          rr=requests.get('https://api.nzx.com/public/announcement/468191/attachment/463239/468191-463239.pdf',headers=H,timeout=90)
+          rr.raise_for_status()
+          reader=PdfReader(io.BytesIO(rr.content))
+          full='\n'.join((p.extract_text() or '') for p in reader.pages)
+          print('NZX_ANNUAL_PAGES',len(reader.pages),'TEXT',len(full))
+          for needle in ('statement of comprehensive income','statement of financial position','statement of cash flows',
+                         'total assets','total liabilities','total equity','cash and cash equivalents','operating activities'):
+              low=full.lower()
+              start=0
+              count=0
+              while count<6:
+                  pos=low.find(needle,start)
+                  if pos<0: break
+                  print('ANNUAL_CTX',needle,repr(full[max(0,pos-900):pos+2500]))
+                  start=pos+len(needle); count+=1
           PY
