@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 from global_markets.b3_official import B3OfficialClient, parse_b3_equity_info, parse_cotahist_equity_line
 from global_markets.country_packs import get_exchange
 from global_markets.models import GlobalCompany
+from global_markets.scanner import GlobalMarketScanner
 
 
 def _fixed_line(*, ticker="PETR4", spec="PN      N2", isin="BRPETRACNPR6", close=42.37, qty=123456, turnover=5234567.89):
@@ -110,3 +111,20 @@ def test_b3_batch_quotes_uses_daily_trade_and_official_last_price_fallback(monke
     assert rows[1]["averageVolume"]==0.0
     assert rows[1]["noTradeLatestSession"] is True
     assert "B3 official" in source
+
+
+
+def test_official_stage_one_quote_survives_as_market_evidence():
+    company=GlobalCompany(
+        country="BR",exchange="B3",currency="BRL",ticker="PETR4",
+        name="PETROBRAS",mic_code="BVMF",isin="BRPETRACNPR6",
+    )
+    seeded=GlobalMarketScanner._seed_screening_quote(company,{
+        "ticker":"PETR4","price":42.37,"averageVolume":123456,
+        "liquidityValue":5234567.89,"quoteDate":"2026-09-24",
+        "provider":"official-b3-daily-equities",
+    })
+    assert seeded.price==42.37
+    assert seeded.price_observed_at=="2026-09-24T00:00:00+00:00"
+    assert seeded.volume_today==123456
+    assert any(source.source_type=="official_exchange_market_quote" for source in seeded.sources)
