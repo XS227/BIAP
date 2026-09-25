@@ -168,7 +168,7 @@ class NZXIssuerFundamentalsProvider(FundamentalsProvider):
                 continue
             if "annual report" not in lower and "full year" not in lower:
                 continue
-            attachments = details.get("attachments") or []
+            attachments = ann.get("attachments") or details.get("attachments") or []
             report = next(
                 (
                     item for item in attachments
