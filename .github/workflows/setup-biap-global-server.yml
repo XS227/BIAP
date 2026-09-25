@@ -211,6 +211,28 @@ jobs:
                       removed += 1
           print(f"DFM pre-v2 fundamentals latest snapshots removed: {removed}")
           PY
+
+          # NZX annual-report provider v4 fixes the filing period year. Remove
+          # stale v3 normalized snapshots so production cannot serve the
+          # previously misdated 2026 period as an outage fallback.
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("/var/lib/biap-global/fundamentals/NZ/NZX")
+          removed = 0
+          if root.exists():
+              for path in root.glob("*/latest.json"):
+                  try:
+                      payload = json.loads(path.read_text(encoding="utf-8"))
+                  except Exception:
+                      continue
+                  provider = str(payload.get("provider") or "")
+                  period = str(payload.get("filingPeriodEnd") or "")
+                  if "official-nzx-issuer-annual-report-v4" not in provider or period == "2026-12-31":
+                      path.unlink(missing_ok=True)
+                      removed += 1
+          print(f"NZX stale fundamentals latest snapshots removed: {removed}")
+          PY
           PYTHONPATH=analysis BIAP_GLOBAL_UNIVERSE_SYNC_MARKETS=SE:NASDAQ_STOCKHOLM timeout 360 analysis/.venv-global/bin/python -m global_markets.universe_sync
           PYTHONPATH=analysis BIAP_GLOBAL_UNIVERSE_SYNC_MARKETS=DK:NASDAQ_COPENHAGEN timeout 360 analysis/.venv-global/bin/python -m global_markets.universe_sync
 
