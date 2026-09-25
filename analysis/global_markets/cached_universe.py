@@ -19,10 +19,10 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
 
-# Version 19 normalizes SIX ordinary-share classes from the exchange's stable
-# RS/BS machine codes. Older Swiss snapshots may expose the masked "***" label
-# for valid bearer shares and must be rebuilt.
-CACHE_SCHEMA_VERSION = 19
+# Version 20 replaces the New Zealand vendor reference catalog with the official
+# NZX Main Board domestic ordinary-share universe. Older NZ snapshots may include
+# ETFs/funds or overseas-primary secondary listings and must be rebuilt.
+CACHE_SCHEMA_VERSION = 20
 
 
 def _utc_now() -> datetime:
