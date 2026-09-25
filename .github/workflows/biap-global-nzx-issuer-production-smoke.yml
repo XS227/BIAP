@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -q requests
-      # NZX Next payload stores attachments at announcement level.
+      # NZX Next payload stores attachments at announcement level; report year comes from the annual-results title.
       - name: Verify NZX Limited official annual fundamentals in production
         shell: bash
         run: |
