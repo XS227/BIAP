@@ -1,0 +1,48 @@
+name: BIAP Global India Korea official universe probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-india-korea-official-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install backend dependencies
+        working-directory: analysis
+        run: python -m pip install -q -r requirements.txt
+      - name: Probe NSE and KRX official universes
+        working-directory: analysis
+        env:
+          PYTHONPATH: .
+        run: |
+          python - <<'PY'
+          from global_markets.india_official import NSEOfficialUniverseProvider
+          from global_markets.krx_official import KRXKINDOfficialUniverseProvider
+
+          nse=NSEOfficialUniverseProvider(timeout=45).list_instruments(country='IN',exchange='NSE')
+          print('NSE',len(nse),[x.ticker for x in nse[:10]])
+          assert len(nse) >= 1500
+          assert any(x.ticker == 'RELIANCE' for x in nse)
+          assert all(x.mic_code == 'XNSE' and x.instrument_type == 'Common Stock' for x in nse)
+
+          krx=KRXKINDOfficialUniverseProvider(timeout=45).list_instruments(country='KR',exchange='KRX')
+          print('KRX',len(krx),[x.ticker for x in krx[:10]])
+          print('KRX metadata',KRXKINDOfficialUniverseProvider.provider_id)
+          assert len(krx) >= 1500
+          assert any(x.ticker == '005930' for x in krx)
+          assert all(x.mic_code == 'XKRX' and x.instrument_type == 'Common Stock' for x in krx)
+          PY
