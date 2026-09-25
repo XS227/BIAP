@@ -24,7 +24,7 @@ from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
 
 
-_PROVIDER_ID = "official-nzx-issuer-annual-report-v1"
+_PROVIDER_ID = "official-nzx-issuer-annual-report-v2"
 _COMPANY_PAGE = "https://new.nzx.com/companies/{ticker}/announcements"
 _USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 BIAP-Global"
 _SUPPORTED = {"NZX"}
