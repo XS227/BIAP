@@ -123,6 +123,7 @@ def test_dfm_parser_handles_multiline_profit_and_equity_statement_fallback():
     Profit for the year after net movement in
     regulatory deferral account and tax 9,055,344 7,234,189
     Consolidated statement of changes in equity
+    At 31 December 2024 500,000 39,117,511 591,346 1,056,262 48,084,114 89,349,233 5,638,617 94,987,850
     At 31 December 2025 500,000 39,165,645 591,346 485,839 50,273,686 91,016,516 6,753,019 97,769,535
     Consolidated statement of cash flows
     Profit for the year after tax 9,055,344 7,234,189
