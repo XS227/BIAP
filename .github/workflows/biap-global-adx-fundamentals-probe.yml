@@ -56,6 +56,13 @@ jobs:
             {'symbol':'ALDAR'},{'security':'ALDAR'},{'securityCode':'ALDAR'},
             {'companySymbol':'ALDAR'},{'eqCode':'ALDAR'},{'displaySecCode':'ALDAR'},
           ]
+          # Find actual frontend invocations to recover required query/body parameters.
+          for needle in ('CompanyProfileBalanceSheetV2','CompanyInformationV2','ListedCompanyProfileDataV2'):
+              for m in list(re.finditer(re.escape(needle),js))[:50]:
+                  ctx=js[max(0,m.start()-3500):m.start()+3500]
+                  if 'callIdentifier' in ctx or 'urlExt' in ctx:
+                      print('CALL_CTX',needle,ctx)
+
           for url in bases:
               for p in params:
                   try:
