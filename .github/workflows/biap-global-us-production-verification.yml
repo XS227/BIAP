@@ -1,0 +1,22 @@
+name: BIAP Global US production verification
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-us-production-verification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - run: python -m pip install -q requests
+      - run: python tools/probe_us_production_scan.py
