@@ -179,3 +179,34 @@ def test_sec_foreign_ifrs_uses_verified_ticker_alias(monkeypatch):
     assert enriched.reporting_currency == "USD"
     assert enriched.raw_provider_fields["sec_cik"] == 1114448
     assert any(source.source_type == "official_regulatory_xbrl" for source in enriched.sources)
+
+
+def test_sec_foreign_ifrs_rejects_stale_annual_period(monkeypatch):
+    provider = SECForeignIFRSFundamentalsProvider(user_agent="BIAP test contact@example.com")
+    seed = GlobalCompany(
+        country="CH",
+        exchange="SIX",
+        mic_code="XSWX",
+        currency="CHF",
+        ticker="UBSG",
+        name="UBS Group AG",
+        raw_provider_fields={"sec_ticker_alias": "UBS"},
+    )
+    monkeypatch.setattr(provider, "_ticker_map", lambda: {"UBS": 1610520})
+    stale = {
+        "entityName": "UBS GROUP AG",
+        "facts": {
+            "ifrs-full": {
+                "Revenue": {
+                    "units": {"USD": [
+                        {"val": 35000000000, "end": "2021-12-31", "filed": "2022-03-07", "form": "20-F", "fp": "FY"}
+                    ]}
+                },
+                "ProfitLoss": fact(7000000000, end="2021-12-31", filed="2022-03-07", unit="USD"),
+                "Assets": fact(1600000000000, end="2021-12-31", filed="2022-03-07", unit="USD"),
+            }
+        },
+    }
+    monkeypatch.setattr(provider, "_get_json", lambda url: stale)
+    with pytest.raises(GlobalProviderError, match="stale"):
+        provider.enrich_fundamentals(seed)
