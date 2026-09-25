@@ -32,6 +32,7 @@ from .german_issuer import GermanIssuerFundamentalsProvider
 from .hkex_issuer import HKEXIssuerFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
 from .kap_current import KAPCurrentFundamentalsProvider
+from .lse_official import LSEOfficialUniverseProvider
 from .opendart import OpenDARTFundamentalsProvider
 from .official_universe import ASXUniverseProvider, DeutscheBoerseUniverseProvider
 from .providers import ProviderRegistry
@@ -133,6 +134,12 @@ def build_registry() -> ProviderRegistry:
         fresh_hours=12,
     )
     registry.register_universe("IE", "EURONEXT_DUBLIN", dublin_universe)
+
+    lse_universe = PersistentUniverseProvider(
+        LSEOfficialUniverseProvider(),
+        fresh_hours=12,
+    )
+    registry.register_universe("GB", "LSE", lse_universe)
 
     # Licensed Twelve Data remains the preferred market source. Without a
     # licensed credential, BIAP uses a lower-trust public EOD fallback only on
