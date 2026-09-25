@@ -410,10 +410,9 @@ def build_registry() -> ProviderRegistry:
     for exchange in COUNTRY_PACKS["TR"].exchanges:
         register_fundamentals("TR", exchange.code, tr)
 
-    # ADX exposes an official structured annual financial summary. It is intentionally
-    # marked partial: the endpoint contains net profit, equity, EPS and P/B but not
-    # revenue, assets/liabilities or cash flow, so it must not by itself clear the
-    # EvidenceAgent complete-filing gate. Yahoo may supplement display fields only.
+    # ADX exposes issuer-filed annual Financial Reports through its official efid
+    # disclosures feed. The adapter verifies the linked PDF and cross-checks
+    # overlapping headline metrics against ADX's structured annual summary.
     ae_adx = PersistentFundamentalsProvider(
         FallbackFundamentalsProvider(ADXFinancialSummaryProvider(), public_fundamentals)
     )
