@@ -1,0 +1,44 @@
+name: BIAP Global BSE SCRIP zip probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-bse-scrip-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests
+      - name: Inspect official BSE SCRIP zip
+        run: |
+          python - <<'PY'
+          import csv, io, zipfile, requests
+          url='https://www.bseindia.com/downloads/SCRIP.zip'
+          r=requests.get(url,headers={'User-Agent':'Mozilla/5.0','Referer':'https://www.bseindia.com/'},timeout=60)
+          print('STATUS',r.status_code,'BYTES',len(r.content),'TYPE',r.headers.get('content-type'))
+          r.raise_for_status()
+          z=zipfile.ZipFile(io.BytesIO(r.content))
+          names=[n for n in z.namelist() if not n.endswith('/')]
+          print('COUNT',len(names))
+          print('FIRST',names[:20])
+          print('LAST',names[-30:])
+          for name in names[-5:]:
+              b=z.read(name)
+              print('FILE',name,'BYTES',len(b),'HEAD',repr(b[:1000]))
+              try:
+                  text=b.decode('utf-8-sig')
+              except UnicodeDecodeError:
+                  text=b.decode('cp1252','replace')
+              rows=list(csv.reader(io.StringIO(text)))
+              print('ROWS',len(rows),'HEADER',rows[:3])
+          PY
