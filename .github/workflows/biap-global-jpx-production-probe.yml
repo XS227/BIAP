@@ -1,0 +1,68 @@
+name: BIAP Global JPX production probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-jpx-production-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - name: Probe production JPX universe and ranking gate
+        run: |
+          python -m pip install -q requests
+          python - <<'PY'
+          import json, requests
+          base="https://biap.dadashi.no/global-api/global"
+          s=requests.Session()
+          s.headers.update({"Accept":"application/json","User-Agent":"BIAP-Global-JPX-production-probe"})
+          status=s.get(base+"/status",timeout=30)
+          status.raise_for_status()
+          print("STATUS",json.dumps(status.json(),sort_keys=True))
+          catalog=s.get(base+"/instruments/JP/TSE_JP",params={"limit":5},timeout=120)
+          catalog.raise_for_status()
+          data=catalog.json()
+          print("CATALOG",json.dumps({
+              "totalMatched":data.get("totalMatched"),
+              "catalog":data.get("catalog"),
+              "sample":[
+                  {
+                      "ticker":x.get("ticker"),"name":x.get("name"),
+                      "type":x.get("instrument_type"),"mic":x.get("mic_code"),
+                      "section":(x.get("raw_provider_fields") or {}).get("jpx_section"),
+                  } for x in data.get("instruments",[])
+              ],
+          },ensure_ascii=False,sort_keys=True))
+          assert 3500 <= int(data.get("totalMatched") or 0) <= 3900
+          info=data.get("catalog") or {}
+          assert "official-jpx-tse-listed-issues" in str(info.get("provider") or "")
+          assert all(x.get("instrument_type")=="Common Stock" for x in data.get("instruments",[]))
+          scan=s.post(base+"/scan",json={
+              "country":"JP","exchange":"TSE_JP","topN":10,
+              "discoveryLimit":5000,"deepLimit":10,
+          },timeout=180)
+          scan.raise_for_status()
+          result=scan.json()
+          print("SCAN",json.dumps({
+              "status":result.get("status"),
+              "rankingEligible":result.get("rankingEligible"),
+              "universeSource":result.get("universeSource"),
+              "universeDiscovered":result.get("universeDiscovered"),
+              "universeScreened":result.get("universeScreened"),
+              "screeningCoveragePct":result.get("screeningCoveragePct"),
+              "readiness":result.get("readiness"),
+              "recommendationCount":result.get("recommendationCount"),
+          },ensure_ascii=False,sort_keys=True))
+          assert "official-jpx-tse-listed-issues" in str(result.get("universeSource") or "")
+          assert int(result.get("universeDiscovered") or 0) >= 3500
+          PY
