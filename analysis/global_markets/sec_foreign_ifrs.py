@@ -29,6 +29,8 @@ from .sec_edgar import SEC_FACTS_BASE
 # any CompanyFacts data is accepted.
 _VERIFIED_LOCAL_TICKER_ALIASES = {
     ("CH", "SIX", "NOVN"): "NVS",  # Novartis AG
+    ("CH", "SIX", "UBSG"): "UBS",  # UBS Group AG
+    ("CH", "SIX", "ABBN"): "ABB",  # ABB Ltd
 }
 
 
