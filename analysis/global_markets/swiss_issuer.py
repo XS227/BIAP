@@ -26,7 +26,7 @@ _PROVIDER_ID = "official-nestle-annual-financial-statements-v1"
 _ANNUAL_PAGE = "https://www.nestle.com/investors/annual-report"
 _USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 BIAP-Global"
 _SUPPORTED = {"NESN": "CH0038863350"}
-_AMOUNT = r"\(?-?\d{1,3}(?:[ '\u00a0]\d{3})*(?:\.\d+)?\)?"
+_AMOUNT = r"\(?-?[0-9]{1,3}(?: [0-9]{3})?(?:\.[0-9]+)?\)?"
 
 
 def _num(value: str, *, scale: float = 1.0) -> Optional[float]:
