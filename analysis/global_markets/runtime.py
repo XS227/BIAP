@@ -31,8 +31,10 @@ from .nzx_official import NZXOfficialUniverseProvider
 from .fallback_fundamentals import FallbackFundamentalsProvider
 from .german_issuer import GermanIssuerFundamentalsProvider
 from .hkex_issuer import HKEXIssuerFundamentalsProvider
+from .india_official import NSEOfficialUniverseProvider
 from .iran_adapter import IranLegacyProvider
 from .jpx_official import JPXOfficialUniverseProvider
+from .krx_official import KRXKINDOfficialUniverseProvider
 from .kap_current import KAPCurrentFundamentalsProvider
 from .lse_official import LSEOfficialUniverseProvider
 from .opendart import OpenDARTFundamentalsProvider
