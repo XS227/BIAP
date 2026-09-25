@@ -25,7 +25,7 @@ from .providers import FundamentalsProvider, GlobalProviderError, append_source
 _LIST_URL = "https://api2.dfm.ae/efsah/v1/prototype_efsah"
 _RESOURCE_BASE = "https://feeds.dfm.ae/documents"
 _PAGE_URL = "https://www.dfm.ae/the-exchange/market-information"
-_PROVIDER_ID = "official-dfm-efsah-annual-statement"
+_PROVIDER_ID = "official-dfm-efsah-annual-statement-v2"
 _USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 BIAP-Global"
 _NUMBER = r"\(?-?[\d][\d,]*(?:\.\d+)?\)?"
 
