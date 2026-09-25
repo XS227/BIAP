@@ -248,7 +248,7 @@ jobs:
               except Exception:
                   payload = {}
               rows = payload.get("instruments") if isinstance(payload, dict) else []
-              required = {"NOVN": "NVS", "UBSG": "UBS", "ABBN": "ABB"}
+              required = {"NOVN": "NVS", "UBSG": "UBS"}
               aliases = {
                   str((row or {}).get("ticker") or "").upper():
                   str((((row or {}).get("raw_provider_fields") or {}).get("sec_ticker_alias") or "")).upper()
