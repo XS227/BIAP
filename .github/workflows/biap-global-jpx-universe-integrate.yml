@@ -50,7 +50,9 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add analysis/global_markets/jpx_official.py analysis/global_markets/runtime.py analysis/global_markets/cached_universe.py analysis/tests/test_global_jpx_official.py analysis/tests/test_global_universe_cache_v8.py
+          git add analysis/global_markets/jpx_official.py analysis/global_markets/runtime.py analysis/global_markets/cached_universe.py analysis/tests/test_global_jpx_official.py analysis/tests/test_global_universe_cache_v8.py analysis/tests/test_global_universe_cache_schema.py
           git diff --cached --quiet && exit 0
           git commit -m 'Use JPX authoritative domestic equity universe'
           git push origin HEAD:feat/biap-global
+
+# retry: schema-v16
