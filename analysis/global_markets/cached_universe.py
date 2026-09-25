@@ -19,10 +19,10 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
 
-# Version 18 replaces the Switzerland reference/demo catalog with the official
-# SIX Swiss primary ordinary-share universe. Older Swiss snapshots must not
-# survive the authoritative source change.
-CACHE_SCHEMA_VERSION = 18
+# Version 19 normalizes SIX ordinary-share classes from the exchange's stable
+# RS/BS machine codes. Older Swiss snapshots may expose the masked "***" label
+# for valid bearer shares and must be rebuilt.
+CACHE_SCHEMA_VERSION = 19
 
 
 def _utc_now() -> datetime:
