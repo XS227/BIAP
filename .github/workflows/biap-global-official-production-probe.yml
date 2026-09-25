@@ -18,7 +18,7 @@ jobs:
       - name: Probe public production API
         run: |
           python - <<'PY'
-          import json, urllib.parse, urllib.request
+          import json, time, urllib.error, urllib.parse, urllib.request
 
           base='https://biap.dadashi.no/global-api/global'
           def get(path, params=None):
@@ -38,7 +38,18 @@ jobs:
               ('nse','IN','NSE'),('bse','IN','BSE'),('krx','KR','KRX'),('hkex','HK','HKEX'),('jse','ZA','JSE'),
               ('sgx','SG','SGX'),('dfm','AE','DFM'),('adx','AE','ADX'),('saudi','SA','SAUDI_EXCHANGE')
           ]:
-              row=catalog(country,exchange)
+              print('CATALOG_START',key,country,exchange,flush=True)
+              started=time.monotonic()
+              try:
+                  row=catalog(country,exchange)
+              except urllib.error.HTTPError as exc:
+                  body=exc.read().decode('utf-8','replace')
+                  print('CATALOG_ERROR',key,'HTTP',exc.code,'BODY',body[:4000],flush=True)
+                  raise
+              except Exception as exc:
+                  print('CATALOG_ERROR',key,type(exc).__name__,str(exc)[:4000],flush=True)
+                  raise
+              print('CATALOG_OK',key,'count',row.get('totalMatched'),'catalog',row.get('catalog'),'secs',round(time.monotonic()-started,2),flush=True)
               results[key]={
                   'totalMatched':row.get('totalMatched'),
                   'returned':row.get('returned'),
