@@ -118,6 +118,18 @@ def build_registry() -> ProviderRegistry:
     registry.register_universe("CA", "TSX", tmx_universe)
     registry.register_universe("CA", "TSXV", tmx_universe)
 
+    nse_universe = PersistentUniverseProvider(
+        NSEOfficialUniverseProvider(),
+        fresh_hours=24,
+    )
+    registry.register_universe("IN", "NSE", nse_universe)
+
+    krx_universe = PersistentUniverseProvider(
+        KRXKINDOfficialUniverseProvider(),
+        fresh_hours=12,
+    )
+    registry.register_universe("KR", "KRX", krx_universe)
+
     six_universe = PersistentUniverseProvider(
         SIXOfficialUniverseProvider(),
         fresh_hours=12,
