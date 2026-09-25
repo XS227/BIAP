@@ -39,7 +39,7 @@ jobs:
               print('LIST',symbol,r.status_code,'BYTES',len(r.content),'BODY',repr(r.text[:30000]))
               if not r.ok:
                   continue
-              p=r.json()
+              p=json.loads(r.content.decode('utf-8-sig'))
               root=p.get('root') if isinstance(p,dict) else None
               rows=root if isinstance(root,list) else ([root] if isinstance(root,dict) else [])
               print('ROWS',symbol,len(rows))
@@ -51,5 +51,11 @@ jobs:
                   if not ident:
                       continue
                   d=requests.get(base+'/detail',params={'id':ident,'lang':'en'},headers=h,timeout=45)
-                  print('DETAIL',symbol,ident,d.status_code,'BYTES',len(d.content),'BODY',repr(d.text[:30000]))
+                  print('DETAIL',symbol,ident,d.status_code,'BYTES',len(d.content),'BODY',repr(d.content.decode('utf-8-sig',errors='replace')[:30000]))
+                  if d.ok:
+                      try:
+                          dp=json.loads(d.content.decode('utf-8-sig'))
+                          print('DETAIL_JSON',symbol,ident,json.dumps(dp,ensure_ascii=False)[:40000])
+                      except Exception as e:
+                          print('DETAIL_JSON_ERROR',type(e).__name__,e)
           PY
