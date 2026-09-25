@@ -1,0 +1,61 @@
+name: BIAP Global SIX production probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-six-production-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Verify production Swiss ordinary-equity universe
+        run: |
+          python - <<'PY'
+          import json, urllib.parse, urllib.request
+          base="https://biap.dadashi.no/global-api/global"
+
+          def get(path, params=None):
+              url=base+path
+              if params:
+                  url += "?" + urllib.parse.urlencode(params)
+              with urllib.request.urlopen(url, timeout=90) as r:
+                  return json.load(r)
+
+          browse=get("/instruments/CH/SIX",{"limit":1000})
+          rows=browse.get("instruments") or []
+          catalog=browse.get("catalog") or {}
+          print(json.dumps({
+              "totalMatched":browse.get("totalMatched"),
+              "returned":browse.get("returned"),
+              "catalog":catalog,
+              "sample":[
+                  {
+                      "ticker":x.get("ticker"),
+                      "name":x.get("name"),
+                      "class":(x.get("raw_provider_fields") or {}).get("six_class_of_share"),
+                      "primary":(x.get("raw_provider_fields") or {}).get("six_primary_listing"),
+                  }
+                  for x in rows[:20]
+              ],
+          },indent=2,ensure_ascii=False))
+
+          tickers={str(x.get("ticker") or "").upper() for x in rows}
+          classes={str((x.get("raw_provider_fields") or {}).get("six_class_of_share") or "") for x in rows}
+          assert catalog.get("provider")=="official-six-equity-issuers", catalog
+          assert catalog.get("resolutionCoveragePct")==100.0, catalog
+          assert browse.get("totalMatched")==len(rows)
+          assert 150 <= len(rows) <= 205, len(rows)
+          assert "ABBN" in tickers
+          assert "MMM" not in tickers
+          assert "Participation Certificate" not in classes
+          assert "***" not in classes
+          assert all((x.get("raw_provider_fields") or {}).get("six_primary_listing") is True for x in rows)
+          print("SIX_PRODUCTION_OK count=",len(rows),"classes=",sorted(classes))
+          PY
