@@ -39,26 +39,46 @@ jobs:
               print('TITLE',driver.title)
               print('PAGE_SOURCE_LEN',len(driver.page_source))
               seen=set()
-              for entry in driver.get_log('performance'):
+              entries=driver.get_log('performance')
+              responses=[]
+              for entry in entries:
                   try:
                       msg=json.loads(entry['message'])['message']
                   except Exception:
                       continue
-                  if msg.get('method')!='Network.requestWillBeSent':
-                      continue
-                  req=(msg.get('params') or {}).get('request') or {}
-                  u=str(req.get('url') or '')
+                  method=msg.get('method')
+                  params=msg.get('params') or {}
+                  if method=='Network.requestWillBeSent':
+                      req=params.get('request') or {}
+                      u=str(req.get('url') or '')
+                      low=u.lower()
+                      if (
+                          'api.live.deutsche-boerse.com' in low
+                          or 'mobile-api.live.deutsche-boerse.com' in low
+                          or 'ariva-services.de' in low
+                          or 'erscontent.deutsche-boerse.com' in low
+                      ):
+                          key=(req.get('method'),u)
+                          if key not in seen:
+                              seen.add(key)
+                              print('REQUEST',req.get('method'),u)
+                  elif method=='Network.responseReceived':
+                      resp=params.get('response') or {}
+                      typ=str(params.get('type') or '')
+                      u=str(resp.get('url') or '')
+                      low=u.lower()
+                      if typ in {'XHR','Fetch'} or 'api.live.deutsche-boerse.com' in low or 'ariva-services.de' in low:
+                          responses.append((params.get('requestId'),typ,resp.get('status'),u,resp.get('mimeType')))
+              print('XHR_RESPONSES',len(responses))
+              for rid,typ,status,u,mime in responses:
+                  print('RESPONSE',typ,status,mime,u)
                   low=u.lower()
-                  if (
-                      'api.live.deutsche-boerse.com' in low
-                      or 'erscontent.deutsche-boerse.com' in low
-                      or 'report' in low
-                      or 'company' in low
-                      or 'issuer' in low
-                  ):
-                      if u not in seen:
-                          seen.add(u)
-                          print('REQUEST',req.get('method'),u)
+                  if any(x in low for x in ('recent_reports','corporate_information','about_the_company','instrument_information','ariva-services.de')):
+                      try:
+                          body=driver.execute_cdp_cmd('Network.getResponseBody',{'requestId':rid}).get('body','')
+                          print('BODY',u,' '.join(body.split())[:6000])
+                      except Exception as e:
+                          print('BODY_ERR',u,type(e).__name__,str(e)[:200])
               body=' '.join(driver.find_element('tag name','body').text.split())
               for needle in ('Company reports','Company Reports','Half-yearly financial report','Annual financial report'):
                   i=body.lower().find(needle.lower())
