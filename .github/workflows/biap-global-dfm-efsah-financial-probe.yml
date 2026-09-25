@@ -1,0 +1,55 @@
+name: BIAP Global DFM Efsah financial probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-dfm-efsah-financial-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests
+      - name: Probe DFM official Efsah financial reports
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,requests
+          ua='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36'
+          base='https://api2.dfm.ae/efsah/v1'
+          h={'User-Agent':ua,'Accept':'application/json','Referer':'https://www.dfm.ae/'}
+          for symbol in ('DIC','DEWA'):
+              r=requests.get(
+                  base+'/prototype_efsah',
+                  params={
+                      'types':'financial_reports','announcement_type':'Disclosure',
+                      'symbol':symbol,'take':10,'lang':'en','cms_resources':'true',
+                  },
+                  headers=h,timeout=45,
+              )
+              print('LIST',symbol,r.status_code,'BYTES',len(r.content),'BODY',repr(r.text[:30000]))
+              if not r.ok:
+                  continue
+              p=r.json()
+              root=p.get('root') if isinstance(p,dict) else None
+              rows=root if isinstance(root,list) else ([root] if isinstance(root,dict) else [])
+              print('ROWS',symbol,len(rows))
+              if rows:
+                  print('ROW_KEYS',symbol,sorted(rows[0].keys()))
+              for row in rows[:3]:
+                  ident=row.get('id') or row.get('Id') or row.get('ID')
+                  print('ROW',symbol,json.dumps(row,ensure_ascii=False)[:12000])
+                  if not ident:
+                      continue
+                  d=requests.get(base+'/detail',params={'id':ident,'lang':'en'},headers=h,timeout=45)
+                  print('DETAIL',symbol,ident,d.status_code,'BYTES',len(d.content),'BODY',repr(d.text[:30000]))
+          PY
