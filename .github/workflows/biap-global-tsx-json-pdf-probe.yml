@@ -1,0 +1,77 @@
+name: BIAP Global TSX JSON and PDF probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-tsx-json-pdf-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - name: Inspect TSX JSON, PDF and directory internals
+        run: |
+          python -m pip install -q requests beautifulsoup4 pypdf
+          python - <<'PY'
+          import io, json, re
+          from urllib.parse import urljoin
+          import requests
+          from bs4 import BeautifulSoup
+          from pypdf import PdfReader
+
+          s=requests.Session()
+          s.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36","Accept-Language":"en-US,en;q=0.9"})
+
+          def get(url):
+              r=s.get(url,timeout=40,allow_redirects=True)
+              print("\nGET",url,"=>",r.status_code,r.url,r.headers.get("content-type"),len(r.content))
+              return r
+
+          r=get("https://www.tsx.com/json/trading/daily-trading-reports")
+          print("JSON_HEAD",r.text[:12000])
+
+          pdf=get("https://www.tsx.com/files/trading/daily-trading-report/Daily_Trading_Report_2026-09-24.pdf")
+          if pdf.ok and pdf.content[:4]==b"%PDF":
+              reader=PdfReader(io.BytesIO(pdf.content))
+              print("PDF_PAGES",len(reader.pages))
+              text="\n".join((p.extract_text() or "") for p in reader.pages[:12])
+              print("PDF_TEXT_START")
+              print(text[:40000])
+              print("PDF_TEXT_END")
+              for sym in ["RY","SHOP","TD","BNS","CVE"]:
+                  m=re.search(rf"(?mi)^.*\b{re.escape(sym)}\b.*$",text)
+                  print("SYMBOL_LINE",sym, m.group(0)[:500] if m else None)
+
+          d=get("https://www.tsx.com/en/listings/listing-with-us/listed-company-directory")
+          html=d.text
+          for needle in ["download a full list","LcdbSearch","listed-company-directory","json/","ajax","download"]:
+              pos=html.lower().find(needle.lower())
+              print("\nNEEDLE",needle,"POS",pos)
+              if pos>=0: print(html[max(0,pos-1200):pos+2500])
+          soup=BeautifulSoup(html,"html.parser")
+          scripts=[urljoin(d.url,x["src"]) for x in soup.find_all("script",src=True)]
+          print("SCRIPTS",json.dumps(scripts,indent=2))
+          for src in scripts:
+              low=src.lower()
+              if "tsx" not in low and "tmx" not in low and src.startswith("http"):
+                  continue
+              try:
+                  js=s.get(src,timeout=20)
+              except Exception:
+                  continue
+              body=js.text
+              if any(k.lower() in body.lower() for k in ["LcdbSearch","listed-company-directory","json/list","listed company"]):
+                  print("\nSCRIPT_MATCH",src,js.status_code,len(body))
+                  for needle in ["LcdbSearch","listed-company-directory","json/","download"]:
+                      p=body.lower().find(needle.lower())
+                      if p>=0: print(body[max(0,p-1500):p+3500])
+          PY
