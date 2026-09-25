@@ -79,17 +79,20 @@ jobs:
               if pos >= 0:
                   frag=' '.join(html[max(0,pos-700):pos+1800].split())
                   print('HTML_HIT',needle,frag[:2500])
-          for pat in (
-              r"https?://[^\\"'<> ]+\\.pdf[^\\"'<> ]*",
-              r"https?://api\\.live\\.deutsche-boerse\\.com[^\\"'<> ]*",
-              r"https?://erscontent\\.deutsche-boerse\\.com[^\\"'<> ]*",
-          ):
-              vals=[]
-              for m in re.finditer(pat,html,re.I):
-                  v=m.group(0).replace('&amp;','&')
-                  if v not in vals:
-                      vals.append(v)
-              print('HTML_URLS',pat,'COUNT',len(vals))
-              for v in vals[:30]:
-                  print('URL',v)
+          # Avoid regex quoting ambiguity; extract URL-like tokens by whitespace/quotes.
+          cleaned = html.replace('&amp;','&').replace('"',' ').replace("'",' ').replace('<',' ').replace('>',' ')
+          tokens = cleaned.split()
+          urls = []
+          for token in tokens:
+              if token.startswith(('http://','https://')) and (
+                  '.pdf' in token.lower()
+                  or 'api.live.deutsche-boerse.com' in token.lower()
+                  or 'erscontent.deutsche-boerse.com' in token.lower()
+              ):
+                  token = token.rstrip('),;')
+                  if token not in urls:
+                      urls.append(token)
+          print('HTML_URL_COUNT',len(urls))
+          for url in urls[:80]:
+              print('URL',url)
           PY
