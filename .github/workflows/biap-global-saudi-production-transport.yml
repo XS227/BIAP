@@ -48,6 +48,20 @@ jobs:
           done
           python3 - <<'PY'
           import requests,re
+          for ua in (
+              'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 BIAP-Global',
+              'Mozilla/5.0 BIAP-Global',
+              'BIAP-Global/1.0',
+          ):
+              for url in (
+                  'https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDaily_en.html',
+                  'https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDailySme_en.html',
+              ):
+                  try:
+                      rr=requests.get(url,headers={'User-Agent':ua,'Accept':'text/plain,*/*'},timeout=60)
+                      print('PYREQ_STATUS',repr(ua),url,rr.status_code,len(rr.content),rr.headers.get('retry-after'),rr.text[:300].replace('\n',' '))
+                  except Exception as e:
+                      print('PYREQ_ERROR',repr(ua),url,type(e).__name__,e)
           for tag,url in [
               ('MAIN','https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDaily_en.html'),
               ('NOMU','https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDailySme_en.html'),
