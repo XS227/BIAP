@@ -202,8 +202,18 @@ class DeutscheBoerseUniverseProvider(InstrumentUniverseProvider):
             raise GlobalProviderError(f"unsupported Deutsche Boerse exchange {exchange}") from exc
         html = _http_get(page_url, timeout=self.timeout).text
         hrefs = re.findall(r'href=["\']([^"\']+)["\']', html, flags=re.I)
+        token_lower = token.lower()
         for href in hrefs:
-            if token in href.lower():
+            if token_lower in href.lower():
+                return urljoin(page_url, href)
+
+        # Deutsche Boerse occasionally changes the blob filename casing while
+        # keeping the semantic file name stable. Fall back to exchange marker +
+        # All Tradable Instruments instead of failing a daily official refresh.
+        exchange_marker = "xetr" if exchange.upper() == "XETRA" else "xfra"
+        for href in hrefs:
+            low = href.lower()
+            if exchange_marker in low and "alltradableinstruments.csv" in low:
                 return urljoin(page_url, href)
         raise GlobalProviderError(f"official Deutsche Boerse CSV link not found for {exchange}")
 
