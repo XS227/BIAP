@@ -1,0 +1,47 @@
+name: BIAP Global LSE production probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-lse-production-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Probe production LSE full-market scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://biap.dadashi.no/global-api/global'
+          curl --fail --silent --show-error --max-time 180             -H 'Content-Type: application/json'             -d '{"country":"GB","exchange":"LSE","topN":10,"discoveryLimit":5000,"deepLimit":20}'             "$BASE/scan" -o /tmp/lse.json
+          python - <<'PY'
+          import json
+          data=json.load(open('/tmp/lse.json'))
+          dr=data.get('dataReadiness') or {}
+          summary={
+              'status':data.get('status'),
+              'rankingEligible':data.get('rankingEligible'),
+              'universeDiscovered':data.get('universeDiscovered'),
+              'universeResolved':data.get('universeResolved'),
+              'universeScreened':data.get('universeScreened'),
+              'screeningCoveragePct':data.get('screeningCoveragePct'),
+              'fundamentalCoveragePct':data.get('fundamentalCoveragePct'),
+              'recommendationCount':data.get('recommendationCount'),
+              'universeSource':dr.get('universeSource'),
+              'marketSource':dr.get('marketSource'),
+              'reasons':dr.get('reasons'),
+              'screeningErrors':data.get('screeningErrors'),
+          }
+          print(json.dumps(summary,sort_keys=True))
+          assert dr.get('universeAuthoritative') is True
+          assert 'lse' in str(dr.get('universeSource') or '').lower()
+          assert 'LSE official' in str(dr.get('marketSource') or '')
+          assert float(data.get('screeningCoveragePct') or 0) >= 90
+          PY
