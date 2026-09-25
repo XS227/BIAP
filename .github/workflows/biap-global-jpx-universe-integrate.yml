@@ -1,0 +1,56 @@
+name: BIAP Global JPX official universe integration
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-jpx-universe-integrate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+          fetch-depth: 0
+      - name: Apply JPX official universe patch
+        run: python tools/apply_jpx_official_universe.py
+      - name: Install backend dependencies
+        working-directory: analysis
+        run: python -m pip install -q -r requirements.txt
+      - name: Compile and test Global backend
+        working-directory: analysis
+        env:
+          PYTHONPATH: .
+        run: |
+          python -m compileall -q global_markets global_routes.py global_api_server.py
+          pytest -q tests/test_global_*.py
+      - name: Verify JPX registry authority without network refresh
+        working-directory: analysis
+        env:
+          PYTHONPATH: .
+        run: |
+          python - <<'PY'
+          from global_markets.cached_universe import CACHE_SCHEMA_VERSION
+          from global_markets.runtime import build_registry
+          registry=build_registry()
+          provider=registry.universe("JP","TSE_JP")
+          upstream=getattr(provider,"upstream",provider)
+          print("wrapper",getattr(provider,"provider_id",None),"upstream",getattr(upstream,"provider_id",None),"schema",CACHE_SCHEMA_VERSION)
+          assert getattr(upstream,"provider_id",None)=="official-jpx-tse-listed-issues"
+          assert CACHE_SCHEMA_VERSION==16
+          PY
+      - name: Commit JPX official universe
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add analysis/global_markets/jpx_official.py analysis/global_markets/runtime.py analysis/global_markets/cached_universe.py analysis/tests/test_global_jpx_official.py analysis/tests/test_global_universe_cache_v8.py
+          git diff --cached --quiet && exit 0
+          git commit -m 'Use JPX authoritative domestic equity universe'
+          git push origin HEAD:feat/biap-global
