@@ -1,0 +1,66 @@
+name: BIAP Global DFM reports route probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-dfm-reports-route-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests
+      - name: Trace DFM reports route and API calls
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re,requests
+          ua='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36'
+          base='https://www.dfm.ae/_nuxt/'
+          main=requests.get(base+'AGRv68WG.js',headers={'User-Agent':ua},timeout=45).text
+          print('MAIN',len(main))
+          for needle in ('market-information-company','/company/','reports'):
+              count=0
+              for m in re.finditer(re.escape(needle),main,re.I):
+                  ctx=main[max(0,m.start()-2500):m.start()+5000]
+                  if 'company' in ctx.lower() and 'report' in ctx.lower():
+                      print('ROUTE_CTX',needle,ctx)
+                      count+=1
+                      if count>=8: break
+          tick=chr(96)
+          pat=r'import\('+re.escape(tick)+r'\.\/([^'+re.escape(tick)+r']+\.js)'+re.escape(tick)+r'\)'
+          chunks=sorted(set(re.findall(pat,main)))
+          print('CHUNKS',len(chunks))
+          hits=0
+          for name in chunks:
+              try:
+                  body=requests.get(base+name,headers={'User-Agent':ua},timeout=20).text
+              except Exception:
+                  continue
+              low=body.lower()
+              if not (
+                  'financial reports' in low or 'financialreports' in low or 'reporttype' in low or
+                  ('reports' in low and ('command' in low or 'apibaseurl' in low or 'apiefsahurl' in low or '$fetch' in low))
+              ):
+                  continue
+              print('REPORT_CHUNK',name,'BYTES',len(body))
+              hits+=1
+              for needle in ('financial','report','disclosure','command','apiBaseUrl','apiSfUrl','apiEfsahUrl'):
+                  seen=0
+                  for m in re.finditer(re.escape(needle),body,re.I):
+                      ctx=body[max(0,m.start()-1800):m.start()+3500]
+                      if any(k in ctx.lower() for k in ('api','fetch','command','report','disclos')):
+                          print('REPORT_CTX',name,needle,ctx)
+                          seen+=1
+                          if seen>=8: break
+              if hits>=12: break
+          PY
