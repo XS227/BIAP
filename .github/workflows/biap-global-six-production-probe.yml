@@ -51,11 +51,13 @@ jobs:
           assert catalog.get("provider")=="official-six-equity-issuers", catalog
           assert catalog.get("resolutionCoveragePct")==100.0, catalog
           assert browse.get("totalMatched")==len(rows)
-          assert 150 <= len(rows) <= 205, len(rows)
+          assert len(rows)==198, len(rows)
           assert "ABBN" in tickers
           assert "MMM" not in tickers
           assert "Participation Certificate" not in classes
           assert "***" not in classes
+          assert classes <= {"Registered Share","Bearer Share"}, classes
+          assert "Bearer Share" in classes
           assert all((x.get("raw_provider_fields") or {}).get("six_primary_listing") is True for x in rows)
           print("SIX_PRODUCTION_OK count=",len(rows),"classes=",sorted(classes))
           PY
