@@ -112,3 +112,29 @@ def test_dfm_parser_does_not_invent_revenue_from_total_income():
     assert metrics["total_equity"] == pytest.approx(15_223_470_000)
     assert metrics["total_liabilities"] == pytest.approx(8_054_948_000)
     assert metrics["operating_cash_flow"] == pytest.approx(969_533_000)
+
+
+def test_dfm_parser_handles_multiline_profit_and_equity_statement_fallback():
+    text = """
+    Consolidated statement of profit or loss and other comprehensive income
+    For the year ended 31 December
+    AED’000 AED’000
+    Revenue 28 32,841,823 30,977,351
+    Profit for the year after net movement in
+    regulatory deferral account and tax 9,055,344 7,234,189
+    Consolidated statement of changes in equity
+    At 31 December 2025 500,000 39,165,645 591,346 485,839 50,273,686 91,016,516 6,753,019 97,769,535
+    Consolidated statement of cash flows
+    Profit for the year after tax 9,055,344 7,234,189
+    Net cash generated from operating activities 21,850,477 17,435,409
+    Regulatory deferral account credit balance 26 698,613 367,344
+    """
+
+    metrics = parse_dfm_statement_text(text)
+
+    assert metrics["revenue"] == pytest.approx(32_841_823_000)
+    assert metrics["net_income"] == pytest.approx(9_055_344_000)
+    assert metrics["total_equity"] == pytest.approx(97_769_535_000)
+    assert metrics["operating_cash_flow"] == pytest.approx(21_850_477_000)
+    assert metrics["total_assets"] is None
+    assert metrics["total_liabilities"] is None
