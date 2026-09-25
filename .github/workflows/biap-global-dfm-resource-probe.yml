@@ -33,6 +33,9 @@ jobs:
               for needle in ('r_path','resources','apiEfsahUrl','download','efsah'):
                   for m in list(re.finditer(re.escape(needle),b,re.I))[:20]:
                       print('CTX',name,needle,b[max(0,m.start()-2200):m.start()+4800])
+          main=requests.get(base+'AGRv68WG.js',headers={'User-Agent':ua},timeout=30).text
+          for m in re.finditer('dfmResourcePath',main,re.I):
+              print('RESOURCE_PATH_CTX',main[max(0,m.start()-1200):m.start()+2200])
           path='/2026/Feb/27/3fc534cd-2159-48c9-a6b7-371fab22cace/DEWA Consolidated FS.pdf'
           candidates=[
               'https://api2.dfm.ae/efsah/v1'+path,
