@@ -1,0 +1,43 @@
+name: BIAP Global TSX MiG issuer list probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-tsx-mig-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - name: Inspect current MiG issuer downloads
+        run: |
+          python -m pip install -q requests beautifulsoup4 openpyxl xlrd
+          python - <<'PY'
+          import io, json, re, zipfile
+          from urllib.parse import urljoin
+          import requests
+          from bs4 import BeautifulSoup
+          s=requests.Session()
+          s.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36"})
+          for url in ["https://www.tsx.com/mig","https://www.tsx.com/en/listings/current-market-statistics/mig-archives"]:
+              r=s.get(url,timeout=30)
+              print("\nPAGE",url,r.status_code,r.url,len(r.content),r.headers.get("content-type"))
+              soup=BeautifulSoup(r.text,"html.parser")
+              links=[]
+              for a in soup.find_all("a",href=True):
+                  href=urljoin(r.url,a["href"])
+                  txt=" ".join(a.stripped_strings)
+                  low=(txt+" "+href).lower()
+                  if "issuer" in low or "listed" in low or any(x in low for x in [".xlsx",".xls",".csv"]):
+                      links.append((txt,href))
+              for x in links[:200]: print("LINK",json.dumps(x,ensure_ascii=False))
+          PY
