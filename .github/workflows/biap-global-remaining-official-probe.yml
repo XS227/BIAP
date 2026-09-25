@@ -97,7 +97,7 @@ jobs:
                       print('DFM_EQ_CTX',needle,js[max(0,m.start()-700):m.start()+1200])
 
           adx_home=requests.get('https://www.adx.ae/en/issuers/issuers-information/issuers-directory',headers=H,timeout=45).text
-          adx_scripts=re.findall(r'<script[^>]+src=["\\']([^"\\']+)',adx_home,re.I)
+          adx_scripts=re.findall(r"<script[^>]+src=[\"']([^\"']+)",adx_home,re.I)
           for src in adx_scripts:
               if src.startswith('/'): src='https://www.adx.ae'+src
               try:
