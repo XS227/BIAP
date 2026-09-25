@@ -1,0 +1,49 @@
+name: BIAP Global Saudi production transport probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-saudi-production-transport.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+  VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+  VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
+  VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 6
+    steps:
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$VPS_SSH_KEY"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
+          chmod 600 ~/.ssh/biap_global_key
+          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+      - name: Probe Saudi static reports from BIAP server
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" "bash -s" <<'REMOTE'
+          set -euo pipefail
+          for url in             'https://www.saudiexchange.sa/Resources/Reports-v2/DetailedDaily_en.html'             'https://saudiexchange.sa/Resources/Reports-v2/DetailedDaily_en.html'             'https://www.saudiexchange.sa/Resources/Reports-v2/DetailedDailySme_en.html'             'https://saudiexchange.sa/Resources/Reports-v2/DetailedDailySme_en.html'             'https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDaily_en.html'             'https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDailySme_en.html'
+          do
+            echo "URL $url"
+            code=$(curl -L -A 'Mozilla/5.0 BIAP-Global' --max-time 45 -sS -o /tmp/biap-saudi-probe "$url" -w '%{http_code}' || true)
+            echo "STATUS $code BYTES $(wc -c </tmp/biap-saudi-probe 2>/dev/null || echo 0)"
+            head -c 500 /tmp/biap-saudi-probe 2>/dev/null | tr '\n' ' ' || true
+            echo
+          done
+          REMOTE
