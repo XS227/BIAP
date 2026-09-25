@@ -19,10 +19,10 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
 
-# Version 15 replaces the UK reference/demo catalog with the official London
-# Stock Exchange Main Market universe. Older LSE snapshots must not survive the
-# authoritative source change.
-CACHE_SCHEMA_VERSION = 15
+# Version 16 replaces the Japan reference/demo catalog with the official JPX
+# TSE domestic ordinary-equity universe. Older Japan snapshots must not survive
+# the authoritative source change.
+CACHE_SCHEMA_VERSION = 16
 
 
 def _utc_now() -> datetime:

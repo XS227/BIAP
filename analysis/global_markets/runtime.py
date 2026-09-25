@@ -31,6 +31,7 @@ from .fallback_fundamentals import FallbackFundamentalsProvider
 from .german_issuer import GermanIssuerFundamentalsProvider
 from .hkex_issuer import HKEXIssuerFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
+from .jpx_official import JPXOfficialUniverseProvider
 from .kap_current import KAPCurrentFundamentalsProvider
 from .lse_official import LSEOfficialUniverseProvider
 from .opendart import OpenDARTFundamentalsProvider
@@ -81,6 +82,12 @@ def build_registry() -> ProviderRegistry:
 
     asx_universe = PersistentUniverseProvider(ASXUniverseProvider())
     registry.register_universe("AU", "ASX", asx_universe)
+
+    jpx_universe = PersistentUniverseProvider(
+        JPXOfficialUniverseProvider(),
+        fresh_hours=24,
+    )
+    registry.register_universe("JP", "TSE_JP", jpx_universe)
 
     b3_universe = PersistentUniverseProvider(
         B3OfficialUniverseProvider(),
