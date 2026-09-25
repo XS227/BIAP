@@ -47,6 +47,7 @@ Capital expenditure 8 (4 527) (5 638)
     assert m["eps"] == pytest.approx(3.51)
     assert m["current_assets"] == pytest.approx(31_969_000_000)
     assert m["total_assets"] == pytest.approx(127_151_000_000)
+    assert m["current_assets"] < m["total_assets"]
     assert m["current_liabilities"] == pytest.approx(40_694_000_000)
     assert m["total_liabilities"] == pytest.approx(94_093_000_000)
     assert m["total_equity"] == pytest.approx(33_058_000_000)
