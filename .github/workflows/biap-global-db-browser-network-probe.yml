@@ -1,0 +1,70 @@
+name: BIAP Global Deutsche Boerse browser network probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-db-browser-network-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Capture Deutsche Boerse company-details network
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install -q selenium
+          python - <<'PY'
+          import json, time
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+
+          opts=Options()
+          opts.add_argument('--headless=new')
+          opts.add_argument('--no-sandbox')
+          opts.add_argument('--disable-dev-shm-usage')
+          opts.add_argument('--window-size=1440,1200')
+          opts.set_capability('goog:loggingPrefs', {'performance':'ALL'})
+          driver=webdriver.Chrome(options=opts)
+          try:
+              url='https://live.deutsche-boerse.com/equity/sap-se/company-details'
+              driver.get(url)
+              time.sleep(12)
+              print('TITLE',driver.title)
+              print('PAGE_SOURCE_LEN',len(driver.page_source))
+              seen=set()
+              for entry in driver.get_log('performance'):
+                  try:
+                      msg=json.loads(entry['message'])['message']
+                  except Exception:
+                      continue
+                  if msg.get('method')!='Network.requestWillBeSent':
+                      continue
+                  req=(msg.get('params') or {}).get('request') or {}
+                  u=str(req.get('url') or '')
+                  low=u.lower()
+                  if (
+                      'api.live.deutsche-boerse.com' in low
+                      or 'erscontent.deutsche-boerse.com' in low
+                      or 'report' in low
+                      or 'company' in low
+                      or 'issuer' in low
+                  ):
+                      if u not in seen:
+                          seen.add(u)
+                          print('REQUEST',req.get('method'),u)
+              body=' '.join(driver.find_element('tag name','body').text.split())
+              for needle in ('Company reports','Company Reports','Half-yearly financial report','Annual financial report'):
+                  i=body.lower().find(needle.lower())
+                  if i>=0:
+                      print('BODY_HIT',needle,body[max(0,i-300):i+1400])
+              print('MATCHED_REQUESTS',len(seen))
+          finally:
+              driver.quit()
+          PY
