@@ -24,6 +24,7 @@ from .bist_official import BISTOfficialDailyClient
 from .country_packs import ExchangeSpec, get_country_pack, get_exchange
 from .eodhd_bulk import EODHDBulkEODProvider
 from .euronext_live import EuronextLiveRegulatedClient
+from .lse_official import LSEOfficialClient
 from .models import GlobalCompany, SourceEvidence
 from .nasdaq_nordic import NasdaqNordicOfficialClient
 from .providers import GlobalProviderError
@@ -41,6 +42,7 @@ class GlobalMarketScanner:
         self.eodhd_api_token = (os.environ.get("BIAP_EODHD_API_TOKEN") or "").strip()
         self.eodhd_bulk = EODHDBulkEODProvider(self.eodhd_api_token, timeout=max(20.0, self.timeout)) if self.eodhd_api_token else None
         self.euronext_live = EuronextLiveRegulatedClient(timeout=max(20.0, self.timeout))
+        self.lse_official = LSEOfficialClient(timeout=max(30.0, self.timeout))
         self.nasdaq_nordic = NasdaqNordicOfficialClient(timeout=max(20.0, self.timeout))
         self.b3_official = B3OfficialClient(timeout=max(45.0, self.timeout))
         self.bme_official = BMEOfficialDailyClient(timeout=max(30.0, self.timeout))
@@ -417,6 +419,7 @@ class GlobalMarketScanner:
 
         official_market_source = (
             self.euronext_live.supported(country.upper(), spec.code)
+            or self.lse_official.supported(country.upper(), spec.code)
             or self.nasdaq_nordic.supported(country.upper(), spec.code)
             or self.b3_official.supported(country.upper(), spec.code)
             or self.bme_official.supported(country.upper(), spec.code)
@@ -463,7 +466,9 @@ class GlobalMarketScanner:
                 "notes": "No Top Market result is emitted from stored records. Restore a complete live market source, then rescan the ordinary-equity universe.",
             }
 
-        if self.nasdaq_nordic.supported(country.upper(), spec.code):
+        if self.lse_official.supported(country.upper(), spec.code):
+            quotes, screening_errors, market_source = self.lse_official.batch_quotes(selected_universe, country.upper(), spec)
+        elif self.nasdaq_nordic.supported(country.upper(), spec.code):
             quotes, screening_errors, market_source = self.nasdaq_nordic.batch_quotes(selected_universe, country.upper(), spec)
         elif self.b3_official.supported(country.upper(), spec.code):
             quotes, screening_errors, market_source = self.b3_official.batch_quotes(selected_universe, country.upper(), spec)
