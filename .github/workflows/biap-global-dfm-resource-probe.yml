@@ -1,0 +1,50 @@
+name: BIAP Global DFM report resource probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-dfm-resource-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests
+      - name: Resolve DFM financial report resource URL
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re,requests,urllib.parse
+          ua='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36'
+          base='https://www.dfm.ae/_nuxt/'
+          chunks=['Cb9TkxAC2.js','DADGAa5t.js','BCDJR4qN2.js','sR1HQdAs.js']
+          for name in chunks:
+              b=requests.get(base+name,headers={'User-Agent':ua},timeout=30).text
+              print('CHUNK',name,len(b))
+              for needle in ('r_path','resources','apiEfsahUrl','download','efsah'):
+                  for m in list(re.finditer(re.escape(needle),b,re.I))[:20]:
+                      print('CTX',name,needle,b[max(0,m.start()-2200):m.start()+4800])
+          path='/2026/Feb/27/3fc534cd-2159-48c9-a6b7-371fab22cace/DEWA Consolidated FS.pdf'
+          candidates=[
+              'https://api2.dfm.ae/efsah/v1'+path,
+              'https://api2.dfm.ae/efsah'+path,
+              'https://api2.dfm.ae'+path,
+              'https://www.dfm.ae'+path,
+              'https://www.dfm.ae/efsah'+path,
+          ]
+          for u in candidates:
+              try:
+                  r=requests.get(u,headers={'User-Agent':ua,'Referer':'https://www.dfm.ae/'},timeout=35,allow_redirects=True)
+                  print('RESOURCE',u,'STATUS',r.status_code,'TYPE',r.headers.get('content-type'),'BYTES',len(r.content),'FINAL',r.url,'HEAD',repr(r.content[:100]))
+              except Exception as e:
+                  print('RESOURCE_ERR',u,type(e).__name__,e)
+          PY
