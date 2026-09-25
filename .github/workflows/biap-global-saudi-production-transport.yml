@@ -42,7 +42,10 @@ jobs:
             'https://origin.tadawulgroup.sa/Resources/Reports-v2/DetailedDaily_en.html' \
             'https://origin.tadawulgroup.sa/Resources/Reports-v2/DetailedDailySme_en.html' \
             'https://origin.tadawulgroup.sa/wps/portal/saudiexchange/home?locale=en' \
-            'https://origin.tadawulgroup.sa/wps/portal/saudiexchange/ourmarkets/main-market-watch?locale=en'
+            'https://origin.tadawulgroup.sa/wps/portal/saudiexchange/ourmarkets/main-market-watch?locale=en' \
+            'https://r.jina.ai/http://origin.tadawulgroup.sa/Resources/Reports-v2/DetailedDaily_en.html' \
+            'https://r.jina.ai/http://origin.tadawulgroup.sa/Resources/Reports-v2/DetailedDailySme_en.html' \
+            'https://r.jina.ai/http://origin.tadawulgroup.sa/wps/portal/saudiexchange'
           do
             echo "URL $url"
             code=$(curl -L -A 'Mozilla/5.0 BIAP-Global' --max-time 45 -sS -o /tmp/biap-saudi-probe "$url" -w '%{http_code}' || true)
