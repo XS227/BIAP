@@ -1,0 +1,67 @@
+name: BIAP Global ADX fundamentals probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-adx-fundamentals-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests
+      - name: Discover and probe ADX official financial statement endpoints
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re,requests,json
+          H={
+            'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36',
+            'Accept':'application/json',
+            'Channel-ID':'OSS WEB',
+            'Content-Type':'application/json',
+            'X-Correlation-ID':'biap-global-fundamentals-probe',
+            'adx-Gateway-APIKey':'1863a94c-582b-46f9-b4f0-0d02c0cc5307',
+            'Referer':'https://www.adx.ae/en/issuers/issuers-information/issuers-directory',
+          }
+          app='https://www.adx.ae/_next/static/chunks/pages/_app-873edeb54d7c662a.js'
+          js=requests.get(app,headers={'User-Agent':H['User-Agent']},timeout=45).text
+          needles=[
+            'CompanyProfileBalanceSheetV2','CompanyProfileBalanceSheet',
+            'CompanyProfileIncomeStatementV2','CompanyProfileIncomeStatement',
+            'CompanyProfileCashFlowV2','CompanyProfileCashFlow',
+            'CompanyInformationV2','CompanyInformation',
+            'listedCompanyProfileData','balance-sheet/data','income-statement','cash-flow',
+          ]
+          for needle in needles:
+              for m in list(re.finditer(re.escape(needle),js,re.I))[:12]:
+                  print('MAP_CTX',needle,js[max(0,m.start()-900):m.start()+1800])
+
+          bases=[
+            'https://apigateway.adx.ae/adx/marketwatch/1.1/listedCompanyProfileData',
+            'https://apigateway.adx.ae/adx/marketwatch/1.0/listedCompanyProfileData',
+            'https://apigateway.adx.ae/adx/listed-companies/1.1/balance-sheet/data',
+            'https://apigateway.adx.ae/adx/listed-companies/1.0/balance-sheet/data',
+          ]
+          params=[
+            {'symbol':'ALDAR'},{'security':'ALDAR'},{'securityCode':'ALDAR'},
+            {'companySymbol':'ALDAR'},{'eqCode':'ALDAR'},{'displaySecCode':'ALDAR'},
+          ]
+          for url in bases:
+              for p in params:
+                  try:
+                      r=requests.get(url,params=p,headers=H,timeout=35)
+                      if r.status_code < 500:
+                          print('PROBE',url,p,'STATUS',r.status_code,'BYTES',len(r.content),'BODY',r.text[:5000])
+                  except Exception as e:
+                      print('ERR',url,p,type(e).__name__,e)
+          PY
