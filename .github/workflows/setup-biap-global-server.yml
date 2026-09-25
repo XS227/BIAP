@@ -190,6 +190,27 @@ jobs:
           set -a
           source analysis/.env.global
           set +a
+
+          # DFM fundamentals parser v2 changed extraction semantics. Remove only
+          # stale pre-v2 DFM latest snapshots so the first request refreshes from
+          # the official Efsah filing instead of falling back to an old cache.
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("/var/lib/biap-global/fundamentals/AE/DFM")
+          removed = 0
+          if root.exists():
+              for path in root.glob("*/latest.json"):
+                  try:
+                      payload = json.loads(path.read_text(encoding="utf-8"))
+                  except Exception:
+                      continue
+                  provider = str(payload.get("provider") or "")
+                  if "official-dfm-efsah-annual-statement-v2" not in provider:
+                      path.unlink(missing_ok=True)
+                      removed += 1
+          print(f"DFM pre-v2 fundamentals latest snapshots removed: {removed}")
+          PY
           PYTHONPATH=analysis BIAP_GLOBAL_UNIVERSE_SYNC_MARKETS=SE:NASDAQ_STOCKHOLM timeout 360 analysis/.venv-global/bin/python -m global_markets.universe_sync
           PYTHONPATH=analysis BIAP_GLOBAL_UNIVERSE_SYNC_MARKETS=DK:NASDAQ_COPENHAGEN timeout 360 analysis/.venv-global/bin/python -m global_markets.universe_sync
 
