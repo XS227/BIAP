@@ -27,16 +27,25 @@ jobs:
           r=requests.get(url,headers={'User-Agent':'Mozilla/5.0 BIAP-Global','Accept':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*'},timeout=60)
           r.raise_for_status()
           print('bytes',len(r.content),'type',r.headers.get('content-type'))
-          wb=openpyxl.load_workbook(io.BytesIO(r.content),read_only=True,data_only=True)
+          wb=openpyxl.load_workbook(io.BytesIO(r.content),read_only=False,data_only=True)
           print('sheets',wb.sheetnames)
+          from collections import Counter
           for ws in wb.worksheets:
               print('\nSHEET',ws.title,'rows',ws.max_row,'cols',ws.max_column)
-              shown=0
-              for row in ws.iter_rows(values_only=True):
-                  vals=[v for v in row]
-                  if not any(v not in (None,'') for v in vals):
-                      continue
-                  print(json.dumps(vals,ensure_ascii=False,default=str))
-                  shown += 1
-                  if shown >= 18: break
+              rows=list(ws.iter_rows(values_only=True))
+              for vals in rows[:18]:
+                  print(json.dumps(list(vals),ensure_ascii=False,default=str))
+              header=next((i for i,row in enumerate(rows) if row and row[0]=='Stock Code'),None)
+              if header is not None:
+                  categories=Counter()
+                  subcategories=Counter()
+                  currencies=Counter()
+                  for row in rows[header+1:]:
+                      if not row or not row[0]: continue
+                      categories[str(row[2] or '')]+=1
+                      subcategories[str(row[3] or '')]+=1
+                      currencies[str(row[16] or '')]+=1
+                  print('CATEGORIES',json.dumps(categories,ensure_ascii=False))
+                  print('SUBCATEGORIES',json.dumps(subcategories,ensure_ascii=False))
+                  print('CURRENCIES',json.dumps(currencies,ensure_ascii=False))
           PY
