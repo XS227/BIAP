@@ -13,7 +13,7 @@ permissions:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
       VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
@@ -28,34 +28,72 @@ jobs:
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
           chmod 600 ~/.ssh/biap_global_key
           ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
-      - name: Inspect current Xetra deep results
+
+      - name: Probe Xetra ISIN to LEI to ESEF chain
         run: |
           set -euo pipefail
           PORT="${VPS_PORT:-22}"
           ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
-          python3 - <<'PY'
+          set -euo pipefail
+          APP_DIR=/home/ubuntu/biap-global/BIAP
+          WORK_DIR=/tmp/biap-global-xetra-fund-diag-$$
+          cd "$APP_DIR"
+          git fetch origin feat/biap-global
+          git worktree remove --force "$WORK_DIR" 2>/dev/null || rm -rf "$WORK_DIR"
+          git worktree prune
+          git worktree add --detach "$WORK_DIR" origin/feat/biap-global
+          cleanup() { cd "$APP_DIR"; git worktree remove --force "$WORK_DIR" 2>/dev/null || true; }
+          trap cleanup EXIT
+          cd "$WORK_DIR/analysis"
+          set -a
+          [[ -f "$APP_DIR/analysis/.env.global" ]] && source "$APP_DIR/analysis/.env.global"
+          set +a
+          export PYTHONPATH="$WORK_DIR/analysis"
+          export BIAP_GLOBAL_DATA_DIR="${BIAP_GLOBAL_DATA_DIR:-/var/lib/biap-global}"
+          PY="$APP_DIR/analysis/.venv-global/bin/python"
+          "$PY" - <<'PY'
           import json
           from pathlib import Path
+          from global_markets.cached_esef import CachedESEFFundamentalsProvider
+          from global_markets.models import GlobalCompany
+
           p=Path('/var/lib/biap-global/scan-cache/DE/XETRA.json')
           obj=json.loads(p.read_text())
           payload=obj.get('payload') or {}
+          provider=CachedESEFFundamentalsProvider()
           print('CACHE', obj.get('cachedAt'), payload.get('status'), payload.get('screeningCoveragePct'), payload.get('fundamentalCoveragePct'))
+
           for r in payload.get('deepResults') or []:
               c=r.get('company') or {}
-              e=r.get('evidence') or {}
-              sources=c.get('sources') or []
-              fundamentals=[s for s in sources if 'fundamental' in str(s.get('source_type') or '').lower() or 'filing' in str(s.get('source_type') or '').lower() or 'xbrl' in str(s.get('source_type') or '').lower()]
-              print(json.dumps({
-                  'ticker':r.get('ticker') or c.get('ticker'),
-                  'name':c.get('name'),
-                  'isin':c.get('isin'),
-                  'lei':c.get('lei'),
-                  'call':r.get('call'),
-                  'evidence':e.get('status'),
-                  'missing':e.get('missing_critical') or e.get('missingCritical'),
-                  'reasoning':e.get('reasoning'),
-                  'fundamentalsProvider':(c.get('raw_provider_fields') or {}).get('fundamentals_provider'),
-                  'fundamentalSources':fundamentals,
-              }, ensure_ascii=False, sort_keys=True))
+              ticker=str(r.get('ticker') or c.get('ticker') or '')
+              company=GlobalCompany(
+                  country='DE',
+                  exchange='XETRA',
+                  currency=str(c.get('currency') or 'EUR'),
+                  ticker=ticker,
+                  name=str(c.get('name') or ticker),
+                  isin=c.get('isin'),
+                  lei=c.get('lei'),
+                  mic_code=c.get('mic_code') or c.get('micCode') or 'XETR',
+              )
+              out={'ticker':ticker,'name':company.name,'isin':company.isin,'inputLei':company.lei}
+              try:
+                  lei, legal_name = provider._resolve_lei(company)
+                  out['resolvedLei']=lei
+                  out['legalName']=legal_name
+              except Exception as exc:
+                  out['leiError']=f'{type(exc).__name__}: {str(exc)[:260]}'
+                  print(json.dumps(out, ensure_ascii=False, sort_keys=True))
+                  continue
+              try:
+                  filing=provider._latest_filing(lei, 'DE')
+                  attrs=filing.get('attributes') if isinstance(filing.get('attributes'),dict) else {}
+                  out['filingId']=filing.get('id')
+                  out['filingCountry']=attrs.get('country')
+                  out['periodEnd']=attrs.get('period_end')
+                  out['jsonUrl']=attrs.get('json_url')
+              except Exception as exc:
+                  out['filingError']=f'{type(exc).__name__}: {str(exc)[:260]}'
+              print(json.dumps(out, ensure_ascii=False, sort_keys=True))
           PY
           REMOTE
