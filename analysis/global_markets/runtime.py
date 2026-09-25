@@ -356,6 +356,20 @@ def build_registry() -> ProviderRegistry:
         for exchange in COUNTRY_PACKS["KR"].exchanges:
             register_fundamentals("KR", exchange.code, dart)
 
+    # Canada: many exact TSX/TSXV issuer identities are also SEC foreign
+    # private issuers filing audited IFRS annual data on Form 40-F. Use SEC
+    # CompanyFacts only when ticker resolution and legal-name identity both
+    # verify; all other Canadian issuers fall back to labelled vendor display
+    # metrics and remain Evidence-BLOCKED.
+    ca_sec_ifrs = PersistentFundamentalsProvider(
+        FallbackFundamentalsProvider(
+            SECForeignIFRSFundamentalsProvider(user_agent=sec_user_agent),
+            public_fundamentals,
+        )
+    )
+    for exchange in COUNTRY_PACKS["CA"].exchanges:
+        register_fundamentals("CA", exchange.code, ca_sec_ifrs)
+
     # Singapore: keep SGXNet itself out of generic ingestion until its backend
     # access/redistribution path is explicitly approved. For now a strict
     # issuer-owned adapter covers Singapore Exchange Limited (S68) only; every
