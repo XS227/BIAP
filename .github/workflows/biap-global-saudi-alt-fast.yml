@@ -1,0 +1,38 @@
+name: BIAP Global Saudi alternate fast probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-saudi-alt-fast.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests
+      - name: Probe alternate Saudi transports
+        run: |
+          python - <<'PY'
+          import requests
+          urls=[
+            'https://r.jina.ai/http://origin.tadawulgroup.sa/Resources/Reports-v2/DetailedDaily_en.html',
+            'https://r.jina.ai/http://origin.tadawulgroup.sa/Resources/Reports-v2/DetailedDailySme_en.html',
+            'https://r.jina.ai/http://origin.tadawulgroup.sa/wps/portal/saudiexchange',
+            'https://r.jina.ai/http://www.tadawulgroup.sa/wps/portal/saudiexchange',
+          ]
+          for url in urls:
+              try:
+                  r=requests.get(url,headers={'User-Agent':'BIAP-Global/1.0','Accept':'text/plain,*/*'},timeout=20)
+                  print('ALT',url,'STATUS',r.status_code,'BYTES',len(r.content),'HEAD',r.text[:700].replace('\n',' '))
+              except Exception as e:
+                  print('ALT',url,'ERROR',type(e).__name__,e)
+          PY
