@@ -19,10 +19,10 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
 
-# Version 22 replaces the Hong Kong vendor reference catalog with HKEX's
-# official primary-HKD Main Board/GEM ordinary-equity universe. Older HK caches
-# may contain warrants, ETPs, debt or duplicate RMB counters and must be rebuilt.
-CACHE_SCHEMA_VERSION = 22
+# Version 23 replaces the South Africa vendor reference catalog with JSE's
+# official Equities ISIN full-file ordinary-share universe. Older ZA caches may
+# contain funds, indices, preference shares or structured products.
+CACHE_SCHEMA_VERSION = 23
 
 
 def _utc_now() -> datetime:
