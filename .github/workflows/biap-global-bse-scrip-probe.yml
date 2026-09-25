@@ -39,6 +39,15 @@ jobs:
                   text=b.decode('utf-8-sig')
               except UnicodeDecodeError:
                   text=b.decode('cp1252','replace')
-              rows=list(csv.reader(io.StringIO(text)))
-              print('ROWS',len(rows),'HEADER',rows[:3])
+              rows=list(csv.DictReader(io.StringIO(text)))
+              from collections import Counter
+              print('ROWS',len(rows),'FIELDS',list(rows[0]) if rows else [])
+              print('FIN_TYPES',Counter(x.get('FinInstrmTp','') for x in rows).most_common())
+              print('SERIES',Counter(x.get('SctySrs','') for x in rows).most_common(80))
+              print('ZERO_VOL',sum(float(x.get('TtlTradgVol') or 0)==0 for x in rows))
+              print('ZERO_TX',sum(float(x.get('TtlNbOfTxsExctd') or 0)==0 for x in rows))
+              print('ISIN_EMPTY',sum(not (x.get('ISIN') or '').strip() for x in rows))
+              for needle in ('NIFTYBEES','GOLDBEES','EMBASSY','POWERGRID INVIT','RELIANCE','TCS','BRIGHTCOM'):
+                  found=[x for x in rows if needle in ((x.get('TckrSymb') or '')+' '+(x.get('FinInstrmNm') or '')).upper()]
+                  print('MATCH',needle,found[:8])
           PY
