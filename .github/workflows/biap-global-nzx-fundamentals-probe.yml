@@ -26,6 +26,18 @@ jobs:
           import re,requests,urllib.parse,json
           from bs4 import BeautifulSoup
           H={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36','Accept-Language':'en-NZ,en;q=0.9'}
+          for ticker in ('NZX','SUM','SCL'):
+              page='https://new.nzx.com/companies/'+ticker+'/announcements'
+              cr=requests.get(page,headers=H,timeout=45)
+              print('\n### COMPANY',ticker,'STATUS',cr.status_code,'BYTES',len(cr.content))
+              if cr.ok:
+                  cs=BeautifulSoup(cr.text,'html.parser')
+                  for a in cs.find_all('a',href=True):
+                      href=urllib.parse.urljoin(cr.url,a['href'])
+                      txt=' '.join(a.stripped_strings)
+                      if '/announcements/' in href and any(k in txt.lower() for k in ('annual','full year','financial results','results')):
+                          print('COMPANY_LINK',ticker,txt[:180],href)
+
           for ident in ('468191','468297','468113'):
               url='https://www.nzx.com/announcements/'+ident
               r=requests.get(url,headers=H,timeout=45)
