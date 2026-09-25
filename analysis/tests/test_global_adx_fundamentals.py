@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from global_markets.adx_fundamentals import (\n    parse_adx_financial_summary,\n    parse_adx_disclosure_metrics,\n    select_latest_adx_annual_report,\n)
+from global_markets.adx_fundamentals import (
+    parse_adx_disclosure_metrics,
+    parse_adx_financial_summary,
+    select_latest_adx_annual_report,
+)
 
 
 def test_adx_financial_summary_uses_latest_completed_annual_row():
