@@ -250,15 +250,29 @@ class B3OfficialClient:
         try:
             with zipfile.ZipFile(archive_path) as archive:
                 with archive.open(xml_name) as fh:
-                    for _, elem in ET.iterparse(fh, events=("end",)):
-                        if _local(elem.tag) != "InstrmInf":
+                    # Keep a parent stack so processed InstrmInf nodes are removed
+                    # from the live XML tree. elem.clear() alone leaves millions of
+                    # empty child objects attached to their parent and can OOM a
+                    # small production host on B3's cumulative BVBG snapshot.
+                    stack: list[ET.Element] = []
+                    for event, elem in ET.iterparse(fh, events=("start", "end")):
+                        if event == "start":
+                            stack.append(elem)
                             continue
-                        eqty = _child(elem, "EqtyInf")
-                        if eqty is not None:
-                            row = parse_b3_equity_info(eqty, as_of=report_date)
-                            if row:
-                                rows[(row["ticker"], row["isin"])] = row
-                        elem.clear()
+                        if _local(elem.tag) == "InstrmInf":
+                            eqty = _child(elem, "EqtyInf")
+                            if eqty is not None:
+                                row = parse_b3_equity_info(eqty, as_of=report_date)
+                                if row:
+                                    rows[(row["ticker"], row["isin"])] = row
+                            elem.clear()
+                            if len(stack) >= 2:
+                                try:
+                                    stack[-2].remove(elem)
+                                except ValueError:
+                                    pass
+                        if stack:
+                            stack.pop()
         finally:
             try:
                 os.unlink(archive_path)
