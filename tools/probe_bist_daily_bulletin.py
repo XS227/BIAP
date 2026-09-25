@@ -5,38 +5,32 @@ import zipfile
 import requests
 
 UA = "BIAP Global official BIST probe (+https://setai.no)"
-session = requests.Session()
-session.headers.update({"User-Agent": UA, "Accept": "*/*"})
+s = requests.Session()
+s.headers.update({"User-Agent": UA, "Accept": "*/*"})
 
-candidates = []
-today = date.today()
-for delta in range(0, 10):
-    d = today - timedelta(days=delta)
+for delta in range(0, 8):
+    d = date.today() - timedelta(days=delta)
     y=d.strftime("%Y"); m=d.strftime("%m"); ymd=d.strftime("%Y%m%d")
-    candidates.extend([
-        f"https://borsaistanbul.com/data/thb/{y}/{m}/thb{ymd}S.zip",
-        f"https://www.borsaistanbul.com/data/thb/{y}/{m}/thb{ymd}S.zip",
-        f"https://borsaistanbul.com/data/thb/{y}/{m}/thb{ymd}.zip",
-        f"https://www.borsaistanbul.com/data/thb/{y}/{m}/thb{ymd}.zip",
-    ])
-
-for url in candidates:
+    url=f"https://borsaistanbul.com/data/thb/{y}/{m}/thb{ymd}1.zip"
     try:
-        r=session.get(url, timeout=30, allow_redirects=True)
-        print("TRY", r.status_code, len(r.content), r.url)
-        if r.status_code != 200 or len(r.content) < 100:
-            continue
-        if r.content[:2] != b"PK":
-            print("NOTZIP", r.headers.get("content-type"), r.text[:120].replace("\n"," "))
+        r=s.get(url, timeout=10, allow_redirects=True)
+        print("TRY", d.isoformat(), r.status_code, len(r.content), r.url)
+        if r.status_code != 200 or len(r.content) < 100 or r.content[:2] != b"PK":
             continue
         z=zipfile.ZipFile(BytesIO(r.content))
         print("SUCCESS", url)
-        print("FILES", z.namelist()[:20])
+        print("FILES", z.namelist())
         for name in z.namelist()[:3]:
             raw=z.read(name)
-            print("SAMPLE", name, raw[:1200].decode("utf-8", errors="replace"))
-        break
-    except Exception as exc:
-        print("ERR", type(exc).__name__, str(exc)[:180], url)
-else:
-    raise SystemExit("No official BIST THB daily bulletin ZIP found in last 10 days")
+            for enc in ("utf-8-sig","cp1254","iso-8859-9"):
+                try:
+                    text=raw[:8000].decode(enc)
+                    break
+                except UnicodeDecodeError:
+                    text=""
+            print("SAMPLE", name)
+            print("\n".join(text.splitlines()[:12]))
+        raise SystemExit(0)
+    except requests.RequestException as exc:
+        print("ERR", type(exc).__name__, str(exc)[:160])
+raise SystemExit("No BIST official daily bulletin found for the last 8 calendar days")
