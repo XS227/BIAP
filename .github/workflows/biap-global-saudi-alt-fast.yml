@@ -28,6 +28,8 @@ jobs:
             'https://r.jina.ai/http://origin.tadawulgroup.sa/Resources/Reports-v2/DetailedDailySme_en.html',
             'https://r.jina.ai/http://origin.tadawulgroup.sa/wps/portal/saudiexchange',
             'https://r.jina.ai/http://www.tadawulgroup.sa/wps/portal/saudiexchange',
+            'https://r.jina.ai/http://www.tadawulgroup.sa/Resources/Reports-v2/DetailedDaily_en.html',
+            'https://r.jina.ai/http://www.tadawulgroup.sa/Resources/Reports-v2/DetailedDailySme_en.html',
           ]
           for url in urls:
               try:
