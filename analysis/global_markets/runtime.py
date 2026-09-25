@@ -52,6 +52,7 @@ from .official_universe import ASXUniverseProvider, DeutscheBoerseUniverseProvid
 from .providers import ProviderRegistry
 from .regional_yahoo_chart import RegionalYahooChartMarketProvider
 from .sec_foreign_ifrs import SECForeignIFRSFundamentalsProvider
+from .sec_crosslisted_gaap import SECCrossListedUSGAAPFundamentalsProvider
 from .sgx_issuer import SGXIssuerFundamentalsProvider
 from .sgx_official import SGXOfficialUniverseProvider
 from .saudi_official import SaudiExchangeOfficialUniverseProvider
@@ -361,9 +362,13 @@ def build_registry() -> ProviderRegistry:
     # CompanyFacts only when ticker resolution and legal-name identity both
     # verify; all other Canadian issuers fall back to labelled vendor display
     # metrics and remain Evidence-BLOCKED. Canadian 40-F coverage is issuer-specific.
+    ca_sec_official = FallbackFundamentalsProvider(
+        SECForeignIFRSFundamentalsProvider(user_agent=sec_user_agent),
+        SECCrossListedUSGAAPFundamentalsProvider(user_agent=sec_user_agent),
+    )
     ca_sec_ifrs = PersistentFundamentalsProvider(
         FallbackFundamentalsProvider(
-            SECForeignIFRSFundamentalsProvider(user_agent=sec_user_agent),
+            ca_sec_official,
             public_fundamentals,
         )
     )
