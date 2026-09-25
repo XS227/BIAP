@@ -1,0 +1,42 @@
+name: BIAP Global HKEX official universe format probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-hkex-universe-format-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests openpyxl
+      - name: Inspect HKEX official ListOfSecurities workbook
+        run: |
+          python - <<'PY'
+          import io, json, requests, openpyxl
+          url='https://www.hkex.com.hk/eng/services/trading/securities/securitieslists/ListOfSecurities.xlsx'
+          r=requests.get(url,headers={'User-Agent':'Mozilla/5.0 BIAP-Global','Accept':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*'},timeout=60)
+          r.raise_for_status()
+          print('bytes',len(r.content),'type',r.headers.get('content-type'))
+          wb=openpyxl.load_workbook(io.BytesIO(r.content),read_only=True,data_only=True)
+          print('sheets',wb.sheetnames)
+          for ws in wb.worksheets:
+              print('\nSHEET',ws.title,'rows',ws.max_row,'cols',ws.max_column)
+              shown=0
+              for row in ws.iter_rows(values_only=True):
+                  vals=[v for v in row]
+                  if not any(v not in (None,'') for v in vals):
+                      continue
+                  print(json.dumps(vals,ensure_ascii=False,default=str))
+                  shown += 1
+                  if shown >= 18: break
+          PY
