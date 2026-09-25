@@ -1,10 +1,10 @@
-"""Verified issuer-filed NZX Limited annual fundamentals.
+"""Verified issuer-filed NZX annual fundamentals.
 
 NZX's public company announcement pages expose structured announcement metadata
 and cryptographically-described attachments. This adapter is intentionally
-strict: it currently supports NZX Limited (ticker NZX) only, selects the latest
-annual-report announcement from NZX itself, verifies the attached PDF, and
-parses primary consolidated statements conservatively.
+strict: it supports only explicitly verified issuers, selects the latest
+annual-report announcement from NZX, verifies the attached PDF, and parses
+issuer-specific primary consolidated statements conservatively.
 """
 from __future__ import annotations
 
@@ -24,10 +24,10 @@ from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
 
 
-_PROVIDER_ID = "official-nzx-issuer-annual-report-v4"
+_PROVIDER_ID = "official-nzx-issuer-annual-report-v5"
 _COMPANY_PAGE = "https://new.nzx.com/companies/{ticker}/announcements"
 _USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 BIAP-Global"
-_SUPPORTED = {"NZX"}
+_SUPPORTED = {"NZX", "SUM", "SCL"}
 
 
 def _number(text: str) -> Optional[float]:
@@ -83,6 +83,119 @@ def parse_nzx_limited_annual_report(text: str) -> dict[str, Optional[float]]:
     if result["revenue"] is None or result["net_income"] is None:
         raise GlobalProviderError("NZX annual report revenue/profit could not be verified")
     return result
+
+
+def parse_summerset_annual_report(text: str) -> dict[str, Optional[float]]:
+    """Parse Summerset Group Holdings FY2025 primary consolidated statements."""
+    income = _block(text, ("Consolidated Income Statement",), length=12000)
+    position = _block(text, ("Consolidated Statement of Financial Position",), length=12000)
+    cashflow = _block(text, ("Consolidated Statement of Cash Flows",), length=12000)
+    if not income or not position or not cashflow:
+        raise GlobalProviderError("SUM annual report primary statements were not found")
+
+    scale = 1000.0
+    revenue = _metric(income, r"^Total revenue\s+([\d,]+)\s+[\d,]+", scale=scale)
+    net_income = _metric(income, r"^Profit for the period\s+([\d,]+)\s+[\d,]+", scale=scale)
+    result = {
+        "revenue": revenue,
+        "net_income": net_income,
+        "total_assets": _metric(position, r"^Total assets\s+([\d,]+)\s+[\d,]+", scale=scale),
+        "total_liabilities": _metric(position, r"^Total liabilities\s+([\d,]+)\s+[\d,]+", scale=scale),
+        "total_equity": _metric(
+            position,
+            r"^Total equity attributable to shareholders\s+([\d,]+)\s+[\d,]+",
+            scale=scale,
+        ),
+        "cash_and_equivalents": _metric(
+            position,
+            r"^Cash and cash equivalents\s+([\d,]+)\s+[\d,]+",
+            scale=scale,
+        ),
+        "operating_cash_flow": _metric(
+            cashflow,
+            r"^Net cash flow from operating activities\s+([\d,]+)\s+[\d,]+",
+            scale=scale,
+        ),
+        "eps": _metric(
+            income,
+            r"^Basic earnings per share \(cents\)\s+(?:\S+\s+)?([\d.]+)\s+[\d.]+",
+            scale=0.01,
+        ),
+    }
+    if revenue is None or net_income is None or result["total_assets"] is None:
+        raise GlobalProviderError("SUM annual report headline metrics could not be verified")
+    return result
+
+
+def parse_scales_annual_report(text: str) -> dict[str, Optional[float]]:
+    """Parse Scales Corporation FY2025 primary consolidated statements.
+
+    Scales' PDF extraction places the financial-position heading after the table
+    and inserts spaces inside some uppercase total labels. Patterns therefore
+    target exact primary-statement row labels rather than relying on page order.
+    """
+    scale = 1000.0
+    revenue = _metric(text, r"^Revenue\s+B1\s+([\d,]+)\s+[\d,]+", scale=scale)
+    net_income = _metric(
+        text,
+        r"^Profit for the year\s+([\d,]+)\s+[\d,]+",
+        scale=scale,
+    )
+    total_assets = _metric(
+        text,
+        r"^TOTA\s*L\s+AS\s*S\s*E\s*TS\s+([\d,]+)\s+[\d,]+",
+        scale=scale,
+    )
+    total_liabilities = _metric(
+        text,
+        r"^TOTAL LIABILITIES\s+([\d,]+)\s+[\d,]+",
+        scale=scale,
+    )
+    total_equity = _metric(
+        text,
+        r"^NET ASSETS\s+([\d,]+)\s+[\d,]+",
+        scale=scale,
+    )
+    result = {
+        "revenue": revenue,
+        "net_income": net_income,
+        "total_assets": total_assets,
+        "total_liabilities": total_liabilities,
+        "total_equity": total_equity,
+        "cash_and_equivalents": _metric(
+            text,
+            r"^Cash and cash equivalents at the end of the year\s+([\d,]+)\s+[\d,]+",
+            scale=scale,
+        ),
+        "operating_cash_flow": _metric(
+            text,
+            r"^Net cash provided by operating activities\s+([\d,]+)\s+[\d,]+",
+            scale=scale,
+        ),
+        "eps": _metric(
+            text,
+            r"^Basic earnings per share \(cents\)\s+D5\s+([\d.]+)\s+[\d.]+",
+            scale=0.01,
+        ),
+    }
+    if (
+        revenue is None
+        or net_income is None
+        or total_assets is None
+        or total_liabilities is None
+        or total_equity is None
+    ):
+        raise GlobalProviderError("SCL annual report headline metrics could not be verified")
+    if abs((total_assets - total_liabilities) - total_equity) > 1000.0:
+        raise GlobalProviderError("SCL annual report balance-sheet totals do not reconcile")
+    return result
+
+
+_PARSERS = {
+    "NZX": parse_nzx_limited_annual_report,
+    "SUM": parse_summerset_annual_report,
+    "SCL": parse_scales_annual_report,
+}
 
 
 def _next_payload(html: str) -> dict:
@@ -166,9 +279,16 @@ class NZXIssuerFundamentalsProvider(FundamentalsProvider):
             lower = title.casefold()
             if kind not in {"ANNREP", "FLLYR"}:
                 continue
-            if "annual report" not in lower and "full year" not in lower:
-                continue
             attachments = ann.get("attachments") or details.get("attachments") or []
+            # ANNREP titles normally say Annual Report. FLLYR announcements can
+            # instead be titled Financial Results; in that case the presence of
+            # an explicit Annual Report PDF is the authoritative annual marker.
+            if (
+                "annual report" not in lower
+                and "full year" not in lower
+                and kind != "FLLYR"
+            ):
+                continue
             report = next(
                 (
                     item for item in attachments
@@ -204,7 +324,8 @@ class NZXIssuerFundamentalsProvider(FundamentalsProvider):
                 raise
             raise GlobalProviderError(f"NZX annual-report PDF parse failed: {type(exc).__name__}") from exc
 
-        metrics = parse_nzx_limited_annual_report(text)
+        parser = _PARSERS[ticker]
+        metrics = parser(text)
         title = str((annual["announcement"].get("summary") or {}).get("title") or "")
         # The announcement title names the reporting year; do not infer it
         # from arbitrary years elsewhere in the PDF (for example publication
