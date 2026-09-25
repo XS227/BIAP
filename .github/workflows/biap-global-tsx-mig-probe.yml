@@ -13,31 +13,56 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           ref: feat/biap-global
-      - name: Inspect current MiG issuer downloads
+      - name: Inspect current and archived official issuer workbooks
         run: |
-          python -m pip install -q requests beautifulsoup4 openpyxl xlrd
+          python -m pip install -q requests openpyxl xlrd
           python - <<'PY'
-          import io, json, re, zipfile
-          from urllib.parse import urljoin
+          import io, json
           import requests
-          from bs4 import BeautifulSoup
+          import openpyxl, xlrd
+
           s=requests.Session()
-          s.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36"})
-          for url in ["https://www.tsx.com/mig","https://www.tsx.com/en/listings/current-market-statistics/mig-archives"]:
-              r=s.get(url,timeout=30)
-              print("\nPAGE",url,r.status_code,r.url,len(r.content),r.headers.get("content-type"))
-              soup=BeautifulSoup(r.text,"html.parser")
-              links=[]
-              for a in soup.find_all("a",href=True):
-                  href=urljoin(r.url,a["href"])
-                  txt=" ".join(a.stripped_strings)
-                  low=(txt+" "+href).lower()
-                  if "issuer" in low or "listed" in low or any(x in low for x in [".xlsx",".xls",".csv"]):
-                      links.append((txt,href))
-              for x in links[:200]: print("LINK",json.dumps(x,ensure_ascii=False))
+          s.headers.update({
+              "User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36",
+              "Accept":"*/*",
+          })
+          urls=[
+              "https://www.tsx.com/en/resource/571",
+              "https://www.tsx.com/en/resource/3477/tsx-tsxv-listed-issuers-2025-12-en.xlsx",
+          ]
+          for url in urls:
+              r=s.get(url,timeout=40,allow_redirects=True)
+              print("\n=== RESOURCE ===")
+              print("requested",url)
+              print("status",r.status_code)
+              print("final",r.url)
+              print("content-type",r.headers.get("content-type"))
+              print("content-disposition",r.headers.get("content-disposition"))
+              print("bytes",len(r.content),"magic",repr(r.content[:16]))
+              if not r.ok:
+                  continue
+              data=r.content
+              if data[:2] == b"PK":
+                  wb=openpyxl.load_workbook(io.BytesIO(data),read_only=True,data_only=True)
+                  print("FORMAT xlsx SHEETS",wb.sheetnames)
+                  for ws in wb.worksheets:
+                      print("SHEET",ws.title,"rows",ws.max_row,"cols",ws.max_column)
+                      for i,row in enumerate(ws.iter_rows(values_only=True),start=1):
+                          vals=[None if v is None else str(v)[:250] for v in row]
+                          print("ROW",i,json.dumps(vals,ensure_ascii=False))
+                          if i>=25: break
+              elif data[:8] in (b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1",):
+                  book=xlrd.open_workbook(file_contents=data)
+                  print("FORMAT xls SHEETS",book.sheet_names())
+                  for ws in book.sheets():
+                      print("SHEET",ws.name,"rows",ws.nrows,"cols",ws.ncols)
+                      for i in range(min(ws.nrows,25)):
+                          print("ROW",i+1,json.dumps([str(ws.cell_value(i,j))[:250] for j in range(ws.ncols)],ensure_ascii=False))
+              else:
+                  print("TEXT_HEAD",data[:5000].decode("utf-8","replace"))
           PY
