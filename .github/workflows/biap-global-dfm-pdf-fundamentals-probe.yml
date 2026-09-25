@@ -1,0 +1,51 @@
+name: BIAP Global DFM PDF fundamentals probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-dfm-pdf-fundamentals-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests pypdf
+      - name: Download and inspect official DFM annual statements
+        shell: bash
+        run: |
+          python - <<'PY'
+          import io,re,requests
+          from pypdf import PdfReader
+          ua='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36'
+          docs=[
+            ('DIC','/2026/Mar/24/2acacfb1-f8d5-4c6c-a996-a166e6f5c65e/DIC FS 2025 E 24 03 .pdf'),
+            ('DEWA','/2026/Feb/27/3fc534cd-2159-48c9-a6b7-371fab22cace/DEWA Consolidated FS.pdf'),
+          ]
+          for symbol,path in docs:
+              url='https://feeds.dfm.ae/documents'+path
+              r=requests.get(url,headers={'User-Agent':ua,'Referer':'https://www.dfm.ae/'},timeout=60)
+              print('PDF',symbol,r.status_code,r.headers.get('content-type'),len(r.content),r.url,repr(r.content[:20]))
+              if not (r.ok and r.content[:4]==b'%PDF'):
+                  continue
+              reader=PdfReader(io.BytesIO(r.content))
+              print('PAGES',symbol,len(reader.pages))
+              text='\n'.join((p.extract_text() or '') for p in reader.pages[:25])
+              print('TEXT_LEN',symbol,len(text))
+              for needle in (
+                  'consolidated statement of profit or loss','revenue','total assets','total liabilities',
+                  'total equity','cash and cash equivalents','net cash generated from operating activities',
+                  'net cash from operating activities','profit for the year'
+              ):
+                  pos=text.lower().find(needle)
+                  if pos>=0:
+                      print('PDF_CTX',symbol,needle,repr(text[max(0,pos-900):pos+2600]))
+          PY
