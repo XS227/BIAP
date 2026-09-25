@@ -31,6 +31,8 @@ from .sec_edgar import SEC_FACTS_BASE
 _VERIFIED_LOCAL_TICKER_ALIASES = {
     ("CH", "SIX", "NOVN"): "NVS",  # Novartis AG
     ("CH", "SIX", "UBSG"): "UBS",  # UBS Group AG; stale filings are rejected below
+    ("ZA", "JSE", "SSW"): "SBSW",  # Sibanye Stillwater Limited
+    ("ZA", "JSE", "HAR"): "HMY",  # Harmony Gold Mining Company Limited
 }
 
 MAX_ANNUAL_FILING_AGE_DAYS = 550
@@ -78,9 +80,16 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
 
     @staticmethod
     def _identity_matches(company: GlobalCompany, entity_name: str) -> bool:
-        company_core = _legal_core(company.name)
         entity_core = _legal_core(entity_name)
-        return bool(company_core and entity_core and company_core == entity_core)
+        if not entity_core:
+            return False
+        candidates = [company.name]
+        # The JSE full file carries a separate official issuer legal name in
+        # addition to the shorter security description shown in the UI.
+        jse_issuer = str(company.raw_provider_fields.get("jse_issuer_name") or "").strip()
+        if jse_issuer:
+            candidates.append(jse_issuer)
+        return any(_legal_core(name) == entity_core for name in candidates if _legal_core(name))
 
     def _resolve_cik(self, company: GlobalCompany) -> int:
         explicit_alias = str(company.raw_provider_fields.get("sec_ticker_alias") or "").strip().upper()
