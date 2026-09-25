@@ -19,10 +19,10 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
 
-# Version 17 replaces the Canada reference/demo catalog with the official TMX
-# TSX/TSXV domestic operating-issuer universe. Older Canadian snapshots must not
+# Version 18 replaces the Switzerland reference/demo catalog with the official
+# SIX Swiss primary ordinary-share universe. Older Swiss snapshots must not
 # survive the authoritative source change.
-CACHE_SCHEMA_VERSION = 17
+CACHE_SCHEMA_VERSION = 18
 
 
 def _utc_now() -> datetime:
