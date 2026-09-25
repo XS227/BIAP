@@ -23,7 +23,7 @@ jobs:
         run: |
           python - <<'PY'
           import csv, io, zipfile, requests
-          url='https://www.bseindia.com/downloads/SCRIP.zip'
+          url='https://www.bseindia.com/download/BhavCopy/Equity/BSE_EQ_BHAVCOPY_22092026.ZIP'
           r=requests.get(url,headers={'User-Agent':'Mozilla/5.0','Referer':'https://www.bseindia.com/'},timeout=60)
           print('STATUS',r.status_code,'BYTES',len(r.content),'TYPE',r.headers.get('content-type'))
           r.raise_for_status()
@@ -32,7 +32,7 @@ jobs:
           print('COUNT',len(names))
           print('FIRST',names[:20])
           print('LAST',names[-30:])
-          for name in names[-5:]:
+          for name in names:
               b=z.read(name)
               print('FILE',name,'BYTES',len(b),'HEAD',repr(b[:1000]))
               try:
