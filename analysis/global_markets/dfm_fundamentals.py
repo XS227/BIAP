@@ -191,7 +191,7 @@ def parse_dfm_statement_text(text: str) -> dict[str, Optional[float]]:
         values["total_liabilities"] is None
         and values["total_assets"] is not None
         and values["total_equity"] is not None
-        and "regulatory deferral" not in text.casefold()
+        and "regulatory deferral account credit balance" not in text.casefold()
     ):
         # For ordinary balance sheets assets = liabilities + equity. Do not use
         # this identity when a regulator-specific deferral balance is presented
