@@ -80,9 +80,9 @@ jobs:
                   frag=' '.join(html[max(0,pos-700):pos+1800].split())
                   print('HTML_HIT',needle,frag[:2500])
           for pat in (
-              r'https?://[^"\\'<> ]+\\.pdf[^"\\'<> ]*',
-              r'https?://api\\.live\\.deutsche-boerse\\.com[^"\\'<> ]*',
-              r'https?://erscontent\\.deutsche-boerse\\.com[^"\\'<> ]*',
+              r"https?://[^\\"'<> ]+\\.pdf[^\\"'<> ]*",
+              r"https?://api\\.live\\.deutsche-boerse\\.com[^\\"'<> ]*",
+              r"https?://erscontent\\.deutsche-boerse\\.com[^\\"'<> ]*",
           ):
               vals=[]
               for m in re.finditer(pat,html,re.I):
