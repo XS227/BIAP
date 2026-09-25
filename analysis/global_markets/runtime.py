@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 
+from .adx_official import ADXOfficialUniverseProvider
 from .b3_official import B3OfficialUniverseProvider
 from .bist_official import BISTOfficialUniverseProvider
 from .cached_esef import CachedESEFFundamentalsProvider
@@ -170,6 +171,12 @@ def build_registry() -> ProviderRegistry:
         DFMOfficialUniverseProvider(),
         fresh_hours=12,
     )
+    adx_universe = PersistentUniverseProvider(
+        ADXOfficialUniverseProvider(),
+        fresh_hours=12,
+    )
+    registry.register_universe("AE", "ADX", adx_universe)
+
     registry.register_universe("AE", "DFM", dfm_universe)
 
     # France and Italy: ESMA FIRDS is the authoritative regulated/native common-
