@@ -31,6 +31,13 @@ jobs:
               cr=requests.get(page,headers=H,timeout=45)
               print('\n### COMPANY',ticker,'STATUS',cr.status_code,'BYTES',len(cr.content))
               if cr.ok:
+                  rx=re.findall(r'<a[^>]+href=["\\']([^"\\']*/announcements/\\d+)["\\'][^>]*>(.*?)</a>',cr.text,re.I|re.S)
+                  print('PROVIDER_REGEX',ticker,'COUNT',len(rx))
+                  for href,label_html in rx[:80]:
+                      label=re.sub(r'<[^>]+>',' ',label_html)
+                      label=' '.join(label.split())
+                      if any(k in label.lower() for k in ('annual report','full year','financial results','annual results')):
+                          print('PROVIDER_MATCH',ticker,repr(label[:220]),href)
                   cs=BeautifulSoup(cr.text,'html.parser')
                   for a in cs.find_all('a',href=True):
                       href=urllib.parse.urljoin(cr.url,a['href'])
