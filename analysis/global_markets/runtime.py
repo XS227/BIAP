@@ -14,6 +14,7 @@ import os
 from .adx_official import ADXOfficialUniverseProvider
 from .b3_official import B3OfficialUniverseProvider
 from .bist_official import BISTOfficialUniverseProvider
+from .bse_official import BSEOfficialUniverseProvider
 from .cached_esef import CachedESEFFundamentalsProvider
 from .cached_fundamentals import PersistentFundamentalsProvider
 from .cached_market import PersistentMarketProvider
@@ -48,6 +49,7 @@ from .regional_yahoo_chart import RegionalYahooChartMarketProvider
 from .sec_foreign_ifrs import SECForeignIFRSFundamentalsProvider
 from .sgx_issuer import SGXIssuerFundamentalsProvider
 from .sgx_official import SGXOfficialUniverseProvider
+from .saudi_official import SaudiExchangeOfficialUniverseProvider
 from .six_official import SIXOfficialUniverseProvider
 from .twelve_data import TwelveDataMarketProvider
 from .tsx_official import TMXOfficialUniverseProvider
@@ -131,6 +133,12 @@ def build_registry() -> ProviderRegistry:
     )
     registry.register_universe("IN", "NSE", nse_universe)
 
+    bse_universe = PersistentUniverseProvider(
+        BSEOfficialUniverseProvider(),
+        fresh_hours=12,
+    )
+    registry.register_universe("IN", "BSE", bse_universe)
+
     krx_universe = PersistentUniverseProvider(
         KRXKINDOfficialUniverseProvider(),
         fresh_hours=12,
@@ -178,6 +186,12 @@ def build_registry() -> ProviderRegistry:
     registry.register_universe("AE", "ADX", adx_universe)
 
     registry.register_universe("AE", "DFM", dfm_universe)
+
+    saudi_universe = PersistentUniverseProvider(
+        SaudiExchangeOfficialUniverseProvider(),
+        fresh_hours=12,
+    )
+    registry.register_universe("SA", "SAUDI_EXCHANGE", saudi_universe)
 
     # France and Italy: ESMA FIRDS is the authoritative regulated/native common-
     # share membership source. OpenFIGI is used only to resolve the local ticker.
