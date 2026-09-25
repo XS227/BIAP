@@ -124,6 +124,22 @@ jobs:
           except Exception as e:
               print('DFM_EQUITIES_ERROR',type(e).__name__,e)
 
+          try:
+              appjs=requests.get('https://www.adx.ae/_next/static/chunks/pages/_app-873edeb54d7c662a.js',headers=H,timeout=45).text
+              for needle in (
+                  'case n.T.GetIssuersDirectoryV2',
+                  'case n.T.GetIssuersDirectory',
+                  'GetIssuersDirectoryV2:return',
+                  'GetIssuersDirectory:return',
+              ):
+                  for m in list(re.finditer(re.escape(needle),appjs))[:6]:
+                      print('ADX_ISSUER_MAP_CTX',needle,appjs[max(0,m.start()-1500):m.start()+3500])
+              p=appjs.find('76193:')
+              if p>=0:
+                  print('ADX_MAP_MODULE_HEAD',appjs[p:p+5000])
+          except Exception as e:
+              print('ADX_ISSUER_MAP_ERROR',type(e).__name__,e)
+
           for ident in ('GetIssuersDirectoryV2','GetIssuersDirectory'):
               for path in (f'https://www.adx.ae/api/securedCall/{ident}', f'https://www.adx.ae/en/api/securedCall/{ident}'):
                   try:
