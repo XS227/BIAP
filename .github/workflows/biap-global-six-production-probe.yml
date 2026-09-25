@@ -48,16 +48,21 @@ jobs:
 
           tickers={str(x.get("ticker") or "").upper() for x in rows}
           classes={str((x.get("raw_provider_fields") or {}).get("six_class_of_share") or "") for x in rows}
-          assert catalog.get("provider")=="official-six-equity-issuers", catalog
-          assert catalog.get("resolutionCoveragePct")==100.0, catalog
-          assert browse.get("totalMatched")==len(rows)
-          assert len(rows)==198, len(rows)
-          assert "ABBN" in tickers
-          assert "MMM" not in tickers
-          assert "Participation Certificate" not in classes
-          assert "***" not in classes
-          assert classes <= {"Registered Share","Bearer Share"}, classes
-          assert "Bearer Share" in classes
-          assert all((x.get("raw_provider_fields") or {}).get("six_primary_listing") is True for x in rows)
+          checks = [
+              (catalog.get("provider")=="official-six-equity-issuers", f"wrong provider: {catalog}"),
+              (catalog.get("resolutionCoveragePct")==100.0, f"coverage not 100: {catalog}"),
+              (browse.get("totalMatched")==len(rows), f"count mismatch: total={browse.get('totalMatched')} rows={len(rows)}"),
+              (len(rows)==198, f"unexpected SIX ordinary-equity count: {len(rows)}"),
+              ("ABBN" in tickers, "ABBN missing"),
+              ("MMM" not in tickers, "foreign secondary listing MMM leaked into Swiss universe"),
+              ("Participation Certificate" not in classes, f"participation certificates leaked: {classes}"),
+              ("***" not in classes, f"masked SIX class leaked instead of normalized Bearer Share: {classes}"),
+              (classes <= {"Registered Share","Bearer Share"}, f"unexpected share classes: {classes}"),
+              ("Bearer Share" in classes, f"bearer shares missing: {classes}"),
+              (all((x.get("raw_provider_fields") or {}).get("six_primary_listing") is True for x in rows), "non-primary line leaked"),
+          ]
+          failures=[message for ok,message in checks if not ok]
+          if failures:
+              raise SystemExit("SIX_PRODUCTION_FAILED: " + " | ".join(failures))
           print("SIX_PRODUCTION_OK count=",len(rows),"classes=",sorted(classes))
           PY
