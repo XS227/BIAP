@@ -35,7 +35,7 @@ jobs:
           results={}
           for key,country,exchange in [
               ('xetra','DE','XETRA'),('frankfurt','DE','FRANKFURT'),('asx','AU','ASX'),
-              ('nse','IN','NSE'),('krx','KR','KRX'),('hkex','HK','HKEX')
+              ('nse','IN','NSE'),('krx','KR','KRX'),('hkex','HK','HKEX'),('jse','ZA','JSE')
           ]:
               row=catalog(country,exchange)
               results[key]={
@@ -54,6 +54,8 @@ jobs:
               'krx_samsung':search('KR','KRX','005930'),
               'hkex_hkex':search('HK','HKEX','0388'),
               'hkex_hsbc':search('HK','HKEX','0005'),
+              'jse_mtn':search('ZA','JSE','MTN'),
+              'jse_naspers':search('ZA','JSE','NPN'),
           }
           print(json.dumps({'markets':results,'checks':{k:{'totalMatched':v.get('totalMatched'),'tickers':[x.get('ticker') for x in v.get('instruments',[])]} for k,v in checks.items()}},indent=2))
 
@@ -63,7 +65,9 @@ jobs:
           assert 2000 <= int(results['nse']['totalMatched']) <= 3000, results['nse']
           assert 2300 <= int(results['krx']['totalMatched']) <= 3200, results['krx']
           assert 2600 <= int(results['hkex']['totalMatched']) <= 2800, results['hkex']
+          assert 290 <= int(results['jse']['totalMatched']) <= 330, results['jse']
           assert results['hkex']['catalog'].get('provider') == 'official-hkex-list-of-securities', results['hkex']
+          assert results['jse']['catalog'].get('provider') == 'official-jse-equities-isin-full', results['jse']
           assert checks['xetra_sap'].get('totalMatched',0) >= 1
           assert checks['frankfurt_sap'].get('totalMatched',0) >= 1
           assert checks['asx_bhp'].get('totalMatched',0) >= 1
@@ -71,5 +75,7 @@ jobs:
           assert checks['krx_samsung'].get('totalMatched',0) >= 1
           assert checks['hkex_hkex'].get('totalMatched',0) >= 1
           assert checks['hkex_hsbc'].get('totalMatched',0) >= 1
+          assert checks['jse_mtn'].get('totalMatched',0) >= 1
+          assert checks['jse_naspers'].get('totalMatched',0) >= 1
           assert checks['xetra_strabag'].get('totalMatched',0) == 0, checks['xetra_strabag']
           PY
