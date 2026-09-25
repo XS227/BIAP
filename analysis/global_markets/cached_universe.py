@@ -19,10 +19,10 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
 
-# Version 20 replaces the New Zealand vendor reference catalog with the official
-# NZX Main Board domestic ordinary-share universe. Older NZ snapshots may include
-# ETFs/funds or overseas-primary secondary listings and must be rebuilt.
-CACHE_SCHEMA_VERSION = 20
+# Version 21 replaces vendor reference catalogs for India/NSE and Korea/KRX
+# with official NSE and KRX/KIND ordinary-equity universes. Older snapshots may
+# contain non-native or non-equity instruments and must be rebuilt.
+CACHE_SCHEMA_VERSION = 21
 
 
 def _utc_now() -> datetime:
