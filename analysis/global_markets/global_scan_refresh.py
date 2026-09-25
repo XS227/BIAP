@@ -8,13 +8,12 @@ from .scan_service import _global_top_markets, scan_global_market
 
 
 def main() -> int:
-    has_eodhd = bool((os.environ.get("BIAP_EODHD_API_TOKEN") or "").strip())
-    has_twelve = bool((os.environ.get("BIAP_GLOBAL_MARKET_API_KEY") or "").strip())
-    if not (has_eodhd or has_twelve):
-        print("GLOBAL_SCAN_REFRESH: skipped; no full-exchange/batch market source configured")
-        return 0
-
-    deep_limit = max(10, min(int(os.environ.get("BIAP_GLOBAL_DAILY_DEEP_LIMIT", "50")), 100))
+    # Refresh every connected market. Many production markets now have their own
+    # official exchange-wide sources (Euronext, Nasdaq Nordic, BME, B3) and must
+    # not be skipped merely because a generic Twelve Data/EODHD credential is
+    # absent. Markets without a complete source will persist a BLOCKED diagnostic
+    # cache, which is exactly what Global Top should report.
+    deep_limit = max(10, min(int(os.environ.get("BIAP_GLOBAL_DAILY_DEEP_LIMIT", "25")), 50))
     summaries = []
     for country, exchange in _global_top_markets():
         try:
