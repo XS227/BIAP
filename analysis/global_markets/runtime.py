@@ -26,6 +26,7 @@ from .corroboration import CorroboratingFundamentalsProvider
 from .country_packs import COUNTRY_PACKS
 from .cvm_itr import CVMITRCorroborator
 from .cvm_resolver import CVMResolvedFundamentalsProvider
+from .dfm_fundamentals import DFMEfsahAnnualFundamentalsProvider
 from .dfm_official import DFMOfficialUniverseProvider
 from .edinet import EDINETFundamentalsProvider
 from .esma_firds_universe import ESMAFIRDSOpenFIGIUniverseProvider
@@ -401,6 +402,16 @@ def build_registry() -> ProviderRegistry:
         FallbackFundamentalsProvider(ADXFinancialSummaryProvider(), public_fundamentals)
     )
     register_fundamentals("AE", "ADX", ae_adx)
+
+    # DFM Efsah exposes the issuer-filed annual statement PDF itself. BIAP
+    # selects the latest completed yearly filing and extracts only verified
+    # headline fields from the primary statements. If a particular issuer PDF
+    # cannot be parsed safely, vendor metrics remain display-only fallback and
+    # the Evidence gate stays blocked for that issuer.
+    ae_dfm = PersistentFundamentalsProvider(
+        FallbackFundamentalsProvider(DFMEfsahAnnualFundamentalsProvider(), public_fundamentals)
+    )
+    register_fundamentals("AE", "DFM", ae_dfm)
 
     # Other deterministic Yahoo-routed markets currently lack a complete
     # official filing adapter in this branch. Give those markets useful public
