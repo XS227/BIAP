@@ -27,6 +27,7 @@ from .edinet import EDINETFundamentalsProvider
 from .esma_firds_universe import ESMAFIRDSOpenFIGIUniverseProvider
 from .euronext_live import EuronextRegulatedUniverseProvider
 from .nasdaq_nordic import NasdaqNordicUniverseProvider
+from .nzx_official import NZXOfficialUniverseProvider
 from .fallback_fundamentals import FallbackFundamentalsProvider
 from .german_issuer import GermanIssuerFundamentalsProvider
 from .hkex_issuer import HKEXIssuerFundamentalsProvider
@@ -122,6 +123,12 @@ def build_registry() -> ProviderRegistry:
         fresh_hours=12,
     )
     registry.register_universe("CH", "SIX", six_universe)
+
+    nzx_universe = PersistentUniverseProvider(
+        NZXOfficialUniverseProvider(),
+        fresh_hours=24,
+    )
+    registry.register_universe("NZ", "NZX", nzx_universe)
 
     # France and Italy: ESMA FIRDS is the authoritative regulated/native common-
     # share membership source. OpenFIGI is used only to resolve the local ticker.
