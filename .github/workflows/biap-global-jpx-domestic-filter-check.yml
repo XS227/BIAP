@@ -1,0 +1,49 @@
+name: BIAP Global JPX domestic filter check
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-jpx-domestic-filter-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - name: Validate JPX product categories
+        run: |
+          python -m pip install -q requests openpyxl
+          python - <<'PY'
+          import io, collections, re, requests, openpyxl
+          url="https://www.jpx.co.jp/english/markets/statistics-equities/misc/tvdivq0000001vg2-att/data_e.xlsx"
+          r=requests.get(url,headers={"User-Agent":"Mozilla/5.0"},timeout=40)
+          r.raise_for_status()
+          wb=openpyxl.load_workbook(io.BytesIO(r.content),read_only=True,data_only=True)
+          ws=wb.active
+          rows=list(ws.iter_rows(values_only=True))
+          h=[str(x or "").strip() for x in rows[0]]
+          idx={name:i for i,name in enumerate(h)}
+          sec=idx["Section/Products"]; code=idx["Local Code"]; name=idx["Name (English)"]
+          counts=collections.Counter(str(row[sec] or "").strip() for row in rows[1:])
+          print("CATEGORY_COUNTS")
+          for k,v in counts.most_common(): print(repr(k),v)
+          allowed={"Prime Market (Domestic)","Standard Market(Domestic)","Standard Market (Domestic)","Growth Market(Domestic)","Growth Market (Domestic)","Prime Market(Domestic)"}
+          picked=[row for row in rows[1:] if str(row[sec] or "").strip() in allowed]
+          print("PICKED",len(picked))
+          suspicious=[]
+          pat=re.compile(r"preferred|reit|etf|etn|warrant|fund|bond|investment trust",re.I)
+          for row in picked:
+              n=str(row[name] or "")
+              if pat.search(n): suspicious.append((row[code],n,row[sec]))
+          print("SUSPICIOUS",len(suspicious))
+          for x in suspicious[:100]: print("SUS",x)
+          print("SAMPLES",[(row[code],row[name],row[sec]) for row in picked[:20]])
+          PY
