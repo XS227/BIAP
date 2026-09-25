@@ -1,5 +1,5 @@
 from global_markets.cached_universe import CACHE_SCHEMA_VERSION
 
 
-def test_global_universe_cache_schema_is_nse_krx_official_v21():
-    assert CACHE_SCHEMA_VERSION == 21
+def test_global_universe_cache_schema_is_hkex_official_v22():
+    assert CACHE_SCHEMA_VERSION == 22
