@@ -53,7 +53,7 @@ def test_cotahist_parser_rejects_derivative_or_bdr_shape():
 def test_bvbg_equity_parser_accepts_es_share_and_rejects_depositary_receipt():
     eqty=ET.fromstring("""
     <EqtyInf>
-      <SctyCtgy>1</SctyCtgy><ISIN>BRPETRACNPR6</ISIN><CFICd>ESVUFR</CFICd>
+      <SctyCtgy>11</SctyCtgy><ISIN>BRPETRACNPR6</ISIN><CFICd>ESVUFR</CFICd>
       <SpcfctnCd>PN N2</SpcfctnCd><CrpnNm>PETROLEO BRASILEIRO S.A.</CrpnNm>
       <TckrSymb>PETR4</TckrSymb><AllcnRndLot>100</AllcnRndLot><LastPric>42.37</LastPric>
       <TradgStartDt>2000-01-01</TradgStartDt><TradgEndDt>9999-12-31</TradgEndDt><TradgCcy>BRL</TradgCcy>
@@ -68,6 +68,29 @@ def test_bvbg_equity_parser_accepts_es_share_and_rejects_depositary_receipt():
     <TradgStartDt>2020-01-01</TradgStartDt><TradgEndDt>9999-12-31</TradgEndDt><TradgCcy>BRL</TradgCcy></EqtyInf>
     """)
     assert parse_b3_equity_info(bdr,as_of=date(2026,9,24)) is None
+
+
+
+def test_bvbg_equity_parser_rejects_auxiliary_b3_trading_lines():
+    fractional=ET.fromstring("""
+    <EqtyInf>
+      <SctyCtgy>11</SctyCtgy><ISIN>BRVBBRACNOR1</ISIN><CFICd>ESVUFR</CFICd>
+      <SpcfctnCd>ON EJ NM</SpcfctnCd><CrpnNm>VIBRA ENERGIA S.A.</CrpnNm>
+      <TckrSymb>VBBR3F</TckrSymb><AllcnRndLot>1</AllcnRndLot><LastPric>39.15</LastPric>
+      <TradgStartDt>2026-09-22</TradgStartDt><TradgEndDt>9999-12-31</TradgEndDt><TradgCcy>BRL</TradgCcy>
+    </EqtyInf>
+    """)
+    assert parse_b3_equity_info(fractional,as_of=date(2026,9,25)) is None
+
+    auxiliary=ET.fromstring("""
+    <EqtyInf>
+      <SctyCtgy>25</SctyCtgy><ISIN>BRRENTACNOR4</ISIN><CFICd>ESVUFR</CFICd>
+      <SpcfctnCd>ON NM</SpcfctnCd><CrpnNm>LOCALIZA RENT A CAR S.A.</CrpnNm>
+      <TckrSymb>RENT3L</TckrSymb><AllcnRndLot>1</AllcnRndLot><LastPric>0</LastPric>
+      <TradgStartDt>2025-09-25</TradgStartDt><TradgEndDt>9999-12-31</TradgEndDt><TradgCcy>BRL</TradgCcy>
+    </EqtyInf>
+    """)
+    assert parse_b3_equity_info(auxiliary,as_of=date(2026,9,25)) is None
 
 
 def test_b3_batch_quotes_uses_daily_trade_and_official_last_price_fallback(monkeypatch):
