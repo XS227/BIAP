@@ -42,6 +42,11 @@ jobs:
                   lines=[x for x in text.splitlines() if x.strip()]
                   print('lines',len(lines))
                   for line in lines[:15]: print(line[:1200])
+                  from collections import Counter
+                  types=Counter(line[209:219].strip() for line in lines if len(line)>=230)
+                  currencies=Counter(line[206:209].strip() for line in lines if len(line)>=230)
+                  print('SECURITY_TYPES',types.most_common())
+                  print('CURRENCIES',currencies.most_common())
                   for needle in ('NASPERS','MTN GROUP','SHOPRITE','STANDARD BANK','ANGLO AMERICAN'):
                       match=next((line for line in lines if needle in line.upper()),None)
                       if match:
