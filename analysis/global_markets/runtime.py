@@ -23,6 +23,7 @@ from .corroboration import CorroboratingFundamentalsProvider
 from .country_packs import COUNTRY_PACKS
 from .cvm_itr import CVMITRCorroborator
 from .cvm_resolver import CVMResolvedFundamentalsProvider
+from .dfm_official import DFMOfficialUniverseProvider
 from .edinet import EDINETFundamentalsProvider
 from .esma_firds_universe import ESMAFIRDSOpenFIGIUniverseProvider
 from .euronext_live import EuronextRegulatedUniverseProvider
@@ -164,6 +165,12 @@ def build_registry() -> ProviderRegistry:
         fresh_hours=12,
     )
     registry.register_universe("SG", "SGX", sgx_universe)
+
+    dfm_universe = PersistentUniverseProvider(
+        DFMOfficialUniverseProvider(),
+        fresh_hours=12,
+    )
+    registry.register_universe("AE", "DFM", dfm_universe)
 
     # France and Italy: ESMA FIRDS is the authoritative regulated/native common-
     # share membership source. OpenFIGI is used only to resolve the local ticker.
