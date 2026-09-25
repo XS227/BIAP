@@ -1,0 +1,88 @@
+name: BIAP Global ADX market data probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-adx-market-data-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests
+      - name: Discover and probe official ADX quote/history endpoints
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re,requests,json,urllib.parse
+          PAGE='https://www.adx.ae/en/issuers/issuers-information/issuers-directory'
+          UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36'
+          page=requests.get(PAGE,headers={'User-Agent':UA},timeout=45)
+          page.raise_for_status()
+          scripts=[urllib.parse.urljoin(PAGE,x) for x in re.findall(r'<script[^>]+src=["\']([^"\']+)',page.text,re.I)]
+          print('SCRIPTS',len(scripts))
+          bodies=[]
+          for url in scripts:
+              try:
+                  t=requests.get(url,headers={'User-Agent':UA},timeout=30).text
+              except Exception:
+                  continue
+              if '/adx/' in t or 'CompanyRecentTrades' in t or 'Historical' in t:
+                  bodies.append((url,t))
+          merged='\n'.join(t for _,t in bodies)
+          km=re.search(r'adx-Gateway-APIKey["\']?:["\']([^"\']+)',merged,re.I)
+          if not km:
+              raise SystemExit('public ADX gateway key not found')
+          key=km.group(1)
+          H={
+            'User-Agent':UA,
+            'Accept':'application/json',
+            'Channel-ID':'OSS WEB',
+            'Content-Type':'application/json',
+            'X-Correlation-ID':'biap-global-adx-market-probe',
+            'adx-Gateway-APIKey':key,
+            'Referer':PAGE,
+          }
+
+          # Show relevant operation names and concrete route strings from ADX's own bundle.
+          needles=('CompanyRecentTrades','Historical','history','securityOverview','security-closingprice',
+                   'marketwatch','Chart','OneMonth','OneYear','FiveYear','YTD','Top5','TradingDataTable')
+          for url,t in bodies:
+              hits=[]
+              for needle in needles:
+                  if needle.casefold() in t.casefold():
+                      hits.append(needle)
+              if hits:
+                  print('BUNDLE',url,'HITS',hits)
+                  for m in re.finditer(r'["\'](/adx/[^"\']+)["\']',t):
+                      path=m.group(1)
+                      if any(k.casefold() in path.casefold() for k in ('marketwatch','recent','history','histor','chart','closing','security')):
+                          print('ROUTE',path)
+
+          # Probe endpoints known from the public API mapping. ALDAR is a liquid main-market equity.
+          tests=[
+            ('closing','https://apigateway.adx.ae/adx/tradings/1.1/security-closingprice',
+              ({'symbol':'ALDAR'},{'securityCode':'ALDAR'},{'dSymbol':'ALDAR'})),
+            ('profile','https://apigateway.adx.ae/adx/marketwatch/1.1/listedCompanyProfileData/ALDAR',({},)),
+            ('recent','https://apigateway.adx.ae/adx/marketwatch/1.1/recentTrades/ALDAR',({},)),
+            ('overview','https://apigateway.adx.ae/adx/marketwatch/1.1/securityOverview/ALDAR',({},)),
+            ('marketwatch','https://apigateway.adx.ae/adx/marketwatch/1.1/securityBoard/marketwatch',
+              ({'market':'EQTY'},{'marketCode':'510'},{'xMarketCode':'EQTY'})),
+          ]
+          for label,url,variants in tests:
+              for p in variants:
+                  try:
+                      r=requests.get(url,params=p,headers=H,timeout=35)
+                      print('PROBE',label,url,p,'STATUS',r.status_code,'BYTES',len(r.content),'BODY',repr(r.text[:12000]))
+                  except Exception as e:
+                      print('ERR',label,url,p,type(e).__name__,e)
+          PY
