@@ -41,7 +41,8 @@ jobs:
               if text:
                   lines=[x for x in text.splitlines() if x.strip()]
                   print('lines',len(lines))
-                  for line in lines[:15]: print(line[:1200])\n                  from collections import Counter
+                  for line in lines[:15]: print(line[:1200])
+                  from collections import Counter
                   classes=Counter()
                   domestic=Counter()
                   tickers_by_class={}
