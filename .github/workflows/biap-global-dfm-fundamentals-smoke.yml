@@ -57,6 +57,7 @@ jobs:
                   assert company.get('total_assets') is not None, company
               if ticker == 'DEWA':
                   assert company.get('revenue') is not None, company
+                  assert company.get('total_equity') == 97769535000.0, company
               evidence=data.get('evidence') or {}
               assert 'fundamental_source' not in (evidence.get('missing_critical') or []), evidence
               print('OK',ticker,'official DFM annual statement connected',
