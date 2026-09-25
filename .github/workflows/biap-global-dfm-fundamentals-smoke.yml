@@ -49,7 +49,14 @@ jobs:
               company=data.get('company') or {}
               sources=company.get('sources') or []
               official=[x for x in sources if x.get('provider')=='official-dfm-efsah-annual-statement-v2']
+              market=[x for x in sources if x.get('provider')=='official-dfm-company-market']
               assert official, sources
+              assert market, sources
+              assert company.get('price') is not None and company.get('price') > 0, company
+              assert company.get('price_observed_at'), company
+              assert company.get('market_cap') is not None, company
+              assert company.get('price_52w_high') is not None, company
+              assert company.get('price_52w_low') is not None, company
               assert company.get('filing_period_end') == '2025-12-31', company
               assert company.get('net_income') is not None, company
               assert company.get('total_equity') is not None, company
@@ -60,8 +67,12 @@ jobs:
                   assert company.get('revenue') is not None, company
                   assert company.get('total_equity') == 97769535000.0, company
               evidence=data.get('evidence') or {}
-              assert 'fundamental_source' not in (evidence.get('missing_critical') or []), evidence
-              print('OK',ticker,'official DFM annual statement connected',
+              missing=evidence.get('missing_critical') or []
+              assert 'fundamental_source' not in missing, evidence
+              assert 'verified_price' not in missing, evidence
+              assert 'market_source' not in missing, evidence
+              assert evidence.get('status') == 'PASS', evidence
+              print('OK',ticker,'official DFM market + annual statement connected',
                     company.get('filing_period_end'),company.get('net_income'),
                     company.get('total_assets'),company.get('total_equity'),
                     company.get('operating_cash_flow'),evidence.get('status'))
