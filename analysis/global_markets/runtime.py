@@ -464,8 +464,12 @@ def build_registry() -> ProviderRegistry:
     # Switzerland: issuer-owned audited IFRS statements for Nestlé (NESN).
     # Other SIX issuers remain vendor-display-only until a verified primary
     # statement adapter is added for them.
+    ch_official = FallbackFundamentalsProvider(
+        SwissIssuerFundamentalsProvider(),
+        SECForeignIFRSFundamentalsProvider(user_agent=sec_user_agent),
+    )
     ch_issuer = PersistentFundamentalsProvider(
-        FallbackFundamentalsProvider(SwissIssuerFundamentalsProvider(), public_fundamentals)
+        FallbackFundamentalsProvider(ch_official, public_fundamentals)
     )
     register_fundamentals("CH", "SIX", ch_issuer)
 
