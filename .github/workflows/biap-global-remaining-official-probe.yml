@@ -1,0 +1,69 @@
+name: BIAP Global remaining official source probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-remaining-official-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests
+      - name: Probe SGX Saudi DFM ADX official pages
+        run: |
+          python - <<'PY'
+          import json,re,requests
+          H={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36','Accept-Language':'en-US,en;q=0.9'}
+
+          def show(name,url):
+              try:
+                  r=requests.get(url,headers=H,timeout=45)
+                  print('\n###',name,'STATUS',r.status_code,'BYTES',len(r.content),'TYPE',r.headers.get('content-type'),'URL',r.url)
+                  print(r.text[:1000].replace('\n',' ') if 'text' in (r.headers.get('content-type') or '') or not r.headers.get('content-type') else repr(r.content[:300]))
+                  return r
+              except Exception as e:
+                  print('\n###',name,'ERROR',type(e).__name__,e)
+                  return None
+
+          # SGX public website API used by SGX securities pages.
+          sgx=show('SGX','https://api.sgx.com/securities/v1.1?excludetypes=bonds&params=nc%2Cn%2Ccn%2Ccx%2Cs%2Cisin')
+          if sgx and sgx.ok:
+              try:
+                  d=sgx.json()
+                  print('SGX_KEYS',d.keys())
+                  data=d.get('data') or {}
+                  print('SGX_DATA_KEYS',data.keys() if isinstance(data,dict) else type(data))
+                  prices=data.get('prices') if isinstance(data,dict) else None
+                  print('SGX_COUNT',len(prices or []),'SAMPLE',json.dumps((prices or [])[:5],ensure_ascii=False)[:5000])
+              except Exception as e: print('SGX_JSON_ERROR',e)
+
+          pages={
+            'SAUDI':'https://www.saudiexchange.sa/wps/portal/saudiexchange/trading/participants-directory/issuer-directory?locale=en',
+            'DFM':'https://www.dfm.ae/the-exchange/market-information/listed-securities',
+            'ADX':'https://www.adx.ae/English/Pages/default.aspx',
+          }
+          for name,url in pages.items():
+              r=show(name,url)
+              if not r: continue
+              html=r.text
+              scripts=re.findall(r'<script[^>]+src=["\']([^"\']+)',html,re.I)
+              links=re.findall(r'(?:https?:)?//[^"\'<> ]+',html)
+              print(name,'SCRIPTS',scripts[-20:])
+              interesting=[]
+              for token in re.findall(r'[^"\'\s<>]{10,300}',html):
+                  low=token.lower()
+                  if any(k in low for k in ('api','issuer','listed','security','securities','company','companies','symbol','instrument')):
+                      if token not in interesting: interesting.append(token)
+              print(name,'INTERESTING',interesting[:120])
+              print(name,'LINKS',[x for x in links if any(k in x.lower() for k in ('api','issuer','listed','security','company'))][:80])
+          PY
