@@ -56,6 +56,7 @@ from .sgx_issuer import SGXIssuerFundamentalsProvider
 from .sgx_official import SGXOfficialUniverseProvider
 from .saudi_official import SaudiExchangeOfficialUniverseProvider
 from .six_official import SIXOfficialUniverseProvider
+from .swiss_issuer import SwissIssuerFundamentalsProvider
 from .twelve_data import TwelveDataMarketProvider
 from .tsx_official import TMXOfficialUniverseProvider
 from .universe import IranUniverseProvider, TwelveDataUniverseProvider
@@ -428,6 +429,14 @@ def build_registry() -> ProviderRegistry:
         FallbackFundamentalsProvider(DFMEfsahAnnualFundamentalsProvider(), public_fundamentals)
     )
     register_fundamentals("AE", "DFM", ae_dfm)
+
+    # Switzerland: issuer-owned audited IFRS statements for Nestlé (NESN).
+    # Other SIX issuers remain vendor-display-only until a verified primary
+    # statement adapter is added for them.
+    ch_issuer = PersistentFundamentalsProvider(
+        FallbackFundamentalsProvider(SwissIssuerFundamentalsProvider(), public_fundamentals)
+    )
+    register_fundamentals("CH", "SIX", ch_issuer)
 
     # New Zealand: start with NZX Limited itself using the audited annual
     # report published through NZX's official announcement service. Other NZX
