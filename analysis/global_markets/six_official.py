@@ -20,10 +20,12 @@ _SOURCE_URL = "https://www.six-group.com/sheldon/equity_issuers/v1/equity_issuer
 _PAGE_URL = "https://www.six-group.com/en/market-data/shares/companies.html"
 _USER_AGENT = "BIAP Global SIX universe (+https://setai.no)"
 
-# SIX currently labels Swiss ordinary equity lines as Registered Share. Keep
-# explicit ordinary-share synonyms for resilience, but deliberately exclude
-# Participation Certificate and unknown (***) classes.
-_ORDINARY_SHARE_CLASSES = {
+# SIX's stable machine-readable share-class codes are the authority. RS is a
+# Registered Share and BS is a Bearer Share; both are ordinary equity. The
+# public display label for BS is currently "***", so BIAP normalizes that label
+# instead of treating it as unknown. PC (Participation Certificate) is excluded.
+_ORDINARY_SHARE_CODES = {"RS", "BS"}
+_ORDINARY_SHARE_NAMES = {
     "REGISTERED SHARE",
     "BEARER SHARE",
     "COMMON SHARE",
@@ -54,11 +56,20 @@ def parse_six_equity_items(items: Iterable[dict]) -> list[GlobalCompany]:
         currency = _clean(item.get("tradingCurrency")).upper()
         if currency != "CHF":
             continue
-        share_class = _clean(item.get("classOfShare"))
-        if share_class.upper() not in _ORDINARY_SHARE_CLASSES:
+        share_code = _clean(item.get("classOfShareCode")).upper()
+        source_share_class = _clean(item.get("classOfShare"))
+        if share_code:
+            if share_code not in _ORDINARY_SHARE_CODES:
+                continue
+        elif source_share_class.upper() not in _ORDINARY_SHARE_NAMES:
             continue
         if item.get("secondLineReasonCode") not in (None, ""):
             continue
+        share_class = (
+            "Registered Share" if share_code == "RS"
+            else "Bearer Share" if share_code == "BS"
+            else source_share_class
+        )
 
         ticker = _clean(item.get("valorSymbol")).upper()
         name = _clean(item.get("company"))
@@ -82,7 +93,8 @@ def parse_six_equity_items(items: Iterable[dict]) -> list[GlobalCompany]:
                 "official_universe": True,
                 "six_valor_number": item.get("valorNumber"),
                 "six_class_of_share": share_class,
-                "six_class_of_share_code": item.get("classOfShareCode"),
+                "six_source_class_of_share": source_share_class,
+                "six_class_of_share_code": share_code or None,
                 "six_regulatory_standard": item.get("regulatoryStandard"),
                 "six_primary_listing": True,
                 "six_first_listing_date": item.get("firstListingDate"),
@@ -96,7 +108,7 @@ def parse_six_equity_items(items: Iterable[dict]) -> list[GlobalCompany]:
                 source_url=_PAGE_URL,
                 observed_at=observed,
                 quality=1.0,
-                notes="SIX official List of Equity Issuers; Swiss primary ordinary share lines only.",
+                notes="SIX official List of Equity Issuers; Swiss primary RS/BS ordinary-share lines only.",
             )],
         ))
 
@@ -154,6 +166,6 @@ class SIXOfficialUniverseProvider(InstrumentUniverseProvider):
             "rawIssuerLineCount": len(items),
             "swissPrimaryLineCount": len(ch_primary),
             "identitySource": "SIX official List of Equity Issuers JSON",
-            "domesticScope": "country CH + primary listing + ordinary share class",
+            "domesticScope": "country CH + primary listing + SIX RS/BS ordinary-share codes",
         }
         return rows
