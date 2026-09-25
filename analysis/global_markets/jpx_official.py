@@ -137,6 +137,7 @@ class JPXOfficialUniverseProvider(InstrumentUniverseProvider):
                 industry=row.get("sector33Name") or None,
                 raw_provider_fields={
                     "official_universe": True,
+                    "trusted_official_equity": True,
                     "jpx_effective_date": row.get("effectiveDate"),
                     "jpx_section": row.get("section"),
                     "jpx_sector_33_code": row.get("sector33Code"),

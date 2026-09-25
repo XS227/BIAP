@@ -175,6 +175,7 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
                 "name": str(row.get("name") or ticker),
                 "type": str(row.get("instrument_type") or "Common Stock"),
                 "cfi_code": cached_raw.get("cfi"),
+                "trusted_official_equity": cached_raw.get("trusted_official_equity") is True,
             }
             if not _ordinary_equity_row(
                 country=row_country,

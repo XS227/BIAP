@@ -58,6 +58,14 @@ def _ordinary_equity_row(*, country: str, spec: ExchangeSpec, row: dict, symbol:
     if ".PR." in ticker or ticker.endswith(".PR") or ".RT." in ticker or ticker.endswith(".RT"):
         return False
 
+    # A narrowly-scoped official adapter may certify an instrument after applying
+    # the exchange's own product/segment rules. Preserve the universal structural
+    # checks above, then bypass vendor-name heuristics only for that explicit
+    # certification. JPX uses this for domestic Prime/Standard/Growth four-code
+    # ordinary shares; e.g. "note inc." is a company, not a debt Note.
+    if row.get("trusted_official_equity") is True:
+        return True
+
     if country.upper() in {"FR", "IT", "NL", "BE", "IE", "PT", "ES"} and re.fullmatch(r"[0-9]{4,}[A-Z]?", ticker):
         return False
 
