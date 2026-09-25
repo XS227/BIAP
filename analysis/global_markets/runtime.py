@@ -473,10 +473,10 @@ def build_registry() -> ProviderRegistry:
     )
     register_fundamentals("CH", "SIX", ch_issuer)
 
-    # New Zealand: start with NZX Limited itself using the audited annual
-    # report published through NZX's official announcement service. Other NZX
-    # issuers remain vendor-display-only until their primary statement parser is
-    # verified against issuer-specific annual reports.
+    # New Zealand: verified audited annual reports published through NZX's
+    # official announcement service are connected for NZX Limited, Summerset
+    # and Scales. Other issuers remain vendor-display-only until their primary
+    # statement parser is verified against issuer-specific annual reports.
     nz_issuer = PersistentFundamentalsProvider(
         FallbackFundamentalsProvider(NZXIssuerFundamentalsProvider(), public_fundamentals)
     )
