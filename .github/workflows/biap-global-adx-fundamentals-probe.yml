@@ -63,6 +63,30 @@ jobs:
                   if 'callIdentifier' in ctx or 'urlExt' in ctx:
                       print('CALL_CTX',needle,ctx)
 
+          # Scan every JS chunk loaded by the public issuer directory for the actual balance-sheet call site.
+          try:
+              import urllib.parse
+              page='https://www.adx.ae/en/issuers/issuers-information/issuers-directory'
+              html=requests.get(page,headers={'User-Agent':H['User-Agent']},timeout=45).text
+              srcs=re.findall(r'<script[^>]+src=["\\\']([^"\\\']+)',html,re.I)
+              print('SCRIPT_COUNT',len(srcs))
+              for src in srcs:
+                  url=urllib.parse.urljoin(page,src)
+                  try:
+                      body=requests.get(url,headers={'User-Agent':H['User-Agent']},timeout=30).text
+                  except Exception:
+                      continue
+                  if 'CompanyProfileBalanceSheetV2' not in body and 'CompanyProfileBalanceSheet' not in body:
+                      continue
+                  print('FOUND_CHUNK',url,'BYTES',len(body))
+                  for needle in ('CompanyProfileBalanceSheetV2','CompanyProfileBalanceSheet'):
+                      for m in list(re.finditer(re.escape(needle),body))[:40]:
+                          ctx=body[max(0,m.start()-6000):m.start()+6000]
+                          if 'callIdentifier' in ctx or 'urlExt' in ctx or 'method:' in ctx:
+                              print('CHUNK_CALL_CTX',needle,ctx)
+          except Exception as e:
+              print('SCRIPT_SCAN_ERROR',type(e).__name__,e)
+
           # Compact parameter/path matrix; print response bodies on one line so validation errors are visible.
           candidates=[
             ('https://apigateway.adx.ae/adx/listed-companies/1.1/balance-sheet/data',{}),
