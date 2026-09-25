@@ -1,0 +1,62 @@
+name: BIAP Global production readiness v2
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-production-readiness-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Read production readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://biap.dadashi.no/global-api/global'
+          curl --fail --silent --show-error --max-time 30 "$BASE/status" -o /tmp/status.json
+          curl --fail --silent --show-error --max-time 60             -H 'Content-Type: application/json'             -d '{"topN":10,"maxAgeHours":36}'             "$BASE/scan-global" -o /tmp/global.json
+          python - <<'PY'
+          import json
+          status=json.load(open('/tmp/status.json'))
+          data=json.load(open('/tmp/global.json'))
+          print('STATUS', json.dumps({
+              'mode': status.get('mode'),
+              'marketProviderMode': status.get('marketProviderMode'),
+              'twelveDataBatchConfigured': status.get('twelveDataBatchConfigured'),
+              'eodhdBulkEodConfigured': status.get('eodhdBulkEodConfigured'),
+          }, sort_keys=True))
+          print('GLOBAL', json.dumps({
+              'status': data.get('status'),
+              'marketsScanned': data.get('marketsScanned'),
+              'marketsEligible': data.get('marketsEligible'),
+              'marketsExcluded': data.get('marketsExcluded'),
+              'eligibleEquities': data.get('eligibleEquities'),
+              'screenedEquities': data.get('screenedEquities'),
+              'globalCoveragePct': data.get('globalCoveragePct'),
+              'connectedCoveragePct': data.get('connectedCoveragePct'),
+              'recommendationCount': data.get('recommendationCount'),
+          }, sort_keys=True))
+          for row in data.get('markets') or []:
+              dr=row.get('dataReadiness') or {}
+              print('MARKET', json.dumps({
+                  'country': row.get('country'),
+                  'exchange': row.get('exchange'),
+                  'status': row.get('status'),
+                  'rankingEligible': row.get('rankingEligible'),
+                  'eligibleEquities': row.get('eligibleEquities'),
+                  'screenedEquities': row.get('screenedEquities'),
+                  'screeningCoveragePct': row.get('screeningCoveragePct'),
+                  'fundamentalCoveragePct': row.get('fundamentalCoveragePct'),
+                  'reasons': dr.get('reasons'),
+                  'universeSource': dr.get('universeSource'),
+                  'marketSource': dr.get('marketSource'),
+                  'error': row.get('error'),
+              }, sort_keys=True))
+          PY
