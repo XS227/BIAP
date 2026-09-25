@@ -36,6 +36,11 @@ jobs:
               r'463239',
           ):
               print('MATCH',pat,re.findall(pat,r.text,re.I)[:100])
+          for needle in ('463239','468191-463239.pdf'):
+              pos=r.text.find(needle)
+              if pos >= 0:
+                  print('CTX',needle,repr(r.text[max(0,pos-1600):pos+2200]))
+
           tests=[
               'https://api.nzx.com/public/announcement/'+ann,
               'https://api.nzx.com/public/announcements/'+ann,
