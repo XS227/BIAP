@@ -21,14 +21,19 @@ jobs:
       - run: python -m pip install -q requests
       - run: |
           python - <<'PY'
-          import requests
-          for url in (
-            'https://r.jina.ai/http://www.tadawulgroup.sa/Resources/Reports-v2/DetailedDaily_en.html',
-            'https://r.jina.ai/http://www.tadawulgroup.sa/Resources/Reports-v2/DetailedDailySme_en.html',
-          ):
-              try:
-                  r=requests.get(url,headers={'User-Agent':'BIAP-Global/1.0','Accept':'text/plain,*/*'},timeout=12)
-                  print('TADREPORT',url,r.status_code,len(r.content),r.text[:1200].replace('\n',' '))
-              except Exception as e:
-                  print('TADREPORT',url,'ERROR',type(e).__name__,e)
+          import re,requests
+          url='https://r.jina.ai/http://www.tadawulgroup.sa/wps/portal/saudiexchange'
+          r=requests.get(url,headers={'User-Agent':'BIAP-Global/1.0','Accept':'text/plain,*/*'},timeout=20)
+          print('HOME',r.status_code,len(r.content),r.text[:800].replace('\n',' '))
+          text=r.text
+          nums=re.findall(r'(?<!\d)(\d{4})(?!\d)',text)
+          print('NUM_COUNT',len(nums),'UNIQUE',len(set(nums)),'FIRST',nums[:120])
+          for needle in ('2222','9513','SAUDI ARAMCO','WATANI STEEL','SARCO','ALRAJHI'):
+              positions=[m.start() for m in re.finditer(re.escape(needle),text,re.I)]
+              print('NEEDLE',needle,'COUNT',len(positions))
+              for p in positions[:8]:
+                  print('CTX',needle,repr(text[max(0,p-500):p+900]))
+          for line in text.splitlines():
+              if re.search(r'\b(2222|2030|1120|9513)\b',line) or ('SAUDI ARAMCO' in line.upper()):
+                  print('LINE',line[:3000])
           PY
