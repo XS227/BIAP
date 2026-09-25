@@ -1,0 +1,121 @@
+name: BIAP Global last two official universe probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-last-two-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+  VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+  VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
+  VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests beautifulsoup4
+      - name: Probe BSE and Saudi official public sources
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re, requests, urllib.parse
+          from bs4 import BeautifulSoup
+          H={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36','Accept-Language':'en-US,en;q=0.9'}
+          def get(name,url,**kw):
+              try:
+                  r=requests.get(url,headers={**H,**kw.pop('headers',{})},timeout=45,**kw)
+                  print('\n###',name,'STATUS',r.status_code,'BYTES',len(r.content),'TYPE',r.headers.get('content-type'),'URL',r.url)
+                  print(r.text[:1200].replace('\n',' ') if 'text' in (r.headers.get('content-type') or '') else repr(r.content[:400]))
+                  return r
+              except Exception as e:
+                  print('\n###',name,'ERROR',type(e).__name__,e)
+          # BSE public pages and likely master locations.
+          for name,url in [
+              ('BSE_MEMBERS','https://www.bseindia.com/members/index.aspx'),
+              ('BSE_BHAV','https://www.bseindia.com/markets/MarketInfo/BhavCopy.aspx'),
+              ('BSE_HELP','https://www.bseindia.com/members/HelpDesk.aspx'),
+              ('BSE_SCRIP1','https://www.bseindia.com/downloads1/SCRIP.zip'),
+              ('BSE_SCRIP2','https://www.bseindia.com/download/BhavCopy/Equity/SCRIP.zip'),
+              ('BSE_SCRIP3','https://www.bseindia.com/markets/MarketInfo/SCRIP.zip'),
+              ('BSE_SCRIP4','https://www.bseindia.com/downloads/SCRIP.zip'),
+          ]:
+              r=get(name,url,headers={'Referer':'https://www.bseindia.com/'})
+              if r and 'text/html' in (r.headers.get('content-type') or ''):
+                  soup=BeautifulSoup(r.text,'html.parser')
+                  for a in soup.find_all('a',href=True):
+                      h=a['href']
+                      txt=' '.join(a.stripped_strings)
+                      if any(k in (h+' '+txt).lower() for k in ('scrip','bhav','master','security')):
+                          print('BSE_LINK',name,txt[:120],urllib.parse.urljoin(r.url,h))
+
+          # Saudi pages that search crawlers can reach; inspect JS / AJAX references.
+          for name,url in [
+              ('SA_HOME','https://www.saudiexchange.sa/wps/portal/saudiexchange/home?locale=en'),
+              ('SA_MAIN','https://www.saudiexchange.sa/wps/portal/saudiexchange/ourmarkets/main-market-watch?locale=en'),
+              ('SA_PARTICIPANTS','https://www.saudiexchange.sa/wps/portal/saudiexchange/trading/participants-directory?locale=en'),
+              ('SA_ISSUERS','https://www.saudiexchange.sa/wps/portal/saudiexchange/trading/participants-directory/issuer-directory?locale=en'),
+          ]:
+              r=get(name,url)
+              if not r or not r.ok: continue
+              html=r.text
+              soup=BeautifulSoup(html,'html.parser')
+              for s in soup.find_all('script',src=True):
+                  print('SA_SCRIPT',name,urllib.parse.urljoin(r.url,s['src']))
+              for token in re.findall(r'[^"\'<>\s]{8,500}',html):
+                  low=token.lower()
+                  if any(k in low for k in ('issuercompany','issuer-directory','companydir','ajax','resourceurl','marketwatch','symbol','getcompanies','security')):
+                      print('SA_TOKEN',name,token[:700])
+          PY
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$VPS_SSH_KEY"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
+          chmod 600 ~/.ssh/biap_global_key
+          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+      - name: Probe same sources from production network
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/biap_global_key -p "${VPS_PORT:-22}" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'python3 - <<'"'"'PY'"'"'
+          import re,requests,urllib.parse
+          H={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36','Accept-Language':'en-US,en;q=0.9'}
+          urls=[
+            ('BSE_MEMBERS','https://www.bseindia.com/members/index.aspx'),
+            ('BSE_BHAV','https://www.bseindia.com/markets/MarketInfo/BhavCopy.aspx'),
+            ('BSE_SCRIP1','https://www.bseindia.com/downloads1/SCRIP.zip'),
+            ('BSE_SCRIP2','https://www.bseindia.com/download/BhavCopy/Equity/SCRIP.zip'),
+            ('BSE_SCRIP3','https://www.bseindia.com/markets/MarketInfo/SCRIP.zip'),
+            ('BSE_SCRIP4','https://www.bseindia.com/downloads/SCRIP.zip'),
+            ('SA_HOME','https://www.saudiexchange.sa/wps/portal/saudiexchange/home?locale=en'),
+            ('SA_MAIN','https://www.saudiexchange.sa/wps/portal/saudiexchange/ourmarkets/main-market-watch?locale=en'),
+            ('SA_PARTICIPANTS','https://www.saudiexchange.sa/wps/portal/saudiexchange/trading/participants-directory?locale=en'),
+          ]
+          for name,url in urls:
+              try:
+                  r=requests.get(url,headers={**H,'Referer':'https://www.bseindia.com/' if name.startswith('BSE') else 'https://www.saudiexchange.sa/'},timeout=45)
+                  print('\n###',name,'STATUS',r.status_code,'BYTES',len(r.content),'TYPE',r.headers.get('content-type'),'URL',r.url)
+                  if 'text/html' in (r.headers.get('content-type') or ''):
+                      text=r.text
+                      print(text[:1000].replace('\n',' '))
+                      for pat in (r'href=["\']([^"\']*(?:scrip|bhav|master)[^"\']*)',r'src=["\']([^"\']+\.js[^"\']*)'):
+                          for m in re.finditer(pat,text,re.I):
+                              print(name,'MATCH',urllib.parse.urljoin(r.url,m.group(1)))
+                  else:
+                      print(repr(r.content[:500]))
+              except Exception as e:
+                  print(name,'ERROR',type(e).__name__,e)
+          PY'
