@@ -88,6 +88,30 @@ jobs:
                   for m in list(re.finditer(re.escape(needle),js,re.I))[:8]:
                       print('DFM_CTX',needle,js[max(0,m.start()-500):m.start()+800])
 
+          dfmeq=show('DFM_EQUITY_JS','https://www.dfm.ae/_nuxt/1MVZm7XQ.js')
+          if dfmeq:
+              js=dfmeq.text
+              print('DFM_EQUITY_URLS', sorted(set(re.findall(r'https?://[^"'\\s]+',js)))[:100])
+              for needle in ('listed','securit','equities','apiBaseUrl','getSecurities','symbol'):
+                  for m in list(re.finditer(needle,js,re.I))[:20]:
+                      print('DFM_EQ_CTX',needle,js[max(0,m.start()-700):m.start()+1200])
+
+          adx_home=requests.get('https://www.adx.ae/en/issuers/issuers-information/issuers-directory',headers=H,timeout=45).text
+          adx_scripts=re.findall(r'<script[^>]+src=["\\']([^"\\']+)',adx_home,re.I)
+          for src in adx_scripts:
+              if src.startswith('/'): src='https://www.adx.ae'+src
+              try:
+                  rr=requests.get(src,headers=H,timeout=30)
+              except Exception:
+                  continue
+              js=rr.text
+              if any(k in js.lower() for k in ('issuers-directory','apigateway.adx','issuer directory','getissuers','securitiesdirectory')):
+                  print('ADX_BUNDLE',src,'BYTES',len(js))
+                  print('ADX_URLS',sorted(set(re.findall(r'https?://[^"'\\s]+',js)))[:100])
+                  for needle in ('issuers-directory','apigateway','issuer','directory','securities'):
+                      for m in list(re.finditer(needle,js,re.I))[:20]:
+                          print('ADX_BUNDLE_CTX',needle,js[max(0,m.start()-700):m.start()+1200])
+
           adxjs=show('ADX_JS','https://www.adx.ae/_next/static/chunks/pages/%5B%5B...path%5D%5D-c9057e73bc9df202.js')
           if adxjs:
               js=adxjs.text
@@ -114,8 +138,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/biap_global_key -p "${VPS_PORT:-22}" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'python3 - <<'"'"'PY'"'"'
-          import requests,re
+          cat > /tmp/remote_probe.py <<'PY'
+          import requests
           H={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36','Accept-Language':'en-US,en;q=0.9'}
           tests=[
             ('BSE','https://api.bseindia.com/BseIndiaAPI/api/ListofScripData/w',{'Group':'','Scripcode':'','industry':'','segment':'Equity','status':'Active'}),
@@ -129,8 +153,9 @@ jobs:
                       print('BSE_WARM',w.status_code,len(w.content),list(s.cookies.keys()))
                   r=s.get(url,params=params,timeout=60,headers={**H,'Accept':'application/json,text/html,*/*','Referer':'https://www.bseindia.com/corporates/List_Scrips.html' if name=='BSE' else 'https://www.saudiexchange.sa/'})
                   print(name,'STATUS',r.status_code,'BYTES',len(r.content),'TYPE',r.headers.get('content-type'),'URL',r.url)
-                  print(r.text[:1500].replace('\n',' '))
+                  print(r.text[:2500].replace('\\n',' '))
                   if r.ok and 'json' in (r.headers.get('content-type') or ''):
-                      d=r.json(); print(name,'JSON_TYPE',type(d).__name__,'SUMMARY',str(d)[:5000])
+                      d=r.json(); print(name,'JSON_TYPE',type(d).__name__,'SUMMARY',str(d)[:8000])
               except Exception as e: print(name,'ERROR',type(e).__name__,e)
-          PY'
+          PY
+          ssh -i ~/.ssh/biap_global_key -p "${VPS_PORT:-22}" -o BatchMode=yes "$VPS_USER@$VPS_HOST" python3 - < /tmp/remote_probe.py
