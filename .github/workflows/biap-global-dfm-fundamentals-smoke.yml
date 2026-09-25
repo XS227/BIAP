@@ -1,4 +1,5 @@
 name: BIAP Global DFM fundamentals production smoke
+# Post-deploy rerun after DFM provider/cache version refresh.
 
 on:
   push:
