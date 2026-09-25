@@ -121,7 +121,7 @@ def parse_dfm_statement_text(text: str) -> dict[str, Optional[float]]:
     net_income = _first_value(text, (
         rf"^\s*Profit after tax for (?:the )?(?:period|year)\s+({_NUMBER})(?:\s+{_NUMBER})?\s*$",
         rf"^\s*Profit for the year after tax\s+({_NUMBER})(?:\s+{_NUMBER})?\s*$",
-        rf"^\s*Profit for the year after[\s\S]{0,120}?tax\s+({_NUMBER})(?:\s+{_NUMBER})?\s*$",
+        rf"^\s*Profit for the year after[\s\S]{{0,120}}?tax\s+({_NUMBER})(?:\s+{_NUMBER})?\s*$",
         rf"^\s*Profit for the year\s+({_NUMBER})(?:\s+{_NUMBER})?\s*$",
     ))
     total_assets = _first_value(text, (
