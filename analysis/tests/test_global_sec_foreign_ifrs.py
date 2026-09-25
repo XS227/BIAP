@@ -142,3 +142,40 @@ def test_sec_40f_ifrs_fallback_parses_verified_canadian_issuer(monkeypatch):
     assert enriched.filing_period_end == "2025-10-31"
     assert enriched.raw_provider_fields["sec_form"] == "40-F"
     assert any(source.source_type == "official_regulatory_xbrl" for source in enriched.sources)
+
+
+def test_sec_foreign_ifrs_uses_verified_ticker_alias(monkeypatch):
+    provider = SECForeignIFRSFundamentalsProvider(user_agent="BIAP test contact@example.com")
+    seed = GlobalCompany(
+        country="CH",
+        exchange="SIX",
+        mic_code="XSWX",
+        currency="CHF",
+        ticker="NOVN",
+        name="Novartis AG",
+        raw_provider_fields={"sec_ticker_alias": "NVS"},
+    )
+    monkeypatch.setattr(provider, "_ticker_map", lambda: {"NVS": 1114448})
+    monkeypatch.setattr(provider, "_get_json", lambda url: {
+        "entityName": "NOVARTIS AG",
+        "facts": {
+            "ifrs-full": {
+                "Revenue": {
+                    "units": {"USD": [
+                        {"val": 54000000000, "end": "2025-12-31", "filed": "2026-01-28", "form": "20-F", "fp": "FY"},
+                        {"val": 50000000000, "end": "2024-12-31", "filed": "2025-01-29", "form": "20-F", "fp": "FY"},
+                    ]}
+                },
+                "ProfitLoss": fact(12000000000, unit="USD"),
+                "Assets": fact(100000000000, unit="USD"),
+                "Liabilities": fact(55000000000, unit="USD"),
+                "Equity": fact(45000000000, unit="USD"),
+                "CashFlowsFromUsedInOperatingActivities": fact(15000000000, unit="USD"),
+            }
+        },
+    })
+    enriched = provider.enrich_fundamentals(seed)
+    assert enriched.revenue == 54000000000
+    assert enriched.reporting_currency == "USD"
+    assert enriched.raw_provider_fields["sec_cik"] == 1114448
+    assert any(source.source_type == "official_regulatory_xbrl" for source in enriched.sources)
