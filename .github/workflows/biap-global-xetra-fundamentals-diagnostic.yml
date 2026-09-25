@@ -1,0 +1,58 @@
+name: BIAP Global Xetra fundamentals diagnostic
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-xetra-fundamentals-diagnostic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+      VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+      VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+    steps:
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          test -n "$VPS_SSH_KEY"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
+          chmod 600 ~/.ssh/biap_global_key
+          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+      - name: Inspect current Xetra deep results
+        run: |
+          PORT="${VPS_PORT:-22}"
+          ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'python3 - <<'"'"'PY'"'"''
+          import json
+          from pathlib import Path
+          p=Path('/var/lib/biap-global/scan-cache/DE/XETRA.json')
+          obj=json.loads(p.read_text())
+          payload=obj.get('payload') or {}
+          print('CACHE', obj.get('cachedAt'), payload.get('status'), payload.get('screeningCoveragePct'), payload.get('fundamentalCoveragePct'))
+          for r in payload.get('deepResults') or []:
+              c=r.get('company') or {}
+              e=r.get('evidence') or {}
+              sources=c.get('sources') or []
+              fundamentals=[s for s in sources if 'fundamental' in str(s.get('source_type') or '').lower() or 'filing' in str(s.get('source_type') or '').lower() or 'xbrl' in str(s.get('source_type') or '').lower()]
+              print(json.dumps({
+                  'ticker':r.get('ticker') or c.get('ticker'),
+                  'name':c.get('name'),
+                  'isin':c.get('isin'),
+                  'lei':c.get('lei'),
+                  'call':r.get('call'),
+                  'evidence':e.get('status'),
+                  'missing':e.get('missing_critical') or e.get('missingCritical'),
+                  'reasoning':e.get('reasoning'),
+                  'fundamentalsProvider':(c.get('raw_provider_fields') or {}).get('fundamentals_provider'),
+                  'fundamentalSources':fundamentals,
+              }, ensure_ascii=False, sort_keys=True))
+          PY'
