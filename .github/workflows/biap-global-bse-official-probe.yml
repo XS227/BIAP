@@ -1,0 +1,46 @@
+name: BIAP Global BSE official universe probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-bse-official-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests
+      - name: Probe BSE active equity universe
+        run: |
+          python - <<'PY'
+          import json, requests
+          url='https://api.bseindia.com/BseIndiaAPI/api/ListofScripData/w'
+          params={'Group':'','Scripcode':'','industry':'','segment':'Equity','status':'Active'}
+          headers={
+            'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36',
+            'Accept':'application/json,text/plain,*/*',
+            'Referer':'https://www.bseindia.com/corporates/List_Scrips.html',
+            'Origin':'https://www.bseindia.com',
+          }
+          r=requests.get(url,params=params,headers=headers,timeout=60)
+          print('status',r.status_code,'bytes',len(r.content),'type',r.headers.get('content-type'),'url',r.url)
+          r.raise_for_status()
+          data=r.json()
+          print('payload type',type(data).__name__)
+          if isinstance(data,dict):
+              print('keys',list(data)[:20])
+              for k,v in data.items():
+                  if isinstance(v,list):
+                      print('LIST',k,'count',len(v),'sample',json.dumps(v[:5],ensure_ascii=False,default=str)[:6000])
+          elif isinstance(data,list):
+              print('count',len(data),'sample',json.dumps(data[:5],ensure_ascii=False,default=str)[:6000])
+          PY
