@@ -233,6 +233,31 @@ jobs:
                       removed += 1
           print(f"NZX stale fundamentals latest snapshots removed: {removed}")
           PY
+
+          # SIX cache predates the verified NOVN -> NVS SEC alias. Invalidate
+          # only CH/SIX when that exact alias is absent so production search
+          # immediately carries the evidence-routing metadata after deploy.
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("/var/lib/biap-global/universe/CH/SIX.json")
+          removed = 0
+          if path.exists():
+              try:
+                  payload = json.loads(path.read_text(encoding="utf-8"))
+              except Exception:
+                  payload = {}
+              rows = payload.get("instruments") if isinstance(payload, dict) else []
+              novn = next(
+                  (row for row in rows or [] if str((row or {}).get("ticker") or "").upper() == "NOVN"),
+                  None,
+              )
+              alias = str(((novn or {}).get("raw_provider_fields") or {}).get("sec_ticker_alias") or "").upper()
+              if alias != "NVS":
+                  path.unlink(missing_ok=True)
+                  removed = 1
+          print(f"SIX pre-SEC-alias universe snapshots removed: {removed}")
+          PY
           PYTHONPATH=analysis BIAP_GLOBAL_UNIVERSE_SYNC_MARKETS=SE:NASDAQ_STOCKHOLM timeout 360 analysis/.venv-global/bin/python -m global_markets.universe_sync
           PYTHONPATH=analysis BIAP_GLOBAL_UNIVERSE_SYNC_MARKETS=DK:NASDAQ_COPENHAGEN timeout 360 analysis/.venv-global/bin/python -m global_markets.universe_sync
 
