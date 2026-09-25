@@ -1,0 +1,37 @@
+name: BIAP Global DFM reports fetch probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-dfm-reports-fetch-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests
+      - name: Inspect DFM reports fetch composable
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re,requests
+          ua='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36'
+          url='https://www.dfm.ae/_nuxt/DADGAa5t.js'
+          body=requests.get(url,headers={'User-Agent':ua},timeout=45).text
+          print('STATUS','BYTES',len(body))
+          for needle in ('apiBaseUrl','apiSfUrl','apiEfsahUrl','announcement_type','reportType','symbol','take','Command=','$fetch','fetch(','efsah','disclosure'):
+              seen=0
+              for m in re.finditer(re.escape(needle),body,re.I):
+                  print('CTX',needle,body[max(0,m.start()-3000):m.start()+6500])
+                  seen+=1
+                  if seen>=20: break
+          PY
