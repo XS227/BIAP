@@ -120,7 +120,8 @@ def parse_dfm_statement_text(text: str) -> dict[str, Optional[float]]:
     ))
     net_income = _first_value(text, (
         rf"^\s*Profit after tax for (?:the )?(?:period|year)\s+({_NUMBER})(?:\s+{_NUMBER})?\s*$",
-        rf"^\s*Profit for the year after .*?tax\s+({_NUMBER})(?:\s+{_NUMBER})?\s*$",
+        rf"^\s*Profit for the year after tax\s+({_NUMBER})(?:\s+{_NUMBER})?\s*$",
+        rf"^\s*Profit for the year after[\s\S]{0,120}?tax\s+({_NUMBER})(?:\s+{_NUMBER})?\s*$",
         rf"^\s*Profit for the year\s+({_NUMBER})(?:\s+{_NUMBER})?\s*$",
     ))
     total_assets = _first_value(text, (
@@ -131,6 +132,11 @@ def parse_dfm_statement_text(text: str) -> dict[str, Optional[float]]:
     ))
     total_equity = _first_value(text, (
         rf"^\s*Total equity\s+({_NUMBER})(?:\s+{_NUMBER})?\s*$",
+        # Some DFM PDFs have a damaged text layer on the statement of financial
+        # position. The statement of changes in equity is often clean; its final
+        # column is Total equity, so the last value on the year-end row is a
+        # conservative fallback.
+        rf"^\s*At 31 December 20\d{{2}}.*\s({_NUMBER})\s*$",
     ))
     current_assets = _first_value(text, (
         rf"^\s*Total current assets\s+({_NUMBER})(?:\s+{_NUMBER})?\s*$",
@@ -181,7 +187,16 @@ def parse_dfm_statement_text(text: str) -> dict[str, Optional[float]]:
         if value is not None:
             values[key] = value * scale
 
-    if values["total_liabilities"] is None and values["total_assets"] is not None and values["total_equity"] is not None:
+    if (
+        values["total_liabilities"] is None
+        and values["total_assets"] is not None
+        and values["total_equity"] is not None
+        and "regulatory deferral" not in text.casefold()
+    ):
+        # For ordinary balance sheets assets = liabilities + equity. Do not use
+        # this identity when a regulator-specific deferral balance is presented
+        # outside liabilities/equity (for example DEWA), because doing so would
+        # silently misclassify that balance as a liability.
         derived = float(values["total_assets"]) - float(values["total_equity"])
         if derived >= 0:
             values["total_liabilities"] = derived
