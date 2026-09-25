@@ -21,7 +21,7 @@ jobs:
           set -euo pipefail
           python -m pip install -q selenium
           python - <<'PY'
-          import json, time
+          import json, time, hashlib
           from selenium import webdriver
           from selenium.webdriver.chrome.options import Options
 
