@@ -15,6 +15,7 @@ cache, so the same historical source JSON is retained on the BIAP server.
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import date
 from typing import Optional
 
 from .cached_sec_edgar import CachedSECEdgarFundamentalsProvider
@@ -29,9 +30,10 @@ from .sec_edgar import SEC_FACTS_BASE
 # any CompanyFacts data is accepted.
 _VERIFIED_LOCAL_TICKER_ALIASES = {
     ("CH", "SIX", "NOVN"): "NVS",  # Novartis AG
-    ("CH", "SIX", "UBSG"): "UBS",  # UBS Group AG
-    ("CH", "SIX", "ABBN"): "ABB",  # ABB Ltd
+    ("CH", "SIX", "UBSG"): "UBS",  # UBS Group AG; stale filings are rejected below
 }
+
+MAX_ANNUAL_FILING_AGE_DAYS = 550
 
 
 class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
@@ -147,6 +149,16 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
         period_row = revenues[0] if revenues else (net_income[0] if net_income else assets)
         period_end = (str(period_row.get("end") or "") or None) if period_row else None
         filed_at = (str(period_row.get("filed") or "") or None) if period_row else None
+        if period_end:
+            try:
+                filing_date = date.fromisoformat(period_end)
+            except ValueError as exc:
+                raise GlobalProviderError(f"invalid SEC annual filing period {period_end!r}") from exc
+            age_days = (date.today() - filing_date).days
+            if age_days > MAX_ANNUAL_FILING_AGE_DAYS:
+                raise GlobalProviderError(
+                    f"SEC annual IFRS filing is stale: period_end={period_end}, age_days={age_days}"
+                )
         reporting_currency = self._currency(period_row) or company.reporting_currency
         filing_form = str((period_row or {}).get("form") or "").strip() or None
 
