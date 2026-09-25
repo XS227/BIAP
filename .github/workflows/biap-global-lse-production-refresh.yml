@@ -1,0 +1,86 @@
+name: BIAP Global LSE production refresh
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-lse-production-refresh.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+      VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+      VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+    steps:
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          test -n "$VPS_SSH_KEY"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
+          chmod 600 ~/.ssh/biap_global_key
+          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+      - name: Refresh LSE scan cache with official sources
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          APP_DIR=/home/ubuntu/biap-global/BIAP
+          WORK_DIR=/tmp/biap-global-lse-refresh-$$
+          cd "$APP_DIR"
+          git fetch origin feat/biap-global
+          git worktree remove --force "$WORK_DIR" 2>/dev/null || rm -rf "$WORK_DIR"
+          git worktree prune
+          git worktree add --detach "$WORK_DIR" origin/feat/biap-global
+          cleanup() { cd "$APP_DIR"; git worktree remove --force "$WORK_DIR" 2>/dev/null || true; }
+          trap cleanup EXIT
+          cd "$WORK_DIR/analysis"
+          set -a
+          [[ -f "$APP_DIR/analysis/.env.global" ]] && source "$APP_DIR/analysis/.env.global"
+          set +a
+          export PYTHONPATH="$WORK_DIR/analysis"
+          export BIAP_GLOBAL_DATA_DIR="${BIAP_GLOBAL_DATA_DIR:-/var/lib/biap-global}"
+          PY="$APP_DIR/analysis/.venv-global/bin/python"
+          "$PY" - <<'PY'
+          import json
+          from global_markets.scan_service import scan_global_market
+          result=scan_global_market(
+              country='GB',
+              exchange='LSE',
+              top_n=10,
+              discovery_limit=5000,
+              deep_limit=20,
+          )
+          dr=result.get('dataReadiness') or {}
+          summary={
+              'status':result.get('status'),
+              'rankingEligible':result.get('rankingEligible'),
+              'universeDiscovered':result.get('universeDiscovered'),
+              'universeResolved':result.get('universeResolved'),
+              'universeScreened':result.get('universeScreened'),
+              'screeningCoveragePct':result.get('screeningCoveragePct'),
+              'fundamentalCoveragePct':result.get('fundamentalCoveragePct'),
+              'deepAnalyzed':result.get('deepAnalyzed'),
+              'recommendationCount':result.get('recommendationCount'),
+              'universeSource':dr.get('universeSource'),
+              'universeAuthoritative':dr.get('universeAuthoritative'),
+              'marketSource':dr.get('marketSource'),
+              'fundamentalsSource':dr.get('fundamentalsSource'),
+              'reasons':dr.get('reasons'),
+              'screeningErrors':result.get('screeningErrors'),
+              'topTickers':[x.get('ticker') for x in (result.get('deepResults') or [])[:20]],
+          }
+          print('LSE_RESULT',json.dumps(summary,sort_keys=True))
+          assert dr.get('universeAuthoritative') is True
+          assert 'LSE official' in str(dr.get('marketSource') or '')
+          PY
+          REMOTE
