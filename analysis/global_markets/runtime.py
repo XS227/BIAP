@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 
+from .adx_fundamentals import ADXFinancialSummaryProvider
 from .adx_official import ADXOfficialUniverseProvider
 from .b3_official import B3OfficialUniverseProvider
 from .bist_official import BISTOfficialUniverseProvider
@@ -391,6 +392,15 @@ def build_registry() -> ProviderRegistry:
     tr = PersistentFundamentalsProvider(tr_base)
     for exchange in COUNTRY_PACKS["TR"].exchanges:
         register_fundamentals("TR", exchange.code, tr)
+
+    # ADX exposes an official structured annual financial summary. It is intentionally
+    # marked partial: the endpoint contains net profit, equity, EPS and P/B but not
+    # revenue, assets/liabilities or cash flow, so it must not by itself clear the
+    # EvidenceAgent complete-filing gate. Yahoo may supplement display fields only.
+    ae_adx = PersistentFundamentalsProvider(
+        FallbackFundamentalsProvider(ADXFinancialSummaryProvider(), public_fundamentals)
+    )
+    register_fundamentals("AE", "ADX", ae_adx)
 
     # Other deterministic Yahoo-routed markets currently lack a complete
     # official filing adapter in this branch. Give those markets useful public
