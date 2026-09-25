@@ -34,7 +34,8 @@ jobs:
 
           results={}
           for key,country,exchange in [
-              ('xetra','DE','XETRA'),('frankfurt','DE','FRANKFURT'),('asx','AU','ASX')
+              ('xetra','DE','XETRA'),('frankfurt','DE','FRANKFURT'),('asx','AU','ASX'),
+              ('nse','IN','NSE'),('krx','KR','KRX')
           ]:
               row=catalog(country,exchange)
               results[key]={
@@ -49,14 +50,20 @@ jobs:
               'xetra_strabag':search('DE','XETRA','XD4'),
               'frankfurt_sap':search('DE','FRANKFURT','SAP'),
               'asx_bhp':search('AU','ASX','BHP'),
+              'nse_reliance':search('IN','NSE','RELIANCE'),
+              'krx_samsung':search('KR','KRX','005930'),
           }
           print(json.dumps({'markets':results,'checks':{k:{'totalMatched':v.get('totalMatched'),'tickers':[x.get('ticker') for x in v.get('instruments',[])]} for k,v in checks.items()}},indent=2))
 
           assert 300 <= int(results['xetra']['totalMatched']) <= 700, results['xetra']
           assert 300 <= int(results['frankfurt']['totalMatched']) <= 800, results['frankfurt']
           assert 1500 <= int(results['asx']['totalMatched']) <= 2200, results['asx']
+          assert 2000 <= int(results['nse']['totalMatched']) <= 3000, results['nse']
+          assert 2300 <= int(results['krx']['totalMatched']) <= 3200, results['krx']
           assert checks['xetra_sap'].get('totalMatched',0) >= 1
           assert checks['frankfurt_sap'].get('totalMatched',0) >= 1
           assert checks['asx_bhp'].get('totalMatched',0) >= 1
+          assert checks['nse_reliance'].get('totalMatched',0) >= 1
+          assert checks['krx_samsung'].get('totalMatched',0) >= 1
           assert checks['xetra_strabag'].get('totalMatched',0) == 0, checks['xetra_strabag']
           PY
