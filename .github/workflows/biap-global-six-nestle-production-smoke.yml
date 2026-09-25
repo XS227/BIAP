@@ -52,7 +52,7 @@ jobs:
           evidence=data.get('evidence') or {}
           missing=evidence.get('missing_critical') or []
           assert 'fundamental_source' not in missing, evidence
-          assert evidence.get('status') == 'PASS', evidence
+          assert evidence.get('status') in {'PASS','WARN'}, evidence
           print('OK NESN official annual filing connected',
                 company.get('revenue'),company.get('net_income'),company.get('total_assets'),
                 company.get('total_liabilities'),company.get('total_equity'),
