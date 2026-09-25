@@ -24,6 +24,14 @@ from .providers import GlobalProviderError, append_source
 from .sec_edgar import SEC_FACTS_BASE
 
 
+# Local exchange symbols can differ from the issuer's US ADR ticker. Aliases are
+# explicit and venue-scoped; SEC legal-name equality still has to pass before
+# any CompanyFacts data is accepted.
+_VERIFIED_LOCAL_TICKER_ALIASES = {
+    ("CH", "SIX", "NOVN"): "NVS",  # Novartis AG
+}
+
+
 class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
     provider_id = "sec-edgar-foreign-ifrs-cached"
 
@@ -71,7 +79,13 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
         return bool(company_core and entity_core and company_core == entity_core)
 
     def _resolve_cik(self, company: GlobalCompany) -> int:
-        alias = str(company.raw_provider_fields.get("sec_ticker_alias") or "").strip().upper()
+        explicit_alias = str(company.raw_provider_fields.get("sec_ticker_alias") or "").strip().upper()
+        key = (
+            company.country.strip().upper(),
+            company.exchange.strip().upper(),
+            company.ticker.strip().upper(),
+        )
+        alias = explicit_alias or _VERIFIED_LOCAL_TICKER_ALIASES.get(key, "")
         if alias:
             cik = self._ticker_map().get(alias)
             if cik is None:
