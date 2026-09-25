@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - name: Inspect SIX equity issuer table internals
+      - name: Inspect SIX issuer React data endpoints
         run: |
           python -m pip install -q requests beautifulsoup4
           python - <<'PY'
@@ -24,35 +24,35 @@ jobs:
           import requests
           from bs4 import BeautifulSoup
 
-          url="https://www.six-group.com/en/market-data/shares/companies.html"
+          page="https://www.six-group.com/en/market-data/shares/companies.html"
           s=requests.Session()
           s.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36","Accept-Language":"en-US,en;q=0.9"})
-          r=s.get(url,timeout=40)
-          print("PAGE",r.status_code,r.url,r.headers.get("content-type"),len(r.content))
-          html=r.text
-          soup=BeautifulSoup(html,"html.parser")
-          for a in soup.find_all(["a","button"],href=True):
-              href=urljoin(r.url,a.get("href"))
-              text=" ".join(a.stripped_strings)
-              low=(href+" "+text).lower()
-              if any(k in low for k in ["csv","download","companies","issuer","shares"]):
-                  print("LINK",json.dumps({"text":text[:120],"href":href},ensure_ascii=False))
+          r=s.get(page,timeout=40)
+          soup=BeautifulSoup(r.text,"html.parser")
           scripts=[urljoin(r.url,x.get("src")) for x in soup.find_all("script",src=True)]
-          print("SCRIPTS",json.dumps(scripts,indent=2))
-          needles=["csv","companies","equity issuer","primarylisting","primary listing","download"]
-          for src in scripts:
-              try:
-                  js=s.get(src,timeout=25)
-              except Exception as e:
-                  continue
-              body=js.text
-              if any(n in body.lower() for n in needles):
-                  print("\nSCRIPT",src,js.status_code,len(body))
-                  for n in needles:
-                      pos=body.lower().find(n)
-                      if pos>=0:
-                          print("NEEDLE",n,body[max(0,pos-1800):pos+5000])
-          patterns=sorted(set(re.findall(r'https?://[^"\'<> ]+|/[^"\'<> ]*(?:csv|api|download|companies|share)[^"\'<> ]*',html,flags=re.I)))
-          for p in patterns[:300]:
-              print("PATTERN",p[:1000])
+          target=next(x for x in scripts if "shares-list-of-companies" in x)
+          js=s.get(target,timeout=40)
+          print("TARGET",target,js.status_code,len(js.text))
+          body=js.text
+          # Print string literals and nearby contexts that look like data/API/CSV routes.
+          strings=sorted(set(re.findall(r'["\']([^"\']{4,400})["\']',body)))
+          for val in strings:
+              low=val.lower()
+              if any(k in low for k in ["http","api","csv","companies","issuer","download","share"]):
+                  print("STRING",val[:1000])
+          for needle in ["axios","fetch(","csv","download","companies","primaryListing","primary_listing","api/"]:
+              start=0
+              while True:
+                  pos=body.find(needle,start)
+                  if pos<0: break
+                  print("\nCTX",needle,pos,body[max(0,pos-1200):pos+2800])
+                  start=pos+len(needle)
+                  if start>pos+20000: break
+          # Extract likely relative endpoint tokens.
+          for pat in [
+              r'/[^"\' ]+(?:\.json|\.csv|/search|/list|/companies)[^"\' ]*',
+              r'https?://[^"\' ]+',
+          ]:
+              for val in sorted(set(re.findall(pat,body))):
+                  print("ENDPOINT",val[:1000])
           PY
