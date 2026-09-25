@@ -38,7 +38,11 @@ jobs:
           PORT="${VPS_PORT:-22}"
           ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" "bash -s" <<'REMOTE'
           set -euo pipefail
-          for url in             'https://www.saudiexchange.sa/Resources/Reports-v2/DetailedDaily_en.html'             'https://saudiexchange.sa/Resources/Reports-v2/DetailedDaily_en.html'             'https://www.saudiexchange.sa/Resources/Reports-v2/DetailedDailySme_en.html'             'https://saudiexchange.sa/Resources/Reports-v2/DetailedDailySme_en.html'             'https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDaily_en.html'             'https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDailySme_en.html'
+          for url in             'https://www.saudiexchange.sa/Resources/Reports-v2/DetailedDaily_en.html'             'https://saudiexchange.sa/Resources/Reports-v2/DetailedDaily_en.html'             'https://www.saudiexchange.sa/Resources/Reports-v2/DetailedDailySme_en.html'             'https://saudiexchange.sa/Resources/Reports-v2/DetailedDailySme_en.html'             'https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDaily_en.html'             'https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDailySme_en.html' \
+            'https://origin.tadawulgroup.sa/Resources/Reports-v2/DetailedDaily_en.html' \
+            'https://origin.tadawulgroup.sa/Resources/Reports-v2/DetailedDailySme_en.html' \
+            'https://origin.tadawulgroup.sa/wps/portal/saudiexchange/home?locale=en' \
+            'https://origin.tadawulgroup.sa/wps/portal/saudiexchange/ourmarkets/main-market-watch?locale=en'
           do
             echo "URL $url"
             code=$(curl -L -A 'Mozilla/5.0 BIAP-Global' --max-time 45 -sS -o /tmp/biap-saudi-probe "$url" -w '%{http_code}' || true)
