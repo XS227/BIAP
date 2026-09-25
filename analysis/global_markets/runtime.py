@@ -12,6 +12,7 @@ from __future__ import annotations
 import os
 
 from .adx_fundamentals import ADXFinancialSummaryProvider
+from .adx_market import ADXOfficialMarketProvider
 from .adx_official import ADXOfficialUniverseProvider
 from .b3_official import B3OfficialUniverseProvider
 from .bist_official import BISTOfficialUniverseProvider
@@ -263,6 +264,11 @@ def build_registry() -> ProviderRegistry:
         "AE",
         "DFM",
         PersistentMarketProvider(DFMOfficialMarketProvider(), fresh_hours=1),
+    )
+    registry.register_market(
+        "AE",
+        "ADX",
+        PersistentMarketProvider(ADXOfficialMarketProvider(), fresh_hours=1),
     )
 
     # Public vendor annual financial metrics are a display/analysis supplement,
