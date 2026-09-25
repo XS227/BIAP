@@ -360,7 +360,7 @@ def build_registry() -> ProviderRegistry:
     # private issuers filing audited IFRS annual data on Form 40-F. Use SEC
     # CompanyFacts only when ticker resolution and legal-name identity both
     # verify; all other Canadian issuers fall back to labelled vendor display
-    # metrics and remain Evidence-BLOCKED.
+    # metrics and remain Evidence-BLOCKED. Canadian 40-F coverage is issuer-specific.
     ca_sec_ifrs = PersistentFundamentalsProvider(
         FallbackFundamentalsProvider(
             SECForeignIFRSFundamentalsProvider(user_agent=sec_user_agent),
