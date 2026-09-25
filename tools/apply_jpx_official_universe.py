@@ -256,3 +256,15 @@ new='''def test_universe_cache_schema_is_v16():
 '''
 if old not in text: raise SystemExit("cache test anchor missing")
 p.write_text(text.replace(old,new,1),encoding="utf-8")
+
+
+p=Path("analysis/tests/test_global_universe_cache_schema.py")
+text=p.read_text(encoding="utf-8")
+old='''def test_global_universe_cache_schema_is_lse_official_v15():
+    assert CACHE_SCHEMA_VERSION == 15
+'''
+new='''def test_global_universe_cache_schema_is_jpx_official_v16():
+    assert CACHE_SCHEMA_VERSION == 16
+'''
+if old not in text: raise SystemExit("secondary cache schema test anchor missing")
+p.write_text(text.replace(old,new,1),encoding="utf-8")
