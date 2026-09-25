@@ -40,6 +40,7 @@ from .providers import ProviderRegistry
 from .regional_yahoo_chart import RegionalYahooChartMarketProvider
 from .sec_foreign_ifrs import SECForeignIFRSFundamentalsProvider
 from .sgx_issuer import SGXIssuerFundamentalsProvider
+from .six_official import SIXOfficialUniverseProvider
 from .twelve_data import TwelveDataMarketProvider
 from .tsx_official import TMXOfficialUniverseProvider
 from .universe import IranUniverseProvider, TwelveDataUniverseProvider
@@ -115,6 +116,12 @@ def build_registry() -> ProviderRegistry:
     )
     registry.register_universe("CA", "TSX", tmx_universe)
     registry.register_universe("CA", "TSXV", tmx_universe)
+
+    six_universe = PersistentUniverseProvider(
+        SIXOfficialUniverseProvider(),
+        fresh_hours=12,
+    )
+    registry.register_universe("CH", "SIX", six_universe)
 
     # France and Italy: ESMA FIRDS is the authoritative regulated/native common-
     # share membership source. OpenFIGI is used only to resolve the local ticker.
