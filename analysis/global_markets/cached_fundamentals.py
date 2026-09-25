@@ -154,6 +154,11 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         # considered fresh so the next normal request refreshes it once.
         if payload.get("schemaVersion") != 2:
             return False
+        # A changed upstream/provider id can represent parser semantics or a
+        # different evidence chain. Never let a previous provider snapshot
+        # suppress the first refresh after such a deployment.
+        if str(payload.get("provider") or "") != self.upstream_id:
+            return False
         age = self._age_seconds(payload)
         return age is not None and age <= self.fresh_seconds
 
