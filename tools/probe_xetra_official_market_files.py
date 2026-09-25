@@ -21,7 +21,7 @@ def get(url,timeout=90):
 page="https://www.cashmarket.deutsche-boerse.com/cash-en/trading/Tradable-Instruments-Xetra/Downloads/xetra-downloads"
 rp=get(page,45)
 hrefs=re.findall(r'href=["\']([^"\']+)["\']',rp.text,re.I)
-csv_url=next(urljoin(page,h) for h in hrefs if "t7-xetr-alltradableinstruments.csv" in h.lower())
+csv_url=next(urljoin(page,h) for h in hrefs if "alltradableinstruments.csv" in h.lower() and "xetr" in h.lower())
 text=get(csv_url,60).content.decode("utf-8-sig",errors="replace")
 lines=[line for line in text.splitlines() if line.strip()]
 hi=next(i for i,line in enumerate(lines) if line.startswith("Product Status;"))
