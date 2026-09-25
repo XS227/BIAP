@@ -40,7 +40,7 @@ jobs:
           print('ANALYZE',a.status_code,a.text[:30000])
           a.raise_for_status()
           data=a.json(); company=data.get('company') or {}; sources=company.get('sources') or []
-          assert any(x.get('provider')=='official-nzx-issuer-annual-report-v2' for x in sources), sources
+          assert any(x.get('provider')=='official-nzx-issuer-annual-report-v3' for x in sources), sources
           assert any(x.get('source_type')=='official_exchange_financial_statement' for x in sources), sources
           assert company.get('revenue') is not None and company.get('revenue') > 0, company
           assert company.get('net_income') is not None, company
