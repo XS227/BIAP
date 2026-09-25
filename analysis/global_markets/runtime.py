@@ -27,6 +27,7 @@ from .country_packs import COUNTRY_PACKS
 from .cvm_itr import CVMITRCorroborator
 from .cvm_resolver import CVMResolvedFundamentalsProvider
 from .dfm_fundamentals import DFMEfsahAnnualFundamentalsProvider
+from .dfm_market import DFMOfficialMarketProvider
 from .dfm_official import DFMOfficialUniverseProvider
 from .edinet import EDINETFundamentalsProvider
 from .esma_firds_universe import ESMAFIRDSOpenFIGIUniverseProvider
@@ -254,6 +255,15 @@ def build_registry() -> ProviderRegistry:
             else:
                 provider = cache_only_market
             registry.register_market(country, exchange.code, provider)
+
+    # DFM publishes its own current quote and exchange-rendered close history.
+    # Prefer this official public market source over licensed/vendor/cache-only
+    # routing so price provenance can satisfy the Evidence Agent without a key.
+    registry.register_market(
+        "AE",
+        "DFM",
+        PersistentMarketProvider(DFMOfficialMarketProvider(), fresh_hours=1),
+    )
 
     # Public vendor annual financial metrics are a display/analysis supplement,
     # not official filing evidence. Its SourceEvidence type intentionally does
