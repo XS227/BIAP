@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+import pytest
+
 from global_markets.cached_fundamentals import PersistentFundamentalsProvider
 from global_markets.models import GlobalCompany, SourceEvidence
 from global_markets.providers import FundamentalsProvider, GlobalProviderError, append_source
@@ -95,3 +97,52 @@ def test_market_sources_are_not_persisted_inside_fundamentals_snapshot(tmp_path)
 
     restored = PersistentFundamentalsProvider(FailingProvider(), data_dir=str(tmp_path), fresh_hours=0).enrich_fundamentals(_seed())
     assert not any(source.provider == "market-test" for source in restored.sources)
+
+
+
+class StaleOfficialProvider(FundamentalsProvider):
+    provider_id = "official-stale-test"
+
+    def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
+        enriched = replace(
+            company,
+            revenue=10.0,
+            net_income=1.0,
+            filing_period_end="2021-12-31",
+            filing_observed_at="2022-03-01T00:00:00+00:00",
+        )
+        return append_source(enriched, SourceEvidence(
+            provider=self.provider_id,
+            source_type="official_regulatory_xbrl",
+            source_id="stale-filing",
+            period_end="2021-12-31",
+            quality=1.0,
+        ))
+
+
+class FailingStaleProvider(FundamentalsProvider):
+    provider_id = "official-stale-test"
+
+    def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
+        raise GlobalProviderError("regulator offline")
+
+
+def test_stale_official_snapshot_is_not_fresh_or_used_on_outage(tmp_path):
+    cache = PersistentFundamentalsProvider(
+        StaleOfficialProvider(),
+        data_dir=str(tmp_path),
+        fresh_hours=24,
+    )
+    first = cache.enrich_fundamentals(_seed())
+    assert first.filing_period_end == "2021-12-31"
+    info = cache.snapshot_info(_seed())
+    assert info["officialEvidence"] is True
+    assert info["fresh"] is False
+
+    unavailable = PersistentFundamentalsProvider(
+        FailingStaleProvider(),
+        data_dir=str(tmp_path),
+        fresh_hours=24,
+    )
+    with pytest.raises(GlobalProviderError, match="offline"):
+        unavailable.enrich_fundamentals(_seed())
