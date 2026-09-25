@@ -1,0 +1,60 @@
+name: BIAP Global Canada production probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-canada-production-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Probe production TSX and TSXV authoritative universes
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, urllib.parse, urllib.request
+          base="https://biap.dadashi.no/global-api/global"
+
+          def get(path, params=None):
+              url=base+path
+              if params:
+                  url += "?" + urllib.parse.urlencode(params)
+              with urllib.request.urlopen(url, timeout=90) as r:
+                  return json.load(r)
+
+          cases=[
+              ("TSX browse","/instruments/CA/TSX",{"limit":5}),
+              ("TSX Royal Bank","/instruments/CA/TSX",{"q":"RY","limit":10}),
+              ("TSX ETF reject","/instruments/CA/TSX",{"q":"BTCQ","limit":10}),
+              ("TSX CDR reject","/instruments/CA/TSX",{"q":"ABT","limit":10}),
+              ("TSX foreign reject","/instruments/CA/TSX",{"q":"FAP","limit":10}),
+              ("TSXV operating","/instruments/CA/TSXV",{"q":"AME","limit":10}),
+              ("TSXV CPC reject","/instruments/CA/TSXV",{"q":"AZC.P","limit":10}),
+          ]
+          output={}
+          for label,path,params in cases:
+              data=get(path,params)
+              output[label]={
+                  "totalMatched":data.get("totalMatched"),
+                  "catalog":data.get("catalog"),
+                  "tickers":[x.get("ticker") for x in (data.get("instruments") or [])[:10]],
+                  "names":[x.get("name") for x in (data.get("instruments") or [])[:10]],
+              }
+          print(json.dumps(output,indent=2,ensure_ascii=False))
+          browse=output["TSX browse"]
+          provider=((browse.get("catalog") or {}).get("provider") or "")
+          assert provider=="official-tmx-listed-issuers", provider
+          assert output["TSX Royal Bank"]["totalMatched"] >= 1
+          assert output["TSX ETF reject"]["totalMatched"] == 0
+          assert output["TSX CDR reject"]["totalMatched"] == 0
+          assert output["TSX foreign reject"]["totalMatched"] == 0
+          assert output["TSXV operating"]["totalMatched"] >= 1
+          assert output["TSXV CPC reject"]["totalMatched"] == 0
+          PY
