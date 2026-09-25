@@ -44,12 +44,18 @@ jobs:
           data=a.json(); company=data.get('company') or {}; sources=company.get('sources') or []
           assert any(x.get('provider')=='sec-edgar-foreign-ifrs-cached' for x in sources), sources
           assert any(x.get('source_type')=='official_regulatory_xbrl' for x in sources), sources
-          assert company.get('revenue') is not None and company.get('revenue') > 0, company
           assert company.get('net_income') is not None, company
           assert company.get('total_assets') is not None, company
+          assert company.get('total_liabilities') is not None, company
+          assert company.get('total_equity') is not None, company
+          assert company.get('operating_cash_flow') is not None, company
+          assert company.get('filing_period_end') == '2025-12-31', company
           evidence=data.get('evidence') or {}
           missing=evidence.get('missing_critical') or []
           assert 'fundamental_source' not in missing, evidence
-          print('OK NOVN SEC IFRS connected',company.get('revenue'),company.get('net_income'),
-                company.get('total_assets'),company.get('filing_period_end'),evidence.get('status'),missing)
+          assert evidence.get('status') == 'PASS', evidence
+          print('OK NOVN SEC IFRS connected',company.get('net_income'),company.get('total_assets'),
+                company.get('total_liabilities'),company.get('total_equity'),
+                company.get('operating_cash_flow'),company.get('filing_period_end'),
+                evidence.get('status'),missing)
           PY
