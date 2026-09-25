@@ -35,7 +35,8 @@ jobs:
           results={}
           for key,country,exchange in [
               ('xetra','DE','XETRA'),('frankfurt','DE','FRANKFURT'),('asx','AU','ASX'),
-              ('nse','IN','NSE'),('krx','KR','KRX'),('hkex','HK','HKEX'),('jse','ZA','JSE')
+              ('nse','IN','NSE'),('bse','IN','BSE'),('krx','KR','KRX'),('hkex','HK','HKEX'),('jse','ZA','JSE'),
+              ('sgx','SG','SGX'),('dfm','AE','DFM'),('adx','AE','ADX'),('saudi','SA','SAUDI_EXCHANGE')
           ]:
               row=catalog(country,exchange)
               results[key]={
@@ -56,6 +57,12 @@ jobs:
               'hkex_hsbc':search('HK','HKEX','0005'),
               'jse_mtn':search('ZA','JSE','MTN'),
               'jse_naspers':search('ZA','JSE','NPN'),
+              'bse_reliance':search('IN','BSE','RELIANCE'),
+              'bse_tcs':search('IN','BSE','TCS'),
+              'sgx_sgx':search('SG','SGX','S68'),
+              'dfm_emaar':search('AE','DFM','EMAAR'),
+              'adx_adcb':search('AE','ADX','ADCB'),
+              'saudi_aramco':search('SA','SAUDI_EXCHANGE','2222'),
           }
           print(json.dumps({'markets':results,'checks':{k:{'totalMatched':v.get('totalMatched'),'tickers':[x.get('ticker') for x in v.get('instruments',[])]} for k,v in checks.items()}},indent=2))
 
@@ -66,8 +73,18 @@ jobs:
           assert 2300 <= int(results['krx']['totalMatched']) <= 3200, results['krx']
           assert 2600 <= int(results['hkex']['totalMatched']) <= 2800, results['hkex']
           assert 290 <= int(results['jse']['totalMatched']) <= 330, results['jse']
+          assert int(results['bse']['totalMatched']) >= 3500, results['bse']
+          assert int(results['sgx']['totalMatched']) >= 300, results['sgx']
+          assert int(results['dfm']['totalMatched']) >= 20, results['dfm']
+          assert int(results['adx']['totalMatched']) >= 40, results['adx']
+          assert int(results['saudi']['totalMatched']) >= 200, results['saudi']
           assert results['hkex']['catalog'].get('provider') == 'official-hkex-list-of-securities', results['hkex']
           assert results['jse']['catalog'].get('provider') == 'official-jse-equities-isin-full', results['jse']
+          assert results['bse']['catalog'].get('provider') == 'official-bse-equity-bhavcopy', results['bse']
+          assert results['sgx']['catalog'].get('provider') == 'official-sgx-website-securities', results['sgx']
+          assert results['dfm']['catalog'].get('provider') == 'official-dfm-fresh-securities', results['dfm']
+          assert results['adx']['catalog'].get('provider') == 'official-adx-issuer-directory', results['adx']
+          assert results['saudi']['catalog'].get('provider') == 'official-saudi-exchange-daily-report', results['saudi']
           assert checks['xetra_sap'].get('totalMatched',0) >= 1
           assert checks['frankfurt_sap'].get('totalMatched',0) >= 1
           assert checks['asx_bhp'].get('totalMatched',0) >= 1
@@ -77,5 +94,11 @@ jobs:
           assert checks['hkex_hsbc'].get('totalMatched',0) >= 1
           assert checks['jse_mtn'].get('totalMatched',0) >= 1
           assert checks['jse_naspers'].get('totalMatched',0) >= 1
+          assert checks['bse_reliance'].get('totalMatched',0) >= 1
+          assert checks['bse_tcs'].get('totalMatched',0) >= 1
+          assert checks['sgx_sgx'].get('totalMatched',0) >= 1
+          assert checks['dfm_emaar'].get('totalMatched',0) >= 1
+          assert checks['adx_adcb'].get('totalMatched',0) >= 1
+          assert checks['saudi_aramco'].get('totalMatched',0) >= 1
           assert checks['xetra_strabag'].get('totalMatched',0) == 0, checks['xetra_strabag']
           PY
