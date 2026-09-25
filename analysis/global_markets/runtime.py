@@ -12,6 +12,7 @@ from __future__ import annotations
 import os
 
 from .b3_official import B3OfficialUniverseProvider
+from .bist_official import BISTOfficialUniverseProvider
 from .cached_esef import CachedESEFFundamentalsProvider
 from .cached_fundamentals import PersistentFundamentalsProvider
 from .cached_market import PersistentMarketProvider
@@ -84,6 +85,12 @@ def build_registry() -> ProviderRegistry:
         fresh_hours=24,
     )
     registry.register_universe("BR", "B3", b3_universe)
+
+    bist_universe = PersistentUniverseProvider(
+        BISTOfficialUniverseProvider(),
+        fresh_hours=24,
+    )
+    registry.register_universe("TR", "BIST", bist_universe)
 
     # France and Italy: ESMA FIRDS is the authoritative regulated/native common-
     # share membership source. OpenFIGI is used only to resolve the local ticker.
