@@ -46,4 +46,24 @@ jobs:
             head -c 500 /tmp/biap-saudi-probe 2>/dev/null | tr '\n' ' ' || true
             echo
           done
+          python3 - <<'PY'
+          import requests,re
+          for tag,url in [
+              ('MAIN','https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDaily_en.html'),
+              ('NOMU','https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDailySme_en.html'),
+          ]:
+              text=requests.get(url,timeout=60).text
+              p=text.find('### Companies List')
+              body=text[p:] if p>=0 else text
+              rows=[]
+              for line in body.splitlines():
+                  if not line.startswith('|'): continue
+                  cols=[x.strip() for x in line.strip().strip('|').split('|')]
+                  if cols and re.fullmatch(r'\d{4,6}',cols[0] or ''):
+                      rows.append(cols)
+              print(tag,'ROWS',len(rows),'FIRST',rows[:4],'LAST',rows[-4:])
+              for key in ('REIT','ETF','FUND','RIGHT','SUKUK','BOND','WARRANT'):
+                  hits=[x for x in rows if key in ' '.join(x[:2]).upper()]
+                  print(tag,key,'COUNT',len(hits),'HITS',hits[:30])
+          PY
           REMOTE
