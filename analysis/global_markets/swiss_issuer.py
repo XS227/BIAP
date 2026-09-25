@@ -22,10 +22,17 @@ from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
 
 
-_PROVIDER_ID = "official-nestle-annual-financial-statements-v1"
+_PROVIDER_ID = "official-nestle-annual-financial-statements-v2"
 _ANNUAL_PAGE = "https://www.nestle.com/investors/annual-report"
 _USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 BIAP-Global"
 _SUPPORTED = {"NESN": "CH0038863350"}
+# Nestlé's investor HTML can reject some server-side clients while its official
+# static annual-report PDFs remain public. Keep the latest verified issuer URL
+# as a deterministic primary source; page discovery may be re-enabled when a
+# later annual report is published and verified.
+_KNOWN_REPORTS = {
+    2025: "https://www.nestle.com/sites/default/files/2026-02/corp-governance-compensation-financial-statements-2025-en.pdf",
+}
 _AMOUNT = r"\(?-?[0-9]{1,3}(?: [0-9]{3})?(?:\.[0-9]+)?\)?"
 
 
