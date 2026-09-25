@@ -47,7 +47,7 @@ jobs:
               data=a.json()
               company=data.get('company') or {}
               sources=company.get('sources') or []
-              official=[x for x in sources if x.get('provider')=='official-dfm-efsah-annual-statement']
+              official=[x for x in sources if x.get('provider')=='official-dfm-efsah-annual-statement-v2']
               assert official, sources
               assert company.get('filing_period_end') == '2025-12-31', company
               assert company.get('net_income') is not None, company
