@@ -58,7 +58,7 @@ COUNTRY_PACKS: dict[str, CountryPack] = {
     ), "twelve-data", "sedar-plus", "sedar-plus", "SEDAR+", ("XIU",), "ibkr"),
     "GB": CountryPack("GB", "United Kingdom", (
         E("LSE", "London Stock Exchange", ("GBP",), "XLON"),
-    ), "twelve-data", "uk-filings", "uk-filings", "Companies House + issuer/RNS filings", ("ISF",), "ibkr"),
+    ), "london-stock-exchange-official-price-explorer", "uk-filings", "uk-filings", "London Stock Exchange + Companies House + issuer/RNS filings", ("ISF",), "ibkr"),
 
     "SE": CountryPack("SE", "Sweden", (
         E("NASDAQ_STOCKHOLM", "Nasdaq Stockholm", ("SEK",), "XSTO"),
