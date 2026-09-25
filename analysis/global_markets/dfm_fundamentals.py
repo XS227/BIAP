@@ -110,6 +110,22 @@ def _statement_scale(text: str) -> float:
     return 1.0
 
 
+def _latest_year_end_equity(text: str) -> Optional[float]:
+    """Return the final Total-equity column from the latest year-end row."""
+    candidates: list[tuple[int, float]] = []
+    for match in re.finditer(r"^\s*At 31 December (20\d{2})([^\n]*)$", text, re.I | re.M):
+        year = int(match.group(1))
+        numbers = re.findall(_NUMBER, match.group(2))
+        if not numbers:
+            continue
+        value = _to_number(numbers[-1])
+        if value is not None:
+            candidates.append((year, value))
+    if not candidates:
+        return None
+    return max(candidates, key=lambda item: item[0])[1]
+
+
 def parse_dfm_statement_text(text: str) -> dict[str, Optional[float]]:
     if not text or len(text) < 200:
         raise GlobalProviderError("DFM annual PDF has insufficient extractable text")
@@ -132,12 +148,12 @@ def parse_dfm_statement_text(text: str) -> dict[str, Optional[float]]:
     ))
     total_equity = _first_value(text, (
         rf"^\s*Total equity\s+({_NUMBER})(?:\s+{_NUMBER})?\s*$",
-        # Some DFM PDFs have a damaged text layer on the statement of financial
-        # position. The statement of changes in equity is often clean; its final
-        # column is Total equity, so the last value on the year-end row is a
-        # conservative fallback.
-        rf"^\s*At 31 December 20\d{{2}}.*\s({_NUMBER})\s*$",
     ))
+    if total_equity is None:
+        # Some DFM PDFs have a damaged text layer on the statement of financial
+        # position. The statement of changes in equity is often clean; choose
+        # the latest year-end row, whose final column is Total equity.
+        total_equity = _latest_year_end_equity(text)
     current_assets = _first_value(text, (
         rf"^\s*Total current assets\s+({_NUMBER})(?:\s+{_NUMBER})?\s*$",
     ))
