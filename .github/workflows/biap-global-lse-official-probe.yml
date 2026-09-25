@@ -1,0 +1,68 @@
+name: BIAP Global LSE official feed probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-lse-official-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests
+      - name: Probe official LSE Price Explorer API
+        run: |
+          python - <<'PY'
+          import json, requests
+          PAGE='https://api.londonstockexchange.com/api/v1/pages'
+          REFRESH='https://api.londonstockexchange.com/api/v1/components/refresh'
+          PATH='live-markets/market-data-dashboard/price-explorer'
+          H={
+            'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131 Safari/537.36',
+            'Accept':'application/json',
+            'Content-Type':'application/json',
+            'Origin':'https://www.londonstockexchange.com',
+            'Referer':'https://www.londonstockexchange.com/',
+          }
+          s=requests.Session()
+          r=s.get(PAGE,params={'path':PATH,'parameters':'markets=MAINMARKET&categories=EQUITY'},headers=H,timeout=45)
+          print('pages_status',r.status_code)
+          r.raise_for_status()
+          p=r.json()
+          comps=p.get('components') or []
+          c=next(x for x in comps if x.get('type')=='price-explorer')
+          cid=c['id']
+          print('component_id',cid)
+          def refresh(params):
+              body={'path':PATH,'parameters':params,'components':[{'componentId':cid,'parameters':params}]}
+              rr=s.post(REFRESH,params={'parameters':params,'path':PATH,'components':'priceexplorersearch'},json=body,headers=H,timeout=60)
+              print('refresh_status',rr.status_code,'params',params)
+              rr.raise_for_status()
+              content=rr.json()[0]['content']
+              return {x['name']:x['value'] for x in content}
+          for params in [
+              'markets=MAINMARKET&categories=EQUITY&showonlylse=true&page=0&size=5',
+              'markets=MAINMARKET&categories=EQUITY&subcategories=1&showonlylse=true&page=0&size=5',
+          ]:
+              d=refresh(params)
+              x=d.get('priceexplorersearch') or {}
+              rows=x.get('content') or []
+              print('SUMMARY',json.dumps({
+                  'params':params,
+                  'totalElements':x.get('totalElements'),
+                  'totalPages':x.get('totalPages'),
+                  'size':x.get('size'),
+                  'rowKeys':sorted(rows[0].keys()) if rows else [],
+              },sort_keys=True))
+              for row in rows[:5]:
+                  print('ROW',json.dumps(row,ensure_ascii=False,sort_keys=True))
+          PY
