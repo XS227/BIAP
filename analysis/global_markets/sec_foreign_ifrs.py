@@ -70,6 +70,15 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
         entity_core = _legal_core(entity_name)
         return bool(company_core and entity_core and company_core == entity_core)
 
+    def _resolve_cik(self, company: GlobalCompany) -> int:
+        alias = str(company.raw_provider_fields.get("sec_ticker_alias") or "").strip().upper()
+        if alias:
+            cik = self._ticker_map().get(alias)
+            if cik is None:
+                raise GlobalProviderError(f"SEC CIK not found for verified alias {alias}")
+            return cik
+        return super()._resolve_cik(company)
+
     def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
         if company.country.strip().upper() == "US":
             raise GlobalProviderError("foreign SEC IFRS fallback is not used for US issuers")
