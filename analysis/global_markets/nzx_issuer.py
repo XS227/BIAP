@@ -119,8 +119,24 @@ class NZXIssuerFundamentalsProvider(FundamentalsProvider):
         except requests.RequestException as exc:
             raise GlobalProviderError(f"NZX company announcements request failed: {type(exc).__name__}") from exc
 
-        links = re.findall(r'href=["\']([^"\']*/announcements/\d+)["\']', listing.text, re.I)
-        links = list(dict.fromkeys(urljoin(company_url, link) for link in links))
+        anchors = re.findall(
+            r'<a[^>]+href=["\']([^"\']*/announcements/\d+)["\'][^>]*>(.*?)</a>',
+            listing.text,
+            re.I | re.S,
+        )
+        links: list[str] = []
+        for href, label_html in anchors:
+            label = html.unescape(re.sub(r"<[^>]+>", " ", label_html))
+            label = " ".join(label.split()).casefold()
+            if "announcement date" in label or "meeting" in label:
+                continue
+            if not any(token in label for token in ("annual report", "full year", "financial results", "annual results")):
+                continue
+            url = urljoin(company_url, href)
+            if url not in links:
+                links.append(url)
+        if not links:
+            raise GlobalProviderError(f"NZX company page has no annual-results links for {ticker}")
         annual: Optional[dict] = None
         annual_url = ""
         annual_date = ""
