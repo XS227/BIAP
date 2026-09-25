@@ -48,4 +48,12 @@ jobs:
                   print('CATEGORIES',json.dumps(categories,ensure_ascii=False))
                   print('SUBCATEGORIES',json.dumps(subcategories,ensure_ascii=False))
                   print('CURRENCIES',json.dumps(currencies,ensure_ascii=False))
+                  allowed={'Equity Securities (Main Board)','Equity Securities (GEM)'}
+                  equity=[row for row in rows[header+1:] if row and row[0] and str(row[2] or '')=='Equity' and str(row[3] or '') in allowed]
+                  from collections import Counter as C2
+                  print('ORDINARY_COUNT',len(equity))
+                  print('ORDINARY_CURRENCIES',json.dumps(C2(str(row[16] or '') for row in equity),ensure_ascii=False))
+                  print('ORDINARY_RMB_COUNTER',json.dumps(C2(str(row[17] or '') for row in equity),ensure_ascii=False))
+                  print('ORDINARY_CODES_MINMAX',equity[0][0] if equity else None,equity[-1][0] if equity else None)
+                  print('ORDINARY_NON_HKD_SAMPLE',json.dumps([[row[0],row[1],row[16],row[17]] for row in equity if str(row[16] or '')!='HKD'][:25],ensure_ascii=False,default=str))
           PY
