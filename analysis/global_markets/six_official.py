@@ -37,7 +37,6 @@ _ORDINARY_SHARE_NAMES = {
 _SEC_TICKER_ALIASES = {
     "NOVN": "NVS",  # Novartis AG
     "UBSG": "UBS",  # UBS Group AG
-    "ABBN": "ABB",  # ABB Ltd
 }
 
 
