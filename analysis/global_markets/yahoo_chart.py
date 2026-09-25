@@ -157,6 +157,10 @@ class YahooChartMarketProvider(MarketDataProvider):
             return "GBP", 0.01
         if upper == "GBP":
             return "GBP", 1.0
+        # Yahoo quotes JSE instruments in South African cents (ZAc/ZAC).
+        # Normalize to ISO ZAR so market values and currency checks are not 100x off.
+        if text == "ZAc" or upper == "ZAC":
+            return "ZAR", 0.01
         return (upper or None), 1.0
 
     @classmethod
