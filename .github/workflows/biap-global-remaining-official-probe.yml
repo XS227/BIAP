@@ -10,6 +10,12 @@ on:
 permissions:
   contents: read
 
+env:
+  VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+  VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+  VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
+  VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+
 jobs:
   probe:
     runs-on: ubuntu-latest
@@ -66,4 +72,65 @@ jobs:
                       if token not in interesting: interesting.append(token)
               print(name,'INTERESTING',interesting[:120])
               print(name,'LINKS',[x for x in links if any(k in x.lower() for k in ('api','issuer','listed','security','company'))][:80])
+          # Deeper probes for concrete endpoints.
+          sgx2=show('SGX_VALID','https://api.sgx.com/securities/v1.1?excludetypes=bonds&params=nc%2Cadjusted-vwap%2Cb%2Cbv%2Cp%2Cc%2Cchange_vs_pc%2Cchange_vs_pc_percentage%2Ccx%2Ccn%2Cdp%2Cdpc%2Cdu%2Ced%2Cfn%2Ch%2Ciiv%2Ciopv%2Clt%2Cl%2Co%2Cp_%2Cpv%2Cptd%2Cs%2Csv%2Ctrading_time%2Cv_%2Cv%2Cvl%2Cvwap%2Cvwap-currency')
+          if sgx2 and sgx2.ok:
+              try:
+                  d=sgx2.json(); prices=(d.get('data') or {}).get('prices') or []
+                  print('SGX_VALID_META',d.get('meta'))
+                  print('SGX_VALID_COUNT',len(prices),'KEYS',sorted((prices[0] if prices else {}).keys()),'SAMPLE',json.dumps(prices[:8],ensure_ascii=False)[:8000])
+              except Exception as e: print('SGX_VALID_ERROR',e)
+
+          dfmjs=show('DFM_JS','https://www.dfm.ae/_nuxt/AGRv68WG.js')
+          if dfmjs:
+              js=dfmjs.text
+              for needle in ('symbol-search-stocks-en','listed-credits','securities-total','apiBaseUrl','listed-securities'):
+                  for m in list(re.finditer(re.escape(needle),js,re.I))[:8]:
+                      print('DFM_CTX',needle,js[max(0,m.start()-500):m.start()+800])
+
+          adxjs=show('ADX_JS','https://www.adx.ae/_next/static/chunks/pages/%5B%5B...path%5D%5D-c9057e73bc9df202.js')
+          if adxjs:
+              js=adxjs.text
+              for needle in ('issuers-directory','apigateway','listed-companies','issuer','security'):
+                  for m in list(re.finditer(re.escape(needle),js,re.I))[:12]:
+                      print('ADX_CTX',needle,js[max(0,m.start()-500):m.start()+900])
           PY
+
+  remote-probe:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    steps:
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$VPS_SSH_KEY"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
+          chmod 600 ~/.ssh/biap_global_key
+          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+      - name: Probe BSE and Saudi from production network
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/biap_global_key -p "${VPS_PORT:-22}" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'python3 - <<'"'"'PY'"'"'
+          import requests,re
+          H={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36','Accept-Language':'en-US,en;q=0.9'}
+          tests=[
+            ('BSE','https://api.bseindia.com/BseIndiaAPI/api/ListofScripData/w',{'Group':'','Scripcode':'','industry':'','segment':'Equity','status':'Active'}),
+            ('SAUDI','https://www.saudiexchange.sa/wps/portal/saudiexchange/trading/participants-directory/issuer-directory?locale=en',None),
+          ]
+          for name,url,params in tests:
+              try:
+                  s=requests.Session(); s.headers.update(H)
+                  if name=='BSE':
+                      w=s.get('https://www.bseindia.com/corporates/List_Scrips.html',timeout=45)
+                      print('BSE_WARM',w.status_code,len(w.content),list(s.cookies.keys()))
+                  r=s.get(url,params=params,timeout=60,headers={**H,'Accept':'application/json,text/html,*/*','Referer':'https://www.bseindia.com/corporates/List_Scrips.html' if name=='BSE' else 'https://www.saudiexchange.sa/'})
+                  print(name,'STATUS',r.status_code,'BYTES',len(r.content),'TYPE',r.headers.get('content-type'),'URL',r.url)
+                  print(r.text[:1500].replace('\n',' '))
+                  if r.ok and 'json' in (r.headers.get('content-type') or ''):
+                      d=r.json(); print(name,'JSON_TYPE',type(d).__name__,'SUMMARY',str(d)[:5000])
+              except Exception as e: print(name,'ERROR',type(e).__name__,e)
+          PY'
