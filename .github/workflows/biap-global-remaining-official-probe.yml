@@ -140,6 +140,28 @@ jobs:
           except Exception as e:
               print('ADX_ISSUER_MAP_ERROR',type(e).__name__,e)
 
+          # Direct ADX official API discovered from the exchange's public web bundle.
+          try:
+              adx_headers={
+                  **H,
+                  'Accept':'application/json',
+                  'Channel-ID':'OSS WEB',
+                  'Content-Type':'application/json',
+                  'X-Correlation-ID':'biap-global-probe',
+                  'adx-Gateway-APIKey':'1863a94c-582b-46f9-b4f0-0d02c0cc5307',
+                  'Referer':'https://www.adx.ae/en/issuers/issuers-information/issuers-directory',
+              }
+              for path in (
+                  'https://apigateway.adx.ae/adx/tradings/1.1/issuers',
+                  'https://apigateway.adx.ae/adx/tradings/1.0/issuers',
+                  'https://apigateway.adx.ae/adx/marketwatch/1.1/securityBoards/mainMarket',
+                  'https://apigateway.adx.ae/adx/marketwatch/1.1/securityBoards/growthMarket',
+              ):
+                  rr=requests.get(path,headers=adx_headers,timeout=45)
+                  print('ADX_OFFICIAL_DIRECT',path,rr.status_code,len(rr.content),rr.headers.get('content-type'),rr.text[:12000])
+          except Exception as e:
+              print('ADX_OFFICIAL_DIRECT_ERROR',type(e).__name__,e)
+
           for ident in ('GetIssuersDirectoryV2','GetIssuersDirectory'):
               for path in (f'https://www.adx.ae/api/securedCall/{ident}', f'https://www.adx.ae/en/api/securedCall/{ident}'):
                   try:
