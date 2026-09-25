@@ -44,6 +44,7 @@ _FUNDAMENTAL_FIELDS = (
 # legal identity, but it is not an official financial statement.
 _OFFICIAL_FINANCIAL_TOKENS = ("filing", "regulatory", "xbrl", "financial_statement")
 _CACHE_SOURCE_TOKENS = (*_OFFICIAL_FINANCIAL_TOKENS, "fundamental", "financial_metrics", "company_registry")
+MAX_OFFICIAL_FILING_AGE_DAYS = int(os.environ.get("BIAP_GLOBAL_MAX_OFFICIAL_FILING_AGE_DAYS", "550"))
 
 
 def _utc_now() -> datetime:
@@ -148,6 +149,18 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         fetched = _parse_iso(payload.get("fetchedAt"))
         return None if fetched is None else max(0.0, (_utc_now() - fetched).total_seconds())
 
+    @staticmethod
+    def _filing_age_days(payload: dict) -> Optional[float]:
+        period = _parse_iso(payload.get("filingPeriodEnd"))
+        return None if period is None else max(0.0, (_utc_now() - period).total_seconds() / 86400.0)
+
+    @classmethod
+    def _stale_official_filing(cls, payload: dict) -> bool:
+        if not bool(payload.get("officialEvidence")):
+            return False
+        age_days = cls._filing_age_days(payload)
+        return age_days is not None and age_days > MAX_OFFICIAL_FILING_AGE_DAYS
+
     def _is_fresh(self, payload: dict) -> bool:
         # Schema v2 adds shareholder-return fields such as dividend/share.
         # A v1 cache can still be used as an outage fallback, but it is never
@@ -158,6 +171,11 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         # different evidence chain. Never let a previous provider snapshot
         # suppress the first refresh after such a deployment.
         if str(payload.get("provider") or "") != self.upstream_id:
+            return False
+        # A recently cached response can still contain an obsolete annual
+        # filing. Never let cache recency turn stale official fundamentals into
+        # current evidence.
+        if self._stale_official_filing(payload):
             return False
         age = self._age_seconds(payload)
         return age is not None and age <= self.fresh_seconds
@@ -265,7 +283,9 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
             self._write(enriched)
             return enriched
         except Exception as exc:
-            if cached is not None:
+            # Outage resilience must not resurrect an obsolete official filing:
+            # stale annual evidence is less trustworthy than an explicit block.
+            if cached is not None and not self._stale_official_filing(cached):
                 return self._decode(company, cached, fallback=True)
             if isinstance(exc, GlobalProviderError):
                 raise
