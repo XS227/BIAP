@@ -31,6 +31,7 @@ from .nzx_official import NZXOfficialUniverseProvider
 from .fallback_fundamentals import FallbackFundamentalsProvider
 from .german_issuer import GermanIssuerFundamentalsProvider
 from .hkex_issuer import HKEXIssuerFundamentalsProvider
+from .hkex_official import HKEXOfficialUniverseProvider
 from .india_official import NSEOfficialUniverseProvider
 from .iran_adapter import IranLegacyProvider
 from .jpx_official import JPXOfficialUniverseProvider
@@ -131,6 +132,12 @@ def build_registry() -> ProviderRegistry:
         fresh_hours=12,
     )
     registry.register_universe("KR", "KRX", krx_universe)
+
+    hkex_universe = PersistentUniverseProvider(
+        HKEXOfficialUniverseProvider(),
+        fresh_hours=12,
+    )
+    registry.register_universe("HK", "HKEX", hkex_universe)
 
     six_universe = PersistentUniverseProvider(
         SIXOfficialUniverseProvider(),
