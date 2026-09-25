@@ -1,0 +1,51 @@
+name: BIAP Global ADX exact fundamentals probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-adx-exact-fundamentals-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests
+      - name: Probe exact ADX official balance sheet
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,re,requests
+          ua='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36'
+          js=requests.get('https://www.adx.ae/_next/static/chunks/pages/_app-873edeb54d7c662a.js',headers={'User-Agent':ua},timeout=45).text
+          m=re.search(r'adx-Gateway-APIKey["\']?:["\']([^"\']+)',js)
+          if not m:
+              m=re.search(r'([0-9a-f]{8}-[0-9a-f-]{27,})',js,re.I)
+          if not m:
+              raise SystemExit('ADX public web API key not found in public bundle')
+          key=m.group(1)
+          h={
+              'User-Agent':ua,'Accept':'application/json','Channel-ID':'OSS WEB',
+              'Content-Type':'application/json','X-Correlation-ID':'biap-global-fundamentals',
+              'adx-Gateway-APIKey':key,
+              'Referer':'https://www.adx.ae/en/issuers/issuers-information/issuers-directory',
+          }
+          url='https://apigateway.adx.ae/adx/listed-companies/1.1/balance-sheet/data'
+          for symbol in ('ALDAR','ADCB','ADNOCGAS'):
+              r=requests.get(url,params={'symbol':symbol,'startYear':'2022','endYear':'2026'},headers=h,timeout=35)
+              print('SYMBOL',symbol,'STATUS',r.status_code,'BYTES',len(r.content),'BODY',repr(r.text[:30000]))
+              if r.ok:
+                  p=r.json(); rows=((p.get('response') or {}).get('data') or [])
+                  print('ROWS',symbol,len(rows))
+                  if rows:
+                      print('KEYS',symbol,sorted(rows[0].keys()))
+                      print('SAMPLE',symbol,json.dumps(rows[:8],ensure_ascii=False)[:30000])
+          PY
