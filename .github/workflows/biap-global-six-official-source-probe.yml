@@ -52,6 +52,14 @@ jobs:
                       str(k):sum(1 for x in primary if x.get("tradingCurrency")==k)
                       for k in sorted({x.get("tradingCurrency") for x in primary},key=lambda z:str(z))
                   },ensure_ascii=False,indent=2))
+                  non_registered=[x for x in primary if x.get("classOfShare")!="Registered Share"]
+                  print("NON_REGISTERED",json.dumps([{
+                      "company":x.get("company"),"isin":x.get("isin"),"symbol":x.get("valorSymbol"),
+                      "classCode":x.get("classOfShareCode"),"class":x.get("classOfShare"),
+                      "segment":x.get("regulatoryStandard"),"primary":x.get("primaryListing"),
+                      "country":x.get("country"),"currency":x.get("tradingCurrency"),
+                      "secondLineReasonCode":x.get("secondLineReasonCode"),
+                  } for x in non_registered],ensure_ascii=False,indent=2))
               else:
                   text=r.content.decode("utf-8-sig","replace")
                   reader=csv.reader(io.StringIO(text))
