@@ -112,6 +112,26 @@ jobs:
                       for m in list(re.finditer(needle,js,re.I))[:20]:
                           print('ADX_BUNDLE_CTX',needle,js[max(0,m.start()-700):m.start()+1200])
 
+          fetchmod=show('DFM_FETCH_MODULE','https://www.dfm.ae/_nuxt/DADGAa5t.js')
+          if fetchmod:
+              js=fetchmod.text
+              print('DFM_FETCH_CONTENT',js[:20000])
+
+          for url in (
+              'https://www.adx.ae/_next/static/chunks/pages/_app-873edeb54d7c662a.js',
+              'https://www.adx.ae/_next/static/chunks/689-7d304c5e2d1ce5c1.js',
+          ):
+              try:
+                  js=requests.get(url,headers=H,timeout=45).text
+              except Exception:
+                  continue
+              print('ADX_PROXY_FILE',url,'LEN',len(js))
+              for needle in ('SecuredProxyRequest','/api/','proxy','GetIssuersDirectoryV2','GetIssuersDirectory'):
+                  positions=[m.start() for m in re.finditer(re.escape(needle),js,re.I)]
+                  print('ADX_PROXY_POS',needle,positions[:20])
+                  for pos in positions[:4]:
+                      print('ADX_PROXY_CTX',needle,js[max(0,pos-1400):pos+2200])
+
           hook=show('DFM_HOOK_MODULE','https://www.dfm.ae/_nuxt/BnugGJt_2.js')
           if hook:
               js=hook.text
