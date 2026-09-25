@@ -42,4 +42,11 @@ jobs:
                   lines=[x for x in text.splitlines() if x.strip()]
                   print('lines',len(lines))
                   for line in lines[:15]: print(line[:1200])
+                  for needle in ('NASPERS','MTN GROUP','SHOPRITE','STANDARD BANK','ANGLO AMERICAN'):
+                      match=next((line for line in lines if needle in line.upper()),None)
+                      if match:
+                          print('MATCH',needle,'LEN',len(match),'LINE',match)
+                          for token in ('NPN','MTN','SHP','SBK','AGL','ZAC','ZAR'):
+                              pos=match.find(token)
+                              if pos>=0: print('POS',needle,token,pos,repr(match[max(0,pos-15):pos+35]))
           PY
