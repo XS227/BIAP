@@ -35,6 +35,7 @@ from .esma_firds_universe import ESMAFIRDSOpenFIGIUniverseProvider
 from .euronext_live import EuronextRegulatedUniverseProvider
 from .nasdaq_nordic import NasdaqNordicUniverseProvider
 from .nzx_official import NZXOfficialUniverseProvider
+from .nzx_issuer import NZXIssuerFundamentalsProvider
 from .fallback_fundamentals import FallbackFundamentalsProvider
 from .german_issuer import GermanIssuerFundamentalsProvider
 from .hkex_issuer import HKEXIssuerFundamentalsProvider
@@ -427,6 +428,15 @@ def build_registry() -> ProviderRegistry:
         FallbackFundamentalsProvider(DFMEfsahAnnualFundamentalsProvider(), public_fundamentals)
     )
     register_fundamentals("AE", "DFM", ae_dfm)
+
+    # New Zealand: start with NZX Limited itself using the audited annual
+    # report published through NZX's official announcement service. Other NZX
+    # issuers remain vendor-display-only until their primary statement parser is
+    # verified against issuer-specific annual reports.
+    nz_issuer = PersistentFundamentalsProvider(
+        FallbackFundamentalsProvider(NZXIssuerFundamentalsProvider(), public_fundamentals)
+    )
+    register_fundamentals("NZ", "NZX", nz_issuer)
 
     # Other deterministic Yahoo-routed markets currently lack a complete
     # official filing adapter in this branch. Give those markets useful public
