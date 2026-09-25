@@ -24,6 +24,10 @@ _PAGE_URL = "https://clientportal.jse.co.za/downloadable-files?RequestNode=/ISIN
 _PROVIDER_ID = "official-jse-equities-isin-full"
 _USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 BIAP-Global"
 _ORDINARY_TYPES = {"ORDINARY", "NORD", "AORD", "BORD"}
+_SEC_TICKER_ALIASES = {
+    "SSW": "SBSW",
+    "HAR": "HMY",
+}
 
 
 def _clean(value: str) -> str:
@@ -89,6 +93,7 @@ def parse_jse_isin_full(text: str) -> list[GlobalCompany]:
                 "jse_registration_number": registration,
                 "jse_tax_number": tax_number,
                 "jse_file_currency": raw_currency or None,
+                "sec_ticker_alias": _SEC_TICKER_ALIASES.get(alpha),
             },
             sources=[SourceEvidence(
                 provider=_PROVIDER_ID,
