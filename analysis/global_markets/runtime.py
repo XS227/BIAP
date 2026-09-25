@@ -375,6 +375,18 @@ def build_registry() -> ProviderRegistry:
     for exchange in COUNTRY_PACKS["CA"].exchanges:
         register_fundamentals("CA", exchange.code, ca_sec_ifrs)
 
+    # South Africa: exact JSE issuers that also file audited IFRS annual
+    # statements with the SEC can use the same strict foreign-issuer CompanyFacts
+    # path. Ticker and legal-name identity must both verify; unsupported JSE
+    # issuers remain vendor-display-only and Evidence-BLOCKED.
+    za_sec = PersistentFundamentalsProvider(
+        FallbackFundamentalsProvider(
+            SECForeignIFRSFundamentalsProvider(user_agent=sec_user_agent),
+            public_fundamentals,
+        )
+    )
+    register_fundamentals("ZA", "JSE", za_sec)
+
     # Singapore: keep SGXNet itself out of generic ingestion until its backend
     # access/redistribution path is explicitly approved. For now a strict
     # issuer-owned adapter covers Singapore Exchange Limited (S68) only; every
