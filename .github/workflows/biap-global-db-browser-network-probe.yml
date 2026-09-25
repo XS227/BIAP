@@ -67,8 +67,8 @@ jobs:
                                   print('HEADER_NAMES',u,sorted(str(k) for k in headers.keys()))
                                   for k,v in headers.items():
                                       lk=str(k).lower()
-                                      if lk in {'authorization','x-api-key','x-authorization','token','x-token'}:
-                                          print('AUTH_HEADER',k,'PRESENT',bool(v),'LEN',len(str(v)))
+                                      if lk in {'authorization','x-api-key','x-authorization','token','x-token','x-security'}:
+                                          import hashlib\n                                          val=str(v)\n                                          print('AUTH_HEADER',k,'PRESENT',bool(val),'LEN',len(val),'SHA256_12',hashlib.sha256(val.encode()).hexdigest()[:12])
                   elif method=='Network.responseReceived':
                       resp=params.get('response') or {}
                       typ=str(params.get('type') or '')
@@ -101,7 +101,7 @@ jobs:
                               print('BODY',u,' '.join(body.split())[:6000])
                       except Exception as e:
                           print('BODY_ERR',u,type(e).__name__,str(e)[:200])
-              body=' '.join(driver.find_element('tag name','body').text.split())
+              # Resolve rendered Company Report download links.\n              for a in driver.find_elements('tag name','a'):\n                  try:\n                      txt=' '.join((a.text or '').split())\n                      href=a.get_attribute('href') or ''\n                  except Exception:\n                      continue\n                  low=(txt+' '+href).lower()\n                  if txt.lower()=='file' or 'erscontent' in low or 'report' in low:\n                      print('ANCHOR',txt,href)\n              body=' '.join(driver.find_element('tag name','body').text.split())
               for needle in ('Company reports','Company Reports','Half-yearly financial report','Annual financial report'):
                   i=body.lower().find(needle.lower())
                   if i>=0:
