@@ -13,6 +13,7 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 import io
 import os
+import re
 import shutil
 import tempfile
 from typing import Iterable, Optional
@@ -31,6 +32,10 @@ _DOWNLOAD = "https://www.b3.com.br/pesquisapregao/download"
 _COTAHIST_BASE = "https://bvmf.bmfbovespa.com.br/InstDados/SerHist/"
 _USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) BIAP-Global official-B3"
 _MIC = "BVMF"
+# B3's BVBG registry publishes multiple auxiliary trading lines (F/M/Q/L/G)
+# for the same security. The regular cash-equity line uses the canonical
+# four-letter + one/two-digit ticker (e.g. PETR4, SANB11).
+_REGULAR_EQUITY_TICKER = re.compile(r"^[A-Z]{4}[0-9]{1,2}$")
 
 
 def _local(tag: str) -> str:
@@ -87,12 +92,19 @@ def parse_b3_equity_info(eqty: ET.Element, *, as_of: date) -> Optional[dict]:
     """Normalize one BVBG.028.02 EqtyInf record if it is a current share/unit."""
     cfi = str(_text(eqty, "CFICd") or "").upper()
     spec = str(_text(eqty, "SpcfctnCd") or "").upper()
+    security_category = str(_text(eqty, "SctyCtgy") or "").strip()
     currency = str(_text(eqty, "TradgCcy") or "").upper()
     ticker = str(_text(eqty, "TckrSymb") or "").upper()
     isin = _valid_isin(_text(eqty, "ISIN"))
     start = str(_text(eqty, "TradgStartDt") or "")
     end = str(_text(eqty, "TradgEndDt") or "")
     if not cfi.startswith("ES") or not _equity_spec(spec):
+        return None
+    # Category 11 is B3's regular listed-equity line in the current official
+    # instrument registry. Other categories and letter-suffixed variants are
+    # auxiliary/odd-lot/forward-style lines of the same ISIN, not distinct
+    # companies for BIAP's "This market" universe.
+    if security_category != "11" or not _REGULAR_EQUITY_TICKER.fullmatch(ticker):
         return None
     if currency != "BRL" or not ticker or not isin:
         return None
@@ -107,7 +119,7 @@ def parse_b3_equity_info(eqty: ET.Element, *, as_of: date) -> Optional[dict]:
         "currency": currency,
         "cfi": cfi,
         "specification": spec,
-        "securityCategory": str(_text(eqty, "SctyCtgy") or ""),
+        "securityCategory": security_category,
         "roundLot": _int(_text(eqty, "AllcnRndLot")),
         "lastPrice": _float(_text(eqty, "LastPric")),
         "marketCap": _float(_text(eqty, "MktCptlstn")),
@@ -443,7 +455,9 @@ class B3OfficialClient:
 
 
 class B3OfficialUniverseProvider(InstrumentUniverseProvider):
-    provider_id = "official-b3-instrument-universe"
+    # Provider-id change intentionally invalidates only B3's old persistent
+    # universe snapshot without forcing every other market cache to refresh.
+    provider_id = "official-b3-regular-equity-universe"
 
     def __init__(self, *, timeout: float = 45.0) -> None:
         self.client = B3OfficialClient(timeout=timeout)
