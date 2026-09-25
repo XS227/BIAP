@@ -1,0 +1,63 @@
+name: BIAP Global TSX official source probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-tsx-official-source-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - name: Inspect official TSX issuer and daily-report endpoints
+        shell: bash
+        run: |
+          python -m pip install -q requests beautifulsoup4
+          python - <<'PY'
+          import json, re
+          import requests
+          from bs4 import BeautifulSoup
+          from urllib.parse import urljoin
+
+          pages = [
+              ("directory", "https://www.tsx.com/en/listings/listing-with-us/listed-company-directory"),
+              ("daily", "https://www.tsx.com/en/trading/market-data-and-statistics/market-statistics-and-reports/daily-trading-reports"),
+          ]
+          s = requests.Session()
+          s.headers.update({
+              "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36",
+              "Accept-Language": "en-US,en;q=0.9",
+          })
+          for label, url in pages:
+              r = s.get(url, timeout=30, allow_redirects=True)
+              print("\n===", label, "===")
+              print("status", r.status_code, "url", r.url, "type", r.headers.get("content-type"), "bytes", len(r.content))
+              print("server", r.headers.get("server"))
+              text = r.text
+              soup = BeautifulSoup(text, "html.parser")
+              links = []
+              for a in soup.find_all("a", href=True):
+                  href = urljoin(r.url, a["href"])
+                  title = " ".join(a.stripped_strings)
+                  low = (href + " " + title).lower()
+                  if any(k in low for k in ("download", ".csv", ".txt", ".xls", ".xlsx", "daily", "report", "issuer", "company")):
+                      links.append((title[:120], href))
+              for item in links[:120]:
+                  print("LINK", json.dumps(item, ensure_ascii=False))
+              patterns = sorted(set(re.findall(r'https?://[^"\'<> ]+|/[^"\'<> ]*(?:api|download|report|listed|issuer)[^"\'<> ]*', text, flags=re.I)))
+              for p in patterns[:160]:
+                  print("PATTERN", p[:500])
+              print("forms", [
+                  {"action": urljoin(r.url, f.get("action") or ""), "method": f.get("method"), "id": f.get("id")}
+                  for f in soup.find_all("form")[:20]
+              ])
+          PY
