@@ -63,6 +63,22 @@ jobs:
                   if 'callIdentifier' in ctx or 'urlExt' in ctx:
                       print('CALL_CTX',needle,ctx)
 
+          # Compact parameter/path matrix; print response bodies on one line so validation errors are visible.
+          candidates=[
+            ('https://apigateway.adx.ae/adx/listed-companies/1.1/balance-sheet/data',{}),
+            ('https://apigateway.adx.ae/adx/listed-companies/1.1/balance-sheet/data/ALDAR',{}),
+            ('https://apigateway.adx.ae/adx/marketwatch/1.1/listedCompanyProfileData/ALDAR',{}),
+          ]
+          for key in ('code','securityCode','displaySecCode','symbol','companySymbol','eqCode','isin','securityId','companyCode'):
+              candidates.append(('https://apigateway.adx.ae/adx/listed-companies/1.1/balance-sheet/data',{key:'ALDAR'}))
+              candidates.append(('https://apigateway.adx.ae/adx/marketwatch/1.1/listedCompanyProfileData',{key:'ALDAR'}))
+          for url,p in candidates:
+              try:
+                  rr=requests.get(url,params=p,headers=H,timeout=30)
+                  print('COMPACT',url,p,'STATUS',rr.status_code,'BODY_REPR',repr(rr.text[:1800]))
+              except Exception as e:
+                  print('COMPACT_ERR',url,p,type(e).__name__,e)
+
           for url in bases:
               for p in params:
                   try:
