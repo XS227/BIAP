@@ -51,7 +51,7 @@ COUNTRY_PACKS: dict[str, CountryPack] = {
     "US": CountryPack("US", "United States", (
         E("NASDAQ", "NASDAQ", ("USD",), "XNAS", ("XNGS", "XNCM", "XNMS")),
         E("NYSE", "New York Stock Exchange", ("USD",), "XNYS"),
-    ), "twelve-data", "sec-edgar-xbrl", "sec-edgar-xbrl", "SEC EDGAR", ("SPY", "QQQ"), "ibkr"),
+    ), "nasdaq-trader+nasdaq-full-screener", "sec-edgar-xbrl", "sec-edgar-xbrl", "Nasdaq Trader/Screener + SEC EDGAR", ("SPY", "QQQ"), "ibkr"),
     "CA": CountryPack("CA", "Canada", (
         E("TSX", "Toronto Stock Exchange", ("CAD",), "XTSE"),
         E("TSXV", "TSX Venture Exchange", ("CAD",), "XTSX"),
