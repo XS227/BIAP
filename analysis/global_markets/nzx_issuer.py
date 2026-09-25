@@ -143,7 +143,7 @@ def parse_scales_annual_report(text: str) -> dict[str, Optional[float]]:
     )
     total_assets = _metric(
         text,
-        r"^TOTA\s*L\s+AS\s*S\s*E\s*TS\s+([\d,]+)\s+[\d,]+",
+        r"^TOT\s*AL\s+AS\s*S\s*E\s*TS\s+([\d,]+)\s+[\d,]+",
         scale=scale,
     )
     total_liabilities = _metric(
