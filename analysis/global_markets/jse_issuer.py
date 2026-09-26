@@ -142,4 +142,5 @@ class JSEIssuerFundamentalsProvider(FundamentalsProvider):
             quality=0.99,
             notes="Audited FY2025 Form 20-F filed with the SEC; current filing document used because CompanyFacts taxonomy facts lag the filing.",
         ))
-\n# Runtime contract: current filed 20-F precedes stale CompanyFacts for SSW.\n
+
+# Runtime contract: current filed 20-F precedes stale CompanyFacts for SSW.
