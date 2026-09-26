@@ -70,8 +70,10 @@ def parse_sibanye_2025_xbrl(xml_bytes: bytes) -> dict[str, float]:
     revenue = pick("Revenue", "RevenueFromContractsWithCustomers")
     net_income = pick("ProfitLossAttributableToOwnersOfParent", "ProfitLoss")
     assets = pick("Assets")
-    liabilities = pick("Liabilities")
     equity = pick("Equity")
+    # Current/non-current liabilities are separate XBRL facts in this filing.
+    # Derive the consolidated total from the audited balance equation.
+    liabilities = assets - equity
     cash = pick("CashAndCashEquivalents")
 
     # Independent audited values visible in the filed 20-F provide a narrow
