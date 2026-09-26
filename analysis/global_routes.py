@@ -161,38 +161,44 @@ def _seed(req: InstrumentRequest):
         # so provider-specific identity metadata (verified SEC aliases, legal
         # issuer names, etc.) survives the search -> analyze boundary without
         # requiring clients to round-trip internal raw_provider_fields.
-        registry = build_registry()
-        provider = registry.universe(seed.country, seed.exchange)
-        search = getattr(provider, "search_instruments", None)
-        candidates = []
-        if callable(search):
-            candidates = list(search(
-                country=seed.country,
-                exchange=seed.exchange,
-                query=seed.ticker,
-                limit=30,
-            ))
-        if not candidates:
-            candidates = list(provider.list_instruments(
-                country=seed.country,
-                exchange=seed.exchange,
-            ))
-        exact = next(
-            (
-                item for item in candidates
-                if item.ticker.strip().upper() == seed.ticker.strip().upper()
-                and (not seed.isin or not item.isin or item.isin.upper() == seed.isin.upper())
-            ),
-            None,
-        )
-        if exact is not None:
-            return replace(
-                exact,
-                name=req.name.strip() if req.name else exact.name,
-                currency=(req.currency or exact.currency).strip().upper(),
-                isin=_clean_isin(req.isin) or exact.isin,
-                lei=_clean_lei(req.lei) or exact.lei,
+        try:
+            registry = build_registry()
+            provider = registry.universe(seed.country, seed.exchange)
+            search = getattr(provider, "search_instruments", None)
+            candidates = []
+            if callable(search):
+                candidates = list(search(
+                    country=seed.country,
+                    exchange=seed.exchange,
+                    query=seed.ticker,
+                    limit=30,
+                ))
+            if not candidates:
+                candidates = list(provider.list_instruments(
+                    country=seed.country,
+                    exchange=seed.exchange,
+                ))
+            exact = next(
+                (
+                    item for item in candidates
+                    if item.ticker.strip().upper() == seed.ticker.strip().upper()
+                    and (not seed.isin or not item.isin or item.isin.upper() == seed.isin.upper())
+                ),
+                None,
             )
+            if exact is not None:
+                return replace(
+                    exact,
+                    name=req.name.strip() if req.name else exact.name,
+                    currency=(req.currency or exact.currency).strip().upper(),
+                    isin=_clean_isin(req.isin) or exact.isin,
+                    lei=_clean_lei(req.lei) or exact.lei,
+                )
+        except Exception:
+            # Universe resolution enriches identity but is not required for the
+            # legacy analyze contract. Provider outages must not turn a valid
+            # sanitized request into an API failure.
+            pass
         return seed
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
