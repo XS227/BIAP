@@ -144,8 +144,12 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
         payload = self._get_json(source_url)
         entity_name = str(payload.get("entityName") or "").strip()
         if not entity_name or not self._identity_matches(company, entity_name):
+            jse_issuer = str(company.raw_provider_fields.get("jse_issuer_name") or "").strip()
+            sec_alias = str(company.raw_provider_fields.get("sec_ticker_alias") or "").strip()
             raise GlobalProviderError(
-                f"SEC ticker identity does not match selected issuer {company.name!r}"
+                "SEC ticker identity does not match selected issuer "
+                f"{company.name!r}; entityName={entity_name!r}; "
+                f"jseIssuer={jse_issuer!r}; secAlias={sec_alias!r}; cik={cik}"
             )
 
         ifrs = self._facts(payload)
