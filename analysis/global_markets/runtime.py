@@ -43,7 +43,8 @@ from .hkex_official import HKEXOfficialUniverseProvider
 from .india_official import NSEOfficialUniverseProvider
 from .iran_adapter import IranLegacyProvider
 from .jpx_official import JPXOfficialUniverseProvider
-from .jse_official import JSEOfficialUniverseProvider\nfrom .jse_issuer import JSEIssuerFundamentalsProvider
+from .jse_official import JSEOfficialUniverseProvider
+from .jse_issuer import JSEIssuerFundamentalsProvider
 from .krx_official import KRXKINDOfficialUniverseProvider
 from .kap_current import KAPCurrentFundamentalsProvider
 from .lse_official import LSEOfficialUniverseProvider
