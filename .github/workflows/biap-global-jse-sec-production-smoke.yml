@@ -47,7 +47,7 @@ jobs:
               a.raise_for_status()
               data=a.json(); company=data.get('company') or {}; sources=company.get('sources') or []
               if ticker == 'SSW':
-                  assert any(x.get('provider')=='official-jse-current-20f-v1' for x in sources), sources
+                  assert any(x.get('provider')=='official-jse-current-20f-v2' for x in sources), sources
                   assert any(x.get('source_type')=='official_regulatory_xbrl' for x in sources), sources
               else:
                   assert any(x.get('provider')=='sec-edgar-foreign-ifrs-cached' for x in sources), sources
