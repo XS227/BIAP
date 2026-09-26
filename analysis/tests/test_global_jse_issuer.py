@@ -12,7 +12,7 @@ CONSOLIDATED STATEMENT OF FINANCIAL POSITION
 Cash and cash equivalents 17,178 16,049
 Total assets 149,737 138,088
 Total liabilities 105,570 89,799
-Total equity 44,167 48,289
+Net assets 44,167 48,289
 """
 
 
