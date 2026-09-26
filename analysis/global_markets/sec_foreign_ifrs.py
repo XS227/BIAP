@@ -14,6 +14,8 @@ cache, so the same historical source JSON is retained on the BIAP server.
 """
 from __future__ import annotations
 
+# deployment trigger: HAR/HMY verified identity fix 2026-09-26
+
 from dataclasses import replace
 from datetime import date
 from typing import Optional
