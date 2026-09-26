@@ -89,14 +89,20 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
         jse_issuer = str(company.raw_provider_fields.get("jse_issuer_name") or "").strip()
         if jse_issuer:
             candidates.append(jse_issuer)
-        # Verified cross-list identity: the JSE full file spells the legal name
-        # in full while SEC CompanyFacts abbreviates COMPANY LIMITED as CO LTD.
+        # Verified cross-list identity: JSE publishes the full legal issuer
+        # while SEC may punctuate/abbreviate COMPANY LIMITED as CO LTD. Keep
+        # this exception scoped to the independently verified HAR -> HMY alias;
+        # no fuzzy issuer matching is allowed.
         if (
             company.country.upper() == "ZA"
             and company.exchange.upper() == "JSE"
             and company.ticker.upper() == "HAR"
-            and jse_issuer.upper() == "HARMONY GOLD MINING COMPANY LIMITED"
-            and entity_name.upper() == "HARMONY GOLD MINING CO LTD"
+            and str(company.raw_provider_fields.get("sec_ticker_alias") or "").upper() == "HMY"
+            and _legal_core(jse_issuer) == _legal_core("HARMONY GOLD MINING COMPANY LIMITED")
+            and _legal_core(entity_name) in {
+                _legal_core("HARMONY GOLD MINING CO LTD"),
+                _legal_core("HARMONY GOLD MINING COMPANY LIMITED"),
+            }
         ):
             return True
         if any(_legal_core(name) == entity_core for name in candidates if _legal_core(name)):
