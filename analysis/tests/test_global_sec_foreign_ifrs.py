@@ -210,3 +210,34 @@ def test_sec_foreign_ifrs_rejects_stale_annual_period(monkeypatch):
     monkeypatch.setattr(provider, "_get_json", lambda url: stale)
     with pytest.raises(GlobalProviderError, match="stale"):
         provider.enrich_fundamentals(seed)
+
+
+def test_harmony_verified_jse_hmy_identity_accepts_sec_abbreviation():
+    provider = SECForeignIFRSFundamentalsProvider(user_agent="BIAP test contact@example.com")
+    seed = GlobalCompany(
+        country="ZA",
+        exchange="JSE",
+        mic_code="XJSE",
+        currency="ZAR",
+        ticker="HAR",
+        name="Harmony GM Co Ltd",
+        raw_provider_fields={
+            "jse_issuer_name": "HARMONY GOLD MINING COMPANY LIMITED",
+            "sec_ticker_alias": "HMY",
+        },
+    )
+    assert provider._identity_matches(seed, "Harmony Gold Mining Co. Ltd.")
+
+
+def test_harmony_identity_exception_requires_verified_hmy_alias():
+    provider = SECForeignIFRSFundamentalsProvider(user_agent="BIAP test contact@example.com")
+    seed = GlobalCompany(
+        country="ZA",
+        exchange="JSE",
+        mic_code="XJSE",
+        currency="ZAR",
+        ticker="HAR",
+        name="Harmony GM Co Ltd",
+        raw_provider_fields={"jse_issuer_name": "HARMONY GOLD MINING COMPANY LIMITED"},
+    )
+    assert not provider._identity_matches(seed, "Harmony Gold Mining Co. Ltd.")
