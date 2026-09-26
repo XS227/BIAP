@@ -7,7 +7,7 @@ from global_markets.runtime import build_registry
 SAMPLE = """
 CONSOLIDATED INCOME STATEMENT
 Revenue 129,677 112,129
-Loss for the year (4,708) (5,721)
+(Loss)/profit for the year attributable to owners of Sibanye-Stillwater (5,171) (7,297)
 CONSOLIDATED STATEMENT OF FINANCIAL POSITION
 Cash and cash equivalents 17,178 16,049
 Total assets 149,737 138,088
