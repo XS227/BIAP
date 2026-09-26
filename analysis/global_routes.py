@@ -5,7 +5,7 @@ evolve independently while the Iran production endpoints stay intact.
 """
 from __future__ import annotations
 
-from dataclasses import asdict
+from dataclasses import asdict, replace
 import os
 import re
 from typing import Optional
@@ -146,7 +146,7 @@ def _rank_instruments(instruments, query: str):
 
 def _seed(req: InstrumentRequest):
     try:
-        return instrument_seed(
+        seed = instrument_seed(
             country=req.country,
             exchange=req.exchange,
             ticker=req.ticker,
@@ -155,6 +155,45 @@ def _seed(req: InstrumentRequest):
             isin=_clean_isin(req.isin),
             lei=_clean_lei(req.lei),
         )
+
+        # Analysis requests intentionally expose only stable public identifiers.
+        # Re-resolve the selected instrument through the authoritative universe
+        # so provider-specific identity metadata (verified SEC aliases, legal
+        # issuer names, etc.) survives the search -> analyze boundary without
+        # requiring clients to round-trip internal raw_provider_fields.
+        registry = build_registry()
+        provider = registry.universe(seed.country, seed.exchange)
+        search = getattr(provider, "search_instruments", None)
+        candidates = []
+        if callable(search):
+            candidates = list(search(
+                country=seed.country,
+                exchange=seed.exchange,
+                query=seed.ticker,
+                limit=30,
+            ))
+        if not candidates:
+            candidates = list(provider.list_instruments(
+                country=seed.country,
+                exchange=seed.exchange,
+            ))
+        exact = next(
+            (
+                item for item in candidates
+                if item.ticker.strip().upper() == seed.ticker.strip().upper()
+                and (not seed.isin or not item.isin or item.isin.upper() == seed.isin.upper())
+            ),
+            None,
+        )
+        if exact is not None:
+            return replace(
+                exact,
+                name=req.name.strip() if req.name else exact.name,
+                currency=(req.currency or exact.currency).strip().upper(),
+                isin=_clean_isin(req.isin) or exact.isin,
+                lei=_clean_lei(req.lei) or exact.lei,
+            )
+        return seed
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
