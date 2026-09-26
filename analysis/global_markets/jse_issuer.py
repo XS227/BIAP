@@ -98,10 +98,11 @@ class JSEIssuerFundamentalsProvider(FundamentalsProvider):
             )
             response.raise_for_status()
             raw = response.text
-            if "Sibanye Stillwater Limited" not in raw or "31 December 2025" not in raw:
-                raise GlobalProviderError("Sibanye current 20-F identity/period could not be verified")
             text = html.unescape(re.sub(r"<[^>]+>", " ", raw))
             text = " ".join(text.split())
+            identity = text.casefold().replace("-", " ")
+            if "sibanye stillwater limited" not in identity or "31 december 2025" not in identity:
+                raise GlobalProviderError("Sibanye current 20-F identity/period could not be verified")
         except requests.RequestException as exc:
             raise GlobalProviderError(f"Sibanye annual report request failed: {type(exc).__name__}") from exc
         except Exception as exc:
