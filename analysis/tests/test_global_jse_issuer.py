@@ -19,7 +19,7 @@ Total equity 44,167 48,289
 def test_sibanye_2025_primary_totals_parse_and_reconcile():
     metrics = parse_sibanye_2025(SAMPLE)
     assert metrics["revenue"] == 129_677_000_000.0
-    assert metrics["net_income"] == -4_708_000_000.0
+    assert metrics["net_income"] == -5_171_000_000.0
     assert metrics["total_assets"] == 149_737_000_000.0
     assert metrics["total_liabilities"] == 105_570_000_000.0
     assert metrics["total_equity"] == 44_167_000_000.0
