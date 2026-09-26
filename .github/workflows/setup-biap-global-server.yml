@@ -234,6 +234,20 @@ jobs:
           print(f"NZX stale fundamentals latest snapshots removed: {removed}")
           PY
 
+          # HAR cache may preserve a pre-HMY identity failure. Remove only
+          # Harmony's normalized fundamentals snapshot so the next production
+          # analysis must re-run the verified HAR -> HMY SEC CompanyFacts path.
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path("/var/lib/biap-global/fundamentals/ZA/JSE/HAR")
+          removed = 0
+          if root.exists():
+              for path in root.glob("*.json"):
+                  path.unlink(missing_ok=True)
+                  removed += 1
+          print(f"HAR stale fundamentals snapshots removed: {removed}")
+          PY
+
           # SIX cache predates the verified NOVN -> NVS SEC alias. Invalidate
           # only CH/SIX when that exact alias is absent so production search
           # immediately carries the evidence-routing metadata after deploy.
