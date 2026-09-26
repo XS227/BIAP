@@ -167,8 +167,11 @@ class PersistentMarketProvider(MarketDataProvider):
                 else f"Persistent market snapshot from {upstream}"
             ),
         )
-        raw_fields = dict(seed.raw_provider_fields)
-        raw_fields.update(payload.get("raw_provider_fields") or {})
+        # Fresh universe/reference metadata is authoritative for identity
+        # routing. A market cache may contain an older copy of raw fields, but
+        # must never erase or overwrite newer issuer aliases/legal names.
+        raw_fields = dict(payload.get("raw_provider_fields") or {})
+        raw_fields.update(seed.raw_provider_fields)
         raw_fields.update({
             "market_cache": "fallback" if fallback else "fresh",
             "market_cached_at": fetched_at,
