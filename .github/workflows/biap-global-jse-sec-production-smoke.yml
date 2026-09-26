@@ -4,7 +4,10 @@ on:
   push:
     branches: [feat/biap-global]
     paths:
-      - '.github/workflows/biap-global-jse-sec-production-smoke.yml'\n      - 'analysis/global_markets/jse_issuer.py'\n      - 'analysis/global_markets/sec_foreign_ifrs.py'\n      - 'analysis/global_markets/runtime.py'
+      - '.github/workflows/biap-global-jse-sec-production-smoke.yml'
+      - 'analysis/global_markets/jse_issuer.py'
+      - 'analysis/global_markets/sec_foreign_ifrs.py'
+      - 'analysis/global_markets/runtime.py'
   workflow_dispatch:
 
 permissions:
