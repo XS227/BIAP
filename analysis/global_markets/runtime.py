@@ -43,7 +43,7 @@ from .hkex_official import HKEXOfficialUniverseProvider
 from .india_official import NSEOfficialUniverseProvider
 from .iran_adapter import IranLegacyProvider
 from .jpx_official import JPXOfficialUniverseProvider
-from .jse_official import JSEOfficialUniverseProvider
+from .jse_official import JSEOfficialUniverseProvider\nfrom .jse_issuer import JSEIssuerFundamentalsProvider
 from .krx_official import KRXKINDOfficialUniverseProvider
 from .kap_current import KAPCurrentFundamentalsProvider
 from .lse_official import LSEOfficialUniverseProvider
@@ -379,11 +379,16 @@ def build_registry() -> ProviderRegistry:
     # statements with the SEC can use the same strict foreign-issuer CompanyFacts
     # path. Ticker and legal-name identity must both verify; unsupported JSE
     # issuers remain vendor-display-only and Evidence-BLOCKED.
+    # Prefer the issuer-published audited annual report for explicitly verified
+    # JSE issuers when SEC CompanyFacts taxonomy facts lag the latest filing.
+    # SEC remains the second official path (including Harmony); vendor metrics
+    # are display-only and never clear Evidence by themselves.
+    za_official = FallbackFundamentalsProvider(
+        JSEIssuerFundamentalsProvider(),
+        SECForeignIFRSFundamentalsProvider(user_agent=sec_user_agent),
+    )
     za_sec = PersistentFundamentalsProvider(
-        FallbackFundamentalsProvider(
-            SECForeignIFRSFundamentalsProvider(user_agent=sec_user_agent),
-            public_fundamentals,
-        )
+        FallbackFundamentalsProvider(za_official, public_fundamentals)
     )
     register_fundamentals("ZA", "JSE", za_sec)
 
