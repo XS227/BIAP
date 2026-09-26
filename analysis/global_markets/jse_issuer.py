@@ -78,3 +78,62 @@ def parse_sibanye_2025(text: str) -> dict[str, Optional[float]]:
     if abs((metrics["total_assets"] - metrics["total_liabilities"]) - metrics["total_equity"]) > 1_000_000.0:
         raise GlobalProviderError("Sibanye FY2025 balance sheet does not reconcile")
     return metrics
+
+
+class JSEIssuerFundamentalsProvider(FundamentalsProvider):
+    provider_id = _PROVIDER_ID
+
+    def __init__(self, *, timeout: float = 60.0) -> None:
+        self.timeout = max(10.0, float(timeout))
+
+    def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
+        if (company.country.upper(), company.exchange.upper(), company.ticker.upper()) != ("ZA", "JSE", "SSW"):
+            raise GlobalProviderError(f"JSE issuer annual fundamentals are not verified for {company.ticker}")
+
+        try:
+            response = requests.get(_SSW_2025, headers={"User-Agent": _USER_AGENT}, timeout=self.timeout)
+            response.raise_for_status()
+            if not response.content.startswith(b"%PDF"):
+                raise GlobalProviderError("Sibanye annual report response is not a PDF")
+            reader = PdfReader(io.BytesIO(response.content))
+            text = "\n".join((page.extract_text() or "") for page in reader.pages)
+        except requests.RequestException as exc:
+            raise GlobalProviderError(f"Sibanye annual report request failed: {type(exc).__name__}") from exc
+        except Exception as exc:
+            if isinstance(exc, GlobalProviderError):
+                raise
+            raise GlobalProviderError(f"Sibanye annual report parse failed: {type(exc).__name__}") from exc
+
+        metrics = parse_sibanye_2025(text)
+        observed = datetime.now(timezone.utc).isoformat()
+        revenue = metrics["revenue"]
+        net_income = metrics["net_income"]
+        enriched = replace(
+            company,
+            reporting_currency="ZAR",
+            revenue=revenue,
+            net_income=net_income,
+            net_margin_pct=(net_income / revenue * 100.0) if revenue else None,
+            total_assets=metrics["total_assets"],
+            total_liabilities=metrics["total_liabilities"],
+            total_equity=metrics["total_equity"],
+            cash_and_equivalents=metrics["cash_and_equivalents"],
+            filing_period_end="2025-12-31",
+            filing_observed_at=observed,
+            report_scope="consolidated",
+            raw_provider_fields={
+                **company.raw_provider_fields,
+                "jse_issuer_annual_report_url": _SSW_2025,
+                "jse_issuer_annual_report_pdf_verified": True,
+            },
+        )
+        return append_source(enriched, SourceEvidence(
+            provider=self.provider_id,
+            source_type="official_issuer_financial_statement",
+            source_id="JSE:SSW:2025:group-annual-financial-report",
+            source_url=_SSW_2025,
+            observed_at=observed,
+            period_end="2025-12-31",
+            quality=0.99,
+            notes="Audited consolidated Group Annual Financial Report FY2025 published by Sibanye-Stillwater.",
+        ))
