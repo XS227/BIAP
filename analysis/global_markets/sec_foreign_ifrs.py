@@ -96,8 +96,8 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
         # legal-token normalization after an official JSE issuer name exists.
         if jse_issuer:
             def legal_tokens(value: str) -> str:
-                core = _legal_core(value)
-                return core.replace("company", "co").replace("limited", "ltd")
+                core = _legal_core(value).replace("company", "co").replace("limited", "ltd")
+                return core[:-2] if core.endswith("co") else core
             return legal_tokens(jse_issuer) == legal_tokens(entity_name)
         return False
 
