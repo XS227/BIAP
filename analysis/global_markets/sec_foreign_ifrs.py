@@ -89,7 +89,17 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
         jse_issuer = str(company.raw_provider_fields.get("jse_issuer_name") or "").strip()
         if jse_issuer:
             candidates.append(jse_issuer)
-        return any(_legal_core(name) == entity_core for name in candidates if _legal_core(name))
+        if any(_legal_core(name) == entity_core for name in candidates if _legal_core(name)):
+            return True
+        # SEC's filer header abbreviates some legal-name tokens (for example
+        # Harmony "COMPANY LIMITED" as "CO LTD"). Only apply this canonical
+        # legal-token normalization after an official JSE issuer name exists.
+        if jse_issuer:
+            def legal_tokens(value: str) -> str:
+                core = " " + _legal_core(value) + " "
+                return core.replace(" company ", " co ").replace(" limited ", " ltd ").strip()
+            return legal_tokens(jse_issuer) == legal_tokens(entity_name)
+        return False
 
     def _resolve_cik(self, company: GlobalCompany) -> int:
         explicit_alias = str(company.raw_provider_fields.get("sec_ticker_alias") or "").strip().upper()
