@@ -229,7 +229,7 @@ def test_harmony_verified_jse_hmy_identity_accepts_sec_abbreviation():
     assert provider._identity_matches(seed, "Harmony Gold Mining Co. Ltd.")
 
 
-def test_harmony_identity_exception_requires_verified_hmy_alias():
+def test_harmony_identity_rejects_different_business_name():
     provider = SECForeignIFRSFundamentalsProvider(user_agent="BIAP test contact@example.com")
     seed = GlobalCompany(
         country="ZA",
@@ -238,6 +238,9 @@ def test_harmony_identity_exception_requires_verified_hmy_alias():
         currency="ZAR",
         ticker="HAR",
         name="Harmony GM Co Ltd",
-        raw_provider_fields={"jse_issuer_name": "HARMONY GOLD MINING COMPANY LIMITED"},
+        raw_provider_fields={
+            "jse_issuer_name": "HARMONY GOLD MINING COMPANY LIMITED",
+            "sec_ticker_alias": "HMY",
+        },
     )
-    assert not provider._identity_matches(seed, "Harmony Gold Mining Co. Ltd.")
+    assert not provider._identity_matches(seed, "Harmony Mining Holdings Co. Ltd.")
