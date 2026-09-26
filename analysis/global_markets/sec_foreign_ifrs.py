@@ -100,10 +100,10 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
             and company.exchange.upper() == "JSE"
             and company.ticker.upper() == "HAR"
             and str(company.raw_provider_fields.get("sec_ticker_alias") or "").upper() == "HMY"
-            and _legal_core(jse_issuer) == _legal_core("HARMONY GOLD MINING COMPANY LIMITED")
-            and _legal_core(entity_name) in {
-                _legal_core("HARMONY GOLD MINING CO LTD"),
-                _legal_core("HARMONY GOLD MINING COMPANY LIMITED"),
+            and jse_issuer.upper() == "HARMONY GOLD MINING COMPANY LIMITED"
+            and entity_name.upper().replace(".", "") in {
+                "HARMONY GOLD MINING CO LTD",
+                "HARMONY GOLD MINING COMPANY LIMITED",
             }
         ):
             return True
