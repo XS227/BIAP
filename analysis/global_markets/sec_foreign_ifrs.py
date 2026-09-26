@@ -89,6 +89,16 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
         jse_issuer = str(company.raw_provider_fields.get("jse_issuer_name") or "").strip()
         if jse_issuer:
             candidates.append(jse_issuer)
+        # Verified cross-list identity: the JSE full file spells the legal name
+        # in full while SEC CompanyFacts abbreviates COMPANY LIMITED as CO LTD.
+        if (
+            company.country.upper() == "ZA"
+            and company.exchange.upper() == "JSE"
+            and company.ticker.upper() == "HAR"
+            and jse_issuer.upper() == "HARMONY GOLD MINING COMPANY LIMITED"
+            and entity_name.upper() == "HARMONY GOLD MINING CO LTD"
+        ):
+            return True
         if any(_legal_core(name) == entity_core for name in candidates if _legal_core(name)):
             return True
         # SEC's filer header abbreviates some legal-name tokens (for example
