@@ -56,7 +56,7 @@ def parse_sibanye_2025(text: str) -> dict[str, Optional[float]]:
     compact = " ".join(text.split())
     expected = {
         "revenue": ("Revenue", "129,677", 129_677_000_000.0),
-        "net_income": ("Loss for the year", "4,708", -4_708_000_000.0),
+        "net_income": ("(Loss)/profit for the year attributable to owners of Sibanye-Stillwater", "5,171", -5_171_000_000.0),
         "total_assets": ("Total assets", "149,737", 149_737_000_000.0),
         "total_liabilities": ("Total liabilities", "105,570", 105_570_000_000.0),
         "total_equity": ("Total equity", "44,167", 44_167_000_000.0),
@@ -91,12 +91,17 @@ class JSEIssuerFundamentalsProvider(FundamentalsProvider):
             raise GlobalProviderError(f"JSE issuer annual fundamentals are not verified for {company.ticker}")
 
         try:
-            response = requests.get(_SSW_2025, headers={"User-Agent": _USER_AGENT}, timeout=self.timeout)
+            response = requests.get(
+                _SSW_2025,
+                headers={"User-Agent": _USER_AGENT, "Accept-Encoding": "gzip, deflate"},
+                timeout=self.timeout,
+            )
             response.raise_for_status()
-            if not response.content.startswith(b"%PDF"):
-                raise GlobalProviderError("Sibanye annual report response is not a PDF")
-            reader = PdfReader(io.BytesIO(response.content))
-            text = "\n".join((page.extract_text() or "") for page in reader.pages)
+            raw = response.text
+            if "Sibanye Stillwater Limited" not in raw or "31 December 2025" not in raw:
+                raise GlobalProviderError("Sibanye current 20-F identity/period could not be verified")
+            text = html.unescape(re.sub(r"<[^>]+>", " ", raw))
+            text = " ".join(text.split())
         except requests.RequestException as exc:
             raise GlobalProviderError(f"Sibanye annual report request failed: {type(exc).__name__}") from exc
         except Exception as exc:
@@ -129,11 +134,11 @@ class JSEIssuerFundamentalsProvider(FundamentalsProvider):
         )
         return append_source(enriched, SourceEvidence(
             provider=self.provider_id,
-            source_type="official_issuer_financial_statement",
-            source_id="JSE:SSW:2025:group-annual-financial-report",
+            source_type="official_regulatory_xbrl",
+            source_id="SEC:SBSW:20-F:2025-12-31",
             source_url=_SSW_2025,
             observed_at=observed,
             period_end="2025-12-31",
             quality=0.99,
-            notes="Audited consolidated Group Annual Financial Report FY2025 published by Sibanye-Stillwater.",
+            notes="Audited FY2025 Form 20-F filed with the SEC; current filing document used because CompanyFacts taxonomy facts lag the filing.",
         ))
