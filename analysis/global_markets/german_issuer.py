@@ -195,7 +195,11 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
         if expected is None:
             raise GlobalProviderError(f"no verified German issuer parser for {ticker}")
         legal_core = _legal_core(company.name)
-        # Deutsche Boerse display labels append legal/share-class markers such as\n        # "AG NA O.N.". Require the verified issuer token at the start while\n        # still rejecting unrelated ticker/name collisions.\n        if legal_core != expected and not legal_core.startswith(expected + " "):\n            raise GlobalProviderError(
+        # Deutsche Boerse display labels append legal/share-class markers such as
+        # "AG NA O.N.". Require the verified issuer token at the start while
+        # still rejecting unrelated ticker/name collisions.
+        if legal_core != expected and not legal_core.startswith(expected + " "):
+            raise GlobalProviderError(
                 f"German issuer identity mismatch for {ticker}: {company.name!r}"
             )
         return ticker
