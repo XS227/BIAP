@@ -52,7 +52,14 @@ jobs:
           PY="$APP_DIR/analysis/.venv-global/bin/python"
           "$PY" - <<'PY'
           import json
+          from global_markets.runtime import build_registry
+          from global_markets.models import GlobalCompany
           from global_markets.scan_service import scan_global_market
+          registry=build_registry()
+          seed=GlobalCompany(country='DE',exchange='XETRA',mic_code='XETR',currency='EUR',ticker='SIE',name='SIEMENS AG  NA O.N.',isin='DE0007236101')
+          p=registry.fundamentals('DE','XETRA')
+          enriched=p.enrich_fundamentals(seed)
+          print(json.dumps({'SIE_PROVIDER':[s.provider for s in enriched.sources], 'SIE_PERIOD':enriched.filing_period_end, 'SIE_REVENUE':enriched.revenue, 'SIE_EPS':enriched.eps, 'SIE_PRIMARY_ERROR':enriched.raw_provider_fields.get('fundamentals_primary_error')},sort_keys=True))
           result = scan_global_market(
               country='DE',
               exchange='XETRA',
