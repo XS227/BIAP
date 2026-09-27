@@ -263,18 +263,26 @@ def global_instruments(
         # catalog refresh. This is the latency/resilience path used by mobile
         # ticker search when the persistent exchange snapshot is absent/stale.
         ranked_targeted = _rank_instruments(candidates, q)
-        if ranked_targeted:
+        # A targeted provider may return broad/prefix candidates that rank for
+        # the query while omitting the exact exchange ticker. Before trusting
+        # that shortcut, require an exact normalized ticker/identifier/name
+        # match. Otherwise fall back to the authoritative local catalog.
+        exact_targeted = any(score >= 1000 for score, _ in ranked_targeted)
+        if exact_targeted:
             instruments = [item for _, item in ranked_targeted]
         else:
             try:
                 local = list(provider.list_instruments(country=country.upper(), exchange=spec.code))
             except Exception as exc:
-                if targeted_error is not None:
+                if ranked_targeted:
+                    instruments = [item for _, item in ranked_targeted]
+                elif targeted_error is not None:
                     detail = f"targeted search failed ({type(targeted_error).__name__}); catalog unavailable ({type(exc).__name__})"
+                    raise HTTPException(status_code=503, detail=detail[:500]) from exc
                 else:
-                    detail = str(exc)
-                raise HTTPException(status_code=503, detail=detail[:500]) from exc
-            instruments = [item for _, item in _rank_instruments(local, q)]
+                    raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+            else:
+                instruments = [item for _, item in _rank_instruments(local, q)]
     else:
         try:
             instruments = list(provider.list_instruments(country=country.upper(), exchange=spec.code))
