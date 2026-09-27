@@ -78,6 +78,28 @@ def test_allianz_official_statement_page_is_parsed(monkeypatch):
     assert enriched.sources[-1].provider == provider.provider_id
 
 
+def test_sap_official_integrated_report_is_parsed(monkeypatch):
+    provider = GermanIssuerFundamentalsProvider()
+    html = """
+    <html><body>
+      SAP Group Consolidated Income Statements for 2025 2024 2023
+      Total revenue 36,800 34,176 31,207
+      Profit after tax 7,326 3,150 5,964
+      Earnings per share, basic (in €) 6.14 2.68 5.26
+    </body></html>
+    """
+    monkeypatch.setattr(provider, "_get_text", lambda url: " ".join(html.split()))
+
+    enriched = provider.enrich_fundamentals(_company("SAP", "SAP SE O.N."))
+
+    assert enriched.revenue == 36_800_000_000
+    assert enriched.revenue_prev == 34_176_000_000
+    assert enriched.net_income == 7_326_000_000
+    assert enriched.eps == 6.14
+    assert enriched.filing_period_end == "2025-12-31"
+    assert enriched.sources[-1].provider == provider.provider_id
+
+
 def test_german_issuer_adapter_rejects_ticker_name_collision():
     provider = GermanIssuerFundamentalsProvider()
     with pytest.raises(GlobalProviderError, match="identity mismatch"):
