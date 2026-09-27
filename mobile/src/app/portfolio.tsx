@@ -363,16 +363,24 @@ export default function GlobalPortfolioScreen() {
   const proposal = result?.proposal;
   const allocations = proposal?.allocations || [];
   const analysisMap = useMemo(() => new Map((result?.analyses || []).map((analysis) => [analysisKey(analysis), analysis])), [result]);
+  const candidateEvidence = useMemo(() => {
+    const analyses = result?.analyses || [];
+    return {
+      pass: analyses.filter((analysis) => analysis.evidence?.status === 'PASS').length,
+      warn: analyses.filter((analysis) => analysis.evidence?.status === 'WARN').length,
+      block: analyses.filter((analysis) => analysis.evidence?.status === 'BLOCK').length,
+    };
+  }, [result]);
   const noRecommendationReason = useMemo(() => {
     if (!proposal || proposal.status !== 'NO_RECOMMENDATION') return '';
     if (!candidateCount) return 'No stock cleared the current Evidence/Verification and candidate filters.';
     const limited = stats.filter((market) => market.mode === 'CACHED' && market.coverage < 80);
-    const blocked = stats.reduce((sum, market) => sum + market.block, 0);
-    const warned = stats.reduce((sum, market) => sum + market.warn, 0);
+    const blocked = candidateEvidence.block;
+    const warned = candidateEvidence.warn;
     if (limited.length) return `The selected market coverage is still limited (${limited.map((market) => `${market.country} ${n(market.coverage, 1)}%`).join(' • ')}). The ${candidateCount} qualified scan inputs were not sufficient to create an allocation under the current profile and evidence rules.`;
     if (blocked || warned) return `${candidateCount} candidate inputs reached portfolio review, but evidence/risk checks still excluded the final allocation (${blocked} blocked • ${warned} review).`;
     return 'The qualified candidates did not satisfy the portfolio constraints together (risk, concentration, cash reserve, FX and evidence).';
-  }, [candidateCount, proposal, stats]);
+  }, [candidateCount, candidateEvidence, proposal, stats]);
 
   const modeColor = (mode: MarketMode) => {
     if (mode === 'LIVE') return Brand.positive;
