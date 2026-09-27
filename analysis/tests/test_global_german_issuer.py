@@ -35,7 +35,7 @@ def test_siemens_official_issuer_results_are_parsed_without_guessing(monkeypatch
     """
     monkeypatch.setattr(provider, "_get_text", lambda url: " ".join(html.split()))
 
-    enriched = provider.enrich_fundamentals(_company("SIE", "Siemens Aktiengesellschaft"))
+    enriched = provider.enrich_fundamentals(_company("SIE", "SIEMENS AG  NA O.N."))
 
     assert enriched.revenue == 78_900_000_000
     assert enriched.net_income == 10_400_000_000
