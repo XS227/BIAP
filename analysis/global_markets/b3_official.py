@@ -485,6 +485,7 @@ class B3OfficialUniverseProvider(InstrumentUniverseProvider):
                 market_cap=row.get("marketCap"),
                 raw_provider_fields={
                     "official_universe": True,
+                    "trusted_official_equity": True,
                     "cfi": row.get("cfi"),
                     "b3_specification": row.get("specification"),
                     "b3_security_category": row.get("securityCategory"),
