@@ -33,6 +33,7 @@ def _company(*, ticker="AAA", country="US", exchange="NASDAQ", currency="USD", s
         operating_cash_flow=160_000_000,
         free_cash_flow=110_000_000,
         total_debt=300_000_000,
+        filing_period_end="2025-12-31",
         sources=[
             SourceEvidence(
                 provider="fixture",
@@ -71,6 +72,20 @@ def test_evidence_agent_warns_on_high_confidence_agent_conflict():
     assert result.status == "WARN"
     assert result.contradictions
     assert result.confidence_multiplier < 1.0
+
+
+def test_evidence_agent_blocks_fresh_price_combined_with_stale_fundamentals():
+    company = _company(ticker="KABE.B", country="SE", exchange="NASDAQ_STOCKHOLM", currency="SEK")
+    company.price = 244.0
+    company.price_observed_at = "2026-09-25T07:00:00+00:00"
+    company.filing_period_end = "2022-12-31"
+
+    result = evidence_agent(company, _signals(), now=datetime(2026, 9, 27, 22, tzinfo=timezone.utc))
+
+    assert result.status == "BLOCK"
+    assert "fresh_fundamentals" in result.missing_critical
+    assert result.freshness_score == 0.05
+    assert "fundamentalPeriodAgeDays=" in result.reasoning
 
 
 def test_portfolio_agent_respects_max_positions_and_keeps_cash_reserve():
