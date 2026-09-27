@@ -175,7 +175,15 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
                 "name": str(row.get("name") or ticker),
                 "type": str(row.get("instrument_type") or "Common Stock"),
                 "cfi_code": cached_raw.get("cfi"),
-                "trusted_official_equity": cached_raw.get("trusted_official_equity") is True,
+                "trusted_official_equity": (
+                    cached_raw.get("trusted_official_equity") is True
+                    or (
+                        str(payload.get("provider") or "") == "official-b3-regular-equity-universe"
+                        and cached_raw.get("official_universe") is True
+                        and str(cached_raw.get("cfi") or "").upper().startswith("ES")
+                        and str(cached_raw.get("b3_security_category") or "") == "11"
+                    )
+                ),
             }
             if not _ordinary_equity_row(
                 country=row_country,
