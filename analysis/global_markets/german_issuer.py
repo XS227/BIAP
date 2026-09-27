@@ -43,6 +43,7 @@ _ALLIANZ_PDF_URL = (
     "investor-relations/en/results-reports/annual-report/ar-2025/"
     "en-allianz-group-annual-report-2025.pdf"
 )
+_SAP_URL = "https://www.sap.com/integrated-reports/2025/en/datahub/financial-data.html"
 
 
 def _plain_text(value: str) -> str:
@@ -191,7 +192,7 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
         if company.country.strip().upper() != "DE":
             raise GlobalProviderError("German issuer adapter only supports DE")
         ticker = company.ticker.strip().upper()
-        expected = {"SIE": "SIEMENS", "ALV": "ALLIANZ"}.get(ticker)
+        expected = {"SIE": "SIEMENS", "ALV": "ALLIANZ", "SAP": "SAP"}.get(ticker)
         if expected is None:
             raise GlobalProviderError(f"no verified German issuer parser for {ticker}")
         # Deutsche Boerse display labels append legal/share-class markers such as
@@ -349,10 +350,63 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
             ),
         ))
 
+
+    def _sap(self, company: GlobalCompany) -> GlobalCompany:
+        text = self._get_text(_SAP_URL)
+        lower = text.lower()
+        if "sap group" not in lower or "2025" not in lower or "total revenue" not in lower:
+            raise GlobalProviderError("SAP FY2025 issuer source identity/period marker missing")
+
+        revenue, revenue_prev = _row_pair(text, "Total revenue")
+        net_income, net_income_prev = _row_pair(text, "Profit after tax")
+        eps = float(_required_match(
+            r"Earnings per share, basic\s*\(in\s*€\).*?"
+            r"([0-9]+(?:\.[0-9]+)?)\s+([0-9]+(?:\.[0-9]+)?)",
+            text,
+            label="SAP basic EPS",
+        ).group(1))
+        revenue_yoy = ((revenue / revenue_prev) - 1.0) * 100.0 if revenue_prev else None
+        margin = (net_income / revenue) * 100.0 if revenue else None
+        margin_prev = (net_income_prev / revenue_prev) * 100.0 if revenue_prev else None
+        enriched = replace(
+            company,
+            reporting_currency="EUR",
+            revenue=revenue,
+            revenue_prev=revenue_prev,
+            revenue_yoy_pct=revenue_yoy,
+            net_income=net_income,
+            net_margin_pct=margin,
+            net_margin_prev_pct=margin_prev,
+            eps=eps,
+            filing_period_end="2025-12-31",
+            filing_observed_at="2026-01-29T00:00:00+00:00",
+            report_scope="consolidated",
+            raw_provider_fields={
+                **company.raw_provider_fields,
+                "de_issuer_source": "sap_integrated_report_2025_financial_data",
+                "de_issuer_evidence_kind": "issuer_published_financial_statements",
+            },
+        )
+        return append_source(enriched, SourceEvidence(
+            provider=self.provider_id,
+            source_type="official_issuer_financial_statement",
+            source_id="sap-integrated-report-2025-financial-data",
+            source_url=_SAP_URL,
+            observed_at="2026-01-29T00:00:00+00:00",
+            period_end="2025-12-31",
+            quality=0.96,
+            notes=(
+                "SAP issuer-published FY2025 consolidated financial statements; "
+                "official issuer evidence, not a regulator filing"
+            ),
+        ))
+
     def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
         ticker = self._identity(company)
         if ticker == "SIE":
             return self._siemens(company)
         if ticker == "ALV":
             return self._allianz(company)
+        if ticker == "SAP":
+            return self._sap(company)
         raise GlobalProviderError(f"no verified German issuer parser for {ticker}")
