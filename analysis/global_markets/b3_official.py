@@ -467,6 +467,35 @@ class B3OfficialUniverseProvider(InstrumentUniverseProvider):
         if not country or not exchange or not self.client.supported(country, exchange):
             raise GlobalProviderError(f"B3 official universe is not configured for {country}/{exchange}")
         report_date, rows = self.client.instrument_rows()
+        # BVBG.028 can omit a currently tradable share class even while B3's
+        # official COTAHIST publishes it (observed for PETR4 on 2026-09-25).
+        # Merge only native spot-equity rows already validated by the strict
+        # COTAHIST parser, keyed by ticker+ISIN, so this remains B3-only evidence.
+        try:
+            cotahist_date, cotahist_rows = self.client.cotahist_rows()
+        except GlobalProviderError:
+            cotahist_date, cotahist_rows = None, []
+        known = {(str(row.get("ticker") or "").upper(), str(row.get("isin") or "").upper()) for row in rows}
+        for daily in cotahist_rows:
+            key = (str(daily.get("ticker") or "").upper(), str(daily.get("isin") or "").upper())
+            if not key[0] or not key[1] or key in known:
+                continue
+            rows.append({
+                "ticker": key[0],
+                "isin": key[1],
+                "name": str(daily.get("name") or key[0]),
+                "currency": "BRL",
+                "cfi": "ES",
+                "specification": daily.get("specification"),
+                "securityCategory": "11",
+                "roundLot": None,
+                "lastPrice": daily.get("close"),
+                "marketCap": None,
+                "tradingStartDate": None,
+                "tradingEndDate": None,
+                "cotahistFallback": True,
+            })
+            known.add(key)
         observed = datetime.now(timezone.utc).isoformat()
         result: list[GlobalCompany] = []
         for row in rows:
@@ -494,6 +523,7 @@ class B3OfficialUniverseProvider(InstrumentUniverseProvider):
                     "b3_report_date": report_date.isoformat(),
                     "b3_trading_start_date": row.get("tradingStartDate"),
                     "b3_trading_end_date": row.get("tradingEndDate"),
+                    "b3_cotahist_universe_fallback": row.get("cotahistFallback") is True,
                 },
                 sources=[SourceEvidence(
                     provider=self.provider_id,
@@ -511,6 +541,7 @@ class B3OfficialUniverseProvider(InstrumentUniverseProvider):
             "resolutionCoveragePct": 100.0,
             "nativeMic": _MIC,
             "reportDate": report_date.isoformat(),
+            "cotahistReportDate": cotahist_date.isoformat() if cotahist_date else None,
             "identitySource": "B3 BVBG.028.02 official instrument registry",
         }
         return result
