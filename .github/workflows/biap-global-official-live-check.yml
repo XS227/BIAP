@@ -5,6 +5,9 @@ on:
   push:
     branches: [feat/biap-global]
     paths:
+      - 'analysis/global_markets/**'
+      - 'analysis/global_routes.py'
+      - 'analysis/global_api_server.py'
       - '.github/workflows/biap-global-official-live-check.yml'
 
 # validation rerun: 2026-09-27
