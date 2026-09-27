@@ -4,6 +4,9 @@ on:
   push:
     branches: [feat/biap-global]
     paths:
+      - 'analysis/global_markets/german_issuer.py'
+      - 'analysis/global_markets/runtime.py'
+      - 'analysis/tests/test_global_german_issuer.py'
       - '.github/workflows/biap-global-xetra-production-refresh.yml'
   workflow_dispatch:
 
