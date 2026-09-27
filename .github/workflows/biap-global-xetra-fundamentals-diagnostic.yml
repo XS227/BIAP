@@ -57,6 +57,7 @@ jobs:
           from global_markets.cached_esef import CachedESEFFundamentalsProvider
           from global_markets.models import GlobalCompany
 
+          print('DIAGNOSTIC_TARGET', 'DE/XETRA/SIE')
           p=Path('/var/lib/biap-global/scan-cache/DE/XETRA.json')
           obj=json.loads(p.read_text())
           payload=obj.get('payload') or {}
