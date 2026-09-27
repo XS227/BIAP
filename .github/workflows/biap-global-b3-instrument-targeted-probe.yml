@@ -28,13 +28,13 @@ jobs:
 
           spec = get_exchange('BR', 'B3')
           live = B3OfficialUniverseProvider()
-          raw = list(live.list_instruments(country='BR', exchange='B3', spec=spec))
+          raw = list(live.list_instruments(country='BR', exchange='B3'))
           print('LIVE_COUNT', len(raw))
           print('LIVE_PETR4', [(x.ticker, x.name, x.mic_code, x.raw_provider_fields) for x in raw if x.ticker == 'PETR4'])
           print('LIVE_PETR_PREFIX', [(x.ticker, x.name, x.mic_code) for x in raw if 'PETR' in x.ticker][:30])
 
           cached = PersistentUniverseProvider(live)
-          decoded = list(cached.list_instruments(country='BR', exchange='B3', spec=spec))
+          decoded = list(cached.list_instruments(country='BR', exchange='B3'))
           print('DECODED_COUNT', len(decoded))
           print('DECODED_PETR4', [(x.ticker, x.name, x.mic_code, x.raw_provider_fields) for x in decoded if x.ticker == 'PETR4'])
           print('DECODED_PETR_PREFIX', [(x.ticker, x.name, x.mic_code) for x in decoded if 'PETR' in x.ticker][:30])
