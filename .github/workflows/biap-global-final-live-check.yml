@@ -8,6 +8,7 @@ on:
     paths:
       - '.github/workflows/biap-global-final-live-check.yml'
 
+# validation rerun: 2026-09-27
 permissions:
   contents: read
 
