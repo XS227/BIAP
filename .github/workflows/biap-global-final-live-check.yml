@@ -11,7 +11,7 @@ on:
       - 'analysis/global_api_server.py'
       - '.github/workflows/biap-global-final-live-check.yml'
 
-# post-deploy peer benchmark validation: 2026-09-27
+# post-deploy SAP issuer validation: 2026-09-27
 permissions:
   contents: read
 
