@@ -92,7 +92,7 @@ def test_recent_market_scan_supplies_non_official_peer_pe_benchmark(monkeypatch,
             },
         })
     write_json_atomic(scan_path, {
-        "schemaVersion": 1,
+        # Must match the current writer schema in scan_service. A reader/writer\n        # version mismatch previously made valid peer P/E data disappear in\n        # production decision support.\n        "schemaVersion": 3,
         "cachedAt": "2026-09-22T00:00:00+00:00",
         "payload": {"deepResults": peers},
     })
