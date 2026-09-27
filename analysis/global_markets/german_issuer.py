@@ -194,11 +194,15 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
         expected = {"SIE": "SIEMENS", "ALV": "ALLIANZ"}.get(ticker)
         if expected is None:
             raise GlobalProviderError(f"no verified German issuer parser for {ticker}")
-        legal_core = _legal_core(company.name)
         # Deutsche Boerse display labels append legal/share-class markers such as
-        # "AG NA O.N.". Require the verified issuer token at the start while
-        # still rejecting unrelated ticker/name collisions.
-        if legal_core != expected and not legal_core.startswith(expected + " "):
+        # "AG NA O.N.". _legal_core intentionally strips legal suffixes, but may
+        # leave punctuation/share-class tokens attached to the verified issuer
+        # name (for example SIEMENSNAON). Compare a conservative alphanumeric
+        # prefix while still rejecting unrelated ticker/name collisions.
+        legal_core = _legal_core(company.name)
+        normalized_core = re.sub(r"[^A-Z0-9]+", "", legal_core.upper())
+        normalized_expected = re.sub(r"[^A-Z0-9]+", "", expected.upper())
+        if not normalized_core.startswith(normalized_expected):
             raise GlobalProviderError(
                 f"German issuer identity mismatch for {ticker}: {company.name!r}"
             )
