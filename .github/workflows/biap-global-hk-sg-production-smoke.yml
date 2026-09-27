@@ -35,11 +35,11 @@ jobs:
               ('SG','SGX','S68','SGD','2026-06-30','sgx-official-issuer-financial-information'),
           ]
           for country,exchange,ticker,currency,period,provider in cases:
-              r=s.get(f'{base}/instruments/{country}/{exchange}',params={'q':ticker,'limit':5},timeout=90)
+              r=s.get(f'{base}/instruments/{country}/{exchange}',params={'q':ticker,'limit':25},timeout=90)
               print('SEARCH',ticker,r.status_code,r.text[:12000])
               r.raise_for_status()
               rows=r.json().get('instruments') or []
-              exact=[x for x in rows if str(x.get('ticker') or '').lstrip('0').upper()==ticker.lstrip('0').upper()]
+              exact=[x for x in rows if str(x.get('ticker') or '').upper()==ticker.upper() or (str(x.get('ticker') or '').isdigit() and ticker.isdigit() and str(x.get('ticker') or '').lstrip('0')==ticker.lstrip('0'))]
               assert exact, rows
               row=exact[0]
               payload={'country':country,'exchange':exchange,'ticker':row.get('ticker') or ticker,
