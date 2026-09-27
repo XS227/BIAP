@@ -282,7 +282,19 @@ def global_instruments(
                 else:
                     raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
             else:
-                instruments = [item for _, item in _rank_instruments(local, q)]
+                ranked_local = _rank_instruments(local, q)
+                # Exact ticker lookup is the primary mobile/API contract. Keep
+                # it deterministic even if a provider-specific display field
+                # later changes search normalization.
+                if not ranked_local:
+                    q_ticker = _search_text(q).replace(" ", "")
+                    exact_local = [
+                        item for item in local
+                        if _search_text(item.ticker).replace(" ", "") == q_ticker
+                    ]
+                    instruments = exact_local
+                else:
+                    instruments = [item for _, item in ranked_local]
     else:
         try:
             instruments = list(provider.list_instruments(country=country.upper(), exchange=spec.code))
