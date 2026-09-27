@@ -15,44 +15,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
-      - name: Download latest official B3 BVBG.028.02 instrument file
+      - uses: actions/checkout@v4
+      - name: Probe B3 provider before and after persistent cache
+        working-directory: analysis
         run: |
           python - <<'PY'
-          import io,json,zipfile,requests
-          from datetime import date,timedelta
-          page='https://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/boletins-diarios/pesquisa-por-pregao/pesquisa-por-pregao/'
-          endpoint='https://www.b3.com.br/pesquisapregao/download'
-          s=requests.Session()
-          s.headers.update({'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) BIAP-Global B3 instruments'})
-          p=s.get(page,timeout=90)
-          print('PAGE',p.status_code,len(p.content))
-          for back in range(0,5):
-              d=date.today()-timedelta(days=back)
-              fn=f'IN{d:%y%m%d}.zip'
-              try:
-                  with s.get(endpoint,params={'filelist':fn},timeout=(30,240),stream=True) as r:
-                      chunks=[]
-                      size=0
-                      for chunk in r.iter_content(1024*1024):
-                          if chunk:
-                              chunks.append(chunk); size+=len(chunk)
-                      content=b''.join(chunks)
-                  print('TRY',fn,r.status_code,size,r.headers.get('content-type'))
-                  if r.status_code != 200: continue
-                  outer=zipfile.ZipFile(io.BytesIO(content))
-                  names=outer.namelist()
-                  print('OUTER',json.dumps({'filename':fn,'count':len(names),'names':names[:12],'sizes':[outer.getinfo(n).file_size for n in names[:12]]}))
-                  # B3 instrument package is commonly nested. Inspect the newest/largest nested zip/XML only.
-                  parsed=[]
-                  for n in names:
-                      raw=outer.read(n)
-                      if zipfile.is_zipfile(io.BytesIO(raw)):
-                          inner=zipfile.ZipFile(io.BytesIO(raw))
-                          parsed.append({'outer':n,'innerCount':len(inner.namelist()),'innerNames':inner.namelist()[:8],'innerSizes':[inner.getinfo(x).file_size for x in inner.namelist()[:8]]})
-                      else:
-                          parsed.append({'outer':n,'head':raw[:100].decode('utf-8','replace')})
-                  print('NESTED',json.dumps(parsed[:5],ensure_ascii=False))
-                  break
-              except Exception as exc:
-                  print('ERR',fn,type(exc).__name__,str(exc)[:300])
+          from global_markets.country_packs import get_exchange
+          from global_markets.b3_official import B3OfficialUniverseProvider
+          from global_markets.cached_universe import PersistentUniverseProvider
+
+          spec = get_exchange('BR', 'B3')
+          live = B3OfficialUniverseProvider()
+          raw = list(live.list_instruments(country='BR', exchange='B3', spec=spec))
+          print('LIVE_COUNT', len(raw))
+          print('LIVE_PETR4', [(x.ticker, x.name, x.mic_code, x.raw_provider_fields) for x in raw if x.ticker == 'PETR4'])
+          print('LIVE_PETR_PREFIX', [(x.ticker, x.name, x.mic_code) for x in raw if 'PETR' in x.ticker][:30])
+
+          cached = PersistentUniverseProvider(live)
+          decoded = list(cached.list_instruments(country='BR', exchange='B3', spec=spec))
+          print('DECODED_COUNT', len(decoded))
+          print('DECODED_PETR4', [(x.ticker, x.name, x.mic_code, x.raw_provider_fields) for x in decoded if x.ticker == 'PETR4'])
+          print('DECODED_PETR_PREFIX', [(x.ticker, x.name, x.mic_code) for x in decoded if 'PETR' in x.ticker][:30])
+          print('DECODED_SAMPLE', [(x.ticker, x.name, x.mic_code) for x in decoded[:20]])
           PY
