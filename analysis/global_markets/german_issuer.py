@@ -357,8 +357,21 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
         if "sap group" not in lower or "2025" not in lower or "total revenue" not in lower:
             raise GlobalProviderError("SAP FY2025 issuer source identity/period marker missing")
 
-        revenue, revenue_prev = _row_pair(text, "Total revenue")
-        net_income, net_income_prev = _row_pair(text, "Profit after tax")
+        revenue_match = _required_match(
+            r"Total revenue.{0,120}?([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            text,
+            label="SAP total revenue",
+        )
+        income_match = _required_match(
+            r"Profit after tax(?:\s+from continuing operations)?.{0,120}?"
+            r"([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            text,
+            label="SAP profit after tax",
+        )
+        revenue = _million_number(revenue_match.group(1))
+        revenue_prev = _million_number(revenue_match.group(2))
+        net_income = _million_number(income_match.group(1))
+        net_income_prev = _million_number(income_match.group(2))
         eps = float(_required_match(
             r"Earnings per share, basic\s*\(in\s*€\).*?"
             r"([0-9]+(?:\.[0-9]+)?)\s+([0-9]+(?:\.[0-9]+)?)",
