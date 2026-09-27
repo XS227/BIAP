@@ -16,6 +16,8 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+      - name: Install analysis dependencies
+        run: python -m pip install -r analysis/requirements.txt
       - name: Probe B3 provider before and after persistent cache
         working-directory: analysis
         run: |
