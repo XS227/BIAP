@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from math import floor
 from typing import Iterable, Mapping, Optional
 
@@ -76,6 +76,37 @@ def _freshness(company: GlobalCompany, *, now: Optional[datetime] = None) -> tup
     return 0.05, age_days
 
 
+def _fundamental_freshness(
+    company: GlobalCompany,
+    *,
+    now: Optional[datetime] = None,
+) -> tuple[float, Optional[float]]:
+    """Score the reporting period separately from the market-price timestamp.
+
+    A newly observed/cached source must not make an old reporting period look
+    fresh.  The 550-day hard limit allows normal annual-report publication
+    calendars while rejecting statements that are more than one fiscal cycle
+    behind.
+    """
+
+    value = (company.filing_period_end or "").strip()[:10]
+    if not value:
+        return 0.25, None
+    try:
+        period_end = date.fromisoformat(value)
+    except ValueError:
+        return 0.0, None
+    current = (now or datetime.now(timezone.utc)).astimezone(timezone.utc).date()
+    age_days = float(max(0, (current - period_end).days))
+    if age_days <= 450:
+        return 1.0, age_days
+    if age_days <= 550:
+        return 0.65, age_days
+    if age_days <= 730:
+        return 0.25, age_days
+    return 0.05, age_days
+
+
 def _has_source_type(company: GlobalCompany, tokens: tuple[str, ...]) -> bool:
     for source in company.sources:
         kind = source.source_type.lower().replace("-", "_")
@@ -115,7 +146,9 @@ def evidence_agent(
 
     available = sum(getattr(company, field) is not None for field in _EVIDENCE_FIELDS)
     coverage = available / len(_EVIDENCE_FIELDS)
-    freshness_score, price_age_days = _freshness(company, now=now)
+    price_freshness, price_age_days = _freshness(company, now=now)
+    fundamental_freshness, fundamental_age_days = _fundamental_freshness(company, now=now)
+    freshness_score = min(price_freshness, fundamental_freshness)
 
     contradictions: list[str] = []
     confident_positive: list[str] = []
@@ -139,6 +172,10 @@ def evidence_agent(
     # a new portfolio proposal. The analysis can still be shown as blocked.
     if price_age_days is not None and price_age_days > 7:
         missing_critical.append("fresh_price")
+    if company.filing_period_end and fundamental_age_days is None:
+        missing_critical.append("valid_fundamental_period")
+    elif fundamental_age_days is not None and fundamental_age_days > 550:
+        missing_critical.append("fresh_fundamentals")
 
     quality_scores = [max(0.0, min(1.0, source.quality)) for source in company.sources]
     source_quality = sum(quality_scores) / len(quality_scores) if quality_scores else 0.0
@@ -168,6 +205,10 @@ def evidence_agent(
         reasons.append("price timestamp unavailable")
     else:
         reasons.append(f"priceAgeDays={price_age_days:.1f}")
+    if fundamental_age_days is None:
+        reasons.append("fundamentalPeriodAgeDays=unavailable")
+    else:
+        reasons.append(f"fundamentalPeriodAgeDays={fundamental_age_days:.1f}")
     if missing_critical:
         reasons.append("missing=" + ",".join(dict.fromkeys(missing_critical)))
     if contradictions:
