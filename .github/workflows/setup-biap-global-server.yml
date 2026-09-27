@@ -1,4 +1,4 @@
-# Redeploy after HKEX absolute-HKD fix: 2026-09-20
+# Redeploy after peer benchmark scan-cache schema fix: 2026-09-27
 name: Setup BIAP Global server
 
 on:
