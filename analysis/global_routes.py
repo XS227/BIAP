@@ -106,6 +106,11 @@ def _instrument_search_score(item, query: str) -> Optional[int]:
 
     if ticker == q_compact:
         return 1000
+    # HKEX publishes five-digit stock codes (for example 00388), while BIAP
+    # exposes the conventional ticker without leading zeroes (388). Treat only
+    # an all-digit zero-padding difference as exact; 3880 must remain a prefix.
+    if ticker.isdigit() and q_compact.isdigit() and ticker.lstrip("0") == q_compact.lstrip("0"):
+        return 1000
     if ticker.startswith(q_compact):
         return 900
     if isin and isin == q_compact:
