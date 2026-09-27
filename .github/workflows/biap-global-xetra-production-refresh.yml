@@ -63,6 +63,10 @@ jobs:
           p=registry.fundamentals('DE','XETRA')
           enriched=p.enrich_fundamentals(seed)
           print(json.dumps({'SIE_PROVIDER':[s.provider for s in enriched.sources], 'SIE_PERIOD':enriched.filing_period_end, 'SIE_REVENUE':enriched.revenue, 'SIE_EPS':enriched.eps, 'SIE_PRIMARY_ERROR':enriched.raw_provider_fields.get('fundamentals_primary_error')},sort_keys=True))
+          sap_seed=GlobalCompany(country='DE',exchange='XETRA',mic_code='XETR',currency='EUR',ticker='SAP',name='SAP SE O.N.')
+          sap=p.enrich_fundamentals(sap_seed)
+          print(json.dumps({'SAP_PROVIDER':[s.provider for s in sap.sources], 'SAP_PERIOD':sap.filing_period_end, 'SAP_REVENUE':sap.revenue, 'SAP_EPS':sap.eps, 'SAP_PRIMARY_ERROR':sap.raw_provider_fields.get('fundamentals_primary_error')},sort_keys=True))
+          assert any(s.provider == 'de-official-issuer-financials' for s in sap.sources)
           result = scan_global_market(
               country='DE',
               exchange='XETRA',
