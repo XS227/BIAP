@@ -28,12 +28,18 @@ jobs:
 
           spec = get_exchange('BR', 'B3')
           live = B3OfficialUniverseProvider()
+          # Inspect the official daily COTAHIST independently. If PETR4 is
+          # tradable there but absent from BVBG, the universe parser is too
+          # restrictive rather than the ticker being invalid.
+          cot_date, cot = live.client.cotahist_rows()
+          print('COTAHIST_DATE', cot_date)
+          print('COTAHIST_PETR', [(x.get('ticker'), x.get('name'), x.get('specification'), x.get('isin')) for x in cot if 'PETR' in str(x.get('ticker',''))][:30])
           raw = list(live.list_instruments(country='BR', exchange='B3'))
           print('LIVE_COUNT', len(raw))
           print('LIVE_PETR4', [(x.ticker, x.name, x.mic_code, x.raw_provider_fields) for x in raw if x.ticker == 'PETR4'])
           print('LIVE_PETR_PREFIX', [(x.ticker, x.name, x.mic_code) for x in raw if 'PETR' in x.ticker][:30])
 
-          cached = PersistentUniverseProvider(live)
+          cached = PersistentUniverseProvider(live, data_dir='/tmp/biap-global-probe')
           decoded = list(cached.list_instruments(country='BR', exchange='B3'))
           print('DECODED_COUNT', len(decoded))
           print('DECODED_PETR4', [(x.ticker, x.name, x.mic_code, x.raw_provider_fields) for x in decoded if x.ticker == 'PETR4'])
