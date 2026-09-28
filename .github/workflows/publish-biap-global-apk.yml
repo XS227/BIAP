@@ -1,4 +1,4 @@
-# Dynamic-version BIAP Global APK publisher: 2026-09-28
+# Dynamic-version BIAP Global APK publisher: 2026-09-28 stale-evidence refresh
 name: Publish BIAP Global APK
 
 # Publishes the latest successful BIAP Global universal/ARM64 build to the public web download path.
