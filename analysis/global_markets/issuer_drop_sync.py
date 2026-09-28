@@ -24,6 +24,78 @@ from .sgx_issuer import SGXIssuerFundamentalsProvider
 
 
 _BUNDLED_VERIFIED_SNAPSHOTS = {
+    ("FR", "MC"): {
+        "verified": True,
+        "verificationMode": "bundled_verified_snapshot",
+        "sourceProvider": "lvmh-official-financial-documents",
+        "sourceType": "official_issuer_financial_statement",
+        "sourceUrl": (
+            "https://lvmh-com.cdn.prismic.io/lvmh-com/"
+            "aXjqHgIvOtkhB_8I_Financialdocuments-December31,2025.pdf"
+        ),
+        "sourceId": "lvmh-financial-documents-fy2025",
+        "periodEnd": "2025-12-31",
+        "observedAt": "2026-01-27T00:00:00+00:00",
+        "currency": "EUR",
+        "reportScope": "consolidated",
+        "quality": 0.98,
+        "fundamentals": {
+            "revenue": 80_807_000_000.0,
+            "revenue_prev": 84_683_000_000.0,
+            "revenue_yoy_pct": ((80_807 / 84_683) - 1.0) * 100.0,
+            "operating_income": 17_755_000_000.0,
+            "net_income": 10_878_000_000.0,
+            "net_margin_pct": (10_878 / 80_807) * 100.0,
+            "net_margin_prev_pct": (12_550 / 84_683) * 100.0,
+            "total_assets": 142_037_000_000.0,
+            "total_liabilities": 73_088_000_000.0,
+            "total_equity": 68_949_000_000.0,
+            "current_assets": 48_179_000_000.0,
+            "current_liabilities": 30_416_000_000.0,
+            "cash_and_equivalents": 8_794_000_000.0,
+            "operating_cash_flow": 18_874_000_000.0,
+            "free_cash_flow": 11_333_000_000.0,
+            "total_debt": 20_343_000_000.0,
+            "eps": 21.86,
+        },
+    },
+    ("NO", "AKER"): {
+        "verified": True,
+        "verificationMode": "bundled_verified_snapshot",
+        "sourceProvider": "aker-official-annual-report",
+        "sourceType": "official_issuer_financial_statement",
+        "sourceUrl": (
+            "https://www.akerasa.com/~/media/Files/A/aker-corp/"
+            "results-and-presentations/Aker_ASA_Annual_Report-2025.pdf"
+        ),
+        "sourceId": "aker-asa-annual-report-fy2025",
+        "periodEnd": "2025-12-31",
+        "observedAt": "2026-03-25T00:00:00+00:00",
+        "currency": "NOK",
+        "reportScope": "consolidated",
+        "quality": 0.98,
+        "fundamentals": {
+            "revenue": 18_364_000_000.0,
+            "revenue_prev": 12_886_000_000.0,
+            "revenue_yoy_pct": ((18_364 / 12_886) - 1.0) * 100.0,
+            "operating_income": 3_442_000_000.0,
+            "ebitda": 6_582_000_000.0,
+            "net_income": 3_930_000_000.0,
+            "net_margin_pct": (3_930 / 18_364) * 100.0,
+            "net_margin_prev_pct": (7_197 / 12_886) * 100.0,
+            "total_assets": 99_563_000_000.0,
+            "total_liabilities": 48_499_000_000.0,
+            "total_equity": 51_030_000_000.0,
+            "current_assets": 10_560_000_000.0,
+            "current_liabilities": 7_854_000_000.0,
+            "cash_and_equivalents": 2_877_000_000.0,
+            "operating_cash_flow": 4_491_000_000.0,
+            "free_cash_flow": 1_446_000_000.0,
+            "total_debt": 41_566_000_000.0,
+            "interest_expense": 2_289_000_000.0,
+            "eps": 52.91,
+        },
+    },
     ("DE", "ALV"): {
         "verified": True,
         "verificationMode": "bundled_verified_snapshot",
@@ -106,6 +178,21 @@ def _targets():
     return (
         (
             GlobalCompany(
+                country="FR", exchange="EURONEXT_PARIS", mic_code="XPAR",
+                currency="EUR", ticker="MC",
+                name="LVMH Moet Hennessy Louis Vuitton SE",
+            ),
+            None,
+        ),
+        (
+            GlobalCompany(
+                country="NO", exchange="EURONEXT_OSLO", mic_code="XOSL",
+                currency="NOK", ticker="AKER", name="Aker ASA",
+            ),
+            None,
+        ),
+        (
+            GlobalCompany(
                 country="DE", exchange="XETRA", mic_code="XETR",
                 currency="EUR", ticker="ALV", name="Allianz SE",
             ),
@@ -181,6 +268,8 @@ def main() -> int:
     for seed, provider in _targets():
         label = f"{seed.country}/{seed.exchange}/{seed.ticker}"
         try:
+            if provider is None:
+                raise RuntimeError("bundled verified issuer snapshot")
             enriched = provider.enrich_fundamentals(seed)
             record = _record(enriched)
             folder = root / seed.country

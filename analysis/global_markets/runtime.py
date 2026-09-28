@@ -310,6 +310,27 @@ def build_registry() -> ProviderRegistry:
     esef_with_fallback = FallbackFundamentalsProvider(official_europe, public_fundamentals)
     esef_persistent = PersistentFundamentalsProvider(esef_with_fallback)
 
+    # A small number of issuers publish audited statements before the generic
+    # ESEF index used above exposes the new period. Prefer the separately
+    # verified issuer drop for those exact tickers; a missing drop falls through
+    # to the normal ESEF/SEC chain and can never upgrade vendor metrics.
+    fr_drop = VerifiedFilingDropProvider(
+        country="FR",
+        provider_names=("lvmh-official-financial-documents",),
+    )
+    fr_official = FallbackFundamentalsProvider(fr_drop, official_europe)
+    fr_provider = PersistentFundamentalsProvider(
+        FallbackFundamentalsProvider(fr_official, public_fundamentals)
+    )
+    no_drop = VerifiedFilingDropProvider(
+        country="NO",
+        provider_names=("aker-official-annual-report",),
+    )
+    no_official = FallbackFundamentalsProvider(no_drop, official_europe)
+    no_provider = PersistentFundamentalsProvider(
+        FallbackFundamentalsProvider(no_official, public_fundamentals)
+    )
+
     # Germany keeps generic regulatory ESEF/SEC first. Siemens and Allianz are
     # currently absent from the public ESEF index used by BIAP, so an exact,
     # whitelisted issuer-published annual-results adapter is the next official
@@ -339,6 +360,10 @@ def build_registry() -> ProviderRegistry:
             provider = uk_provider
         elif country == "DE":
             provider = de_provider
+        elif country == "FR":
+            provider = fr_provider
+        elif country == "NO":
+            provider = no_provider
         else:
             provider = esef_persistent
         for exchange in COUNTRY_PACKS[country].exchanges:

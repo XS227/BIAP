@@ -10,6 +10,7 @@ on:
       - 'analysis/global_markets/german_issuer.py'
       - 'analysis/global_markets/sgx_issuer.py'
       - 'analysis/global_markets/hkex_issuer.py'
+      - 'analysis/global_markets/runtime.py'
   workflow_dispatch:
   workflow_run:
     workflows: ["Setup BIAP Global server"]
