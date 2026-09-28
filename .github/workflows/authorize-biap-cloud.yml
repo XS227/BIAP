@@ -37,15 +37,13 @@ jobs:
           chmod 700 ~/.ssh
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_deploy_key
           chmod 600 ~/.ssh/biap_deploy_key
-          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
 
       - name: Add BIAP cloud public key
         shell: bash
         run: |
           set -euo pipefail
           PORT="${VPS_PORT:-22}"
-          ssh -i ~/.ssh/biap_deploy_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" \
+          ssh -i ~/.ssh/biap_deploy_key -p "$PORT" -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 "$VPS_USER@$VPS_HOST" \
             "BIAP_CLOUD_PUBLIC_KEY='$BIAP_CLOUD_PUBLIC_KEY' bash -s" <<'REMOTE'
           set -euo pipefail
           mkdir -p "$HOME/.ssh"
