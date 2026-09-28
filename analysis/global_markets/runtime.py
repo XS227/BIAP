@@ -488,10 +488,12 @@ def build_registry() -> ProviderRegistry:
     )
     register_fundamentals("NZ", "NZX", nz_issuer)
 
-    # Other deterministic Yahoo-routed markets currently lack a complete
-    # official filing adapter in this branch. Give those markets useful public
-    # financial metrics now, but deliberately leave recommendation verification
-    # blocked until their official source adapter is connected.
+    # Every configured exchange must still have a non-authoritative display
+    # fallback when its official filing adapter or regulator credential is not
+    # available. This keeps analysis usable and diagnostic instead of failing
+    # with an unconfigured-provider error. Yahoo metrics are explicitly typed
+    # as public vendor data, so Evidence remains BLOCKED and can never promote
+    # these values into recommendation-grade filing evidence.
     for country, pack in COUNTRY_PACKS.items():
         if country == "IR":
             continue
@@ -499,7 +501,6 @@ def build_registry() -> ProviderRegistry:
             key = (country.upper(), exchange.code.upper())
             if key in fundamentals_registered:
                 continue
-            if RegionalYahooChartMarketProvider.supported(country, exchange.code):
-                register_fundamentals(country, exchange.code, public_fundamentals)
+            register_fundamentals(country, exchange.code, public_fundamentals)
 
     return registry
