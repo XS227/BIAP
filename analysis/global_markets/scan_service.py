@@ -1,17 +1,18 @@
 """Public scan orchestration for BIAP Global.
 
 Besides single-exchange scans, this module builds a cached cross-market Top 10
-for the currently finalized US/Europe/Türkiye/Brazil coverage. The global list never
-pads results: only evidence-qualified BUY_CANDIDATE rows are ranked.
+across every enabled non-Iran exchange in the Global catalog. The global list
+never pads results: only evidence-qualified BUY_CANDIDATE rows are ranked, and
+markets without recommendation-grade evidence remain visible as excluded.
 """
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
-import os
 from typing import Optional
 
+from .country_packs import COUNTRY_PACKS
 from .models import GlobalCompany
 from .runtime import build_registry
 from .scanner import GlobalMarketScanner
@@ -22,42 +23,23 @@ from .source_cache import data_root, read_json, write_json_atomic
 _SCAN_CACHE_SCHEMA_VERSION = 3
 
 
-_BASE_GLOBAL_TOP_MARKETS: tuple[tuple[str, str], ...] = (
-    ("US", "NASDAQ"),
-    ("US", "NYSE"),
-    ("GB", "LSE"),
-    ("DE", "XETRA"),
-    ("FR", "EURONEXT_PARIS"),
-    ("NL", "EURONEXT_AMSTERDAM"),
-    ("ES", "BME_MADRID"),
-    ("IT", "EURONEXT_MILAN"),
-    ("SE", "NASDAQ_STOCKHOLM"),
-    ("NO", "EURONEXT_OSLO"),
-    ("DK", "NASDAQ_COPENHAGEN"),
-    ("FI", "NASDAQ_HELSINKI"),
-    ("BE", "EURONEXT_BRUSSELS"),
-    ("IE", "EURONEXT_DUBLIN"),
-    ("PT", "EURONEXT_LISBON"),
-    ("IS", "NASDAQ_ICELAND"),
-    ("TR", "BIST"),
-    ("BR", "B3"),
-)
-
-
 def _global_top_markets() -> tuple[tuple[str, str], ...]:
-    """Return markets whose official fundamentals path can currently qualify.
+    """Return the complete enabled Global scan scope.
 
-    Japan and South Korea are included automatically only when their regulator
-    credentials are configured on the server. This keeps Global Top 10 honest:
-    a market is not advertised as recommendation-capable when Evidence would be
-    forced to BLOCK every stock for missing official filing provenance.
+    Readiness is a result of each scheduled market scan, not a reason to omit a
+    configured country. This distinction is important: omitting an unavailable
+    market made coverage look better than it was and prevented its cache from
+    ever being refreshed after a source or credential was connected.
+
+    Iran stays on its separate legacy/CODAL refresh path and is therefore not
+    mixed into the cross-market Global Top scan.
     """
-    markets = list(_BASE_GLOBAL_TOP_MARKETS)
-    if (os.environ.get("BIAP_EDINET_API_KEY") or "").strip():
-        markets.append(("JP", "TSE_JP"))
-    if (os.environ.get("BIAP_OPENDART_API_KEY") or "").strip():
-        markets.append(("KR", "KRX"))
-    return tuple(markets)
+    return tuple(
+        (country.upper(), exchange.code.upper())
+        for country, pack in COUNTRY_PACKS.items()
+        if pack.enabled and country.upper() != "IR"
+        for exchange in pack.exchanges
+    )
 
 
 def _scan_cache_path(country: str, exchange: str) -> Path:
