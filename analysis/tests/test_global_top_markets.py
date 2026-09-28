@@ -1,24 +1,40 @@
 import global_markets.scan_service as scan_service
+from global_markets.runtime import build_registry
 from global_markets.scan_service import _global_scan_status, _global_top_markets
 
 
-def test_global_top_markets_keep_verified_base_without_regulator_keys(monkeypatch):
+def test_global_top_markets_cover_every_enabled_non_iran_exchange_without_keys(monkeypatch):
     monkeypatch.delenv("BIAP_EDINET_API_KEY", raising=False)
     monkeypatch.delenv("BIAP_OPENDART_API_KEY", raising=False)
     markets = _global_top_markets()
     assert ("BR", "B3") in markets
-    assert ("JP", "TSE_JP") not in markets
-    assert ("KR", "KRX") not in markets
-    assert len(markets) == 18
+    assert ("JP", "TSE_JP") in markets
+    assert ("KR", "KRX") in markets
+    assert ("CA", "TSXV") in markets
+    assert ("AE", "ADX") in markets
+    assert ("IN", "BSE") in markets
+    assert not any(country == "IR" for country, _ in markets)
+    assert len(markets) == 34
 
 
-def test_global_top_markets_add_japan_and_korea_only_with_official_keys(monkeypatch):
+def test_global_top_market_scope_does_not_change_when_regulator_keys_are_added(monkeypatch):
     monkeypatch.setenv("BIAP_EDINET_API_KEY", "configured")
     monkeypatch.setenv("BIAP_OPENDART_API_KEY", "configured")
     markets = _global_top_markets()
     assert ("JP", "TSE_JP") in markets
     assert ("KR", "KRX") in markets
-    assert len(markets) == 20
+    assert len(markets) == 34
+
+
+def test_every_global_scan_market_has_all_three_provider_layers(monkeypatch):
+    monkeypatch.delenv("BIAP_EDINET_API_KEY", raising=False)
+    monkeypatch.delenv("BIAP_OPENDART_API_KEY", raising=False)
+    registry = build_registry()
+
+    for country, exchange in _global_top_markets():
+        assert registry.universe(country, exchange) is not None
+        assert registry.market(country, exchange) is not None
+        assert registry.fundamentals(country, exchange) is not None
 
 
 def test_global_status_never_calls_partial_zero_result_global_no_recommendation():
