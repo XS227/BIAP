@@ -29,7 +29,7 @@ jobs:
           test -n "$VPS_SSH_KEY"
           echo "Target: $VPS_USER@$VPS_HOST:${VPS_PORT:-22}"
 
-      - name: Configure SSH
+      - name: Configure SSH key
         shell: bash
         run: |
           set -euo pipefail
@@ -37,16 +37,20 @@ jobs:
           chmod 700 ~/.ssh
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_deploy_key
           chmod 600 ~/.ssh/biap_deploy_key
-          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
 
-      - name: Install cloud public key
+      - name: Install and verify cloud public key
         shell: bash
         run: |
           set -euo pipefail
           PORT="${VPS_PORT:-22}"
-          ssh -i ~/.ssh/biap_deploy_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" \
-            "NEW_PUBKEY='$NEW_PUBKEY' bash -s" <<'REMOTE'
+          for attempt in 1 2 3 4 5 6; do
+            echo "SSH attempt $attempt/6"
+            if ssh -i ~/.ssh/biap_deploy_key -p "$PORT" \
+              -o BatchMode=yes \
+              -o StrictHostKeyChecking=accept-new \
+              -o ConnectTimeout=10 \
+              "$VPS_USER@$VPS_HOST" \
+              "NEW_PUBKEY='$NEW_PUBKEY' bash -s" <<'REMOTE'
           set -euo pipefail
           umask 077
           mkdir -p "$HOME/.ssh"
@@ -62,3 +66,11 @@ jobs:
           grep -qxF "$NEW_PUBKEY" "$HOME/.ssh/authorized_keys"
           echo "AUTHORIZED_KEY_OK"
           REMOTE
+            then
+              echo "Cloud SSH key installation verified"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Unable to reach VPS over SSH after 6 attempts" >&2
+          exit 1
