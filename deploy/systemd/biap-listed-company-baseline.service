@@ -11,7 +11,6 @@ Environment=PYTHONUNBUFFERED=1
 Environment=BIAP_LISTED_COMPANY_DAILY_BASELINE_BATCH=300
 Environment=BIAP_LISTED_COMPANY_INTERVAL_SECONDS=2.5
 Environment=TINDEX_FULL_ENRICHMENT=false
-EnvironmentFile=-/home/ubuntu/biap-kiasha/XS227-BIAP/analysis/.env.ai
 EnvironmentFile=-/etc/biap/market-memory.env
 EnvironmentFile=-/etc/biap/listed-company.env
 ExecStart=/home/ubuntu/biap-kiasha/XS227-BIAP/analysis/.venv/bin/python /home/ubuntu/biap-kiasha/XS227-BIAP/analysis/run_listed_company_baseline.py
