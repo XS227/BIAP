@@ -28,6 +28,20 @@ def test_global_top_markets_can_limit_operational_ranking_scope(monkeypatch):
     )
 
 
+def test_bounded_scan_cannot_downgrade_complete_market_cache(monkeypatch, tmp_path):
+    path = tmp_path / "NASDAQ.json"
+    monkeypatch.setattr(scan_service, "_scan_cache_path", lambda *_: path)
+    scan_service._write_scan_cache(
+        "US", "NASDAQ", {"rankingEligible": True, "recommendations": [{"ticker": "MSFT"}]}
+    )
+    scan_service._write_scan_cache(
+        "US", "NASDAQ", {"rankingEligible": False, "recommendations": []}
+    )
+    cached = scan_service.read_json(path, default={})["payload"]
+    assert cached["rankingEligible"] is True
+    assert cached["recommendations"][0]["ticker"] == "MSFT"
+
+
 def test_global_top_market_scope_does_not_change_when_regulator_keys_are_added(monkeypatch):
     monkeypatch.setenv("BIAP_EDINET_API_KEY", "configured")
     monkeypatch.setenv("BIAP_OPENDART_API_KEY", "configured")
