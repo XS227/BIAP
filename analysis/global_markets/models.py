@@ -159,6 +159,7 @@ class DistressAssessment:
     altman_zone: Optional[str] = None
     interest_coverage: Optional[float] = None
     synthetic_credit_band: Optional[str] = None
+    approx_default_spread: Optional[float] = None
     available_models: tuple[str, ...] = ()
     missing_inputs: tuple[str, ...] = ()
     reasoning: str = ""
