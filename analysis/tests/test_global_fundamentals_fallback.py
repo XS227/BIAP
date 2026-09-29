@@ -114,3 +114,77 @@ def test_yahoo_supplement_populates_metrics_without_clearing_evidence_gate(monke
     evidence = evidence_agent(enriched)
     assert evidence.status == "BLOCK"
     assert "fundamental_source" in evidence.missing_critical
+
+
+
+class _StaticFundamentals:
+    def __init__(self, provider_id: str, period: str, revenue: float, source_type: str):
+        self.provider_id = provider_id
+        self.period = period
+        self.revenue = revenue
+        self.source_type = source_type
+        self.calls = 0
+
+    def enrich_fundamentals(self, company):
+        from dataclasses import replace
+        self.calls += 1
+        result = replace(company, revenue=self.revenue, filing_period_end=self.period)
+        result.sources = [*result.sources, SourceEvidence(
+            provider=self.provider_id,
+            source_type=self.source_type,
+            source_id=f"{self.provider_id}:{self.period}",
+            period_end=self.period,
+            quality=1.0 if "vendor" not in self.source_type else 0.72,
+        )]
+        return result
+
+
+def test_stale_successful_primary_does_not_suppress_newer_fallback():
+    from global_markets.fallback_fundamentals import FallbackFundamentalsProvider
+
+    primary = _StaticFundamentals("old-esef", "2024-12-31", 100.0, "official_regulatory_xbrl")
+    fallback = _StaticFundamentals("new-vendor", "2025-12-31", 120.0, "public_vendor_financial_metrics")
+    provider = FallbackFundamentalsProvider(primary, fallback)
+
+    seed = GlobalCompany(country="SE", exchange="NASDAQ_STOCKHOLM", currency="SEK", ticker="X", name="X")
+    result = provider.enrich_fundamentals(seed)
+
+    assert primary.calls == 1
+    assert fallback.calls == 1
+    assert result.filing_period_end == "2025-12-31"
+    assert result.revenue == 120.0
+    assert result.raw_provider_fields["fundamentals_primary_stale"] is True
+    assert result.raw_provider_fields["fundamentals_fallback_reason"] == "newer_period_available"
+
+    evidence = evidence_agent(result)
+    assert evidence.status == "BLOCK"
+    assert "fundamental_source" in evidence.missing_critical
+
+
+def test_fresh_primary_does_not_call_fallback():
+    from global_markets.fallback_fundamentals import FallbackFundamentalsProvider
+
+    primary = _StaticFundamentals("fresh-official", "2025-12-31", 100.0, "official_regulatory_xbrl")
+    fallback = _StaticFundamentals("unused", "2026-06-30", 130.0, "public_vendor_financial_metrics")
+    provider = FallbackFundamentalsProvider(primary, fallback)
+
+    seed = GlobalCompany(country="SE", exchange="NASDAQ_STOCKHOLM", currency="SEK", ticker="X", name="X")
+    result = provider.enrich_fundamentals(seed)
+
+    assert result.filing_period_end == "2025-12-31"
+    assert fallback.calls == 0
+
+
+def test_stale_primary_is_kept_when_fallback_is_not_newer():
+    from global_markets.fallback_fundamentals import FallbackFundamentalsProvider
+
+    primary = _StaticFundamentals("old-official", "2024-12-31", 100.0, "official_regulatory_xbrl")
+    fallback = _StaticFundamentals("older-vendor", "2024-06-30", 80.0, "public_vendor_financial_metrics")
+    provider = FallbackFundamentalsProvider(primary, fallback)
+
+    seed = GlobalCompany(country="GB", exchange="LSE", currency="GBP", ticker="X", name="X")
+    result = provider.enrich_fundamentals(seed)
+
+    assert result.filing_period_end == "2024-12-31"
+    assert result.revenue == 100.0
+    assert result.raw_provider_fields["fundamentals_fallback_reason"] == "fallback_not_newer"
