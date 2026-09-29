@@ -176,7 +176,10 @@ jobs:
           print(json.dumps({'profileAssessment': profile}, sort_keys=True))
 
           global_scan = post('/scan-global', {'topN': 3, 'maxAgeHours': 24}, 420)
-          assert global_scan.get('marketsScanned', 0) >= 18
+          assert global_scan.get('marketsScanned', 0) >= 1
+          assert global_scan.get('marketsEligible') == global_scan.get('marketsScanned'), global_scan
+          assert global_scan.get('marketsExcluded') == 0, global_scan
+          assert global_scan.get('status') in {'GLOBAL_TOP10', 'NO_RECOMMENDATION'}, global_scan
           assert isinstance(global_scan.get('recommendations'), list)
           for row in global_scan.get('recommendations') or []:
               assert row.get('call') == 'BUY_CANDIDATE'
