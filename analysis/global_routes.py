@@ -14,6 +14,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from global_markets.country_packs import country_catalog, get_exchange
+from global_markets.credit_scoring import score_individual_credit
 from global_markets.models import InvestorProfile
 from global_markets.runtime import build_registry
 from global_markets.scan_service import scan_global_market, scan_global_top10
@@ -71,6 +72,16 @@ class PortfolioRequest(BaseModel):
     profile: PortfolioProfileRequest
     instruments: list[InstrumentRequest] = Field(min_length=1, max_length=50)
     fxToBase: dict[str, float] = Field(default_factory=dict)
+
+
+class IndividualCreditRequest(BaseModel):
+    paymentOnTimeRatio: float = Field(ge=0, le=1)
+    creditUtilization: float = Field(ge=0)
+    creditHistoryYears: float = Field(ge=0)
+    debtToIncome: float = Field(ge=0)
+    activeAccounts: float = Field(ge=0)
+    bouncedChecks: Optional[float] = Field(default=None, ge=0)
+    pastDefaults: Optional[float] = Field(default=None, ge=0)
 
 
 def _clean_isin(value: Optional[str]) -> Optional[str]:
@@ -399,6 +410,32 @@ def global_analyze(req: InstrumentRequest):
         return analyze_company(_seed(req))
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+
+
+@router.post("/credit/individual")
+def global_individual_credit(req: IndividualCreditRequest):
+    """Agent 10 retail scorecard for hypothetical/research scenarios only.
+
+    Report-only: it never returns approve/decline and must not be treated as a
+    calibrated lender PD without fitting/validation on the lender's own data.
+    """
+    result = score_individual_credit(
+        payment_on_time_ratio=req.paymentOnTimeRatio,
+        credit_utilization=req.creditUtilization,
+        credit_history_years=req.creditHistoryYears,
+        debt_to_income=req.debtToIncome,
+        active_accounts=req.activeAccounts,
+        bounced_checks=req.bouncedChecks,
+        past_defaults=req.pastDefaults,
+    )
+    return {
+        "agent": 10,
+        "mode": "individual",
+        "reportOnly": True,
+        "creditDecision": None,
+        "trainingOnly": True,
+        "creditScoring": result,
+    }
 
 
 @router.post("/portfolio")

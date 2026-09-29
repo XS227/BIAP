@@ -19,6 +19,7 @@ from .advanced_agents import run_advanced_agents
 from .agents import PortfolioCandidate, evidence_agent, portfolio_agent
 from .core_agents import run_core_agents
 from .country_packs import get_exchange
+from .credit_scoring import score_legal_entity_company
 from .decision_support import build_decision_table, profile_assessment
 from .distress import distress_agent
 from .governance import decision_governance_agent
@@ -264,6 +265,7 @@ def _evaluate(company: GlobalCompany, registry: ProviderRegistry):
     signals = run_core_agents(enriched) + run_advanced_agents(enriched)
     evidence = evidence_agent(enriched, signals)
     distress = distress_agent(enriched)
+    credit_scoring = score_legal_entity_company(enriched, distress)
     raw_score, decision_confidence = _weighted_score(signals)
     final_score = raw_score * evidence.confidence_multiplier
     overall_confidence = decision_confidence * evidence.confidence_multiplier
@@ -273,6 +275,7 @@ def _evaluate(company: GlobalCompany, registry: ProviderRegistry):
         signals,
         evidence,
         distress,
+        credit_scoring,
         raw_score,
         final_score,
         decision_confidence,
@@ -349,6 +352,7 @@ def _analysis_payload(
     signals,
     evidence,
     distress: DistressAssessment,
+    credit_scoring: dict,
     raw_score: float,
     score: float,
     decision_confidence: float,
@@ -391,6 +395,7 @@ def _analysis_payload(
         "sourcePlan": _source_plan_payload(enriched.country),
         "evidence": asdict(evidence),
         "distress": asdict(distress),
+        "creditScoring": credit_scoring,
         "governance": asdict(governance),
         "decisionIntegrity": {
             "preliminaryCall": preliminary_call,
@@ -401,7 +406,7 @@ def _analysis_payload(
             "governanceAccepted": governance.accepted,
             "governanceEscalated": governance.escalated,
             "governanceAbstained": governance.abstained,
-            "notes": "Agent 8 governs whether the analysis may be accepted/reviewed/abstained. Agent 9 is an independent distress/credit sidecar that may block a new positive call but never creates BUY/SELL by itself.",
+            "notes": "Agent 8 governs whether the analysis may be accepted/reviewed/abstained. Agent 9 is an independent distress/credit sidecar. Agent 10 is report-only credit scoring for the selected legal entity and never creates or changes BUY/SELL decisions.",
         },
         "signals": [asdict(signal) for signal in signals],
         "decisionTable": build_decision_table(
@@ -465,6 +470,7 @@ def portfolio_from_instruments(
         signals,
         evidence,
         distress,
+        credit_scoring,
         raw_score,
         score,
         decision_confidence,
@@ -498,6 +504,7 @@ def portfolio_from_instruments(
             signals,
             evidence,
             distress,
+            credit_scoring,
             raw_score,
             score,
             decision_confidence,
