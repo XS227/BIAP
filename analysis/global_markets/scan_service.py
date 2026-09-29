@@ -62,6 +62,18 @@ def _scan_cache_path(country: str, exchange: str) -> Path:
 
 
 def _write_scan_cache(country: str, exchange: str, payload: dict) -> None:
+    path = _scan_cache_path(country, exchange)
+    existing = read_json(path, default=None)
+    existing_payload = existing.get("payload") if isinstance(existing, dict) else None
+    # Interactive/bounded scans must never replace a complete scheduled market
+    # artifact.  Doing so made Global Top regress minutes after a successful
+    # refresh whenever a live-check requested only a small discovery sample.
+    if (
+        isinstance(existing_payload, dict)
+        and existing_payload.get("rankingEligible") is True
+        and payload.get("rankingEligible") is not True
+    ):
+        return
     wrapper = {
         "schemaVersion": _SCAN_CACHE_SCHEMA_VERSION,
         "cachedAt": datetime.now(timezone.utc).isoformat(),
@@ -70,7 +82,7 @@ def _write_scan_cache(country: str, exchange: str, payload: dict) -> None:
         "payload": payload,
     }
     try:
-        write_json_atomic(_scan_cache_path(country, exchange), wrapper)
+        write_json_atomic(path, wrapper)
     except OSError:
         pass
 
