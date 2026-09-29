@@ -98,7 +98,7 @@ jobs:
             # Existing country cache directories are owned by the deploy user.
             # France has no dedicated writable directory on older deployments,
             # so publish its verified filing through the shared EU fallback.
-            for country in DE HK NO SG; do
+            for country in AU DE HK NO SG; do
               if [[ -d "$DROP_TMP/$country" ]]; then
                 mkdir -p "$BIAP_GLOBAL_DATA_DIR/filings/$country"
                 cp -a "$DROP_TMP/$country/." "$BIAP_GLOBAL_DATA_DIR/filings/$country/"
