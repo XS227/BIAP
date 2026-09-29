@@ -13,6 +13,7 @@ BATCH2 = [
     ("PT", "EURONEXT_LISBON"),
     ("NO", "EURONEXT_OSLO"),
     ("ES", "BME_MADRID"),
+    ("GR", "ATHENS"),
 ]
 
 

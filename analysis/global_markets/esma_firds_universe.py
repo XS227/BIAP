@@ -39,6 +39,7 @@ _NATIVE_MIC: dict[tuple[str, str], str] = {
     ("PT", "EURONEXT_LISBON"): "XLIS",
     ("NO", "EURONEXT_OSLO"): "XOSL",
     ("ES", "BME_MADRID"): "XMAD",
+    ("GR", "ATHENS"): "XATH",
     ("SE", "NASDAQ_STOCKHOLM"): "XSTO",
     ("DK", "NASDAQ_COPENHAGEN"): "XCSE",
 }
