@@ -24,6 +24,7 @@ def test_requested_markets_are_enabled():
         ("NL", "EURONEXT_AMSTERDAM"),
         ("DE", "XETRA"),
         ("ES", "BME_MADRID"),
+        ("GR", "ATHENS"),
         ("CA", "TSX"),
         ("HK", "HKEX"),
         ("IN", "NSE"),
@@ -44,6 +45,7 @@ def test_vendor_symbol_routing_is_exchange_specific():
     assert RegionalYahooChartMarketProvider._vendor_symbol(company("SE", "NASDAQ_STOCKHOLM", "SEK", "VOLV-B")) == "VOLV-B.ST"
     assert RegionalYahooChartMarketProvider._vendor_symbol(company("DE", "XETRA", "EUR", "SAP")) == "SAP.DE"
     assert RegionalYahooChartMarketProvider._vendor_symbol(company("DE", "FRANKFURT", "EUR", "SAP")) == "SAP.F"
+    assert RegionalYahooChartMarketProvider._vendor_symbol(company("GR", "ATHENS", "EUR", "OTE")) == "OTE.AT"
     assert RegionalYahooChartMarketProvider._vendor_symbol(company("HK", "HKEX", "HKD", "700")) == "0700.HK"
 
 

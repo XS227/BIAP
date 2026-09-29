@@ -101,6 +101,9 @@ COUNTRY_PACKS: dict[str, CountryPack] = {
     "ES": CountryPack("ES", "Spain", (
         E("BME_MADRID", "Bolsa de Madrid", ("EUR",), "XMAD", ("BMEX",)),
     ), "twelve-data", "esef-issuer", "esef-issuer", "Issuer/OAM + ESEF filings", ("IBEX35",), "ibkr"),
+    "GR": CountryPack("GR", "Greece", (
+        E("ATHENS", "Athens Exchange", ("EUR",), "XATH"),
+    ), "twelve-data", "esef-issuer", "esef-issuer", "Athens Exchange + HCMC/ESEF issuer filings", ("ATHEX",), "ibkr"),
     "CH": CountryPack("CH", "Switzerland", (
         E("SIX", "SIX Swiss Exchange", ("CHF",), "XSWX"),
     ), "twelve-data", "six-issuer", "six-issuer", "SIX/issuer disclosures", ("SMI",), "ibkr"),

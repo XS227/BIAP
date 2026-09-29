@@ -35,6 +35,7 @@ _DEFAULT_TARGETS = (
     "DE:XETRA",
     "DE:FRANKFURT",
     "ES:BME_MADRID",
+    "GR:ATHENS",
     "CH:SIX",
     "AU:ASX",
     "NZ:NZX",

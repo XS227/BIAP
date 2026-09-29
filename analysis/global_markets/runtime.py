@@ -67,7 +67,7 @@ from .verified_filing_drop import VerifiedFilingDropProvider
 from .yahoo_fundamentals import YahooFundamentalsProvider
 
 _ESEF_COUNTRIES = (
-    "SE", "NO", "DK", "FI", "IS", "NL", "FR", "BE", "IE", "PT", "IT", "DE", "ES", "GB",
+    "SE", "NO", "DK", "FI", "IS", "NL", "FR", "BE", "IE", "PT", "IT", "DE", "ES", "GR", "GB",
 )
 
 
@@ -216,6 +216,7 @@ def build_registry() -> ProviderRegistry:
     registry.register_universe("PT", "EURONEXT_LISBON", firds_eu)
     registry.register_universe("NO", "EURONEXT_OSLO", firds_eu)
     registry.register_universe("ES", "BME_MADRID", firds_eu)
+    registry.register_universe("GR", "ATHENS", firds_eu)
 
     nasdaq_nordic = PersistentUniverseProvider(
         NasdaqNordicUniverseProvider(),

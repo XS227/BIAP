@@ -34,6 +34,7 @@ _MARKET_SUFFIX: dict[tuple[str, str], str] = {
     ("DE", "XETRA"): ".DE",
     ("DE", "FRANKFURT"): ".F",
     ("ES", "BME_MADRID"): ".MC",
+    ("GR", "ATHENS"): ".AT",
     ("CH", "SIX"): ".SW",
     ("CA", "TSX"): ".TO",
     ("CA", "TSXV"): ".V",

@@ -14,7 +14,7 @@ def test_global_top_markets_cover_every_enabled_non_iran_exchange_without_keys(m
     assert ("AE", "ADX") in markets
     assert ("IN", "BSE") in markets
     assert not any(country == "IR" for country, _ in markets)
-    assert len(markets) == 34
+    assert len(markets) == 35
 
 
 def test_global_top_markets_can_limit_operational_ranking_scope(monkeypatch):
@@ -48,7 +48,7 @@ def test_global_top_market_scope_does_not_change_when_regulator_keys_are_added(m
     markets = _global_top_markets()
     assert ("JP", "TSE_JP") in markets
     assert ("KR", "KRX") in markets
-    assert len(markets) == 34
+    assert len(markets) == 35
 
 
 def test_every_global_scan_market_has_all_three_provider_layers(monkeypatch):
