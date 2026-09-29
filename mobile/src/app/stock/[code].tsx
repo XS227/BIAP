@@ -133,6 +133,8 @@ export default function GlobalStockDetailScreen() {
   const company = analysis?.company;
   const sourcePlan = analysis?.sourcePlan;
   const decision = analysis?.decisionTable;
+  const governance = analysis?.governance;
+  const distress = analysis?.distress;
   const signals = Array.isArray(analysis?.signals) ? analysis!.signals! : [];
   const sources = Array.isArray(company?.sources) ? company!.sources! : [];
   const callTone = decisionColor(analysis?.call, colors.textSecondary);
@@ -193,7 +195,9 @@ export default function GlobalStockDetailScreen() {
 
   const decisionRows = useMemo(() => [
     ['Kiasha call', friendly(analysis?.call)],
-    ['Decision confidence', analysis?.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`],
+    ['Decision confidence', analysis?.decisionConfidence == null ? (analysis?.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`) : `${Math.round(analysis.decisionConfidence * 100)}%`],
+    ['Evidence confidence', analysis?.evidenceConfidence == null ? '—' : `${Math.round(analysis.evidenceConfidence * 100)}%`],
+    ['Overall calibrated', analysis?.overallCalibratedConfidence == null ? (analysis?.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`) : `${Math.round(analysis.overallCalibratedConfidence * 100)}%`],
     ['Short-term outlook', friendly(decision?.shortTermOutlook)],
     ['Long-term outlook', friendly(decision?.longTermOutlook)],
     ['Momentum', friendly(decision?.momentum)],
@@ -212,7 +216,7 @@ export default function GlobalStockDetailScreen() {
     ['New position', friendly(decision?.kiasha?.newPositionAction || analysis?.call)],
     ['If already owned', friendly(decision?.kiasha?.existingHolderAction)],
     ['Evidence', analysis?.evidence?.status || '—'],
-  ], [analysis?.call, analysis?.confidence, analysis?.evidence?.status, decision, dm]);
+  ], [analysis?.call, analysis?.confidence, analysis?.decisionConfidence, analysis?.evidenceConfidence, analysis?.overallCalibratedConfidence, analysis?.evidence?.status, decision, dm]);
 
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} tintColor={Brand.primary} />} contentContainerStyle={styles.content}>
     <View style={styles.maxWidth}>
@@ -245,6 +249,23 @@ export default function GlobalStockDetailScreen() {
           <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Coverage {analysis.evidence?.coverage == null ? '—' : `${Math.round(analysis.evidence.coverage * 100)}%`} • Freshness {analysis.evidence?.freshness_score == null ? '—' : n(analysis.evidence.freshness_score, 2)}</Text>
           <Text style={[styles.agentReason, { color: colors.textSecondary }]}>{analysis.evidence?.reasoning || 'Evidence assessment unavailable.'}</Text>
           {analysis.evidence?.missing_critical?.length ? <Text style={[styles.warning, { color: Brand.warning }]}>Missing critical: {analysis.evidence.missing_critical.join(', ')}</Text> : null}
+        </View>
+
+        <View style={[styles.agentCard, { backgroundColor: colors.backgroundElement, borderColor: governance?.action === 'ACCEPT' ? Brand.positive : governance?.action === 'REVIEW' ? Brand.warning : Brand.negative }]}>
+          <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>Agent 8 · Decision Governance</Text><Text style={[styles.agentVote, { color: governance?.action === 'ACCEPT' ? Brand.positive : governance?.action === 'REVIEW' ? Brand.warning : Brand.negative }]}>{governance?.action || '—'}</Text></View>
+          <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Final call {friendly(governance?.final_call || analysis.call)} • {governance?.accepted ? 'accepted' : governance?.escalated ? 'human review' : governance?.abstained ? 'abstained' : 'pending'}</Text>
+          <Text style={[styles.agentReason, { color: colors.textSecondary }]}>{governance?.reasoning || 'Governance assessment unavailable.'}</Text>
+          {governance?.hard_blocks?.length ? <Text style={[styles.warning, { color: Brand.negative }]}>Hard blocks: {governance.hard_blocks.join(' • ')}</Text> : null}
+          {governance?.review_reasons?.length ? <Text style={[styles.warning, { color: Brand.warning }]}>Review: {governance.review_reasons.join(' • ')}</Text> : null}
+        </View>
+
+        <View style={[styles.agentCard, { backgroundColor: colors.backgroundElement, borderColor: distress?.status === 'HIGH_RISK' ? Brand.negative : distress?.status === 'ELEVATED_RISK' ? Brand.warning : distress?.status === 'LOW_RISK' ? Brand.positive : colors.backgroundSelected }]}>
+          <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>Agent 9 · Distress & Credit</Text><Text style={[styles.agentVote, { color: distress?.status === 'HIGH_RISK' ? Brand.negative : distress?.status === 'ELEVATED_RISK' ? Brand.warning : distress?.status === 'LOW_RISK' ? Brand.positive : colors.textSecondary }]}>{friendly(distress?.status)}</Text></View>
+          <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Zmijewski {distress?.distress_probability == null ? '—' : `${(distress.distress_probability * 100).toFixed(1)}%`} • Altman Z'' {distress?.altman_z_double_prime == null ? '—' : n(distress.altman_z_double_prime, 2)} • ICR {distress?.interest_coverage == null ? '—' : `${n(distress.interest_coverage, 2)}x`}</Text>
+          <Text style={[styles.agentReason, { color: colors.textSecondary }]}>{distress?.reasoning || 'Insufficient verified inputs for distress models.'}</Text>
+          {distress?.synthetic_credit_band ? <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Credit band: {friendly(distress.synthetic_credit_band)}</Text> : null}
+          {distress?.positive_block ? <Text style={[styles.warning, { color: Brand.negative }]}>Positive-decision safety gate active.</Text> : null}
+          {distress?.missing_inputs?.length ? <Text style={[styles.warning, { color: Brand.warning }]}>Not guessed: {distress.missing_inputs.join(', ')}</Text> : null}
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Market & risk</Text>

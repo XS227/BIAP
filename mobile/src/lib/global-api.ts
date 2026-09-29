@@ -50,6 +50,31 @@ export type GlobalEvidence = {
   reasoning?: string;
 };
 
+export type GlobalDistress = {
+  status?: 'LOW_RISK' | 'ELEVATED_RISK' | 'HIGH_RISK' | 'INSUFFICIENT_DATA' | 'NOT_APPLICABLE' | string;
+  positive_block?: boolean;
+  zmijewski_index?: number | null;
+  distress_probability?: number | null;
+  altman_z_double_prime?: number | null;
+  altman_zone?: string | null;
+  interest_coverage?: number | null;
+  synthetic_credit_band?: string | null;
+  available_models?: string[];
+  missing_inputs?: string[];
+  reasoning?: string;
+};
+
+export type GlobalGovernance = {
+  action?: 'ACCEPT' | 'REVIEW' | 'ABSTAIN' | string;
+  final_call?: string;
+  accepted?: boolean;
+  escalated?: boolean;
+  abstained?: boolean;
+  hard_blocks?: string[];
+  review_reasons?: string[];
+  reasoning?: string;
+};
+
 export type GlobalCompanyData = GlobalInstrument & {
   price?: number | null;
   price_observed_at?: string | null;
@@ -156,7 +181,23 @@ export type GlobalAnalysis = {
   call?: 'BUY_CANDIDATE' | 'HOLD_OR_WATCH' | 'AVOID_OR_REVIEW' | 'NO_RECOMMENDATION' | string;
   score?: number;
   confidence?: number;
+  decisionConfidence?: number;
+  evidenceConfidence?: number;
+  overallCalibratedConfidence?: number;
   evidence?: GlobalEvidence;
+  distress?: GlobalDistress;
+  governance?: GlobalGovernance;
+  decisionIntegrity?: {
+    preliminaryCall?: string;
+    finalCall?: string;
+    distressGateApplied?: boolean;
+    crossAgentConsistency?: string;
+    governanceAction?: string;
+    governanceAccepted?: boolean;
+    governanceEscalated?: boolean;
+    governanceAbstained?: boolean;
+    notes?: string;
+  };
   signals?: GlobalAgentSignal[];
   decisionTable?: GlobalDecisionTable;
   company?: GlobalCompanyData;
