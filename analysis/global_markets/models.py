@@ -25,6 +25,11 @@ class SourceEvidence:
     observed_at: Optional[str] = None
     period_end: Optional[str] = None
     quality: float = 1.0
+    # Provenance and audit are deliberately separate. A user-entered/cited
+    # number is never treated as independently verified or audited merely
+    # because it has a citation label.
+    provenance_status: str = "unknown"
+    audit_status: str = "unknown"
     notes: Optional[str] = None
 
 
@@ -87,6 +92,7 @@ class GlobalCompany:
     total_assets: Optional[float] = None
     total_liabilities: Optional[float] = None
     total_equity: Optional[float] = None
+    retained_earnings: Optional[float] = None
     current_assets: Optional[float] = None
     current_liabilities: Optional[float] = None
     cash_and_equivalents: Optional[float] = None
@@ -126,11 +132,35 @@ class EvidenceAssessment:
     freshness_score: float
     contradictions: tuple[str, ...] = ()
     missing_critical: tuple[str, ...] = ()
+    source_quality_score: float = 0.0
+    provenance_status: str = "unknown"
+    audit_status: str = "unknown"
     reasoning: str = ""
 
     @property
     def blocked(self) -> bool:
         return self.status == "BLOCK"
+
+
+@dataclass(frozen=True)
+class DistressAssessment:
+    """Independent solvency/distress sidecar used as a positive-decision gate.
+
+    It is intentionally not an investment vote and cannot create a BUY/SELL
+    recommendation on its own.
+    """
+
+    status: str
+    positive_block: bool
+    zmijewski_index: Optional[float] = None
+    distress_probability: Optional[float] = None
+    altman_z_double_prime: Optional[float] = None
+    altman_zone: Optional[str] = None
+    interest_coverage: Optional[float] = None
+    synthetic_credit_band: Optional[str] = None
+    available_models: tuple[str, ...] = ()
+    missing_inputs: tuple[str, ...] = ()
+    reasoning: str = ""
 
 
 @dataclass(frozen=True)

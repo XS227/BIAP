@@ -17,6 +17,7 @@ from typing import Iterable, Mapping, Optional
 from .decision_support import preference_adjustment
 from .models import (
     AgentSignal,
+    DistressAssessment,
     EvidenceAssessment,
     GlobalCompany,
     InvestorProfile,
@@ -47,6 +48,55 @@ _EVIDENCE_FIELDS = (
 
 _MARKET_SOURCE_TOKENS = ("market", "price", "quote", "history")
 _FUNDAMENTAL_SOURCE_TOKENS = ("filing", "regulatory", "xbrl", "fundamental", "financial_statement")
+_VERIFIED_SOURCE_TOKENS = (
+    "official", "regulatory", "xbrl", "filing", "exchange", "sec", "edgar",
+    "esef", "edinet", "opendart", "issuer", "companies_house",
+)
+
+
+def _source_provenance(source) -> str:
+    explicit = str(getattr(source, "provenance_status", "") or "").strip().lower()
+    if explicit and explicit != "unknown":
+        return explicit
+    text = f"{source.provider} {source.source_type}".lower().replace("-", "_")
+    if source.provider == "biap-derived-metrics" or "derived_" in text:
+        return "derived"
+    if "manual" in text or "user_entered" in text:
+        return "user_entered"
+    if any(token in text for token in _VERIFIED_SOURCE_TOKENS) and (source.source_id or source.source_url or "official" in text or "regulatory" in text):
+        return "independently_verified"
+    if source.source_id or source.source_url:
+        return "cited_source"
+    return "source_supplied"
+
+
+def _aggregate_provenance(company: GlobalCompany) -> str:
+    values = [_source_provenance(source) for source in company.sources]
+    values = [value for value in values if value != "derived"]
+    if not values:
+        return "unknown"
+    if "independently_verified" in values:
+        return "independently_verified"
+    if "cited_source" in values:
+        return "cited_source"
+    if "user_entered" in values:
+        return "user_entered"
+    return "source_supplied"
+
+
+def _aggregate_audit_status(company: GlobalCompany) -> str:
+    explicit = [str(getattr(source, "audit_status", "") or "").strip().lower() for source in company.sources]
+    if "audited" in explicit:
+        return "audited"
+    if "unaudited" in explicit:
+        return "unaudited"
+    opinion = (company.audit_opinion or "").strip().lower()
+    audited_markers = ("unqualified", "qualified", "adverse", "disclaimer")
+    if opinion and "unaudited" not in opinion and any(marker in opinion for marker in audited_markers):
+        return "audited"
+    if "unaudited" in opinion:
+        return "unaudited"
+    return "unknown"
 
 
 def _parse_time(value: Optional[str]) -> Optional[datetime]:
@@ -177,7 +227,13 @@ def evidence_agent(
     elif fundamental_age_days is not None and fundamental_age_days > 550:
         missing_critical.append("fresh_fundamentals")
 
-    quality_scores = [max(0.0, min(1.0, source.quality)) for source in company.sources]
+    provenance_status = _aggregate_provenance(company)
+    audit_status = _aggregate_audit_status(company)
+    quality_scores = [
+        max(0.0, min(1.0, source.quality))
+        for source in company.sources
+        if _source_provenance(source) != "derived"
+    ]
     source_quality = sum(quality_scores) / len(quality_scores) if quality_scores else 0.0
 
     confidence_multiplier = max(
@@ -186,12 +242,16 @@ def evidence_agent(
     )
     if contradictions:
         confidence_multiplier *= 0.70
+    if provenance_status == "user_entered":
+        # Manual input may be useful for research, but it is not independent
+        # verification and cannot silently inherit an "audited" label.
+        confidence_multiplier *= 0.70
     if missing_critical:
         confidence_multiplier = min(confidence_multiplier, 0.20)
 
     if missing_critical:
         status = "BLOCK"
-    elif coverage < 0.35 or freshness_score < 0.65 or contradictions:
+    elif coverage < 0.35 or freshness_score < 0.65 or contradictions or provenance_status == "user_entered":
         status = "WARN"
     else:
         status = "PASS"
@@ -200,6 +260,8 @@ def evidence_agent(
         f"coverage={coverage:.0%}",
         f"freshness={freshness_score:.2f}",
         f"sourceQuality={source_quality:.2f}",
+        f"provenance={provenance_status}",
+        f"auditStatus={audit_status}",
     ]
     if price_age_days is None:
         reasons.append("price timestamp unavailable")
@@ -221,6 +283,9 @@ def evidence_agent(
         freshness_score=freshness_score,
         contradictions=tuple(contradictions),
         missing_critical=tuple(dict.fromkeys(missing_critical)),
+        source_quality_score=source_quality,
+        provenance_status=provenance_status,
+        audit_status=audit_status,
         reasoning="; ".join(reasons),
     )
 
@@ -230,6 +295,7 @@ class PortfolioCandidate:
     company: GlobalCompany
     signals: tuple[AgentSignal, ...]
     evidence: EvidenceAssessment
+    distress: Optional[DistressAssessment] = None
 
 
 def _candidate_score(candidate: PortfolioCandidate) -> tuple[float, float]:
@@ -305,6 +371,9 @@ def portfolio_agent(
         identity = company.identity()
         if candidate.evidence.blocked:
             excluded.append(f"{identity}: evidence blocked ({candidate.evidence.reasoning})")
+            continue
+        if candidate.distress is not None and candidate.distress.positive_block:
+            excluded.append(f"{identity}: distress safety gate ({candidate.distress.reasoning})")
             continue
         if allowed_countries and company.country.upper() not in allowed_countries:
             excluded.append(f"{identity}: country outside investor scope")

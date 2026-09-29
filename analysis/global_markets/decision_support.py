@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Iterable, Optional
 
-from .models import AgentSignal, EvidenceAssessment, GlobalCompany, InvestorProfile
+from .models import AgentSignal, DistressAssessment, EvidenceAssessment, GlobalCompany, InvestorProfile
 
 
 def _safe_ratio(numerator: Optional[float], denominator: Optional[float], *, pct: bool = False) -> Optional[float]:
@@ -56,6 +56,8 @@ def build_decision_table(
     call: str,
     score: float,
     confidence: float,
+    decision_confidence: Optional[float] = None,
+    distress: Optional[DistressAssessment] = None,
 ) -> dict:
     """Return stable, explainable metrics commonly used in stock decisions."""
 
@@ -205,7 +207,13 @@ def build_decision_table(
             "existingHolderAction": holder_action,
             "score": round(float(score), 6),
             "confidence": round(float(confidence), 6),
+            "decisionConfidence": round(float(decision_confidence if decision_confidence is not None else confidence), 6),
+            "evidenceConfidence": round(float(evidence.confidence_multiplier), 6),
             "evidence": evidence.status,
+            "provenance": evidence.provenance_status,
+            "auditStatus": evidence.audit_status,
+            "distressStatus": distress.status if distress is not None else "NOT_RUN",
+            "distressPositiveBlock": bool(distress.positive_block) if distress is not None else False,
         },
         "notes": (
             "Base stock assessment is profile-independent. Investor preferences are applied separately "

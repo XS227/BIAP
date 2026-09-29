@@ -2,8 +2,9 @@
 
 This service is the boundary between UI/API requests and provider/agent logic.
 It validates country/exchange identity, enriches evidence with fault isolation,
-runs six scoring agents plus Evidence/Verification and Portfolio agents, and
-refuses to force a directional call when verification/confidence is insufficient.
+runs six scoring agents plus Evidence/Verification, independent distress/credit
+assessment and Portfolio agents, and refuses to force a directional call when
+verification/confidence is insufficient.
 """
 
 from __future__ import annotations
@@ -19,8 +20,9 @@ from .agents import PortfolioCandidate, evidence_agent, portfolio_agent
 from .core_agents import run_core_agents
 from .country_packs import get_exchange
 from .decision_support import build_decision_table, profile_assessment
+from .distress import distress_agent
 from .fx import TwelveDataFXProvider
-from .models import GlobalCompany, InvestorProfile, SourceEvidence
+from .models import DistressAssessment, GlobalCompany, InvestorProfile, SourceEvidence
 from .providers import ProviderDiagnostics, ProviderRegistry
 from .runtime import build_registry
 from .source_cache import data_root, read_json
@@ -260,22 +262,57 @@ def _evaluate(company: GlobalCompany, registry: ProviderRegistry):
     enriched = _derive_metrics(enriched)
     signals = run_core_agents(enriched) + run_advanced_agents(enriched)
     evidence = evidence_agent(enriched, signals)
-    raw_score, mean_confidence = _weighted_score(signals)
+    distress = distress_agent(enriched)
+    raw_score, decision_confidence = _weighted_score(signals)
     final_score = raw_score * evidence.confidence_multiplier
-    final_confidence = mean_confidence * evidence.confidence_multiplier
-    return enriched, diagnostics, signals, evidence, final_score, final_confidence
+    overall_confidence = decision_confidence * evidence.confidence_multiplier
+    return (
+        enriched,
+        diagnostics,
+        signals,
+        evidence,
+        distress,
+        raw_score,
+        final_score,
+        decision_confidence,
+        overall_confidence,
+    )
 
 
-def _call(score: float, confidence: float, evidence_status: str) -> str:
+def _call(
+    score: float,
+    confidence: float,
+    evidence_status: str,
+    distress: Optional[DistressAssessment] = None,
+) -> str:
     # New BUY candidates are held to the strictest evidence state. WARN can
     # still show analysis, but cannot be promoted into a fresh buy idea.
     if evidence_status == "BLOCK" or confidence < 0.35:
         return "NO_RECOMMENDATION"
     if score >= 0.25 and confidence >= 0.45 and evidence_status == "PASS":
+        if distress is not None and distress.positive_block:
+            return "NO_RECOMMENDATION"
         return "BUY_CANDIDATE"
     if score <= -0.25 and confidence >= 0.45:
         return "AVOID_OR_REVIEW"
     return "HOLD_OR_WATCH"
+
+
+def _distress_consistency(preliminary_call: str, distress: DistressAssessment) -> str:
+    if distress.status in {"HIGH_RISK", "ELEVATED_RISK"}:
+        if preliminary_call == "BUY_CANDIDATE":
+            return "MATERIAL_CONTRADICTION"
+        if preliminary_call == "AVOID_OR_REVIEW":
+            return "STRONG_CORROBORATION"
+        return "RISK_CAUTION"
+    if distress.status == "LOW_RISK":
+        if preliminary_call == "BUY_CANDIDATE":
+            return "SUPPORTIVE"
+        if preliminary_call == "AVOID_OR_REVIEW":
+            return "MIXED"
+    if distress.status == "NOT_APPLICABLE":
+        return "MODEL_NOT_APPLICABLE"
+    return "INSUFFICIENT_DISTRESS_DATA"
 
 
 def _source_plan_payload(country: str) -> dict:
@@ -305,8 +342,20 @@ def _source_plan_payload(country: str) -> dict:
     return plan
 
 
-def _analysis_payload(enriched, diagnostics: ProviderDiagnostics, signals, evidence, score, confidence) -> dict:
-    call = _call(score, confidence, evidence.status)
+def _analysis_payload(
+    enriched,
+    diagnostics: ProviderDiagnostics,
+    signals,
+    evidence,
+    distress: DistressAssessment,
+    raw_score: float,
+    score: float,
+    decision_confidence: float,
+    confidence: float,
+) -> dict:
+    preliminary_call = _call(score, confidence, evidence.status)
+    call = _call(score, confidence, evidence.status, distress)
+    distress_gate_applied = preliminary_call == "BUY_CANDIDATE" and call == "NO_RECOMMENDATION" and distress.positive_block
     return {
         "identity": enriched.identity(),
         "country": enriched.country,
@@ -319,10 +368,23 @@ def _analysis_payload(enriched, diagnostics: ProviderDiagnostics, signals, evide
         "currency": enriched.currency,
         "call": call,
         "score": round(score, 6),
+        "rawScore": round(raw_score, 6),
+        # Backward-compatible "confidence" remains the overall calibrated value.
         "confidence": round(confidence, 6),
+        "decisionConfidence": round(decision_confidence, 6),
+        "evidenceConfidence": round(evidence.confidence_multiplier, 6),
+        "overallCalibratedConfidence": round(confidence, 6),
         "providerDiagnostics": diagnostics.to_dict(),
         "sourcePlan": _source_plan_payload(enriched.country),
         "evidence": asdict(evidence),
+        "distress": asdict(distress),
+        "decisionIntegrity": {
+            "preliminaryCall": preliminary_call,
+            "finalCall": call,
+            "distressGateApplied": distress_gate_applied,
+            "crossAgentConsistency": _distress_consistency(preliminary_call, distress),
+            "notes": "Distress/credit is an independent safety sidecar: it may block a new positive call but never creates BUY/SELL by itself.",
+        },
         "signals": [asdict(signal) for signal in signals],
         "decisionTable": build_decision_table(
             enriched,
@@ -331,6 +393,8 @@ def _analysis_payload(enriched, diagnostics: ProviderDiagnostics, signals, evide
             call=call,
             score=score,
             confidence=confidence,
+            decision_confidence=decision_confidence,
+            distress=distress,
         ),
         "company": asdict(enriched),
     }
@@ -377,11 +441,23 @@ def portfolio_from_instruments(
 
     candidates: list[PortfolioCandidate] = []
     analyses: list[dict] = []
-    for enriched, diagnostics, signals, evidence, score, confidence in staged:
+    for (
+        enriched,
+        diagnostics,
+        signals,
+        evidence,
+        distress,
+        raw_score,
+        score,
+        decision_confidence,
+        confidence,
+    ) in staged:
         currency = enriched.currency.upper()
         block_reasons: list[str] = []
         if evidence.status != "PASS":
             block_reasons.append(f"portfolio requires PASS evidence, got {evidence.status}")
+        if distress.positive_block:
+            block_reasons.append(f"distress safety gate: {distress.reasoning}")
         if currency not in rates:
             block_reasons.append(f"verified FX rate {currency}/{base} unavailable")
 
@@ -398,12 +474,22 @@ def portfolio_from_instruments(
                 reasoning=f"{evidence.reasoning}; " + "; ".join(block_reasons),
             )
 
-        payload = _analysis_payload(enriched, diagnostics, signals, evidence, score, confidence)
+        payload = _analysis_payload(
+            enriched,
+            diagnostics,
+            signals,
+            evidence,
+            distress,
+            raw_score,
+            score,
+            decision_confidence,
+            confidence,
+        )
         payload["portfolioEligible"] = portfolio_evidence.status == "PASS"
         if currency in fx_errors:
             payload["fxError"] = fx_errors[currency]
         analyses.append(payload)
-        candidates.append(PortfolioCandidate(enriched, signals, portfolio_evidence))
+        candidates.append(PortfolioCandidate(enriched, signals, portfolio_evidence, distress))
 
     proposal = portfolio_agent(profile, candidates, fx_to_base=rates)
     return {
