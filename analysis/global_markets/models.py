@@ -25,12 +25,13 @@ class SourceEvidence:
     observed_at: Optional[str] = None
     period_end: Optional[str] = None
     quality: float = 1.0
+    notes: Optional[str] = None
     # Provenance and audit are deliberately separate. A user-entered/cited
     # number is never treated as independently verified or audited merely
-    # because it has a citation label.
+    # because it has a citation label. These fields stay after the legacy
+    # fields so positional SourceEvidence construction remains compatible.
     provenance_status: str = "unknown"
     audit_status: str = "unknown"
-    notes: Optional[str] = None
 
 
 @dataclass
