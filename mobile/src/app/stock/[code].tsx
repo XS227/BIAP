@@ -135,6 +135,7 @@ export default function GlobalStockDetailScreen() {
   const decision = analysis?.decisionTable;
   const governance = analysis?.governance;
   const distress = analysis?.distress;
+  const credit = analysis?.creditScoring;
   const signals = Array.isArray(analysis?.signals) ? analysis!.signals! : [];
   const sources = Array.isArray(company?.sources) ? company!.sources! : [];
   const callTone = decisionColor(analysis?.call, colors.textSecondary);
@@ -266,6 +267,20 @@ export default function GlobalStockDetailScreen() {
           {distress?.synthetic_credit_band ? <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Credit band: {friendly(distress.synthetic_credit_band)}</Text> : null}
           {distress?.positive_block ? <Text style={[styles.warning, { color: Brand.negative }]}>Positive-decision safety gate active.</Text> : null}
           {distress?.missing_inputs?.length ? <Text style={[styles.warning, { color: Brand.warning }]}>Not guessed: {distress.missing_inputs.join(', ')}</Text> : null}
+        </View>
+
+        <View style={[styles.agentCard, { backgroundColor: colors.backgroundElement, borderColor: credit?.indicated_rating_sp ? Brand.positive : credit?.status ? Brand.warning : colors.backgroundSelected }]}>
+          <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>Agent 10 · Corporate Credit Scoring</Text><Text style={[styles.agentVote, { color: credit?.indicated_rating_sp ? Brand.positive : Brand.warning }]}>{credit?.indicated_rating_sp || friendly(credit?.status) || '—'}</Text></View>
+          <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>
+            {credit?.indicated_rating_moodys ? `Moody's grid ${credit.indicated_rating_moodys} • S&P equivalent ${credit.indicated_rating_sp} • 1y PD ${credit.pd_1y == null ? '—' : (credit.pd_1y * 100).toFixed(2) + '%'}` : 'Canonical Agent 10 legal-entity grid'}
+          </Text>
+          <Text style={[styles.agentReason, { color: colors.textSecondary }]}>
+            {credit?.weight_coverage == null ? (credit?.status || 'Credit-scoring inputs unavailable.') : `Grid coverage ${Math.round(credit.weight_coverage * 100)}% • ${credit.investment_grade == null ? 'rating not produced' : credit.investment_grade ? 'investment-grade indicated band' : 'non-investment-grade indicated band'}`}
+          </Text>
+          {credit?.factors ? Object.entries(credit.factors).map(([key, factor]) => <Text key={key} style={[styles.agentConfidence, { color: colors.textSecondary }]}>{friendly(key)}: {factor.value == null ? '—' : typeof factor.value === 'number' ? n(factor.value, 2) : String(factor.value)} • {factor.category || '—'}</Text>) : null}
+          {credit?.factors_missing && Object.keys(credit.factors_missing).length ? <Text style={[styles.warning, { color: Brand.warning }]}>Not guessed: {Object.entries(credit.factors_missing).map(([key, why]) => `${friendly(key)} — ${why}`).join(' • ')}</Text> : null}
+          {credit?.agent9_crosscheck ? <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Agent 9 cross-check: {credit.agent9_crosscheck.damodaran_icr_rating || 'rating —'}{credit.agent9_crosscheck.zmijewski_p_distress == null ? '' : ` • Zmijewski ${(credit.agent9_crosscheck.zmijewski_p_distress * 100).toFixed(1)}%`}</Text> : null}
+          <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Report only • never changes the investment call</Text>
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Market & risk</Text>

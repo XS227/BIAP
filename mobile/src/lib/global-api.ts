@@ -64,6 +64,40 @@ export type GlobalDistress = {
   reasoning?: string;
 };
 
+export type GlobalCreditScoring = {
+  model?: 'individual' | 'legal_entity' | string;
+  status?: string;
+  entity_type?: string;
+  report_only?: boolean;
+  canonical_commit?: string;
+  aggregate_score?: number;
+  indicated_rating_moodys?: string;
+  indicated_rating_sp?: string;
+  investment_grade?: boolean;
+  pd_1y?: number;
+  pd?: number;
+  score?: number;
+  risk_band?: string;
+  weight_coverage?: number;
+  factors?: Record<string, {
+    value?: number | string | null;
+    category?: string;
+    score?: number;
+    weight?: number;
+    note?: string;
+  }>;
+  factors_missing?: Record<string, string>;
+  reason_codes?: string[];
+  contributions_to_log_odds?: Record<string, number>;
+  adverse_history_not_supplied?: string[];
+  agent9_crosscheck?: {
+    damodaran_icr_rating?: string;
+    zmijewski_p_distress?: number;
+  };
+  caveat?: string;
+  source?: string;
+};
+
 export type GlobalGovernance = {
   action?: 'ACCEPT' | 'REVIEW' | 'ABSTAIN' | string;
   final_call?: string;
@@ -186,6 +220,7 @@ export type GlobalAnalysis = {
   overallCalibratedConfidence?: number;
   evidence?: GlobalEvidence;
   distress?: GlobalDistress;
+  creditScoring?: GlobalCreditScoring;
   governance?: GlobalGovernance;
   decisionIntegrity?: {
     preliminaryCall?: string;
@@ -293,6 +328,25 @@ export type GlobalPortfolioProfile = {
   objectives?: Array<'growth' | 'income' | 'value' | 'capital_preservation' | string>;
   liquidityNeed?: 'low' | 'medium' | 'high' | string;
   maxDrawdownComfortPct?: number | null;
+};
+
+export type IndividualCreditScoringInput = {
+  paymentOnTimeRatio: number;
+  creditUtilization: number;
+  creditHistoryYears: number;
+  debtToIncome: number;
+  activeAccounts: number;
+  bouncedChecks?: number | null;
+  pastDefaults?: number | null;
+};
+
+export type IndividualCreditScoringResponse = {
+  agent: number;
+  mode: 'individual';
+  reportOnly: boolean;
+  creditDecision: null;
+  trainingOnly: boolean;
+  creditScoring: GlobalCreditScoring;
 };
 
 export type GlobalPortfolioResponse = {
@@ -435,6 +489,13 @@ export async function scanGlobalTop10(topN = 10, maxAgeHours = 30): Promise<Glob
     method: 'POST',
     body: JSON.stringify({ topN, maxAgeHours }),
   }, 180_000);
+}
+
+export async function scoreIndividualCredit(input: IndividualCreditScoringInput): Promise<IndividualCreditScoringResponse> {
+  return request<IndividualCreditScoringResponse>('/global/credit/individual', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  }, 20_000);
 }
 
 export async function buildGlobalPortfolio(

@@ -42,7 +42,8 @@ const GROUPS: ModuleGroup[] = [
     { key: 'executive-report', title: 'Executive Report', subtitle: 'KPI, risk, valuation and evidence summary', icon: '🧾' },
   ]},
   { key: 'credit', title: 'Credit & Underwriting', accent: Brand.warning, items: [
-    { key: 'credit-lab', title: 'Credit Underwriting Lab', subtitle: 'Hypothetical consumer-finance scenarios: affordability, BKR/bureau, LTV and stress testing', icon: '🧾', href: '/credit-lab' },
+    { key: 'corporate-credit', title: 'Agent 10 · Corporate Credit', subtitle: 'Select a listed company; Agent 9 + Agent 10 run automatically inside Stock Analysis', icon: '🏢', href: '/market' },
+    { key: 'credit-lab', title: 'Agent 10 · Personal Credit', subtitle: 'Separate hypothetical natural-person scorecard plus affordability, LTV and stress testing', icon: '🧾', href: '/credit-lab' },
   ]},
   { key: 'finance', title: 'Financial Modeling', accent: '#4b8cff', items: [
     { key: 'financial-model', title: 'Financial Model', subtitle: 'Normalized official financial statements', icon: '📈' },
@@ -76,6 +77,7 @@ export default function ModulesScreen() {
 
   const stateFor = (item: ModuleItem, group: string) => {
     if (group === 'investment') return 'LIVE GLOBAL';
+    if (group === 'credit' && item.key === 'corporate-credit') return selected ? `SELECTED • ${selected.ticker}` : 'SELECT A STOCK';
     if (group === 'credit') return 'TRAINING • NO CREDIT DECISION';
     if (item.privateData) return hasPrivateData ? 'PRIVATE DATA' : 'PRIVATE DATA REQUIRED';
     if (selected) return `SELECTED • ${selected.ticker}`;
