@@ -90,9 +90,24 @@ jobs:
           export BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global
           mkdir -p "$BIAP_GLOBAL_DATA_DIR/filings"
           if [[ -s /tmp/biap-global-issuer-drops.tgz ]]; then
+            DROP_TMP="$(mktemp -d)"
+            trap 'rm -rf "$DROP_TMP"' EXIT
             tar --extract --gzip --file=/tmp/biap-global-issuer-drops.tgz \
-              --directory="$BIAP_GLOBAL_DATA_DIR/filings" \
+              --directory="$DROP_TMP" \
               --no-same-owner --no-same-permissions --touch
+            # Existing country cache directories are owned by the deploy user.
+            # France has no dedicated writable directory on older deployments,
+            # so publish its verified filing through the shared EU fallback.
+            for country in DE HK NO SG; do
+              if [[ -d "$DROP_TMP/$country" ]]; then
+                mkdir -p "$BIAP_GLOBAL_DATA_DIR/filings/$country"
+                cp -a "$DROP_TMP/$country/." "$BIAP_GLOBAL_DATA_DIR/filings/$country/"
+              fi
+            done
+            if [[ -f "$DROP_TMP/FR/MC.json" ]]; then
+              mkdir -p "$BIAP_GLOBAL_DATA_DIR/filings/EU"
+              cp "$DROP_TMP/FR/MC.json" "$BIAP_GLOBAL_DATA_DIR/filings/EU/MC.json"
+            fi
             rm -f /tmp/biap-global-issuer-drops.tgz
           fi
           bash deploy/sync-global-sources.sh
