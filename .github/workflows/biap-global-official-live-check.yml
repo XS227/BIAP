@@ -28,7 +28,7 @@ jobs:
           base = 'https://biap.dadashi.no/global-api/global'
           cases = [
               ('US', 'NASDAQ', 'AAPL', 'USD', 'sec-edgar-xbrl-cached'),
-              ('FR', 'EURONEXT_PARIS', 'MC', 'EUR', 'esef-xbrl-cached'),
+              ('FR', 'EURONEXT_PARIS', 'MC', 'EUR', 'lvmh-official-financial-documents'),
               ('ES', 'BME_MADRID', 'SAN', 'EUR', 'esef-xbrl-cached'),
               ('TR', 'BIST', 'AKBNK', 'TRY', 'kap-official-financial-summary'),
               ('BR', 'B3', 'PETR4', 'BRL', 'cvm-open-data-dfp-resolved'),
