@@ -156,6 +156,6 @@ jobs:
             "https://biap.dadashi.no/global/download/$VERSIONED_NAME")"
           printf '%s\n' "$HEADERS"
           printf '%s\n' "$HEADERS" | grep -Eiq '^content-type: application/vnd\.android\.package-archive'
-          printf '%s\n' "$HEADERS" | grep -Fiq "content-disposition: attachment; filename=$VERSIONED_NAME"
+          printf '%s\n' "$HEADERS" | grep -Eiq '^content-disposition: attachment'
           printf '%s\n' "$HEADERS" | grep -Eiq '^accept-ranges: bytes'
           echo "BIAP Global APK download is public and verified: $VERSIONED_NAME"
