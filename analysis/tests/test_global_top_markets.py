@@ -17,6 +17,17 @@ def test_global_top_markets_cover_every_enabled_non_iran_exchange_without_keys(m
     assert len(markets) == 34
 
 
+def test_global_top_markets_can_limit_operational_ranking_scope(monkeypatch):
+    monkeypatch.setenv(
+        "BIAP_GLOBAL_RANKING_MARKETS",
+        "US:NASDAQ,FR:EURONEXT_PARIS,XX:NOT_REAL,bad-value",
+    )
+    assert _global_top_markets() == (
+        ("US", "NASDAQ"),
+        ("FR", "EURONEXT_PARIS"),
+    )
+
+
 def test_global_top_market_scope_does_not_change_when_regulator_keys_are_added(monkeypatch):
     monkeypatch.setenv("BIAP_EDINET_API_KEY", "configured")
     monkeypatch.setenv("BIAP_OPENDART_API_KEY", "configured")

@@ -8,6 +8,7 @@ markets without recommendation-grade evidence remain visible as excluded.
 
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -34,12 +35,24 @@ def _global_top_markets() -> tuple[tuple[str, str], ...]:
     Iran stays on its separate legacy/CODAL refresh path and is therefore not
     mixed into the cross-market Global Top scan.
     """
-    return tuple(
+    catalog = tuple(
         (country.upper(), exchange.code.upper())
         for country, pack in COUNTRY_PACKS.items()
         if pack.enabled and country.upper() != "IR"
         for exchange in pack.exchanges
     )
+    configured = (os.environ.get("BIAP_GLOBAL_RANKING_MARKETS") or "").strip()
+    if not configured:
+        return catalog
+
+    requested: list[tuple[str, str]] = []
+    for item in configured.split(","):
+        country, separator, exchange = item.strip().partition(":")
+        if not separator or not country.strip() or not exchange.strip():
+            continue
+        requested.append((country.strip().upper(), exchange.strip().upper()))
+    allowed = set(catalog)
+    return tuple(market for market in requested if market in allowed)
 
 
 def _scan_cache_path(country: str, exchange: str) -> Path:
