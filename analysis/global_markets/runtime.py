@@ -452,7 +452,10 @@ def build_registry() -> ProviderRegistry:
 
     # ASX/issuer disclosures are licensing-sensitive. An authorized ingestion
     # job writes normalized verified records to the server filing drop.
-    au = VerifiedFilingDropProvider(country="AU", provider_names=("asx", "asx-issuer", "issuer"))
+    au = VerifiedFilingDropProvider(
+        country="AU",
+        provider_names=("asx", "asx-issuer", "issuer", "bhp-official-annual-report"),
+    )
     au_with_fallback = FallbackFundamentalsProvider(au, public_fundamentals)
     for exchange in COUNTRY_PACKS["AU"].exchanges:
         register_fundamentals("AU", exchange.code, au_with_fallback)

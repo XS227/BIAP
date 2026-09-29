@@ -24,6 +24,41 @@ from .sgx_issuer import SGXIssuerFundamentalsProvider
 
 
 _BUNDLED_VERIFIED_SNAPSHOTS = {
+    ("AU", "BHP"): {
+        "verified": True,
+        "verificationMode": "bundled_verified_snapshot",
+        "sourceProvider": "bhp-official-annual-report",
+        "sourceType": "official_issuer_financial_statement",
+        "sourceUrl": (
+            "https://www.bhp.com/-/media/documents/investors/annual-reports/"
+            "2025/250819_bhpannualreport2025.pdf"
+        ),
+        "sourceId": "bhp-annual-report-fy2025",
+        "periodEnd": "2025-06-30",
+        "observedAt": "2025-08-19T00:00:00+00:00",
+        "currency": "USD",
+        "reportScope": "consolidated",
+        "quality": 0.98,
+        "fundamentals": {
+            "revenue": 51_262_000_000.0,
+            "revenue_prev": 55_658_000_000.0,
+            "revenue_yoy_pct": ((51_262 / 55_658) - 1.0) * 100.0,
+            "operating_income": 19_464_000_000.0,
+            "net_income": 11_143_000_000.0,
+            "net_margin_pct": (11_143 / 51_262) * 100.0,
+            "net_margin_prev_pct": (9_601 / 55_658) * 100.0,
+            "total_assets": 108_790_000_000.0,
+            "total_liabilities": 56_572_000_000.0,
+            "total_equity": 52_218_000_000.0,
+            "current_assets": 22_830_000_000.0,
+            "current_liabilities": 15_639_000_000.0,
+            "cash_and_equivalents": 11_894_000_000.0,
+            "operating_cash_flow": 18_692_000_000.0,
+            "total_debt": 24_496_000_000.0,
+            "interest_expense": 1_478_000_000.0,
+            "eps": 1.778,
+        },
+    },
     ("FR", "MC"): {
         "verified": True,
         "verificationMode": "bundled_verified_snapshot",
@@ -176,6 +211,14 @@ _FIELDS = (
 
 def _targets():
     return (
+        (
+            GlobalCompany(
+                country="AU", exchange="ASX", mic_code="XASX",
+                currency="AUD", ticker="BHP", name="BHP Group Limited",
+                isin="AU000000BHP4",
+            ),
+            None,
+        ),
         (
             GlobalCompany(
                 country="FR", exchange="EURONEXT_PARIS", mic_code="XPAR",
