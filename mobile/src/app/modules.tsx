@@ -42,8 +42,8 @@ const GROUPS: ModuleGroup[] = [
     { key: 'executive-report', title: 'Executive Report', subtitle: 'KPI, risk, valuation and evidence summary', icon: '🧾' },
   ]},
   { key: 'credit', title: 'Credit & Underwriting', accent: Brand.warning, items: [
-    { key: 'corporate-credit', title: 'Agent 10 · Corporate Credit', subtitle: 'Select a listed company; Agent 9 + Agent 10 run automatically inside Stock Analysis', icon: '🏢', href: '/market' },
-    { key: 'credit-lab', title: 'Agent 10 · Personal Credit', subtitle: 'Separate hypothetical natural-person scorecard plus affordability, LTV and stress testing', icon: '🧾', href: '/credit-lab' },
+    { key: 'corporate-credit', title: 'Agent 10 · Corporate Credit', subtitle: 'Selected company credit rating with Agent 9 + Agent 10', icon: '🏢', href: '/credit-lab' },
+    { key: 'credit-lab', title: 'Agent 10 · Personal Credit', subtitle: 'Separate natural-person scorecard and affordability lab', icon: '🧾', href: '/credit-lab' },
   ]},
   { key: 'finance', title: 'Financial Modeling', accent: '#4b8cff', items: [
     { key: 'financial-model', title: 'Financial Model', subtitle: 'Normalized official financial statements', icon: '📈' },
