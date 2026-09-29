@@ -87,3 +87,29 @@ def test_verified_filing_drop_exposes_bundled_snapshot_mode(tmp_path, monkeypatc
     company = GlobalCompany(country="DE", exchange="XETRA", currency="EUR", ticker="ALV", name="Allianz SE")
     enriched = provider.enrich_fundamentals(company)
     assert enriched.raw_provider_fields["verified_filing_verification_mode"] == "bundled_verified_snapshot"
+
+
+def test_verified_filing_drop_uses_shared_eu_directory_when_country_dir_is_absent(tmp_path, monkeypatch):
+    monkeypatch.setenv("BIAP_GLOBAL_DATA_DIR", str(tmp_path))
+    folder = tmp_path / "filings" / "EU"
+    folder.mkdir(parents=True)
+    (folder / "MC.json").write_text(
+        '{"verified":true,"sourceProvider":"lvmh-official-financial-documents",'
+        '"sourceType":"official_issuer_financial_statement",'
+        '"sourceUrl":"https://www.lvmh.com/en/investors",'
+        '"sourceId":"lvmh-fy2025","periodEnd":"2025-12-31",'
+        '"observedAt":"2026-01-27T00:00:00Z","currency":"EUR",'
+        '"fundamentals":{"revenue":80807000000,"net_income":10878000000}}',
+        encoding="utf-8",
+    )
+    provider = VerifiedFilingDropProvider(
+        country="FR",
+        provider_names=("lvmh-official-financial-documents",),
+    )
+    company = GlobalCompany(
+        country="FR", exchange="EURONEXT_PARIS", currency="EUR",
+        ticker="MC", name="LVMH",
+    )
+    enriched = provider.enrich_fundamentals(company)
+    assert enriched.revenue == 80_807_000_000
+    assert enriched.sources[-1].provider == "lvmh-official-financial-documents"

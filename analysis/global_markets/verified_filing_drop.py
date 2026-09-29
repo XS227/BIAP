@@ -42,7 +42,16 @@ class VerifiedFilingDropProvider(FundamentalsProvider):
 
     def _path(self, company: GlobalCompany) -> Path:
         safe = "".join(ch for ch in company.ticker if ch.isalnum() or ch in {"-", "_", "."})
-        return data_root() / "filings" / self.country / f"{safe}.json"
+        country_path = data_root() / "filings" / self.country / f"{safe}.json"
+        if country_path.exists() or self.country not in {
+            "AT", "BE", "DE", "DK", "ES", "FI", "FR", "GB", "IE", "IS",
+            "IT", "NL", "NO", "PT", "SE",
+        }:
+            return country_path
+        # Some deployments predate country-specific issuer drops and expose a
+        # writable shared European evidence directory. The record is still
+        # accepted only after provider/source/period verification below.
+        return data_root() / "filings" / "EU" / f"{safe}.json"
 
     @staticmethod
     def _number(value: Any) -> Optional[float]:
