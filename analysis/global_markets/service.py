@@ -21,6 +21,7 @@ from .core_agents import run_core_agents
 from .country_packs import get_exchange
 from .decision_support import build_decision_table, profile_assessment
 from .distress import distress_agent
+from .governance import decision_governance_agent
 from .fx import TwelveDataFXProvider
 from .models import DistressAssessment, GlobalCompany, InvestorProfile, SourceEvidence
 from .providers import ProviderDiagnostics, ProviderRegistry
@@ -354,8 +355,20 @@ def _analysis_payload(
     confidence: float,
 ) -> dict:
     preliminary_call = _call(score, confidence, evidence.status)
-    call = _call(score, confidence, evidence.status, distress)
-    distress_gate_applied = preliminary_call == "BUY_CANDIDATE" and call == "NO_RECOMMENDATION" and distress.positive_block
+    governance = decision_governance_agent(
+        proposed_call=preliminary_call,
+        score=score,
+        overall_confidence=confidence,
+        decision_confidence=decision_confidence,
+        evidence=evidence,
+        distress=distress,
+    )
+    call = governance.final_call
+    distress_gate_applied = (
+        preliminary_call == "BUY_CANDIDATE"
+        and call == "NO_RECOMMENDATION"
+        and distress.positive_block
+    )
     return {
         "identity": enriched.identity(),
         "country": enriched.country,
@@ -378,12 +391,17 @@ def _analysis_payload(
         "sourcePlan": _source_plan_payload(enriched.country),
         "evidence": asdict(evidence),
         "distress": asdict(distress),
+        "governance": asdict(governance),
         "decisionIntegrity": {
             "preliminaryCall": preliminary_call,
             "finalCall": call,
             "distressGateApplied": distress_gate_applied,
             "crossAgentConsistency": _distress_consistency(preliminary_call, distress),
-            "notes": "Distress/credit is an independent safety sidecar: it may block a new positive call but never creates BUY/SELL by itself.",
+            "governanceAction": governance.action,
+            "governanceAccepted": governance.accepted,
+            "governanceEscalated": governance.escalated,
+            "governanceAbstained": governance.abstained,
+            "notes": "Agent 8 governs whether the analysis may be accepted/reviewed/abstained. Agent 9 is an independent distress/credit sidecar that may block a new positive call but never creates BUY/SELL by itself.",
         },
         "signals": [asdict(signal) for signal in signals],
         "decisionTable": build_decision_table(

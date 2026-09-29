@@ -165,6 +165,24 @@ class DistressAssessment:
 
 
 @dataclass(frozen=True)
+class GovernanceAssessment:
+    """Agent 8: final decision-governance result.
+
+    Governance never creates an investment thesis. It decides whether the
+    underlying analysis may be accepted, should be reviewed, or must abstain.
+    """
+
+    action: str
+    final_call: str
+    accepted: bool
+    escalated: bool
+    abstained: bool
+    hard_blocks: tuple[str, ...] = ()
+    review_reasons: tuple[str, ...] = ()
+    reasoning: str = ""
+
+
+@dataclass(frozen=True)
 class InvestorProfile:
     capital: float
     base_currency: str
