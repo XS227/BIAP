@@ -7,7 +7,7 @@ import { getSelectedGlobalCompany } from '@/lib/global-company-selection';
 import { getGlobalMarketSelection, type GlobalMarketSelection } from '@/lib/global-market-selection';
 import type { GlobalInstrument } from '@/lib/global-api';
 
-type ModuleItem = { key: string; title: string; subtitle: string; icon: string; href?: '/market' | '/portfolio' | '/kiasha'; privateData?: boolean };
+type ModuleItem = { key: string; title: string; subtitle: string; icon: string; href?: '/market' | '/portfolio' | '/kiasha' | '/credit-lab'; privateData?: boolean };
 type ModuleGroup = { key: string; title: string; accent: string; items: ModuleItem[] };
 
 const GROUPS: ModuleGroup[] = [
@@ -41,6 +41,9 @@ const GROUPS: ModuleGroup[] = [
     { key: 'plan', title: 'Business Plan', subtitle: 'Financial baseline with explicit business assumptions', icon: '📄' },
     { key: 'executive-report', title: 'Executive Report', subtitle: 'KPI, risk, valuation and evidence summary', icon: '🧾' },
   ]},
+  { key: 'credit', title: 'Credit & Underwriting', accent: Brand.warning, items: [
+    { key: 'credit-lab', title: 'Credit Underwriting Lab', subtitle: 'Hypothetical consumer-finance scenarios: affordability, BKR/bureau, LTV and stress testing', icon: '🧾', href: '/credit-lab' },
+  ]},
   { key: 'finance', title: 'Financial Modeling', accent: '#4b8cff', items: [
     { key: 'financial-model', title: 'Financial Model', subtitle: 'Normalized official financial statements', icon: '📈' },
     { key: 'scenario', title: 'Scenario Analysis', subtitle: 'Observed sensitivity inputs; assumptions stay explicit', icon: '🔮' },
@@ -73,6 +76,7 @@ export default function ModulesScreen() {
 
   const stateFor = (item: ModuleItem, group: string) => {
     if (group === 'investment') return 'LIVE GLOBAL';
+    if (group === 'credit') return 'TRAINING • NO CREDIT DECISION';
     if (item.privateData) return hasPrivateData ? 'PRIVATE DATA' : 'PRIVATE DATA REQUIRED';
     if (selected) return `SELECTED • ${selected.ticker}`;
     if (hasPrivateData) return 'PRIVATE DATA';
