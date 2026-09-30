@@ -237,9 +237,12 @@ class YahooFundamentalsProvider(FundamentalsProvider):
         if not any(value is not None for value in values.values()):
             raise GlobalProviderError(f"Yahoo fundamentals returned no annual financial metrics for {symbol}")
 
+        observed_at = datetime.now(timezone.utc).isoformat()
         enriched = replace(
             company,
             reporting_currency=self._currency(payload) or company.reporting_currency,
+            filing_period_end=period_end or company.filing_period_end,
+            filing_observed_at=observed_at,
             revenue=revenue,
             revenue_prev=revenue_prev,
             revenue_yoy_pct=self._pct_change(revenue, revenue_prev),
@@ -271,7 +274,7 @@ class YahooFundamentalsProvider(FundamentalsProvider):
             source_type="public_vendor_financial_metrics",
             source_id=symbol,
             source_url=f"https://finance.yahoo.com/quote/{symbol}/financials/",
-            observed_at=datetime.now(timezone.utc).isoformat(),
+            observed_at=observed_at,
             period_end=period_end,
             quality=0.72,
             notes=(

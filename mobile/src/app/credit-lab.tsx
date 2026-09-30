@@ -229,7 +229,7 @@ export default function CreditLabScreen() {
                   <Text style={[styles.body, { color: colors.textSecondary }]}>{credit?.status || 'Agent 10 does not have enough verified company inputs to produce a rating.'}</Text>
                   {credit?.weight_coverage != null ? <Text style={[styles.body, { color: colors.textSecondary }]}>Available grid coverage: {pct(credit.weight_coverage, 0)}</Text> : null}
                 </>}
-                <Text style={[styles.disclaimerInline, { color: colors.textSecondary }]}>Report-only synthetic credit scoring from canonical Agent 10. It is not an agency-issued rating and does not alter the stock decision.</Text>
+                <Text style={[styles.disclaimerInline, { color: colors.textSecondary }]}>Report-only synthetic credit scoring from canonical Agent 10. It is not an agency-issued rating and does not alter the stock decision. The investment Evidence gate is separate from this credit calculation.</Text>
               </View>
 
               <Text style={[styles.section, { color: colors.text }]}>Agent 9 cross-check</Text>
@@ -265,7 +265,7 @@ export default function CreditLabScreen() {
                   ['Free cash flow', fmt(company?.free_cash_flow, 0)],
                   ['Current assets', fmt(company?.current_assets, 0)],
                   ['Current liabilities', fmt(company?.current_liabilities, 0)],
-                  ['Evidence gate', analysis.evidence?.status || '—'],
+                  ['Investment evidence gate', analysis.evidence?.status || '—'],
                 ].map(([label, value]) => <View key={String(label)} style={styles.dataRow}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>{label}</Text><Text style={[styles.dataValue, { color: colors.text }]}>{value}</Text></View>)}
               </View>
 
