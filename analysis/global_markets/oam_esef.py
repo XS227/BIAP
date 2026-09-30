@@ -86,7 +86,15 @@ class OAMHttp:
         self.timeout = timeout
 
     def client(self) -> httpx.Client:
-        return httpx.Client(timeout=self.timeout, follow_redirects=True, headers={"User-Agent": USER_AGENT})
+        # IPv4 only: the production VPS has an IPv6 route on which FI's OAM
+        # stalls every response until the client read timeout (measured 20-90
+        # s per request vs 0.09 s over IPv4). httpx has no Happy-Eyeballs.
+        return httpx.Client(
+            timeout=self.timeout,
+            follow_redirects=True,
+            headers={"User-Agent": USER_AGENT},
+            transport=httpx.HTTPTransport(local_address="0.0.0.0", retries=1),
+        )
 
     @staticmethod
     def cache_dir() -> Path:
@@ -285,7 +293,15 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
         try:
             with self.http.client() as client, client.stream("GET", url) as response, target.open("wb") as out:
                 response.raise_for_status()
+                first = True
                 for chunk in response.iter_bytes():
+                    if first and chunk:
+                        first = False
+                        # ESEF packages are zip files. OAMs also store PDFs for
+                        # issuers outside ESEF (e.g. third-country issuers);
+                        # stop immediately instead of downloading them.
+                        if not chunk.startswith(b"PK"):
+                            raise GlobalProviderError("OAM document is not an ESEF zip package (non-ESEF filing)")
                     size += len(chunk)
                     if size > MAX_PACKAGE_BYTES:
                         raise GlobalProviderError("OAM ESEF package exceeds size limit")
@@ -340,7 +356,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
         lei, legal_name = self._resolve_lei(company)
         filings = locator.annual_filings(company, lei, legal_name)
         errors: list[str] = []
-        for filing in filings[:3]:
+        for filing in filings[:2]:
             try:
                 package = self.package_facts(filing)
             except GlobalProviderError as exc:

@@ -336,11 +336,16 @@ jobs:
           # Kick off the SE/NO official-OAM ESEF warm in the background so the
           # first app request for a Nordic issuer does not pay the cold OAM
           # package download. Safe to run concurrently with the service.
-          mkdir -p /var/lib/biap-global/logs
-          if ! pgrep -f "global_markets.oam_esef_warm" >/dev/null; then
-            (set -a; source analysis/.env.global; set +a; cd analysis && \
-              BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global setsid nohup .venv-global/bin/python -m global_markets.oam_esef_warm \
-              > /var/lib/biap-global/logs/oam-esef-warm-$(date -u +%Y%m%dT%H%M%SZ).log 2>&1 < /dev/null &)
+          # Transient systemd unit: fully detached from this SSH session.
+          if ! systemctl is-active --quiet biap-global-oam-esef-warm.service; then
+            $SUDO systemctl reset-failed biap-global-oam-esef-warm.service 2>/dev/null || true
+            $SUDO systemd-run --unit=biap-global-oam-esef-warm --collect \
+              --uid="$(id -un)" --gid="$(id -gn)" \
+              --working-directory="$APP_DIR/analysis" \
+              -p EnvironmentFile="$APP_DIR/analysis/.env.global" \
+              -E PYTHONPATH="$APP_DIR/analysis" -E BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global \
+              -E BIAP_OAM_WARM_WORKERS=4 \
+              "$APP_DIR/analysis/.venv-global/bin/python" -m global_markets.oam_esef_warm
           fi
           echo "Global checkout: $(git rev-parse --short HEAD)"
           echo "Global local health OK. Iran production checkout/service were not touched."
