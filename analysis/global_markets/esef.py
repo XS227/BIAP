@@ -18,7 +18,7 @@ can later replace or corroborate it with country OAM/regulator adapters.
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import date
+from datetime import date, timedelta
 import re
 from typing import Any, Optional
 
@@ -62,6 +62,23 @@ def _num(value: Any) -> Optional[float]:
     return None if result != result else result
 
 
+def _period_point(text: str, *, is_end: bool) -> date:
+    """Parse one xBRL period boundary as the *reporting* calendar date.
+
+    xBRL-JSON (OIM) encodes period ends and instants as exclusive midnight
+    datetimes: fiscal year 2025 is ``2025-01-01T00:00:00/2026-01-01T00:00:00``
+    and a 31 Dec 2025 balance is ``2026-01-01T00:00:00``. Treating that
+    exclusive end as the reporting date shifted every duration fact one fiscal
+    year back (the FY2025 filing produced FY2024 revenue/profit). Date-only
+    values (inline XBRL contexts) are already inclusive and stay unchanged.
+    """
+    value = text.strip()
+    day = date.fromisoformat(value[:10])
+    if is_end and len(value) > 10 and value[10:].startswith("T00:00:00"):
+        day = day - timedelta(days=1)
+    return day
+
+
 def _period_parts(raw: Any) -> tuple[Optional[date], Optional[date]]:
     text = str(raw or "").strip()
     if not text:
@@ -69,9 +86,9 @@ def _period_parts(raw: Any) -> tuple[Optional[date], Optional[date]]:
     parts = text.split("/")
     try:
         if len(parts) == 1:
-            instant = date.fromisoformat(parts[0][:10])
+            instant = _period_point(parts[0], is_end=True)
             return instant, instant
-        return date.fromisoformat(parts[0][:10]), date.fromisoformat(parts[-1][:10])
+        return _period_point(parts[0], is_end=False), _period_point(parts[-1], is_end=True)
     except ValueError:
         return None, None
 
@@ -205,23 +222,13 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
     def _margin(value: Optional[float], revenue: Optional[float]) -> Optional[float]:
         return None if value is None or revenue in (None, 0) else value / revenue * 100.0
 
-    def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
-        lei, legal_name = self._resolve_lei(company)
-        filing = self._latest_filing(lei, company.country)
-        attrs = filing.get("attributes") if isinstance(filing.get("attributes"), dict) else {}
-        period_text = str(attrs.get("period_end") or "")[:10]
-        try:
-            period_end = date.fromisoformat(period_text)
-        except ValueError as exc:
-            raise GlobalProviderError(f"invalid ESEF period end {period_text!r}") from exc
-        json_url = str(attrs.get("json_url") or "").strip()
-        if json_url.startswith("/"):
-            json_url = "https://filings.xbrl.org" + json_url
-        xbrl = self._get_json(json_url)
-        facts = self._facts(xbrl)
-        if not facts:
-            raise GlobalProviderError(f"ESEF xBRL-JSON contains no facts for LEI {lei}")
+    def normalized_fields(self, facts: list[dict], period_end: date) -> dict:
+        """Map plain annual IFRS facts to GlobalCompany fields.
 
+        Shared by every ESEF transport (xbrl.org index JSON and national OAM
+        inline-XBRL packages) so one extraction contract applies to all
+        European markets. Missing concepts stay None.
+        """
         concept_facts = {key: self._concept_facts(facts, concepts) for key, concepts in _CONCEPTS.items()}
         revenue = self._duration_value(concept_facts["revenue"], period_end)
         revenue_prev = self._duration_value(concept_facts["revenue"], period_end, previous=True)
@@ -246,6 +253,49 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             if reporting_currency:
                 break
 
+        return {
+            "reporting_currency": reporting_currency,
+            "revenue": revenue,
+            "revenue_prev": revenue_prev,
+            "revenue_yoy_pct": self._pct_change(revenue, revenue_prev),
+            "gross_profit": self._duration_value(concept_facts["gross_profit"], period_end),
+            "operating_income": self._duration_value(concept_facts["operating_income"], period_end),
+            "net_income": net_income,
+            "net_margin_pct": self._margin(net_income, revenue),
+            "net_margin_prev_pct": self._margin(net_income_prev, revenue_prev),
+            "total_assets": self._instant_value(concept_facts["assets"], period_end),
+            "total_liabilities": self._instant_value(concept_facts["liabilities"], period_end),
+            "total_equity": self._instant_value(concept_facts["equity"], period_end),
+            "current_assets": self._instant_value(concept_facts["current_assets"], period_end),
+            "current_liabilities": self._instant_value(concept_facts["current_liabilities"], period_end),
+            "cash_and_equivalents": self._instant_value(concept_facts["cash"], period_end),
+            "operating_cash_flow": ocf,
+            "free_cash_flow": fcf,
+            "total_debt": debt,
+            "interest_expense": self._duration_value(concept_facts["interest_expense"], period_end),
+            "eps": self._duration_value(concept_facts["eps"], period_end),
+        }
+
+    def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
+        lei, legal_name = self._resolve_lei(company)
+        filing = self._latest_filing(lei, company.country)
+        attrs = filing.get("attributes") if isinstance(filing.get("attributes"), dict) else {}
+        period_text = str(attrs.get("period_end") or "")[:10]
+        try:
+            period_end = date.fromisoformat(period_text)
+        except ValueError as exc:
+            raise GlobalProviderError(f"invalid ESEF period end {period_text!r}") from exc
+        json_url = str(attrs.get("json_url") or "").strip()
+        if json_url.startswith("/"):
+            json_url = "https://filings.xbrl.org" + json_url
+        xbrl = self._get_json(json_url)
+        facts = self._facts(xbrl)
+        if not facts:
+            raise GlobalProviderError(f"ESEF xBRL-JSON contains no facts for LEI {lei}")
+
+        normalized = self.normalized_fields(facts, period_end)
+        reporting_currency = normalized.pop("reporting_currency")
+
         try:
             errors = int(attrs.get("error_count") or 0)
         except (TypeError, ValueError):
@@ -266,25 +316,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             name=legal_name or company.name,
             lei=lei,
             reporting_currency=reporting_currency or company.reporting_currency,
-            revenue=revenue,
-            revenue_prev=revenue_prev,
-            revenue_yoy_pct=self._pct_change(revenue, revenue_prev),
-            gross_profit=self._duration_value(concept_facts["gross_profit"], period_end),
-            operating_income=self._duration_value(concept_facts["operating_income"], period_end),
-            net_income=net_income,
-            net_margin_pct=self._margin(net_income, revenue),
-            net_margin_prev_pct=self._margin(net_income_prev, revenue_prev),
-            total_assets=self._instant_value(concept_facts["assets"], period_end),
-            total_liabilities=self._instant_value(concept_facts["liabilities"], period_end),
-            total_equity=self._instant_value(concept_facts["equity"], period_end),
-            current_assets=self._instant_value(concept_facts["current_assets"], period_end),
-            current_liabilities=self._instant_value(concept_facts["current_liabilities"], period_end),
-            cash_and_equivalents=self._instant_value(concept_facts["cash"], period_end),
-            operating_cash_flow=ocf,
-            free_cash_flow=fcf,
-            total_debt=debt,
-            interest_expense=self._duration_value(concept_facts["interest_expense"], period_end),
-            eps=self._duration_value(concept_facts["eps"], period_end),
+            **normalized,
             filing_period_end=period_end.isoformat(),
             filing_observed_at=processed,
             report_scope=None,

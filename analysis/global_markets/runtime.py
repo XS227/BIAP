@@ -36,6 +36,7 @@ from .euronext_live import EuronextRegulatedUniverseProvider
 from .nasdaq_nordic import NasdaqNordicUniverseProvider
 from .nzx_official import NZXOfficialUniverseProvider
 from .nzx_issuer import NZXIssuerFundamentalsProvider
+from .oam_esef import NationalOAMESEFProvider
 from .fallback_fundamentals import FallbackFundamentalsProvider
 from .german_issuer import GermanIssuerFundamentalsProvider
 from .hkex_issuer import HKEXIssuerFundamentalsProvider
@@ -323,11 +324,22 @@ def build_registry() -> ProviderRegistry:
     fr_provider = PersistentFundamentalsProvider(
         FallbackFundamentalsProvider(fr_official, public_fundamentals)
     )
+    # Sweden/Norway: the issuer's ESEF annual report as lodged with the
+    # national officially appointed mechanism (FI Börsinformation / Oslo
+    # Newsweb) is read first. filings.xbrl.org is only an index and lagged a
+    # whole annual cycle for these countries, which pushed every issuer onto a
+    # stale FY2024 filing and then onto vendor metrics. The index remains the
+    # second official path; vendor metrics stay display-only.
+    oam_esef = NationalOAMESEFProvider()
+    nordic_oam_official = FallbackFundamentalsProvider(oam_esef, official_europe)
+    se_provider = PersistentFundamentalsProvider(
+        FallbackFundamentalsProvider(nordic_oam_official, public_fundamentals)
+    )
     no_drop = VerifiedFilingDropProvider(
         country="NO",
         provider_names=("aker-official-annual-report",),
     )
-    no_official = FallbackFundamentalsProvider(no_drop, official_europe)
+    no_official = FallbackFundamentalsProvider(nordic_oam_official, no_drop)
     no_provider = PersistentFundamentalsProvider(
         FallbackFundamentalsProvider(no_official, public_fundamentals)
     )
@@ -365,6 +377,8 @@ def build_registry() -> ProviderRegistry:
             provider = fr_provider
         elif country == "NO":
             provider = no_provider
+        elif country == "SE":
+            provider = se_provider
         else:
             provider = esef_persistent
         for exchange in COUNTRY_PACKS[country].exchanges:

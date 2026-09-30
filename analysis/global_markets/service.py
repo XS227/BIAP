@@ -17,6 +17,7 @@ from typing import Iterable, Optional
 
 from .advanced_agents import run_advanced_agents
 from .agents import PortfolioCandidate, evidence_agent, portfolio_agent
+from .evidence_contract import fundamental_evidence_contract
 from .core_agents import run_core_agents
 from .country_packs import get_exchange
 from .credit_scoring import score_legal_entity_company
@@ -394,6 +395,7 @@ def _analysis_payload(
         "providerDiagnostics": diagnostics.to_dict(),
         "sourcePlan": _source_plan_payload(enriched.country),
         "evidence": asdict(evidence),
+        "fundamentalEvidence": fundamental_evidence_contract(enriched),
         "distress": asdict(distress),
         "creditScoring": credit_scoring,
         "governance": asdict(governance),

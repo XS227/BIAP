@@ -137,6 +137,11 @@ class EvidenceAssessment:
     provenance_status: str = "unknown"
     audit_status: str = "unknown"
     reasoning: str = ""
+    # Exact official-fundamentals classification (diagnostic only; the gate
+    # itself is missing_critical). OFFICIAL_CURRENT / OFFICIAL_STALE /
+    # OFFICIAL_SOURCE_UNAVAILABLE.
+    official_fundamental_status: str = "unknown"
+    official_fundamental_detail: str = ""
 
     @property
     def blocked(self) -> bool:

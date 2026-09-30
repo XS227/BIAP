@@ -5,11 +5,27 @@ development. This preserves the existing `/api/stock/*` production contract and
 lets the mobile/web client point to a separate staging origin.
 """
 
+from pathlib import Path
+import subprocess
+
 from fastapi import FastAPI
 
 from global_routes import router as global_router
 from global_source_routes import router as global_source_router
 
+
+def _running_commit() -> str | None:
+    """Commit of the checkout this process was started from (read once)."""
+    try:
+        return subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=Path(__file__).resolve().parent,
+            capture_output=True, text=True, timeout=5, check=True,
+        ).stdout.strip() or None
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+RUNNING_COMMIT = _running_commit()
 
 app = FastAPI(title="BIAP Global research service")
 app.include_router(global_router)
@@ -23,4 +39,5 @@ def health():
         "service": "biap-global",
         "liveTrading": False,
         "productionIranModified": False,
+        "commit": RUNNING_COMMIT,
     }

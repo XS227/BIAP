@@ -21,6 +21,7 @@ import os
 from pathlib import Path
 from typing import Optional
 
+from .evidence_contract import fundamental_evidence_contract, is_official_fundamental_source, official_fundamental_sources
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
 
@@ -44,6 +45,9 @@ _FUNDAMENTAL_FIELDS = (
 # legal identity, but it is not an official financial statement.
 _OFFICIAL_FINANCIAL_TOKENS = ("filing", "regulatory", "xbrl", "financial_statement")
 _CACHE_SOURCE_TOKENS = (*_OFFICIAL_FINANCIAL_TOKENS, "fundamental", "financial_metrics", "company_registry")
+# v3: canonical evidence contract stored with every snapshot; official flag is
+# re-verified against stored source rows on read.
+CACHE_SCHEMA_VERSION = 3
 MAX_OFFICIAL_FILING_AGE_DAYS = int(os.environ.get("BIAP_GLOBAL_MAX_OFFICIAL_FILING_AGE_DAYS", "550"))
 
 
@@ -63,14 +67,22 @@ def _parse_iso(value: object) -> Optional[datetime]:
 
 
 def _official_sources(company: GlobalCompany) -> list[SourceEvidence]:
-    rows: list[SourceEvidence] = []
-    for source in company.sources:
-        kind = source.source_type.lower().replace("-", "_")
-        provider = source.provider.lower()
-        if "vendor" in kind or "vendor" in provider:
+    # One definition shared with EvidenceAgent and the API contract.
+    return official_fundamental_sources(company)
+
+
+def _payload_official_sources(payload: dict) -> list[dict]:
+    """Official rows actually present in a stored snapshot (never trusts the flag)."""
+    rows = []
+    for raw in payload.get("sources") or []:
+        if not isinstance(raw, dict):
             continue
-        if any(token in kind for token in _OFFICIAL_FINANCIAL_TOKENS):
-            rows.append(source)
+        try:
+            source = SourceEvidence(**{key: raw.get(key) for key in SourceEvidence.__dataclass_fields__ if key in raw})
+        except TypeError:
+            continue
+        if is_official_fundamental_source(source):
+            rows.append(raw)
     return rows
 
 
@@ -133,7 +145,7 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
             payload = json.loads(self._latest_path(company).read_text(encoding="utf-8"))
         except (OSError, ValueError, TypeError):
             return None
-        if not isinstance(payload, dict) or payload.get("schemaVersion") not in {1, 2}:
+        if not isinstance(payload, dict) or payload.get("schemaVersion") not in {1, 2, CACHE_SCHEMA_VERSION}:
             return None
         identity = payload.get("identity") if isinstance(payload.get("identity"), dict) else {}
         if str(identity.get("country") or "").upper() != company.country.upper():
@@ -142,6 +154,13 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
             return None
         if str(identity.get("ticker") or "").upper() != company.ticker.upper():
             return None
+        # A snapshot may claim officialEvidence without carrying a verifiable
+        # official source row (older writers, or metadata lost in transit).
+        # Such a claim is never honoured: the record is treated as
+        # non-official, so it cannot short-circuit a refresh and cannot be
+        # served as official evidence.
+        if payload.get("officialEvidence") and not _payload_official_sources(payload):
+            payload = {**payload, "officialEvidence": False, "officialClaimRejected": True}
         return payload
 
     @staticmethod
@@ -165,7 +184,7 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         # Schema v2 adds shareholder-return fields such as dividend/share.
         # A v1 cache can still be used as an outage fallback, but it is never
         # considered fresh so the next normal request refreshes it once.
-        if payload.get("schemaVersion") != 2:
+        if payload.get("schemaVersion") != CACHE_SCHEMA_VERSION:
             return False
         # A changed upstream/provider id can represent parser semantics or a
         # different evidence chain. Never let a previous provider snapshot
@@ -184,13 +203,14 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         sources = [asdict(source) for source in _cache_sources(company)]
         official = bool(_official_sources(company))
         payload = {
-            "schemaVersion": 2,
+            "schemaVersion": CACHE_SCHEMA_VERSION,
             "identity": {
                 "country": company.country,
                 "exchange": company.exchange,
                 "mic_code": company.mic_code,
                 "ticker": company.ticker,
                 "isin": company.isin,
+                "lei": company.lei,
             },
             "provider": self.upstream_id,
             "fetchedAt": _utc_now().isoformat(),
@@ -199,6 +219,7 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
             "fundamentals": {field: getattr(company, field) for field in _FUNDAMENTAL_FIELDS},
             "raw_provider_fields": company.raw_provider_fields,
             "sources": sources,
+            "evidenceContract": fundamental_evidence_contract(company),
         }
         directory = self._directory(company)
         directory.mkdir(parents=True, exist_ok=True)
@@ -274,14 +295,20 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
             "fresh": self._is_fresh(payload),
         }
 
+    def _current_official(self, payload: Optional[dict]) -> bool:
+        return (
+            payload is not None
+            and bool(payload.get("officialEvidence"))
+            and bool(_payload_official_sources(payload))
+            and not self._stale_official_filing(payload)
+        )
+
     def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
         cached = self._read(company)
         if cached is not None and bool(cached.get("officialEvidence")) and self._is_fresh(cached):
             return self._decode(company, cached, fallback=False)
         try:
             enriched = self.upstream.enrich_fundamentals(company)
-            self._write(enriched)
-            return enriched
         except Exception as exc:
             # Outage resilience must not resurrect an obsolete official filing:
             # stale annual evidence is less trustworthy than an explicit block.
@@ -290,3 +317,17 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
             if isinstance(exc, GlobalProviderError):
                 raise
             raise GlobalProviderError(f"fundamentals unavailable and no cache exists: {type(exc).__name__}") from exc
+        if not _official_sources(enriched) and self._current_official(cached):
+            # Never let a weaker (vendor/non-official) refresh overwrite a
+            # still-current official snapshot. Serve the official snapshot and
+            # record why; the vendor result is not persisted over it.
+            preserved = self._decode(company, cached, fallback=True)
+            return replace(preserved, raw_provider_fields={
+                **preserved.raw_provider_fields,
+                "fundamentals_official_preserved": True,
+                "fundamentals_refresh_non_official_provider": ",".join(
+                    sorted({s.provider for s in enriched.sources if "financial" in s.source_type or "fundamental" in s.source_type})
+                ) or None,
+            })
+        self._write(enriched)
+        return enriched

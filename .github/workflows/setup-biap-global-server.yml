@@ -274,6 +274,31 @@ jobs:
                   removed = 1
           print(f"SIX pre-SEC-alias universe snapshots removed: {removed}")
           PY
+          # Evidence contract v3 migration. ESEF xBRL-JSON snapshots written
+          # before the exclusive-period-end fix carry the PRIOR fiscal year's
+          # income/cash-flow values. Remove only those normalized latest
+          # snapshots (history archives stay) so they cannot be served as an
+          # outage fallback; the next request re-derives them from the filing.
+          # Snapshots whose officialEvidence flag lacks an official source row
+          # are demoted on read by the v3 cache and never trusted.
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          removed = kept = 0
+          for path in Path("/var/lib/biap-global/fundamentals").glob("*/*/*/latest.json"):
+              try:
+                  payload = json.loads(path.read_text(encoding="utf-8"))
+              except Exception:
+                  continue
+              if int(payload.get("schemaVersion") or 0) >= 3:
+                  kept += 1
+                  continue
+              providers = [str((s or {}).get("provider") or "") for s in payload.get("sources") or []]
+              if any(p.startswith("esef-xbrl") for p in providers):
+                  path.unlink(missing_ok=True)
+                  removed += 1
+          print(f"ESEF pre-period-fix latest snapshots removed: {removed}; v3 kept: {kept}")
+          PY
           PYTHONPATH=analysis BIAP_GLOBAL_UNIVERSE_SYNC_MARKETS=SE:NASDAQ_STOCKHOLM timeout 360 analysis/.venv-global/bin/python -m global_markets.universe_sync
           PYTHONPATH=analysis BIAP_GLOBAL_UNIVERSE_SYNC_MARKETS=DK:NASDAQ_COPENHAGEN timeout 360 analysis/.venv-global/bin/python -m global_markets.universe_sync
 
@@ -308,6 +333,15 @@ jobs:
 
           bash deploy/configure-global-route.sh
           $SUDO systemctl list-timers --all biap-global-source-sync.timer --no-pager || true
+          # Kick off the SE/NO official-OAM ESEF warm in the background so the
+          # first app request for a Nordic issuer does not pay the cold OAM
+          # package download. Safe to run concurrently with the service.
+          mkdir -p /var/lib/biap-global/logs
+          if ! pgrep -f "global_markets.oam_esef_warm" >/dev/null; then
+            (set -a; source analysis/.env.global; set +a; cd analysis && \
+              BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global setsid nohup .venv-global/bin/python -m global_markets.oam_esef_warm \
+              > /var/lib/biap-global/logs/oam-esef-warm-$(date -u +%Y%m%dT%H%M%SZ).log 2>&1 < /dev/null &)
+          fi
           echo "Global checkout: $(git rev-parse --short HEAD)"
           echo "Global local health OK. Iran production checkout/service were not touched."
           REMOTE

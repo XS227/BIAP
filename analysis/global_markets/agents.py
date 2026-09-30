@@ -15,6 +15,7 @@ from math import floor
 from typing import Iterable, Mapping, Optional
 
 from .decision_support import preference_adjustment
+from .evidence_contract import official_fundamental_sources, official_fundamental_status
 from .models import (
     AgentSignal,
     DistressAssessment,
@@ -191,8 +192,11 @@ def evidence_agent(
         missing_critical.append("source_provenance")
     if not _has_source_type(company, _MARKET_SOURCE_TOKENS):
         missing_critical.append("market_source")
-    if not _has_source_type(company, _FUNDAMENTAL_SOURCE_TOKENS):
+    # Canonical contract: the same official-financial-statement test used by
+    # the fundamentals cache and the API payload (vendor types never count).
+    if not official_fundamental_sources(company):
         missing_critical.append("fundamental_source")
+    official_status, official_detail = official_fundamental_status(company, now=now)
 
     available = sum(getattr(company, field) is not None for field in _EVIDENCE_FIELDS)
     coverage = available / len(_EVIDENCE_FIELDS)
@@ -273,6 +277,7 @@ def evidence_agent(
         reasons.append(f"fundamentalPeriodAgeDays={fundamental_age_days:.1f}")
     if missing_critical:
         reasons.append("missing=" + ",".join(dict.fromkeys(missing_critical)))
+    reasons.append(f"officialFundamentals={official_status} ({official_detail})")
     if contradictions:
         reasons.extend(contradictions)
 
@@ -287,6 +292,8 @@ def evidence_agent(
         provenance_status=provenance_status,
         audit_status=audit_status,
         reasoning="; ".join(reasons),
+        official_fundamental_status=official_status,
+        official_fundamental_detail=official_detail,
     )
 
 

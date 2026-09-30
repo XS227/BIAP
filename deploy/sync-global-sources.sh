@@ -37,6 +37,14 @@ if ! "$PY" -m global_markets.official_cache_warm; then
   echo "OFFICIAL_CACHE_WARM: refresh degraded; existing snapshots preserved" >&2
 fi
 
+# Sweden/Norway: pre-parse the issuers' official ESEF annual reports from the
+# national OAMs (FI Börsinformation / Oslo Newsweb) for the whole universe.
+# Parsed documents are cached permanently by OAM document id, so after the
+# first pass this only re-reads OAM listings for new filings.
+if ! "$PY" -m global_markets.oam_esef_warm; then
+  echo "OAM_ESEF_WARM: refresh degraded; existing snapshots preserved" >&2
+fi
+
 # Brazil: CVM DFP is the annual regulator-published fundamentals base. CVM ITR is
 # a second official quarterly filing stream used as corroboration/freshness only.
 # Both datasets are updated weekly; refresh compact indexes at most every 6 days.
