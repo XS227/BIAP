@@ -144,6 +144,8 @@ export type GlobalCompanyData = GlobalInstrument & {
   current_liabilities?: number | null;
   operating_cash_flow?: number | null;
   free_cash_flow?: number | null;
+  ebitda?: number | null;
+  interest_expense?: number | null;
   total_debt?: number | null;
   audit_opinion?: string | null;
   material_event_flags?: string[];
