@@ -104,6 +104,17 @@ def test_extended_market_data_resolves_symbol_before_requests(monkeypatch):
     assert all("123456" in url for url in urls)
 
 
+def test_find_quote_numeric_code_bypasses_watchlist(monkeypatch):
+    monkeypatch.setattr(
+        md,
+        "fetch_watchlist",
+        lambda **kwargs: (_ for _ in ()).throw(AssertionError("watchlist should not be called")),
+    )
+    expected = md.LiveQuote("123456", "TEST", 1000, 990, 980, 20, 2.04)
+    monkeypatch.setattr(md, "_fetch_tsetmc_quote", lambda code, **kwargs: expected)
+    assert md.find_quote("123456", use_cache=False) is expected
+
+
 def test_find_quote_degrades_to_none_when_symbol_cannot_resolve(monkeypatch):
     def unavailable(*args, **kwargs):
         raise md.MarketDataUnavailable("watchlist unavailable")

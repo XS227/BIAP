@@ -335,9 +335,14 @@ def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuot
     if last_price is not None and yesterday_price not in (None, 0):
         change = last_price - yesterday_price
         change_percent = (change / yesterday_price) * 100.0
+    # Numeric instrument codes are already verified by the caller. Avoid a
+    # second full-universe fetch just to derive a display name; that can turn a
+    # sub-second quote lookup into a 12s+ upstream stall. Company ingestion can
+    # enrich the issuer name from CODAL independently.
+    display_name = str(instrument_code) if _is_tsetmc_instrument_code(code) else _resolve_symbol_name(str(instrument_code), timeout=timeout)
     return LiveQuote(
         code=str(instrument_code),
-        name=_resolve_symbol_name(str(instrument_code), timeout=timeout),
+        name=display_name,
         last_price=last_price,
         closing_price=closing_price,
         yesterday_price=yesterday_price,
@@ -441,6 +446,12 @@ def fetch_extended_market_data(code: str, *, timeout: float = 12.0, use_cache: b
 
 
 def find_quote(code: str, *, timeout: float = 8.0, use_cache: bool = True) -> Optional[LiveQuote]:
+    # Listed-company ingestion uses verified numeric TSETMC instrument codes.
+    # Do not hit the legacy BIAP watchlist first for those codes: the endpoint
+    # may be unavailable and the numeric code can be resolved directly.
+    if _is_tsetmc_instrument_code(code):
+        return _fetch_tsetmc_quote(code, timeout=timeout)
+
     try:
         quotes = fetch_watchlist(timeout=timeout, use_cache=use_cache)
         for q in quotes:
