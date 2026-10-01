@@ -165,3 +165,20 @@ def test_tsetmc_quote_degrades_to_none_on_network_timeout(monkeypatch):
     monkeypatch.setattr(md, "fetch_symbol_universe", lambda **kwargs: [_tsetmc_item()])
     monkeypatch.setattr(md.httpx, "Client", _StalledHttpClient)
     assert md._fetch_tsetmc_quote("ارفع", timeout=1) is None
+
+
+def test_numeric_quote_does_not_fetch_bulk_symbol_universe(monkeypatch):
+    monkeypatch.setattr(md, "fetch_symbol_universe", lambda **kwargs: (_ for _ in ()).throw(AssertionError("bulk universe must not run")))
+    seen = []
+    def fake_read(url, *, timeout):
+        seen.append(url)
+        if "GetClosingPriceInfo" in url:
+            return {"closingPriceInfo": {"pDrCotVal": 1010, "pClosing": 1000, "priceYesterday": 990}}
+        if "GetInstrumentInfo" in url:
+            return {"instrumentInfo": {"lVal18AFC": "فولاد", "lVal30": "فولاد مبارکه اصفهان"}}
+        raise AssertionError(url)
+    monkeypatch.setattr(md, "_read_json", fake_read)
+    quote = md._fetch_tsetmc_quote("46348559193224090", timeout=1)
+    assert quote is not None and quote.name == "فولاد"
+    assert len(seen) == 2
+    assert all("GetInstrument" in u or "GetClosingPriceInfo" in u for u in seen)

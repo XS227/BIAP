@@ -340,8 +340,12 @@ def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuot
     # CODAL enrichment needs a Persian symbol, and passing the numeric insCode
     # silently disables fundamentals. This is a small direct lookup, unlike the
     # expensive full-universe request we intentionally avoid here.
-    display_name = _resolve_symbol_name(str(instrument_code), timeout=timeout)
-    if _is_tsetmc_instrument_code(code) and display_name == str(instrument_code):
+    # Numeric insCodes are already verified identifiers. Resolve their display
+    # ticker with the small InstrumentInfo endpoint directly; never block the
+    # quote hot path on the bulk symbol-universe download. Persian symbols still
+    # use the verified universe/search resolver above.
+    if _is_tsetmc_instrument_code(code):
+        display_name = str(instrument_code)
         try:
             info_payload = _read_json(
                 f"{tsetmc_api_base()}/Instrument/GetInstrumentInfo/{instrument_code}",
@@ -356,6 +360,8 @@ def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuot
                     _symbol_name_cache[str(instrument_code)] = (time.monotonic(), display_name)
         except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
             pass
+    else:
+        display_name = _resolve_symbol_name(str(instrument_code), timeout=timeout)
     return LiveQuote(
         code=str(instrument_code),
         name=display_name,
