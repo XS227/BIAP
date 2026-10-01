@@ -329,7 +329,15 @@ def _build_verified_company(code: str) -> tuple[dict[str, Any] | None, str]:
     except MarketDataUnavailable:
         quote = None
     if quote is not None:
-        return build_company_from_quote(quote, codal_symbol=quote.name), "tsetmc+tindex+codal+company_builder"
+        codal_symbol = quote.name
+        # Numeric TSETMC quotes intentionally skip the expensive universe-name
+        # lookup. Recover the canonical Persian symbol from the persisted
+        # instrument registry for CODAL enrichment.
+        if str(code).isascii() and str(code).isdigit():
+            instrument = CompanyRegistryStore().get_instrument(code)
+            if instrument and instrument.get("symbol"):
+                codal_symbol = str(instrument["symbol"])
+        return build_company_from_quote(quote, codal_symbol=codal_symbol), "tsetmc+tindex+codal+company_builder"
     return build_company_from_symbol(code), "tindex+codal+company_builder-fallback"
 
 
@@ -488,7 +496,12 @@ def run_batch(
     for index, code in enumerate(codes):
         last_code = code
         try:
+            # Resolve the canonical Persian issuer symbol from the registry so
+            # numeric TSETMC codes do not get sent to CODAL as a symbol.
+            instrument = reg.get_instrument(code)
             company, source = _build_verified_company(code)
+            if company is not None and instrument and instrument.get("symbol"):
+                company["name_fa"] = str(instrument["symbol"])
             if company is None:
                 raise ValueError("no verified company data available")
             if code in already_enriched_in_slice:

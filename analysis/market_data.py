@@ -363,15 +363,18 @@ def fetch_extended_market_data(code: str, *, timeout: float = 12.0, use_cache: b
     tsetmc = tsetmc_api_base()
     try:
         current = _read_json(f"{tsetmc}/ClosingPrice/GetClosingPriceInfo/{instrument_code}", timeout=timeout)
-        history = _read_json(f"{tsetmc}/ClosingPrice/GetClosingPriceDailyList/{instrument_code}/400", timeout=timeout)
         instrument_payload = _read_json(f"{tsetmc}/Instrument/GetInstrumentInfo/{instrument_code}", timeout=timeout)
     except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
         return None
 
+    # The relay's large DailyList response can trickle for tens of seconds.
+    # InstrumentInfo already exposes verified maxYear/minYear/qTotTran5JAvg,
+    # which are the fields this baseline needs, so do not block every company
+    # on the historical payload.
     row = current.get("closingPriceInfo")
-    rows = history.get("closingPriceDaily")
+    rows: list[dict] = []
     instrument = instrument_payload.get("instrumentInfo")
-    if not isinstance(row, dict) or not isinstance(rows, list) or not rows:
+    if not isinstance(row, dict):
         return None
     if not isinstance(instrument, dict):
         instrument = {}
