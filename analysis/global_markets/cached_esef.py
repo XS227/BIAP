@@ -14,7 +14,7 @@ from .source_cache import data_root, read_json, write_json_atomic
 
 
 class CachedESEFFundamentalsProvider(CountryAwareESEFFundamentalsProvider):
-    provider_id = "esef-xbrl-cached"
+    provider_id = "esef-xbrl-cached-v2"
 
     def _cache_path(self, url: str, params: Optional[dict]) -> Path:
         canonical = json.dumps({"url": url, "params": params or {}}, sort_keys=True, separators=(",", ":"))

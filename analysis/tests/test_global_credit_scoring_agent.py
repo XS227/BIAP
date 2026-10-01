@@ -50,6 +50,9 @@ class Agent10CreditScoringTests(unittest.TestCase):
         result = score_legal_entity_company(company(ebitda=None, raw_provider_fields={}), None)
         self.assertIn("insufficient data", result["status"])
         self.assertIn("debt_ebitda", result["factors_missing"])
+        self.assertFalse(result["strict_rating_available"])
+        self.assertIn("partial_view", result)
+        self.assertTrue(result["partial_view"]["not_for_decision"])
 
     def test_rating_pd_monotonic(self):
         values = [rating_pd(n) for n in range(1, 22)]

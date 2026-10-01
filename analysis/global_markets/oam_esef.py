@@ -17,6 +17,7 @@ This provider reads the ESEF package from the OAM itself:
 * NO: Oslo Børs Newsweb, Norway's OAM, category ANNUAL FINANCIAL REPORT.
 * FR: AMF/DILA info-financiere.gouv.fr, France's OAM, indexed by issuer LEI.
 * ES: CNMV annual financial reports, Spain's OAM, listed by issuer NIF (GLEIF).
+* IT: 1INFO authorized storage API, category 1.1 annual ESEF packages.
 
 Identity is never ticker-only: the issuer LEI is resolved via
 ISIN -> GLEIF (or explicit LEI / exact legal name) and the downloaded inline
@@ -43,7 +44,7 @@ from urllib.parse import urlencode
 import httpx
 
 from .cached_esef import CachedESEFFundamentalsProvider
-from .esef import _CONCEPTS
+from .esef import _CONCEPTS, concept_is_relevant
 from .ixbrl import annual_period_end, extract_facts
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, append_source
@@ -446,6 +447,127 @@ class SpainCNMVLocator(OAMLocator):
         return filings
 
 
+class Italy1InfoLocator(OAMLocator):
+    """1INFO authorized Italian regulated-information storage.
+
+    Only annual rows carrying protocolCodeXbrl are accepted by this ESEF
+    adapter. PDF-only annual reports remain for a separately verified issuer
+    parser and are never promoted to XBRL evidence.
+    """
+
+    oam = "it-1info"
+    country = "IT"
+    root = "https://www.1info.it/PORTALE1INFO"
+    companies_api = root + "/API/companies/documenti"
+    documents_api = root + "/API/Documenti"
+    viewer = "https://www.1info.it/PdfViewer/PdfShow.aspx"
+
+    @staticmethod
+    def _name_core(value: str) -> str:
+        text = re.sub(r"[^A-Z0-9]+", "", str(value or "").upper())
+        for suffix in ("SOCIETAPERAZIONI", "SPA", "NV", "SA"):
+            if text.endswith(suffix):
+                text = text[:-len(suffix)]
+                break
+        return text
+
+    def _issuer_id(self, legal_name: str) -> int:
+        def fetch() -> str:
+            with self.http.client() as client:
+                response = client.get(self.companies_api, headers={"Accept": "application/json"})
+            response.raise_for_status()
+            return response.text
+        try:
+            rows = json.loads(self.http.cached_text("1info:companies", fetch))
+        except ValueError as exc:
+            raise GlobalProviderError("1INFO issuer list returned invalid JSON") from exc
+        target = self._name_core(legal_name)
+        matches = [
+            row for row in rows or []
+            if isinstance(row, dict) and self._name_core(str(row.get("descrizione") or "")) == target
+        ]
+        if len(matches) != 1:
+            raise GlobalProviderError(f"1INFO issuer identity is not uniquely resolved for {legal_name!r}")
+        return int(matches[0]["ndg"])
+
+    @staticmethod
+    def _datatable_form(ndg: int) -> dict[str, str]:
+        form: dict[str, str] = {
+            "draw": "1", "start": "0", "length": "60",
+            "search[value]": "", "search[regex]": "false",
+            "order[0][column]": "2", "order[0][dir]": "desc",
+            "SearchFilter[emittente][0]": str(ndg),
+            "SearchFilter[categoria][0]": "1.1",
+        }
+        columns = ("", "mittente", "dataStoccaggio", "oggetto", "", "")
+        for index, data in enumerate(columns):
+            form[f"columns[{index}][data]"] = data
+            form[f"columns[{index}][name]"] = ""
+            form[f"columns[{index}][searchable]"] = "true"
+            form[f"columns[{index}][orderable]"] = "true"
+            form[f"columns[{index}][search][value]"] = ""
+            form[f"columns[{index}][search][regex]"] = "false"
+        return form
+
+    def _rows(self, ndg: int) -> list[dict]:
+        form = self._datatable_form(ndg)
+        def fetch() -> str:
+            with self.http.client() as client:
+                response = client.post(
+                    self.documents_api,
+                    data=form,
+                    headers={
+                        "Accept": "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Referer": self.root,
+                    },
+                )
+            response.raise_for_status()
+            return response.text
+        try:
+            payload = json.loads(self.http.cached_text(f"1info:annual:{ndg}", fetch))
+        except ValueError as exc:
+            raise GlobalProviderError("1INFO annual-document API returned invalid JSON") from exc
+        rows = payload.get("data") if isinstance(payload, dict) else None
+        return [row for row in rows or [] if isinstance(row, dict) and row.get("ndg") == ndg]
+
+    def annual_filings(self, company: GlobalCompany, lei: str, legal_name: str) -> list[OAMFiling]:
+        ndg = self._issuer_id(legal_name)
+        filings: list[OAMFiling] = []
+        for row in self._rows(ndg):
+            protocol = str(row.get("protocolCodeXbrl") or "").strip()
+            if not protocol or not protocol.lower().endswith((".zip", ".xhtml", ".html", ".htm")):
+                continue
+            try:
+                exercise_ts = int(row.get("dataEsercizio") or 0)
+                stored_ts = int(row.get("dataStoccaggio") or 0)
+            except (TypeError, ValueError):
+                continue
+            if exercise_ts <= 0:
+                continue
+            exercise_year = datetime.fromtimestamp(exercise_ts, tz=timezone.utc).year
+            published = datetime.fromtimestamp(stored_ts, tz=timezone.utc).isoformat() if stored_ts > 0 else None
+            package_url = self.viewer + "?" + urlencode({
+                "service": "",
+                "type": "documenti",
+                "year": exercise_year,
+                "file": protocol,
+                "download": 1,
+            })
+            filings.append(OAMFiling(
+                oam=self.oam,
+                document_id=f"1INFO:{protocol}",
+                package_url=package_url,
+                landing_url=self.root + "#documenti",
+                published_at=published,
+                label=str(row.get("oggetto") or f"Annual financial report {exercise_year}")[:220],
+            ))
+        if not filings:
+            raise GlobalProviderError(f"1INFO lists no annual ESEF package for {legal_name} (LEI {lei})")
+        filings.sort(key=lambda filing: filing.published_at or "", reverse=True)
+        return filings
+
+
 def _report_member(archive: zipfile.ZipFile) -> Optional[str]:
     names = [n for n in archive.namelist() if n.lower().endswith((".xhtml", ".html", ".htm")) and not n.endswith("/")]
     in_reports = [n for n in names if "/reports/" in n.lower() or n.lower().startswith("reports/")]
@@ -456,7 +578,7 @@ def _report_member(archive: zipfile.ZipFile) -> Optional[str]:
 class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
     """ESEF fundamentals read from the issuer's national OAM filing."""
 
-    provider_id = "official-oam-esef-ixbrl-v1"
+    provider_id = "official-oam-esef-ixbrl-v2"
 
     def __init__(self, *, timeout: float = 60.0, locators: Optional[Iterable[OAMLocator]] = None) -> None:
         super().__init__(timeout=min(timeout, 20.0))
@@ -466,6 +588,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
             NorwayNewswebLocator(self.http),
             FranceAMFInfoFinanciereLocator(self.http),
             SpainCNMVLocator(self.http),
+            Italy1InfoLocator(self.http),
         ]
         self.locators = {locator.country: locator for locator in chosen}
 
@@ -502,7 +625,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
         """Facts of one immutable OAM document, parsed once and cached."""
         path = self._facts_cache_path(filing)
         cached = read_json(path)
-        if isinstance(cached, dict) and cached.get("schemaVersion") == 1 and isinstance(cached.get("facts"), list):
+        if isinstance(cached, dict) and cached.get("schemaVersion") == 2 and isinstance(cached.get("facts"), list):
             return cached
         tmp_dir = OAMHttp.cache_dir() / "tmp"
         tmp_dir.mkdir(parents=True, exist_ok=True)
@@ -529,9 +652,9 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
 
     def _parse_text(self, filing: OAMFiling, chunks, member: str) -> dict:
         facts, entities = extract_facts(chunks)
-        kept = [f for f in facts if str(f["dimensions"].get("concept") or "").lower() in _WANTED_CONCEPTS]
+        kept = [f for f in facts if concept_is_relevant(f["dimensions"].get("concept"))]
         return {
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "documentId": filing.document_id,
             "packageUrl": filing.package_url,
             "reportFile": member,
@@ -569,6 +692,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
             period_end = date.fromisoformat(period_text)
             normalized = self.normalized_fields(facts, period_end)
             reporting_currency = normalized.pop("reporting_currency")
+            normalization_meta = normalized.pop("__normalization_meta__", {})
             retrieved = str(package.get("parsedAt") or _utc_now().isoformat())
             enriched = replace(
                 company,
@@ -588,6 +712,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                     "oam_published_at": filing.published_at,
                     "oam_retrieved_at": retrieved,
                     "oam_entity_lei_verified": True,
+                    "oam_credit_extraction": normalization_meta,
                 },
             )
             return append_source(enriched, SourceEvidence(

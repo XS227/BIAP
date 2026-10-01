@@ -42,6 +42,7 @@ from .german_issuer import GermanIssuerFundamentalsProvider
 from .hkex_issuer import HKEXIssuerFundamentalsProvider
 from .hkex_official import HKEXOfficialUniverseProvider
 from .india_official import NSEOfficialUniverseProvider
+from .italy_issuer import ItalyIssuerFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
 from .jpx_official import JPXOfficialUniverseProvider
 from .jse_official import JSEOfficialUniverseProvider
@@ -345,6 +346,15 @@ def build_registry() -> ProviderRegistry:
     no_provider = PersistentFundamentalsProvider(
         FallbackFundamentalsProvider(no_official, public_fundamentals)
     )
+    # Italy: 1INFO ESEF is the first official path. Some issuers (including
+    # Fidia FY2025) lodge the current annual report as PDF before a same-period
+    # ESEF package is exposed; exact issuer parsers bridge that gap without
+    # relabelling vendor metrics as official.
+    it_issuer = ItalyIssuerFundamentalsProvider()
+    it_official = FallbackFundamentalsProvider(nordic_oam_official, it_issuer)
+    it_provider = PersistentFundamentalsProvider(
+        FallbackFundamentalsProvider(it_official, public_fundamentals)
+    )
 
     # Germany keeps generic regulatory ESEF/SEC first. Siemens and Allianz are
     # currently absent from the public ESEF index used by BIAP, so an exact,
@@ -379,6 +389,8 @@ def build_registry() -> ProviderRegistry:
             provider = fr_provider
         elif country == "NO":
             provider = no_provider
+        elif country == "IT":
+            provider = it_provider
         elif country == "SE" or oam_esef.supports(country):
             # Every country with a national-OAM locator reads the lodged ESEF
             # report first; filings.xbrl.org stays the second official path.

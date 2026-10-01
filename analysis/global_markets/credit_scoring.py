@@ -332,19 +332,38 @@ def score_legal_entity_company(company: GlobalCompany, distress: Optional[Distre
         if cross:
             base["agent9_crosscheck"] = cross
 
+    base["strict_rating_available"] = False
+    base["strict_minimum_coverage"] = _MIN_WEIGHT_COVERAGE
+    if coverage > 0:
+        partial_aggregate = sum(row["score"] * row["weight"] for row in scored.values()) / coverage
+        partial_notch = min(21, max(1, int(math.floor(partial_aggregate + 0.5))))
+        partial = {
+            "provisional": True,
+            "not_for_decision": True,
+            "coverage": round(coverage, 2),
+            "leverage_scored": "debt_ebitda" in scored,
+            "aggregate_score": round(partial_aggregate, 3),
+            "status": "partial factors only — not a credit rating",
+        }
+        if coverage >= 0.20:
+            partial["factor_band_moodys"] = _MOODYS_NOTCHES[partial_notch - 1]
+            partial["factor_band_sp"] = _SP_NOTCHES[partial_notch - 1]
+        base["partial_view"] = partial
+
     if "debt_ebitda" not in scored or coverage < _MIN_WEIGHT_COVERAGE:
         why = (
             "leverage (debt/EBITDA) not scored"
             if "debt_ebitda" not in scored
             else f"only {coverage:.0%} of the grid weight has data (needs {_MIN_WEIGHT_COVERAGE:.0%})"
         )
-        base["status"] = f"insufficient data ({why} — not computed, not guessed)"
+        base["status"] = f"insufficient data ({why} — strict rating not computed, missing inputs not guessed)"
         return base
 
     aggregate = sum(row["score"] * row["weight"] for row in scored.values()) / coverage
     notch = min(21, max(1, int(math.floor(aggregate + 0.5))))
     pd_ = rating_pd(notch)
     base.update({
+        "strict_rating_available": True,
         "aggregate_score": round(aggregate, 3),
         "indicated_rating_moodys": _MOODYS_NOTCHES[notch - 1],
         "indicated_rating_sp": _SP_NOTCHES[notch - 1],

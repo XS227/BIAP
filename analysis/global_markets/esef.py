@@ -34,22 +34,97 @@ _CONCEPTS = {
     "revenue": ("ifrs-full:Revenue", "ifrs-full:RevenueFromContractsWithCustomers"),
     "gross_profit": ("ifrs-full:GrossProfit",),
     "operating_income": ("ifrs-full:ProfitLossFromOperatingActivities", "ifrs-full:OperatingProfitLoss"),
+    "ebitda": (),
+    "depreciation_amortisation": (
+        "ifrs-full:DepreciationAndAmortisationExpense",
+        "ifrs-full:DepreciationAndAmortizationExpense",
+        "ifrs-full:DepreciationExpense",
+    ),
     "net_income": ("ifrs-full:ProfitLoss",),
     "assets": ("ifrs-full:Assets",),
     "liabilities": ("ifrs-full:Liabilities",),
     "equity": ("ifrs-full:Equity",),
+    "retained_earnings": ("ifrs-full:RetainedEarnings",),
     "current_assets": ("ifrs-full:CurrentAssets",),
     "current_liabilities": ("ifrs-full:CurrentLiabilities",),
     "cash": ("ifrs-full:CashAndCashEquivalents",),
     "ocf": ("ifrs-full:CashFlowsFromUsedInOperatingActivities",),
-    "capex": ("ifrs-full:PurchaseOfPropertyPlantAndEquipment", "ifrs-full:PaymentsToAcquirePropertyPlantAndEquipment"),
-    "borrowings": ("ifrs-full:Borrowings",),
-    "current_borrowings": ("ifrs-full:CurrentBorrowings",),
-    "noncurrent_borrowings": ("ifrs-full:NoncurrentBorrowings",),
+    "capex": (
+        "ifrs-full:PurchaseOfPropertyPlantAndEquipment",
+        "ifrs-full:PaymentsToAcquirePropertyPlantAndEquipment",
+    ),
+    "borrowings": (
+        "ifrs-full:Borrowings",
+        "ifrs-full:InterestBearingLoansAndBorrowings",
+        "ifrs-full:LoansAndBorrowings",
+    ),
+    "current_borrowings": (
+        "ifrs-full:CurrentBorrowings",
+        "ifrs-full:CurrentInterestBearingLoansAndBorrowings",
+    ),
+    "noncurrent_borrowings": (
+        "ifrs-full:NoncurrentBorrowings",
+        "ifrs-full:NoncurrentInterestBearingLoansAndBorrowings",
+    ),
     "interest_expense": ("ifrs-full:FinanceCosts", "ifrs-full:InterestExpense"),
     "eps": ("ifrs-full:BasicEarningsLossPerShare", "ifrs-full:DilutedEarningsLossPerShare"),
 }
+
+_EXTENSION_LOCAL_PATTERNS = {
+    "ebitda": (
+        r"^ebitda$",
+        r"^earningsbeforeinteresttax(?:es)?depreciationandamorti[sz]ation$",
+        r"^operatingprofitbeforedepreciationandamorti[sz]ation$",
+    ),
+    "depreciation_amortisation": (
+        r"^depreciationandamorti[sz]ation(?:expense|expenses)?$",
+        r"^depreciationamorti[sz]ationandimpairment(?:expense|expenses)?$",
+    ),
+    "retained_earnings": (
+        r"^retainedearnings(?:accumulatedlosses)?$",
+        r"^retainedearningsaccumulatedloss$",
+    ),
+    "borrowings": (
+        r"^(?:total|gross)?financialdebt$",
+        r"^(?:total)?interestbearing(?:loansand)?borrowings$",
+    ),
+    "current_borrowings": (
+        r"^currentfinancialdebt$",
+        r"^currentinterestbearing(?:loansand)?borrowings$",
+    ),
+    "noncurrent_borrowings": (
+        r"^noncurrentfinancialdebt$",
+        r"^noncurrentinterestbearing(?:loansand)?borrowings$",
+    ),
+    "interest_expense": (
+        r"^interestexpense$",
+        r"^interestexpenses$",
+        r"^financecosts$",
+    ),
+}
 _ALLOWED_DIMENSIONS = {"concept", "entity", "period", "unit"}
+
+
+def _concept_local_name(concept: object) -> str:
+    text = str(concept or "").strip()
+    return re.sub(r"[^A-Za-z0-9]", "", text.split(":", 1)[-1]).lower()
+
+
+def _extension_key(concept: object) -> Optional[str]:
+    local = _concept_local_name(concept)
+    if not local:
+        return None
+    for key, patterns in _EXTENSION_LOCAL_PATTERNS.items():
+        if any(re.fullmatch(pattern, local, flags=re.IGNORECASE) for pattern in patterns):
+            return key
+    return None
+
+
+def concept_is_relevant(concept: object) -> bool:
+    text = str(concept or "").strip().lower()
+    if any(text == value.lower() for values in _CONCEPTS.values() for value in values):
+        return True
+    return _extension_key(concept) is not None
 
 
 def _num(value: Any) -> Optional[float]:
@@ -169,12 +244,15 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         return all(key in _ALLOWED_DIMENSIONS for key in dims)
 
     @classmethod
-    def _concept_facts(cls, facts: list[dict], concepts: tuple[str, ...]) -> list[dict]:
+    def _concept_facts(cls, facts: list[dict], concepts: tuple[str, ...], *, extension_key: Optional[str] = None) -> list[dict]:
         wanted = {value.lower() for value in concepts}
         result = []
         for fact in facts:
             dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
-            if str(dims.get("concept") or "").lower() in wanted and cls._plain_fact(fact) and _num(fact.get("value")) is not None:
+            concept = str(dims.get("concept") or "")
+            exact = concept.lower() in wanted
+            extension = extension_key is not None and _extension_key(concept) == extension_key
+            if (exact or extension) and cls._plain_fact(fact) and _num(fact.get("value")) is not None:
                 result.append(fact)
         return result
 
@@ -229,19 +307,36 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         inline-XBRL packages) so one extraction contract applies to all
         European markets. Missing concepts stay None.
         """
-        concept_facts = {key: self._concept_facts(facts, concepts) for key, concepts in _CONCEPTS.items()}
+        concept_facts = {
+            key: self._concept_facts(facts, concepts, extension_key=key)
+            for key, concepts in _CONCEPTS.items()
+        }
         revenue = self._duration_value(concept_facts["revenue"], period_end)
         revenue_prev = self._duration_value(concept_facts["revenue"], period_end, previous=True)
         net_income = self._duration_value(concept_facts["net_income"], period_end)
         net_income_prev = self._duration_value(concept_facts["net_income"], period_end, previous=True)
+        operating_income = self._duration_value(concept_facts["operating_income"], period_end)
+        direct_ebitda = self._duration_value(concept_facts["ebitda"], period_end)
+        depreciation_amortisation = self._duration_value(concept_facts["depreciation_amortisation"], period_end)
+        ebitda = direct_ebitda
+        ebitda_method = "direct_explicit_tag" if direct_ebitda is not None else None
+        if ebitda is None and operating_income is not None and depreciation_amortisation is not None:
+            ebitda = operating_income + abs(depreciation_amortisation)
+            ebitda_method = "derived_operating_income_plus_abs_depreciation_amortisation"
         ocf = self._duration_value(concept_facts["ocf"], period_end)
         capex = self._duration_value(concept_facts["capex"], period_end)
         fcf = None if ocf is None or capex is None else ocf - abs(capex)
         debt = self._instant_value(concept_facts["borrowings"], period_end)
+        debt_method = "direct_borrowings" if debt is not None else None
         if debt is None:
-            parts = [self._instant_value(concept_facts["current_borrowings"], period_end), self._instant_value(concept_facts["noncurrent_borrowings"], period_end)]
+            parts = [
+                self._instant_value(concept_facts["current_borrowings"], period_end),
+                self._instant_value(concept_facts["noncurrent_borrowings"], period_end),
+            ]
             present = [value for value in parts if value is not None]
             debt = sum(present) if present else None
+            if debt is not None:
+                debt_method = "current_plus_noncurrent_borrowings"
 
         reporting_currency = None
         for key in ("revenue", "net_income", "assets"):
@@ -259,13 +354,15 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             "revenue_prev": revenue_prev,
             "revenue_yoy_pct": self._pct_change(revenue, revenue_prev),
             "gross_profit": self._duration_value(concept_facts["gross_profit"], period_end),
-            "operating_income": self._duration_value(concept_facts["operating_income"], period_end),
+            "operating_income": operating_income,
+            "ebitda": ebitda,
             "net_income": net_income,
             "net_margin_pct": self._margin(net_income, revenue),
             "net_margin_prev_pct": self._margin(net_income_prev, revenue_prev),
             "total_assets": self._instant_value(concept_facts["assets"], period_end),
             "total_liabilities": self._instant_value(concept_facts["liabilities"], period_end),
             "total_equity": self._instant_value(concept_facts["equity"], period_end),
+            "retained_earnings": self._instant_value(concept_facts["retained_earnings"], period_end),
             "current_assets": self._instant_value(concept_facts["current_assets"], period_end),
             "current_liabilities": self._instant_value(concept_facts["current_liabilities"], period_end),
             "cash_and_equivalents": self._instant_value(concept_facts["cash"], period_end),
@@ -274,6 +371,12 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             "total_debt": debt,
             "interest_expense": self._duration_value(concept_facts["interest_expense"], period_end),
             "eps": self._duration_value(concept_facts["eps"], period_end),
+            "__normalization_meta__": {
+                "ebitda_method": ebitda_method,
+                "debt_method": debt_method,
+                "capex": capex,
+                "fcf_method": "operating_cash_flow_minus_abs_capex" if fcf is not None else None,
+            },
         }
 
     def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
@@ -295,6 +398,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
 
         normalized = self.normalized_fields(facts, period_end)
         reporting_currency = normalized.pop("reporting_currency")
+        normalization_meta = normalized.pop("__normalization_meta__", {})
 
         try:
             errors = int(attrs.get("error_count") or 0)
@@ -326,6 +430,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                 "esef_validation_errors": errors,
                 "esef_validation_inconsistencies": inconsistencies,
                 "esef_json_url": json_url,
+                "esef_credit_extraction": normalization_meta,
             },
         )
         return append_source(enriched, SourceEvidence(
