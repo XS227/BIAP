@@ -79,6 +79,18 @@ export type GlobalCreditScoring = {
   score?: number;
   risk_band?: string;
   weight_coverage?: number;
+  strict_rating_available?: boolean;
+  strict_minimum_coverage?: number;
+  partial_view?: {
+    provisional?: boolean;
+    not_for_decision?: boolean;
+    coverage?: number;
+    leverage_scored?: boolean;
+    aggregate_score?: number;
+    status?: string;
+    factor_band_moodys?: string;
+    factor_band_sp?: string;
+  };
   factors?: Record<string, {
     value?: number | string | null;
     category?: string;

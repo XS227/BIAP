@@ -228,6 +228,17 @@ export default function CreditLabScreen() {
                   <Text style={[styles.cardTitle, { color: Brand.warning }]}>Rating not produced yet</Text>
                   <Text style={[styles.body, { color: colors.textSecondary }]}>{credit?.status || 'Agent 10 does not have enough verified company inputs to produce a rating.'}</Text>
                   {credit?.weight_coverage != null ? <Text style={[styles.body, { color: colors.textSecondary }]}>Available grid coverage: {pct(credit.weight_coverage, 0)}</Text> : null}
+                  {credit?.partial_view ? <View style={[styles.partialBox, { borderColor: Brand.warning }]}>
+                    <Text style={[styles.cardTitle, { color: colors.text }]}>Partial factor view</Text>
+                    <Text style={[styles.body, { color: colors.textSecondary }]}>
+                      {credit.partial_view.factor_band_sp
+                        ? `${credit.partial_view.factor_band_sp} / ${credit.partial_view.factor_band_moodys || '—'} from scored factors only`
+                        : 'Too little factor coverage to map even a partial band.'}
+                    </Text>
+                    <Text style={[styles.body, { color: Brand.warning }]}>
+                      Coverage {pct(credit.partial_view.coverage, 0)} • provisional • not a credit rating • not used for BUY/SELL
+                    </Text>
+                  </View> : null}
                 </>}
                 <Text style={[styles.disclaimerInline, { color: colors.textSecondary }]}>Report-only synthetic credit scoring from canonical Agent 10. It is not an agency-issued rating and does not alter the stock decision. The investment Evidence gate is separate from this credit calculation.</Text>
               </View>
@@ -357,6 +368,7 @@ const styles = StyleSheet.create({
   factorMeta: { fontFamily: Fonts.sans, fontSize: 8.5, lineHeight: 13, marginTop: 2 },
   factorCategory: { fontFamily: Fonts.mono, fontSize: 10, fontWeight: '900', marginTop: 2 },
   missingBox: { borderWidth: 1, borderRadius: Radius.md, padding: 10, marginTop: 12 },
+  partialBox: { borderWidth: 1, borderRadius: Radius.md, padding: 10, marginTop: 12 },
   field: { marginBottom: 8 },
   label: { fontFamily: Fonts.sans, fontSize: 9.5, marginBottom: 5 },
   input: { borderWidth: 1, borderRadius: Radius.md, minHeight: 46, paddingHorizontal: 12, fontFamily: Fonts.mono, fontSize: 13 },
