@@ -147,23 +147,33 @@ jobs:
             git clone --branch feat/biap-global --single-branch https://github.com/XS227/BIAP.git "$APP_DIR"
           else
             cd "$APP_DIR"
-            if [[ -n "$(git status --porcelain)" ]]; then
-              UNEXPECTED="$(git status --porcelain | awk '{print $2}' | grep -Ev '^(deploy/configure-global-route\.sh|deploy/setup-global-data\.sh|deploy/sync-global-sources\.sh)$' || true)"
-              if [[ -n "$UNEXPECTED" ]]; then
-                echo "Refusing Global update: separate checkout has unexpected local changes" >&2
-                git status --short
-                exit 1
-              fi
-              git restore --worktree --staged -- deploy/configure-global-route.sh deploy/setup-global-data.sh deploy/sync-global-sources.sh
-            fi
-            if [[ -n "$(git status --porcelain)" ]]; then
-              echo "Refusing Global update: checkout remains dirty after safe reset" >&2
+            # Deployment scripts can be rewritten by server setup; reset only
+            # those known generated files. Preserve every other local edit.
+            git restore --worktree --staged -- deploy/configure-global-route.sh deploy/setup-global-data.sh deploy/sync-global-sources.sh 2>/dev/null || true
+            git fetch origin feat/biap-global
+            if [[ "$(git branch --show-current)" != "feat/biap-global" ]]; then
+              echo "Refusing Global update: checkout is not on feat/biap-global" >&2
               git status --short
               exit 1
             fi
-            git fetch origin feat/biap-global
-            git checkout feat/biap-global
-            git pull --ff-only origin feat/biap-global
+
+            # Local Claude/operator work is allowed when the incoming commit
+            # does not touch the same files. This keeps uncommitted work intact
+            # instead of blocking unrelated production fixes.
+            DIRTY="$(git status --porcelain | awk '{print $2}' | sort -u)"
+            if [[ -n "$DIRTY" ]]; then
+              INCOMING="$(git diff --name-only HEAD..origin/feat/biap-global | sort -u)"
+              OVERLAP="$(comm -12 <(printf '%s\n' "$DIRTY") <(printf '%s\n' "$INCOMING") || true)"
+              if [[ -n "$OVERLAP" ]]; then
+                echo "Refusing Global update: incoming commit overlaps preserved local work:" >&2
+                printf '%s\n' "$OVERLAP" >&2
+                git status --short
+                exit 1
+              fi
+              echo "Preserving unrelated local changes during fast-forward:"
+              git status --short
+            fi
+            git merge --ff-only origin/feat/biap-global
           fi
           cd "$APP_DIR"
           mkdir -p .runtime
