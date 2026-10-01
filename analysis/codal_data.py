@@ -163,7 +163,20 @@ def find_company(symbol: str) -> Optional[dict[str, Any]]:
     try:
         payload = _get_json(
             "/api/search/v2/q",
-            {"Symbol": wanted, "PageNumber": 1, "Length": 1},
+            {
+                "Symbol": wanted,
+                "LetterType": _FINANCIAL_LETTER_TYPE,
+                "PageNumber": 1,
+                "Length": _CODAL_PAGE_LENGTH,
+                "CompanyState": 0,
+                "CompanyType": -1,
+                "FromDate": "1404/01/01",
+                "ToDate": "1405/12/29",
+                "Mains": "true",
+                "Childs": "true",
+                "Publisher": "false",
+                "search": "true",
+            },
         )
         rows = payload.get("Letters") if isinstance(payload, dict) else None
         if isinstance(rows, list):
