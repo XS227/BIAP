@@ -15,6 +15,8 @@ This provider reads the ESEF package from the OAM itself:
 * SE: Finansinspektionen "Börsinformation" (finanscentralen.fi.se), Sweden's
   OAM, searched by the issuer's Swedish organisation number from GLEIF.
 * NO: Oslo Børs Newsweb, Norway's OAM, category ANNUAL FINANCIAL REPORT.
+* FR: AMF/DILA info-financiere.gouv.fr, France's OAM, indexed by issuer LEI.
+* ES: CNMV annual financial reports, Spain's OAM, listed by issuer NIF (GLEIF).
 
 Identity is never ticker-only: the issuer LEI is resolved via
 ISIN -> GLEIF (or explicit LEI / exact legal name) and the downloaded inline
@@ -159,9 +161,14 @@ class SwedenFinanscentralenLocator(OAMLocator):
     def annual_filings(self, company: GlobalCompany, lei: str, legal_name: str) -> list[OAMFiling]:
         org = self._org_number(lei)
         html = self._search_html(org, legal_name)
-        # The FI page shows the selected issuer's LEI; require it to equal the
-        # GLEIF-resolved LEI before trusting any listed document.
-        if lei.upper() not in html.upper():
+        # The issuer page must match the GLEIF-resolved legal entity either by
+        # LEI or by the Swedish organisation number GLEIF records for that LEI
+        # (FI's displayed LEI is occasionally a subsidiary's). The downloaded
+        # report's own inline-XBRL entity LEI remains the hard gate.
+        tail = html[html.find("Organisationsnummer"):] if "Organisationsnummer" in html else ""
+        match = re.search(r"(\d{6}-\d{4})", tail)
+        page_org = match.group(1) if match else None
+        if lei.upper() not in html.upper() and not (org and page_org == org):
             raise GlobalProviderError(f"FI Börsinformation has no issuer page for LEI {lei}")
         start = html.find("gvwYearReports")
         end = html.find("</table>", start)
@@ -263,6 +270,182 @@ class NorwayNewswebLocator(OAMLocator):
         return filings
 
 
+class FranceAMFInfoFinanciereLocator(OAMLocator):
+    """AMF/DILA info-financiere.gouv.fr (French OAM), queried by issuer LEI.
+
+    The OAM's open-data feed indexes every regulated-information document with
+    the depositing issuer's LEI and ISIN. Annual financial reports (003000) and
+    universal registration documents (300005, which embed the annual financial
+    report) lodged as ESEF zip/XHTML are candidates; PDFs are never ESEF.
+    """
+
+    oam = "fr-amf-info-financiere"
+    country = "FR"
+    api = "https://www.info-financiere.gouv.fr/api/explore/v2.1/catalog/datasets/flux-amf-new-prod/records"
+    annual_subtypes = ("003000", "300005")
+
+    def _records(self, field: str, value: str) -> list[dict]:
+        subtypes = " or ".join(f'informationdeposee_inf_stp_pri="{code}"' for code in self.annual_subtypes)
+        params = {
+            "where": f'{field}="{value}" and ({subtypes})',
+            "order_by": "informationdeposee_inf_dat_emt desc",
+            "limit": 40,
+        }
+        key = "amf:" + urlencode(sorted(params.items()))
+
+        def fetch() -> str:
+            with self.http.client() as client:
+                response = client.get(self.api, params=params, headers={"Accept": "application/json"})
+            response.raise_for_status()
+            return response.text
+
+        try:
+            payload = json.loads(self.http.cached_text(key, fetch))
+        except ValueError as exc:
+            raise GlobalProviderError("AMF info-financiere returned invalid JSON") from exc
+        rows = payload.get("results") if isinstance(payload, dict) else None
+        return [row for row in rows or [] if isinstance(row, dict)]
+
+    def annual_filings(self, company: GlobalCompany, lei: str, legal_name: str) -> list[OAMFiling]:
+        rows = self._records("identificationsociete_iso_cd_lei", lei.upper())
+        if not rows and company.isin:
+            # Older depositor records omit the LEI; the ISIN is the issuer's
+            # own security identifier. The report's inline-XBRL entity LEI is
+            # still verified against GLEIF before any value is used.
+            rows = self._records("identificationsociete_iso_cd_isi", company.isin.upper())
+        cutoff = (_utc_now().date() - timedelta(days=800)).isoformat()
+        filings: list[OAMFiling] = []
+        seen: set[str] = set()
+        for row in rows:
+            url = str(row.get("url_de_recuperation") or "").strip()
+            published = str(row.get("informationdeposee_inf_dat_emt") or "") or None
+            if not url.lower().endswith((".zip", ".xhtml", ".html")) or url in seen:
+                continue
+            if published and published[:10] < cutoff:
+                continue
+            seen.add(url)
+            name = str(row.get("fichierdecontenu_inf_fic_nom") or url.rsplit("/", 1)[-1])
+            filings.append(OAMFiling(
+                oam=self.oam,
+                document_id=f"AMF-INFOFI:{name}",
+                package_url=url,
+                landing_url=url,
+                published_at=published,
+                label=str(row.get("informationdeposee_inf_tit_inf") or "")[:200] or None,
+            ))
+        if not filings:
+            raise GlobalProviderError(f"AMF info-financiere lists no ESEF annual financial report for LEI {lei}")
+        return filings
+
+
+class SpainCNMVLocator(OAMLocator):
+    """CNMV "Informes financieros anuales" (Spanish OAM), listed per issuer NIF.
+
+    GLEIF records the Spanish issuer's NIF as ``registeredAs``. The CNMV list
+    links each period's ESEF annual financial report as consolidated and
+    individual XHTML; the consolidated report is preferred (group accounts).
+    """
+
+    oam = "es-cnmv-ifa"
+    country = "ES"
+    listing = "https://www.cnmv.es/portal/Consultas/IFA/ListadoIFA"
+
+    def _nif(self, lei: str) -> Optional[str]:
+        try:
+            with self.http.client() as client:
+                response = client.get(f"https://api.gleif.org/api/v1/lei-records/{lei}", headers={"Accept": "application/vnd.api+json"})
+            response.raise_for_status()
+            entity = response.json()["data"]["attributes"]["entity"]
+        except (httpx.HTTPError, ValueError, KeyError, TypeError):
+            return None
+        value = re.sub(r"[^A-Z0-9]", "", str(entity.get("registeredAs") or "").upper())
+        if value.startswith("ES") and len(value) == 11:
+            value = value[2:]
+        return value if re.fullmatch(r"[A-Z]\d{7}[A-Z0-9]", value) else None
+
+    def _nif_by_name(self, legal_name: str, isin: Optional[str]) -> Optional[str]:
+        """CNMV entity search by GLEIF legal name. A candidate NIF is accepted
+        only when CNMV's own ISIN register for it lists the instrument's ISIN,
+        and only when exactly one candidate does."""
+        if not legal_name or not isin:
+            return None
+        search = "https://www.cnmv.es/portal/Consultas/BusquedaPorEntidad"
+        core = re.sub(r"[,\s]+(S\.?\s?A\.?(\s?U\.?)?|SOCIMI,?\s?S\.?A\.?)$", "", legal_name.strip(), flags=re.I)
+        candidates: list[str] = []
+        for term in dict.fromkeys([legal_name.strip(), core]):
+            def fetch(term: str = term) -> str:
+                with self.http.client() as client:
+                    first = client.get(search)
+                    first.raise_for_status()
+                    fields = dict(re.findall(r'<input type="hidden" name="([^"]+)" id="[^"]*" value="([^"]*)"', first.text))
+                    fields.update({"ctl00$ContentPrincipal$txtBusqueda": term, "ctl00$ContentPrincipal$btnBuscar": "Buscar"})
+                    response = client.post(search, content=urlencode(fields), headers={"Content-Type": "application/x-www-form-urlencoded"})
+                    response.raise_for_status()
+                    return str(response.url) + "\n" + response.text
+
+            try:
+                text = self.http.cached_text(f"cnmv-entity:{term.upper()}", fetch)
+            except GlobalProviderError:
+                continue
+            found = re.findall(r"nif=([A-Z]-?\d{7}[A-Z0-9])", text.split("\n", 1)[0], flags=re.I)
+            found += re.findall(r'<option[^>]*value="([A-Z]-?\d{7}[A-Z0-9])"', text, flags=re.I)
+            candidates = list(dict.fromkeys(n.upper() for n in found))
+            if candidates:
+                break
+        verified = []
+        for nif in candidates[:6]:
+            def fetch_isins(nif: str = nif) -> str:
+                with self.http.client() as client:
+                    response = client.get("https://www.cnmv.es/portal/ancv/isin", params={"nif": nif})
+                response.raise_for_status()
+                return response.text
+
+            try:
+                if isin.upper() in self.http.cached_text(f"cnmv-isins:{nif}", fetch_isins).upper():
+                    verified.append(nif)
+            except GlobalProviderError:
+                continue
+        return verified[0] if len(verified) == 1 else None
+
+    def annual_filings(self, company: GlobalCompany, lei: str, legal_name: str) -> list[OAMFiling]:
+        nif = self._nif(lei) or self._nif_by_name(legal_name, company.isin)
+        if not nif:
+            raise GlobalProviderError(f"no CNMV NIF verifiable for LEI {lei} (GLEIF registeredAs / CNMV ISIN register)")
+
+        def fetch() -> str:
+            with self.http.client() as client:
+                response = client.get(self.listing, params={"id": "0", "nif": nif})
+            response.raise_for_status()
+            return response.text
+
+        html = self.http.cached_text(f"cnmv-ifa:{nif}", fetch)
+        start = html.find("gridInformes")
+        body = html[start:html.find("</table>", start)] if start >= 0 else ""
+        filings: list[OAMFiling] = []
+        for row in re.findall(r"<tr[^>]*>(.*?)</tr>", body, flags=re.S):
+            cells = {k: v for k, v in re.findall(r'<td data-th="([^"]+)">(.*?)</td>', row, flags=re.S)}
+            reg = re.sub(r"\D", "", cells.get("Nº Registro Oficial", ""))
+            period = re.search(r"(\d{2})/(\d{2})/(\d{4})", cells.get("Fecha Estados Financieros", ""))
+            published = re.search(r"(\d{2})/(\d{2})/(\d{4})", cells.get("Fecha de publicación (1)", ""))
+            links = dict((kind, url) for url, kind in re.findall(r'href="([^"]+)"[^>]*>(Consolidada|Individual)</a>', cells.get("Tipo", "")))
+            kind = "Consolidada" if "Consolidada" in links else "Individual" if "Individual" in links else None
+            if not reg or not period or kind is None:
+                continue
+            url = links[kind].replace("&amp;", "&")
+            filings.append(OAMFiling(
+                oam=self.oam,
+                document_id=f"CNMV-IFA:{reg}:{'consolidated' if kind == 'Consolidada' else 'individual'}",
+                package_url=url,
+                landing_url=f"{self.listing}?id=0&nif={nif}",
+                published_at=(f"{published.group(3)}-{published.group(2)}-{published.group(1)}" if published else None),
+                label=f"Informe financiero anual {period.group(3)}-{period.group(2)}-{period.group(1)} ({kind.lower()})",
+            ))
+        if not filings:
+            raise GlobalProviderError(f"CNMV lists no ESEF annual financial report for NIF {nif} (LEI {lei})")
+        filings.sort(key=lambda f: f.label or "", reverse=True)
+        return filings
+
+
 def _report_member(archive: zipfile.ZipFile) -> Optional[str]:
     names = [n for n in archive.namelist() if n.lower().endswith((".xhtml", ".html", ".htm")) and not n.endswith("/")]
     in_reports = [n for n in names if "/reports/" in n.lower() or n.lower().startswith("reports/")]
@@ -278,7 +461,12 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
     def __init__(self, *, timeout: float = 60.0, locators: Optional[Iterable[OAMLocator]] = None) -> None:
         super().__init__(timeout=min(timeout, 20.0))
         self.http = OAMHttp(timeout=timeout)
-        chosen = list(locators) if locators is not None else [SwedenFinanscentralenLocator(self.http), NorwayNewswebLocator(self.http)]
+        chosen = list(locators) if locators is not None else [
+            SwedenFinanscentralenLocator(self.http),
+            NorwayNewswebLocator(self.http),
+            FranceAMFInfoFinanciereLocator(self.http),
+            SpainCNMVLocator(self.http),
+        ]
         self.locators = {locator.country: locator for locator in chosen}
 
     def supports(self, country: str) -> bool:
@@ -300,8 +488,9 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                         # ESEF packages are zip files. OAMs also store PDFs for
                         # issuers outside ESEF (e.g. third-country issuers);
                         # stop immediately instead of downloading them.
-                        if not chunk.startswith(b"PK"):
-                            raise GlobalProviderError("OAM document is not an ESEF zip package (non-ESEF filing)")
+                        head = chunk.lstrip().removeprefix(b"\xef\xbb\xbf").lstrip()[:1]
+                        if not chunk.startswith(b"PK") and head != b"<":
+                            raise GlobalProviderError("OAM document is not an ESEF report (non-ESEF filing, e.g. PDF)")
                     size += len(chunk)
                     if size > MAX_PACKAGE_BYTES:
                         raise GlobalProviderError("OAM ESEF package exceeds size limit")
@@ -320,12 +509,13 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
         with tempfile.NamedTemporaryFile(dir=tmp_dir, suffix=".zip") as handle:
             target = Path(handle.name)
             self._download(filing.package_url, target)
-            try:
-                archive = zipfile.ZipFile(target)
-            except zipfile.BadZipFile as exc:
-                raise GlobalProviderError("OAM document is not an ESEF zip package") from exc
-            with archive:
-                payload = self._parse_archive(filing, archive)
+            if zipfile.is_zipfile(target):
+                with zipfile.ZipFile(target) as archive:
+                    payload = self._parse_archive(filing, archive)
+            else:
+                # A single-file ESEF report (XHTML lodged without a zip).
+                with target.open("r", encoding="utf-8", errors="replace") as text:
+                    payload = self._parse_text(filing, iter(lambda: text.read(1 << 20), ""), "report.xhtml")
         write_json_atomic(path, payload)
         return payload
 
@@ -335,7 +525,10 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
             raise GlobalProviderError("OAM ESEF package contains no XHTML report")
         with archive.open(member) as handle:
             text = io.TextIOWrapper(handle, encoding="utf-8", errors="replace")
-            facts, entities = extract_facts(iter(lambda: text.read(1 << 20), ""))
+            return self._parse_text(filing, iter(lambda: text.read(1 << 20), ""), member)
+
+    def _parse_text(self, filing: OAMFiling, chunks, member: str) -> dict:
+        facts, entities = extract_facts(chunks)
         kept = [f for f in facts if str(f["dimensions"].get("concept") or "").lower() in _WANTED_CONCEPTS]
         return {
             "schemaVersion": 1,
@@ -356,11 +549,14 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
         lei, legal_name = self._resolve_lei(company)
         filings = locator.annual_filings(company, lei, legal_name)
         errors: list[str] = []
-        for filing in filings[:2]:
+        for filing in filings[:3]:
             try:
                 package = self.package_facts(filing)
             except GlobalProviderError as exc:
                 errors.append(f"{filing.document_id}: {exc}")
+                continue
+            if not package.get("entities") and not package.get("facts"):
+                errors.append(f"{filing.document_id}: official ESEF report carries no inline XBRL tags (untagged report)")
                 continue
             if lei.upper() not in {e.upper() for e in package.get("entities") or []}:
                 errors.append(f"{filing.document_id}: report entity {package.get('entities')} != LEI {lei}")

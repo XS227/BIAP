@@ -107,6 +107,17 @@ class FallbackFundamentalsProvider(FundamentalsProvider):
             )
 
         if _newer(fallback_result, primary_result):
+            # Keep the official chain's own diagnostics (e.g. why a nested
+            # national-OAM source failed) so the Evidence reason stays exact.
+            inner = {
+                key: value for key, value in primary_result.raw_provider_fields.items()
+                if key in {"fundamentals_primary_error", "fundamentals_fallback_reason"}
+            }
+            if inner.get("fundamentals_primary_error"):
+                fallback_result = self._mark(
+                    fallback_result,
+                    fundamentals_official_chain_error=inner["fundamentals_primary_error"],
+                )
             return self._mark(
                 fallback_result,
                 fundamentals_primary_stale=True,

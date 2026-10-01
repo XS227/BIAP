@@ -37,7 +37,14 @@ if ! "$PY" -m global_markets.official_cache_warm; then
   echo "OFFICIAL_CACHE_WARM: refresh degraded; existing snapshots preserved" >&2
 fi
 
-# Sweden/Norway: pre-parse the issuers' official ESEF annual reports from the
+# ESMA FIRDS ISIN -> issuer-LEI index (EU regulator reference data). Identity
+# resolution for every EU market uses it before any name matching; rebuilding
+# here keeps the ~40 s download out of the request path.
+if ! "$PY" -c "from global_markets.firds_lei_index import ensure_index; import sys; sys.exit(0 if ensure_index() else 1)"; then
+  echo "FIRDS_LEI_INDEX: refresh failed; previous index kept" >&2
+fi
+
+# Sweden/Norway/France/Spain: pre-parse the issuers' official ESEF annual reports from the
 # national OAMs (FI Börsinformation / Oslo Newsweb) for the whole universe.
 # Parsed documents are cached permanently by OAM document id, so after the
 # first pass this only re-reads OAM listings for new filings.

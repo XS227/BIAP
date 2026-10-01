@@ -77,10 +77,12 @@ def official_fundamental_status(company: GlobalCompany, *, now: Optional[datetim
             return STATUS_OFFICIAL_STALE, f"latest official period {best.period_end} is {age} days old"
         return STATUS_OFFICIAL_CURRENT, f"{best.provider} period {best.period_end or company.filing_period_end}"
     if raw.get("fundamentals_primary_stale"):
+        chain_error = raw.get("fundamentals_official_chain_error")
         return (
             STATUS_OFFICIAL_STALE,
             f"latest official period {raw.get('fundamentals_primary_period')} is "
-            f"{raw.get('fundamentals_primary_age_days')} days old; newer period only from non-official source",
+            f"{raw.get('fundamentals_primary_age_days')} days old; newer period only from non-official source"
+            + (f"; newer official source unavailable: {str(chain_error)[:220]}" if chain_error else ""),
         )
     error = raw.get("fundamentals_primary_error")
     if error:

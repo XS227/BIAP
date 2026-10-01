@@ -120,6 +120,9 @@ _DISPLAY_SECURITY_SUFFIXES: tuple[tuple[str, ...], ...] = (
     ("REGISTERED", "SHARES"),
     ("COMMON", "STOCK"),
     ("COMMON", "SHARES"),
+    # Swedish/Nordic depository receipts (e.g. "Alvotech SDB") describe the
+    # listed security, not the issuing legal entity.
+    ("SDB",),
 )
 
 

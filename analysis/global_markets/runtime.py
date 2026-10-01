@@ -320,10 +320,6 @@ def build_registry() -> ProviderRegistry:
         country="FR",
         provider_names=("lvmh-official-financial-documents",),
     )
-    fr_official = FallbackFundamentalsProvider(fr_drop, official_europe)
-    fr_provider = PersistentFundamentalsProvider(
-        FallbackFundamentalsProvider(fr_official, public_fundamentals)
-    )
     # Sweden/Norway: the issuer's ESEF annual report as lodged with the
     # national officially appointed mechanism (FI Börsinformation / Oslo
     # Newsweb) is read first. filings.xbrl.org is only an index and lagged a
@@ -332,6 +328,12 @@ def build_registry() -> ProviderRegistry:
     # second official path; vendor metrics stay display-only.
     oam_esef = NationalOAMESEFProvider()
     nordic_oam_official = FallbackFundamentalsProvider(oam_esef, official_europe)
+    # France: the AMF/DILA OAM indexes each lodged ESEF annual report by issuer
+    # LEI; filings.xbrl.org omits many French issuers entirely.
+    fr_official = FallbackFundamentalsProvider(fr_drop, nordic_oam_official)
+    fr_provider = PersistentFundamentalsProvider(
+        FallbackFundamentalsProvider(fr_official, public_fundamentals)
+    )
     se_provider = PersistentFundamentalsProvider(
         FallbackFundamentalsProvider(nordic_oam_official, public_fundamentals)
     )
@@ -377,7 +379,9 @@ def build_registry() -> ProviderRegistry:
             provider = fr_provider
         elif country == "NO":
             provider = no_provider
-        elif country == "SE":
+        elif country == "SE" or oam_esef.supports(country):
+            # Every country with a national-OAM locator reads the lodged ESEF
+            # report first; filings.xbrl.org stays the second official path.
             provider = se_provider
         else:
             provider = esef_persistent

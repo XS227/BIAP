@@ -17,6 +17,7 @@ from .esef import ESEFFundamentalsProvider, FILINGS_API
 from .gleif import _legal_core, _legal_core_query
 from .models import GlobalCompany
 from .providers import GlobalProviderError
+from .firds_lei_index import lookup_issuer_lei
 
 
 # Strict, country-scoped catalog-display aliases. These are not fuzzy matches:
@@ -97,8 +98,14 @@ class CountryAwareESEFFundamentalsProvider(ESEFFundamentalsProvider):
                 return resolution.lei, resolution.legal_name
             except GlobalProviderError:
                 # Not every legacy ISIN is mapped by participating NNAs yet.
-                # Fall back conservatively to the existing exact-name resolver.
                 pass
+            # ESMA FIRDS records the issuer LEI for every share admitted to an
+            # EU venue (regulator reference data). Verify it with GLEIF; the
+            # filing's own entity LEI is still checked by the reader.
+            firds_lei = lookup_issuer_lei(company.isin)
+            if firds_lei:
+                resolution = self.gleif.verify_lei(firds_lei)
+                return resolution.lei, resolution.legal_name
 
         if not company.name or company.name == company.ticker:
             raise GlobalProviderError("ESEF requires a verified LEI or full legal company name")

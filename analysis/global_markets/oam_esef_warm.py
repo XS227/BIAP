@@ -22,7 +22,12 @@ import time
 from .evidence_contract import official_fundamental_status
 from .runtime import build_registry
 
-MARKETS = (("SE", "NASDAQ_STOCKHOLM"), ("NO", "EURONEXT_OSLO"))
+MARKETS = (
+    ("SE", "NASDAQ_STOCKHOLM"),
+    ("NO", "EURONEXT_OSLO"),
+    ("FR", "EURONEXT_PARIS"),
+    ("ES", "BME_MADRID"),
+)
 
 
 def _one(provider, company):
