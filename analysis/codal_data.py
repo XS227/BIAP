@@ -175,7 +175,6 @@ def find_company(symbol: str) -> Optional[dict[str, Any]]:
             "/api/search/v2/q",
             {
                 "Symbol": wanted,
-                "LetterType": _FINANCIAL_LETTER_TYPE,
                 "PageNumber": 1,
                 "Length": _CODAL_PAGE_LENGTH,
                 "CompanyState": 0,
@@ -324,40 +323,43 @@ def latest_financial_filings(symbol: str, limit: int = 3) -> list[CodalFiling]:
     if cached and now - cached[0] < _FILINGS_TTL:
         return cached[1][:limit]
 
-    attempts = [
-        {
-            "LetterType": _FINANCIAL_LETTER_TYPE,
-            "PageNumber": 1,
-            "Length": _CODAL_PAGE_LENGTH,
-            "CompanyState": 0,
-            "CompanyType": -1,
-            "Mains": "true",
-            "Childs": "false",
-            "Publisher": "false",
-            "search": "true",
-        },
-        {
-            "LetterType": _FINANCIAL_LETTER_TYPE,
-            "PageNumber": 1,
-            "Length": _CODAL_PAGE_LENGTH,
-            "CompanyState": -1,
-            "CompanyType": -1,
-            "Mains": "true",
-            "Childs": "false",
-            "Publisher": "false",
-            "search": "true",
-        },
-    ]
-
+    # CODAL's live v2 API returns no rows for numeric LetterType=6 even
+    # when the issuer has filings. Inspect small unfiltered pages instead.
+    # A small page size avoids the relay's slow large-response streaming.
     filings: list[CodalFiling] = []
-    for params in attempts:
+    seen: set[str] = set()
+    completed = False
+    for page in range(1, 13):
         try:
-            filings = _search_payload(wanted, params)
+            payload = _get_json("/api/search/v2/q", {
+                "Symbol": wanted, "PageNumber": page, "Length": 2,
+            })
         except CodalDataUnavailable:
-            continue
-        if filings:
+            if not completed:
+                raise  # Do not cache a timeout/rate-limit as "no filings".
             break
-
+        if not isinstance(payload, dict) or not isinstance(payload.get("Letters"), list):
+            raise CodalDataUnavailable("unexpected CODAL filing search response")
+        completed = True
+        rows = payload["Letters"]
+        for row in rows:
+            if not isinstance(row, dict) or str(row.get("Symbol", "")).strip() != wanted:
+                continue
+            title = str(row.get("Title") or "").replace("\\u200c", " ")
+            # Do not treat monthly activity, board notices, or forecasts as
+            # financial statements merely because they have Excel exports.
+            if "صورت" not in title or "مالی" not in title:
+                continue
+            filing = _normalize_filing(row)
+            if not filing.excel_url:
+                continue
+            identity = filing.tracing_no or filing.excel_url
+            if identity not in seen:
+                seen.add(identity)
+                filings.append(filing)
+        if len(filings) >= limit or len(rows) < 2:
+            break
+    # Only cache a genuine completed empty search, not transport failures.
     _financial_filings_cache[wanted] = (now, filings)
     return filings[:limit]
 
