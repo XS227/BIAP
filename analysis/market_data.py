@@ -335,11 +335,27 @@ def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuot
     if last_price is not None and yesterday_price not in (None, 0):
         change = last_price - yesterday_price
         change_percent = (change / yesterday_price) * 100.0
-    # Numeric instrument codes are already verified by the caller. Avoid a
-    # second full-universe fetch just to derive a display name; that can turn a
-    # sub-second quote lookup into a 12s+ upstream stall. Company ingestion can
-    # enrich the issuer name from CODAL independently.
-    display_name = str(instrument_code) if _is_tsetmc_instrument_code(code) else _resolve_symbol_name(str(instrument_code), timeout=timeout)
+    # For numeric instrument codes, resolve the canonical ticker directly from
+    # TSETMC InstrumentInfo. Do not depend on the persisted registry being warm:
+    # CODAL enrichment needs a Persian symbol, and passing the numeric insCode
+    # silently disables fundamentals. This is a small direct lookup, unlike the
+    # expensive full-universe request we intentionally avoid here.
+    display_name = _resolve_symbol_name(str(instrument_code), timeout=timeout)
+    if _is_tsetmc_instrument_code(code) and display_name == str(instrument_code):
+        try:
+            info_payload = _read_json(
+                f"{tsetmc_api_base()}/Instrument/GetInstrumentInfo/{instrument_code}",
+                timeout=timeout,
+            )
+            info = info_payload.get("instrumentInfo")
+            if isinstance(info, dict):
+                ticker = str(info.get("lVal18AFC") or "").strip()
+                issuer_name = str(info.get("lVal30") or "").strip()
+                display_name = ticker or issuer_name or display_name
+                if display_name != str(instrument_code):
+                    _symbol_name_cache[str(instrument_code)] = (time.monotonic(), display_name)
+        except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
+            pass
     return LiveQuote(
         code=str(instrument_code),
         name=display_name,
