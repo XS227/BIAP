@@ -34,6 +34,8 @@ _YEARS_TTL = 60 * 60
 _FILINGS_TTL = 5 * 60
 _CODAL_PAGE_LENGTH = 12
 _FINANCIAL_LETTER_TYPE = 6
+_RATE_LIMIT_COOLDOWN_SECONDS = 60
+_rate_limited_until = 0.0
 
 
 class CodalDataUnavailable(RuntimeError):
@@ -116,6 +118,10 @@ def www_base_url() -> str:
 
 
 def _get_json(path: str, params: Optional[dict[str, Any]] = None) -> Any:
+    global _rate_limited_until
+    now = time.monotonic()
+    if now < _rate_limited_until:
+        raise CodalDataUnavailable("CODAL search temporarily cooling down after upstream 429")
     url = f"{base_url()}{path}"
     if params:
         url = f"{url}?{urlencode(params)}"
@@ -130,7 +136,11 @@ def _get_json(path: str, params: Optional[dict[str, Any]] = None) -> Any:
     try:
         with urlopen(req, timeout=_TIMEOUT) as resp:
             raw = resp.read().decode("utf-8", errors="replace")
-    except (HTTPError, URLError, TimeoutError, OSError) as exc:
+    except HTTPError as exc:
+        if exc.code == 429:
+            _rate_limited_until = time.monotonic() + _RATE_LIMIT_COOLDOWN_SECONDS
+        raise CodalDataUnavailable(f"CODAL request failed: {exc}") from exc
+    except (URLError, TimeoutError, OSError) as exc:
         raise CodalDataUnavailable(f"CODAL request failed: {exc}") from exc
     try:
         return json.loads(raw)
