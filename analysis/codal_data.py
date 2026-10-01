@@ -156,9 +156,33 @@ def find_company(symbol: str) -> Optional[dict[str, Any]]:
     wanted = symbol.strip()
     if not wanted:
         return None
-    for row in list_companies():
-        if str(row.get("sy", "")).strip() == wanted:
-            return row
+
+    # The full /companies payload is ~750 KB and the relay can trickle it for
+    # well beyond the request timeout. Resolve issuer metadata from the much
+    # smaller symbol-filtered search response first.
+    try:
+        payload = _get_json(
+            "/api/search/v2/q",
+            {"Symbol": wanted, "PageNumber": 1, "Length": 1},
+        )
+        rows = payload.get("Letters") if isinstance(payload, dict) else None
+        if isinstance(rows, list):
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                row_symbol = str(row.get("Symbol", "")).strip()
+                if row_symbol == wanted:
+                    return {
+                        "sy": row_symbol,
+                        "n": row.get("CompanyName"),
+                        "i": row.get("CompanyID") or row.get("CompanyId"),
+                    }
+    except CodalDataUnavailable:
+        pass
+
+    # Do not fall back to the ~750 KB company directory here. On the
+    # production relay that response can take minutes and would stall every
+    # baseline company. Filing/year endpoints remain authoritative enrichment.
     return None
 
 
