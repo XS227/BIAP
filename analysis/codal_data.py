@@ -360,6 +360,12 @@ def latest_financial_filings(symbol: str, limit: int = 3) -> list[CodalFiling]:
                 filings.append(filing)
         if len(filings) >= limit or len(rows) < 2:
             break
+    # A relay returning zero letters for an issuer with verified financial
+    # years is not evidence that the issuer has no financial reports.
+    # Fail closed instead of persisting a misleading empty result.
+    known_years = _years_cache.get(wanted)
+    if not filings and known_years and known_years[1]:
+        raise CodalDataUnavailable("CODAL report search returned no filings despite verified financial years; relay/search source needs repair")
     # Only cache a genuine completed empty search, not transport failures.
     _financial_filings_cache[wanted] = (now, filings)
     return filings[:limit]
