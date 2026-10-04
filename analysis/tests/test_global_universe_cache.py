@@ -104,3 +104,20 @@ def test_cached_structured_product_is_filtered_from_stock_universe(tmp_path: Pat
     provider = PersistentUniverseProvider(SwedishUniverse(), data_dir=str(tmp_path), fresh_hours=12)
     rows = list(provider.refresh(country="SE", exchange="NASDAQ_STOCKHOLM"))
     assert [row.ticker for row in rows] == ["ERIC.B"]
+
+
+def test_targeted_search_recovers_verified_snapshot_when_upstream_missing(tmp_path: Path):
+    upstream = FakeUniverse()
+    provider = PersistentUniverseProvider(upstream, data_dir=str(tmp_path), fresh_hours=12)
+    list(provider.refresh(country="GB", exchange="LSE"))
+    assert [r.ticker for r in provider.search_instruments(country="GB", exchange="LSE", query="test")] == ["TEST"]
+    assert provider.search_instruments(country="GB", exchange="LSE", query="missing") == []
+    assert upstream.calls == 1
+
+
+def test_targeted_search_does_not_accept_unverified_cache(tmp_path: Path):
+    upstream = FakeUniverse()
+    provider = PersistentUniverseProvider(upstream, data_dir=str(tmp_path), fresh_hours=12)
+    list(provider.refresh(country="GB", exchange="LSE"))
+    upstream.provider_id = "different-source"
+    assert provider.search_instruments(country="GB", exchange="LSE", query="TEST") == []

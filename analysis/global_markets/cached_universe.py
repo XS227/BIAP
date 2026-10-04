@@ -296,12 +296,22 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
         or incomplete local catalog.
         """
         search = getattr(self.upstream, "search_instruments", None)
-        if not callable(search):
+        rows = []
+        if callable(search):
+            try:
+                rows = list(search(country=country, exchange=exchange, query=query, limit=limit))
+            except GlobalProviderError:
+                pass
+        if rows:
+            return rows
+        # A failed targeted endpoint must not hide an already verified,
+        # venue-filtered catalog. Never fetch an entire upstream universe here.
+        payload = self._read_payload(country, exchange)
+        if payload is None or not query.strip():
             return []
-        try:
-            return list(search(country=country, exchange=exchange, query=query, limit=limit))
-        except GlobalProviderError:
-            return []
+        needle = query.strip().casefold()
+        return [row for row in self._decode(payload, fallback=not self._is_fresh(payload))
+                if needle in row.ticker.casefold() or needle in row.name.casefold()][:max(0, limit)]
 
     def list_instruments(
         self,
