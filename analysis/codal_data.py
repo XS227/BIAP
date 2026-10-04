@@ -35,7 +35,7 @@ _YEARS_TTL = 60 * 60
 _FILINGS_TTL = 5 * 60
 _CODAL_PAGE_LENGTH = 12
 _FINANCIAL_LETTER_TYPE = 6
-_RATE_LIMIT_COOLDOWN_SECONDS = 60
+_RATE_LIMIT_COOLDOWN_SECONDS = 15 * 60
 _rate_limited_until = 0.0
 
 
@@ -595,6 +595,11 @@ def metadata_for_symbol(symbol: str) -> Optional[CodalMetadata]:
         years = financial_years(symbol)
     except CodalDataUnavailable:
         years = []
+    # Once CODAL rejects requests, avoid spawning more optional searches.
+    if time.monotonic() < _rate_limited_until:
+        return (CodalMetadata(symbol=symbol, company_name=None, company_id=None,
+                financial_years=years, latest_filings=[], latest_financial_filings=[])
+                if years else None)
     results = run_parallel_with_deadline([
         lambda: find_company(symbol),
         lambda: latest_filings(symbol, limit=3),
