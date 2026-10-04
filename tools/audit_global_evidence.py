@@ -12,9 +12,15 @@ rows plus evenly spaced positions through the universe) and every result is
 classified:
 
   OK                     Evidence PASS/WARN
-  LEGIT_OFFICIAL_STALE   official filing found but older than the unchanged stale guard
-  COVERAGE_GAP           no official financial-statement adapter for this market/issuer
-  PIPELINE_FAILURE       official adapter exists but failed / contradiction in payload
+  LEGIT_OFFICIAL_STALE   newest official filing anywhere is older than the unchanged stale guard
+  LEGIT_OFFICIAL_UNAVAILABLE  the official source was reached and holds no machine-readable
+                         report for the issuer (untagged/PDF-only report, no OAM issuer page,
+                         no completed annual period)
+  INDEX_LAG              official filing found only for an older period while a newer period
+                         exists; the issuer's national OAM is not integrated (coverage gap)
+  COVERAGE_GAP           no official financial-statement adapter/credentials for this market/issuer
+  PIPELINE_FAILURE       BIAP itself failed: identity resolution, transport, parsing, an
+                         unrecognised error, or a self-contradicting payload
   MARKET_DATA            BLOCK only for price/market reasons
   API_FAILURE            HTTP error / timeout
 
@@ -109,6 +115,65 @@ def _analyze(row: dict) -> dict:
     return {**body, **_classify(payload), "seconds": round(time.time() - started, 1)}
 
 
+# Leaf reasons emitted by BIAP's official adapters. Anything not recognised
+# here is treated as a BIAP pipeline failure so new failure modes surface.
+_NEUTRAL = (
+    "sec cik not found", "sec ticker identity does not match",  # opportunistic SEC path outside the US
+)
+_LEGIT = (
+    "carries no inline xbrl", "non-esef filing", "not an esef", "lists no esef annual financial report",
+    "has no issuer page", "contains no completed annual", "no esef annual financial report",
+    "lists no annual esef package",
+)
+_COVERAGE = (
+    "no verified local filing record", "fundamentals are not verified for", "issuer parser for",
+    "current filing fundamentals are not verified", "no official filing adapter returned data",
+    "no official financial-statement source attached", "no esef filing found for lei",
+    "no strict cvm issuer match", "requires a verified lei or full legal company name",
+)
+
+
+def _leaf_class(detail: str) -> str:
+    import re
+    # SEC identity diagnostics carry their own ';'-separated details.
+    detail = re.sub(r"(?i)(sec ticker identity does not match|sec cik not found)[^()]*(\([^()]*\))?[^()]*", "sec cik not found", detail)
+    leaves = [x.strip(" .;:()").lower() for x in re.split(
+        r"primary fundamentals unavailable\s*\(|fallback unavailable\s*\(|official oam esef package unusable:|[();]", detail)]
+    leaves = [x for x in leaves if len(x) > 6]
+    if len(detail) >= 295 and leaves and detail.count("(") > detail.count(")"):
+        leaves = leaves[:-1]  # older servers truncated the reason mid-leaf
+    # An official OAM can publish an untagged report: its document identifier
+    # and nested fallback wrappers are diagnostics, not parser failures.
+    # Only collapse this well-understood chain when every terminal reason is
+    # an explicitly recognized absence/coverage/neutral condition.
+    if "official esef report carries no inline xbrl tags" in detail.lower():
+        cleaned = re.sub(r"(?i)[a-z0-9_-]+:(?:[a-z0-9_./-]+):(?=official esef report carries)", "", detail)
+        cleaned = re.sub(r"(?i)amf-infofi:[^:;() ]+:\s*", "", cleaned)
+        cleaned = re.sub(r"(?i)official esef report carries no inline xbrl tags \(untagged report\)", "carries no inline xbrl", cleaned)
+        cleaned = re.sub(r"(?i)sec cik not found for ticker [a-z0-9.]+", "sec cik not found", cleaned)
+        cleaned = re.sub(r"(?i)no esef filing found for lei [a-z0-9]+", "no esef filing found for lei", cleaned)
+        cleaned = re.sub(r"(?i)no verified local filing record at [^);]+", "no verified local filing record", cleaned)
+        cleaned = re.sub(r"(?i)(primary fundamentals unavailable|fallback unavailable|official oam esef package unusable)\s*\(?", "", cleaned)
+        cleaned = re.sub(r"[();]", " ", cleaned)
+        cleaned = re.sub(r"(?i)(carries no inline xbrl|no esef filing found for lei|no verified local filing record|sec cik not found)", "", cleaned)
+        if not cleaned.strip(" .: "):
+            return "LEGIT_OFFICIAL_UNAVAILABLE"
+    kinds = set()
+    for leaf in leaves:
+        if any(p in leaf for p in _NEUTRAL):
+            continue
+        if any(p in leaf for p in _LEGIT):
+            kinds.add("LEGIT_OFFICIAL_UNAVAILABLE")
+        elif any(p in leaf for p in _COVERAGE):
+            kinds.add("COVERAGE_GAP")
+        else:
+            kinds.add("PIPELINE_FAILURE")
+    for kind in ("PIPELINE_FAILURE", "LEGIT_OFFICIAL_UNAVAILABLE", "COVERAGE_GAP"):
+        if kind in kinds:
+            return kind
+    return "COVERAGE_GAP"
+
+
 def _classify(payload: dict) -> dict:
     ev = payload.get("evidence") or {}
     fe = payload.get("fundamentalEvidence") or {}
@@ -127,9 +192,15 @@ def _classify(payload: dict) -> dict:
     elif not any(m in missing for m in ("fundamental_source", "fresh_fundamentals", "valid_fundamental_period")):
         cls = "MARKET_DATA"
     elif official_status == "OFFICIAL_STALE":
-        cls = "LEGIT_OFFICIAL_STALE"
-    elif official_status == "OFFICIAL_SOURCE_UNAVAILABLE" and str(detail or "").startswith("no official"):
-        cls = "COVERAGE_GAP"
+        text = str(detail or "")
+        if "newer official source unavailable" in text and _leaf_class(text.split("newer official source unavailable:", 1)[1]) == "PIPELINE_FAILURE":
+            cls = "PIPELINE_FAILURE"
+        elif "newer period only from non-official source" in text:
+            cls = "INDEX_LAG"
+        else:
+            cls = "LEGIT_OFFICIAL_STALE"
+    elif official_status == "OFFICIAL_SOURCE_UNAVAILABLE":
+        cls = _leaf_class(str(detail or ""))
     else:
         cls = "PIPELINE_FAILURE"
     return {
@@ -180,6 +251,8 @@ def main() -> int:
         except Exception:
             hit = None
         canary_rows.append({**(hit or {"ticker": t}), "country": c, "exchange": e, "_canary": True})
+        # Android deep-link / watchlist shape: no isin/lei and name == ticker.
+        canary_rows.append({"ticker": t, "name": t, "currency": (hit or {}).get("currency"), "country": c, "exchange": e, "_canary": True, "_shape": "deeplink"})
 
     results: list[dict] = []
     work = [j for j in jobs if j.get("ticker")] + canary_rows
@@ -189,6 +262,7 @@ def main() -> int:
             job = futures[future]
             result = future.result()
             result["_canary"] = bool(job.get("_canary"))
+            result["shape"] = job.get("_shape", "catalog")
             results.append(result)
             print(json.dumps({k: result.get(k) for k in ("country", "exchange", "ticker", "classification", "evidence", "officialStatus", "fundamentalSource", "reportPeriod", "missing", "seconds")}, ensure_ascii=False), flush=True)
     for job in jobs:
@@ -200,11 +274,13 @@ def main() -> int:
         if r.get("_canary"):
             continue
         key = f"{r['country']}/{r['exchange']}"
-        m = by_market.setdefault(key, {"universe": totals.get(key), "sampled": 0, "officialValid": 0, "officialStale": 0, "coverageGap": 0, "pipelineFailure": 0, "marketData": 0, "apiFailure": 0, "pass": 0, "block": 0, "blockReasons": {}})
+        m = by_market.setdefault(key, {"universe": totals.get(key), "sampled": 0, "officialValid": 0, "officialStale": 0, "legitUnavailable": 0, "indexLag": 0, "coverageGap": 0, "pipelineFailure": 0, "marketData": 0, "apiFailure": 0, "pass": 0, "block": 0, "blockReasons": {}})
         m["sampled"] += 1
         cls = r["classification"]
         m["officialValid"] += int(bool(r.get("official")) and r.get("officialStatus") == "OFFICIAL_CURRENT")
         m["officialStale"] += int(cls == "LEGIT_OFFICIAL_STALE")
+        m["legitUnavailable"] += int(cls == "LEGIT_OFFICIAL_UNAVAILABLE")
+        m["indexLag"] += int(cls == "INDEX_LAG")
         m["coverageGap"] += int(cls == "COVERAGE_GAP")
         m["pipelineFailure"] += int(cls == "PIPELINE_FAILURE")
         m["marketData"] += int(cls == "MARKET_DATA")
@@ -218,13 +294,13 @@ def main() -> int:
     report = {"base": BASE, "generatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "seconds": round(time.time() - t0), "markets": by_market, "canaries": canaries, "rows": [r for r in results if not r.get("_canary")]}
     with open(OUT + ".json", "w", encoding="utf-8") as fh:
         json.dump(report, fh, ensure_ascii=False, indent=1)
-    lines = ["| country/exchange | universe | sampled | official valid | stale | coverage gap | pipeline fail | market data | api fail | PASS | BLOCK | BLOCK reasons |", "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    lines = ["| country/exchange | universe | sampled | official valid | stale | official unavailable | index lag | coverage gap | pipeline fail | market data | api fail | PASS | BLOCK | BLOCK reasons |", "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for key in sorted(by_market):
         m = by_market[key]
-        lines.append(f"| {key} | {m['universe']} | {m['sampled']} | {m['officialValid']} | {m['officialStale']} | {m['coverageGap']} | {m['pipelineFailure']} | {m['marketData']} | {m['apiFailure']} | {m['pass']} | {m['block']} | {'; '.join(f'{k}×{v}' for k, v in m['blockReasons'].items())} |")
+        lines.append(f"| {key} | {m['universe']} | {m['sampled']} | {m['officialValid']} | {m['officialStale']} | {m['legitUnavailable']} | {m['indexLag']} | {m['coverageGap']} | {m['pipelineFailure']} | {m['marketData']} | {m['apiFailure']} | {m['pass']} | {m['block']} | {'; '.join(f'{k}×{v}' for k, v in m['blockReasons'].items())} |")
     lines += ["", "| canary | evidence | official | source | document | period | ageDays | missing | governance |", "|---|---|---|---|---|---|---|---|---|"]
     for r in canaries:
-        lines.append(f"| {r['country']}:{r['ticker']} | {r.get('evidence')} | {r.get('official')} | {r.get('fundamentalSource')} | {r.get('officialDocumentId')} | {r.get('reportPeriod')} | {r.get('fundamentalAgeDays')} | {','.join(r.get('missing') or [])} | {r.get('governance')} |")
+        lines.append(f"| {r['country']}:{r['ticker']} ({r.get('shape')}) | {r.get('evidence')} | {r.get('official')} | {r.get('fundamentalSource')} | {r.get('officialDocumentId')} | {r.get('reportPeriod')} | {r.get('fundamentalAgeDays')} | {','.join(r.get('missing') or [])} | {r.get('governance')} |")
     lines += ["", "| country/exchange | ticker | ISIN | price source | fundamental source | official | period | age | coverage | freshness | srcQuality | evidence | class | missing / reason |", "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for r in sorted(report["rows"], key=lambda x: (x["country"], x["exchange"], str(x.get("ticker")))):
         cov = r.get("coverage")
@@ -236,7 +312,7 @@ def main() -> int:
     failures = []
     for r in canaries:
         if not r.get("official") or "fundamental_source" in (r.get("missing") or []):
-            failures.append(f"canary {r['country']}:{r['ticker']} lost official evidence ({r.get('classification')}: {r.get('officialDetail') or r.get('error')})")
+            failures.append(f"canary {r['country']}:{r['ticker']} ({r.get('shape')}) lost official evidence ({r.get('classification')}: {r.get('officialDetail') or r.get('error')})")
     contradictions = [r for r in report["rows"] if r.get("official") and "fundamental_source" in (r.get("missing") or [])]
     if contradictions:
         failures.append(f"{len(contradictions)} payload(s) carry official evidence yet report missing fundamental_source")
