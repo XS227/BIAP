@@ -479,11 +479,7 @@ def find_quote(code: str, *, timeout: float = 8.0, use_cache: bool = True) -> Op
         # an upstream stall consume the entire recommendation deadline.
         return _fetch_tsetmc_quote(code, timeout=min(timeout, 4.0))
 
-    try:
-        quotes = fetch_watchlist(timeout=timeout, use_cache=use_cache)
-        for q in quotes:
-            if q.code == code:
-                return q
-    except MarketDataUnavailable:
-        pass
+    # The legacy BIAP /stock/watchlist route is not deployed in production
+    # (HTTP 404). Resolve through the canonical TSETMC instrument endpoint
+    # rather than issuing a failing watchlist request for every company.
     return _fetch_tsetmc_quote(code, timeout=timeout)

@@ -507,6 +507,10 @@ def run_batch(
             if code in already_enriched_in_slice:
                 re_enriched_companies += 1
             availability = company.get("data_available") or {}
+            codal_diag = (company.get("data_diagnostics") or {}).get("codal") or {}
+            codal_error = " ".join(str(codal_diag.get(key) or "") for key in ("metadataError", "fundamentalsError", "error"))
+            if _is_rate_limit_error(RuntimeError(codal_error)) and not availability.get("codal"):
+                raise RuntimeError(f"CODAL rate limit during financial enrichment: {codal_error[:240]}")
             target.save_enriched(
                 code,
                 company,
