@@ -15,6 +15,7 @@ filing. Missing or ambiguous fields stay unavailable.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, replace
+from deadline import DeadlineExceeded, run_parallel_with_deadline
 from html import unescape
 from html.parser import HTMLParser
 import json
@@ -176,7 +177,7 @@ def find_company(symbol: str) -> Optional[dict[str, Any]]:
             {
                 "Symbol": wanted,
                 "PageNumber": 1,
-                "Length": _CODAL_PAGE_LENGTH,
+                "Length": 2,
                 "CompanyState": 0,
                 "CompanyType": -1,
                 "FromDate": "1404/01/01",
@@ -585,21 +586,34 @@ def fundamentals_for_symbol(symbol: str) -> Optional[CodalFundamentals]:
 
 
 def metadata_for_symbol(symbol: str) -> Optional[CodalMetadata]:
-    # A slow/rate-limited issuer search must not suppress independently verified
-    # financial-year or filing evidence. Never invent an issuer identifier.
-    company = find_company(symbol)
-    years = financial_years(symbol)
-    filings = latest_filings(symbol, limit=5)
-    financial_filings = latest_financial_filings(symbol, limit=3)
-    if not company and not years and not filings and not financial_filings:
-        return None
+    # Financial years are independent, verified issuer evidence. Fetch them
+    # concurrently with optional discovery so a trickling CODAL search page
+    # cannot suppress a fast and valid metadata result.
+    # The production relay serializes some requests: collect the tiny years
+    # response first so concurrent slow searches cannot starve it.
+    try:
+        years = financial_years(symbol)
+    except CodalDataUnavailable:
+        years = []
+    results = run_parallel_with_deadline([
+        lambda: find_company(symbol),
+        lambda: latest_filings(symbol, limit=3),
+    ], timeout=3.0)
+    company, filings = (
+        value if not isinstance(value, BaseException) else None
+        for value in results
+    )
     company = company or {}
+    filings = filings or []
+    # Financial filings are fetched by the fundamentals pipeline separately.
+    # Do not duplicate its expensive paginated discovery in metadata.
+    if not company and not years and not filings:
+        return None
     return CodalMetadata(
         symbol=symbol,
         company_name=(str(company.get("n")).strip() if company.get("n") else None),
         company_id=(str(company.get("i")).strip() if company.get("i") else None),
         financial_years=years,
         latest_filings=[item.to_dict() for item in filings],
-        latest_financial_filings=[item.to_dict() for item in financial_filings],
+        latest_financial_filings=[],
     )
-
