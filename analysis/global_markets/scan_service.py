@@ -61,7 +61,7 @@ def _scan_cache_path(country: str, exchange: str) -> Path:
     return data_root() / "scan-cache" / safe_country / f"{safe_exchange}.json"
 
 
-def _write_scan_cache(country: str, exchange: str, payload: dict) -> None:
+def _write_scan_cache(country: str, exchange: str, payload: dict, *, full_refresh: bool = False) -> None:
     path = _scan_cache_path(country, exchange)
     existing = read_json(path, default=None)
     existing_payload = existing.get("payload") if isinstance(existing, dict) else None
@@ -69,7 +69,8 @@ def _write_scan_cache(country: str, exchange: str, payload: dict) -> None:
     # artifact.  Doing so made Global Top regress minutes after a successful
     # refresh whenever a live-check requested only a small discovery sample.
     if (
-        isinstance(existing_payload, dict)
+        not full_refresh
+        and isinstance(existing_payload, dict)
         and existing_payload.get("rankingEligible") is True
         and payload.get("rankingEligible") is not True
     ):
@@ -126,7 +127,7 @@ def scan_global_market(
             discovery_limit=discovery_limit,
             deep_limit=deep_limit,
         )
-        _write_scan_cache(country, exchange, result)
+        _write_scan_cache(country, exchange, result, full_refresh=discovery_limit >= 5000)
         return result
 
     # Keep Iran read-only until its Tindex/CODAL integration work is explicitly
