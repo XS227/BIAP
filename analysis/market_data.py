@@ -475,7 +475,9 @@ def find_quote(code: str, *, timeout: float = 8.0, use_cache: bool = True) -> Op
     # Do not hit the legacy BIAP watchlist first for those codes: the endpoint
     # may be unavailable and the numeric code can be resolved directly.
     if _is_tsetmc_instrument_code(code):
-        return _fetch_tsetmc_quote(code, timeout=timeout)
+        # Numeric identifiers need only two small direct endpoints; do not let
+        # an upstream stall consume the entire recommendation deadline.
+        return _fetch_tsetmc_quote(code, timeout=min(timeout, 4.0))
 
     try:
         quotes = fetch_watchlist(timeout=timeout, use_cache=use_cache)
