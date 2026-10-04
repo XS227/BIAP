@@ -585,12 +585,15 @@ def fundamentals_for_symbol(symbol: str) -> Optional[CodalFundamentals]:
 
 
 def metadata_for_symbol(symbol: str) -> Optional[CodalMetadata]:
+    # A slow/rate-limited issuer search must not suppress independently verified
+    # financial-year or filing evidence. Never invent an issuer identifier.
     company = find_company(symbol)
-    if company is None:
-        return None
     years = financial_years(symbol)
     filings = latest_filings(symbol, limit=5)
     financial_filings = latest_financial_filings(symbol, limit=3)
+    if not company and not years and not filings and not financial_filings:
+        return None
+    company = company or {}
     return CodalMetadata(
         symbol=symbol,
         company_name=(str(company.get("n")).strip() if company.get("n") else None),
