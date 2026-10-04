@@ -70,7 +70,14 @@ def _targets() -> Iterable[tuple[str, str, str]]:
 def _exact(provider, country: str, exchange: str, ticker: str):
     search = getattr(provider, "search_instruments", None)
     rows = list(search(country=country, exchange=exchange, query=ticker, limit=20)) if callable(search) else []
-    return next((row for row in rows if row.ticker.strip().upper() == ticker.upper()), None)
+    exact = next((row for row in rows if row.ticker.strip().upper() == ticker.upper()), None)
+    if exact is not None:
+        return exact
+    # Targeted upstream search can be unavailable even when the verified
+    # exchange snapshot contains the instrument. Reuse the same strict
+    # venue-filtered cache decoder as the production catalog.
+    return next((row for row in provider.list_instruments(country=country, exchange=exchange)
+                 if row.ticker.strip().upper() == ticker.upper()), None)
 
 
 def _official_financial_sources(company) -> list[str]:
