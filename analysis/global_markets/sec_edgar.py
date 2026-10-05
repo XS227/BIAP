@@ -99,9 +99,20 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             if not isinstance(entries, list):
                 continue
             for row in entries:
-                if not isinstance(row, dict) or row.get("form") not in {"10-K", "10-K/A"}:
+                if not isinstance(row, dict) or not isinstance(row.get("val"), (int, float)):
                     continue
-                if row.get("fp") not in {None, "FY"} or not isinstance(row.get("val"), (int, float)):
+                form = str(row.get("form") or "").upper()
+                fp = row.get("fp")
+                if form in {"10-K", "10-K/A"}:
+                    if fp not in {None, "FY"}:
+                        continue
+                elif form in {"10-12B", "10-12B/A", "10-12G", "10-12G/A"}:
+                    # Newly public issuers may not have filed their first 10-K yet.
+                    # Accept only explicit fiscal-year facts from the audited
+                    # Exchange Act registration statement; never interim rows.
+                    if fp != "FY":
+                        continue
+                else:
                     continue
                 rows.append(row)
         rows.sort(key=lambda row: (str(row.get("end") or ""), str(row.get("filed") or "")), reverse=True)
@@ -353,6 +364,6 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
                 observed_at=filed_at,
                 period_end=period_end,
                 quality=1.0,
-                notes="standard US-GAAP facts from SEC companyfacts; annual 10-K/10-K-A preference",
+                notes="standard US-GAAP facts from SEC companyfacts; annual 10-K/10-K-A or audited FY facts from 10-12B/10-12G registration statements",
             ),
         )
