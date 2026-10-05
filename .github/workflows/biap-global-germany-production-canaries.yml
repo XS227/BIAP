@@ -14,6 +14,8 @@ on:
 permissions:
   contents: read
 
+# production rerun after 0f793f5 Germany deploy
+
 jobs:
   germany-canaries:
     runs-on: ubuntu-latest
