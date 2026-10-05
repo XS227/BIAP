@@ -107,6 +107,25 @@ def test_governance_abstains_when_distress_blocks_positive_call():
     assert g.final_call == "NO_RECOMMENDATION"
 
 
+def test_no_recommendation_with_pass_evidence_is_not_mislabeled_as_evidence_block():
+    c = _company()
+    e = evidence_agent(c, _signals(), now=datetime(2026, 9, 29, 9, tzinfo=timezone.utc))
+    d = distress_agent(c)
+    g = decision_governance_agent(
+        proposed_call="NO_RECOMMENDATION",
+        score=-0.10,
+        overall_confidence=0.28,
+        decision_confidence=0.41,
+        evidence=e,
+        distress=d,
+    )
+    assert e.status == "PASS"
+    assert g.action == "ABSTAIN"
+    assert g.hard_blocks == ()
+    assert "evidence gate is out of scope or blocked" not in g.reasoning
+    assert "confidence" in g.reasoning.lower()
+
+
 def test_governance_keeps_negative_direction_when_distress_corroborates():
     c = _company(
         total_equity=-100.0,

@@ -71,6 +71,14 @@ function Metric({ label, value, colors }: { label: string; value: string; colors
   return <View style={[styles.metric, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.metricValue, { color: colors.text }]}>{value}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{label}</Text></View>;
 }
 
+function creditStatusLabel(value: string | null | undefined) {
+  const key = String(value || '').trim().toUpperCase();
+  if (!key) return '—';
+  if (key.includes('INSUFFICIENT')) return 'INSUFFICIENT DATA';
+  if (key.includes('NOT SCORED')) return 'NOT SCORED';
+  return friendly(value);
+}
+
 function signalDisplay(signal: GlobalAgentSignal) {
   const confidence = Number(signal.confidence || 0);
   const vote = Number(signal.vote || 0);
@@ -270,7 +278,7 @@ export default function GlobalStockDetailScreen() {
         </View>
 
         <View style={[styles.agentCard, { backgroundColor: colors.backgroundElement, borderColor: credit?.indicated_rating_sp ? Brand.positive : credit?.status ? Brand.warning : colors.backgroundSelected }]}>
-          <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>Agent 10 · Corporate Credit Scoring</Text><Text style={[styles.agentVote, { color: credit?.indicated_rating_sp ? Brand.positive : Brand.warning }]}>{credit?.indicated_rating_sp || friendly(credit?.status) || '—'}</Text></View>
+          <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>Agent 10 · Corporate Credit Scoring</Text><Text style={[styles.agentVote, { color: credit?.indicated_rating_sp ? Brand.positive : Brand.warning }]}>{credit?.indicated_rating_sp || creditStatusLabel(credit?.status)}</Text></View>
           <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>
             {credit?.indicated_rating_moodys ? `Moody's grid ${credit.indicated_rating_moodys} • S&P equivalent ${credit.indicated_rating_sp} • 1y PD ${credit.pd_1y == null ? '—' : (credit.pd_1y * 100).toFixed(2) + '%'}` : 'Canonical Agent 10 legal-entity grid'}
           </Text>
@@ -310,7 +318,7 @@ const styles = StyleSheet.create({
   caution: { borderWidth: 1, borderRadius: Radius.md, padding: Spacing.three, marginTop: 10 }, cautionTitle: { fontFamily: Fonts.sans, fontSize: 11, fontWeight: '900' },
   metrics: { flexDirection: 'row', gap: 8, marginTop: 10 }, metric: { flex: 1, borderRadius: Radius.md, paddingVertical: 14, paddingHorizontal: 8, alignItems: 'center' }, metricValue: { fontFamily: Fonts.mono, fontSize: 15, fontWeight: '900', textAlign: 'center' }, metricLabel: { fontFamily: Fonts.sans, fontSize: 8.5, marginTop: 4, textAlign: 'center' },
   sectionTitle: { fontFamily: Fonts.sans, fontSize: 15, fontWeight: '900', marginTop: 20, marginBottom: 8 }, card: { borderRadius: Radius.lg, padding: Spacing.three, marginTop: 10 }, cardTitle: { fontFamily: Fonts.sans, fontSize: 14, fontWeight: '900' }, body: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 17, marginTop: 5 },
-  agentCard: { borderWidth: 1, borderRadius: Radius.lg, padding: Spacing.three, marginBottom: 8 }, agentName: { fontFamily: Fonts.sans, fontSize: 12.5, fontWeight: '900' }, agentVote: { fontFamily: Fonts.mono, fontSize: 12, fontWeight: '900' }, agentConfidence: { fontFamily: Fonts.mono, fontSize: 9, marginTop: 5 }, agentReason: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 17, marginTop: 6 }, warning: { fontFamily: Fonts.sans, fontSize: 9.5, lineHeight: 15, marginTop: 6 },
+  agentCard: { borderWidth: 1, borderRadius: Radius.lg, padding: Spacing.three, marginBottom: 8 }, agentName: { fontFamily: Fonts.sans, fontSize: 12.5, fontWeight: '900', flex: 1, minWidth: 0 }, agentVote: { fontFamily: Fonts.mono, fontSize: 12, fontWeight: '900', flexShrink: 1, maxWidth: '44%', textAlign: 'right' }, agentConfidence: { fontFamily: Fonts.mono, fontSize: 9, marginTop: 5 }, agentReason: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 17, marginTop: 6 }, warning: { fontFamily: Fonts.sans, fontSize: 9.5, lineHeight: 15, marginTop: 6 },
   dataRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, paddingVertical: 9, borderBottomWidth: StyleSheet.hairlineWidth }, dataLabel: { fontFamily: Fonts.sans, fontSize: 10, flex: 1 }, dataValue: { fontFamily: Fonts.mono, fontSize: 10, fontWeight: '800', flex: 1, textAlign: 'right' }, sourceRow: { paddingVertical: 9, borderBottomWidth: StyleSheet.hairlineWidth }, sourceProvider: { fontFamily: Fonts.mono, fontSize: 10, fontWeight: '900' }, sourceMeta: { fontFamily: Fonts.mono, fontSize: 8.5, marginTop: 3 },
   action: { minHeight: 46, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center', marginTop: 12 }, actionText: { color: '#fff', fontFamily: Fonts.sans, fontSize: 11, fontWeight: '900' }, disclaimer: { fontFamily: Fonts.sans, fontSize: 9.5, lineHeight: 15, textAlign: 'center', marginTop: 22 },
 });
