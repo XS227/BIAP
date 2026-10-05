@@ -136,9 +136,11 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
         return super()._resolve_cik(company)
 
     def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
-        if company.country.strip().upper() == "US":
-            raise GlobalProviderError("foreign SEC IFRS fallback is not used for US issuers")
-
+        # A foreign private issuer may trade on a US exchange while still filing
+        # annual reports on Form 20-F/40-F using IFRS (e.g. AKAN on NASDAQ).
+        # The strict form filter + IFRS namespace + legal-entity identity checks
+        # below are sufficient to distinguish these filers from domestic US-GAAP
+        # issuers, so do not reject merely because the selected venue is US.
         jse_issuer = str(company.raw_provider_fields.get("jse_issuer_name") or "").strip()
         names = issuer_names(company, [jse_issuer] if jse_issuer else [])
 
