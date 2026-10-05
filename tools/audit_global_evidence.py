@@ -10,6 +10,7 @@ Markets are discovered from BIAP's own configuration (never a hand list).
 For each market a deterministic spread of the catalog is analysed by default.
 Markets listed in BIAP_AUDIT_FULL_MARKETS are audited exhaustively, page by
 page, and the advertised denominator must exactly match the distinct rows.
+Germany regression audits use this exhaustive mode after provider-routing changes.
 Every result is classified:
 
   OK                     Evidence PASS/WARN
