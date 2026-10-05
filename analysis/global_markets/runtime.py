@@ -379,13 +379,16 @@ def build_registry() -> ProviderRegistry:
     de_with_fallback = FallbackFundamentalsProvider(de_official, public_fundamentals)
     de_provider = PersistentFundamentalsProvider(de_with_fallback)
     companies_house_key = (os.environ.get("BIAP_COMPANIES_HOUSE_API_KEY") or "").strip()
+    # UK: the FCA National Storage Mechanism (official OAM) first, then the
+    # filings.xbrl.org/SEC chain, then labelled vendor metrics.
+    uk_official = FallbackFundamentalsProvider(nordic_oam_official, public_fundamentals)
     uk_base = (
         CorroboratingFundamentalsProvider(
-            esef_with_fallback,
+            uk_official,
             CompaniesHouseCorroborator(api_key=companies_house_key),
         )
         if companies_house_key
-        else esef_with_fallback
+        else uk_official
     )
     uk_provider = PersistentFundamentalsProvider(uk_base)
     for country in _ESEF_COUNTRIES:

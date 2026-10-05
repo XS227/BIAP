@@ -39,6 +39,8 @@ import io
 import json
 import re
 import tempfile
+import threading
+import time
 import unicodedata
 import zipfile
 from pathlib import Path
@@ -1119,6 +1121,78 @@ class NetherlandsAFMLocator(OAMLocator):
                     out.write(chunk)
 
 
+class UKNSMLocator(OAMLocator):
+    """FCA National Storage Mechanism (UK OAM): tagged ESEF annual reports.
+
+    The NSM search API (index ``nsm-search``) is queried by the issuer's LEI
+    for "Annual Financial Report" disclosures tagged ESEF; every hit is
+    re-checked client-side to carry exactly that LEI. AIM issuers are not on
+    a regulated market and lodge no ESEF report.
+    """
+
+    oam = "gb-fca-nsm"
+    country = "GB"
+    search = "https://api.data.fca.org.uk/search?index=nsm-search"
+    artefacts = "https://data.fca.org.uk/artefacts/"
+    min_interval_seconds = 3.0
+    cooldown_seconds = 900.0
+    _lock = threading.Lock()
+    _last_call = 0.0
+    _blocked_until = 0.0
+
+    def _throttle(self) -> None:
+        with UKNSMLocator._lock:
+            now = time.monotonic()
+            if now < UKNSMLocator._blocked_until:
+                raise GlobalProviderError("FCA NSM search is cooling down after a rate block")
+            wait = UKNSMLocator._last_call + self.min_interval_seconds - now
+            if wait > 0:
+                time.sleep(wait)
+            UKNSMLocator._last_call = time.monotonic()
+
+    def annual_filings(self, company: GlobalCompany, lei: str, legal_name: str) -> list[OAMFiling]:
+        lei = lei.upper()
+
+        def fetch() -> str:
+            self._throttle()
+            body = {"from": 0, "size": 40, "sort": "publication_date", "sortorder": "desc",
+                    "criteriaObj": {"criteria": [
+                        {"name": "company_lei", "value": ["", lei, "disclose_org", "related_org"]},
+                        {"name": "tag_esef", "value": ["Tagged"]},
+                    ], "dateCriteria": None}}
+            with self.http.client() as client:
+                response = client.post(self.search, json=body)
+            if response.status_code in (403, 429):
+                # API Gateway rate block: stop calling for a while instead of
+                # extending the block (the VPS shares one IP for all users).
+                UKNSMLocator._blocked_until = time.monotonic() + self.cooldown_seconds
+            response.raise_for_status()
+            return response.text
+
+        hits = json.loads(self.http.cached_text(f"fca-nsm-esef:{lei}", fetch)).get("hits", {}).get("hits", [])
+        filings = []
+        for hit in hits:
+            row = hit.get("_source") or {}
+            if str(row.get("lei") or "").upper() != lei:
+                continue
+            if str(row.get("type") or "").strip().lower() != "annual financial report":
+                continue
+            link = str(row.get("download_link") or "")
+            if not re.search(r"\.(zip|xhtml|html)$", link, re.I):
+                continue
+            filings.append(OAMFiling(
+                oam=self.oam, document_id=f"FCA-NSM:{row.get('disclosure_id')}",
+                package_url=self.artefacts + link,
+                landing_url="https://data.fca.org.uk/#/nsm/nationalstoragemechanism",
+                published_at=str(row.get("publication_date") or "")[:10] or None,
+                label=f"{row.get('company')}: {row.get('headline') or 'Annual Financial Report'}",
+            ))
+        filings.sort(key=lambda f: f.published_at or "", reverse=True)
+        if not filings:
+            raise GlobalProviderError(f"FCA NSM lists no tagged ESEF annual financial report for LEI {lei}")
+        return filings
+
+
 class ItalySDIRLocator(OAMLocator):
     """Both Italian authorized storage mechanisms, merged and ranked.
 
@@ -1171,6 +1245,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
             PortugalCMVMLocator(self.http),
             BelgiumSTORILocator(self.http),
             NetherlandsAFMLocator(self.http),
+            UKNSMLocator(self.http),
         ]
         self.locators = {locator.country: locator for locator in chosen}
 
