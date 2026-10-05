@@ -29,11 +29,13 @@ jobs:
           cases = [
               ('US', 'NASDAQ', 'AAPL', 'USD', 'sec-edgar-xbrl-cached'),
               ('FR', 'EURONEXT_PARIS', 'MC', 'EUR', 'lvmh-official-financial-documents'),
-              ('ES', 'BME_MADRID', 'SAN', 'EUR', 'esef-xbrl-cached'),
+              ('ES', 'BME_MADRID', 'SAN', 'EUR', ('official-oam-es-cnmv-ifa', 'esef-xbrl-cached')),
               ('TR', 'BIST', 'AKBNK', 'TRY', 'kap-official-financial-summary'),
               ('BR', 'B3', 'PETR4', 'BRL', 'cvm-open-data-dfp-resolved'),
               ('DE', 'XETRA', 'SIE', 'EUR', 'de-official-issuer-financials'),
               ('DE', 'XETRA', 'ALV', 'EUR', 'de-official-issuer-financials'),
+              ('DE', 'XETRA', 'BEI', 'EUR', 'de-issuer-esef-v1'),
+              ('DE', 'XETRA', 'DBK', 'EUR', 'de-issuer-esef-v1'),
               ('SG', 'SGX', 'S68', 'SGD', 'sgx-official-issuer-financial-information'),
               ('HK', 'HKEX', '0388', 'HKD', 'hkex-official-issuer-financial-statements'),
           ]
@@ -71,7 +73,8 @@ jobs:
                   'cvmMatchMode': (company.get('raw_provider_fields') or {}).get('cvm_match_mode'),
               }
               print(json.dumps(result, ensure_ascii=False, sort_keys=True))
-              assert expected_provider in providers, result
+              expected = expected_provider if isinstance(expected_provider, tuple) else (expected_provider,)
+              assert any(p in providers for p in expected), result
               assert 'fundamental_source' not in (evidence.get('missing_critical') or []), result
               assert evidence.get('status') in {'PASS','WARN'}, result
 

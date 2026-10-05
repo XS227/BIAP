@@ -177,9 +177,12 @@ jobs:
 
           global_scan = post('/scan-global', {'topN': 3, 'maxAgeHours': 24}, 420)
           assert global_scan.get('marketsScanned', 0) >= 1
-          assert global_scan.get('marketsEligible') == global_scan.get('marketsScanned'), global_scan
-          assert global_scan.get('marketsExcluded') == 0, global_scan
-          assert global_scan.get('status') in {'GLOBAL_TOP10', 'NO_RECOMMENDATION'}, global_scan
+          # PARTIAL_GLOBAL_SCAN (0.3.16+) honestly ranks only coverage-qualified
+          # markets and reports the excluded ones; the counts must reconcile.
+          assert global_scan.get('status') in {'GLOBAL_TOP10', 'PARTIAL_GLOBAL_SCAN', 'NO_RECOMMENDATION'}, global_scan
+          assert global_scan.get('marketsEligible', 0) + global_scan.get('marketsExcluded', 0) == global_scan.get('marketsScanned'), global_scan
+          if global_scan.get('status') == 'GLOBAL_TOP10':
+              assert global_scan.get('marketsExcluded') == 0, global_scan
           assert isinstance(global_scan.get('recommendations'), list)
           for row in global_scan.get('recommendations') or []:
               assert row.get('call') == 'BUY_CANDIDATE'
