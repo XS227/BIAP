@@ -1,6 +1,8 @@
 from global_markets.cached_fundamentals import PersistentFundamentalsProvider
+from global_markets.fallback_fundamentals import FallbackFundamentalsProvider
 from global_markets.runtime import build_registry
 from global_markets.sec_edgar import SECEdgarFundamentalsProvider
+from global_markets.sec_foreign_ifrs import SECForeignIFRSFundamentalsProvider
 
 
 def test_us_sec_fundamentals_are_registered_without_env(monkeypatch):
@@ -12,10 +14,16 @@ def test_us_sec_fundamentals_are_registered_without_env(monkeypatch):
 
     assert isinstance(nasdaq, PersistentFundamentalsProvider)
     assert isinstance(nyse, PersistentFundamentalsProvider)
-    assert isinstance(nasdaq.upstream, SECEdgarFundamentalsProvider)
-    assert isinstance(nyse.upstream, SECEdgarFundamentalsProvider)
-    assert nasdaq.upstream.user_agent
-    assert nyse.upstream.user_agent
+    assert isinstance(nasdaq.upstream, FallbackFundamentalsProvider)
+    assert isinstance(nyse.upstream, FallbackFundamentalsProvider)
+    assert isinstance(nasdaq.upstream.primary, SECEdgarFundamentalsProvider)
+    assert isinstance(nasdaq.upstream.fallback, SECForeignIFRSFundamentalsProvider)
+    assert isinstance(nyse.upstream.primary, SECEdgarFundamentalsProvider)
+    assert isinstance(nyse.upstream.fallback, SECForeignIFRSFundamentalsProvider)
+    assert nasdaq.upstream.primary.user_agent
+    assert nasdaq.upstream.fallback.user_agent
+    assert nyse.upstream.primary.user_agent
+    assert nyse.upstream.fallback.user_agent
 
 
 def test_sec_parser_anchors_to_latest_annual_period_and_drops_stale_revenue(monkeypatch):

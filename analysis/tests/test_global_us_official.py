@@ -16,6 +16,8 @@ def test_us_ordinary_filter_rejects_non_common_instruments():
     assert not _ordinary_security("ADR", "Issuer American Depository Shares", etf="N", test_issue="N")
     assert not _ordinary_security("ETF", "Sample ETF", etf="Y", test_issue="N")
     assert not _ordinary_security("TEST", "Test Common Stock", etf="N", test_issue="Y")
+    assert not _ordinary_security("GCGR", "General Catalyst Global Resilience Merger Corp.", etf="N", test_issue="N")
+    assert not _ordinary_security("SPAC", "Example Acquisition Corp.", etf="N", test_issue="N")
 
 
 def test_nasdaq_directory_universe(monkeypatch):
