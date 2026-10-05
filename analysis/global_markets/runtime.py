@@ -45,6 +45,7 @@ from .india_official import NSEOfficialUniverseProvider
 from .italy_issuer import ItalyIssuerFundamentalsProvider
 from .enel_issuer_esef import EnelIssuerESEFProvider
 from .german_issuer_esef import GermanIssuerESEFProvider
+from .india_nse_filings import NSEIntegratedFilingFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
 from .jpx_official import JPXOfficialUniverseProvider
 from .jse_official import JSEOfficialUniverseProvider
@@ -514,6 +515,14 @@ def build_registry() -> ProviderRegistry:
     tr = PersistentFundamentalsProvider(tr_base)
     for exchange in COUNTRY_PACKS["TR"].exchanges:
         register_fundamentals("TR", exchange.code, tr)
+
+    # India: SEBI Integrated Filing (Financials) XBRL published by NSE. BSE
+    # listings reuse the NSE filing only when the filing states their ISIN.
+    india = PersistentFundamentalsProvider(
+        FallbackFundamentalsProvider(NSEIntegratedFilingFundamentalsProvider(), public_fundamentals)
+    )
+    for exchange in COUNTRY_PACKS["IN"].exchanges:
+        register_fundamentals("IN", exchange.code, india)
 
     # ADX exposes issuer-filed annual Financial Reports through its official efid
     # disclosures feed. The adapter verifies the linked PDF and cross-checks
