@@ -34,6 +34,7 @@ jobs:
               ("DE", "FRANKFURT", "SAP", "EUR", {"sec-edgar-foreign-ifrs-cached", "de-official-issuer-financials"}),
           ]
 
+          failures = []
           for country, exchange, ticker, currency, expected in cases:
               q = urllib.parse.urlencode({"q": ticker, "limit": 20})
               with urllib.request.urlopen(f"{base}/instruments/{country}/{exchange}?{q}", timeout=45) as r:
@@ -82,10 +83,22 @@ jobs:
                   "period": company.get("filing_period_end"),
                   "score": payload.get("score"),
                   "call": payload.get("call"),
+                  "primaryError": (company.get("raw_provider_fields") or {}).get("fundamentals_primary_error"),
+                  "fallbackError": (company.get("raw_provider_fields") or {}).get("fundamentals_fallback_error"),
+                  "issuerSource": (company.get("raw_provider_fields") or {}).get("de_issuer_source"),
               }
               print(json.dumps(result, ensure_ascii=False, sort_keys=True))
-              assert providers.intersection(expected), result
-              assert "fundamental_source" not in result["missing"], result
-              assert result["evidence"] in {"PASS", "WARN"}, result
-              assert result["period"] == "2025-12-31", result
+              checks = [
+                  (bool(providers.intersection(expected)), "expected_official_provider"),
+                  ("fundamental_source" not in result["missing"], "fundamental_source"),
+                  (result["evidence"] in {"PASS", "WARN"}, "evidence_status"),
+                  (result["period"] == "2025-12-31", "period"),
+              ]
+              failed = [name for ok, name in checks if not ok]
+              if failed:
+                  failures.append({"ticker": ticker, "failed": failed, "result": result})
+
+          if failures:
+              print("GERMANY_CANARY_FAILURES=" + json.dumps(failures, ensure_ascii=False, sort_keys=True))
+              raise AssertionError(f"{len(failures)} Germany production canaries failed")
           PY
