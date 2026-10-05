@@ -132,6 +132,14 @@ def _ordinary_equity_row(*, country: str, spec: ExchangeSpec, row: dict, symbol:
         if any(marker in name for marker in acquisition_shell_markers):
             return False
 
+        # Closed-end and other registered investment funds can be exposed by
+        # reference vendors as "Common Stock" because their exchange-traded
+        # shares are equity securities. They are not operating companies and do
+        # not use the 10-K/company-fundamentals model that Kiasha's stock agents
+        # expect. Keep them out of the ordinary operating-equity universe.
+        if " FUND " in name:
+            return False
+
     return True
 
 
