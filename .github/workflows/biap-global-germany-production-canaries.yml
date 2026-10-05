@@ -1,0 +1,104 @@
+name: BIAP Global Germany production canaries
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-germany-production-canaries.yml'
+      - 'analysis/global_markets/german_issuer.py'
+      - 'analysis/global_markets/german_issuer_esef.py'
+      - 'analysis/global_markets/scanner.py'
+      - 'analysis/global_markets/xetra_delayed.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  germany-canaries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Verify Germany production analyses
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.parse, urllib.request
+
+          base = "https://biap.dadashi.no/global-api/global"
+          cases = [
+              ("DE", "XETRA", "BMW", "EUR", {"de-official-issuer-financials"}),
+              ("DE", "FRANKFURT", "DUE", "EUR", {"de-official-issuer-financials"}),
+              ("DE", "FRANKFURT", "BMM", "EUR", {"de-official-issuer-financials"}),
+              ("DE", "FRANKFURT", "SAP", "EUR", {"sec-edgar-foreign-ifrs-cached", "de-official-issuer-financials"}),
+          ]
+
+          failures = []
+          for country, exchange, ticker, currency, expected in cases:
+              q = urllib.parse.urlencode({"q": ticker, "limit": 20})
+              with urllib.request.urlopen(f"{base}/instruments/{country}/{exchange}?{q}", timeout=45) as r:
+                  catalog = json.load(r)
+              exact = next(
+                  (row for row in (catalog.get("instruments") or [])
+                   if str(row.get("ticker") or "").upper() == ticker),
+                  None,
+              )
+              assert exact, (country, exchange, ticker, catalog)
+              body = {
+                  "country": country,
+                  "exchange": exchange,
+                  "ticker": exact.get("ticker") or ticker,
+                  "name": exact.get("name") or ticker,
+                  "currency": exact.get("currency") or currency,
+                  "isin": exact.get("isin"),
+                  "lei": exact.get("lei"),
+              }
+              req = urllib.request.Request(
+                  f"{base}/analyze",
+                  data=json.dumps(body).encode(),
+                  headers={"Content-Type": "application/json", "Accept": "application/json"},
+                  method="POST",
+              )
+              with urllib.request.urlopen(req, timeout=180) as r:
+                  payload = json.load(r)
+
+              company = payload.get("company") or {}
+              evidence = payload.get("evidence") or {}
+              providers = {
+                  str(s.get("provider") or "")
+                  for s in (company.get("sources") or [])
+              }
+              result = {
+                  "market": f"{country}/{exchange}",
+                  "ticker": ticker,
+                  "catalogName": exact.get("name"),
+                  "isin": exact.get("isin"),
+                  "reportingMarket": (exact.get("raw_provider_fields") or {}).get("reporting_market"),
+                  "providers": sorted(providers),
+                  "evidence": evidence.get("status"),
+                  "official": evidence.get("official_fundamental_status"),
+                  "missing": evidence.get("missing_critical") or [],
+                  "coverage": evidence.get("coverage"),
+                  "period": company.get("filing_period_end"),
+                  "score": payload.get("score"),
+                  "call": payload.get("call"),
+                  "primaryError": (company.get("raw_provider_fields") or {}).get("fundamentals_primary_error"),
+                  "fallbackError": (company.get("raw_provider_fields") or {}).get("fundamentals_fallback_error"),
+                  "issuerSource": (company.get("raw_provider_fields") or {}).get("de_issuer_source"),
+              }
+              print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+              checks = [
+                  (bool(providers.intersection(expected)), "expected_official_provider"),
+                  ("fundamental_source" not in result["missing"], "fundamental_source"),
+                  (result["evidence"] in {"PASS", "WARN"}, "evidence_status"),
+                  (result["period"] == "2025-12-31", "period"),
+              ]
+              failed = [name for ok, name in checks if not ok]
+              if failed:
+                  failures.append({"ticker": ticker, "failed": failed, "result": result})
+
+          if failures:
+              print("GERMANY_CANARY_FAILURES=" + json.dumps(failures, ensure_ascii=False, sort_keys=True))
+              raise AssertionError(f"{len(failures)} Germany production canaries failed")
+          PY
