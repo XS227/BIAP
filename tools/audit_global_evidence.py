@@ -7,9 +7,10 @@ Uses exactly the Android app's data path:
   POST {base}/global/analyze  {country, exchange, ticker, name, currency, isin, lei}
 
 Markets are discovered from BIAP's own configuration (never a hand list).
-For each market a deterministic spread of the catalog is analysed (first
-rows plus evenly spaced positions through the universe) and every result is
-classified:
+For each market a deterministic spread of the catalog is analysed by default.
+Markets listed in BIAP_AUDIT_FULL_MARKETS are audited exhaustively, page by
+page, and the advertised denominator must exactly match the distinct rows.
+Every result is classified:
 
   OK                     Evidence PASS/WARN
   LEGIT_OFFICIAL_STALE   newest official filing anywhere is older than the unchanged stale guard
@@ -41,6 +42,8 @@ import urllib.request
 
 BASE = os.environ.get("BIAP_GLOBAL_PUBLIC_API", "https://biap.dadashi.no/global-api").rstrip("/")
 SAMPLES = int(os.environ.get("BIAP_AUDIT_SAMPLES_PER_MARKET", "4"))
+FULL_MARKETS = {m.strip().upper() for m in (os.environ.get("BIAP_AUDIT_FULL_MARKETS") or "").split(",") if m.strip()}
+CATALOG_PAGE_SIZE = max(50, min(int(os.environ.get("BIAP_AUDIT_CATALOG_PAGE_SIZE", "250")), 1000))
 WORKERS = int(os.environ.get("BIAP_AUDIT_WORKERS", "6"))
 TIMEOUT = int(os.environ.get("BIAP_AUDIT_TIMEOUT", "150"))
 ONLY = {m.strip().upper() for m in (os.environ.get("BIAP_AUDIT_MARKETS") or "").split(",") if m.strip()}
@@ -99,6 +102,46 @@ def _sample(country: str, exchange: str) -> tuple[list[dict], int]:
             seen.add(row.get("ticker"))
             unique.append(row)
     return unique, total
+
+
+def _full_catalog(country: str, exchange: str) -> tuple[list[dict], int]:
+    """Fetch the complete advertised catalog for one market in bounded pages."""
+    first = _catalog(country, exchange, CATALOG_PAGE_SIZE, 0)
+    total = int(first.get("totalMatched") or len(first.get("instruments") or []))
+    rows = list(first.get("instruments") or [])
+    offset = len(rows)
+    while offset < total:
+        page = _catalog(country, exchange, min(CATALOG_PAGE_SIZE, total - offset), offset)
+        batch = list(page.get("instruments") or [])
+        if not batch:
+            raise RuntimeError(
+                f"catalog pagination stopped early for {country}/{exchange}: {offset}/{total}"
+            )
+        rows.extend(batch)
+        offset += len(batch)
+
+    seen, unique = set(), []
+    for row in rows:
+        key = (str(row.get("ticker") or "").upper(), str(row.get("isin") or "").upper())
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(row)
+    if len(unique) != total:
+        # Do not silently call a market complete when the API denominator and
+        # the distinct catalog rows disagree.
+        raise RuntimeError(
+            f"catalog denominator mismatch for {country}/{exchange}: "
+            f"advertised={total} distinct={len(unique)}"
+        )
+    return unique, total
+
+
+def _rows_for_market(country: str, exchange: str) -> tuple[list[dict], int]:
+    key = f"{country}:{exchange}".upper()
+    if country.upper() in FULL_MARKETS or key in FULL_MARKETS:
+        return _full_catalog(country, exchange)
+    return _sample(country, exchange)
 
 
 def _analyze(row: dict) -> dict:
@@ -244,7 +287,7 @@ def main() -> int:
     totals: dict[str, int] = {}
     for country, exchange in markets:
         try:
-            rows, total = _sample(country, exchange)
+            rows, total = _rows_for_market(country, exchange)
         except Exception as exc:  # catalog outage is itself an API failure
             jobs.append({"country": country, "exchange": exchange, "ticker": None, "catalogError": str(exc)[:200]})
             continue
