@@ -111,3 +111,13 @@ def test_share_classes_sharing_a_lei_get_their_own_document_id():
     locator = _GermanIssuerLocator({pref.isin: pref, ordinary.isin: ordinary})
     filings = locator.annual_filings(_company(ticker="SIX2", isin=ordinary.isin), LEI, "SIXT SE")
     assert [f.document_id for f in filings] == [f"de-issuer-esef:{ordinary.isin}:2025-12-31"]
+
+
+def test_single_extensionless_inner_package_is_parsed():
+    report = _ixbrl(LEI, date(2025, 12, 31)).encode()
+    inner = _zip({"K-Fast/reports/report.xhtml": report})
+    outer = _zip({"K-Fast Holding AB (publ) arsredovisning 2025 XBRL": inner})
+    filing = OAMFiling(oam="se", document_id="t", package_url="u", landing_url="u")
+    with zipfile.ZipFile(io.BytesIO(outer)) as archive:
+        payload = NationalOAMESEFProvider(locators=[])._parse_archive(filing, archive)
+    assert LEI in payload["entities"]

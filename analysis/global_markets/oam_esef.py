@@ -228,6 +228,10 @@ class NorwayNewswebLocator(OAMLocator):
         base = re.split(r"[.\-\s]", ticker)[0]
         if base and base not in signs:
             signs.append(base)
+        # Share-class tickers (ODFB, SCHA/SCHB) are filed under the issuer
+        # sign; rows are still kept only on an exact issuer-sign match.
+        if len(base) > 3 and base[-1] in "AB" and base[:-1] not in signs:
+            signs.append(base[:-1])
         return signs
 
     def _json(self, path: str, params: dict) -> dict:
@@ -260,6 +264,24 @@ class NorwayNewswebLocator(OAMLocator):
             if rows:
                 messages = rows
                 break
+        sign_used = messages[0]["issuerSign"] if messages else None
+        # Issuers occasionally file the annual report under another
+        # category (e.g. Elkem FY2025 as a non-regulatory press release).
+        # Accept those only when an attachment is the LEI-named ESEF
+        # package; the embedded LEI is verified on download anyway.
+        for sign in ([sign_used] if sign_used else self._signs(company)):
+            data = self._json("list", {
+                "issuer": sign,
+                "fromDate": (today - timedelta(days=500)).isoformat(),
+                "toDate": today.isoformat(),
+            })
+            extra = [m for m in data.get("messages") or []
+                     if str(m.get("issuerSign") or "").upper() == sign
+                     and re.search(r"annual|årsrapport|arsrapport|integrated report", str(m.get("title") or ""), re.I)
+                     and m.get("messageId") not in {x.get("messageId") for x in messages}]
+            if extra:
+                messages = messages + [dict(m, _lei_named_only=True) for m in extra]
+                break
         filings: list[OAMFiling] = []
         for message in sorted(messages, key=lambda m: str(m.get("publishedTime") or ""), reverse=True):
             if message.get("correctedByMessageId"):
@@ -269,6 +291,8 @@ class NorwayNewswebLocator(OAMLocator):
             for attachment in detail.get("attachments") or []:
                 name = str(attachment.get("name") or "")
                 if not name.lower().endswith(".zip"):
+                    continue
+                if message.get("_lei_named_only") and not name.upper().startswith(lei.upper()):
                     continue
                 url = f"{self.api}attachment?messageId={message_id}&attachmentId={attachment.get('id')}"
                 filings.append(OAMFiling(
@@ -1412,10 +1436,17 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
         if member is None and depth == 0:
             # Some issuers wrap the ESEF report package (.zip/.xbri) in an
             # outer zip. Descend exactly one level, within the size limit.
+            files = [info for info in archive.infolist() if not info.is_dir()]
             nested = [
-                info for info in archive.infolist()
+                info for info in files
                 if info.filename.lower().endswith((".zip", ".xbri")) and info.file_size <= MAX_PACKAGE_BYTES
             ]
+            if not nested and len(files) == 1 and files[0].file_size <= MAX_PACKAGE_BYTES:
+                # A single inner member without extension (e.g. "... årsredovisning
+                # 2025 XBRL"); accepted only if its content is itself a zip.
+                with archive.open(files[0]) as handle:
+                    if handle.read(2) == b"PK":
+                        nested = files
             if len(nested) == 1:
                 with archive.open(nested[0]) as handle:
                     inner_bytes = handle.read(MAX_PACKAGE_BYTES + 1)
