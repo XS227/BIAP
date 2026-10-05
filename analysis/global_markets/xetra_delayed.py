@@ -29,6 +29,7 @@ _APIS = {
 }
 _DOWNLOAD = "https://mfs.deutsche-boerse.com/api/download"
 _USER_AGENT = "BIAP Global Deutsche Boerse delayed market adapter (+https://setai.no)"
+_PROVIDER = "official-deutsche-boerse-xetra-delayed-posttrade"
 
 
 def _float(value: object) -> Optional[float]:
