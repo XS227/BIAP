@@ -52,3 +52,21 @@ def test_most_recent_tag_series_wins():
     }
     series = GAAP._annual_series(gaap, ("Revenues", "RevenueFromContractWithCustomerExcludingAssessedTax"))
     assert series[0]["end"] == "2025-12-31"
+
+
+def test_name_resolved_filer_without_xbrl_facts_is_not_an_error(monkeypatch):
+    from global_markets.providers import GlobalProviderError
+    from global_markets.sec_foreign_ifrs import SECForeignIFRSFundamentalsProvider as IFRS
+    import pytest
+
+    provider = IFRS.__new__(IFRS)
+    monkeypatch.setattr(sec_identity, "gleif_legal_name", lambda c: None)  # no network
+    monkeypatch.setattr(sec_identity, "cik_by_name", lambda p, n: 123)
+    monkeypatch.setattr("global_markets.sec_foreign_ifrs.cik_by_name", lambda p, n: 123)
+    monkeypatch.setattr(IFRS, "_resolve_cik", lambda self, c: (_ for _ in ()).throw(GlobalProviderError("SEC CIK not found for ticker KRY")))
+    def get_json(self, url):
+        raise GlobalProviderError("SEC request failed: HTTPStatusError")
+    monkeypatch.setattr(IFRS, "_get_json", get_json)
+    co = GlobalCompany(country="CA", exchange="TSXV", currency="CAD", ticker="KRY", name="Kraken Robotics Inc.", isin="CA50077N1024")
+    with pytest.raises(GlobalProviderError, match="SEC CIK not found for ticker KRY"):
+        provider.enrich_fundamentals(co)
