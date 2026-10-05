@@ -5,11 +5,26 @@ name: BIAP Global evidence audit (Android path, all markets)
 # when official evidence regresses for canaries or when a payload contradicts
 # itself. Replaces reliance on hand-picked tickers as the only live signal.
 on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - 'tools/audit_global_evidence.py'
+      - 'analysis/global_markets/german_issuer_esef.py'
+      - 'analysis/global_markets/official_universe.py'
+      - 'analysis/global_markets/cached_universe.py'
+      - 'analysis/global_markets/data/de_issuer_esef.json'
+      - '.github/workflows/biap-global-evidence-audit.yml'
   workflow_dispatch:
     inputs:
       samples:
         description: Samples per market
         default: '4'
+      markets:
+        description: Optional markets/countries (for example DE or DE:XETRA)
+        default: ''
+      full_markets:
+        description: Exhaustively audit these markets/countries
+        default: ''
   schedule:
     - cron: '40 5 * * *'
   workflow_run:
@@ -33,12 +48,21 @@ jobs:
       - name: Run global evidence audit
         env:
           BIAP_AUDIT_SAMPLES_PER_MARKET: ${{ github.event.inputs.samples || '4' }}
+          BIAP_AUDIT_MARKETS: ${{ github.event_name == 'push' && 'DE' || github.event.inputs.markets || '' }}
+          BIAP_AUDIT_FULL_MARKETS: ${{ github.event_name == 'push' && 'DE' || github.event.inputs.full_markets || '' }}
+          BIAP_AUDIT_CANARIES: ${{ github.event_name == 'push' && 'DE:XETRA:SAP,DE:XETRA:SIE' || '' }}
+          BIAP_AUDIT_OUT: ${{ github.event_name == 'push' && 'germany-full-evidence-audit' || 'global-evidence-audit' }}
         run: python3 tools/audit_global_evidence.py
       - name: Summary
         if: always()
-        run: test -f global-evidence-audit.md && cat global-evidence-audit.md >> "$GITHUB_STEP_SUMMARY" || true
+        run: |
+          for f in germany-full-evidence-audit.md global-evidence-audit.md; do
+            test -f "$f" && cat "$f" >> "$GITHUB_STEP_SUMMARY" || true
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: global-evidence-audit
-          path: global-evidence-audit.*
+          name: ${{ github.event_name == 'push' && 'germany-full-evidence-audit' || 'global-evidence-audit' }}
+          path: |
+            global-evidence-audit.*
+            germany-full-evidence-audit.*

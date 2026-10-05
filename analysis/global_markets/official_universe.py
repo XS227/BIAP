@@ -106,6 +106,7 @@ def parse_deutsche_boerse_csv(
                 "product_status": "Active",
                 "instrument_status": "Active",
                 "primary_market_mic": str(row.get("Primary Market MIC Code") or "").strip().upper() or None,
+                "reporting_market": str(row.get("Reporting Market") or "").strip().upper() or None,
                 "market_segment": str(row.get("Market Segment") or "").strip() or None,
                 "country_of_issue": str(row.get("Country Of Issue") or "").strip() or None,
                 "domestic_scope": f"ISIN:{country.upper()}",

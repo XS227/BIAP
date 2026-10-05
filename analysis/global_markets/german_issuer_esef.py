@@ -28,10 +28,12 @@ from .providers import GlobalProviderError
 
 REGISTRY_PATH = Path(__file__).with_name("data") / "de_issuer_esef.json"
 
-# Primary-market MICs of German EU regulated markets. Only issuers admitted to
-# one of these must publish an ESEF annual financial report (WpHG §114); Open
-# Market/Scale (Freiverkehr) listings have no ESEF obligation.
-REGULATED_MICS = frozenset({"XFRA", "XETR", "XMUN", "XDUS", "XSTU", "XHAM", "XBER", "XHAN"})
+# Deutsche Boerse T7 publishes a dedicated Reporting Market field. It is the
+# authoritative venue-segment classifier for these German listings; Primary
+# Market MIC is not (e.g. XFRA is an operating MIC, FRAA is the regulated
+# Frankfurt segment). Xetra and Frankfurt agree for every overlapping DE ISIN.
+REGULATED_REPORTING_MICS = frozenset({"FRAA", "XETA"})
+NON_REGULATED_REPORTING_MICS = frozenset({"FRAB", "FRAS", "XETB", "XETS"})
 
 
 @dataclass(frozen=True)
@@ -105,14 +107,21 @@ class GermanIssuerESEFProvider(NationalOAMESEFProvider):
             raise GlobalProviderError("German issuer ESEF applies to DE listings only")
         row = self.registry.get((company.isin or "").upper())
         if row is None:
-            primary = str(company.raw_provider_fields.get("primary_market_mic") or "").upper()
-            if primary and primary not in REGULATED_MICS:
+            reporting = str(company.raw_provider_fields.get("reporting_market") or "").upper()
+            if reporting in NON_REGULATED_REPORTING_MICS:
                 raise GlobalProviderError(
-                    f"listing is not admitted to an EU regulated market (primary market {primary}): "
+                    f"listing is in Deutsche Boerse {reporting} Open Market/Scale: "
                     "no ESEF annual financial report obligation"
                 )
+            if reporting in REGULATED_REPORTING_MICS:
+                raise GlobalProviderError(
+                    f"no reviewed issuer-published ESEF package for {company.isin or company.ticker}"
+                )
+            # Fail closed. An absent/unknown Reporting Market must never be
+            # converted into a false ESEF exemption from Primary Market MIC.
             raise GlobalProviderError(
-                f"no reviewed issuer-published ESEF package for {company.isin or company.ticker}"
+                f"Deutsche Boerse reporting market unavailable/unknown for "
+                f"{company.isin or company.ticker}; ESEF obligation not safely determined"
             )
         if company.lei and company.lei.upper() != row.lei.upper():
             raise GlobalProviderError(

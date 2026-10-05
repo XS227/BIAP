@@ -5,11 +5,11 @@ def test_deutsche_boerse_parser_keeps_only_active_common_stocks():
     text = "\n".join([
         "Market:;XETR",
         "Date Last Update:;24.09.2026",
-        "Product Status;Instrument Status;Instrument;ISIN;Mnemonic;MIC Code;Instrument Type;Settlement Currency;Currency;Primary Market MIC Code;Market Segment;Country Of Issue",
-        "Active;Active;SAP SE;DE0007164600;SAP;XETR;CS;EUR;EUR;XETR;001;DE",
-        "Active;Active;Some ETF;DE0000000001;ETF1;XETR;ETF;EUR;EUR;XETR;001;DE",
-        "Inactive;Inactive;Old Share;DE0000000002;OLD;XETR;CS;EUR;EUR;XETR;001;DE",
-        "Active;Active;Wrong MIC;DE0000000003;WRG;XFRA;CS;EUR;EUR;XFRA;001;DE",
+        "Product Status;Instrument Status;Instrument;ISIN;Mnemonic;MIC Code;Instrument Type;Settlement Currency;Currency;Primary Market MIC Code;Reporting Market;Market Segment;Country Of Issue",
+        "Active;Active;SAP SE;DE0007164600;SAP;XETR;CS;EUR;EUR;XFRA;XETA;001;DE",
+        "Active;Active;Some ETF;DE0000000001;ETF1;XETR;ETF;EUR;EUR;XETR;XETA;001;DE",
+        "Inactive;Inactive;Old Share;DE0000000002;OLD;XETR;CS;EUR;EUR;XETR;XETA;001;DE",
+        "Active;Active;Wrong MIC;DE0000000003;WRG;XFRA;CS;EUR;EUR;XFRA;FRAA;001;DE",
     ])
     rows = parse_deutsche_boerse_csv(
         text,
@@ -20,6 +20,8 @@ def test_deutsche_boerse_parser_keeps_only_active_common_stocks():
     assert [row.ticker for row in rows] == ["SAP"]
     assert rows[0].isin == "DE0007164600"
     assert rows[0].mic_code == "XETR"
+    assert rows[0].raw_provider_fields["primary_market_mic"] == "XFRA"
+    assert rows[0].raw_provider_fields["reporting_market"] == "XETA"
     assert rows[0].sources[0].source_type == "official_exchange_universe"
 
 

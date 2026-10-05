@@ -19,10 +19,10 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
 
-# Version 23 replaces the South Africa vendor reference catalog with JSE's
-# official Equities ISIN full-file ordinary-share universe. Older ZA caches may
-# contain funds, indices, preference shares or structured products.
-CACHE_SCHEMA_VERSION = 23
+# Version 24 persists Deutsche Boerse's authoritative Reporting Market field.
+# Older German snapshots only carried Primary Market MIC, which is not a safe
+# regulated-vs-Open-Market classifier (operating MICs and segment MICs differ).
+CACHE_SCHEMA_VERSION = 24
 
 
 def _utc_now() -> datetime:

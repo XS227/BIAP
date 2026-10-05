@@ -111,8 +111,15 @@ and SCT (FY2025 package has no ProfitLoss tag; only FY2024 usable → stale).
 
 ## Germany (update 2026-10-05)
 
-499 instruments: 388 on an EU regulated market (ESEF-obliged), 111 Open
-Market/Scale (no ESEF obligation; now reported as such, not as a gap).
+499 instruments. The previous 388/111 split was incorrect: it inferred legal
+market status from `Primary Market MIC Code`, mixing operating and segment MICs.
+Deutsche Boerse's authoritative `Reporting Market` gives **323 regulated
+(FRAA/XETA)** and **176 Open Market/Scale (FRAB/FRAS; XETB/XETS on Xetra)**;
+the Xetra and Frankfurt classifications agree for every overlapping DE ISIN.
+The parser now persists that field and only the 176 Open/Scale rows receive a
+no-ESEF-obligation classification; missing/unknown reporting-market data fails
+closed rather than creating a false exemption. Universe cache schema v24 forces
+old German snapshots to rebuild.
 Unternehmensregister disallows automated retrieval (robots.txt) and
 filings.xbrl.org has no German filings, so BIAP reads issuer-hosted ESEF
 packages from a verified registry (`analysis/global_markets/data/de_issuer_esef.json`).
