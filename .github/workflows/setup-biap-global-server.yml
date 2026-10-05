@@ -1,4 +1,4 @@
-# Redeploy after peer benchmark scan-cache schema fix: 2026-09-27
+# Redeploy after Germany Reporting Market / universe cache schema v24 fix: 2026-10-05
 name: Setup BIAP Global server
 
 on:
