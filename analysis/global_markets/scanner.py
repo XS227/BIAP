@@ -479,7 +479,32 @@ class GlobalMarketScanner:
         elif self.us_screener.supported(country.upper(), spec.code):
             quotes, screening_errors, market_source = self.us_screener.batch_quotes(selected_universe, country.upper(), spec)
         elif self.xetra_delayed.supported(country.upper(), spec.code):
-            quotes, screening_errors, market_source = self.xetra_delayed.batch_quotes(selected_universe, country.upper(), spec)
+            try:
+                quotes, screening_errors, market_source = self.xetra_delayed.batch_quotes(
+                    selected_universe, country.upper(), spec
+                )
+            except GlobalProviderError as exc:
+                # Deutsche Boerse's public delayed file service can briefly
+                # advertise unavailable objects or reject downloads. Do not
+                # turn that upstream outage into a total Germany scan failure.
+                if self.eodhd_bulk is not None:
+                    quotes, fallback_errors, fallback_source = self.eodhd_bulk.batch_quotes(
+                        selected_universe, country.upper(), spec
+                    )
+                else:
+                    quotes, fallback_errors = self._batch_quotes(
+                        selected_universe, country.upper(), spec
+                    )
+                    fallback_source = "Twelve Data licensed batch market feed"
+                # A successful configured fallback is still live market
+                # data. Keep only errors from that fallback in the readiness
+                # gate; preserve the official-source outage in the source label
+                # instead of falsely blocking an otherwise complete scan.
+                screening_errors = list(fallback_errors)
+                market_source = (
+                    f"{fallback_source} (fallback after Deutsche Boerse delayed-source outage: "
+                    f"{str(exc)[:120]})"
+                )
         elif self.euronext_live.supported(country.upper(), spec.code):
             quotes, screening_errors, market_source = self.euronext_live.batch_quotes(selected_universe, country.upper(), spec)
         elif self.eodhd_bulk is not None:

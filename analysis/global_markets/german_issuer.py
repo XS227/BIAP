@@ -476,7 +476,7 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
             label="Dürr FY2025 total equity",
         )
         liabilities_match = _required_match(
-            r"Total liabilities of the Dürr Group.*?([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            r"Total liabilities of the Dürr Group(?:\s*\d+)?\s+([0-9]{1,3}(?:,[0-9]{3})+)\s+([0-9]{1,3}(?:,[0-9]{3})+)",
             text,
             label="Dürr FY2025 total liabilities",
         )

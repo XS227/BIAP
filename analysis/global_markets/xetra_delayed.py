@@ -148,15 +148,33 @@ class DeutscheBoerseXetraDelayedClient:
         )
         if not daily:
             raise GlobalProviderError("Xetra delayed file service has no daily consolidated file")
-        filename = daily[-1]
-        match = re.search(r"daily-(\d{4}-\d{2}-\d{2})\.json\.gz$", filename)
-        quote_date = match.group(1) if match else datetime.now(timezone.utc).date().isoformat()
-        source_url = f"{_DOWNLOAD}/{filename.lstrip('/')}"
-        content = self._request(source_url, accept="application/gzip,*/*").content
-        if len(content) < 1_000 or content[:2] != b"\x1f\x8b":
-            raise GlobalProviderError("Xetra delayed daily file is not a valid gzip payload")
-        self._cached_daily = (quote_date, source_url, content)
-        return self._cached_daily
+        # Metadata can briefly advertise a daily object before the download
+        # endpoint has finished publishing it. Walk newest -> oldest and use
+        # the first actually downloadable gzip instead of failing the market.
+        last_error: Exception | None = None
+        for filename in reversed(daily):
+            match = re.search(r"daily-(\d{4}-\d{2}-\d{2})\.json\.gz$", filename)
+            quote_date = match.group(1) if match else datetime.now(timezone.utc).date().isoformat()
+            source_url = f"{_DOWNLOAD}/{filename.lstrip('/')}"
+            try:
+                content = self._request(source_url, accept="application/gzip,*/*").content
+            except GlobalProviderError as exc:
+                last_error = exc
+                continue
+            if len(content) < 1_000 or content[:2] != b"\x1f\x8b":
+                last_error = GlobalProviderError(
+                    f"Xetra delayed daily file is not a valid gzip payload: {filename}"
+                )
+                continue
+            self._cached_daily = (quote_date, source_url, content)
+            return self._cached_daily
+        if last_error is not None:
+            raise GlobalProviderError(
+                "Xetra delayed file service has no downloadable daily consolidated file"
+            ) from last_error
+        raise GlobalProviderError(
+            "Xetra delayed file service has no downloadable daily consolidated file"
+        )
 
     def batch_quotes(
         self,
