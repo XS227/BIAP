@@ -40,6 +40,17 @@ are not bugs in existing code. Several have no free machine-readable official
 source (AU: no XBRL mandate, ASX data licensed; DE: Unternehmensregister
 requires registration).
 
+## Canada (update 2026-10-05)
+
+Canada has no machine-readable official filing source of its own (SEDAR+ has
+no XBRL). Cross-listed issuers file XBRL with the SEC: identity matching was
+made robust but stays exact (SEC header artefacts, GLEIF legal name via ISIN,
+unique name-based CIK when the TSX ticker belongs to another US filer), and the
+US-GAAP parser now reads 40-F and year-end 6-K filers. Large caps such as TD,
+RY, BMO, BNS, CM, CNR, CP, ENB, TRP, SHOP, MFC, NTR, TRI, WCN are PASS/WARN.
+Broad audit (25 samples each): TSX 2/25, TSXV 0/25 — most TSX/TSXV issuers
+do not file with the SEC, so they remain on labelled vendor data.
+
 ## Greece, Nordics (update 2026-10-05)
 
 - Greece: `GreeceAthensLocator` (Euronext Athens issuer "Financial Statements
