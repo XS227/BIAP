@@ -142,6 +142,28 @@ def test_bmw_official_group_report_is_parsed(monkeypatch):
     assert enriched.eps == 11.89
     assert enriched.filing_period_end == "2025-12-31"
     assert enriched.sources[-1].audit_status == "audited"
+    assert enriched.raw_provider_fields["de_issuer_transport"] == "live_official_pages"
+
+
+def test_bmw_verified_snapshot_survives_issuer_timeout(monkeypatch):
+    provider = GermanIssuerFundamentalsProvider()
+    monkeypatch.setattr(
+        provider,
+        "_get_text",
+        lambda url: (_ for _ in ()).throw(GlobalProviderError("ReadTimeout")),
+    )
+
+    enriched = provider.enrich_fundamentals(_company("BMW", "BAY.MOTOREN WERKE AG ST"))
+
+    assert enriched.revenue == 133_453_000_000
+    assert enriched.net_income == 7_451_000_000
+    assert enriched.total_assets == 265_967_000_000
+    assert enriched.total_equity == 97_906_000_000
+    assert enriched.operating_cash_flow == 8_228_000_000
+    assert enriched.eps == 11.89
+    assert enriched.filing_period_end == "2025-12-31"
+    assert enriched.sources[-1].provider == provider.provider_id
+    assert enriched.raw_provider_fields["de_issuer_transport"].startswith("verified_snapshot_after_live_error:")
 
 
 def test_duerr_official_annual_report_is_parsed(monkeypatch):
@@ -179,11 +201,13 @@ def test_bmm_official_annual_report_is_parsed(monkeypatch):
     provider = GermanIssuerFundamentalsProvider()
     text = """
       Brüder Mannesmann Aktiengesellschaft Konzernabschluss 2025
-      Umsatzerlöse 19.919.704,63 24.232.406,25
-      Konzern-Jahresüberschuss 757.810,32 -350.793,44
+      Kassenbestand, Guthaben bei Kreditinstituten 1.743.271,54 1.415.702,14
+      Aktive latente Steuern 3.601.832,00 4.107.084,05
       Summe 33.563.595,47 36.810.634,57
-      Eigenkapital 10.334.755,49 9.576.945,17
-      Kassenbestand, Guthaben bei Kreditinstituten 1.743.271,54 2.123.470,42
+      IV. Konzern-Bilanzverlust -3.003.717,58 -3.761.527,90
+      10.334.755,49 9.576.945,17
+      Umsatzerlöse 19.919.704,63 24.232.406,25
+      Konzern-Jahresüberschuss / Konzern-Jahresfehlbetrag (-) 757.810,32 -350.793,44
       Cashflow aus der laufenden Geschäftstätigkeit 143.741,58 -407.869,98
       Bestätigungsvermerk des unabhängigen Abschlussprüfers
     """
