@@ -10,6 +10,8 @@ on:
     paths:
       - 'tools/audit_global_evidence.py'
       - 'analysis/global_markets/german_issuer_esef.py'
+      - 'analysis/global_markets/official_universe.py'
+      - 'analysis/global_markets/cached_universe.py'
       - 'analysis/global_markets/data/de_issuer_esef.json'
       - '.github/workflows/biap-global-evidence-audit.yml'
   workflow_dispatch:
@@ -53,7 +55,10 @@ jobs:
         run: python3 tools/audit_global_evidence.py
       - name: Summary
         if: always()
-        run: test -f global-evidence-audit.md && cat global-evidence-audit.md >> "$GITHUB_STEP_SUMMARY" || true
+        run: |
+          for f in germany-full-evidence-audit.md global-evidence-audit.md; do
+            test -f "$f" && cat "$f" >> "$GITHUB_STEP_SUMMARY" || true
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
