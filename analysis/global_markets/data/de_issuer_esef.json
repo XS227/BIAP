@@ -19,6 +19,69 @@
    "landing_url": "https://www.db.com",
    "period_end": "2025-12-31",
    "verified_at": "2026-10-05T10:39:40+00:00"
+  },
+  {
+   "isin": "DE0005759807",
+   "lei": "391200ZOAI9BOLGC1D37",
+   "ticker": "IXX",
+   "package_url": "https://www.initse.com/fileadmin/user_upload/Content/8_IR/5_Financial_reports/DE/2025/INIT_KA_KLB_ESEF-2025-12-31-1-de.xbri",
+   "landing_url": "https://initse.com",
+   "period_end": "2025-12-31",
+   "verified_at": "2026-10-05T11:00:14+00:00"
+  },
+  {
+   "isin": "DE000PAH0038",
+   "lei": "52990053Z17ZYM1KFV27",
+   "ticker": "PAH3",
+   "package_url": "https://www.porsche-se.com/fileadmin/downloads/investorrelations/mandatorypublications/annualreport-25/PorscheSE_KLB_KA-2025-12-31-1-de.xbri",
+   "landing_url": "https://www.porsche-se.com/",
+   "period_end": "2025-12-31",
+   "verified_at": "2026-10-05T11:13:20+00:00"
+  },
+  {
+   "isin": "DE000A0DJ6J9",
+   "lei": "529900Q6JQHI8X451Q21",
+   "ticker": "S92",
+   "package_url": "https://www.sma.de/fileadmin/content/global/Investor_Relations/Documents/Publications/Finanzberichte/2025/Geschaeftsbericht-SMA-Gruppe-2025-ESEF-Version.zip",
+   "landing_url": "https://www.sma.de/",
+   "period_end": "2025-12-31",
+   "verified_at": "2026-10-05T11:00:43+00:00"
+  },
+  {
+   "isin": "DE000KSAG888",
+   "lei": "529900YURAYD4IJX2J91",
+   "ticker": "SDF",
+   "package_url": "https://www.kpluss.com/.downloads/ir/2025/quartalsmitteilung-q4-2025/kpluss-2025-12-31-1-de.zip",
+   "landing_url": "https://www.kpluss.com/",
+   "period_end": "2025-12-31",
+   "verified_at": "2026-10-05T11:13:17+00:00"
+  },
+  {
+   "isin": "DE0007231326",
+   "lei": "5299004ZME6CSBR7WP07",
+   "ticker": "SIX2",
+   "package_url": "https://about.sixt.com/wp-content/uploads/2026/03/SIXT_SE_KAuKLB_ESEF-2025-12-31-de.xbri",
+   "landing_url": "https://www.sixt.com",
+   "period_end": "2025-12-31",
+   "verified_at": "2026-10-05T11:11:36+00:00"
+  },
+  {
+   "isin": "DE0007231334",
+   "lei": "5299004ZME6CSBR7WP07",
+   "ticker": "SIX3",
+   "package_url": "https://about.sixt.com/wp-content/uploads/2026/03/SIXT_SE_KAuKLB_ESEF-2025-12-31-de.xbri",
+   "landing_url": "https://www.sixt.com",
+   "period_end": "2025-12-31",
+   "verified_at": "2026-10-05T11:11:36+00:00"
+  },
+  {
+   "isin": "DE0005089031",
+   "lei": "3VEKWPJHTD4NKMBVG947",
+   "ticker": "UTDI",
+   "package_url": "https://www.united-internet.de/fileadmin/user_upload/unitedinternetag_KA_ZLB_2025-12-31-1-de-Merged.xhtml",
+   "landing_url": "https://www.united-internet.de/",
+   "period_end": "2025-12-31",
+   "verified_at": "2026-10-05T11:00:01+00:00"
   }
  ]
 }
