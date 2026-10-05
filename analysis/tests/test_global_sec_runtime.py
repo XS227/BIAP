@@ -156,3 +156,49 @@ def test_sec_parser_accepts_audited_fy_facts_from_form_10_registration(monkeypat
     assert enriched.net_income == 50_400_000
     assert enriched.total_assets == 2_700_000_000
     assert any(source.source_type == "official_regulatory_xbrl" for source in enriched.sources)
+
+
+def test_sec_parser_accepts_us_gaap_annual_facts_from_form_20f(monkeypatch):
+    from global_markets.models import GlobalCompany
+
+    provider = SECEdgarFundamentalsProvider(user_agent="BIAP test contact@example.com")
+    seed = GlobalCompany(
+        country="US",
+        exchange="NASDAQ",
+        mic_code="XNAS",
+        currency="USD",
+        ticker="ODD",
+        name="ODDITY TECH LTD.",
+    )
+    monkeypatch.setattr(provider, "_resolve_cik", lambda company: 1907085)
+
+    def row(value, end="2025-12-31", filed="2026-03-17", *, start=None, unit="USD"):
+        out = {"val": value, "end": end, "filed": filed, "form": "20-F", "fp": "FY"}
+        if start:
+            out["start"] = start
+        return out
+
+    payload = {
+        "entityName": "ODDITY TECH LTD.",
+        "facts": {"us-gaap": {
+            "Revenues": {"units": {"USD": [
+                row(790_000_000, start="2025-01-01"),
+                row(650_000_000, end="2024-12-31", filed="2026-03-17", start="2024-01-01"),
+            ]}},
+            "NetIncomeLoss": {"units": {"USD": [row(120_000_000, start="2025-01-01")]}},
+            "Assets": {"units": {"USD": [row(900_000_000)]}},
+            "Liabilities": {"units": {"USD": [row(300_000_000)]}},
+            "StockholdersEquity": {"units": {"USD": [row(600_000_000)]}},
+            "CashAndCashEquivalentsAtCarryingValue": {"units": {"USD": [row(250_000_000)]}},
+            "NetCashProvidedByUsedInOperatingActivities": {"units": {"USD": [row(180_000_000, start="2025-01-01")]}},
+        }},
+    }
+    monkeypatch.setattr(provider, "_get_json", lambda url: payload)
+
+    enriched = provider.enrich_fundamentals(seed)
+
+    assert enriched.filing_period_end == "2025-12-31"
+    assert enriched.revenue == 790_000_000
+    assert enriched.net_income == 120_000_000
+    assert enriched.total_assets == 900_000_000
+    assert any(source.source_type == "official_regulatory_xbrl" for source in enriched.sources)
