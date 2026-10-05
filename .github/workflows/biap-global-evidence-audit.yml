@@ -1,5 +1,6 @@
 name: BIAP Global evidence audit (Android path, all markets)
 
+# Germany full-audit trigger refreshed after BMW/BMM production fix: 2026-10-05
 # Samples every market BIAP itself advertises (/global/countries) through the
 # exact Android calls (/global/instruments -> POST /global/analyze) and fails
 # when official evidence regresses for canaries or when a payload contradicts
@@ -10,6 +11,9 @@ on:
     paths:
       - 'tools/audit_global_evidence.py'
       - 'analysis/global_markets/german_issuer_esef.py'
+      - 'analysis/global_markets/german_issuer.py'
+      - 'analysis/global_markets/scanner.py'
+      - 'analysis/global_markets/xetra_delayed.py'
       - 'analysis/global_markets/official_universe.py'
       - 'analysis/global_markets/cached_universe.py'
       - 'analysis/global_markets/data/de_issuer_esef.json'
