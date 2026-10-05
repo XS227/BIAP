@@ -44,6 +44,7 @@ from .hkex_official import HKEXOfficialUniverseProvider
 from .india_official import NSEOfficialUniverseProvider
 from .italy_issuer import ItalyIssuerFundamentalsProvider
 from .enel_issuer_esef import EnelIssuerESEFProvider
+from .german_issuer_esef import GermanIssuerESEFProvider
 from .iran_adapter import IranLegacyProvider
 from .jpx_official import JPXOfficialUniverseProvider
 from .jse_official import JSEOfficialUniverseProvider
@@ -370,7 +371,10 @@ def build_registry() -> ProviderRegistry:
         provider_names=(GermanIssuerFundamentalsProvider.provider_id,),
     )
     de_issuer_resilient = FallbackFundamentalsProvider(de_issuer, de_drop)
-    de_official = FallbackFundamentalsProvider(official_europe, de_issuer_resilient)
+    # Issuer-hosted ESEF packages (reviewed registry, LEI-verified on every
+    # read) come before the narrow per-issuer HTML/PDF parsers.
+    de_issuer_esef = FallbackFundamentalsProvider(GermanIssuerESEFProvider(), de_issuer_resilient)
+    de_official = FallbackFundamentalsProvider(official_europe, de_issuer_esef)
     de_with_fallback = FallbackFundamentalsProvider(de_official, public_fundamentals)
     de_provider = PersistentFundamentalsProvider(de_with_fallback)
     companies_house_key = (os.environ.get("BIAP_COMPANIES_HOUSE_API_KEY") or "").strip()

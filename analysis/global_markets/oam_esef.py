@@ -901,8 +901,21 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
         write_json_atomic(path, payload)
         return payload
 
-    def _parse_archive(self, filing: OAMFiling, archive: zipfile.ZipFile) -> dict:
+    def _parse_archive(self, filing: OAMFiling, archive: zipfile.ZipFile, *, depth: int = 0) -> dict:
         member = _report_member(archive)
+        if member is None and depth == 0:
+            # Some issuers wrap the ESEF report package (.zip/.xbri) in an
+            # outer zip. Descend exactly one level, within the size limit.
+            nested = [
+                info for info in archive.infolist()
+                if info.filename.lower().endswith((".zip", ".xbri")) and info.file_size <= MAX_PACKAGE_BYTES
+            ]
+            if len(nested) == 1:
+                with archive.open(nested[0]) as handle:
+                    inner_bytes = handle.read(MAX_PACKAGE_BYTES + 1)
+                if len(inner_bytes) <= MAX_PACKAGE_BYTES and zipfile.is_zipfile(io.BytesIO(inner_bytes)):
+                    with zipfile.ZipFile(io.BytesIO(inner_bytes)) as inner:
+                        return self._parse_archive(filing, inner, depth=1)
         if member is None:
             raise GlobalProviderError("OAM ESEF package contains no XHTML report")
         with archive.open(member) as handle:

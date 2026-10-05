@@ -123,13 +123,14 @@ _NEUTRAL = (
 _LEGIT = (
     "carries no inline xbrl", "non-esef filing", "not an esef", "lists no esef annual financial report",
     "has no issuer page", "contains no completed annual", "no esef annual financial report",
-    "lists no annual esef package",
+    "lists no annual esef package", "no esef annual financial report obligation",
 )
 _COVERAGE = (
     "no verified local filing record", "fundamentals are not verified for", "issuer parser for",
     "current filing fundamentals are not verified", "no official filing adapter returned data",
     "no official financial-statement source attached", "no esef filing found for lei",
     "no strict cvm issuer match", "requires a verified lei or full legal company name",
+    "no reviewed issuer-published esef package",
 )
 
 

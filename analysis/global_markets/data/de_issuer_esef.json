@@ -1,0 +1,24 @@
+{
+ "schema": "biap-de-issuer-esef/1",
+ "note": "Issuer-hosted ESEF packages; each row verified by tools/verify_de_issuer_esef.py (embedded LEI + annual IFRS facts) and re-verified on every read.",
+ "issuers": [
+  {
+   "isin": "DE0005200000",
+   "lei": "L47NHHI0Z9X22DV46U41",
+   "ticker": "BEI",
+   "package_url": "https://www.beiersdorf.com/~/media/Beiersdorf/investors/financial-publication/2026/annual-report/Beiersdorf_AG_KA-2025_ESEF.xbri",
+   "landing_url": "https://www.beiersdorf.com/",
+   "period_end": "2025-12-31",
+   "verified_at": "2026-10-05T10:39:07+00:00"
+  },
+  {
+   "isin": "DE0005140008",
+   "lei": "7LTWFZYICNSX8D621K86",
+   "ticker": "DBK",
+   "package_url": "https://investor-relations.db.com/files/documents/annual-reports/2025/Deutsche-Bank-AG-KA-KLB-ESEF-2025-12-31.zip",
+   "landing_url": "https://www.db.com",
+   "period_end": "2025-12-31",
+   "verified_at": "2026-10-05T10:39:40+00:00"
+  }
+ ]
+}
