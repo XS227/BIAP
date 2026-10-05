@@ -48,6 +48,7 @@ _BMW_INCOME_URL = "https://www.bmwgroup.com/en/report/2025/financial-statements/
 _BMW_BALANCE_URL = "https://www.bmwgroup.com/en/report/2025/financial-statements/balance-sheet/index.html"
 _BMW_CASH_URL = "https://www.bmwgroup.com/en/report/2025/financial-statements/cash-flow-statement/index.html"
 _DUERR_PDF_URL = "https://www.durr-group.com/fileadmin/durr-group.com/Investors/Downloads/Reports/2025/annual-report-2025-EN.pdf"
+_BMM_PDF_URL = "https://bmag-online.de/wp-content/uploads/2026/08/BMAG-GB-2025.pdf"
 
 
 def _plain_text(value: str) -> str:
@@ -64,6 +65,11 @@ def _million_number(value: str) -> float:
 
 def _billion_number(value: str) -> float:
     return float(value.replace(",", "").strip()) * 1_000_000_000.0
+
+
+def _german_number(value: str) -> float:
+    """Parse German-formatted report numbers such as 19.919.704,63."""
+    return float(value.replace(".", "").replace(",", ".").strip())
 
 
 def _required_match(pattern: str, text: str, *, label: str) -> re.Match[str]:
@@ -202,6 +208,7 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
             "SAP": "SAP",
             "BMW": "BAYMOTORENWERKE",
             "DUE": "DUERR",
+            "BMM": "BRUEDERMANNESM",
         }.get(ticker)
         if expected is None:
             raise GlobalProviderError(f"no verified German issuer parser for {ticker}")
@@ -530,6 +537,97 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
             notes="Dürr issuer-published FY2025 audited consolidated annual report",
         ))
 
+    def _bmm(self, company: GlobalCompany) -> GlobalCompany:
+        if company.isin and company.isin.upper() != "DE0005275507":
+            raise GlobalProviderError(
+                f"Brüder Mannesmann ISIN mismatch: {company.isin}"
+            )
+        text = self._get_pdf_text(_BMM_PDF_URL)
+        lower = text.lower()
+        if (
+            "brüder mannesmann" not in lower
+            and "brueder mannesmann" not in lower
+            and "bruder mannesmann" not in lower
+        ) or "2025" not in lower:
+            raise GlobalProviderError(
+                "Brüder Mannesmann FY2025 issuer source identity/period marker missing"
+            )
+
+        revenue_match = _required_match(
+            r"Umsatzerlöse\s+([0-9.]+,[0-9]{2})\s+([+-]?[0-9.]+,[0-9]{2})",
+            text,
+            label="Brüder Mannesmann FY2025 revenue",
+        )
+        net_match = _required_match(
+            r"Konzern-Jahresüberschuss\s+([+-]?[0-9.]+,[0-9]{2})\s+([+-]?[0-9.]+,[0-9]{2})",
+            text,
+            label="Brüder Mannesmann FY2025 net income",
+        )
+        assets_match = _required_match(
+            r"Summe\s+([0-9.]+,[0-9]{2})\s+([0-9.]+,[0-9]{2})",
+            text,
+            label="Brüder Mannesmann FY2025 total assets",
+        )
+        equity_match = _required_match(
+            r"(?:Eigenkapital|Summe Eigenkapital)\s+([0-9.]+,[0-9]{2})\s+([0-9.]+,[0-9]{2})",
+            text,
+            label="Brüder Mannesmann FY2025 equity",
+        )
+        cash_match = _required_match(
+            r"Kassenbestand,\s*Guthaben bei Kreditinstituten\s+([0-9.]+,[0-9]{2})\s+([0-9.]+,[0-9]{2})",
+            text,
+            label="Brüder Mannesmann FY2025 cash",
+        )
+        ocf_match = _required_match(
+            r"Cashflow aus der laufenden Geschäftstätigkeit\s+([+-]?[0-9.]+,[0-9]{2})\s+([+-]?[0-9.]+,[0-9]{2})",
+            text,
+            label="Brüder Mannesmann FY2025 operating cash flow",
+        )
+
+        revenue = _german_number(revenue_match.group(1))
+        revenue_prev = _german_number(revenue_match.group(2))
+        net_income = _german_number(net_match.group(1))
+        total_assets = _german_number(assets_match.group(1))
+        total_equity = _german_number(equity_match.group(1))
+        cash = _german_number(cash_match.group(1))
+        operating_cash_flow = _german_number(ocf_match.group(1))
+
+        enriched = replace(
+            company,
+            reporting_currency="EUR",
+            revenue=revenue,
+            revenue_prev=revenue_prev,
+            revenue_yoy_pct=((revenue / revenue_prev) - 1.0) * 100.0 if revenue_prev else None,
+            net_income=net_income,
+            net_margin_pct=(net_income / revenue) * 100.0 if revenue else None,
+            total_assets=total_assets,
+            total_liabilities=total_assets - total_equity,
+            total_equity=total_equity,
+            cash_and_equivalents=cash,
+            operating_cash_flow=operating_cash_flow,
+            filing_period_end="2025-12-31",
+            report_scope="consolidated",
+            raw_provider_fields={
+                **company.raw_provider_fields,
+                "de_issuer_source": "brueder_mannesmann_annual_report_2025",
+                "de_issuer_evidence_kind": "issuer_published_audited_annual_report",
+                "de_esef_obligation": "not_required_open_market",
+            },
+        )
+        return append_source(enriched, SourceEvidence(
+            provider=self.provider_id,
+            source_type="official_issuer_financial_statement",
+            source_id="brueder-mannesmann-annual-report-2025",
+            source_url=_BMM_PDF_URL,
+            period_end="2025-12-31",
+            quality=0.97,
+            audit_status="audited",
+            notes=(
+                "Brüder Mannesmann AG issuer-published FY2025 audited consolidated "
+                "annual report; Open Market listing does not require ESEF"
+            ),
+        ))
+
     def _sap(self, company: GlobalCompany) -> GlobalCompany:
         text = self._get_text(_SAP_URL)
         lower = text.lower()
@@ -605,4 +703,6 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
             return self._bmw(company)
         if ticker == "DUE":
             return self._duerr(company)
+        if ticker == "BMM":
+            return self._bmm(company)
         raise GlobalProviderError(f"no verified German issuer parser for {ticker}")
