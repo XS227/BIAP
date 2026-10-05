@@ -36,6 +36,10 @@ jobs:
               ('DE', 'XETRA', 'ALV', 'EUR', 'de-official-issuer-financials'),
               ('DE', 'XETRA', 'BEI', 'EUR', 'de-issuer-esef-v1'),
               ('DE', 'XETRA', 'DBK', 'EUR', 'de-issuer-esef-v1'),
+              ('DE', 'XETRA', 'BMW', 'EUR', 'de-official-issuer-financials'),
+              ('DE', 'FRANKFURT', 'DUE', 'EUR', 'de-official-issuer-financials'),
+              ('DE', 'FRANKFURT', 'BMM', 'EUR', 'de-official-issuer-financials'),
+              ('DE', 'FRANKFURT', 'SAP', 'EUR', ('sec-edgar-foreign-ifrs-cached', 'de-official-issuer-financials')),
               ('SG', 'SGX', 'S68', 'SGD', 'sgx-official-issuer-financial-information'),
               ('HK', 'HKEX', '0388', 'HKD', 'hkex-official-issuer-financial-statements'),
           ]
