@@ -134,7 +134,8 @@ _COVERAGE = (
     "no strict cvm issuer match", "requires a verified lei or full legal company name",
     "no reviewed issuer-published esef package",
     "nse lists no integrated filings", "nse integrated filings contain no annual",
-    "issuer identity is not uniquely resolved",  # issuer not (uniquely) on the national OAM register  # BSE-only issuers (BSE API not reachable)
+    "issuer identity is not uniquely resolved",  # issuer not (uniquely) on the national OAM register
+    "no official oam esef locator for",  # BIAP has no national-OAM integration for this country yet  # BSE-only issuers (BSE API not reachable)
 )
 
 

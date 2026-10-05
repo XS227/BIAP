@@ -1308,6 +1308,70 @@ class GreeceAthensLocator(OAMLocator):
         return filings
 
 
+class DenmarkVirkLocator(OAMLocator):
+    """Danish annual reports filed with the Danish Business Authority (virk.dk).
+
+    Listed Danish issuers file their ESEF annual report (inline XBRL xhtml)
+    with Erhvervsstyrelsen, which publishes it through the open
+    distribution.virk.dk search index keyed by CVR number. The CVR is read
+    from GLEIF (registeredAs) for the issuer's LEI; the report's embedded LEI
+    is then verified like any OAM package.
+    """
+
+    oam = "dk-virk-regnskab"
+    country = "DK"
+    search = "http://distribution.virk.dk/offentliggoerelser/_search"
+
+    def _cvr(self, lei: str) -> Optional[str]:
+        def fetch() -> str:
+            with self.http.client() as client:
+                response = client.get(f"https://api.gleif.org/api/v1/lei-records/{lei}", headers={"Accept": "application/vnd.api+json"})
+            response.raise_for_status()
+            return response.text
+
+        try:
+            entity = json.loads(self.http.cached_text(f"gleif-record:{lei.upper()}", fetch))["data"]["attributes"]["entity"]
+        except (GlobalProviderError, ValueError, KeyError, TypeError):
+            return None
+        value = re.sub(r"\D", "", str(entity.get("registeredAs") or ""))
+        return value if len(value) == 8 and str(entity.get("jurisdiction") or "").upper().startswith("DK") else None
+
+    def annual_filings(self, company: GlobalCompany, lei: str, legal_name: str) -> list[OAMFiling]:
+        cvr = self._cvr(lei)
+        if not cvr:
+            raise GlobalProviderError(f"no Danish CVR number verifiable for LEI {lei} (GLEIF registeredAs)")
+
+        def fetch() -> str:
+            body = {"query": {"term": {"cvrNummer": int(cvr)}}, "size": 40,
+                    "sort": [{"offentliggoerelsesTidspunkt": {"order": "desc"}}]}
+            with self.http.client() as client:
+                response = client.post(self.search, json=body)
+            response.raise_for_status()
+            return response.text
+
+        hits = json.loads(self.http.cached_text(f"virk-regnskab:{cvr}", fetch)).get("hits", {}).get("hits", [])
+        filings = []
+        for hit in hits:
+            row = hit.get("_source") or {}
+            if str(row.get("cvrNummer")) != cvr:
+                continue
+            period = ((row.get("regnskab") or {}).get("regnskabsperiode") or {}).get("slutDato")
+            for doc in row.get("dokumenter") or []:
+                if doc.get("dokumentType") != "AARSRAPPORT" or "xhtml" not in str(doc.get("dokumentMimeType")):
+                    continue
+                filings.append(OAMFiling(
+                    oam=self.oam, document_id=f"VIRK:{cvr}:{period}:{hit.get('_id')}",
+                    package_url=str(doc.get("dokumentUrl")),
+                    landing_url=f"https://datacvr.virk.dk/enhed/virksomhed/{cvr}",
+                    published_at=str(row.get("offentliggoerelsesTidspunkt") or "")[:10] or None,
+                    label=f"Annual report {period} filed with Erhvervsstyrelsen (CVR {cvr})",
+                ))
+        filings.sort(key=lambda f: f.published_at or "", reverse=True)
+        if not filings:
+            raise GlobalProviderError(f"virk.dk lists no ESEF annual report for CVR {cvr}")
+        return filings
+
+
 class ItalySDIRLocator(OAMLocator):
     """Both Italian authorized storage mechanisms, merged and ranked.
 
@@ -1362,6 +1426,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
             NetherlandsAFMLocator(self.http),
             UKNSMLocator(self.http),
             GreeceAthensLocator(self.http),
+            DenmarkVirkLocator(self.http),
         ]
         self.locators = {locator.country: locator for locator in chosen}
 
