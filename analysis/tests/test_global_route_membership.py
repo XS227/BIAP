@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from fastapi import HTTPException
 
 import global_routes
 from global_markets.models import GlobalCompany
@@ -41,8 +42,10 @@ def test_analyze_seed_rejects_ticker_not_on_selected_official_exchange(monkeypat
         name="D-Wave Quantum Inc.",
         currency="USD",
     )
-    with pytest.raises(ValueError, match="not listed in the official US/NASDAQ universe"):
+    with pytest.raises(HTTPException) as exc:
         global_routes._seed(req)
+    assert exc.value.status_code == 400
+    assert "not listed in the official US/NASDAQ universe" in str(exc.value.detail)
 
 
 def test_analyze_seed_keeps_legacy_fallback_only_for_real_provider_outage(monkeypatch):
