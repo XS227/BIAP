@@ -76,11 +76,12 @@ class _GermanIssuerLocator:
     country = "DE"
 
     def __init__(self, registry: dict[str, IssuerPackage]):
-        self.by_lei = {row.lei.upper(): row for row in registry.values()}
+        self.registry = registry
 
     def annual_filings(self, company, lei, legal_name):
-        row = self.by_lei.get(lei.upper())
-        if row is None:
+        # Keyed by ISIN: share classes of one issuer (e.g. SIX2/SIX3) share a LEI.
+        row = self.registry.get((company.isin or "").upper())
+        if row is None or row.lei.upper() != lei.upper():
             return []
         return [OAMFiling(
             oam="de-issuer",

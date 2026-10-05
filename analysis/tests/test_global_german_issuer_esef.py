@@ -102,3 +102,12 @@ def test_nested_packages_descend_only_one_level():
     with zipfile.ZipFile(io.BytesIO(deep)) as archive:
         with pytest.raises(GlobalProviderError, match="no XHTML report"):
             NationalOAMESEFProvider(locators=[])._parse_archive(filing, archive)
+
+
+def test_share_classes_sharing_a_lei_get_their_own_document_id():
+    from global_markets.german_issuer_esef import _GermanIssuerLocator
+    pref = IssuerPackage(**{**ROW.__dict__, "isin": "DE0007231334", "ticker": "SIX3"})
+    ordinary = IssuerPackage(**{**ROW.__dict__, "isin": "DE0007231326", "ticker": "SIX2"})
+    locator = _GermanIssuerLocator({pref.isin: pref, ordinary.isin: ordinary})
+    filings = locator.annual_filings(_company(ticker="SIX2", isin=ordinary.isin), LEI, "SIXT SE")
+    assert [f.document_id for f in filings] == [f"de-issuer-esef:{ordinary.isin}:2025-12-31"]
