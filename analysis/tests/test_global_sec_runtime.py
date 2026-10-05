@@ -113,3 +113,46 @@ def test_sec_parser_anchors_to_latest_annual_period_and_drops_stale_revenue(monk
         and source.period_end == "2025-12-31"
         for source in enriched.sources
     )
+
+
+def test_sec_parser_accepts_audited_fy_facts_from_form_10_registration(monkeypatch):
+    from global_markets.models import GlobalCompany
+
+    provider = SECEdgarFundamentalsProvider(user_agent="BIAP test contact@example.com")
+    seed = GlobalCompany(
+        country="US",
+        exchange="NASDAQ",
+        mic_code="XNAS",
+        currency="USD",
+        ticker="WCCB",
+        name="West Coast Community Bancorp",
+    )
+    monkeypatch.setattr(provider, "_resolve_cik", lambda company: 2105965)
+
+    def row(value, end="2025-12-31", filed="2026-08-31", *, start=None, fp="FY"):
+        out = {"val": value, "end": end, "filed": filed, "form": "10-12B", "fp": fp}
+        if start:
+            out["start"] = start
+        return out
+
+    payload = {
+        "entityName": "West Coast Community Bancorp",
+        "facts": {"us-gaap": {
+            "NetIncomeLoss": {"units": {"USD": [
+                row(50_400_000, start="2025-01-01"),
+                row(29_600_000, end="2024-12-31", filed="2026-08-31", start="2024-01-01"),
+            ]}},
+            "Assets": {"units": {"USD": [row(2_700_000_000)]}},
+            "Liabilities": {"units": {"USD": [row(2_450_000_000)]}},
+            "StockholdersEquity": {"units": {"USD": [row(250_000_000)]}},
+            "CashAndCashEquivalentsAtCarryingValue": {"units": {"USD": [row(190_678_000)]}},
+        }},
+    }
+    monkeypatch.setattr(provider, "_get_json", lambda url: payload)
+
+    enriched = provider.enrich_fundamentals(seed)
+
+    assert enriched.filing_period_end == "2025-12-31"
+    assert enriched.net_income == 50_400_000
+    assert enriched.total_assets == 2_700_000_000
+    assert any(source.source_type == "official_regulatory_xbrl" for source in enriched.sources)
