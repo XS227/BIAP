@@ -1,0 +1,46 @@
+name: BIAP Global TSX directory API probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-tsx-directory-api-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - name: Probe official company directory APIs
+        run: |
+          python -m pip install -q requests
+          python - <<'PY'
+          import json, requests
+          s=requests.Session()
+          s.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36","Accept":"application/json,text/plain,*/*"})
+          for ex in ("tsx","tsxv"):
+              for action in ("current","currently-listed","listed"):
+                  url=f"https://www.tsx.com/json/company-directory/{action}/{ex}"
+                  try:
+                      r=s.get(url,timeout=30)
+                      print("\n",url,r.status_code,r.headers.get("content-type"),len(r.content))
+                      print(r.text[:12000])
+                      if r.status_code==200:
+                          try:
+                              p=r.json()
+                              print("TYPE",type(p).__name__,"KEYS",list(p)[:20] if isinstance(p,dict) else None)
+                              if isinstance(p,dict):
+                                  rows=p.get("results") or p.get("data") or []
+                                  print("COUNT",len(rows),"SAMPLE",json.dumps(rows[:5],ensure_ascii=False))
+                          except Exception as e:
+                              print("JSONERR",e)
+                  except Exception as e:
+                      print("ERR",url,type(e).__name__,e)
+          PY

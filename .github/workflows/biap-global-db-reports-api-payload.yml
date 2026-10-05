@@ -1,0 +1,57 @@
+name: BIAP Global Deutsche Boerse reports API payload
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-db-reports-api-payload.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Probe official recent_reports API payloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, requests
+          base='https://api.live.deutsche-boerse.com/v1/data/recent_reports'
+          headers={
+            'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131 Safari/537.36',
+            'Accept':'application/json,text/plain,*/*',
+            'Origin':'https://live.deutsche-boerse.com',
+            'Referer':'https://live.deutsche-boerse.com/',
+          }
+          targets={
+            'SAP':'DE0007164600',
+            'Allianz':'DE0008404005',
+            'DeutscheBank':'DE0005140008',
+            'BMW':'DE0005190003',
+            'Siemens':'DE0007236101',
+            'Rheinmetall':'DE0007030009',
+            'BASF':'DE000BASF111',
+            'Telekom':'DE0005557508',
+          }
+          s=requests.Session()
+          for name,isin in targets.items():
+            try:
+              r=s.get(base,params={'isin':isin,'limit':5},headers=headers,timeout=30)
+              print('\nTARGET',name,isin,'STATUS',r.status_code,'CT',r.headers.get('content-type'),'LEN',len(r.content))
+              print('URL',r.url)
+              if r.status_code==200:
+                try:
+                  payload=r.json()
+                  print(json.dumps(payload,ensure_ascii=False,indent=2)[:12000])
+                except Exception:
+                  print(r.text[:6000])
+              else:
+                print(r.text[:2000])
+            except Exception as e:
+              print('ERROR',name,type(e).__name__,str(e)[:300])
+          PY

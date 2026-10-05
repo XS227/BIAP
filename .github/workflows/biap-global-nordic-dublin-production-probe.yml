@@ -1,0 +1,96 @@
+name: BIAP Global Nordic Dublin production probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-nordic-dublin-production-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Probe production official universes and scans
+        run: |
+          python - <<'PY'
+          import json, requests
+
+          base='https://biap.dadashi.no/global-api/global'
+          targets=[
+              ('SE','NASDAQ_STOCKHOLM','official-nasdaq-nordic-main-market',350),
+              ('DK','NASDAQ_COPENHAGEN','official-nasdaq-nordic-main-market',100),
+              ('FI','NASDAQ_HELSINKI','official-nasdaq-nordic-main-market',120),
+              ('IS','NASDAQ_ICELAND','official-nasdaq-nordic-main-market',20),
+              ('IE','EURONEXT_DUBLIN','official-euronext-regulated-universe',10),
+          ]
+          session=requests.Session()
+          session.headers.update({'User-Agent':'BIAP Global production source verification'})
+
+          status=session.get(base+'/status',timeout=30)
+          status.raise_for_status()
+          print('STATUS',json.dumps(status.json(),sort_keys=True))
+
+          catalogs=[]
+          for country,exchange,provider,floor in targets:
+              r=session.get(f'{base}/instruments/{country}/{exchange}',params={'limit':5,'offset':0},timeout=150)
+              r.raise_for_status()
+              p=r.json()
+              catalog=p.get('catalog') or {}
+              row={
+                  'country':country,'exchange':exchange,
+                  'totalMatched':p.get('totalMatched'),
+                  'catalogProvider':catalog.get('provider'),
+                  'schemaVersion':catalog.get('schemaVersion'),
+                  'officialCount':catalog.get('officialCount'),
+                  'resolvedCount':catalog.get('resolvedCount'),
+                  'resolutionCoveragePct':catalog.get('resolutionCoveragePct'),
+                  'fresh':catalog.get('fresh'),
+                  'sample':[
+                      {
+                          'ticker':x.get('ticker'),'name':x.get('name'),'isin':x.get('isin'),
+                          'mic':x.get('mic_code'),'type':x.get('instrument_type')
+                      } for x in (p.get('instruments') or [])[:5]
+                  ],
+              }
+              print('CATALOG',json.dumps(row,ensure_ascii=False,sort_keys=True))
+              assert catalog.get('provider') == provider, row
+              assert int(p.get('totalMatched') or 0) >= floor, row
+              assert int(catalog.get('schemaVersion') or 0) == 13, row
+              catalogs.append(row)
+
+          scans=[]
+          for country,exchange,provider,floor in targets:
+              r=session.post(base+'/scan',json={
+                  'country':country,'exchange':exchange,
+                  'topN':3,'discoveryLimit':1000,'deepLimit':10
+              },timeout=240)
+              r.raise_for_status()
+              p=r.json()
+              readiness=p.get('dataReadiness') or {}
+              row={
+                  'country':country,'exchange':exchange,
+                  'status':p.get('status'),
+                  'universeSource':readiness.get('universeSource'),
+                  'universeAuthoritative':readiness.get('universeAuthoritative'),
+                  'marketSource':readiness.get('marketSource'),
+                  'eligibleEquities':readiness.get('eligibleEquities'),
+                  'screenedEquities':readiness.get('screenedEquities'),
+                  'marketCoveragePct':readiness.get('marketCoveragePct'),
+                  'fundamentalCoveragePct':readiness.get('fundamentalCoveragePct'),
+                  'rankingEligible':readiness.get('rankingEligible'),
+                  'reasons':readiness.get('reasons'),
+                  'recommendationCount':p.get('recommendationCount'),
+              }
+              print('SCAN',json.dumps(row,ensure_ascii=False,sort_keys=True))
+              assert readiness.get('universeSource') == provider, row
+              assert readiness.get('universeAuthoritative') is True, row
+              assert float(readiness.get('marketCoveragePct') or 0) >= 90.0, row
+              scans.append(row)
+
+          print('SUMMARY',json.dumps({'catalogs':catalogs,'scans':scans},ensure_ascii=False,sort_keys=True))
+          PY

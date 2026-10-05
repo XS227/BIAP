@@ -1,0 +1,48 @@
+name: BIAP Global B3 full instruments targeted probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-b3-instrument-targeted-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install analysis dependencies
+        run: python -m pip install -r analysis/requirements.txt
+      - name: Probe B3 provider before and after persistent cache
+        working-directory: analysis
+        run: |
+          python - <<'PY'
+          from global_markets.country_packs import get_exchange
+          from global_markets.b3_official import B3OfficialUniverseProvider
+          from global_markets.cached_universe import PersistentUniverseProvider
+
+          spec = get_exchange('BR', 'B3')
+          live = B3OfficialUniverseProvider()
+          # Inspect the official daily COTAHIST independently. If PETR4 is
+          # tradable there but absent from BVBG, the universe parser is too
+          # restrictive rather than the ticker being invalid.
+          cot_date, cot = live.client.cotahist_rows()
+          print('COTAHIST_DATE', cot_date)
+          print('COTAHIST_PETR', [(x.get('ticker'), x.get('name'), x.get('specification'), x.get('isin')) for x in cot if 'PETR' in str(x.get('ticker',''))][:30])
+          raw = list(live.list_instruments(country='BR', exchange='B3'))
+          print('LIVE_COUNT', len(raw))
+          print('LIVE_PETR4', [(x.ticker, x.name, x.mic_code, x.raw_provider_fields) for x in raw if x.ticker == 'PETR4'])
+          print('LIVE_PETR_PREFIX', [(x.ticker, x.name, x.mic_code) for x in raw if 'PETR' in x.ticker][:30])
+
+          cached = PersistentUniverseProvider(live, data_dir='/tmp/biap-global-probe')
+          decoded = list(cached.list_instruments(country='BR', exchange='B3'))
+          print('DECODED_COUNT', len(decoded))
+          print('DECODED_PETR4', [(x.ticker, x.name, x.mic_code, x.raw_provider_fields) for x in decoded if x.ticker == 'PETR4'])
+          print('DECODED_PETR_PREFIX', [(x.ticker, x.name, x.mic_code) for x in decoded if 'PETR' in x.ticker][:30])
+          print('DECODED_SAMPLE', [(x.ticker, x.name, x.mic_code) for x in decoded[:20]])
+          PY

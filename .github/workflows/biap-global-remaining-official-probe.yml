@@ -1,0 +1,290 @@
+name: BIAP Global remaining official source probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-remaining-official-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+  VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+  VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
+  VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests
+      - name: Probe SGX Saudi DFM ADX official pages
+        run: |
+          python - <<'PY'
+          import json,re,requests
+          H={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36','Accept-Language':'en-US,en;q=0.9'}
+
+          def show(name,url):
+              try:
+                  r=requests.get(url,headers=H,timeout=45)
+                  print('\n###',name,'STATUS',r.status_code,'BYTES',len(r.content),'TYPE',r.headers.get('content-type'),'URL',r.url)
+                  print(r.text[:1000].replace('\n',' ') if 'text' in (r.headers.get('content-type') or '') or not r.headers.get('content-type') else repr(r.content[:300]))
+                  return r
+              except Exception as e:
+                  print('\n###',name,'ERROR',type(e).__name__,e)
+                  return None
+
+          # SGX public website API used by SGX securities pages.
+          sgx=show('SGX','https://api.sgx.com/securities/v1.1?excludetypes=bonds&params=nc%2Cn%2Ccn%2Ccx%2Cs%2Cisin')
+          if sgx and sgx.ok:
+              try:
+                  d=sgx.json()
+                  print('SGX_KEYS',d.keys())
+                  data=d.get('data') or {}
+                  print('SGX_DATA_KEYS',data.keys() if isinstance(data,dict) else type(data))
+                  prices=data.get('prices') if isinstance(data,dict) else None
+                  print('SGX_COUNT',len(prices or []),'SAMPLE',json.dumps((prices or [])[:5],ensure_ascii=False)[:5000])
+              except Exception as e: print('SGX_JSON_ERROR',e)
+
+          pages={
+            'SAUDI':'https://www.saudiexchange.sa/wps/portal/saudiexchange/trading/participants-directory/issuer-directory?locale=en',
+            'DFM':'https://www.dfm.ae/the-exchange/market-information/listed-securities',
+            'ADX':'https://www.adx.ae/English/Pages/default.aspx',
+          }
+          for name,url in pages.items():
+              r=show(name,url)
+              if not r: continue
+              html=r.text
+              scripts=re.findall(r'<script[^>]+src=["\']([^"\']+)',html,re.I)
+              links=re.findall(r'(?:https?:)?//[^"\'<> ]+',html)
+              print(name,'SCRIPTS',scripts[-20:])
+              interesting=[]
+              for token in re.findall(r'[^"\'\s<>]{10,300}',html):
+                  low=token.lower()
+                  if any(k in low for k in ('api','issuer','listed','security','securities','company','companies','symbol','instrument')):
+                      if token not in interesting: interesting.append(token)
+              print(name,'INTERESTING',interesting[:120])
+              print(name,'LINKS',[x for x in links if any(k in x.lower() for k in ('api','issuer','listed','security','company'))][:80])
+          # Deeper probes for concrete endpoints.
+          sgx2=show('SGX_VALID','https://api.sgx.com/securities/v1.1?excludetypes=bonds&params=nc%2Cadjusted-vwap%2Cb%2Cbv%2Cp%2Cc%2Cchange_vs_pc%2Cchange_vs_pc_percentage%2Ccx%2Ccn%2Cdp%2Cdpc%2Cdu%2Ced%2Cfn%2Ch%2Ciiv%2Ciopv%2Clt%2Cl%2Co%2Cp_%2Cpv%2Cptd%2Cs%2Csv%2Ctrading_time%2Cv_%2Cv%2Cvl%2Cvwap%2Cvwap-currency')
+          if sgx2 and sgx2.ok:
+              try:
+                  d=sgx2.json(); prices=(d.get('data') or {}).get('prices') or []
+                  print('SGX_VALID_META',d.get('meta'))
+                  print('SGX_VALID_COUNT',len(prices),'KEYS',sorted((prices[0] if prices else {}).keys()),'SAMPLE',json.dumps(prices[:8],ensure_ascii=False)[:8000])
+              except Exception as e: print('SGX_VALID_ERROR',e)
+
+          dfmjs=show('DFM_JS','https://www.dfm.ae/_nuxt/AGRv68WG.js')
+          if dfmjs:
+              js=dfmjs.text
+              for needle in ('symbol-search-stocks-en','listed-credits','securities-total','apiBaseUrl','listed-securities'):
+                  for m in list(re.finditer(re.escape(needle),js,re.I))[:8]:
+                      print('DFM_CTX',needle,js[max(0,m.start()-500):m.start()+800])
+
+          dfmeq=show('DFM_EQUITY_JS','https://www.dfm.ae/_nuxt/1MVZm7XQ.js')
+          if dfmeq:
+              js=dfmeq.text
+              print('DFM_EQUITY_LEN',len(js))
+              for needle in ('listed','securit','equities','apiBaseUrl','getSecurities','symbol'):
+                  for m in list(re.finditer(needle,js,re.I))[:20]:
+                      print('DFM_EQ_CTX',needle,js[max(0,m.start()-700):m.start()+1200])
+
+          adx_home=requests.get('https://www.adx.ae/en/issuers/issuers-information/issuers-directory',headers=H,timeout=45).text
+          adx_scripts=re.findall(r"<script[^>]+src=[\"']([^\"']+)",adx_home,re.I)
+          for src in adx_scripts:
+              if src.startswith('/'): src='https://www.adx.ae'+src
+              try:
+                  rr=requests.get(src,headers=H,timeout=30)
+              except Exception:
+                  continue
+              js=rr.text
+              if any(k in js.lower() for k in ('issuers-directory','apigateway.adx','issuer directory','getissuers','securitiesdirectory')):
+                  print('ADX_BUNDLE',src,'BYTES',len(js))
+                  print('ADX_BUNDLE_LEN',len(js))
+                  for needle in ('issuers-directory','apigateway','issuer','directory','securities'):
+                      for m in list(re.finditer(needle,js,re.I))[:20]:
+                          print('ADX_BUNDLE_CTX',needle,js[max(0,m.start()-700):m.start()+1200])
+
+          try:
+              rr=requests.post(
+                  'https://api2.dfm.ae/web/widgets/v1/data',
+                  data={'Command':'FreshSecuritiesLists','Language':'en','lang':'en','securitytype':'equities'},
+                  headers={**H,'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded','Referer':'https://www.dfm.ae/'},
+                  timeout=45,
+              )
+              print('DFM_EQUITIES_API',rr.status_code,len(rr.content),rr.headers.get('content-type'))
+              print('DFM_EQUITIES_BODY',rr.text[:16000])
+          except Exception as e:
+              print('DFM_EQUITIES_ERROR',type(e).__name__,e)
+
+          try:
+              appjs=requests.get('https://www.adx.ae/_next/static/chunks/pages/_app-873edeb54d7c662a.js',headers=H,timeout=45).text
+              for needle in (
+                  'case n.T.GetIssuersDirectoryV2',
+                  'case n.T.GetIssuersDirectory',
+                  'GetIssuersDirectoryV2:return',
+                  'GetIssuersDirectory:return',
+              ):
+                  for m in list(re.finditer(re.escape(needle),appjs))[:6]:
+                      print('ADX_ISSUER_MAP_CTX',needle,appjs[max(0,m.start()-1500):m.start()+3500])
+              p=appjs.find('76193:')
+              if p>=0:
+                  print('ADX_MAP_MODULE_HEAD',appjs[p:p+5000])
+          except Exception as e:
+              print('ADX_ISSUER_MAP_ERROR',type(e).__name__,e)
+
+          # Direct ADX official API discovered from the exchange's public web bundle.
+          try:
+              adx_headers={
+                  **H,
+                  'Accept':'application/json',
+                  'Channel-ID':'OSS WEB',
+                  'Content-Type':'application/json',
+                  'X-Correlation-ID':'biap-global-probe',
+                  'adx-Gateway-APIKey':'1863a94c-582b-46f9-b4f0-0d02c0cc5307',
+                  'Referer':'https://www.adx.ae/en/issuers/issuers-information/issuers-directory',
+              }
+              for path in (
+                  'https://apigateway.adx.ae/adx/tradings/1.1/issuers',
+                  'https://apigateway.adx.ae/adx/tradings/1.0/issuers',
+                  'https://apigateway.adx.ae/adx/marketwatch/1.1/securityBoards/mainMarket',
+                  'https://apigateway.adx.ae/adx/marketwatch/1.1/securityBoards/growthMarket',
+              ):
+                  rr=requests.get(path,headers=adx_headers,timeout=45)
+                  print('ADX_OFFICIAL_DIRECT',path,rr.status_code,len(rr.content),rr.headers.get('content-type'),rr.text[:12000])
+          except Exception as e:
+              print('ADX_OFFICIAL_DIRECT_ERROR',type(e).__name__,e)
+
+          for ident in ('GetIssuersDirectoryV2','GetIssuersDirectory'):
+              for path in (f'https://www.adx.ae/api/securedCall/{ident}', f'https://www.adx.ae/en/api/securedCall/{ident}'):
+                  try:
+                      rr=requests.post(
+                          path,
+                          json={'callIdentifier':ident,'method':'GET'},
+                          headers={**H,'Accept':'application/json','Content-Type':'application/json','Referer':'https://www.adx.ae/en/issuers/issuers-information/issuers-directory'},
+                          timeout=45,
+                      )
+                      print('ADX_DIRECT_PROXY',ident,path,rr.status_code,len(rr.content),rr.headers.get('content-type'),rr.text[:6000])
+                  except Exception as e:
+                      print('ADX_DIRECT_PROXY_ERROR',ident,path,type(e).__name__,e)
+
+          try:
+              appjs=requests.get('https://www.adx.ae/_next/static/chunks/pages/_app-873edeb54d7c662a.js',headers=H,timeout=45).text
+              for mod in ('91737:', '76193:', '72077:', '86108:'):
+                  positions=[m.start() for m in re.finditer(re.escape(mod),appjs)]
+                  print('ADX_CORE_MODULE_POS',mod,positions[:10])
+                  for pos in positions[:2]:
+                      print('ADX_CORE_MODULE_CTX',mod,appjs[max(0,pos-1000):pos+7000])
+          except Exception as e:
+              print('ADX_CORE_MODULE_ERROR',type(e).__name__,e)
+
+          try:
+              appjs=requests.get('https://www.adx.ae/_next/static/chunks/pages/_app-873edeb54d7c662a.js',headers=H,timeout=45).text
+              for needle in ('98056:', '98056:function', 'CallAPIFromClient', 'CallAPIFromServer'):
+                  positions=[m.start() for m in re.finditer(re.escape(needle),appjs)]
+                  print('ADX_MODULE_POS',needle,positions[:20])
+                  for pos in positions[:6]:
+                      print('ADX_MODULE_CTX',needle,appjs[max(0,pos-1800):pos+4200])
+          except Exception as e:
+              print('ADX_MODULE_ERROR',type(e).__name__,e)
+
+          fetchmod=show('DFM_FETCH_MODULE','https://www.dfm.ae/_nuxt/DADGAa5t.js')
+          if fetchmod:
+              js=fetchmod.text
+              print('DFM_FETCH_CONTENT',js[:20000])
+
+          for url in (
+              'https://www.adx.ae/_next/static/chunks/pages/_app-873edeb54d7c662a.js',
+              'https://www.adx.ae/_next/static/chunks/689-7d304c5e2d1ce5c1.js',
+          ):
+              try:
+                  js=requests.get(url,headers=H,timeout=45).text
+              except Exception:
+                  continue
+              print('ADX_PROXY_FILE',url,'LEN',len(js))
+              for needle in ('SecuredProxyRequest','/api/','proxy','GetIssuersDirectoryV2','GetIssuersDirectory'):
+                  positions=[m.start() for m in re.finditer(re.escape(needle),js,re.I)]
+                  print('ADX_PROXY_POS',needle,positions[:20])
+                  for pos in positions[:4]:
+                      print('ADX_PROXY_CTX',needle,js[max(0,pos-1400):pos+2200])
+
+          hook=show('DFM_HOOK_MODULE','https://www.dfm.ae/_nuxt/BnugGJt_2.js')
+          if hook:
+              js=hook.text
+              print('DFM_HOOK_LEN',len(js))
+              for needle in ('apiBaseUrl','api2.dfm.ae','equities','securities','useFetch','widgets','security'):
+                  for m in list(re.finditer(re.escape(needle),js,re.I))[:30]:
+                      print('DFM_HOOK_CTX',needle,js[max(0,m.start()-900):m.start()+1600])
+
+          # Find the exact ADX issuer-directory proxy mapping without dumping huge bundles.
+          for src in adx_scripts:
+              if src.startswith('/'): src='https://www.adx.ae'+src
+              try:
+                  js=requests.get(src,headers=H,timeout=30).text
+              except Exception:
+                  continue
+              if 'GetIssuersDirectory' not in js:
+                  continue
+              print('ADX_ISSUER_BUNDLE',src,'LEN',len(js))
+              for needle in ('GetIssuersDirectoryV2','GetIssuersDirectory','SecuredProxyRequest','apiGateway','apigateway','proxy','callIdentifier'):
+                  pos=0
+                  for _ in range(12):
+                      pos=js.find(needle,pos)
+                      if pos < 0: break
+                      print('ADX_ISSUER_CTX',needle,js[max(0,pos-1000):pos+1800])
+                      pos += len(needle)
+
+          adxjs=show('ADX_JS','https://www.adx.ae/_next/static/chunks/pages/%5B%5B...path%5D%5D-c9057e73bc9df202.js')
+          if adxjs:
+              js=adxjs.text
+              for needle in ('issuers-directory','apigateway','listed-companies','issuer','security'):
+                  for m in list(re.finditer(re.escape(needle),js,re.I))[:12]:
+                      print('ADX_CTX',needle,js[max(0,m.start()-500):m.start()+900])
+          PY
+
+  remote-probe:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    steps:
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$VPS_SSH_KEY"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
+          chmod 600 ~/.ssh/biap_global_key
+          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+      - name: Probe BSE and Saudi from production network
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/remote_probe.py <<'PY'
+          import requests
+          H={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36','Accept-Language':'en-US,en;q=0.9'}
+          tests=[
+            ('BSE','https://api.bseindia.com/BseIndiaAPI/api/ListofScripData/w',{'Group':'','Scripcode':'','industry':'','segment':'Equity','status':'Active'}),
+            ('SAUDI','https://www.saudiexchange.sa/wps/portal/saudiexchange/trading/participants-directory/issuer-directory?locale=en',None),
+          ]
+          for name,url,params in tests:
+              try:
+                  s=requests.Session(); s.headers.update(H)
+                  if name=='BSE':
+                      w=s.get('https://www.bseindia.com/corporates/List_Scrips.html',timeout=45)
+                      print('BSE_WARM',w.status_code,len(w.content),list(s.cookies.keys()))
+                  r=s.get(url,params=params,timeout=60,headers={**H,'Accept':'application/json,text/html,*/*','Referer':'https://www.bseindia.com/corporates/List_Scrips.html' if name=='BSE' else 'https://www.saudiexchange.sa/'})
+                  print(name,'STATUS',r.status_code,'BYTES',len(r.content),'TYPE',r.headers.get('content-type'),'URL',r.url)
+                  print(r.text[:2500].replace('\\n',' '))
+                  if r.ok and 'json' in (r.headers.get('content-type') or ''):
+                      d=r.json(); print(name,'JSON_TYPE',type(d).__name__,'SUMMARY',str(d)[:8000])
+              except Exception as e: print(name,'ERROR',type(e).__name__,e)
+          PY
+          ssh -i ~/.ssh/biap_global_key -p "${VPS_PORT:-22}" -o BatchMode=yes "$VPS_USER@$VPS_HOST" python3 - < /tmp/remote_probe.py

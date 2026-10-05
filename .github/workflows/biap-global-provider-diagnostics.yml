@@ -1,0 +1,370 @@
+# Verify H&M after legal-name alias deploy: 2026-09-22
+# Recheck Nordic completeness after Swedish identity normalization: 2026-09-22
+name: BIAP Global provider diagnostics
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-provider-diagnostics.yml'
+
+permissions:
+  contents: read
+
+# Verify provider credentials/coverage without exposing secrets.
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment: production
+    env:
+      MARKET_KEY: ${{ secrets.BIAP_GLOBAL_MARKET_API_KEY || secrets.TWELVE_DATA_API_KEY }}
+      SEC_ID: ${{ secrets.BIAP_SEC_USER_AGENT || secrets.SEC_USER_AGENT }}
+      EDINET_KEY: ${{ secrets.BIAP_EDINET_API_KEY || secrets.EDINET_API_KEY }}
+      OPENDART_KEY: ${{ secrets.BIAP_OPENDART_API_KEY || secrets.OPENDART_API_KEY }}
+      CH_KEY: ${{ secrets.BIAP_COMPANIES_HOUSE_API_KEY || secrets.COMPANIES_HOUSE_API_KEY }}
+    steps:
+      - name: Public Global provider and source status
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 15 https://biap.dadashi.no/global-api/health
+          echo
+          curl --fail --silent --show-error --max-time 15 https://biap.dadashi.no/global-api/global/status
+          echo
+          curl --fail --silent --show-error --max-time 15 https://biap.dadashi.no/global-api/global/source-status | tee /tmp/source-status.json
+          echo
+          python3 - <<'PY'
+          import json
+          with open('/tmp/source-status.json', encoding='utf-8') as f:
+              payload = json.load(f)
+          rows = {row['country']: row for row in payload.get('sources', [])}
+          assert rows['BR']['officialRuntimeReady'] is True, rows.get('BR')
+          assert rows['US']['officialRuntimeReady'] is True, rows.get('US')
+          assert rows['ES']['officialRuntimeReady'] is True, rows.get('ES')
+          assert rows['JP']['credentialRequired'] == 'BIAP_EDINET_API_KEY', rows.get('JP')
+          assert rows['KR']['credentialRequired'] == 'BIAP_OPENDART_API_KEY', rows.get('KR')
+          print('source-status officialReadyCount=', payload.get('officialReadyCount'))
+          PY
+
+      - name: Check matching GitHub secrets without revealing values
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          for name in ['MARKET_KEY','SEC_ID','EDINET_KEY','OPENDART_KEY','CH_KEY']:
+              print(f'{name}_available={bool(os.environ.get(name))}')
+          PY
+
+      - name: Probe public demo reference-data coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.parse, urllib.request
+          tests = [
+              ('US-XNAS', {'mic_code':'XNAS','type':'Common Stock'}),
+              ('US-XNYS', {'mic_code':'XNYS','type':'Common Stock'}),
+              ('GB-XLON', {'mic_code':'XLON','type':'Common Stock'}),
+              ('NO-XOSL', {'mic_code':'XOSL','type':'Common Stock'}),
+              ('SE-XSTO', {'mic_code':'XSTO','type':'Common Stock'}),
+              ('ES-XMAD', {'mic_code':'XMAD','type':'Common Stock'}),
+              ('JP-XJPX', {'mic_code':'XJPX','type':'Common Stock'}),
+              ('AU-XASX', {'mic_code':'XASX','type':'Common Stock'}),
+              ('BR-BVMF', {'mic_code':'BVMF','type':'Common Stock'}),
+          ]
+          for label, params in tests:
+              q = urllib.parse.urlencode({**params, 'apikey':'demo', 'outputsize':5000})
+              url = 'https://api.twelvedata.com/stocks?' + q
+              try:
+                  with urllib.request.urlopen(url, timeout=20) as r:
+                      payload = json.load(r)
+                  rows = payload.get('data') if isinstance(payload, dict) else None
+                  print(f'{label}_status={payload.get("status") if isinstance(payload,dict) else None} count={len(rows) if isinstance(rows,list) else 0} message={payload.get("message") if isinstance(payload,dict) else None}')
+              except Exception as exc:
+                  print(f'{label}_error={type(exc).__name__}:{exc}')
+          PY
+
+      - name: Probe public demo market-data coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.parse, urllib.request
+          tests = [
+              ('AAPL-US', {'symbol':'AAPL','mic_code':'XNAS'}),
+              ('VOD-GB', {'symbol':'VOD','mic_code':'XLON'}),
+              ('EQNR-NO', {'symbol':'EQNR','mic_code':'XOSL'}),
+              ('VOLV-B-SE', {'symbol':'VOLV-B','mic_code':'XSTO'}),
+              ('SAN-ES', {'symbol':'SAN','mic_code':'XMAD'}),
+              ('7203-JP', {'symbol':'7203','mic_code':'XJPX'}),
+              ('BHP-AU', {'symbol':'BHP','mic_code':'XASX'}),
+              ('PETR4-BR', {'symbol':'PETR4','mic_code':'BVMF'}),
+          ]
+          for label, params in tests:
+              for endpoint, extra in [('quote',{}), ('time_series',{'interval':'1day','outputsize':10})]:
+                  q = urllib.parse.urlencode({**params, **extra, 'apikey':'demo'})
+                  url = f'https://api.twelvedata.com/{endpoint}?' + q
+                  try:
+                      with urllib.request.urlopen(url, timeout=20) as r:
+                          payload = json.load(r)
+                      if endpoint == 'quote':
+                          ok = bool(payload.get('close') or payload.get('price')) if isinstance(payload, dict) else False
+                          msg = payload.get('message') if isinstance(payload, dict) else None
+                      else:
+                          vals = payload.get('values') if isinstance(payload, dict) else None
+                          ok = isinstance(vals, list) and len(vals) > 0
+                          msg = payload.get('message') if isinstance(payload, dict) else None
+                      print(f'{label}_{endpoint}_ok={ok} message={msg}')
+                  except Exception as exc:
+                      print(f'{label}_{endpoint}_error={type(exc).__name__}:{exc}')
+          PY
+
+      - name: Live production analysis smoke for launch markets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import urllib.request
+
+          url = 'https://biap.dadashi.no/global-api/global/analyze'
+          cases = [
+              ('AAPL', {'country':'US','exchange':'NASDAQ','ticker':'AAPL','name':'Apple Inc.','currency':'USD'}),
+              ('EQNR', {'country':'NO','exchange':'EURONEXT_OSLO','ticker':'EQNR','name':'Equinor ASA','currency':'NOK'}),
+              ('SHEL', {'country':'GB','exchange':'LSE','ticker':'SHEL','name':'Shell plc','currency':'GBP'}),
+          ]
+          for label, body in cases:
+              request = urllib.request.Request(
+                  url,
+                  data=json.dumps(body).encode('utf-8'),
+                  headers={'Content-Type':'application/json','Accept':'application/json'},
+                  method='POST',
+              )
+              with urllib.request.urlopen(request, timeout=45) as response:
+                  payload = json.load(response)
+              company = payload.get('company') or {}
+              signals = payload.get('signals') or []
+              price = company.get('price')
+              observed = company.get('price_observed_at')
+              vol = company.get('volatility_annualized_pct')
+              drawdown = company.get('max_drawdown_pct')
+              avgvol = company.get('avg_volume_30d')
+              market_sources = [s for s in (company.get('sources') or []) if s.get('source_type') in ('market_history','public_daily_market_history','market_snapshot_cache')]
+              nonzero_signals = [s for s in signals if float(s.get('confidence') or 0) > 0]
+              assert isinstance(price, (int,float)) and price > 0, (label, 'price', price, payload.get('providerDiagnostics'))
+              assert observed, (label, 'price_observed_at', observed)
+              assert isinstance(vol, (int,float)), (label, 'volatility', vol)
+              assert isinstance(drawdown, (int,float)), (label, 'drawdown', drawdown)
+              assert isinstance(avgvol, (int,float)), (label, 'avg_volume_30d', avgvol)
+              assert market_sources, (label, 'market provenance missing', company.get('sources'))
+              assert len(nonzero_signals) >= 3, (label, 'nonzero signal count', len(nonzero_signals), signals)
+              print(json.dumps({
+                  'ticker': label,
+                  'price': price,
+                  'currency': company.get('currency'),
+                  'observedAt': observed,
+                  'volatility': vol,
+                  'maxDrawdown': drawdown,
+                  'avgVolume30d': avgvol,
+                  'call': payload.get('call'),
+                  'confidence': payload.get('confidence'),
+                  'evidenceStatus': (payload.get('evidence') or {}).get('status'),
+                  'nonzeroSignals': len(nonzero_signals),
+                  'marketProviders': sorted({s.get('provider') for s in market_sources}),
+              }, sort_keys=True))
+          PY
+
+      - name: Live Spain Japan Singapore and Brazil fundamentals smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import urllib.parse
+          import urllib.request
+
+          base = 'https://biap.dadashi.no/global-api/global'
+          cases = [
+              ('ES', 'BME_MADRID', 'SAN', 'EUR'),
+              ('JP', 'TSE_JP', '7203', 'JPY'),
+              ('SG', 'SGX', 'D05', 'SGD'),
+              ('BR', 'B3', 'PETR4', 'BRL'),
+          ]
+          metric_names = (
+              'revenue', 'net_income', 'total_assets', 'total_equity',
+              'operating_cash_flow', 'free_cash_flow', 'total_debt', 'ebitda',
+          )
+
+          for country, exchange, ticker, currency in cases:
+              query = urllib.parse.urlencode({'q': ticker, 'limit': 20})
+              catalog_url = f'{base}/instruments/{country}/{exchange}?{query}'
+              with urllib.request.urlopen(catalog_url, timeout=45) as response:
+                  catalog = json.load(response)
+              instruments = catalog.get('instruments') or []
+              exact = next((row for row in instruments if str(row.get('ticker') or '').upper() == ticker.upper()), None)
+              assert exact is not None, (country, exchange, ticker, 'exact ticker not found', catalog)
+
+              body = {
+                  'country': country,
+                  'exchange': exchange,
+                  'ticker': exact.get('ticker') or ticker,
+                  'name': exact.get('name') or ticker,
+                  'currency': exact.get('currency') or currency,
+                  'isin': exact.get('isin'),
+                  'lei': exact.get('lei'),
+              }
+              request = urllib.request.Request(
+                  f'{base}/analyze',
+                  data=json.dumps(body).encode('utf-8'),
+                  headers={'Content-Type':'application/json','Accept':'application/json'},
+                  method='POST',
+              )
+              with urllib.request.urlopen(request, timeout=60) as response:
+                  payload = json.load(response)
+
+              company = payload.get('company') or {}
+              diagnostics = payload.get('providerDiagnostics') or {}
+              metrics = {name: company.get(name) for name in metric_names if company.get(name) is not None}
+              sources = company.get('sources') or []
+              fundamental_sources = [s for s in sources if s.get('provider') in {
+                  'esef-xbrl-cached', 'edinet', 'yahoo-public-fundamentals-global', 'cvm-open-data-dfp'
+              } or 'fundamental' in str(s.get('source_type') or '').lower() or 'xbrl' in str(s.get('source_type') or '').lower() or 'regulatory' in str(s.get('source_type') or '').lower()]
+
+              assert isinstance(company.get('price'), (int, float)) and company.get('price') > 0, (
+                  country, exchange, ticker, 'missing price', diagnostics,
+              )
+              assert metrics, (country, exchange, ticker, 'fundamentals still empty', diagnostics, sources)
+              assert fundamental_sources, (country, exchange, ticker, 'fundamental provenance missing', diagnostics, sources)
+              if country == 'BR':
+                  assert any(str(s.get('provider') or '').startswith('cvm-open-data-dfp') for s in sources), (country, ticker, sources, diagnostics)
+                  assert (payload.get('evidence') or {}).get('status') in {'PASS', 'WARN'}, payload.get('evidence')
+
+              print(json.dumps({
+                  'market': f'{country}/{exchange}',
+                  'ticker': ticker,
+                  'catalogMic': catalog.get('mic'),
+                  'catalogReturned': catalog.get('returned'),
+                  'catalogName': exact.get('name'),
+                  'price': company.get('price'),
+                  'fundamentalsStatus': diagnostics.get('fundamentalsStatus'),
+                  'fundamentalsProvider': diagnostics.get('fundamentalsProvider'),
+                  'metricsPresent': sorted(metrics),
+                  'evidenceStatus': (payload.get('evidence') or {}).get('status'),
+                  'sourceProviders': sorted({str(s.get('provider')) for s in fundamental_sources}),
+              }, sort_keys=True))
+          PY
+
+      - name: Nordic completeness diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.parse, urllib.request
+
+          base = 'https://biap.dadashi.no/global-api/global'
+          cases = [
+              ('SE','NASDAQ_STOCKHOLM','VOLV.B'),
+              ('SE','NASDAQ_STOCKHOLM','ERIC.B'),
+              ('SE','NASDAQ_STOCKHOLM','ATCO.A'),
+              ('SE','NASDAQ_STOCKHOLM','ATCO.B'),
+              ('SE','NASDAQ_STOCKHOLM','INVE.B'),
+              ('SE','NASDAQ_STOCKHOLM','SEB.A'),
+              ('SE','NASDAQ_STOCKHOLM','SWED.A'),
+              ('SE','NASDAQ_STOCKHOLM','HM.B'),
+              ('SE','NASDAQ_STOCKHOLM','SAND'),
+              ('SE','NASDAQ_STOCKHOLM','ASSA.B'),
+              ('NO','EURONEXT_OSLO','AKSO'),
+              ('NO','EURONEXT_OSLO','EQNR'),
+              ('NO','EURONEXT_OSLO','DNB'),
+          ]
+
+          def norm(v):
+              return ''.join(ch for ch in str(v or '').upper() if ch.isalnum())
+
+          for country, exchange, ticker in cases:
+              q = urllib.parse.urlencode({'q': ticker, 'limit': 30})
+              with urllib.request.urlopen(f'{base}/instruments/{country}/{exchange}?{q}', timeout=45) as response:
+                  catalog = json.load(response)
+              rows = catalog.get('instruments') or []
+              exact = next((row for row in rows if norm(row.get('ticker')) == norm(ticker)), None)
+              if exact is None:
+                  print(json.dumps({'market':f'{country}/{exchange}','ticker':ticker,'catalog':'NOT_FOUND','returned':len(rows)}))
+                  continue
+
+              body = {
+                  'country': country,
+                  'exchange': exchange,
+                  'ticker': exact.get('ticker') or ticker,
+                  'name': exact.get('name') or ticker,
+                  'currency': exact.get('currency'),
+                  'isin': exact.get('isin'),
+                  'lei': exact.get('lei'),
+              }
+              request = urllib.request.Request(
+                  f'{base}/analyze',
+                  data=json.dumps(body).encode('utf-8'),
+                  headers={'Content-Type':'application/json','Accept':'application/json'},
+                  method='POST',
+              )
+              with urllib.request.urlopen(request, timeout=75) as response:
+                  payload = json.load(response)
+
+              company = payload.get('company') or {}
+              diag = payload.get('providerDiagnostics') or {}
+              fundamentals = {
+                  key: company.get(key) for key in (
+                      'revenue','revenue_yoy_pct','net_income','total_assets','total_liabilities',
+                      'total_equity','operating_cash_flow','free_cash_flow','total_debt','eps',
+                      'dividend_yield_pct'
+                  ) if company.get(key) is not None
+              }
+              market = {
+                  key: company.get(key) for key in (
+                      'price','price_52w_high','price_52w_low','return_1m_pct','return_3m_pct',
+                      'return_6m_pct','volatility_annualized_pct','max_drawdown_pct',
+                      'volume_today','avg_volume_30d'
+                  ) if company.get(key) is not None
+              }
+              print(json.dumps({
+                  'market': f'{country}/{exchange}',
+                  'tickerRequested': ticker,
+                  'tickerResolved': exact.get('ticker'),
+                  'name': exact.get('name'),
+                  'isin': exact.get('isin'),
+                  'lei': exact.get('lei'),
+                  'marketStatus': diag.get('marketStatus'),
+                  'marketProvider': diag.get('marketProvider'),
+                  'marketError': diag.get('marketError'),
+                  'fundamentalsStatus': diag.get('fundamentalsStatus'),
+                  'fundamentalsProvider': diag.get('fundamentalsProvider'),
+                  'fundamentalsError': diag.get('fundamentalsError'),
+                  'fundamentalsPrimaryError': (company.get('raw_provider_fields') or {}).get('fundamentals_primary_error'),
+                  'marketFields': sorted(market),
+                  'fundamentalFields': sorted(fundamentals),
+                  'evidence': (payload.get('evidence') or {}).get('status'),
+                  'coverage': (payload.get('evidence') or {}).get('coverage'),
+                  'call': payload.get('call'),
+                  'sourceProviders': sorted({str(s.get('provider')) for s in (company.get('sources') or [])}),
+              }, sort_keys=True))
+          PY
+
+      - name: Live catalog filter smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.request
+          cases = [
+              ('NO','EURONEXT_OSLO','AASB31.PR.RO'),
+              ('GB','LSE','0A0D'),
+          ]
+          for country, exchange, rejected in cases:
+              url = f'https://biap.dadashi.no/global-api/global/instruments/{country}/{exchange}?limit=1000'
+              with urllib.request.urlopen(url, timeout=45) as response:
+                  payload = json.load(response)
+              symbols = {str(row.get('ticker') or '').upper() for row in payload.get('instruments') or []}
+              assert rejected.upper() not in symbols, (country, exchange, rejected, 'still present')
+              print(f'{country}/{exchange}: returned={payload.get("returned")} rejected={rejected} absent=True')
+          PY

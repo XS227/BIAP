@@ -1,0 +1,80 @@
+name: BIAP Global Euronext production scan probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-euronext-production-scan-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Probe full-market production scans
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request, urllib.error
+
+          base='https://biap.dadashi.no/global-api/global'
+          markets=[
+              ('FR','EURONEXT_PARIS'),
+              ('IT','EURONEXT_MILAN'),
+              ('NL','EURONEXT_AMSTERDAM'),
+              ('BE','EURONEXT_BRUSSELS'),
+              ('PT','EURONEXT_LISBON'),
+              ('NO','EURONEXT_OSLO'),
+          ]
+
+          def post(path, body, timeout=240):
+              data=json.dumps(body).encode()
+              req=urllib.request.Request(base+path,data=data,headers={
+                  'Content-Type':'application/json',
+                  'Accept':'application/json',
+                  'User-Agent':'BIAP-Euronext-production-scan-probe',
+              },method='POST')
+              with urllib.request.urlopen(req,timeout=timeout) as r:
+                  return json.load(r)
+
+          out={}
+          for country,exchange in markets:
+              key=f'{country}:{exchange}'
+              try:
+                  d=post('/scan',{
+                      'country':country,'exchange':exchange,
+                      'topN':1,'discoveryLimit':5000,'deepLimit':3,
+                  })
+                  readiness=d.get('dataReadiness') or {}
+                  out[key]={
+                      'status':d.get('status'),
+                      'rankingEligible':d.get('rankingEligible'),
+                      'universeDiscovered':d.get('universeDiscovered'),
+                      'universeScreened':d.get('universeScreened'),
+                      'quotesUsable':d.get('quotesUsable'),
+                      'screeningCoveragePct':d.get('screeningCoveragePct'),
+                      'fundamentalCoveragePct':d.get('fundamentalCoveragePct'),
+                      'deepAnalyzed':d.get('deepAnalyzed'),
+                      'recommendationCount':d.get('recommendationCount'),
+                      'readinessStatus':readiness.get('status'),
+                      'universeAuthoritative':readiness.get('universeAuthoritative'),
+                      'universeSource':readiness.get('universeSource'),
+                      'marketSource':readiness.get('marketSource'),
+                      'reasons':readiness.get('reasons'),
+                      'screeningErrors':d.get('screeningErrors'),
+                  }
+              except Exception as exc:
+                  out[key]={'error':f'{type(exc).__name__}: {exc}'}
+          print(json.dumps(out,indent=2,sort_keys=True))
+          # Integrity assertions: every integrated Euronext market must now use
+          # an authoritative universe and the official exchange-wide EOD source.
+          for key,row in out.items():
+              assert not row.get('error'), (key,row)
+              assert row.get('universeAuthoritative') is True, (key,row)
+              assert 'official-esma-firds-universe' in str(row.get('universeSource')), (key,row)
+              assert 'Euronext regulated official EOD' in str(row.get('marketSource')), (key,row)
+              assert float(row.get('screeningCoveragePct') or 0) >= 90.0, (key,row)
+          PY

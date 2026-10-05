@@ -1,0 +1,70 @@
+name: BIAP Global NZX fundamentals probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-nzx-fundamentals-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests
+      - name: Probe NZX annual announcement attachment API
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re, requests
+          H={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36','Accept-Language':'en-NZ,en;q=0.9'}
+          listing='https://new.nzx.com/companies/NZX/announcements'
+          lr=requests.get(listing,headers=H,timeout=45)
+          print('LISTING',lr.status_code,len(lr.content),lr.url)
+          rx=re.findall(r'<a[^>]+href=["\']([^"\']*/announcements/\\d+)["\'][^>]*>(.*?)</a>',lr.text,re.I|re.S)
+          print('LISTING_PROVIDER_REGEX_COUNT',len(rx))
+          for href,label_html in rx:
+              label=re.sub(r'<[^>]+>',' ',label_html)
+              label=' '.join(label.split())
+              if '468191' in href or any(k in label.lower() for k in ('annual report','full year','financial results','annual results')):
+                  print('LISTING_MATCH',href,repr(label[:500]))
+          p=lr.text.find('468191')
+          if p>=0:
+              print('LISTING_CTX',repr(lr.text[max(0,p-1500):p+2500]))
+
+          ann='468191'
+          page='https://www.nzx.com/announcements/'+ann
+          r=requests.get(page,headers=H,timeout=45)
+          print('PAGE',r.status_code,len(r.content),r.url)
+          print('RAW_API_URLS',sorted(set(re.findall(r'https://api\.nzx\.com/[^"\'<> ]+',r.text)))[:100])
+          for pat in (
+              r'/public/announcement/'+ann+r'/attachment/\d+/[^"\'<> ]+',
+              r'attachment/\d+/[^"\'<> ]+\.pdf',
+              r'463239',
+          ):
+              print('MATCH',pat,re.findall(pat,r.text,re.I)[:100])
+          for needle in ('463239','468191-463239.pdf'):
+              pos=r.text.find(needle)
+              if pos >= 0:
+                  print('CTX',needle,repr(r.text[max(0,pos-1600):pos+2200]))
+
+          tests=[
+              'https://api.nzx.com/public/announcement/'+ann,
+              'https://api.nzx.com/public/announcements/'+ann,
+              'https://api.nzx.com/public/announcement/'+ann+'/attachments',
+              'https://api.nzx.com/public/announcements/'+ann+'/attachments',
+          ]
+          for url in tests:
+              try:
+                  rr=requests.get(url,headers=H,timeout=35)
+                  print('API',url,'STATUS',rr.status_code,'TYPE',rr.headers.get('content-type'),'BYTES',len(rr.content),'BODY',repr(rr.text[:12000]))
+              except Exception as e:
+                  print('API_ERR',url,type(e).__name__,e)
+          PY

@@ -1,0 +1,110 @@
+name: BIAP Global production integrity probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-production-integrity-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Verify production data integrity and ranking readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.parse, urllib.request
+
+          base = 'https://biap.dadashi.no/global-api/global'
+
+          def get(url, timeout=60):
+              with urllib.request.urlopen(url, timeout=timeout) as r:
+                  return json.load(r)
+
+          def post(url, body, timeout=240):
+              req = urllib.request.Request(
+                  url,
+                  data=json.dumps(body).encode('utf-8'),
+                  headers={'Content-Type':'application/json','Accept':'application/json'},
+                  method='POST',
+              )
+              with urllib.request.urlopen(req, timeout=timeout) as r:
+                  return json.load(r)
+
+          status = get(base + '/status', 30)
+          print('STATUS=' + json.dumps({
+              'marketProviderConfigured': status.get('marketProviderConfigured'),
+              'licensedMarketFeedConfigured': status.get('licensedMarketFeedConfigured'),
+              'marketProviderMode': status.get('marketProviderMode'),
+              'esefConfigured': status.get('esefConfigured'),
+              'secConfigured': status.get('secConfigured'),
+              'edinetConfigured': status.get('edinetConfigured'),
+              'openDartConfigured': status.get('openDartConfigured'),
+              'companiesHouseConfigured': status.get('companiesHouseConfigured'),
+          }, sort_keys=True))
+
+          for ticker in ('0112N','0007H','0117N'):
+              q = urllib.parse.urlencode({'q':ticker,'limit':30})
+              payload = get(f'{base}/instruments/FR/EURONEXT_PARIS?{q}', 60)
+              exact = [x for x in (payload.get('instruments') or []) if str(x.get('ticker') or '').upper() == ticker]
+              print('FR_FILTER=' + json.dumps({
+                  'ticker': ticker,
+                  'totalMatched': payload.get('totalMatched'),
+                  'exactMatches': len(exact),
+                  'matches': [{'ticker':x.get('ticker'),'name':x.get('name'),'type':x.get('instrument_type')} for x in exact],
+              }, sort_keys=True))
+              if exact:
+                  raise SystemExit(f'France debt/non-equity leak remains for {ticker}')
+
+          france = post(base + '/scan', {
+              'country':'FR',
+              'exchange':'EURONEXT_PARIS',
+              'topN':10,
+              'discoveryLimit':5000,
+              'deepLimit':30,
+          }, 300)
+          print('FR_SCAN=' + json.dumps({
+              'status': france.get('status'),
+              'rankingEligible': france.get('rankingEligible'),
+              'universeDiscovered': france.get('universeDiscovered'),
+              'universeScreened': france.get('universeScreened'),
+              'quotesUsable': france.get('quotesUsable'),
+              'deepAnalyzed': france.get('deepAnalyzed'),
+              'screeningCoveragePct': france.get('screeningCoveragePct'),
+              'fundamentalCoveragePct': france.get('fundamentalCoveragePct'),
+              'recommendationCount': france.get('recommendationCount'),
+              'dataReadiness': france.get('dataReadiness'),
+          }, sort_keys=True))
+
+          if not france.get('rankingEligible') and (france.get('recommendations') or []):
+              raise SystemExit('France returned ranking recommendations despite failing readiness gate')
+
+          global_scan = post(base + '/scan-global', {'topN':10,'maxAgeHours':0.5}, 600)
+          print('GLOBAL_SCAN=' + json.dumps({
+              'status': global_scan.get('status'),
+              'marketsScanned': global_scan.get('marketsScanned'),
+              'marketsEligible': global_scan.get('marketsEligible'),
+              'marketsExcluded': global_scan.get('marketsExcluded'),
+              'eligibleEquities': global_scan.get('eligibleEquities'),
+              'screenedEquities': global_scan.get('screenedEquities'),
+              'deepAnalyzed': global_scan.get('deepAnalyzed'),
+              'globalCoveragePct': global_scan.get('globalCoveragePct'),
+              'connectedCoveragePct': global_scan.get('connectedCoveragePct'),
+              'recommendationCount': global_scan.get('recommendationCount'),
+              'tickers': [x.get('ticker') for x in (global_scan.get('recommendations') or [])],
+          }, sort_keys=True))
+
+          bad_markets = []
+          for row in global_scan.get('markets') or []:
+              if not row.get('rankingEligible') and int(row.get('recommendationCount') or 0) > 0:
+                  bad_markets.append((row.get('country'), row.get('exchange')))
+          if bad_markets:
+              raise SystemExit(f'ineligible markets leaked recommendations: {bad_markets}')
+          PY

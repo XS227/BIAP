@@ -1,0 +1,22 @@
+name: BIAP Global BIST production verification
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-bist-production-verification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - run: python -m pip install -q requests
+      - run: python tools/probe_bist_production_scan.py

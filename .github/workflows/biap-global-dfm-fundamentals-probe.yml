@@ -1,0 +1,60 @@
+name: BIAP Global DFM fundamentals probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-dfm-fundamentals-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests beautifulsoup4
+      - name: Trace DFM company reports and financial APIs
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re,requests,urllib.parse
+          from bs4 import BeautifulSoup
+          ua='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36'
+          page='https://www.dfm.ae/the-exchange/market-information/company/DIC/reports'
+          r=requests.get(page,headers={'User-Agent':ua},timeout=45)
+          print('PAGE',r.status_code,len(r.content),r.url)
+          r.raise_for_status()
+          soup=BeautifulSoup(r.text,'html.parser')
+          srcs=[urllib.parse.urljoin(r.url,s.get('src')) for s in soup.find_all('script',src=True)]
+          print('SCRIPTS',len(srcs))
+          needles=(
+            'financial reports','financial-statements','financialStatements','FinancialStatements',
+            'reports','ReportType','disclosure','Disclosure','api2.dfm.ae','Command:',
+            'command:','company-reports','companyReports','FreshSecuritiesLists'
+          )
+          for src in srcs:
+              try:
+                  js=requests.get(src,headers={'User-Agent':ua},timeout=30).text
+              except Exception:
+                  continue
+              low=js.lower()
+              if not any(n.lower() in low for n in needles):
+                  continue
+              print('FOUND',src,'BYTES',len(js))
+              for needle in needles:
+                  for m in list(re.finditer(re.escape(needle),js,re.I))[:15]:
+                      ctx=js[max(0,m.start()-2200):m.start()+4000]
+                      if 'api' in ctx.lower() or 'command' in ctx.lower() or 'fetch' in ctx.lower() or '$' in ctx:
+                          print('CTX',needle,ctx)
+
+          # Inspect Nuxt payload/data URLs embedded in the rendered page.
+          for token in re.findall(r'https?://[^"\'<> ]+|/[^"\'<> ]{10,250}',r.text):
+              if any(k in token.lower() for k in ('api','report','disclos','financial')):
+                  print('PAGE_TOKEN',token[:500])
+          PY

@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "BIAP Global",
+    "slug": "biap-global",
+    "version": "0.3.16",
+    "orientation": "portrait",
+    "icon": "./assets/brand/biap-logo.png",
+    "scheme": "biapglobal",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "icon": "./assets/brand/biap-logo.png",
+      "bundleIdentifier": "com.biap.global"
+    },
+    "android": {
+      "package": "com.biap.global",
+      "versionCode": 19,
+      "adaptiveIcon": {
+        "backgroundColor": "#0B1020",
+        "foregroundImage": "./assets/brand/biap-logo.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/brand/biap-logo.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0B1020",
+          "image": "./assets/brand/biap-logo.png",
+          "imageWidth": 160
+        }
+      ],
+      "expo-font",
+      "expo-image",
+      "expo-sharing",
+      "expo-status-bar",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {}
+    }
+  }
+}

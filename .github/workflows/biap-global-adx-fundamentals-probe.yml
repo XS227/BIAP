@@ -1,0 +1,114 @@
+name: BIAP Global ADX fundamentals probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-adx-fundamentals-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests
+      - name: Discover and probe ADX official financial statement endpoints
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re,requests,json
+          H={
+            'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36',
+            'Accept':'application/json',
+            'Channel-ID':'OSS WEB',
+            'Content-Type':'application/json',
+            'X-Correlation-ID':'biap-global-fundamentals-probe',
+            'adx-Gateway-APIKey':'1863a94c-582b-46f9-b4f0-0d02c0cc5307',
+            'Referer':'https://www.adx.ae/en/issuers/issuers-information/issuers-directory',
+          }
+          app='https://www.adx.ae/_next/static/chunks/pages/_app-873edeb54d7c662a.js'
+          js=requests.get(app,headers={'User-Agent':H['User-Agent']},timeout=45).text
+          needles=[
+            'CompanyProfileBalanceSheetV2','CompanyProfileBalanceSheet',
+            'CompanyProfileIncomeStatementV2','CompanyProfileIncomeStatement',
+            'CompanyProfileCashFlowV2','CompanyProfileCashFlow',
+            'CompanyInformationV2','CompanyInformation',
+            'listedCompanyProfileData','balance-sheet/data','income-statement','cash-flow',
+          ]
+          for needle in needles:
+              for m in list(re.finditer(re.escape(needle),js,re.I))[:12]:
+                  print('MAP_CTX',needle,js[max(0,m.start()-900):m.start()+1800])
+
+          bases=[
+            'https://apigateway.adx.ae/adx/marketwatch/1.1/listedCompanyProfileData',
+            'https://apigateway.adx.ae/adx/marketwatch/1.0/listedCompanyProfileData',
+            'https://apigateway.adx.ae/adx/listed-companies/1.1/balance-sheet/data',
+            'https://apigateway.adx.ae/adx/listed-companies/1.0/balance-sheet/data',
+          ]
+          params=[
+            {'symbol':'ALDAR'},{'security':'ALDAR'},{'securityCode':'ALDAR'},
+            {'companySymbol':'ALDAR'},{'eqCode':'ALDAR'},{'displaySecCode':'ALDAR'},
+          ]
+          # Find actual frontend invocations to recover required query/body parameters.
+          for needle in ('CompanyProfileBalanceSheetV2','CompanyInformationV2','ListedCompanyProfileDataV2'):
+              for m in list(re.finditer(re.escape(needle),js))[:50]:
+                  ctx=js[max(0,m.start()-3500):m.start()+3500]
+                  if 'callIdentifier' in ctx or 'urlExt' in ctx:
+                      print('CALL_CTX',needle,ctx)
+
+          # Scan every JS chunk loaded by the public issuer directory for the actual balance-sheet call site.
+          try:
+              import urllib.parse
+              page='https://www.adx.ae/en/issuers/issuers-information/issuers-directory'
+              html=requests.get(page,headers={'User-Agent':H['User-Agent']},timeout=45).text
+              srcs=re.findall(r'<script[^>]+src=["\\\']([^"\\\']+)',html,re.I)
+              print('SCRIPT_COUNT',len(srcs))
+              for src in srcs:
+                  url=urllib.parse.urljoin(page,src)
+                  try:
+                      body=requests.get(url,headers={'User-Agent':H['User-Agent']},timeout=30).text
+                  except Exception:
+                      continue
+                  if 'CompanyProfileBalanceSheetV2' not in body and 'CompanyProfileBalanceSheet' not in body:
+                      continue
+                  print('FOUND_CHUNK',url,'BYTES',len(body))
+                  for needle in ('CompanyProfileBalanceSheetV2','CompanyProfileBalanceSheet'):
+                      for m in list(re.finditer(re.escape(needle),body))[:40]:
+                          ctx=body[max(0,m.start()-6000):m.start()+6000]
+                          if 'callIdentifier' in ctx or 'urlExt' in ctx or 'method:' in ctx:
+                              print('CHUNK_CALL_CTX',needle,ctx)
+          except Exception as e:
+              print('SCRIPT_SCAN_ERROR',type(e).__name__,e)
+
+          # Compact parameter/path matrix; print response bodies on one line so validation errors are visible.
+          candidates=[
+            ('https://apigateway.adx.ae/adx/listed-companies/1.1/balance-sheet/data',{}),
+            ('https://apigateway.adx.ae/adx/listed-companies/1.1/balance-sheet/data/ALDAR',{}),
+            ('https://apigateway.adx.ae/adx/marketwatch/1.1/listedCompanyProfileData/ALDAR',{}),
+          ]
+          for key in ('code','securityCode','displaySecCode','symbol','companySymbol','eqCode','isin','securityId','companyCode'):
+              candidates.append(('https://apigateway.adx.ae/adx/listed-companies/1.1/balance-sheet/data',{key:'ALDAR'}))
+              candidates.append(('https://apigateway.adx.ae/adx/marketwatch/1.1/listedCompanyProfileData',{key:'ALDAR'}))
+          for url,p in candidates:
+              try:
+                  rr=requests.get(url,params=p,headers=H,timeout=30)
+                  print('COMPACT',url,p,'STATUS',rr.status_code,'BODY_REPR',repr(rr.text[:1800]))
+              except Exception as e:
+                  print('COMPACT_ERR',url,p,type(e).__name__,e)
+
+          for url in bases:
+              for p in params:
+                  try:
+                      r=requests.get(url,params=p,headers=H,timeout=35)
+                      if r.status_code < 500:
+                          print('PROBE',url,p,'STATUS',r.status_code,'BYTES',len(r.content),'BODY',r.text[:5000])
+                  except Exception as e:
+                      print('ERR',url,p,type(e).__name__,e)
+          PY

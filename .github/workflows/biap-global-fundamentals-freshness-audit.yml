@@ -1,0 +1,31 @@
+name: BIAP Global fundamentals freshness audit
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - 'analysis/global_markets/fallback_fundamentals.py'
+      - 'tools/probe_global_fundamentals_freshness.py'
+      - '.github/workflows/biap-global-fundamentals-freshness-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  freshness-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - name: Audit representative issuer on every enabled Global exchange
+        run: python tools/probe_global_fundamentals_freshness.py
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: global-fundamentals-freshness-audit
+          path: global-fundamentals-freshness-audit.json
+          if-no-files-found: warn

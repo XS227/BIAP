@@ -1,0 +1,58 @@
+name: BIAP Global FIRDS batch2 production probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-firds-batch2-production-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Probe authoritative production universes
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request
+
+          base='https://biap.dadashi.no/global-api/global'
+          markets=[
+              ('NL','EURONEXT_AMSTERDAM'),
+              ('BE','EURONEXT_BRUSSELS'),
+              ('PT','EURONEXT_LISBON'),
+              ('NO','EURONEXT_OSLO'),
+              ('ES','BME_MADRID'),
+          ]
+
+          def get(url, timeout=240):
+              req=urllib.request.Request(url,headers={'Accept':'application/json','User-Agent':'BIAP-FIRDS-batch2-probe'})
+              with urllib.request.urlopen(req,timeout=timeout) as r:
+                  return json.load(r)
+
+          out={}
+          for country,exchange in markets:
+              data=get(f'{base}/instruments/{country}/{exchange}?limit=12')
+              catalog=data.get('catalog') if isinstance(data.get('catalog'),dict) else {}
+              rows=data.get('instruments') or []
+              out[f'{country}:{exchange}']={
+                  'provider':catalog.get('provider'),
+                  'available':catalog.get('available'),
+                  'count':catalog.get('count'),
+                  'officialCount':catalog.get('officialCount'),
+                  'resolvedCount':catalog.get('resolvedCount'),
+                  'resolutionCoveragePct':catalog.get('resolutionCoveragePct'),
+                  'totalMatched':data.get('totalMatched'),
+                  'sample':[(r.get('ticker'),r.get('name'),r.get('isin'),r.get('mic_code') or r.get('mic')) for r in rows[:6]],
+              }
+          print(json.dumps(out,indent=2,ensure_ascii=False,sort_keys=True))
+          for key,row in out.items():
+              assert row['provider']=='official-esma-firds-universe', (key,row)
+              assert row['available'] is True, (key,row)
+              assert int(row['officialCount'] or 0)>0, (key,row)
+              assert int(row['resolvedCount'] or 0)>0, (key,row)
+          PY

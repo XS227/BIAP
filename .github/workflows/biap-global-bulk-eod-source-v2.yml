@@ -1,0 +1,44 @@
+name: BIAP Global bulk EOD source v2
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-bulk-eod-source-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+          fetch-depth: 0
+      - name: Apply patch
+        run: python tools/apply_biap_global_bulk_eod.py
+      - name: Backend tests
+        working-directory: analysis
+        env:
+          PYTHONPATH: .
+        run: |
+          python -m pip install -q -r requirements.txt
+          python -m compileall -q global_markets global_routes.py
+          pytest -q tests/test_global_*.py
+      - name: Mobile typecheck
+        working-directory: mobile
+        run: |
+          npm ci
+          npx tsc --noEmit
+      - name: Commit integration
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add analysis/global_markets/eodhd_bulk.py analysis/global_markets/global_scan_refresh.py analysis/global_markets/scanner.py analysis/global_markets/scan_service.py analysis/global_routes.py analysis/.env.global.example analysis/tests/test_global_eodhd_bulk.py deploy/sync-global-sources.sh .github/workflows/setup-biap-global-server.yml mobile/src/lib/global-api.ts mobile/src/app/market.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m 'Replace shortlist warmer with full-exchange daily scans'
+          git push origin HEAD:feat/biap-global

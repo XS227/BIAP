@@ -1,0 +1,42 @@
+name: BIAP Global Madrid production verification
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-madrid-production-verification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Verify Madrid full-market scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 300             -H 'Content-Type: application/json'             --data '{"country":"ES","exchange":"BME_MADRID","topN":5,"discoveryLimit":5000,"deepLimit":10}'             https://biap.dadashi.no/global-api/global/scan > /tmp/madrid.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/madrid.json'))
+          keys=['status','rankingEligible','universeDiscovered','universeResolved','universeScreened','quotesUsable','deepAnalyzed','screeningCoveragePct','fundamentalCoveragePct','recommendationCount','screeningErrors']
+          print(json.dumps({k:d.get(k) for k in keys},indent=2,ensure_ascii=False))
+          print('READINESS',json.dumps(d.get('dataReadiness'),indent=2,ensure_ascii=False))
+          for row in (d.get('deepResults') or [])[:5]:
+              print('DEEP',json.dumps({
+                  'ticker':row.get('ticker'),
+                  'call':row.get('call'),
+                  'evidence':(row.get('evidence') or {}).get('status'),
+                  'reasoning':(row.get('evidence') or {}).get('reasoning'),
+                  'marketProvider':(row.get('providerDiagnostics') or {}).get('marketProvider'),
+                  'marketError':(row.get('providerDiagnostics') or {}).get('marketError'),
+                  'screening':row.get('screening'),
+              },ensure_ascii=False))
+          assert d.get('rankingEligible') is True, d.get('dataReadiness')
+          assert float(d.get('screeningCoveragePct') or 0) >= 90
+          assert float(d.get('fundamentalCoveragePct') or 0) >= 70
+          PY

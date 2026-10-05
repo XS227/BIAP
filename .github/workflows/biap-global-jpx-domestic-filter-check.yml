@@ -1,0 +1,49 @@
+name: BIAP Global JPX domestic filter check
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-jpx-domestic-filter-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - name: Identify any official JPX row rejected by shared equity guard
+        working-directory: analysis
+        env:
+          PYTHONPATH: .
+        run: |
+          python -m pip install -q -r requirements.txt
+          python - <<'PY'
+          from global_markets.country_packs import get_exchange
+          from global_markets.jpx_official import JPXOfficialUniverseProvider
+          from global_markets.universe import _ordinary_equity_row
+
+          provider=JPXOfficialUniverseProvider()
+          rows=list(provider.list_instruments(country="JP",exchange="TSE_JP"))
+          spec=get_exchange("JP","TSE_JP")
+          rejected=[]
+          for c in rows:
+              ok=_ordinary_equity_row(
+                  country="JP",
+                  spec=spec,
+                  row={"name":c.name,"type":c.instrument_type,"cfi_code":(c.raw_provider_fields or {}).get("cfi")},
+                  symbol=c.ticker,
+                  currency=c.currency,
+              )
+              if not ok:
+                  rejected.append((c.ticker,c.name,(c.raw_provider_fields or {}).get("jpx_section")))
+          print("OFFICIAL",len(rows),"REJECTED",len(rejected))
+          for row in rejected:
+              print("REJECTED_ROW",row)
+          PY

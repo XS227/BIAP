@@ -1,0 +1,93 @@
+name: BIAP Global Deutsche Boerse security metadata
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-db-security-metadata.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Inspect public client security flow safely
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install -q selenium
+          python - <<'PY'
+          import hashlib
+          import json
+          import time
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.common.by import By
+
+          opts=Options()
+          opts.add_argument('--headless=new')
+          opts.add_argument('--no-sandbox')
+          opts.add_argument('--disable-dev-shm-usage')
+          opts.set_capability('goog:loggingPrefs', {'performance':'ALL'})
+          driver=webdriver.Chrome(options=opts)
+          try:
+              driver.get('https://live.deutsche-boerse.com/equity/sap-se/company-details')
+              time.sleep(12)
+              logs=driver.get_log('performance')
+              request_security={}
+              token_body=None
+              response_ids=[]
+              for entry in logs:
+                  try:
+                      msg=json.loads(entry['message'])['message']
+                  except Exception:
+                      continue
+                  method=msg.get('method')
+                  p=msg.get('params') or {}
+                  if method=='Network.requestWillBeSent':
+                      req=p.get('request') or {}
+                      url=str(req.get('url') or '')
+                      if req.get('method')=='GET' and ('mdstokenservice/token' in url or 'recent_reports' in url):
+                          headers=req.get('headers') or {}
+                          sec=str(headers.get('X-Security') or headers.get('x-security') or '')
+                          request_security[url]=sec
+                          print('REQ_META',url,'xSecurityLen',len(sec),'xSecuritySha12',hashlib.sha256(sec.encode()).hexdigest()[:12] if sec else None)
+                          for key in ('Client-Date','X-Request-Datetime','X-Client-TraceId','X-Request-Trace-ID'):
+                              val=headers.get(key)
+                              if val:
+                                  print('REQ_HEADER_META',url,key,'len',len(str(val)))
+                  elif method=='Network.responseReceived':
+                      resp=p.get('response') or {}
+                      url=str(resp.get('url') or '')
+                      if 'mdstokenservice/token' in url and str(p.get('type'))=='XHR':
+                          response_ids.append((p.get('requestId'),url))
+              for rid,url in response_ids:
+                  try:
+                      body=driver.execute_cdp_cmd('Network.getResponseBody',{'requestId':rid}).get('body','')
+                      obj=json.loads(body)
+                      token_body=str(obj.get('token') or '')
+                      print('TOKEN_META','len',len(token_body),'sha12',hashlib.sha256(token_body.encode()).hexdigest()[:12] if token_body else None)
+                  except Exception as exc:
+                      print('TOKEN_ERR',type(exc).__name__,str(exc)[:120])
+
+              token_req=next((v for k,v in request_security.items() if 'mdstokenservice/token' in k), '')
+              report_req=next((v for k,v in request_security.items() if 'recent_reports' in k), '')
+              print('SECURITY_RELATION',
+                    'report_equals_token', bool(token_body) and report_req==token_body,
+                    'token_request_equals_token', bool(token_body) and token_req==token_body,
+                    'token_request_equals_report', bool(token_req) and token_req==report_req)
+
+              nodes=driver.find_elements(By.XPATH, "//*[normalize-space(text())='File']")
+              print('FILE_NODES',len(nodes))
+              for node in nodes[:10]:
+                  try:
+                      print('FILE_NODE',node.tag_name,node.get_attribute('href'),node.get_attribute('outerHTML')[:2500])
+                  except Exception as exc:
+                      print('FILE_NODE_ERR',type(exc).__name__)
+          finally:
+              driver.quit()
+          PY

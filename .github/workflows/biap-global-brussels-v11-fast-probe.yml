@@ -1,0 +1,46 @@
+name: BIAP Global Brussels v11 fast probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-brussels-v11-fast-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Probe Brussels catalog after resolver v11
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request
+          url='https://biap.dadashi.no/global-api/global/instruments/BE/EURONEXT_BRUSSELS?limit=5'
+          req=urllib.request.Request(url,headers={'Accept':'application/json','User-Agent':'BIAP-Brussels-v11-fast-probe'})
+          with urllib.request.urlopen(req,timeout=240) as r:
+              d=json.load(r)
+          c=d.get('catalog') or {}
+          out={
+              'totalMatched':d.get('totalMatched'),
+              'returned':d.get('returned'),
+              'provider':c.get('provider'),
+              'available':c.get('available'),
+              'officialCount':c.get('officialCount'),
+              'resolvedCount':c.get('resolvedCount'),
+              'resolutionCoveragePct':c.get('resolutionCoveragePct'),
+              'tickerResolver':c.get('tickerResolver'),
+              'directoryMatched':c.get('directoryMatched'),
+              'openfigiMatched':c.get('openfigiMatched'),
+              'missingResolverCount':c.get('missingResolverCount'),
+              'sample':[(x.get('ticker'),x.get('name'),x.get('isin'),x.get('mic_code') or x.get('mic')) for x in (d.get('instruments') or [])],
+          }
+          print(json.dumps(out,indent=2,ensure_ascii=False))
+          assert out['provider']=='official-esma-firds-universe', out
+          assert out['available'] is True, out
+          assert int(out['officialCount'] or 0)>0, out
+          assert float(out['resolutionCoveragePct'] or 0)>=90.0, out
+          PY

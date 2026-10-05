@@ -1,0 +1,49 @@
+name: BIAP Global DFM market data probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-dfm-market-data-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests
+      - name: Probe official DFM company trading data
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,requests
+          url='https://api2.dfm.ae/web/widgets/v1/data'
+          h={
+              'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36',
+              'Accept':'application/json',
+              'Content-Type':'application/x-www-form-urlencoded',
+              'Referer':'https://www.dfm.ae/',
+          }
+          bodies=[]
+          for symbol in ('DIC','DEWA'):
+              bodies += [
+                  (symbol,'profile',f'Command=companyprofile&Language=en&lang=en&symbol={symbol}'),
+                  (symbol,'trading1y',f'Command=SearchProfileTradingTab&Language=en&lang=en&Company={symbol}&toDate=25/09/2026&fromDate=25/09/2025&Period=today'),
+                  (symbol,'trading3m',f'Command=SearchProfileTradingTab&Language=en&lang=en&Company={symbol}&toDate=25/09/2026&fromDate=25/06/2026&Period=today'),
+                  (symbol,'daily',f'Command=ProfileDailySummary&Language=en&lang=en&Company={symbol}'),
+              ]
+          for symbol,label,body in bodies:
+              try:
+                  r=requests.post(url,data=body,headers=h,timeout=45)
+                  print('RESULT',symbol,label,'STATUS',r.status_code,'TYPE',r.headers.get('content-type'),'BYTES',len(r.content))
+                  print('BODY',symbol,label,repr(r.content.decode('utf-8-sig',errors='replace')[:40000]))
+              except Exception as e:
+                  print('ERROR',symbol,label,type(e).__name__,e)
+          PY

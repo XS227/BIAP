@@ -1,0 +1,464 @@
+"""FastAPI routes for BIAP Global.
+
+Global routes are isolated from the existing Iran `/stock/*` contract. They can
+evolve independently while the Iran production endpoints stay intact.
+"""
+from __future__ import annotations
+
+from dataclasses import asdict, replace
+import os
+import re
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, Field
+
+from global_markets.country_packs import country_catalog, get_exchange
+from global_markets.credit_scoring import score_individual_credit
+from global_markets.models import InvestorProfile
+from global_markets.runtime import build_registry
+from global_markets.scan_service import scan_global_market, scan_global_top10
+from global_markets.service import analyze_company, instrument_seed, portfolio_from_instruments
+from global_markets.source_catalog import SOURCE_PLANS, requirements_payload
+
+router = APIRouter(prefix="/global", tags=["BIAP Global"])
+
+
+class InstrumentRequest(BaseModel):
+    country: str = Field(min_length=2, max_length=2)
+    exchange: str = Field(min_length=2, max_length=64)
+    ticker: str = Field(min_length=1, max_length=64)
+    name: Optional[str] = Field(default=None, max_length=200)
+    currency: Optional[str] = Field(default=None, min_length=3, max_length=3)
+    # Catalog providers sometimes return entitlement sentinel text instead of an
+    # identifier. Accept the transport value here and sanitize it before it can
+    # become issuer evidence; this keeps old cached snapshots from breaking the
+    # analysis endpoint while still refusing to trust malformed identifiers.
+    isin: Optional[str] = Field(default=None, max_length=64)
+    lei: Optional[str] = Field(default=None, max_length=64)
+
+
+class ScanRequest(BaseModel):
+    country: str = Field(min_length=2, max_length=2)
+    exchange: str = Field(min_length=2, max_length=64)
+    topN: int = Field(default=10, ge=1, le=50)
+    discoveryLimit: int = Field(default=5000, ge=10, le=5000)
+    deepLimit: int = Field(default=75, ge=1, le=200)
+
+
+class GlobalTop10Request(BaseModel):
+    topN: int = Field(default=10, ge=1, le=25)
+    maxAgeHours: float = Field(default=30.0, ge=0, le=36)
+
+
+class PortfolioProfileRequest(BaseModel):
+    capital: float = Field(gt=0)
+    baseCurrency: str = Field(min_length=3, max_length=3)
+    riskTolerance: str = Field(default="medium", min_length=2, max_length=32)
+    horizon: str = Field(default="5y", min_length=1, max_length=32)
+    allowedCountries: list[str] = Field(default_factory=list, max_length=40)
+    allowedExchanges: list[str] = Field(default_factory=list, max_length=80)
+    maxPositionPct: float = Field(default=10.0, gt=0, le=100)
+    maxCountryPct: float = Field(default=40.0, gt=0, le=100)
+    maxSectorPct: float = Field(default=30.0, gt=0, le=100)
+    minCashReservePct: float = Field(default=10.0, ge=0, lt=100)
+    maxPositions: int = Field(default=10, ge=1, le=50)
+    objectives: list[str] = Field(default_factory=list, max_length=12)
+    liquidityNeed: str = Field(default="medium", min_length=2, max_length=32)
+    maxDrawdownComfortPct: Optional[float] = Field(default=None, ge=0, le=100)
+
+
+class PortfolioRequest(BaseModel):
+    profile: PortfolioProfileRequest
+    instruments: list[InstrumentRequest] = Field(min_length=1, max_length=50)
+    fxToBase: dict[str, float] = Field(default_factory=dict)
+
+
+class IndividualCreditRequest(BaseModel):
+    paymentOnTimeRatio: float = Field(ge=0, le=1)
+    creditUtilization: float = Field(ge=0)
+    creditHistoryYears: float = Field(ge=0)
+    debtToIncome: float = Field(ge=0)
+    activeAccounts: float = Field(ge=0)
+    bouncedChecks: Optional[float] = Field(default=None, ge=0)
+    pastDefaults: Optional[float] = Field(default=None, ge=0)
+
+
+def _clean_isin(value: Optional[str]) -> Optional[str]:
+    text = (value or "").strip().upper()
+    return text if len(text) == 12 and text.isalnum() else None
+
+
+def _clean_lei(value: Optional[str]) -> Optional[str]:
+    text = (value or "").strip().upper()
+    return text if len(text) == 20 and text.isalnum() else None
+
+
+def _search_text(value: object) -> str:
+    return " ".join(part for part in re.split(r"[^a-z0-9]+", str(value or "").casefold()) if part)
+
+
+def _instrument_search_score(item, query: str) -> Optional[int]:
+    """Score explicit ticker/identifier/company-name matches.
+
+    Inner-word substring matches are deliberately excluded: querying APPLE must
+    not return Pineapple Power merely because the letters occur in the middle
+    of one word.
+    """
+    q = _search_text(query)
+    if not q:
+        return 0
+    q_compact = q.replace(" ", "")
+    ticker = _search_text(item.ticker).replace(" ", "")
+    isin = _search_text(item.isin).replace(" ", "") if item.isin else ""
+    lei = _search_text(item.lei).replace(" ", "") if item.lei else ""
+    name = _search_text(item.name)
+    words = [word for word in name.split(" ") if word]
+
+    if ticker == q_compact:
+        return 1000
+    # HKEX publishes five-digit stock codes (for example 00388), while BIAP
+    # exposes the conventional ticker without leading zeroes (388). Treat only
+    # an all-digit zero-padding difference as exact; 3880 must remain a prefix.
+    if ticker.isdigit() and q_compact.isdigit() and ticker.lstrip("0") == q_compact.lstrip("0"):
+        return 1000
+    if ticker.startswith(q_compact):
+        return 900
+    if isin and isin == q_compact:
+        return 850
+    if isin and isin.startswith(q_compact):
+        return 820
+    if lei and lei == q_compact:
+        return 800
+    if lei and lei.startswith(q_compact):
+        return 780
+    if name == q:
+        return 760
+    if q in words:
+        return 700
+    if any(word.startswith(q) for word in words):
+        return 620
+    parts = [part for part in q.split(" ") if part]
+    if len(parts) > 1 and all(any(word == part or word.startswith(part) for word in words) for part in parts):
+        return 560
+    return None
+
+
+def _rank_instruments(instruments, query: str):
+    ranked = []
+    seen: set[tuple[str, str, str]] = set()
+    for item in instruments:
+        score = _instrument_search_score(item, query)
+        if score is None:
+            continue
+        key = (str(item.country).upper(), str(item.exchange).upper(), str(item.ticker).upper())
+        if key in seen:
+            continue
+        seen.add(key)
+        ranked.append((score, item))
+    ranked.sort(key=lambda pair: (-pair[0], pair[1].ticker.casefold()))
+    return ranked
+
+
+def _seed(req: InstrumentRequest):
+    try:
+        seed = instrument_seed(
+            country=req.country,
+            exchange=req.exchange,
+            ticker=req.ticker,
+            name=req.name,
+            currency=req.currency,
+            isin=_clean_isin(req.isin),
+            lei=_clean_lei(req.lei),
+        )
+
+        # Analysis requests intentionally expose only stable public identifiers.
+        # Re-resolve the selected instrument through the authoritative universe
+        # so provider-specific identity metadata (verified SEC aliases, legal
+        # issuer names, etc.) survives the search -> analyze boundary without
+        # requiring clients to round-trip internal raw_provider_fields.
+        try:
+            registry = build_registry()
+            provider = registry.universe(seed.country, seed.exchange)
+            search = getattr(provider, "search_instruments", None)
+            candidates = []
+            if callable(search):
+                candidates = list(search(
+                    country=seed.country,
+                    exchange=seed.exchange,
+                    query=seed.ticker,
+                    limit=30,
+                ))
+            if not candidates:
+                candidates = list(provider.list_instruments(
+                    country=seed.country,
+                    exchange=seed.exchange,
+                ))
+            exact = next(
+                (
+                    item for item in candidates
+                    if item.ticker.strip().upper() == seed.ticker.strip().upper()
+                    and (not seed.isin or not item.isin or item.isin.upper() == seed.isin.upper())
+                ),
+                None,
+            )
+            if exact is not None:
+                return replace(
+                    exact,
+                    name=req.name.strip() if req.name else exact.name,
+                    currency=(req.currency or exact.currency).strip().upper(),
+                    isin=_clean_isin(req.isin) or exact.isin,
+                    lei=_clean_lei(req.lei) or exact.lei,
+                )
+        except Exception:
+            # Universe resolution enriches identity but is not required for the
+            # legacy analyze contract. Provider outages must not turn a valid
+            # sanitized request into an API failure.
+            pass
+        return seed
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/countries")
+def global_countries():
+    catalog = country_catalog()
+    return {"count": len(catalog), "countries": catalog}
+
+
+@router.get("/instruments/{country}/{exchange}")
+def global_instruments(
+    country: str,
+    exchange: str,
+    q: Optional[str] = Query(default=None, max_length=80),
+    limit: int = Query(default=100, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0, le=20000),
+):
+    """Browse an exchange or perform a targeted instrument search.
+
+    Search is deliberately independent from a full exchange refresh. Exact
+    ticker/name discovery (for example AAPL) must not wait for thousands of
+    catalog rows to download just because the persistent snapshot is missing or
+    stale. A full snapshot is only required for unfiltered browsing/scan flows.
+    """
+    try:
+        spec = get_exchange(country, exchange)
+        registry = build_registry()
+        provider = registry.universe(country, spec.code)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+
+    snapshot_info = None
+    if hasattr(provider, "snapshot_info"):
+        try:
+            snapshot_info = provider.snapshot_info(country=country.upper(), exchange=spec.code)
+        except Exception:
+            snapshot_info = None
+
+    if q:
+        candidates = []
+        targeted_error = None
+        targeted_search = getattr(provider, "search_instruments", None)
+        if callable(targeted_search):
+            try:
+                candidates.extend(targeted_search(
+                    country=country.upper(),
+                    exchange=spec.code,
+                    query=q,
+                    limit=min(120, max(30, limit)),
+                ))
+            except Exception as exc:
+                targeted_error = exc
+
+        # If targeted discovery already produced a match, do not force a full
+        # catalog refresh. This is the latency/resilience path used by mobile
+        # ticker search when the persistent exchange snapshot is absent/stale.
+        ranked_targeted = _rank_instruments(candidates, q)
+        # A targeted provider may return broad/prefix candidates that rank for
+        # the query while omitting the exact exchange ticker. Before trusting
+        # that shortcut, require an exact normalized ticker/identifier/name
+        # match. Otherwise fall back to the authoritative local catalog.
+        exact_targeted = any(score >= 1000 for score, _ in ranked_targeted)
+        if exact_targeted:
+            instruments = [item for _, item in ranked_targeted]
+        else:
+            try:
+                local = list(provider.list_instruments(country=country.upper(), exchange=spec.code))
+            except Exception as exc:
+                if ranked_targeted:
+                    instruments = [item for _, item in ranked_targeted]
+                elif targeted_error is not None:
+                    detail = f"targeted search failed ({type(targeted_error).__name__}); catalog unavailable ({type(exc).__name__})"
+                    raise HTTPException(status_code=503, detail=detail[:500]) from exc
+                else:
+                    raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+            else:
+                ranked_local = _rank_instruments(local, q)
+                # Exact ticker lookup is the primary mobile/API contract. Keep
+                # it deterministic even if a provider-specific display field
+                # later changes search normalization.
+                if not ranked_local:
+                    q_ticker = _search_text(q).replace(" ", "")
+                    exact_local = [
+                        item for item in local
+                        if _search_text(item.ticker).replace(" ", "") == q_ticker
+                    ]
+                    instruments = exact_local
+                else:
+                    instruments = [item for _, item in ranked_local]
+    else:
+        try:
+            instruments = list(provider.list_instruments(country=country.upper(), exchange=spec.code))
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+
+    # list_instruments() may have created/refreshed the persistent snapshot.
+    # Re-read metadata after that operation so a single API response cannot
+    # simultaneously return official instruments while claiming catalog
+    # availability is false/stale from the pre-refresh state.
+    if hasattr(provider, "snapshot_info"):
+        try:
+            snapshot_info = provider.snapshot_info(country=country.upper(), exchange=spec.code)
+        except Exception:
+            pass
+
+    total = len(instruments)
+    page = instruments[offset:offset + limit]
+    next_offset = offset + len(page)
+    has_more = next_offset < total
+    return {
+        "country": country.upper(),
+        "exchange": spec.code,
+        "mic": spec.mic,
+        "totalMatched": total,
+        "returned": len(page),
+        "offset": offset,
+        "hasMore": has_more,
+        "nextOffset": next_offset if has_more else None,
+        "catalog": snapshot_info,
+        "instruments": [asdict(item) for item in page],
+    }
+
+
+@router.get("/requirements")
+def global_requirements():
+    return {"requirements": requirements_payload(), "sources": SOURCE_PLANS}
+
+
+@router.get("/status")
+def global_status():
+    live_switch_requested = os.environ.get("BIAP_GLOBAL_LIVE_TRADING_ENABLED", "false").strip().lower() == "true"
+    twelve_data_configured = bool((os.environ.get("BIAP_GLOBAL_MARKET_API_KEY") or "").strip())
+    eodhd_bulk_configured = bool((os.environ.get("BIAP_EODHD_API_TOKEN") or "").strip())
+    market_configured = twelve_data_configured or eodhd_bulk_configured
+    return {
+        "mode": "research-paper-first",
+        "liveTrading": False,
+        "liveBrokerConnected": False,
+        "liveTradingSwitchRequested": live_switch_requested,
+        "marketProviderConfigured": market_configured,
+        "marketProviderMode": ("eodhd-whole-exchange-eod" if eodhd_bulk_configured else "twelve-data-batch" if twelve_data_configured else "public-eod-fallback-plus-persistent-cache"),
+        "licensedMarketFeedConfigured": market_configured,
+        "twelveDataBatchConfigured": twelve_data_configured,
+        "eodhdBulkEodConfigured": eodhd_bulk_configured,
+        "publicMarketFallbackConfigured": True,
+        "marketCacheConfigured": True,
+        "marketCacheHours": float(os.environ.get("BIAP_GLOBAL_MARKET_CACHE_HOURS", "6")),
+        "marketCachePolicy": "verified snapshots only; stale timestamps are preserved and EvidenceAgent may block them",
+        "secConfigured": bool(os.environ.get("BIAP_SEC_USER_AGENT")),
+        "openDartConfigured": bool(os.environ.get("BIAP_OPENDART_API_KEY")),
+        "edinetConfigured": bool(os.environ.get("BIAP_EDINET_API_KEY")),
+        "companiesHouseConfigured": bool(os.environ.get("BIAP_COMPANIES_HOUSE_API_KEY")),
+        "esefConfigured": True,
+        "iranBridgeConfigured": True,
+        "universeCacheConfigured": True,
+        "universeCacheHours": float(os.environ.get("BIAP_GLOBAL_UNIVERSE_CACHE_HOURS", "12")),
+        "universeMaxRows": int(os.environ.get("BIAP_GLOBAL_UNIVERSE_MAX_ROWS", "20000")),
+        "countries": len(country_catalog()),
+        "notes": "No live global broker is connected. Public EOD market fallback is lower trust than a licensed feed; missing/stale evidence is never fabricated and can force NO_RECOMMENDATION.",
+    }
+
+
+@router.post("/scan")
+def global_scan(req: ScanRequest):
+    try:
+        get_exchange(req.country, req.exchange)
+        return scan_global_market(
+            country=req.country,
+            exchange=req.exchange,
+            top_n=req.topN,
+            discovery_limit=req.discoveryLimit,
+            deep_limit=req.deepLimit,
+        )
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+
+
+@router.post("/scan-global")
+def global_scan_top10(req: GlobalTop10Request):
+    try:
+        return scan_global_top10(top_n=req.topN, max_age_hours=req.maxAgeHours)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+
+
+@router.post("/analyze")
+def global_analyze(req: InstrumentRequest):
+    try:
+        return analyze_company(_seed(req))
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+
+
+@router.post("/credit/individual")
+def global_individual_credit(req: IndividualCreditRequest):
+    """Agent 10 retail scorecard for hypothetical/research scenarios only.
+
+    Report-only: it never returns approve/decline and must not be treated as a
+    calibrated lender PD without fitting/validation on the lender's own data.
+    """
+    result = score_individual_credit(
+        payment_on_time_ratio=req.paymentOnTimeRatio,
+        credit_utilization=req.creditUtilization,
+        credit_history_years=req.creditHistoryYears,
+        debt_to_income=req.debtToIncome,
+        active_accounts=req.activeAccounts,
+        bounced_checks=req.bouncedChecks,
+        past_defaults=req.pastDefaults,
+    )
+    return {
+        "agent": 10,
+        "mode": "individual",
+        "reportOnly": True,
+        "creditDecision": None,
+        "trainingOnly": True,
+        "creditScoring": result,
+    }
+
+
+@router.post("/portfolio")
+def global_portfolio(req: PortfolioRequest):
+    profile = InvestorProfile(
+        capital=req.profile.capital,
+        base_currency=req.profile.baseCurrency.upper(),
+        risk_tolerance=req.profile.riskTolerance,
+        horizon=req.profile.horizon,
+        allowed_countries=tuple(value.upper() for value in req.profile.allowedCountries),
+        allowed_exchanges=tuple(value.upper() for value in req.profile.allowedExchanges),
+        max_position_pct=req.profile.maxPositionPct,
+        max_country_pct=req.profile.maxCountryPct,
+        max_sector_pct=req.profile.maxSectorPct,
+        min_cash_reserve_pct=req.profile.minCashReservePct,
+        max_positions=req.profile.maxPositions,
+        objectives=tuple(value.strip().lower() for value in req.profile.objectives if value.strip()),
+        liquidity_need=req.profile.liquidityNeed,
+        max_drawdown_comfort_pct=req.profile.maxDrawdownComfortPct,
+    )
+    instruments = [_seed(item) for item in req.instruments]
+    fx = {currency.upper(): float(rate) for currency, rate in req.fxToBase.items() if float(rate) > 0}
+    try:
+        return portfolio_from_instruments(profile, instruments, fx_to_base=fx)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc

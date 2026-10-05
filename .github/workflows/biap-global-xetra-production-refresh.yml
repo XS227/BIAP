@@ -1,0 +1,96 @@
+name: BIAP Global Xetra production refresh
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - 'analysis/global_markets/german_issuer.py'
+      - 'analysis/global_markets/runtime.py'
+      - 'analysis/tests/test_global_german_issuer.py'
+      - '.github/workflows/biap-global-xetra-production-refresh.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+      VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+      VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+    steps:
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          test -n "$VPS_SSH_KEY"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
+          chmod 600 ~/.ssh/biap_global_key
+          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+      - name: Refresh Xetra scan cache with current production code
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          APP_DIR=/home/ubuntu/biap-global/BIAP
+          WORK_DIR=/tmp/biap-global-xetra-refresh-$$
+          cd "$APP_DIR"
+          git fetch origin feat/biap-global
+          git worktree remove --force "$WORK_DIR" 2>/dev/null || rm -rf "$WORK_DIR"
+          git worktree prune
+          git worktree add --detach "$WORK_DIR" origin/feat/biap-global
+          cleanup() { cd "$APP_DIR"; git worktree remove --force "$WORK_DIR" 2>/dev/null || true; }
+          trap cleanup EXIT
+          cd "$WORK_DIR/analysis"
+          set -a
+          [[ -f "$APP_DIR/analysis/.env.global" ]] && source "$APP_DIR/analysis/.env.global"
+          set +a
+          export PYTHONPATH="$WORK_DIR/analysis"
+          export BIAP_GLOBAL_DATA_DIR="${BIAP_GLOBAL_DATA_DIR:-/var/lib/biap-global}"
+          PY="$APP_DIR/analysis/.venv-global/bin/python"
+          "$PY" - <<'PY'
+          import json
+          from global_markets.runtime import build_registry
+          from global_markets.models import GlobalCompany
+          from global_markets.scan_service import scan_global_market
+          registry=build_registry()
+          seed=GlobalCompany(country='DE',exchange='XETRA',mic_code='XETR',currency='EUR',ticker='SIE',name='SIEMENS AG  NA O.N.',isin='DE0007236101')
+          p=registry.fundamentals('DE','XETRA')
+          enriched=p.enrich_fundamentals(seed)
+          print(json.dumps({'SIE_PROVIDER':[s.provider for s in enriched.sources], 'SIE_PERIOD':enriched.filing_period_end, 'SIE_REVENUE':enriched.revenue, 'SIE_EPS':enriched.eps, 'SIE_PRIMARY_ERROR':enriched.raw_provider_fields.get('fundamentals_primary_error')},sort_keys=True))
+          sap_seed=GlobalCompany(country='DE',exchange='XETRA',mic_code='XETR',currency='EUR',ticker='SAP',name='SAP SE O.N.')
+          sap=p.enrich_fundamentals(sap_seed)
+          print(json.dumps({'SAP_PROVIDER':[s.provider for s in sap.sources], 'SAP_PERIOD':sap.filing_period_end, 'SAP_REVENUE':sap.revenue, 'SAP_EPS':sap.eps, 'SAP_PRIMARY_ERROR':sap.raw_provider_fields.get('fundamentals_primary_error')},sort_keys=True))
+          assert any(s.provider == 'de-official-issuer-financials' for s in sap.sources)
+          result = scan_global_market(
+              country='DE',
+              exchange='XETRA',
+              top_n=10,
+              discovery_limit=5000,
+              deep_limit=20,
+          )
+          dr=result.get('dataReadiness') or {}
+          summary={
+              'status':result.get('status'),
+              'rankingEligible':result.get('rankingEligible'),
+              'universeDiscovered':result.get('universeDiscovered'),
+              'universeResolved':result.get('universeResolved'),
+              'universeScreened':result.get('universeScreened'),
+              'screeningCoveragePct':result.get('screeningCoveragePct'),
+              'fundamentalCoveragePct':result.get('fundamentalCoveragePct'),
+              'recommendationCount':result.get('recommendationCount'),
+              'universeSource':dr.get('universeSource'),
+              'marketSource':dr.get('marketSource'),
+              'reasons':dr.get('reasons'),
+              'screeningErrors':result.get('screeningErrors'),
+          }
+          print(json.dumps(summary, sort_keys=True))
+          assert dr.get('universeAuthoritative') is True
+          assert 'Deutsche' in str(dr.get('marketSource') or '')
+          PY
+          REMOTE

@@ -1,0 +1,23 @@
+name: BIAP Global OpenFIGI probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-openfigi-probe.yml'
+      - 'tools/probe_openfigi_isin_mic.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - run: python -m pip install -q requests
+      - run: python tools/probe_openfigi_isin_mic.py

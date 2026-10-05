@@ -1,0 +1,46 @@
+name: BIAP Global B3 universe classification diagnostic
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-b3-universe-classification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - working-directory: analysis
+        run: python -m pip install -q -r requirements.txt
+      - working-directory: analysis
+        env:
+          PYTHONPATH: .
+        run: |
+          python - <<'PY'
+          import collections,re,json
+          from global_markets.b3_official import B3OfficialClient
+          d,rows=B3OfficialClient(timeout=60).instrument_rows()
+          standard=re.compile(r'^[A-Z]{4}[0-9]{1,2}$')
+          cats=collections.Counter(str(r.get('securityCategory')) for r in rows)
+          specs=collections.Counter(str(r.get('specification')) for r in rows)
+          lens=collections.Counter(len(str(r.get('ticker') or '')) for r in rows)
+          good=[r for r in rows if standard.fullmatch(str(r.get('ticker') or ''))]
+          bad=[r for r in rows if not standard.fullmatch(str(r.get('ticker') or ''))]
+          print('DATE',d,'TOTAL',len(rows),'STANDARD',len(good),'NONSTANDARD',len(bad))
+          print('CATEGORIES',json.dumps(cats.most_common(),ensure_ascii=False))
+          print('LENGTHS',json.dumps(lens.most_common(),ensure_ascii=False))
+          print('TOP_SPECS',json.dumps(specs.most_common(80),ensure_ascii=False))
+          print('NONSTANDARD_SAMPLE',json.dumps(bad[:150],ensure_ascii=False))
+          print('STANDARD_SAMPLE',json.dumps(good[:40],ensure_ascii=False))
+          PY

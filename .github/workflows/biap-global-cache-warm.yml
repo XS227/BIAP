@@ -1,0 +1,114 @@
+name: BIAP Global cache warm
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - 'analysis/global_markets/official_cache_warm.py'
+      - 'analysis/requirements.txt'
+      - 'analysis/global_markets/market_cache_warm.py'
+      - 'analysis/global_markets/cached_fundamentals.py'
+      - 'analysis/global_markets/fallback_fundamentals.py'
+      - 'analysis/global_markets/cached_sec_edgar.py'
+      - 'analysis/global_markets/cached_esef.py'
+      - 'analysis/global_markets/esef_country.py'
+      - 'analysis/global_markets/gleif.py'
+      - 'analysis/global_markets/german_issuer.py'
+      - 'analysis/global_markets/hkex_issuer.py'
+      - 'analysis/global_markets/sgx_issuer.py'
+      - 'analysis/global_markets/cvm.py'
+      - 'analysis/global_markets/cvm_resolver.py'
+      - 'analysis/global_markets/cvm_itr.py'
+      - 'analysis/global_markets/cvm_sync.py'
+      - 'analysis/global_markets/cvm_itr_sync.py'
+      - 'analysis/global_markets/runtime.py'
+      - 'analysis/global_markets/history_store.py'
+      - 'analysis/global_markets/yahoo_chart.py'
+      - 'analysis/global_markets/twelve_data.py'
+      - '.github/workflows/biap-global-cache-warm.yml'
+
+concurrency:
+  group: biap-global-cache-warm
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+      VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+      VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+    steps:
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$VPS_SSH_KEY" || { echo "VPS_SSH_KEY is not configured" >&2; exit 1; }
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
+          chmod 600 ~/.ssh/biap_global_key
+          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+      - name: Warm connected Global server cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          APP_DIR=/home/ubuntu/biap-global/BIAP
+          WORK_DIR=/tmp/biap-global-cache-warm-$
+          cd "$APP_DIR"
+          git fetch origin feat/biap-global
+          git worktree remove --force "$WORK_DIR" 2>/dev/null || rm -rf "$WORK_DIR"
+          git worktree prune
+          git worktree add --detach "$WORK_DIR" origin/feat/biap-global
+          cleanup() { cd "$APP_DIR"; git worktree remove --force "$WORK_DIR" 2>/dev/null || true; }
+          trap cleanup EXIT
+          cd "$WORK_DIR/analysis"
+          set -a
+          [[ -f "$APP_DIR/analysis/.env.global" ]] && source "$APP_DIR/analysis/.env.global"
+          set +a
+          export PYTHONPATH="$WORK_DIR/analysis"
+          export BIAP_GLOBAL_DATA_DIR="${BIAP_GLOBAL_DATA_DIR:-/var/lib/biap-global}"
+          PY="$APP_DIR/analysis/.venv-global/bin/python"
+          # An explicit warm is intended to hit the official upstream now, not
+          # simply re-read today's normalized cache. Normal request traffic keeps
+          # the normal 24h TTL and remains cheap/resilient.
+          export BIAP_GLOBAL_FUNDAMENTALS_CACHE_HOURS=0
+          export BIAP_GLOBAL_MARKET_CACHE_HOURS=0
+          mkdir -p "$BIAP_GLOBAL_DATA_DIR/fundamentals" "$BIAP_GLOBAL_DATA_DIR/cache/sec-edgar" "$BIAP_GLOBAL_DATA_DIR/history" "$BIAP_GLOBAL_DATA_DIR/source-index"
+          if ! "$PY" -m global_markets.cvm_sync; then
+            echo "CVM_DFP: refresh failed; existing verified index preserved" >&2
+          fi
+          if ! "$PY" -m global_markets.cvm_itr_sync; then
+            echo "CVM_ITR: refresh failed; existing verified index preserved" >&2
+          fi
+          "$PY" -m global_markets.market_cache_warm | tee /tmp/biap-global-market-cache-warm.json
+          "$PY" -m global_markets.official_cache_warm | tee /tmp/biap-global-cache-warm.json
+          echo "fundamentals_latest_files=$(find "$BIAP_GLOBAL_DATA_DIR/fundamentals" -type f -name latest.json 2>/dev/null | wc -l)"
+          echo "fundamentals_period_files=$(find "$BIAP_GLOBAL_DATA_DIR/fundamentals" -type f -path '*/history/*.json' 2>/dev/null | wc -l)"
+          echo "sec_raw_cache_files=$(find "$BIAP_GLOBAL_DATA_DIR/cache/sec-edgar" -type f -name '*.json' 2>/dev/null | wc -l)"
+          echo "market_history_files=$(find "$BIAP_GLOBAL_DATA_DIR/history" -type f -name '*.json' 2>/dev/null | wc -l)"
+          market_history_points=$("$PY" <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          root = Path(os.environ["BIAP_GLOBAL_DATA_DIR"]) / "history"
+          total = 0
+          for path in root.rglob("*.json"):
+              try:
+                  total += len((json.loads(path.read_text()) or {}).get("points") or [])
+              except Exception:
+                  pass
+          print(total)
+          PY
+          )
+          echo "market_history_points=$market_history_points"
+          REMOTE

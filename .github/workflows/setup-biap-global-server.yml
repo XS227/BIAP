@@ -1,0 +1,379 @@
+# Redeploy after peer benchmark scan-cache schema fix: 2026-09-27
+name: Setup BIAP Global server
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - 'analysis/global_markets/**'
+      - 'analysis/global_routes.py'
+      - 'analysis/global_api_server.py'
+      - 'analysis/.env.global.example'
+      - 'deploy/setup-global-data.sh'
+      - 'deploy/sync-global-sources.sh'
+      - 'deploy/configure-global-route.sh'
+      - 'deploy/systemd/biap-global*.service'
+      - 'deploy/systemd/biap-global*.timer'
+      - 'web-showcase/global/**'
+      - '.github/workflows/setup-biap-global-server.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: biap-global-server-setup
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: analysis
+    env:
+      PYTHONPATH: .
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements.txt
+      - run: python -m compileall -q global_markets global_routes.py global_api_server.py
+      - run: pytest -q tests/test_global_*.py
+
+  setup-isolated-server:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+      VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+      VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      MARKET_KEY: ${{ secrets.BIAP_GLOBAL_MARKET_API_KEY || secrets.TWELVE_DATA_API_KEY }}
+      SEC_ID: ${{ secrets.BIAP_SEC_USER_AGENT || secrets.SEC_USER_AGENT }}
+      EDINET_KEY: ${{ secrets.BIAP_EDINET_API_KEY || secrets.EDINET_API_KEY }}
+      OPENDART_KEY: ${{ secrets.BIAP_OPENDART_API_KEY || secrets.OPENDART_API_KEY }}
+      CH_KEY: ${{ secrets.BIAP_COMPANIES_HOUSE_API_KEY || secrets.COMPANIES_HOUSE_API_KEY }}
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CLOUDFLARE_TOKEN || secrets.CF_API_TOKEN }}
+      CF_ZONE: dadashi.no
+      GLOBAL_HOST: global.biap.dadashi.no
+    steps:
+      - name: Check isolated deploy credentials
+        run: |
+          test -n "$VPS_SSH_KEY" || { echo "VPS_SSH_KEY is not configured" >&2; exit 1; }
+
+      - name: Ensure Global DNS record when Cloudflare credentials exist
+        if: ${{ env.CF_TOKEN != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          API="https://api.cloudflare.com/client/v4"
+          ZONE_JSON="$(curl --fail --silent --show-error -H "Authorization: Bearer ${CF_TOKEN}" -H "Content-Type: application/json" "${API}/zones?name=${CF_ZONE}&status=active")"
+          ZONE_ID="$(printf '%s' "$ZONE_JSON" | jq -er '.result[0].id')"
+          RECORD_JSON="$(curl --fail --silent --show-error -H "Authorization: Bearer ${CF_TOKEN}" -H "Content-Type: application/json" "${API}/zones/${ZONE_ID}/dns_records?type=A&name=${GLOBAL_HOST}")"
+          RECORD_ID="$(printf '%s' "$RECORD_JSON" | jq -r '.result[0].id // empty')"
+          BODY="$(jq -nc --arg name "$GLOBAL_HOST" --arg content "$VPS_HOST" '{type:"A",name:$name,content:$content,ttl:120,proxied:false}')"
+          if [[ -n "$RECORD_ID" ]]; then
+            curl --fail --silent --show-error -X PUT -H "Authorization: Bearer ${CF_TOKEN}" -H "Content-Type: application/json" --data "$BODY" "${API}/zones/${ZONE_ID}/dns_records/${RECORD_ID}" >/tmp/cf-dns.json
+          else
+            curl --fail --silent --show-error -X POST -H "Authorization: Bearer ${CF_TOKEN}" -H "Content-Type: application/json" --data "$BODY" "${API}/zones/${ZONE_ID}/dns_records" >/tmp/cf-dns.json
+          fi
+          jq -e '.success == true' /tmp/cf-dns.json >/dev/null
+          jq -r '"Cloudflare DNS OK: \(.result.name) -> \(.result.content) proxied=\(.result.proxied)"' /tmp/cf-dns.json
+          for attempt in $(seq 1 30); do
+            if getent ahostsv4 "$GLOBAL_HOST" 2>/dev/null | awk '{print $1}' | grep -Fxq "$VPS_HOST"; then
+              echo "DNS propagation visible from runner."
+              break
+            fi
+            [[ "$attempt" -lt 30 ]] || { echo "DNS exists but public propagation is not visible yet." >&2; exit 3; }
+            sleep 3
+          done
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
+          chmod 600 ~/.ssh/biap_global_key
+          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+      - name: Prepare runtime provider overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          pairs = {
+              "BIAP_GLOBAL_MARKET_API_KEY": os.environ.get("MARKET_KEY", ""),
+              "BIAP_SEC_USER_AGENT": os.environ.get("SEC_ID", ""),
+              "BIAP_EDINET_API_KEY": os.environ.get("EDINET_KEY", ""),
+              "BIAP_OPENDART_API_KEY": os.environ.get("OPENDART_KEY", ""),
+              "BIAP_COMPANIES_HOUSE_API_KEY": os.environ.get("CH_KEY", ""),
+          }
+          def quote(value: str) -> str:
+              if "\n" in value or "\r" in value:
+                  raise SystemExit("provider secret contains an unsupported newline")
+              return '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
+          lines = [f"{key}={quote(value.strip())}" for key, value in pairs.items() if value and value.strip()]
+          path = Path("/tmp/biap-global-provider.env")
+          path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+          path.chmod(0o600)
+          print("Runtime provider credentials available:", len(lines))
+          PY
+      - name: Copy runtime provider overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          scp -i ~/.ssh/biap_global_key -P "$PORT" -o BatchMode=yes /tmp/biap-global-provider.env "$VPS_USER@$VPS_HOST:/tmp/biap-global-provider.env"
+      - name: Prepare and publish separate Global service
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          APP_DIR=/home/ubuntu/biap-global/BIAP
+          PARENT=$(dirname "$APP_DIR")
+          mkdir -p "$PARENT"
+          if [[ ! -d "$APP_DIR/.git" ]]; then
+            git clone --branch feat/biap-global --single-branch https://github.com/XS227/BIAP.git "$APP_DIR"
+          else
+            cd "$APP_DIR"
+            # Deployment scripts can be rewritten by server setup; reset only
+            # those known generated files. Preserve every other local edit.
+            git restore --worktree --staged -- deploy/configure-global-route.sh deploy/setup-global-data.sh deploy/sync-global-sources.sh 2>/dev/null || true
+            git fetch origin feat/biap-global
+            if [[ "$(git branch --show-current)" != "feat/biap-global" ]]; then
+              echo "Refusing Global update: checkout is not on feat/biap-global" >&2
+              git status --short
+              exit 1
+            fi
+
+            # Local Claude/operator work is allowed when the incoming commit
+            # does not touch the same files. This keeps uncommitted work intact
+            # instead of blocking unrelated production fixes.
+            DIRTY="$(git status --porcelain | awk '{print $2}' | sort -u)"
+            if [[ -n "$DIRTY" ]]; then
+              INCOMING="$(git diff --name-only HEAD..origin/feat/biap-global | sort -u)"
+              OVERLAP="$(comm -12 <(printf '%s\n' "$DIRTY") <(printf '%s\n' "$INCOMING") || true)"
+              if [[ -n "$OVERLAP" ]]; then
+                echo "Refusing Global update: incoming commit overlaps preserved local work:" >&2
+                printf '%s\n' "$OVERLAP" >&2
+                git status --short
+                exit 1
+              fi
+              echo "Preserving unrelated local changes during fast-forward:"
+              git status --short
+            fi
+            git merge --ff-only origin/feat/biap-global
+          fi
+          cd "$APP_DIR"
+          mkdir -p .runtime
+          chmod +x deploy/setup-global-data.sh deploy/sync-global-sources.sh deploy/configure-global-route.sh
+          python3 -m venv analysis/.venv-global
+          analysis/.venv-global/bin/python -m pip install -q --upgrade pip
+          analysis/.venv-global/bin/python -m pip install -q -r analysis/requirements.txt
+          BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global BIAP_GLOBAL_SERVICE_USER="$(id -un)" BIAP_GLOBAL_SERVICE_GROUP="$(id -gn)" bash deploy/setup-global-data.sh
+          if [[ ! -f analysis/.env.global ]]; then cp analysis/.env.global.example analysis/.env.global; fi
+          if [[ -s /tmp/biap-global-provider.env ]]; then
+            while IFS='=' read -r key _rest; do
+              [[ "$key" =~ ^[A-Z0-9_]+$ ]] || continue
+              sed -i "/^${key}=/d" analysis/.env.global
+            done < /tmp/biap-global-provider.env
+            cat /tmp/biap-global-provider.env >> analysis/.env.global
+          fi
+          rm -f /tmp/biap-global-provider.env
+          chmod 600 analysis/.env.global
+
+          # Authoritative FIRDS markets must be warmed before the public service
+          # receives requests. A new cache schema intentionally invalidates old
+          # vendor snapshots, so the first app request must never pay the FIRDS
+          # download + ticker-resolution cost.
+          set -a
+          source analysis/.env.global
+          set +a
+
+          # DFM fundamentals parser v2 changed extraction semantics. Remove only
+          # stale pre-v2 DFM latest snapshots so the first request refreshes from
+          # the official Efsah filing instead of falling back to an old cache.
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("/var/lib/biap-global/fundamentals/AE/DFM")
+          removed = 0
+          if root.exists():
+              for path in root.glob("*/latest.json"):
+                  try:
+                      payload = json.loads(path.read_text(encoding="utf-8"))
+                  except Exception:
+                      continue
+                  provider = str(payload.get("provider") or "")
+                  if "official-dfm-efsah-annual-statement-v2" not in provider:
+                      path.unlink(missing_ok=True)
+                      removed += 1
+          print(f"DFM pre-v2 fundamentals latest snapshots removed: {removed}")
+          PY
+
+          # NZX annual-report provider v4 fixes the filing period year. Remove
+          # stale v3 normalized snapshots so production cannot serve the
+          # previously misdated 2026 period as an outage fallback.
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("/var/lib/biap-global/fundamentals/NZ/NZX")
+          removed = 0
+          if root.exists():
+              for path in root.glob("*/latest.json"):
+                  try:
+                      payload = json.loads(path.read_text(encoding="utf-8"))
+                  except Exception:
+                      continue
+                  provider = str(payload.get("provider") or "")
+                  period = str(payload.get("filingPeriodEnd") or "")
+                  if "official-nzx-issuer-annual-report-v4" not in provider or period == "2026-12-31":
+                      path.unlink(missing_ok=True)
+                      removed += 1
+          print(f"NZX stale fundamentals latest snapshots removed: {removed}")
+          PY
+
+          # HAR cache may preserve a pre-HMY identity failure. Remove only
+          # Harmony's normalized fundamentals snapshot so the next production
+          # analysis must re-run the verified HAR -> HMY SEC CompanyFacts path.
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path("/var/lib/biap-global/fundamentals/ZA/JSE/HAR")
+          removed = 0
+          if root.exists():
+              for path in root.glob("*.json"):
+                  path.unlink(missing_ok=True)
+                  removed += 1
+          print(f"HAR stale fundamentals snapshots removed: {removed}")
+          PY
+
+          # SIX cache predates the verified NOVN -> NVS SEC alias. Invalidate
+          # only CH/SIX when that exact alias is absent so production search
+          # immediately carries the evidence-routing metadata after deploy.
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("/var/lib/biap-global/universe/CH/SIX.json")
+          removed = 0
+          if path.exists():
+              try:
+                  payload = json.loads(path.read_text(encoding="utf-8"))
+              except Exception:
+                  payload = {}
+              rows = payload.get("instruments") if isinstance(payload, dict) else []
+              required = {"NOVN": "NVS", "UBSG": "UBS"}
+              aliases = {
+                  str((row or {}).get("ticker") or "").upper():
+                  str((((row or {}).get("raw_provider_fields") or {}).get("sec_ticker_alias") or "")).upper()
+                  for row in rows or []
+                  if isinstance(row, dict)
+              }
+              if any(aliases.get(ticker) != alias for ticker, alias in required.items()):
+                  path.unlink(missing_ok=True)
+                  removed = 1
+          print(f"SIX pre-SEC-alias universe snapshots removed: {removed}")
+          PY
+          # Evidence contract v3 migration. ESEF xBRL-JSON snapshots written
+          # before the exclusive-period-end fix carry the PRIOR fiscal year's
+          # income/cash-flow values. Remove only those normalized latest
+          # snapshots (history archives stay) so they cannot be served as an
+          # outage fallback; the next request re-derives them from the filing.
+          # Snapshots whose officialEvidence flag lacks an official source row
+          # are demoted on read by the v3 cache and never trusted.
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          removed = kept = 0
+          for path in Path("/var/lib/biap-global/fundamentals").glob("*/*/*/latest.json"):
+              try:
+                  payload = json.loads(path.read_text(encoding="utf-8"))
+              except Exception:
+                  continue
+              if int(payload.get("schemaVersion") or 0) >= 3:
+                  kept += 1
+                  continue
+              providers = [str((s or {}).get("provider") or "") for s in payload.get("sources") or []]
+              if any(p.startswith("esef-xbrl") for p in providers):
+                  path.unlink(missing_ok=True)
+                  removed += 1
+          print(f"ESEF pre-period-fix latest snapshots removed: {removed}; v3 kept: {kept}")
+          PY
+          PYTHONPATH=analysis BIAP_GLOBAL_UNIVERSE_SYNC_MARKETS=SE:NASDAQ_STOCKHOLM timeout 360 analysis/.venv-global/bin/python -m global_markets.universe_sync
+          PYTHONPATH=analysis BIAP_GLOBAL_UNIVERSE_SYNC_MARKETS=DK:NASDAQ_COPENHAGEN timeout 360 analysis/.venv-global/bin/python -m global_markets.universe_sync
+
+          if [[ "$(id -u)" -eq 0 ]]; then SUDO=""; else SUDO="sudo -n"; fi
+          $SUDO install -m 0644 deploy/systemd/biap-global.service /etc/systemd/system/biap-global.service
+          $SUDO install -m 0644 deploy/systemd/biap-global-source-sync.service /etc/systemd/system/biap-global-source-sync.service
+          $SUDO install -m 0644 deploy/systemd/biap-global-source-sync.timer /etc/systemd/system/biap-global-source-sync.timer
+          $SUDO systemctl daemon-reload
+          $SUDO systemctl enable --now biap-global.service
+          $SUDO systemctl restart biap-global.service
+          $SUDO systemctl enable --now biap-global-source-sync.timer
+          for attempt in 1 2 3 4 5 6; do
+            if curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8091/health >/tmp/biap-global-health.json; then cat /tmp/biap-global-health.json; break; fi
+            sleep 2
+          done
+          curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8091/health >/dev/null
+
+          # Regression guard: structured certificates/minifutures mislabelled as
+          # Common Stock by reference vendors must not appear in the equity universe.
+          curl --fail --silent --show-error --max-time 30 \
+            'http://127.0.0.1:8091/global/instruments/SE/NASDAQ_STOCKHOLM?q=MINI.S.DAX.AVA.919&limit=20&offset=0' \
+            > /tmp/biap-se-structured.json
+          python3 - <<'PY'
+          import json
+          payload = json.load(open('/tmp/biap-se-structured.json', encoding='utf-8'))
+          rows = payload.get('instruments') or []
+          bad = [r for r in rows if str(r.get('ticker') or '').upper().startswith('MINI.')]
+          if bad:
+              raise SystemExit(f"structured product leaked into Stockholm equity universe: {bad[:2]}")
+          print("Stockholm structured-product filter OK")
+          PY
+
+          bash deploy/configure-global-route.sh
+          $SUDO systemctl list-timers --all biap-global-source-sync.timer --no-pager || true
+          # Kick off the SE/NO official-OAM ESEF warm in the background so the
+          # first app request for a Nordic issuer does not pay the cold OAM
+          # package download. Safe to run concurrently with the service.
+          # Transient systemd unit: fully detached from this SSH session.
+          if ! systemctl is-active --quiet biap-global-oam-esef-warm.service; then
+            $SUDO systemctl reset-failed biap-global-oam-esef-warm.service 2>/dev/null || true
+            $SUDO systemd-run --unit=biap-global-oam-esef-warm --collect \
+              --uid="$(id -un)" --gid="$(id -gn)" \
+              --working-directory="$APP_DIR/analysis" \
+              -p EnvironmentFile="$APP_DIR/analysis/.env.global" \
+              -E PYTHONPATH="$APP_DIR/analysis" -E BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global \
+              -E BIAP_OAM_WARM_WORKERS=4 \
+              "$APP_DIR/analysis/.venv-global/bin/python" -m global_markets.oam_esef_warm
+          fi
+          echo "Global checkout: $(git rev-parse --short HEAD)"
+          echo "Global local health OK. Iran production checkout/service were not touched."
+          REMOTE
+      - name: Verify public Global route
+        shell: bash
+        run: |
+          set -euo pipefail
+          if getent ahostsv4 "$GLOBAL_HOST" 2>/dev/null | awk '{print $1}' | grep -Fxq "$VPS_HOST"; then
+            curl --fail --silent --show-error --max-time 15 "https://${GLOBAL_HOST}/" > /tmp/global-web.html
+            grep -F 'BIAP Global Web' /tmp/global-web.html >/dev/null
+            curl --fail --silent --show-error --max-time 15 "https://${GLOBAL_HOST}/global-api/health" | tee /tmp/global-health.json
+            LEGACY_HEADERS="$(curl --silent --show-error --max-time 15 -I https://biap.dadashi.no/global/)"
+            printf '%s\n' "$LEGACY_HEADERS" | grep -Eiq '^location: https://global\.biap\.dadashi\.no/'
+            echo "Isolated Global origin and legacy redirect verified."
+          else
+            curl --fail --silent --show-error --max-time 15 https://biap.dadashi.no/global-api/health | tee /tmp/global-health.json
+            curl --fail --silent --show-error --max-time 15 https://biap.dadashi.no/global/ > /tmp/global-web.html
+            grep -F 'BIAP Global Web' /tmp/global-web.html >/dev/null
+            echo "DNS for ${GLOBAL_HOST} is still external/pending; legacy Global route remains healthy."
+          fi

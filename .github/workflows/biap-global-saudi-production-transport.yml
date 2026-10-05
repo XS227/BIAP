@@ -1,0 +1,90 @@
+name: BIAP Global Saudi production transport probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-saudi-production-transport.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+  VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+  VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
+  VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 6
+    steps:
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$VPS_SSH_KEY"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
+          chmod 600 ~/.ssh/biap_global_key
+          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+      - name: Probe Saudi static reports from BIAP server
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" "bash -s" <<'REMOTE'
+          set -euo pipefail
+          for url in             'https://www.saudiexchange.sa/Resources/Reports-v2/DetailedDaily_en.html'             'https://saudiexchange.sa/Resources/Reports-v2/DetailedDaily_en.html'             'https://www.saudiexchange.sa/Resources/Reports-v2/DetailedDailySme_en.html'             'https://saudiexchange.sa/Resources/Reports-v2/DetailedDailySme_en.html'             'https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDaily_en.html'             'https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDailySme_en.html' \
+            'https://origin.tadawulgroup.sa/Resources/Reports-v2/DetailedDaily_en.html' \
+            'https://origin.tadawulgroup.sa/Resources/Reports-v2/DetailedDailySme_en.html' \
+            'https://origin.tadawulgroup.sa/wps/portal/saudiexchange/home?locale=en' \
+            'https://origin.tadawulgroup.sa/wps/portal/saudiexchange/ourmarkets/main-market-watch?locale=en' \
+            'https://r.jina.ai/http://origin.tadawulgroup.sa/Resources/Reports-v2/DetailedDaily_en.html' \
+            'https://r.jina.ai/http://origin.tadawulgroup.sa/Resources/Reports-v2/DetailedDailySme_en.html' \
+            'https://r.jina.ai/http://origin.tadawulgroup.sa/wps/portal/saudiexchange'
+          do
+            echo "URL $url"
+            code=$(curl -L -A 'Mozilla/5.0 BIAP-Global' --max-time 45 -sS -o /tmp/biap-saudi-probe "$url" -w '%{http_code}' || true)
+            echo "STATUS $code BYTES $(wc -c </tmp/biap-saudi-probe 2>/dev/null || echo 0)"
+            head -c 500 /tmp/biap-saudi-probe 2>/dev/null | tr '\n' ' ' || true
+            echo
+          done
+          python3 - <<'PY'
+          import requests,re
+          for ua in (
+              'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 BIAP-Global',
+              'Mozilla/5.0 BIAP-Global',
+              'BIAP-Global/1.0',
+          ):
+              for url in (
+                  'https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDaily_en.html',
+                  'https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDailySme_en.html',
+              ):
+                  try:
+                      rr=requests.get(url,headers={'User-Agent':ua,'Accept':'text/plain,*/*'},timeout=60)
+                      print('PYREQ_STATUS',repr(ua),url,rr.status_code,len(rr.content),rr.headers.get('retry-after'),rr.text[:300].replace('\n',' '))
+                  except Exception as e:
+                      print('PYREQ_ERROR',repr(ua),url,type(e).__name__,e)
+          for tag,url in [
+              ('MAIN','https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDaily_en.html'),
+              ('NOMU','https://r.jina.ai/http://www.saudiexchange.sa/Resources/Reports-v2/DetailedDailySme_en.html'),
+          ]:
+              text=requests.get(url,timeout=60).text
+              p=text.find('### Companies List')
+              body=text[p:] if p>=0 else text
+              rows=[]
+              for line in body.splitlines():
+                  if not line.startswith('|'): continue
+                  cols=[x.strip() for x in line.strip().strip('|').split('|')]
+                  if cols and re.fullmatch(r'\d{4,6}',cols[0] or ''):
+                      rows.append(cols)
+              print(tag,'ROWS',len(rows),'FIRST',rows[:4],'LAST',rows[-4:])
+              for key in ('REIT','ETF','FUND','RIGHT','SUKUK','BOND','WARRANT'):
+                  hits=[x for x in rows if key in ' '.join(x[:2]).upper()]
+                  print(tag,key,'COUNT',len(hits),'HITS',hits[:30])
+          PY
+          REMOTE

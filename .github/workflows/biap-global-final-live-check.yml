@@ -1,0 +1,198 @@
+# AAPL dividend and peer-comparison regression: 2026-09-22
+name: BIAP Global final decision-support live check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - 'analysis/global_markets/**'
+      - 'analysis/global_routes.py'
+      - 'analysis/global_api_server.py'
+      - '.github/workflows/biap-global-final-live-check.yml'
+
+# post-deploy SAP issuer validation: 2026-09-27
+permissions:
+  contents: read
+
+jobs:
+  live-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Verify decision table, investor profile and Global Top 10
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.parse, urllib.request
+
+          base = 'https://biap.dadashi.no/global-api/global'
+
+          def get_json(url, timeout=60):
+              with urllib.request.urlopen(url, timeout=timeout) as response:
+                  return json.load(response)
+
+          def post(path, body, timeout=180):
+              req = urllib.request.Request(
+                  base + path,
+                  data=json.dumps(body).encode(),
+                  headers={'Content-Type': 'application/json', 'Accept': 'application/json'},
+                  method='POST',
+              )
+              with urllib.request.urlopen(req, timeout=timeout) as response:
+                  return json.load(response)
+
+          q = urllib.parse.urlencode({'q': 'AAPL', 'limit': 20})
+          catalog = get_json(f'{base}/instruments/US/NASDAQ?{q}', 60)
+          aapl = next(row for row in catalog.get('instruments', []) if row.get('ticker') == 'AAPL')
+          instrument = {
+              'country': 'US', 'exchange': 'NASDAQ', 'ticker': 'AAPL',
+              'name': aapl.get('name') or 'Apple Inc.', 'currency': aapl.get('currency') or 'USD',
+              'isin': aapl.get('isin'), 'lei': aapl.get('lei'),
+          }
+
+          # Refresh a bounded NASDAQ scan first so the peer P/E benchmark uses
+          # a recent persisted comparison set rather than a hard-coded multiple.
+          us_scan = post('/scan', {
+              'country': 'US', 'exchange': 'NASDAQ', 'topN': 3,
+              'discoveryLimit': 250, 'deepLimit': 25,
+          }, 240)
+          assert isinstance(us_scan.get('deepResults'), list)
+
+          analysis = post('/analyze', instrument, 120)
+          decision = analysis.get('decisionTable') or {}
+          metrics = decision.get('metrics') or {}
+          company = analysis.get('company') or {}
+          assert decision.get('shortTermOutlook')
+          assert decision.get('longTermOutlook')
+          assert decision.get('momentum')
+          assert decision.get('riskLevel')
+          assert metrics.get('price') is not None
+          assert metrics.get('position52wPct') is not None
+          assert company.get('revenue') is not None
+          assert company.get('net_income') is not None
+          assert company.get('total_assets') is not None
+          assert company.get('dividend_per_share') is not None, company
+          assert metrics.get('dividendYieldPct') is not None and metrics.get('dividendYieldPct') > 0, metrics
+          assert metrics.get('sectorPe') is not None and metrics.get('sectorPe') > 0, metrics
+          assert metrics.get('peVsSectorPct') is not None, metrics
+          comparison = next((row for row in analysis.get('signals', []) if row.get('agent') == 'comparison'), {})
+          assert comparison.get('confidence', 0) >= 0.6, comparison
+          assert (decision.get('kiasha') or {}).get('call') == analysis.get('call')
+          assert analysis.get('evidence', {}).get('status') in {'PASS', 'WARN', 'BLOCK'}
+          print(json.dumps({
+              'AAPL': {
+                  'call': analysis.get('call'),
+                  'evidence': analysis.get('evidence', {}).get('status'),
+                  'short': decision.get('shortTermOutlook'),
+                  'long': decision.get('longTermOutlook'),
+                  'risk': decision.get('riskLevel'),
+                  'price': metrics.get('price'),
+                  'position52wPct': metrics.get('position52wPct'),
+                  'revenue': company.get('revenue'),
+                  'netIncome': company.get('net_income'),
+                  'dividendPerShare': company.get('dividend_per_share'),
+                  'dividendYieldPct': metrics.get('dividendYieldPct'),
+                  'peerPe': metrics.get('sectorPe'),
+                  'peVsPeerPct': metrics.get('peVsSectorPct'),
+              }
+          }, sort_keys=True))
+
+          def analyze_exact(country, exchange, ticker, timeout=120):
+              q = urllib.parse.urlencode({'q': ticker, 'limit': 20})
+              catalog = get_json(f'{base}/instruments/{country}/{exchange}?{q}', 60)
+              row = next(item for item in catalog.get('instruments', []) if str(item.get('ticker') or '').upper() == ticker.upper())
+              payload = {
+                  'country': country, 'exchange': exchange, 'ticker': ticker,
+                  'name': row.get('name') or ticker, 'currency': row.get('currency'),
+                  'isin': row.get('isin'), 'lei': row.get('lei'),
+              }
+              return post('/analyze', payload, timeout)
+
+          europe = {}
+          for country, exchange, ticker in [
+              ('NO', 'EURONEXT_OSLO', 'AKER'),
+              ('FR', 'EURONEXT_PARIS', 'OR'),
+              ('DE', 'XETRA', 'SAP'),
+          ]:
+              row = analyze_exact(country, exchange, ticker, 150)
+              evidence_obj = row.get('evidence') or {}
+              evidence = evidence_obj.get('status')
+              sources = (row.get('company') or {}).get('sources', [])
+              official = [
+                  source for source in sources
+                  if any(token in str(source.get('source_type') or '').lower()
+                         for token in ('filing', 'regulatory', 'xbrl', 'financial_statement'))
+                  and 'vendor' not in str(source.get('source_type') or '').lower()
+              ]
+              # WARN is a valid analytical outcome when verified agents conflict
+              # or coverage is incomplete. What this check must prove is that the
+              # official filing source is actually connected and no critical
+              # provenance field is missing.
+              assert evidence != 'BLOCK', (country, exchange, ticker, evidence_obj, row.get('providerDiagnostics'))
+              assert official, (country, exchange, ticker, 'official source missing', sources)
+              europe[ticker] = {
+                  'evidence': evidence,
+                  'coverage': evidence_obj.get('coverage'),
+                  'reasoning': evidence_obj.get('reasoning'),
+                  'contradictions': evidence_obj.get('contradictions'),
+                  'call': row.get('call'),
+                  'sources': [source.get('provider') for source in sources],
+                  'officialSources': [source.get('provider') for source in official],
+              }
+          print(json.dumps({'europeOfficial': europe}, sort_keys=True))
+
+          br = analyze_exact('BR', 'B3', 'VALE3', 180)
+          br_evidence = br.get('evidence') or {}
+          br_sources = (br.get('company') or {}).get('sources', [])
+          assert br_evidence.get('status') != 'BLOCK', (br_evidence, br.get('providerDiagnostics'))
+          assert any('cvm' in str(source.get('provider') or '').lower() for source in br_sources), br_sources
+          print(json.dumps({
+              'brazilOfficial': {
+                  'ticker': 'VALE3',
+                  'evidence': br_evidence.get('status'),
+                  'coverage': br_evidence.get('coverage'),
+                  'call': br.get('call'),
+                  'sources': [source.get('provider') for source in br_sources],
+              }
+          }, sort_keys=True))
+
+          portfolio = post('/portfolio', {
+              'profile': {
+                  'capital': 50000, 'baseCurrency': 'USD', 'riskTolerance': 'low',
+                  'horizon': '1y', 'allowedCountries': ['US'], 'allowedExchanges': ['NASDAQ'],
+                  'maxPositionPct': 25, 'maxCountryPct': 100, 'maxSectorPct': 100,
+                  'minCashReservePct': 25, 'maxPositions': 4,
+                  'objectives': ['income', 'capital_preservation'],
+                  'liquidityNeed': 'high', 'maxDrawdownComfortPct': 15,
+              },
+              'instruments': [instrument],
+              'fxToBase': {'USD': 1.0},
+          }, 120)
+          profile = portfolio.get('profileAssessment') or {}
+          assert profile.get('label') in {'CONSERVATIVE', 'BALANCED', 'AGGRESSIVE_GROWTH'}
+          assert profile.get('objectives') == ['income', 'capital_preservation']
+          print(json.dumps({'profileAssessment': profile}, sort_keys=True))
+
+          global_scan = post('/scan-global', {'topN': 3, 'maxAgeHours': 24}, 420)
+          assert global_scan.get('marketsScanned', 0) >= 1
+          # PARTIAL_GLOBAL_SCAN (0.3.16+) honestly ranks only coverage-qualified
+          # markets and reports the excluded ones; the counts must reconcile.
+          assert global_scan.get('status') in {'GLOBAL_TOP10', 'PARTIAL_GLOBAL_SCAN', 'NO_RECOMMENDATION'}, global_scan
+          assert global_scan.get('marketsEligible', 0) + global_scan.get('marketsExcluded', 0) == global_scan.get('marketsScanned'), global_scan
+          if global_scan.get('status') == 'GLOBAL_TOP10':
+              assert global_scan.get('marketsExcluded') == 0, global_scan
+          assert isinstance(global_scan.get('recommendations'), list)
+          for row in global_scan.get('recommendations') or []:
+              assert row.get('call') == 'BUY_CANDIDATE'
+              assert (row.get('evidence') or {}).get('status') == 'PASS'
+          print(json.dumps({
+              'globalTop': {
+                  'status': global_scan.get('status'),
+                  'marketsScanned': global_scan.get('marketsScanned'),
+                  'recommendationCount': global_scan.get('recommendationCount'),
+                  'tickers': [row.get('ticker') for row in global_scan.get('recommendations') or []],
+              }
+          }, sort_keys=True))
+          PY

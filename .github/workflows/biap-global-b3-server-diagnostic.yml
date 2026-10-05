@@ -1,0 +1,63 @@
+name: BIAP Global B3 server diagnostic
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-b3-server-diagnostic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+      VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+      VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+    steps:
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
+          chmod 600 ~/.ssh/biap_global_key
+          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+      - name: Diagnose official B3 on Global server
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
+          set -uo pipefail
+          cd /home/ubuntu/biap-global/BIAP
+          set -a
+          source analysis/.env.global
+          set +a
+          echo "HEAD=$(git rev-parse --short HEAD)"
+          PYTHONPATH=analysis timeout 300 analysis/.venv-global/bin/python - <<'PY'
+          import traceback
+          from global_markets.b3_official import B3OfficialClient
+          c=B3OfficialClient(timeout=60)
+          for name,fn in [('instrument_rows',c.instrument_rows),('cotahist_rows',c.cotahist_rows)]:
+              try:
+                  d,rows=fn()
+                  print(name,'OK',d,len(rows),rows[:2])
+              except Exception as exc:
+                  print(name,'ERROR',type(exc).__name__,str(exc))
+                  traceback.print_exc()
+          PY
+          echo "LOCAL_SCAN_HTTP"
+          curl -sS -o /tmp/b3-scan.json -w '%{http_code}\n' --max-time 360             -H 'Content-Type: application/json'             --data '{"country":"BR","exchange":"B3","topN":3,"discoveryLimit":5000,"deepLimit":10}'             http://127.0.0.1:8091/global/scan || true
+          head -c 3000 /tmp/b3-scan.json || true
+          echo
+          echo "JOURNAL"
+          if [[ "$(id -u)" -eq 0 ]]; then SUDO=""; else SUDO="sudo -n"; fi
+          $SUDO journalctl -u biap-global.service --since '-10 min' -n 120 --no-pager || true
+          REMOTE

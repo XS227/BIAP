@@ -1,0 +1,13 @@
+name: Deprecated BIAP bulk EOD integration
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deprecated:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'Superseded by the integrated full-exchange market source implementation.'

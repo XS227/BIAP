@@ -1,0 +1,34 @@
+name: BIAP Global DFM PDF extractor comparison
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-dfm-pdf-extractor-comparison.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests pdfplumber
+      - name: Compare DEWA statement extraction
+        shell: bash
+        run: |
+          python - <<'PY'
+          import io,requests,pdfplumber
+          url='https://feeds.dfm.ae/documents/2026/Feb/27/3fc534cd-2159-48c9-a6b7-371fab22cace/DEWA Consolidated FS.pdf'
+          b=requests.get(url,timeout=60).content
+          with pdfplumber.open(io.BytesIO(b)) as pdf:
+              for i in (9,10,13):
+                  text=pdf.pages[i].extract_text(x_tolerance=2,y_tolerance=2) or ''
+                  print('=== PDFPLUMBER PAGE',i,'===')
+                  print(repr(text[:18000]))
+          PY

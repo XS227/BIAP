@@ -1,0 +1,123 @@
+name: BIAP Global official evidence live check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - 'analysis/global_markets/**'
+      - 'analysis/global_routes.py'
+      - 'analysis/global_api_server.py'
+      - '.github/workflows/biap-global-official-live-check.yml'
+
+# validation rerun: 2026-09-27
+permissions:
+  contents: read
+
+jobs:
+  live-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Verify production official evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.parse, urllib.request
+          base = 'https://biap.dadashi.no/global-api/global'
+          cases = [
+              ('US', 'NASDAQ', 'AAPL', 'USD', 'sec-edgar-xbrl-cached'),
+              ('FR', 'EURONEXT_PARIS', 'MC', 'EUR', 'lvmh-official-financial-documents'),
+              ('ES', 'BME_MADRID', 'SAN', 'EUR', ('official-oam-es-cnmv-ifa', 'esef-xbrl-cached')),
+              ('TR', 'BIST', 'AKBNK', 'TRY', 'kap-official-financial-summary'),
+              ('BR', 'B3', 'PETR4', 'BRL', 'cvm-open-data-dfp-resolved'),
+              ('DE', 'XETRA', 'SIE', 'EUR', 'de-official-issuer-financials'),
+              ('DE', 'XETRA', 'ALV', 'EUR', 'de-official-issuer-financials'),
+              ('DE', 'XETRA', 'BEI', 'EUR', 'de-issuer-esef-v1'),
+              ('DE', 'XETRA', 'DBK', 'EUR', 'de-issuer-esef-v1'),
+              ('SG', 'SGX', 'S68', 'SGD', 'sgx-official-issuer-financial-information'),
+              ('HK', 'HKEX', '0388', 'HKD', 'hkex-official-issuer-financial-statements'),
+          ]
+          for country, exchange, ticker, currency, expected_provider in cases:
+              q = urllib.parse.urlencode({'q': ticker, 'limit': 20})
+              with urllib.request.urlopen(f'{base}/instruments/{country}/{exchange}?{q}', timeout=45) as r:
+                  catalog = json.load(r)
+              exact = next((row for row in (catalog.get('instruments') or []) if str(row.get('ticker') or '').upper() == ticker), None)
+              assert exact, (country, exchange, ticker, catalog)
+              body = {
+                  'country': country, 'exchange': exchange,
+                  'ticker': exact.get('ticker') or ticker,
+                  'name': exact.get('name') or ticker,
+                  'currency': exact.get('currency') or currency,
+                  'isin': exact.get('isin'), 'lei': exact.get('lei'),
+              }
+              req = urllib.request.Request(
+                  f'{base}/analyze', data=json.dumps(body).encode(),
+                  headers={'Content-Type':'application/json','Accept':'application/json'}, method='POST'
+              )
+              with urllib.request.urlopen(req, timeout=90) as r:
+                  payload = json.load(r)
+              company = payload.get('company') or {}
+              evidence = payload.get('evidence') or {}
+              sources = company.get('sources') or []
+              providers = {str(s.get('provider') or '') for s in sources}
+              result = {
+                  'market': f'{country}/{exchange}', 'ticker': ticker,
+                  'catalogName': exact.get('name'), 'providers': sorted(providers),
+                  'evidence': evidence.get('status'), 'missing': evidence.get('missing_critical'),
+                  'coverage': evidence.get('coverage'),
+                  'filingPeriod': company.get('filing_period_end'),
+                  'fundamentalsCache': (company.get('raw_provider_fields') or {}).get('fundamentals_cache'),
+                  'kapTransport': (company.get('raw_provider_fields') or {}).get('kap_transport'),
+                  'cvmMatchMode': (company.get('raw_provider_fields') or {}).get('cvm_match_mode'),
+              }
+              print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+              expected = expected_provider if isinstance(expected_provider, tuple) else (expected_provider,)
+              assert any(p in providers for p in expected), result
+              assert 'fundamental_source' not in (evidence.get('missing_critical') or []), result
+              assert evidence.get('status') in {'PASS','WARN'}, result
+
+          # Android regression: the stock screen posts exactly these fields and,
+          # when opened from a deep link / watchlist, often WITHOUT isin/lei and
+          # with name == ticker. Both shapes must reach the same official
+          # evidence, and a payload may never carry official evidence while
+          # Evidence reports missing fundamental_source (CI green / app BLOCK).
+          canaries = [
+              ('SE', 'NASDAQ_STOCKHOLM', 'VOLCAR.B', 'SEK'),
+              ('SE', 'NASDAQ_STOCKHOLM', 'QLINEA', 'SEK'),
+              ('NO', 'EURONEXT_OSLO', 'BONHR', 'NOK'),
+              ('NO', 'EURONEXT_OSLO', 'AKSO', 'NOK'),  # AKBM: no longer in Euronext/OpenFIGI Oslo directories (2026-10-05)
+              ('FR', 'EURONEXT_PARIS', 'OREGE', 'EUR'),
+              ('FI', 'NASDAQ_HELSINKI', 'AKTIA', 'EUR'),
+          ]
+          for country, exchange, ticker, currency in canaries:
+              q = urllib.parse.urlencode({'q': ticker, 'limit': 20})
+              with urllib.request.urlopen(f'{base}/instruments/{country}/{exchange}?{q}', timeout=45) as r:
+                  catalog = json.load(r)
+              exact = next((row for row in (catalog.get('instruments') or []) if str(row.get('ticker') or '').upper() == ticker), None)
+              assert exact, (country, exchange, ticker)
+              shapes = {
+                  'catalog': {k: exact.get(k) for k in ('country', 'exchange', 'ticker', 'name', 'currency', 'isin', 'lei')},
+                  'deeplink': {'country': country, 'exchange': exchange, 'ticker': ticker, 'name': ticker, 'currency': currency},
+              }
+              for shape, body in shapes.items():
+                  body = {k: v for k, v in body.items() if v}
+                  req = urllib.request.Request(
+                      f'{base}/analyze', data=json.dumps(body).encode(),
+                      headers={'Content-Type':'application/json','Accept':'application/json'}, method='POST'
+                  )
+                  with urllib.request.urlopen(req, timeout=150) as r:
+                      payload = json.load(r)
+                  ev = payload.get('evidence') or {}
+                  fe = payload.get('fundamentalEvidence') or {}
+                  missing = ev.get('missing_critical') or []
+                  result = {'shape': shape, 'ticker': ticker, 'evidence': ev.get('status'), 'missing': missing,
+                            'source': fe.get('fundamental_source'), 'doc': fe.get('officialDocumentId'),
+                            'period': fe.get('reportPeriod'), 'official': ev.get('official_fundamental_status'),
+                            'governance': (payload.get('governance') or {}).get('action')}
+                  print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+                  assert not (fe.get('isOfficial') and 'fundamental_source' in missing), result
+                  assert fe.get('isOfficial') and fe.get('officialDocumentId'), result
+                  assert 'fundamental_source' not in missing, result
+          PY

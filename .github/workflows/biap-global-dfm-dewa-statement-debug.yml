@@ -1,0 +1,36 @@
+name: BIAP Global DFM DEWA statement debug
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-dfm-dewa-statement-debug.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests pypdf
+      - name: Print DEWA primary statement pages
+        shell: bash
+        run: |
+          python - <<'PY'
+          import io,requests
+          from pypdf import PdfReader
+          url='https://feeds.dfm.ae/documents/2026/Feb/27/3fc534cd-2159-48c9-a6b7-371fab22cace/DEWA Consolidated FS.pdf'
+          r=requests.get(url,timeout=60)
+          r.raise_for_status()
+          reader=PdfReader(io.BytesIO(r.content))
+          for i in range(7,14):
+              text=reader.pages[i].extract_text() or ''
+              print(f'=== PAGE_INDEX {i} ===')
+              print(repr(text[:18000]))
+          PY

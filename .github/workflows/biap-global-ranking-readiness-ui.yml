@@ -1,0 +1,74 @@
+name: BIAP Global ranking readiness UI
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-ranking-readiness-ui.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+          fetch-depth: 0
+      - name: Patch readiness UI
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          api = Path('mobile/src/lib/global-api.ts')
+          text = api.read_text(encoding='utf-8')
+          old = '''  screeningCoveragePct?: number;\n  recommendations: GlobalAnalysis[];\n'''
+          new = '''  screeningCoveragePct?: number;\n  fundamentalCoveragePct?: number;\n  rankingEligible?: boolean;\n  dataReadiness?: {\n    status?: string;\n    rankingEligible?: boolean;\n    eligibleEquities?: number;\n    screenedEquities?: number;\n    marketCoveragePct?: number;\n    deepAnalyzed?: number;\n    verifiedFundamentals?: number;\n    fundamentalCoveragePct?: number;\n    requiredMarketCoveragePct?: number;\n    requiredFundamentalCoveragePct?: number;\n    reasons?: string[];\n    marketSource?: string;\n    fundamentalsSource?: string;\n  };\n  recommendations: GlobalAnalysis[];\n'''
+          if new not in text:
+              if old not in text: raise SystemExit('GlobalScanResponse anchor missing')
+              text = text.replace(old, new, 1)
+          old = '''  marketsScanned?: number;\n  marketErrors?: number;\n  recommendations: GlobalAnalysis[];\n'''
+          new = '''  marketsScanned?: number;\n  marketsEligible?: number;\n  marketsExcluded?: number;\n  marketErrors?: number;\n  eligibleEquities?: number;\n  screenedEquities?: number;\n  deepAnalyzed?: number;\n  globalCoveragePct?: number;\n  connectedCoveragePct?: number;\n  recommendations: GlobalAnalysis[];\n'''
+          if new not in text:
+              if old not in text: raise SystemExit('GlobalTop10Response anchor missing')
+              text = text.replace(old, new, 1)
+          api.write_text(text, encoding='utf-8')
+
+          market = Path('mobile/src/app/market.tsx')
+          text = market.read_text(encoding='utf-8')
+          old = '''      setScan(result.recommendations || []);\n      if (extended.catalogOnly || result.status === 'MARKET_DATA_REQUIRED') {\n        setScanMode('catalog');\n        setScanStatus(`Catalog available • ${(result.universeDiscovered ?? totalMatched) || instruments.length} instruments • verified price/history feed pending`);\n      } else if (extended.cachedMarketData || result.status.startsWith('CACHED_')) {\n        setScanMode('cached');\n        const coverage = result.screeningCoveragePct == null ? '' : ` • ${Number(result.screeningCoveragePct).toFixed(1)}% coverage`;\n        setScanStatus(`Cached market data • ${result.recommendationCount ?? 0} qualified • ${result.deepAnalyzed ?? 0} deep analyses${coverage}`);\n      } else {\n        setScanMode('live');\n        setScanStatus(`Live market data • ${result.recommendationCount ?? 0} qualified • ${result.deepAnalyzed ?? 0} deep analyses`);\n      }\n'''
+          new = '''      const rankingEligible = result.rankingEligible === true;\n      setScan(rankingEligible ? (result.recommendations || []) : []);\n      const marketCoverage = result.screeningCoveragePct == null ? '—' : `${Number(result.screeningCoveragePct).toFixed(1)}%`;\n      const fundamentalCoverage = result.fundamentalCoveragePct == null ? '—' : `${Number(result.fundamentalCoveragePct).toFixed(1)}%`;\n      if (extended.catalogOnly || result.status === 'MARKET_DATA_REQUIRED') {\n        setScanMode('catalog');\n        setScanStatus(`Ranking blocked • ${(result.universeDiscovered ?? totalMatched) || instruments.length} eligible equities • fresh market feed unavailable`);\n      } else if (extended.cachedMarketData || result.status.startsWith('CACHED_')) {\n        setScanMode('cached');\n        setScanStatus(`Ranking blocked • stored market records only • market coverage ${marketCoverage} • verified fundamentals ${fundamentalCoverage}`);\n      } else if (!rankingEligible) {\n        setScanMode('cached');\n        setScanStatus(`Ranking blocked • ${result.universeScreened ?? 0}/${result.universeDiscovered ?? 0} equities screened • market coverage ${marketCoverage} • verified fundamentals ${fundamentalCoverage}`);\n      } else {\n        setScanMode('live');\n        setScanStatus(`This market • ${result.recommendationCount ?? 0} qualified • ${result.universeScreened ?? 0}/${result.universeDiscovered ?? 0} equities screened • ${marketCoverage} coverage`);\n      }\n'''
+          if new not in text:
+              if old not in text: raise SystemExit('runScan anchor missing')
+              text = text.replace(old, new, 1)
+
+          old = '''      const result = await scanGlobalTop10(10, 0.5);\n      setScan(result.recommendations || []);\n      setScanMode('global');\n      setScanStatus(`Global Top 10 • ${result.recommendationCount ?? 0} qualified • ${result.marketsScanned ?? 0} connected markets`);\n'''
+          new = '''      const result = await scanGlobalTop10(10, 0.5);\n      const globallyReady = (result.marketsEligible ?? 0) > 0 && result.status !== 'GLOBAL_DATA_INCOMPLETE';\n      setScan(globallyReady ? (result.recommendations || []) : []);\n      setScanMode(globallyReady ? 'global' : 'cached');\n      const coverage = result.globalCoveragePct == null ? '—' : `${Number(result.globalCoveragePct).toFixed(1)}%`;\n      if (!globallyReady) {\n        setScanStatus(`Global ranking blocked • ${result.marketsEligible ?? 0}/${result.marketsScanned ?? 0} markets ready • ${result.marketsExcluded ?? result.marketsScanned ?? 0} excluded`);\n      } else {\n        setScanStatus(`Global Top 10 • ${result.recommendationCount ?? 0} qualified • ${result.marketsEligible ?? 0}/${result.marketsScanned ?? 0} markets ready • ${result.screenedEquities ?? 0}/${result.eligibleEquities ?? 0} equities screened • ${coverage} coverage`);\n      }\n'''
+          if new not in text:
+              if old not in text: raise SystemExit('runGlobalTop10 anchor missing')
+              text = text.replace(old, new, 1)
+
+          old = '''    : `Exchange instruments${totalMatched ? ` • ${instruments.length} of ${totalMatched}` : ''}`;\n'''
+          new = '''    : `Ordinary equities${totalMatched ? ` • ${instruments.length} of ${totalMatched}` : ''}`;\n'''
+          if old in text:
+              text = text.replace(old, new, 1)
+          market.write_text(text, encoding='utf-8')
+          PY
+      - name: Typecheck
+        working-directory: mobile
+        run: |
+          npm ci
+          npx tsc --noEmit
+      - name: Commit UI readiness changes
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add mobile/src/lib/global-api.ts mobile/src/app/market.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m 'Show ranking readiness and coverage in BIAP Global'
+          git push origin HEAD:feat/biap-global

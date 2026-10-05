@@ -1,0 +1,55 @@
+name: BIAP Global Euronext filter JS context
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-euronext-filter-js-context.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: python -m pip install -q requests beautifulsoup4
+      - name: Extract official JS filter payload construction
+        run: |
+          python3 - <<'PY'
+          import json,requests
+          from bs4 import BeautifulSoup
+          from urllib.parse import urljoin
+
+          page='https://live.euronext.com/en/products/equities/regulated/list'
+          s=requests.Session();h={'User-Agent':'BIAP Euronext JS context probe'}
+          r=s.get(page,headers=h,timeout=45);r.raise_for_status()
+          soup=BeautifulSoup(r.text,'html.parser')
+          needles=['data_filters.args','datas.args','awl_pd_filters_es','get_filters','serializeArray','issueType','product_directory/filter']
+          out=[]
+          for tag in soup.find_all('script'):
+              src=tag.get('src')
+              if not src: continue
+              url=urljoin(page,src)
+              try:
+                  jr=s.get(url,headers=h,timeout=30)
+                  if jr.status_code!=200 or len(jr.content)>10_000_000: continue
+                  text=jr.text
+              except Exception:
+                  continue
+              low=text.lower()
+              if not any(n.lower() in low for n in needles): continue
+              snippets=[]
+              for needle in needles:
+                  start=0
+                  for _ in range(8):
+                      idx=text.lower().find(needle.lower(),start)
+                      if idx<0: break
+                      snippets.append({'needle':needle,'context':text[max(0,idx-1800):idx+2800]})
+                      start=idx+len(needle)
+              if snippets: out.append({'src':url,'snippets':snippets})
+          print(json.dumps(out,indent=2,ensure_ascii=False))
+          assert out
+          PY

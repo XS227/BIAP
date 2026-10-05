@@ -1,0 +1,95 @@
+name: BIAP Global Deutsche Boerse ERS API probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-db-ers-api-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Discover official Deutsche Boerse company-details API
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import re, requests, urllib.parse
+          page='https://live.deutsche-boerse.com/equity/sap-se/company-details'
+          h={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131 Safari/537.36'}
+          s=requests.Session()
+          r=s.get(page,headers=h,timeout=45)
+          print('PAGE',r.status_code,len(r.text),r.url)
+          r.raise_for_status()
+          html=r.text
+          scripts=[]
+          for src in re.findall(r'<script[^>]+src=["\']([^"\']+)["\']',html,re.I):
+              url=urllib.parse.urljoin(page,src)
+              if url not in scripts:
+                  scripts.append(url)
+          print('SCRIPTS',len(scripts))
+          needles=('X-Security','x-security','Client-Date','client-date','X-Request-Datetime',
+                   'mdstokenservice','X-Client-TraceId','x-client-traceid')
+          hits=[]
+          for i,url in enumerate(scripts):
+              try:
+                  rr=s.get(url,headers=h,timeout=45)
+                  if rr.status_code != 200:
+                      continue
+                  text=rr.text
+              except Exception as e:
+                  print('SCRIPT_ERR',url,type(e).__name__)
+                  continue
+              low=text.lower()
+              if not any(n.lower() in low for n in needles):
+                  continue
+              print('SCRIPT',i,url,'LEN',len(text))
+              # Print compact windows around API base / report-related strings.
+              for pattern in (
+                  r'[^"\']{0,500}(?:X-Security|x-security|Client-Date|client-date|X-Request-Datetime|mdstokenservice|X-Client-TraceId)[^"\']{0,1000}',
+              ):
+                  for m in re.finditer(pattern,text,re.I):
+                      frag=' '.join(m.group(0).split())
+                      if frag not in hits:
+                          hits.append(frag)
+                          print('HIT',frag[:900])
+                          if len(hits)>=120:
+                              break
+                  if len(hits)>=120:
+                      break
+              if len(hits)>=120:
+                  break
+          print('TOTAL_HITS',len(hits))
+          # Inspect raw server HTML / hydration state for official report data.
+          probes=('Half-yearly financial report','companyReports','company-reports',
+                  'financialReports','financial-reports','erscontent','DE0007164600',
+                  'sap-2026-half-year-report','api.live.deutsche-boerse.com')
+          for needle in probes:
+              pos=html.lower().find(needle.lower())
+              print('HTML_PROBE',needle,'POS',pos)
+              if pos >= 0:
+                  frag=' '.join(html[max(0,pos-700):pos+1800].split())
+                  print('HTML_HIT',needle,frag[:2500])
+          # Avoid regex quoting ambiguity; extract URL-like tokens by whitespace/quotes.
+          cleaned = html.replace('&amp;','&').replace('"',' ').replace("'",' ').replace('<',' ').replace('>',' ')
+          tokens = cleaned.split()
+          urls = []
+          for token in tokens:
+              if token.startswith(('http://','https://')) and (
+                  '.pdf' in token.lower()
+                  or 'api.live.deutsche-boerse.com' in token.lower()
+                  or 'erscontent.deutsche-boerse.com' in token.lower()
+              ):
+                  token = token.rstrip('),;')
+                  if token not in urls:
+                      urls.append(token)
+          print('HTML_URL_COUNT',len(urls))
+          for url in urls[:80]:
+              print('URL',url)
+          PY

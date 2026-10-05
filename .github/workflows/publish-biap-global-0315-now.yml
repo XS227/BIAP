@@ -1,0 +1,78 @@
+name: Publish BIAP Global 0.3.15 now
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/publish-biap-global-0315-now.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 12
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+      VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+      VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      GH_TOKEN: ${{ github.token }}
+      ARTIFACT_ID: '10726654682'
+    steps:
+      - name: Download verified 0.3.15 artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$VPS_SSH_KEY"
+          curl --fail --location --silent --show-error \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" \
+            -o /tmp/biap-global-0315.zip
+          mkdir -p /tmp/biap-global-0315
+          unzip -q /tmp/biap-global-0315.zip -d /tmp/biap-global-0315
+          APK="$(find /tmp/biap-global-0315 -type f -name 'BIAP-Global-0.3.15-universal.apk' | head -1)"
+          test -f "$APK"
+          cp "$APK" /tmp/BIAP-Global-latest.apk
+          sha256sum /tmp/BIAP-Global-latest.apk | awk '{print $1}' > /tmp/BIAP-Global-latest.apk.sha256
+          printf '%s\n' 'BIAP-Global-0.3.15-universal.apk' > /tmp/BIAP-Global-latest-arm64.name
+
+      - name: Publish to Global website
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/key
+          chmod 600 ~/.ssh/key
+          ssh-keyscan -p "$PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+          scp -i ~/.ssh/key -P "$PORT" -o BatchMode=yes \
+            /tmp/BIAP-Global-latest.apk /tmp/BIAP-Global-latest.apk.sha256 /tmp/BIAP-Global-latest-arm64.name \
+            "$VPS_USER@$VPS_HOST:/tmp/"
+          ssh -i ~/.ssh/key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          SUDO="sudo -n"; [[ "$(id -u)" -eq 0 ]] && SUDO=""
+          D=/var/www/biap-global-web/download
+          $SUDO install -d -m 0755 "$D"
+          $SUDO install -m 0644 /tmp/BIAP-Global-latest.apk "$D/BIAP-Global-latest.apk"
+          $SUDO install -m 0644 /tmp/BIAP-Global-latest.apk "$D/BIAP-Global-0.3.15-universal.apk"
+          $SUDO install -m 0644 /tmp/BIAP-Global-latest.apk.sha256 "$D/BIAP-Global-latest.apk.sha256"
+          $SUDO install -m 0644 /tmp/BIAP-Global-latest.apk.sha256 "$D/BIAP-Global-0.3.15-universal.apk.sha256"
+          $SUDO install -m 0644 /tmp/BIAP-Global-latest-arm64.name "$D/BIAP-Global-latest-arm64.name"
+          REMOTE
+
+      - name: Verify public 0.3.15
+        run: |
+          set -euo pipefail
+          test "$(curl -fsSL https://biap.dadashi.no/global/download/BIAP-Global-latest-arm64.name)" = 'BIAP-Global-0.3.15-universal.apk'
+          REMOTE_HASH="$(curl -fsSL https://biap.dadashi.no/global/download/BIAP-Global-latest.apk.sha256)"
+          LOCAL_HASH="$(cat /tmp/BIAP-Global-latest.apk.sha256)"
+          test "$REMOTE_HASH" = "$LOCAL_HASH"
+          curl -fsSI https://biap.dadashi.no/global/download/BIAP-Global-0.3.15-universal.apk | grep -Eiq '^content-type: application/vnd\.android\.package-archive'
+          echo "BIAP Global 0.3.15 is public and hash-verified."

@@ -1,0 +1,52 @@
+name: BIAP Global official universe source probe v2
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-official-universe-source-probe-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Count official Nasdaq Nordic main markets
+        run: |
+          python - <<'PY'
+          import json, requests
+          url='https://api.nasdaq.com/api/nordic/screener/shares'
+          headers={
+            'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36',
+            'Accept':'application/json,text/plain,*/*',
+            'Accept-Language':'en-US,en;q=0.9'
+          }
+          out={}
+          for code in ('CPH','STO','HEL','ICE'):
+            params=[
+              ('category','MAIN_MARKET'),('tableonly','true'),('page','1'),('size','1000'),
+              ('segment','LARGE_CAP'),('segment','MID_CAP'),('segment','SMALL_CAP'),('segment','SPAC'),
+              ('market',code),('lang','en')
+            ]
+            r=requests.get(url,params=params,headers=headers,timeout=45)
+            item={'status':r.status_code,'url':r.url,'bytes':len(r.content)}
+            if r.ok:
+              p=r.json(); data=p.get('data') or {}; il=data.get('instrumentListing') or {}; rows=il.get('rows') or []
+              item['total']=(data.get('pagination') or {}).get('total')
+              item['rows']=len(rows)
+              item['currencies']={}
+              item['sample']=[]
+              for row in rows:
+                c=str(row.get('currency') or '')
+                item['currencies'][c]=item['currencies'].get(c,0)+1
+              for row in rows[:8]:
+                item['sample'].append({k:row.get(k) for k in ('fullName','symbol','isin','currency','orderbookId','assetClass')})
+            else:
+              item['text']=r.text[:500]
+            out[code]=item
+          print(json.dumps(out,indent=2,ensure_ascii=False))
+          PY

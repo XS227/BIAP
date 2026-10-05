@@ -1,0 +1,123 @@
+name: BIAP Global NZX multi-issuer annual probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-nzx-multi-issuer-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests beautifulsoup4 pypdf
+      - name: Inspect official NZX annual-report attachments across issuers
+        shell: bash
+        run: |
+          python - <<'PY'
+          import io,json,re,requests,urllib.parse
+          from bs4 import BeautifulSoup
+          from pypdf import PdfReader
+
+          H={
+            'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36',
+            'Accept-Language':'en-NZ,en;q=0.9',
+          }
+
+          def next_payload(html):
+              m=re.search(r'<script[^>]+id=["\']__NEXT_DATA__["\'][^>]*>(.*?)</script>',html,re.I|re.S)
+              return json.loads(m.group(1)) if m else {}
+
+          for ticker in ('SUM','SCL','FPH','AIR'):
+              listing='https://new.nzx.com/companies/'+ticker+'/announcements'
+              r=requests.get(listing,headers=H,timeout=45)
+              print('\n###',ticker,'LISTING',r.status_code,len(r.content),r.url)
+              r.raise_for_status()
+              anchors=re.findall(
+                  r'<a[^>]+href=["\']([^"\']*/announcements/\d+)["\'][^>]*>(.*?)</a>',
+                  r.text,re.I|re.S,
+              )
+              candidates=[]
+              for href,label_html in anchors:
+                  label=BeautifulSoup(label_html,'html.parser').get_text(' ',strip=True)
+                  low=label.lower()
+                  if any(k in low for k in ('annual report','full year','annual results','financial results')):
+                      m=re.search(r'/announcements/(\d+)',href)
+                      if m:
+                          candidates.append((int(m.group(1)),label))
+              print('CANDIDATES',ticker,candidates[:15])
+
+              chosen=None
+              for ident,label in sorted(candidates,reverse=True):
+                  url='https://www.nzx.com/announcements/'+str(ident)
+                  ar=requests.get(url,headers=H,timeout=45)
+                  if not ar.ok:
+                      continue
+                  payload=next_payload(ar.text)
+                  ann=(((payload.get('props') or {}).get('pageProps') or {}).get('announcement') or {})
+                  if not isinstance(ann,dict):
+                      continue
+                  summary=ann.get('summary') or {}
+                  if str(summary.get('companyCode') or '').strip().upper()!=ticker:
+                      continue
+                  attachments=ann.get('attachments') or (ann.get('details') or {}).get('attachments') or []
+                  reports=[
+                      a for a in attachments
+                      if isinstance(a,dict)
+                      and 'annual report' in str(a.get('label') or '').lower()
+                      and str(a.get('fileURL') or '').startswith('https://api.nzx.com/')
+                  ]
+                  if not reports:
+                      continue
+                  chosen=(url,summary,reports[0],attachments)
+                  break
+
+              if not chosen:
+                  print('NO_ANNUAL_REPORT',ticker)
+                  continue
+
+              url,summary,report,attachments=chosen
+              print('ANNOUNCEMENT',ticker,url,json.dumps(summary,ensure_ascii=False))
+              print('ATTACHMENTS',ticker,json.dumps([
+                  {'id':a.get('id'),'label':a.get('label'),'url':a.get('fileURL')}
+                  for a in attachments if isinstance(a,dict)
+              ],ensure_ascii=False,indent=2))
+
+              pdf_url=str(report.get('fileURL') or '')
+              pr=requests.get(pdf_url,headers=H,timeout=90)
+              print('PDF',ticker,pr.status_code,len(pr.content),pdf_url)
+              pr.raise_for_status()
+              assert pr.content.startswith(b'%PDF')
+              reader=PdfReader(io.BytesIO(pr.content))
+              full='\n'.join((p.extract_text() or '') for p in reader.pages)
+              print('PAGES',ticker,len(reader.pages),'TEXTLEN',len(full))
+
+              low=full.lower()
+              needles=(
+                  'statement of comprehensive income',
+                  'income statement',
+                  'statement of financial position',
+                  'balance sheet',
+                  'statement of cash flows',
+                  'cash flow statement',
+                  'total assets',
+                  'total liabilities',
+                  'total equity',
+                  'revenue',
+                  'profit for the year',
+                  'profit after tax',
+                  'net cash',
+              )
+              for needle in needles:
+                  pos=low.find(needle)
+                  if pos>=0:
+                      print('CTX',ticker,needle,repr(full[max(0,pos-800):pos+3500]))
+          PY

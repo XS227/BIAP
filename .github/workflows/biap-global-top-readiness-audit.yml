@@ -1,0 +1,24 @@
+name: BIAP Global Top readiness audit
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-top-readiness-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+      - name: Install requests
+        run: python -m pip install -q requests
+      - name: Read production Global Top readiness
+        run: python tools/probe_global_top_readiness.py

@@ -1,0 +1,44 @@
+name: BIAP Global honest partial ranking semantics
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-partial-ranking-semantics.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+          fetch-depth: 0
+      - name: Apply ranking semantics patch
+        run: python tools/apply_global_partial_semantics.py
+      - name: Backend tests
+        working-directory: analysis
+        env:
+          PYTHONPATH: .
+        run: |
+          python -m pip install -q -r requirements.txt
+          python -m compileall -q global_markets global_routes.py global_api_server.py
+          pytest -q tests/test_global_*.py
+      - name: Mobile typecheck
+        working-directory: mobile
+        run: |
+          npm ci
+          npx tsc --noEmit
+      - name: Commit tested semantics
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add analysis/global_markets/scan_service.py analysis/tests/test_global_top_markets.py mobile/src/app/market.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m 'Label incomplete global rankings as partial scope'
+          git push origin HEAD:feat/biap-global

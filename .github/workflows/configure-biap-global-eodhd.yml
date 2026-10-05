@@ -1,0 +1,67 @@
+name: Configure BIAP Global EODHD
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/configure-biap-global-eodhd.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+      VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+      VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      EODHD_TOKEN: ${{ secrets.BIAP_EODHD_API_TOKEN || secrets.EODHD_API_TOKEN }}
+    steps:
+      - name: Report missing market credential
+        if: ${{ env.EODHD_TOKEN == '' }}
+        run: echo 'BIAP_EODHD_API_TOKEN is not configured; full-exchange rankings remain safely BLOCKED.'
+
+      - name: Configure SSH
+        if: ${{ env.EODHD_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_global_key
+          chmod 600 ~/.ssh/biap_global_key
+          ssh-keyscan -p "${VPS_PORT:-22}" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Install EODHD token in isolated Global environment
+        if: ${{ env.EODHD_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          printf '%s' "$EODHD_TOKEN" > /tmp/biap-eodhd-token
+          chmod 600 /tmp/biap-eodhd-token
+          scp -i ~/.ssh/biap_global_key -P "$PORT" -o BatchMode=yes /tmp/biap-eodhd-token "$VPS_USER@$VPS_HOST:/tmp/biap-eodhd-token"
+          ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          ENV_FILE=/home/ubuntu/biap-global/BIAP/analysis/.env.global
+          TOKEN="$(cat /tmp/biap-eodhd-token)"
+          rm -f /tmp/biap-eodhd-token
+          test -n "$TOKEN"
+          python3 - "$ENV_FILE" "$TOKEN" <<'PY'
+          from pathlib import Path
+          import sys
+          path = Path(sys.argv[1])
+          token = sys.argv[2]
+          lines = path.read_text(encoding='utf-8').splitlines() if path.exists() else []
+          lines = [line for line in lines if not line.startswith('BIAP_EODHD_API_TOKEN=')]
+          escaped = token.replace('\\', '\\\\').replace('"', '\\"')
+          lines.append(f'BIAP_EODHD_API_TOKEN="{escaped}"')
+          path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          path.chmod(0o600)
+          PY
+          if [[ "$(id -u)" -eq 0 ]]; then SUDO=""; else SUDO="sudo -n"; fi
+          $SUDO systemctl restart biap-global.service
+          curl --fail --silent --show-error --max-time 10 http://127.0.0.1:8091/global/status | python3 -c 'import json,sys; d=json.load(sys.stdin); print({"marketProviderConfigured":d.get("marketProviderConfigured"),"eodhdBulkEodConfigured":d.get("eodhdBulkEodConfigured"),"marketProviderMode":d.get("marketProviderMode")})'
+          REMOTE

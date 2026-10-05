@@ -1,0 +1,49 @@
+name: BIAP Global Italy v8 probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-italy-v8-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Probe Milan production catalog
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.parse, urllib.request
+
+          base='https://biap.dadashi.no/global-api/global'
+          def get(url, timeout=90):
+              req=urllib.request.Request(url, headers={'Accept':'application/json','User-Agent':'BIAP-Italy-v8-probe'})
+              with urllib.request.urlopen(req, timeout=timeout) as r:
+                  return json.load(r)
+
+          data=get(base + '/instruments/IT/EURONEXT_MILAN?' + urllib.parse.urlencode({'limit':80}))
+          checks={}
+          for q in ['RACE','ENI','0112N','1A','0007H']:
+              row=get(base + '/instruments/IT/EURONEXT_MILAN?' + urllib.parse.urlencode({'q':q,'limit':20}))
+              checks[q]={
+                  'totalMatched':row.get('totalMatched'),
+                  'returned':row.get('returned'),
+                  'tickers':[x.get('ticker') for x in (row.get('instruments') or [])],
+                  'names':[x.get('name') for x in (row.get('instruments') or [])],
+              }
+          out={
+              'catalog':data.get('catalog'),
+              'totalMatched':data.get('totalMatched'),
+              'returned':data.get('returned'),
+              'sample':[(x.get('ticker'),x.get('name'),x.get('mic_code') or x.get('mic')) for x in (data.get('instruments') or [])[:20]],
+              'checks':checks,
+          }
+          print(json.dumps(out, indent=2, sort_keys=True))
+          PY

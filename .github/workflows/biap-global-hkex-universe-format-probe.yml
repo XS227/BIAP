@@ -1,0 +1,59 @@
+name: BIAP Global HKEX official universe format probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-hkex-universe-format-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q requests openpyxl
+      - name: Inspect HKEX official ListOfSecurities workbook
+        run: |
+          python - <<'PY'
+          import io, json, requests, openpyxl
+          url='https://www.hkex.com.hk/eng/services/trading/securities/securitieslists/ListOfSecurities.xlsx'
+          r=requests.get(url,headers={'User-Agent':'Mozilla/5.0 BIAP-Global','Accept':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*'},timeout=60)
+          r.raise_for_status()
+          print('bytes',len(r.content),'type',r.headers.get('content-type'))
+          wb=openpyxl.load_workbook(io.BytesIO(r.content),read_only=False,data_only=True)
+          print('sheets',wb.sheetnames)
+          from collections import Counter
+          for ws in wb.worksheets:
+              print('\nSHEET',ws.title,'rows',ws.max_row,'cols',ws.max_column)
+              rows=list(ws.iter_rows(values_only=True))
+              for vals in rows[:18]:
+                  print(json.dumps(list(vals),ensure_ascii=False,default=str))
+              header=next((i for i,row in enumerate(rows) if row and row[0]=='Stock Code'),None)
+              if header is not None:
+                  categories=Counter()
+                  subcategories=Counter()
+                  currencies=Counter()
+                  for row in rows[header+1:]:
+                      if not row or not row[0]: continue
+                      categories[str(row[2] or '')]+=1
+                      subcategories[str(row[3] or '')]+=1
+                      currencies[str(row[16] or '')]+=1
+                  print('CATEGORIES',json.dumps(categories,ensure_ascii=False))
+                  print('SUBCATEGORIES',json.dumps(subcategories,ensure_ascii=False))
+                  print('CURRENCIES',json.dumps(currencies,ensure_ascii=False))
+                  allowed={'Equity Securities (Main Board)','Equity Securities (GEM)'}
+                  equity=[row for row in rows[header+1:] if row and row[0] and str(row[2] or '')=='Equity' and str(row[3] or '') in allowed]
+                  from collections import Counter as C2
+                  print('ORDINARY_COUNT',len(equity))
+                  print('ORDINARY_CURRENCIES',json.dumps(C2(str(row[16] or '') for row in equity),ensure_ascii=False))
+                  print('ORDINARY_RMB_COUNTER',json.dumps(C2(str(row[17] or '') for row in equity),ensure_ascii=False))
+                  print('ORDINARY_CODES_MINMAX',equity[0][0] if equity else None,equity[-1][0] if equity else None)
+                  print('ORDINARY_NON_HKD_SAMPLE',json.dumps([[row[0],row[1],row[16],row[17]] for row in equity if str(row[16] or '')!='HKD'][:25],ensure_ascii=False,default=str))
+          PY

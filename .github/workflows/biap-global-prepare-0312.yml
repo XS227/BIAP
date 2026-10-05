@@ -1,0 +1,50 @@
+name: Prepare BIAP Global 0.3.12
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-prepare-0312.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+          fetch-depth: 0
+      - name: Update build and publish verification for 0.3.12
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          build = Path('.github/workflows/biap-global-apk.yml')
+          text = build.read_text()
+          text = text.replace('# Multi-market selector fix build: 2026-09-22', '# Equity-only Sweden fix build 0.3.12: 2026-09-23', 1)
+          text = text.replace("grep -q \"versionCode='14'\" /tmp/biap-global-badging.txt", "grep -q \"versionCode='15'\" /tmp/biap-global-badging.txt")
+          if "versionCode='15'" not in text:
+              raise SystemExit('0.3.12 versionCode assertion not installed')
+          build.write_text(text)
+
+          publish = Path('.github/workflows/publish-biap-global-apk.yml')
+          text = publish.read_text()
+          if not text.startswith('# Publish BIAP Global 0.3.12'):
+              text = '# Publish BIAP Global 0.3.12 equity-only guard: 2026-09-23\n' + text
+          text = text.replace('BIAP-Global-0.3.11-universal.apk', 'BIAP-Global-0.3.12-universal.apk')
+          text = text.replace('BIAP-Global-0\\.3\\.11-universal\\.apk', 'BIAP-Global-0\\.3\\.12-universal\\.apk')
+          if 'BIAP-Global-0.3.12-universal.apk' not in text:
+              raise SystemExit('0.3.12 public verifier not installed')
+          publish.write_text(text)
+          PY
+      - name: Commit workflow updates
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/biap-global-apk.yml .github/workflows/publish-biap-global-apk.yml
+          git commit -m 'Prepare BIAP Global 0.3.12 APK publishing'
+          git push origin HEAD:feat/biap-global

@@ -1,0 +1,68 @@
+name: BIAP Global SIX production probe
+
+on:
+  push:
+    branches: [feat/biap-global]
+    paths:
+      - '.github/workflows/biap-global-six-production-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Verify production Swiss ordinary-equity universe
+        run: |
+          python - <<'PY'
+          import json, urllib.parse, urllib.request
+          base="https://biap.dadashi.no/global-api/global"
+
+          def get(path, params=None):
+              url=base+path
+              if params:
+                  url += "?" + urllib.parse.urlencode(params)
+              with urllib.request.urlopen(url, timeout=90) as r:
+                  return json.load(r)
+
+          browse=get("/instruments/CH/SIX",{"limit":1000})
+          rows=browse.get("instruments") or []
+          catalog=browse.get("catalog") or {}
+          print(json.dumps({
+              "totalMatched":browse.get("totalMatched"),
+              "returned":browse.get("returned"),
+              "catalog":catalog,
+              "sample":[
+                  {
+                      "ticker":x.get("ticker"),
+                      "name":x.get("name"),
+                      "class":(x.get("raw_provider_fields") or {}).get("six_class_of_share"),
+                      "primary":(x.get("raw_provider_fields") or {}).get("six_primary_listing"),
+                  }
+                  for x in rows[:20]
+              ],
+          },indent=2,ensure_ascii=False))
+
+          tickers={str(x.get("ticker") or "").upper() for x in rows}
+          classes={str((x.get("raw_provider_fields") or {}).get("six_class_of_share") or "") for x in rows}
+          checks = [
+              (catalog.get("provider")=="official-six-equity-issuers", f"wrong provider: {catalog}"),
+              (catalog.get("resolutionCoveragePct")==100.0, f"coverage not 100: {catalog}"),
+              (browse.get("totalMatched")==len(rows), f"count mismatch: total={browse.get('totalMatched')} rows={len(rows)}"),
+              (len(rows)==198, f"unexpected SIX ordinary-equity count: {len(rows)}"),
+              ("ABBN" in tickers, "ABBN missing"),
+              ("MMM" not in tickers, "foreign secondary listing MMM leaked into Swiss universe"),
+              ("Participation Certificate" not in classes, f"participation certificates leaked: {classes}"),
+              ("***" not in classes, f"masked SIX class leaked instead of normalized Bearer Share: {classes}"),
+              (classes <= {"Registered Share","Bearer Share"}, f"unexpected share classes: {classes}"),
+              ("Bearer Share" in classes, f"bearer shares missing: {classes}"),
+              (all((x.get("raw_provider_fields") or {}).get("six_primary_listing") is True for x in rows), "non-primary line leaked"),
+          ]
+          failures=[message for ok,message in checks if not ok]
+          if failures:
+              raise SystemExit("SIX_PRODUCTION_FAILED: " + " | ".join(failures))
+          print("SIX_PRODUCTION_OK count=",len(rows),"classes=",sorted(classes))
+          PY
