@@ -299,9 +299,16 @@ def build_registry() -> ProviderRegistry:
         os.environ.get("BIAP_SEC_USER_AGENT")
         or "BIAP Global research application (+https://setai.no)"
     ).strip()
-    sec = PersistentFundamentalsProvider(CachedSECEdgarFundamentalsProvider(user_agent=sec_user_agent))
+    sec_foreign_ifrs = SECForeignIFRSFundamentalsProvider(user_agent=sec_user_agent)
+    sec_domestic = CachedSECEdgarFundamentalsProvider(user_agent=sec_user_agent)
+    # US exchanges also list foreign private issuers that report on 20-F/40-F
+    # under IFRS. Try the normal US-GAAP 10-K parser first, then the strict
+    # foreign-issuer IFRS parser before declaring official fundamentals absent.
+    us_sec = PersistentFundamentalsProvider(
+        FallbackFundamentalsProvider(sec_domestic, sec_foreign_ifrs)
+    )
     for exchange in COUNTRY_PACKS["US"].exchanges:
-        register_fundamentals("US", exchange.code, sec)
+        register_fundamentals("US", exchange.code, us_sec)
 
     # Europe: official ESEF first. If an issuer cannot be safely joined to an
     # ESEF filing, use labelled vendor metrics so cards/agents are not empty,
@@ -311,7 +318,6 @@ def build_registry() -> ProviderRegistry:
     # UK can additionally corroborate the legal entity against Companies House
     # when its free API credential has been configured.
     esef = CachedESEFFundamentalsProvider()
-    sec_foreign_ifrs = SECForeignIFRSFundamentalsProvider(user_agent=sec_user_agent)
     official_europe = FallbackFundamentalsProvider(esef, sec_foreign_ifrs)
     esef_with_fallback = FallbackFundamentalsProvider(official_europe, public_fundamentals)
 
