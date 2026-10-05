@@ -46,6 +46,8 @@ SAMPLES = int(os.environ.get("BIAP_AUDIT_SAMPLES_PER_MARKET", "4"))
 FULL_MARKETS = {m.strip().upper() for m in (os.environ.get("BIAP_AUDIT_FULL_MARKETS") or "").split(",") if m.strip()}
 CATALOG_PAGE_SIZE = max(50, min(int(os.environ.get("BIAP_AUDIT_CATALOG_PAGE_SIZE", "250")), 1000))
 WORKERS = int(os.environ.get("BIAP_AUDIT_WORKERS", "6"))
+FULL_MARKET_WORKERS = max(1, int(os.environ.get("BIAP_AUDIT_FULL_MARKET_WORKERS", "2")))
+TRANSIENT_RETRIES = max(0, int(os.environ.get("BIAP_AUDIT_TRANSIENT_RETRIES", "3")))
 TIMEOUT = int(os.environ.get("BIAP_AUDIT_TIMEOUT", "150"))
 ONLY = {m.strip().upper() for m in (os.environ.get("BIAP_AUDIT_MARKETS") or "").split(",") if m.strip()}
 CANARIES = [c for c in (os.environ.get("BIAP_AUDIT_CANARIES") or "SE:NASDAQ_STOCKHOLM:VOLCAR.B,SE:NASDAQ_STOCKHOLM:QLINEA,NO:EURONEXT_OSLO:BONHR,NO:EURONEXT_OSLO:AKSO").split(",") if c]
@@ -59,8 +61,22 @@ def _req(path: str, body: dict | None = None, timeout: int = 45):
         BASE + path, data=data, method="POST" if body is not None else "GET",
         headers={"Accept": "application/json", "Content-Type": "application/json", "User-Agent": "BIAP global evidence audit"},
     )
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return json.load(response)
+    last_exc: Exception | None = None
+    for attempt in range(TRANSIENT_RETRIES + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return json.load(response)
+        except urllib.error.HTTPError as exc:
+            last_exc = exc
+            if exc.code not in {429, 502, 503, 504} or attempt >= TRANSIENT_RETRIES:
+                raise
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            last_exc = exc
+            if attempt >= TRANSIENT_RETRIES:
+                raise
+        time.sleep(0.75 * (2 ** attempt))
+    assert last_exc is not None
+    raise last_exc
 
 
 def _markets() -> list[tuple[str, str]]:
@@ -309,7 +325,8 @@ def main() -> int:
 
     results: list[dict] = []
     work = [j for j in jobs if j.get("ticker")] + canary_rows
-    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+    active_workers = min(WORKERS, FULL_MARKET_WORKERS) if FULL_MARKETS else WORKERS
+    with ThreadPoolExecutor(max_workers=active_workers) as pool:
         futures = {pool.submit(_analyze, job): job for job in work}
         for future in as_completed(futures):
             job = futures[future]
