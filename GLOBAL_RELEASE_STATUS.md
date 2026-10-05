@@ -25,7 +25,7 @@ gets price + labelled non-official metrics, but no BUY candidate.
 
 ## Tier B — partial (PASS 1–3/6)
 
-FR Paris 3/6, GB LSE 3/6, AE ADX 3/6,
+FR Paris 3/6, AE ADX 3/6,
 GR Athens 1/6, AE DFM 1/6. Gaps are mostly ESEF index lag and issuers without
 a structured report.
 
@@ -39,6 +39,16 @@ These need a new official-source adapter each (or a licensed data feed); they
 are not bugs in existing code. Several have no free machine-readable official
 source (AU: no XBRL mandate, ASX data licensed; DE: Unternehmensregister
 requires registration).
+
+## United Kingdom (update 2026-10-05)
+
+New national OAM locator for the FCA National Storage Mechanism
+(`UKNSMLocator`, LEI search, tagged ESEF only, >=3 s pacing + 15 min cooldown
+after an API-gateway rate block). Production audit, 30 samples: **12
+PASS/WARN** official NSM; 13 legitimately without machine-readable figures
+(investment trusts lodging untagged ESEF, AIM issuers without ESEF); 3 lack a
+verified price (API, AERS, HWC); USFP index lag. The LSE catalog is dominated
+by funds/trusts, so the operating-company hit rate is much higher.
 
 ## Netherlands (update 2026-10-05)
 
