@@ -31,7 +31,7 @@ a structured report.
 
 ## Tier C — no official fundamentals source wired (0/6, COVERAGE_GAP)
 
-AU ASX, CA TSX/TSXV, CH SIX, DE Xetra/Frankfurt (full baseline: 3/499 PASS),
+AU ASX, CA TSX/TSXV, CH SIX,
 HK HKEX, IN NSE/BSE, KR KRX (also no verified price), NZ NZX, SA Tadawul,
 SG SGX, ZA JSE, PT Lisbon (0/6, index lag).
 
@@ -39,6 +39,18 @@ These need a new official-source adapter each (or a licensed data feed); they
 are not bugs in existing code. Several have no free machine-readable official
 source (AU: no XBRL mandate, ASX data licensed; DE: Unternehmensregister
 requires registration).
+
+## Germany (update 2026-10-05)
+
+499 instruments: 388 on an EU regulated market (ESEF-obliged), 111 Open
+Market/Scale (no ESEF obligation; now reported as such, not as a gap).
+Unternehmensregister disallows automated retrieval (robots.txt) and
+filings.xbrl.org has no German filings, so BIAP reads issuer-hosted ESEF
+packages from a verified registry (`analysis/global_markets/data/de_issuer_esef.json`).
+Production PASS/WARN with official FY2025 data: SAP SIE ALV (existing) + BEI DBK
+IXX PAH3 S92 SDF SIX2 SIX3 UTDI = 12. A crawl of 320 issuer sites found
+current ESEF packages for only ~3%; most German issuers publish ESEF only to
+the register. Broader coverage needs a licensed feed or manual curation.
 
 ## Out of scope for Global 1.0
 
