@@ -105,8 +105,9 @@ def test_xetra_download_falls_back_when_newest_advertised_file_is_missing(monkey
             "venueOfExecution": "XETA",
         }
     ])
-    # Production validation requires a non-trivial gzip payload.
-    good = gzip.compress(gzip.decompress(good) + b" " * 2_000)
+    # _download_daily validates gzip magic and a non-trivial payload size.
+    # Keep this test focused on URL fallback rather than compression ratio.
+    good = good + b"x" * 2_000
 
     class Resp:
         def __init__(self, *, payload=None, content=b""):
