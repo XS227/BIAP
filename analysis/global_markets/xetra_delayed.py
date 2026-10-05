@@ -23,10 +23,12 @@ from .country_packs import ExchangeSpec
 from .models import GlobalCompany
 from .providers import GlobalProviderError
 
-_API = "https://mfs.deutsche-boerse.com/api/DETR-posttrade"
+_APIS = {
+    "XETRA": "DETR-posttrade",
+    "FRANKFURT": "DFRA-posttrade",
+}
 _DOWNLOAD = "https://mfs.deutsche-boerse.com/api/download"
-_USER_AGENT = "BIAP Global Xetra delayed market adapter (+https://setai.no)"
-_PROVIDER = "official-deutsche-boerse-xetra-delayed-posttrade"
+_USER_AGENT = "BIAP Global Deutsche Boerse delayed market adapter (+https://setai.no)"
 
 
 def _float(value: object) -> Optional[float]:
@@ -110,11 +112,11 @@ class DeutscheBoerseXetraDelayedClient:
 
     def __init__(self, *, timeout: float = 90.0) -> None:
         self.timeout = max(10.0, float(timeout))
-        self._cached_daily: Optional[tuple[str, str, bytes]] = None
+        self._cached_daily: dict[str, tuple[str, str, bytes]] = {}
 
     @staticmethod
     def supported(country: str, exchange: str) -> bool:
-        return (country.upper(), exchange.upper()) == ("DE", "XETRA")
+        return country.upper() == "DE" and exchange.upper() in _APIS
 
     def _request(self, url: str, *, accept: str = "*/*") -> requests.Response:
         try:
@@ -131,10 +133,17 @@ class DeutscheBoerseXetraDelayedClient:
                 f"Deutsche Boerse delayed Xetra request failed: {type(exc).__name__}"
             ) from exc
 
-    def _download_daily(self) -> tuple[str, str, bytes]:
-        if self._cached_daily is not None:
-            return self._cached_daily
-        metadata_response = self._request(_API, accept="application/json,*/*")
+    def _download_daily(self, exchange: str = "XETRA") -> tuple[str, str, bytes]:
+        exchange = exchange.upper()
+        endpoint = _APIS.get(exchange)
+        if endpoint is None:
+            raise GlobalProviderError(f"unsupported Deutsche Boerse delayed market {exchange}")
+        if exchange in self._cached_daily:
+            return self._cached_daily[exchange]
+        metadata_response = self._request(
+            f"https://mfs.deutsche-boerse.com/api/{endpoint}",
+            accept="application/json,*/*",
+        )
         try:
             payload = metadata_response.json()
         except ValueError as exc:
@@ -166,8 +175,8 @@ class DeutscheBoerseXetraDelayedClient:
                     f"Xetra delayed daily file is not a valid gzip payload: {filename}"
                 )
                 continue
-            self._cached_daily = (quote_date, source_url, content)
-            return self._cached_daily
+            self._cached_daily[exchange] = (quote_date, source_url, content)
+            return self._cached_daily[exchange]
         if last_error is not None:
             raise GlobalProviderError(
                 "Xetra delayed file service has no downloadable daily consolidated file"
@@ -187,7 +196,7 @@ class DeutscheBoerseXetraDelayedClient:
                 f"Deutsche Boerse delayed Xetra source is not configured for {country}/{spec.code}"
             )
         selected = list(instruments)
-        quote_date, source_url, compressed = self._download_daily()
+        quote_date, source_url, compressed = self._download_daily(spec.code)
         stats = aggregate_xetra_posttrade(compressed, selected)
         by_isin = {
             str(company.isin or "").strip().upper(): company
@@ -213,7 +222,11 @@ class DeutscheBoerseXetraDelayedClient:
                 "rangePosition": None,
                 "quoteDate": timestamp[:10] if timestamp else quote_date,
                 "mic": company.mic_code or spec.mic,
-                "provider": self.provider_id,
+                "provider": (
+                    "official-deutsche-boerse-frankfurt-delayed-posttrade"
+                    if spec.code.upper() == "FRANKFURT"
+                    else self.provider_id
+                ),
                 "sourceUrl": source_url,
                 "isin": isin,
                 "trades": int(item.get("trades") or 0),
@@ -222,4 +235,5 @@ class DeutscheBoerseXetraDelayedClient:
         errors: list[str] = []
         if not quotes:
             errors.append("Deutsche Boerse delayed Xetra daily file returned no usable common-stock matches")
-        return quotes, errors, f"Deutsche Boerse official Xetra delayed post-trade ({quote_date})"
+        venue = "Börse Frankfurt" if spec.code.upper() == "FRANKFURT" else "Xetra"
+        return quotes, errors, f"Deutsche Boerse official {venue} delayed post-trade ({quote_date})"
