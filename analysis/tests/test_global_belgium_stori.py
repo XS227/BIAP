@@ -56,5 +56,7 @@ def test_cross_listed_foreign_issuer_uses_home_state_oam():
     athens_listed_belgian = GlobalCompany(country="GR", exchange="ATHENS", currency="EUR", ticker="VIO",
                                           name="VIOHALCO", isin="BE0974271034")
     assert isinstance(provider.locator_for(athens_listed_belgian), BelgiumSTORILocator)
-    greek = GlobalCompany(country="GR", exchange="ATHENS", currency="EUR", ticker="PROF", name="PROFILE", isin="GRS472003011")
-    assert provider.locator_for(greek) is None
+    luxembourg = GlobalCompany(country="NL", exchange="EURONEXT_AMSTERDAM", currency="EUR", ticker="MT",
+                               name="ARCELORMITTAL", isin="LU1598757687")
+    # No Luxembourg locator: the listing country's OAM is used.
+    assert provider.locator_for(luxembourg).country == "NL"
