@@ -10,6 +10,7 @@ import subprocess
 
 from fastapi import FastAPI
 
+from global_release_routes import router as global_release_router
 from global_routes import router as global_router
 from global_source_routes import router as global_source_router
 
@@ -30,6 +31,7 @@ RUNNING_COMMIT = _running_commit()
 app = FastAPI(title="BIAP Global research service")
 app.include_router(global_router)
 app.include_router(global_source_router)
+app.include_router(global_release_router)
 
 
 @app.get("/health")
