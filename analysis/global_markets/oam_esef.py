@@ -1158,7 +1158,7 @@ class UKNSMLocator(OAMLocator):
             body = {"from": 0, "size": 40, "sort": "publication_date", "sortorder": "desc",
                     "criteriaObj": {"criteria": [
                         {"name": "company_lei", "value": ["", lei, "disclose_org", "related_org"]},
-                        {"name": "tag_esef", "value": ["Tagged"]},
+                        {"name": "tag_esef", "value": ["Tagged", "Untagged"]},
                     ], "dateCriteria": None}}
             with self.http.client() as client:
                 response = client.post(self.search, json=body)
@@ -1169,13 +1169,17 @@ class UKNSMLocator(OAMLocator):
             response.raise_for_status()
             return response.text
 
-        hits = json.loads(self.http.cached_text(f"fca-nsm-esef:{lei}", fetch)).get("hits", {}).get("hits", [])
+        hits = json.loads(self.http.cached_text(f"fca-nsm-esef-v2:{lei}", fetch)).get("hits", {}).get("hits", [])
         filings = []
+        untagged = 0
         for hit in hits:
             row = hit.get("_source") or {}
             if str(row.get("lei") or "").upper() != lei:
                 continue
             if str(row.get("type") or "").strip().lower() != "annual financial report":
+                continue
+            if str(row.get("tag_esef") or "").strip().lower() != "tagged":
+                untagged += 1
                 continue
             link = str(row.get("download_link") or "")
             if not re.search(r"\.(zip|xhtml|html)$", link, re.I):
@@ -1188,8 +1192,12 @@ class UKNSMLocator(OAMLocator):
                 label=f"{row.get('company')}: {row.get('headline') or 'Annual Financial Report'}",
             ))
         filings.sort(key=lambda f: f.published_at or "", reverse=True)
+        if not filings and untagged:
+            raise GlobalProviderError(
+                f"FCA NSM annual financial reports for LEI {lei} are lodged untagged (no inline XBRL)"
+            )
         if not filings:
-            raise GlobalProviderError(f"FCA NSM lists no tagged ESEF annual financial report for LEI {lei}")
+            raise GlobalProviderError(f"FCA NSM lists no ESEF annual financial report for LEI {lei}")
         return filings
 
 

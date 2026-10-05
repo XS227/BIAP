@@ -14,7 +14,7 @@ LEI = "2138002P5RNKC5W2JZ46"
 
 
 def _hit(lei, kind, link, date, ident):
-    return {"_source": {"lei": lei, "type": kind, "download_link": link, "publication_date": date,
+    return {"_source": {"lei": lei, "type": kind, "download_link": link, "publication_date": date, "tag_esef": "Tagged",
                         "disclosure_id": ident, "company": "TESCO PLC", "headline": "Annual Financial Report"}}
 
 
@@ -42,8 +42,15 @@ def test_only_own_lei_tagged_annual_packages_newest_first():
 
 
 def test_no_esef_report_is_explicit():
-    with pytest.raises(GlobalProviderError, match="no tagged ESEF annual financial report"):
+    with pytest.raises(GlobalProviderError, match="lists no ESEF annual financial report"):
         _Locator({"hits": {"hits": []}}).annual_filings(COMPANY, LEI, "TESCO PLC")
+
+
+def test_untagged_only_lodgements_are_reported_as_untagged():
+    hit = _hit(LEI, "Annual Financial Report", "NSM/x/NI-9_x-2026-03-31.xhtml", "2026-06-03T00:00:00Z", "NI-9")
+    hit["_source"]["tag_esef"] = "Untagged"
+    with pytest.raises(GlobalProviderError, match="lodged untagged"):
+        _Locator({"hits": {"hits": [hit]}}).annual_filings(COMPANY, LEI, "SCOTTISH MORTGAGE")
 
 
 def test_cooldown_blocks_calls_after_rate_block(monkeypatch):
