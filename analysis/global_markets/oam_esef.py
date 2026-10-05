@@ -44,6 +44,7 @@ import zipfile
 from pathlib import Path
 from typing import Iterable, Optional
 from urllib.parse import urlencode
+from xml.etree import ElementTree as ET
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -1035,6 +1036,89 @@ class BelgiumSTORILocator(OAMLocator):
         return filings
 
 
+class NetherlandsAFMLocator(OAMLocator):
+    """AFM "Register financiele verslaggeving" (Dutch OAM).
+
+    The AFM publishes the whole register as an XML export (id, filing date,
+    issuer name, fiscal year, document type, file name). Annual financial
+    reports lodged as ESEF (.zip/.xbri/.xhtml) are matched to exactly one
+    issuer by legal name; the download link is taken from the filing's AFM
+    detail page. The package's embedded LEI remains the identity proof.
+    """
+
+    oam = "nl-afm-register"
+    country = "NL"
+    export = "https://www.afm.nl/export.aspx?type=e8825b05-4004-4301-b736-651e8c61053d&format=xml"
+    detail = "https://www.afm.nl/en/sector/registers/meldingenregisters/financiele-verslaggeving/details"
+    url_scheme = "afm-register:"
+
+    def _register(self) -> list[dict]:
+        def fetch() -> str:
+            with self.http.client() as client:
+                response = client.get(self.export)
+            response.raise_for_status()
+            root = ET.fromstring(response.content)
+            rows = []
+            for item in root.findall("vermelding"):
+                row = {child.tag: (child.text or "").strip() for child in item}
+                if not row.get("objecttype_eng", "").lower().startswith("annual financial report"):
+                    continue
+                if not re.search(r"\.(zip|xbri|xhtml|html)$", row.get("filename", ""), re.I):
+                    continue
+                rows.append({k: row.get(k, "") for k in ("id", "datum", "uitgevende-instelling", "boekjaar", "filename")})
+            return json.dumps(rows)
+
+        return json.loads(self.http.cached_text("afm-register-annual-esef", fetch))
+
+    @staticmethod
+    def _published(value: str) -> Optional[str]:
+        try:
+            return datetime.strptime(value, "%m/%d/%Y %I:%M:%S %p").date().isoformat()
+        except ValueError:
+            return None
+
+    def annual_filings(self, company: GlobalCompany, lei: str, legal_name: str) -> list[OAMFiling]:
+        from difflib import SequenceMatcher
+        rows = self._register()
+        core = _pt_name_core(legal_name)
+        names = {row["uitgevende-instelling"] for row in rows}
+        matched = {name for name in names if core and _pt_name_core(name) == core}
+        if not matched and len(core) >= 6:
+            matched = {name for name in names if SequenceMatcher(None, core, _pt_name_core(name)).ratio() >= 0.95}
+        if len(matched) != 1:
+            raise GlobalProviderError(f"AFM register issuer identity is not uniquely resolved for {legal_name!r}")
+        issuer = next(iter(matched))
+        filings = [
+            OAMFiling(
+                oam=self.oam, document_id=f"AFM:{row['id']}", package_url=f"{self.url_scheme}{row['id']}",
+                landing_url=f"{self.detail}?id={row['id']}", published_at=self._published(row["datum"]),
+                label=f"{issuer} annual financial report {row['boekjaar']} ({row['filename']})",
+            )
+            for row in rows if row["uitgevende-instelling"] == issuer
+        ]
+        filings.sort(key=lambda f: f.published_at or "", reverse=True)
+        if not filings:
+            raise GlobalProviderError(f"AFM register lists no ESEF annual financial report for {issuer!r}")
+        return filings
+
+    def download(self, url: str, target: Path, max_bytes: int) -> None:
+        ident = url[len(self.url_scheme):]
+        with self.http.client() as client:
+            page = client.get(self.detail, params={"id": ident})
+            page.raise_for_status()
+            link = re.search(r'href="(/downloadregisterfile\.aspx\?[^"]+)"', page.text)
+            if not link:
+                raise GlobalProviderError(f"AFM filing {ident} exposes no downloadable document")
+            size = 0
+            with client.stream("GET", "https://www.afm.nl" + html_unescape(link.group(1))) as response, target.open("wb") as out:
+                response.raise_for_status()
+                for chunk in response.iter_bytes():
+                    size += len(chunk)
+                    if size > max_bytes:
+                        raise GlobalProviderError("OAM ESEF package exceeds size limit")
+                    out.write(chunk)
+
+
 class ItalySDIRLocator(OAMLocator):
     """Both Italian authorized storage mechanisms, merged and ranked.
 
@@ -1086,6 +1170,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
             ItalySDIRLocator(self.http),
             PortugalCMVMLocator(self.http),
             BelgiumSTORILocator(self.http),
+            NetherlandsAFMLocator(self.http),
         ]
         self.locators = {locator.country: locator for locator in chosen}
 
