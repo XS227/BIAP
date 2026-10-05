@@ -33,11 +33,13 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta, timezone
 from html import unescape as html_unescape
+import base64
 import hashlib
 import io
 import json
 import re
 import tempfile
+import unicodedata
 import zipfile
 from pathlib import Path
 from typing import Iterable, Optional
@@ -791,6 +793,197 @@ class ItalyEMarketStorageLocator(OAMLocator):
         return filings
 
 
+# Trailing Portuguese/Spanish legal-form words, possibly stacked
+# ("NOS, SGPS, S.A.", "MARTIFER - S.G.P.S. S.A.", "IMPRESA-SOCIEDADE GESTORA DE
+# PARTICIPACOES SOCIAIS S.A.", "EDP RENEWABLES SOCIEDAD ANONIMA").
+_PT_LEGAL_FORM = re.compile(
+    r"(?:[\s,\-]+(?:S\.?\s?A\.?|S\.?\s?G\.?\s?P\.?\s?S\.?|SOCIEDADE\s+GESTORA\s+DE\s+PARTICIPACOES\s+SOCIAIS|"
+    r"SOCIEDADE\s+ABERTA|SOCIEDAD\s+ANONIMA|SOCIEDADE\s+ANONIMA|S\.?\s?A\.?\s?D\.?|PLC|N\.?\s?V\.?|SE|AG|INC\.?|LTD\.?))+\s*$"
+)
+
+
+def _pt_name_core(value: str) -> str:
+    """'NOS, SGPS, S.A.' / 'NOS SGPS SA' -> 'NOS'; accents folded."""
+    text = unicodedata.normalize("NFKD", str(value or "")).encode("ascii", "ignore").decode().upper()
+    text = re.sub(r"\s+", " ", text).strip(" \"'()")
+    text = _PT_LEGAL_FORM.sub("", text)
+    return re.sub(r"[^A-Z0-9]+", "", text)
+
+
+def _stream_json_base64(chunks, marker: bytes, out, max_bytes: int) -> int:
+    """Decode the JSON string value following ``marker`` (base64) to ``out``.
+
+    Base64 never contains a quote or backslash, so JSON escapes ('\\/') are
+    removed byte-wise and the closing quote ends the value.
+    """
+    state, buf, pending, written = "seek", b"", b"", 0
+    for chunk in chunks:
+        if state == "seek":
+            buf += chunk
+            at = buf.find(marker)
+            if at < 0:
+                buf = buf[-len(marker):]
+                continue
+            chunk, buf, state = buf[at + len(marker):], b"", "data"
+        end = chunk.find(b'"')
+        if end >= 0:
+            chunk, state = chunk[:end], "done"
+        data = pending + chunk.replace(b"\\", b"")
+        cut = len(data) if state == "done" else len(data) - len(data) % 4
+        decoded, pending = base64.b64decode(data[:cut]), data[cut:]
+        written += len(decoded)
+        if written > max_bytes:
+            raise GlobalProviderError("OAM ESEF package exceeds size limit")
+        out.write(decoded)
+        if state == "done":
+            return written
+    raise GlobalProviderError("CMVM download response carried no file")
+
+
+class PortugalCMVMLocator(OAMLocator):
+    """CMVM SDI "Relatorios e Contas Anuais" (Portuguese OAM).
+
+    The CMVM portal is an OutSystems app: issuer list, per-issuer annual
+    report list and the lodged file are served by its screen-service JSON
+    endpoints. Their API version hashes are read from the portal's own
+    published scripts on every refresh, so a portal redeploy does not break
+    the integration silently. The issuer is matched to exactly one CMVM entity
+    by legal name; the embedded LEI inside the downloaded ESEF package remains
+    the identity proof (checked by NationalOAMESEFProvider).
+    """
+
+    oam = "pt-cmvm-sdi"
+    country = "PT"
+    base = "https://www.cmvm.pt/PInstitucional/"
+    view = "MainFlow.Single_SDI_StaticContent"
+    csrf = "T6C+9iB49TLra4jEsMeSckDMNhQ="  # OutSystems anonymous CSRF token
+    url_scheme = "cmvm-sdi:"
+    _actions = {
+        "entities": ("PInstitucional.SDI_StaticPages.SDI_Emitentes_RelCont_Anuais", "DataActionGetData",
+                     "PInstitucional/SDI_StaticPages/SDI_Emitentes_RelCont_Anuais/DataActionGetData"),
+        "reports": ("CMVM_SDI_Emitentes_CW.Relatorios.InfPeriodicasContAnuais", "DataActionGetData",
+                    "CMVM_SDI_Emitentes_CW/Relatorios/InfPeriodicasContAnuais/DataActionGetData"),
+        "download": ("PInstitucional.SDI_StaticPages.SDI_Emitentes_RelCont_Anuais", "InfoDiariaPeriodoDownloadZip",
+                     "PInstitucional/SDI_StaticPages/SDI_Emitentes_RelCont_Anuais/ActionInfoDiariaPeriodoDownloadZip"),
+    }
+
+    def _versions(self) -> dict:
+        def fetch() -> str:
+            with self.http.client() as client:
+                module = client.get(self.base + "moduleservices/moduleversioninfo")
+                module.raise_for_status()
+                result = {"module": module.json()["versionToken"]}
+                for key, (script, name, path) in self._actions.items():
+                    js = client.get(self.base + f"scripts/{script}.mvc.js")
+                    js.raise_for_status()
+                    found = re.search(r'"' + re.escape(name) + r'", "screenservices/' + re.escape(path) + r'", "([^"]+)"', js.text)
+                    if not found:
+                        raise GlobalProviderError(f"CMVM portal script no longer exposes {name}")
+                    result[key] = found.group(1)
+            return json.dumps(result)
+
+        return json.loads(self.http.cached_text("cmvm-sdi-versions", fetch))
+
+    def _call(self, client: httpx.Client, key: str, versions: dict, payload: dict) -> dict:
+        body = {"versionInfo": {"moduleVersion": versions["module"], "apiVersion": versions[key]},
+                "viewName": self.view, **payload}
+        response = client.post(self.base + "screenservices/" + self._actions[key][2], json=body,
+                               headers={"X-CSRFToken": self.csrf, "Accept": "application/json"})
+        response.raise_for_status()
+        data = response.json()
+        if data.get("exception"):
+            raise GlobalProviderError(f"CMVM {key} failed: {data['exception'].get('message')}")
+        return data.get("data") or {}
+
+    def _entities(self) -> list[tuple[str, str]]:
+        def fetch() -> str:
+            versions = self._versions()
+            with self.http.client() as client:
+                data = self._call(client, "entities", versions, {"screenData": {"variables": {}}})
+            rows = (data.get("EntitiesList") or {}).get("List") or []
+            return json.dumps([[str(r["NUM_ENT"]), str(r["NOM_ENT"])] for r in rows if r.get("NUM_ENT")])
+
+        return [tuple(row) for row in json.loads(self.http.cached_text("cmvm-sdi-entities", fetch))]
+
+    def _entity_id(self, legal_name: str) -> str:
+        from difflib import SequenceMatcher
+        core = _pt_name_core(legal_name)
+        entities = self._entities()
+        matches = {eid for eid, name in entities if core and _pt_name_core(name) == core}
+        if not matches and len(core) >= 6:
+            # CMVM register typos ("Participações Soiais"): accept one near-
+            # identical name only. Identity is still proven by the package's
+            # embedded LEI, which must equal the issuer's LEI.
+            def full(value: str) -> str:
+                text = unicodedata.normalize("NFKD", str(value or "")).encode("ascii", "ignore").decode().upper()
+                return re.sub(r"[^A-Z0-9]+", "", text)
+
+            target = full(legal_name)
+            matches = {eid for eid, name in entities
+                       if SequenceMatcher(None, target, full(name)).ratio() >= 0.95}
+        if len(matches) != 1:
+            raise GlobalProviderError(f"CMVM issuer identity is not uniquely resolved for {legal_name!r}")
+        return next(iter(matches))
+
+    def annual_filings(self, company: GlobalCompany, lei: str, legal_name: str) -> list[OAMFiling]:
+        entity = self._entity_id(legal_name)
+
+        def fetch() -> str:
+            versions = self._versions()
+            variables = {
+                "StartIndex": 0, "MaxRecord": 50, "IsLoading": True, "Count": 0,
+                "LanguageId": "1", "_languageIdInDataFetchStatus": 1,
+                "EntitiesList": entity, "_entitiesListInDataFetchStatus": 1,
+                "StartDate": "2019-01-01", "_startDateInDataFetchStatus": 1,
+                "EndDate": _utc_now().date().isoformat(), "_endDateInDataFetchStatus": 1,
+                "InfPeriodicasContAnuaisLst": {"List": []},
+                "GetLanguage": {"Language": {"PortugueseId": 1, "EnglishId": 2}},
+            }
+            with self.http.client() as client:
+                data = self._call(client, "reports", versions, {"screenData": {"variables": variables}})
+            return json.dumps(((data.get("InfPeriodicasContAnuaisLst2") or {}).get("List")) or [])
+
+        rows = json.loads(self.http.cached_text(f"cmvm-sdi-annual:{entity}", fetch))
+        filings = []
+        for row in rows:
+            title = str(row.get("DSC_FACT") or "")
+            lower = title.lower()
+            # Zip lodgements are the ESEF packages (some issuers omit "ESEF"
+            # from the title); explicit non-ESEF/PDF versions are skipped and
+            # the package parser still rejects anything without inline XBRL.
+            if not row.get("IsZip") or re.search(r"n[aã]o\s+esef|non[\s-]+esef|\bpdf\b", lower):
+                continue
+            scope = "consolidated" if "consolid" in lower else ("separate" if "individua" in lower else None)
+            filings.append(OAMFiling(
+                oam=self.oam, document_id=f"CMVM-SDI:{entity}:{row['ID']}",
+                package_url=f"{self.url_scheme}{row['ID']}:{'en' if row.get('IsEN') else 'pt'}",
+                landing_url=self.base + "PortalInstitucional",
+                published_at=str(row.get("DATA_FACT") or "") or None, label=title, scope=scope,
+            ))
+        # Newest publication first; within one date prefer consolidated.
+        filings.sort(key=lambda f: (f.published_at or "", {"consolidated": 2, None: 1}.get(f.scope, 0)), reverse=True)
+        if not filings:
+            raise GlobalProviderError(f"CMVM lists no ESEF annual financial report for entity {entity}")
+        return filings
+
+    def download(self, url: str, target: Path, max_bytes: int) -> None:
+        """Stream the base64 file out of the JSON action response to disk."""
+        _, ident, lang = url.split(":")
+        versions = self._versions()
+        body = {"versionInfo": {"moduleVersion": versions["module"], "apiVersion": versions["download"]},
+                "viewName": self.view,
+                "inputParameters": {"LocalLanguageId": 2 if lang == "en" else 1,
+                                    "Language": {"PortugueseId": 1, "EnglishId": 2},
+                                    "IsPT": lang != "en", "Id": int(ident), "Tab": "Z"}}
+        marker = b'"Base64":"'
+        with self.http.client() as client, client.stream(
+            "POST", self.base + "screenservices/" + self._actions["download"][2], json=body,
+            headers={"X-CSRFToken": self.csrf, "Accept": "application/json"},
+        ) as response, target.open("wb") as out:
+            response.raise_for_status()
+            _stream_json_base64(response.iter_bytes(), marker, out, max_bytes)
+
+
 class ItalySDIRLocator(OAMLocator):
     """Both Italian authorized storage mechanisms, merged and ranked.
 
@@ -840,6 +1033,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
             FranceAMFInfoFinanciereLocator(self.http),
             SpainCNMVLocator(self.http),
             ItalySDIRLocator(self.http),
+            PortugalCMVMLocator(self.http),
         ]
         self.locators = {locator.country: locator for locator in chosen}
 
@@ -851,6 +1045,14 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
         return OAMHttp.cache_dir() / "packages" / (hashlib.sha256(filing.document_id.encode()).hexdigest() + ".json")
 
     def _download(self, url: str, target: Path) -> None:
+        for locator in self.locators.values():
+            scheme = getattr(locator, "url_scheme", None)
+            if scheme and url.startswith(scheme):
+                try:
+                    locator.download(url, target, MAX_PACKAGE_BYTES)
+                except httpx.HTTPError as exc:
+                    raise GlobalProviderError(f"OAM package download failed: {type(exc).__name__}") from exc
+                return
         size = 0
         try:
             with self.http.client() as client, client.stream("GET", url) as response, target.open("wb") as out:
