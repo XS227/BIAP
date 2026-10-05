@@ -374,7 +374,13 @@ def build_registry() -> ProviderRegistry:
     # Issuer-hosted ESEF packages (reviewed registry, LEI-verified on every
     # read) come before the narrow per-issuer HTML/PDF parsers.
     de_issuer_esef = FallbackFundamentalsProvider(GermanIssuerESEFProvider(), de_issuer_resilient)
-    de_official = FallbackFundamentalsProvider(official_europe, de_issuer_esef)
+    # Germany is deliberately NOT routed through the generic public ESEF index:
+    # the public index currently has no German filings, so doing so only forces
+    # hundreds of unnecessary GLEIF identity lookups and can turn GLEIF rate/
+    # transport errors into apparent BIAP pipeline failures. Prefer BIAP's
+    # reviewed issuer-hosted ESEF/issuer statements, then the strict SEC foreign
+    # IFRS route for cross-listed issuers such as SAP.
+    de_official = FallbackFundamentalsProvider(de_issuer_esef, sec_foreign_ifrs)
     de_with_fallback = FallbackFundamentalsProvider(de_official, public_fundamentals)
     de_provider = PersistentFundamentalsProvider(de_with_fallback)
     companies_house_key = (os.environ.get("BIAP_COMPANIES_HOUSE_API_KEY") or "").strip()
