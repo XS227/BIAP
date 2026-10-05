@@ -132,7 +132,7 @@ def test_xetra_download_falls_back_when_newest_advertised_file_is_missing(monkey
         raise AssertionError(url)
 
     monkeypatch.setattr(client, "_request", fake_request)
-    quote_date, source_url, content = client._download_daily()
+    quote_date, source_url, content = client._download_daily("XETRA")
 
     assert quote_date == "2026-10-01"
     assert source_url.endswith("2026-10-01.json.gz")
@@ -155,7 +155,7 @@ def test_xetra_client_builds_stage_one_quotes(monkeypatch):
     monkeypatch.setattr(
         client,
         "_download_daily",
-        lambda: ("2026-09-24","https://mfs.deutsche-boerse.com/api/download/test.json.gz",content),
+        lambda exchange="XETRA": ("2026-09-24","https://mfs.deutsche-boerse.com/api/download/test.json.gz",content),
     )
     quotes,errors,source=client.batch_quotes(
         [_company("SAP","DE0007164600")],
@@ -173,5 +173,36 @@ def test_xetra_client_builds_stage_one_quotes(monkeypatch):
 
 def test_xetra_delayed_support_is_strict():
     assert DeutscheBoerseXetraDelayedClient.supported("DE","XETRA")
-    assert not DeutscheBoerseXetraDelayedClient.supported("DE","FRANKFURT")
+    assert DeutscheBoerseXetraDelayedClient.supported("DE","FRANKFURT")
     assert not DeutscheBoerseXetraDelayedClient.supported("GB","LSE")
+
+
+def test_frankfurt_client_uses_dfra_official_feed(monkeypatch):
+    client = DeutscheBoerseXetraDelayedClient()
+    content = _gzip_rows([{
+        "instrumentIdentificationCode":"DE0007164600",
+        "priceCurrency":"EUR",
+        "price":184.56,
+        "quantity":20,
+        "tradingDateAndTime":"2026-10-05T18:00:00Z",
+        "mmtModificationInd":"-",
+        "venueOfExecution":"FRAA",
+    }])
+    seen = {}
+    def fake_download(exchange="XETRA"):
+        seen["exchange"] = exchange
+        return ("2026-10-05","https://mfs.deutsche-boerse.com/api/download/DFRA-test.json.gz",content)
+    monkeypatch.setattr(client, "_download_daily", fake_download)
+    company = GlobalCompany(
+        country="DE", exchange="FRANKFURT", currency="EUR",
+        ticker="SAP", name="SAP SE", mic_code="XFRA",
+        isin="DE0007164600", instrument_type="Common Stock",
+    )
+    quotes, errors, source = client.batch_quotes(
+        [company], "DE", get_exchange("DE","FRANKFURT")
+    )
+    assert seen["exchange"] == "FRANKFURT"
+    assert errors == []
+    assert quotes[0]["price"] == 184.56
+    assert quotes[0]["provider"] == "official-deutsche-boerse-frankfurt-delayed-posttrade"
+    assert "official Börse Frankfurt delayed post-trade" in source
