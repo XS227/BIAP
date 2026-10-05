@@ -1,61 +1,40 @@
-import { useCallback, useState } from 'react';
-import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
-import { BiapLogo, Brand, Colors, Fonts, Radius, Spacing, BottomTabInset, MaxContentWidth } from '@/constants/theme';
-import { fetchGlobalStatus, type GlobalInstrument } from '@/lib/global-api';
-import { getGlobalMarketSelection, type GlobalMarketSelection } from '@/lib/global-market-selection';
-import { getSelectedGlobalCompany } from '@/lib/global-company-selection';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, Image, StyleSheet, ScrollView, RefreshControl, useColorScheme, SafeAreaView, Pressable } from 'react-native';
+import { router } from 'expo-router';
+import { Colors, Brand, Fonts, Spacing, Radius, BottomTabInset, MaxContentWidth, ThemeColors, BiapLogo } from '@/constants/theme';
+import { formatPrice, parsePct, StockItem } from '@/lib/api';
+import { computeMarketSummary } from '@/lib/market-stats';
+import { marketStatusLabel } from '@/lib/market-hours';
+import { fetchLiveMarketPreview } from '@/lib/live-market-preview';
+import { StockRowSkeleton } from '@/components/skeleton';
+import { SymbolLogo } from '@/components/symbol-logo';
 
-const shortcuts=[
-  ['📈','Market','Browse the selected exchange and run Kiasha scan','/market'],
-  ['🧠','Kiasha','Evidence-gated ranked stock ideas','/kiasha'],
-  ['💼','Portfolio','Compare markets and build a global paper portfolio','/portfolio'],
-  ['🧩','Modules','KPI, data, business and financial modules','/modules'],
-] as const;
+function WatchRow({ item, colors }: { item: StockItem; colors: ThemeColors }) {
+  const pct = parsePct(item.changePercent); const up = pct >= 0;
+  return <Pressable onPress={() => router.push(`/stock/${item.code}`)} style={({ pressed }) => [styles.watchRow, { backgroundColor: colors.backgroundElement, opacity: pressed ? .75 : 1 }]}>
+    <View style={styles.watchLeft}><SymbolLogo symbol={item.name || item.code} size={38} /><View style={{ alignItems: 'flex-start' }}><Text style={[styles.watchName, { color: colors.text }]}>{item.name}</Text><Text style={styles.realTag}>REAL MARKET</Text></View></View>
+    <View style={styles.watchRight}><Text style={[styles.price, { color: colors.text }]}>{formatPrice(item.lastPrice ?? item.closingPrice)}</Text><Text style={{ color: up ? Brand.positive : Brand.negative, fontFamily: Fonts.mono, fontSize: 12 }}>{up ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}٪</Text></View>
+  </Pressable>;
+}
+function ProductCard({ icon, title, body, accent, onPress, colors }: { icon: string; title: string; body: string; accent: string; onPress: () => void; colors: ThemeColors }) { return <Pressable onPress={onPress} style={({ pressed }) => [styles.productCard, { backgroundColor: colors.backgroundElement, borderColor: `${accent}44`, opacity: pressed ? .78 : 1 }]}><View style={[styles.productIcon, { backgroundColor: `${accent}22` }]}><Text style={{ fontSize: 23 }}>{icon}</Text></View><View style={{ flex: 1, alignItems: 'flex-end' }}><Text style={[styles.productTitle, { color: colors.text }]}>{title}</Text><Text style={[styles.productBody, { color: colors.textSecondary }]}>{body}</Text></View></Pressable>; }
 
-export default function HomeScreen(){
-  const colors=useColorScheme()==='dark'?Colors.dark:Colors.light;
-  const[market,setMarket]=useState<GlobalMarketSelection|null>(null);
-  const[company,setCompany]=useState<GlobalInstrument|null>(null);
-  const[status,setStatus]=useState<Record<string,unknown>|null>(null);
-  useFocusEffect(useCallback(()=>{
-    let active=true;
-    void (async()=>{
-      const m=await getGlobalMarketSelection();
-      const[c,s]=await Promise.all([getSelectedGlobalCompany(),fetchGlobalStatus()]);
-      if(!active)return;
-      setMarket(m);
-      setCompany(c);
-      setStatus(s);
-    })();
-    return()=>{active=false;};
-  },[]));
-  const apiOk=Boolean(status);
-  const licensedFeed=Boolean(status?.licensedMarketFeedConfigured ?? status?.marketProviderConfigured);
-  const publicFallback=Boolean(status?.publicMarketFallbackConfigured);
-  const marketCache=Boolean(status?.marketCacheConfigured);
-  const liveTrading=Boolean(status?.liveTrading);
-  const feedValue=licensedFeed?'LICENSED':publicFallback?'PUBLIC':marketCache?'CACHED':'PENDING';
-  const feedColor=licensedFeed?Brand.positive:publicFallback?Brand.warning:marketCache?Brand.warning:colors.textSecondary;
-  const feedLabel=licensedFeed?'Market feed':publicFallback?'EOD + cache':marketCache?'Market cache':'Market feed';
-  return <SafeAreaView style={[styles.safe,{backgroundColor:colors.background}]}><ScrollView contentContainerStyle={styles.content}><View style={styles.max}>
-    <View style={styles.header}><Image source={BiapLogo} style={styles.logo} resizeMode="contain"/><View style={[styles.globalPill,{borderColor:Brand.primary}]}><Text style={styles.globalPillText}>GLOBAL</Text></View></View>
-
-    <View style={[styles.hero,{backgroundColor:colors.backgroundElement,borderColor:colors.backgroundSelected}]}><Text style={styles.kicker}>BUSINESS & INVESTMENT ANALYSIS PLATFORM</Text><Text style={[styles.title,{color:colors.text}]}>BIAP Global</Text><Text style={[styles.body,{color:colors.textSecondary}]}>One BIAP engine across connected markets: six scoring agents — Fundamental, Risk, Forecast, Comparison, Quality and Liquidity — plus Evidence/Verification and Portfolio construction.</Text><View style={styles.heroActions}><Pressable onPress={()=>router.push('/market')} style={[styles.primary,{backgroundColor:Brand.primary}]}><Text style={styles.primaryText}>Open Market</Text></Pressable><Pressable onPress={()=>router.push('/global')} style={[styles.secondary,{borderColor:Brand.primary}]}><Text style={styles.secondaryText}>Change country</Text></Pressable></View></View>
-
-    <Text style={[styles.section,{color:colors.text}]}>Current context</Text>
-    <View style={[styles.context,{backgroundColor:colors.backgroundElement}]}><View style={styles.contextBlock}><Text style={[styles.label,{color:colors.textSecondary}]}>COUNTRY / EXCHANGE</Text><Text style={[styles.value,{color:colors.text}]}>{market?`${market.countryName} • ${market.exchangeLabel}`:'Loading…'}</Text><Text style={[styles.meta,{color:colors.textSecondary}]}>{market?`${market.mic||market.exchange} • ${market.currency}`:''}</Text></View><View style={[styles.divider,{backgroundColor:colors.backgroundSelected}]}/><View style={styles.contextBlock}><Text style={[styles.label,{color:colors.textSecondary}]}>SELECTED COMPANY</Text><Text style={[styles.value,{color:company?colors.text:colors.textSecondary}]}>{company?`${company.ticker} • ${company.name}`:'No stock selected'}</Text><Text style={[styles.meta,{color:colors.textSecondary}]}>{company?`${company.country} • ${company.exchange}`:'Choose a stock from Market or Kiasha for cross-module analysis.'}</Text>{company?<Pressable onPress={()=>router.push({pathname:'/stock/[code]',params:{code:company.ticker,country:company.country,exchange:company.exchange,currency:company.currency,name:company.name,isin:company.isin||'',lei:company.lei||''}} as never)} style={[styles.decisionButton,{borderColor:Brand.primary}]}><Text style={styles.decisionButtonText}>Open stock decision table →</Text></Pressable>:null}</View></View>
-
-    <Text style={[styles.section,{color:colors.text}]}>Core workflows</Text>
-    <View style={styles.grid}>{shortcuts.map(([icon,title,sub,href])=><Pressable key={title} onPress={()=>router.push(href as never)} style={[styles.card,{backgroundColor:colors.backgroundElement}]}><Text style={styles.icon}>{icon}</Text><Text style={[styles.cardTitle,{color:colors.text}]}>{title}</Text><Text style={[styles.cardText,{color:colors.textSecondary}]}>{sub}</Text></Pressable>)}</View>
-
-    <Text style={[styles.section,{color:colors.text}]}>System status</Text>
-    <View style={styles.statusRow}><View style={[styles.status,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.statusValue,{color:apiOk?Brand.positive:Brand.warning}]}>{apiOk?'ONLINE':'CHECK'}</Text><Text style={[styles.statusLabel,{color:colors.textSecondary}]}>Global API</Text></View><View style={[styles.status,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.statusValue,{color:feedColor}]}>{feedValue}</Text><Text style={[styles.statusLabel,{color:colors.textSecondary}]}>{feedLabel}</Text></View><View style={[styles.status,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.statusValue,{color:liveTrading?Brand.positive:colors.textSecondary}]}>{liveTrading?'ON':'OFF'}</Text><Text style={[styles.statusLabel,{color:colors.textSecondary}]}>Live broker</Text></View></View>
-
-    {publicFallback&&!licensedFeed?<View style={[styles.feedNotice,{backgroundColor:colors.backgroundElement,borderColor:Brand.warning}]}><Text style={[styles.feedNoticeTitle,{color:Brand.warning}]}>Public EOD market data</Text><Text style={[styles.feedNoticeText,{color:colors.textSecondary}]}>Verified public end-of-day market history and persistent snapshots are available for supported markets. A licensed live/batch feed is still required for broad full-exchange scanning and higher-trust real-time coverage.</Text></View>:null}
-
-    <View style={[styles.notice,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.noticeTitle,{color:colors.text}]}>Evidence before recommendation</Text><Text style={[styles.noticeText,{color:colors.textSecondary}]}>A missing filing, stale price, ambiguous entity, poor liquidity or high-confidence agent conflict can force NO_RECOMMENDATION. BIAP Global is designed to abstain rather than fill gaps with invented values.</Text></View>
+export default function HomeScreen() {
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light'; const colors = Colors[scheme];
+  const [data, setData] = useState<StockItem[]>([]); const [loading, setLoading] = useState(true); const [refreshing, setRefreshing] = useState(false); const [error, setError] = useState(false); const marketStatus = marketStatusLabel();
+  const load = useCallback(async () => { try { setError(false); const rows = await fetchLiveMarketPreview(); setData(rows); setError(rows.length === 0); } catch { setError(true); } finally { setLoading(false); setRefreshing(false); } }, []);
+  useEffect(() => { load(); const interval = setInterval(load, 45_000); return () => clearInterval(interval); }, [load]);
+  const summary = useMemo(() => computeMarketSummary(data), [data]);
+  return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={Brand.primary} />}><View style={styles.maxWidth}>
+    <View style={styles.header}><Pressable onPress={() => router.push('/more')} style={[styles.avatar, { backgroundColor: Brand.primary }]}><Text style={styles.avatarText}>؟</Text></Pressable><Image source={BiapLogo} style={styles.logo} resizeMode="contain" /><Pressable onPress={() => router.push('/search')} style={[styles.search, { backgroundColor: colors.backgroundElement }]}><Text>🔍</Text></Pressable></View>
+    <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}><Text style={styles.eyebrow}>BIAP • Business & Investment Analysis Platform</Text><Text style={[styles.heroTitle, { color: colors.text }]}>سرمایه‌گذاری، تحلیل داده و رشد کسب‌وکار</Text><Text style={[styles.heroBody, { color: colors.textSecondary }]}>کیاشا برای بازار سرمایه؛ ابزارهای تحلیلی و مدیریتی برای داده و کسب‌وکار، همه در یک اپ.</Text><Pressable onPress={() => router.push('/how-to' as never)} style={[styles.heroButton, { backgroundColor: Brand.primary }]}><Text style={styles.heroButtonText}>چطور از BIAP استفاده کنم؟</Text></Pressable></View>
+    <Text style={[styles.sectionTitle, { color: colors.text }]}>حوزه‌های BIAP</Text>
+    <ProductCard icon="🤖" title="بازار سرمایه • Kiasha" body="تا ۱۰ پیشنهاد برتر از داده واقعی قابل‌تأیید، افق کوتاه/بلندمدت و Track Record Paper" accent={Brand.positive} onPress={() => router.push('/kiasha')} colors={colors} />
+    <ProductCard icon="📊" title="تحلیل داده" body="EDA، KPI، SQL، Forecast، Anomaly و داشبورد" accent={Brand.dataViolet} onPress={() => router.push('/modules' as never)} colors={colors} />
+    <ProductCard icon="💼" title="توسعه کسب‌وکار" body="SWOT، CRM، Journey، Pricing، Business Plan و مدل مالی" accent={Brand.secondary} onPress={() => router.push('/modules' as never)} colors={colors} />
+    <View style={styles.sectionHead}><Pressable onPress={() => router.push('/market')}><Text style={{ color: Brand.primary, fontFamily: Fonts.sans }}>مشاهده بازار ←</Text></Pressable><Text style={[styles.sectionTitle, { color: colors.text }]}>منتخب زنده بازار</Text></View>
+    <View style={[styles.marketPill, { backgroundColor: colors.backgroundElement }]}><Text style={{ color: marketStatus.open ? Brand.positive : colors.textSecondary, fontFamily: Fonts.sans }}>{marketStatus.label} • {summary.total ? `${summary.gainers} مثبت / ${summary.losers} منفی` : 'در انتظار داده واقعی'}</Text></View>
+    {error ? <Text style={[styles.error, { color: colors.textSecondary, backgroundColor: colors.backgroundElement }]}>فعلاً قیمت معتبر از منبع واقعی دریافت نشد. صفحه را پایین بکش یا وارد بازار شو؛ عدد جایگزین ساخته نمی‌شود.</Text> : null}
+    {loading ? [1,2,3].map(i => <StockRowSkeleton key={i} />) : data.map(item => <WatchRow key={`${item.code}-${item.name}`} item={item} colors={colors} />)}
   </View></ScrollView></SafeAreaView>;
 }
-
-const styles=StyleSheet.create({safe:{flex:1},content:{paddingHorizontal:Spacing.three,paddingBottom:BottomTabInset+Spacing.four},max:{maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingTop:Spacing.three,marginBottom:14},logo:{width:104,height:38},globalPill:{borderWidth:1,borderRadius:30,paddingHorizontal:12,paddingVertical:6},globalPillText:{color:Brand.primary,fontFamily:Fonts.mono,fontWeight:'900',fontSize:10,letterSpacing:1.2},hero:{borderWidth:1,borderRadius:Radius.lg,padding:20},kicker:{color:Brand.primary,fontFamily:Fonts.mono,fontSize:8.5,fontWeight:'900',letterSpacing:1},title:{fontFamily:Fonts.sans,fontSize:30,fontWeight:'900',marginTop:7},body:{fontFamily:Fonts.sans,fontSize:11.5,lineHeight:19,marginTop:5},heroActions:{flexDirection:'row',gap:8,marginTop:16},primary:{flex:1,minHeight:46,borderRadius:Radius.md,alignItems:'center',justifyContent:'center'},primaryText:{color:'#fff',fontFamily:Fonts.sans,fontSize:11,fontWeight:'900'},secondary:{flex:1,minHeight:46,borderRadius:Radius.md,borderWidth:1,alignItems:'center',justifyContent:'center'},secondaryText:{color:Brand.primary,fontFamily:Fonts.sans,fontSize:11,fontWeight:'900'},section:{fontFamily:Fonts.sans,fontSize:15,fontWeight:'900',marginTop:20,marginBottom:8},context:{borderRadius:Radius.lg,padding:Spacing.three},contextBlock:{paddingVertical:4},label:{fontFamily:Fonts.mono,fontSize:8,fontWeight:'900'},value:{fontFamily:Fonts.sans,fontSize:13,fontWeight:'900',marginTop:4},meta:{fontFamily:Fonts.sans,fontSize:9.5,lineHeight:14,marginTop:3},decisionButton:{marginTop:10,borderWidth:1,borderRadius:18,paddingHorizontal:12,paddingVertical:8,alignSelf:'flex-start'},decisionButtonText:{color:Brand.primary,fontFamily:Fonts.sans,fontSize:9.5,fontWeight:'900'},divider:{height:1,marginVertical:10},grid:{flexDirection:'row',flexWrap:'wrap',gap:8},card:{width:'48.5%',minHeight:126,borderRadius:Radius.md,padding:Spacing.three},icon:{fontSize:22},cardTitle:{fontFamily:Fonts.sans,fontSize:13,fontWeight:'900',marginTop:6},cardText:{fontFamily:Fonts.sans,fontSize:9.5,lineHeight:15,marginTop:3},statusRow:{flexDirection:'row',gap:8},status:{flex:1,borderRadius:Radius.md,paddingVertical:14,alignItems:'center'},statusValue:{fontFamily:Fonts.mono,fontSize:11.5,fontWeight:'900',textAlign:'center'},statusLabel:{fontFamily:Fonts.sans,fontSize:8.5,marginTop:4,textAlign:'center'},feedNotice:{borderWidth:1,borderRadius:Radius.md,padding:Spacing.three,marginTop:10},feedNoticeTitle:{fontFamily:Fonts.sans,fontSize:11,fontWeight:'900'},feedNoticeText:{fontFamily:Fonts.sans,fontSize:9,lineHeight:14,marginTop:4},notice:{borderRadius:Radius.lg,padding:Spacing.four,marginTop:16},noticeTitle:{fontFamily:Fonts.sans,fontSize:13,fontWeight:'900'},noticeText:{fontFamily:Fonts.sans,fontSize:9.5,lineHeight:15,marginTop:5}});
+const styles = StyleSheet.create({ safe:{flex:1}, content:{paddingHorizontal:Spacing.three,paddingTop:Spacing.three}, maxWidth:{maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'}, header:{flexDirection:'row-reverse',alignItems:'center',justifyContent:'space-between',marginBottom:Spacing.three}, avatar:{width:36,height:36,borderRadius:18,alignItems:'center',justifyContent:'center'}, avatarText:{color:'#fff',fontWeight:'800'}, logo:{width:92,height:31}, search:{width:36,height:36,borderRadius:18,alignItems:'center',justifyContent:'center'}, hero:{borderRadius:Radius.lg,padding:Spacing.four,alignItems:'flex-end',marginBottom:Spacing.four}, eyebrow:{color:'#8ab4ff',fontFamily:Fonts.mono,fontSize:9,fontWeight:'800',textAlign:'right'}, heroTitle:{fontFamily:Fonts.sans,fontSize:21,fontWeight:'800',textAlign:'right',lineHeight:32,marginTop:7}, heroBody:{fontFamily:Fonts.sans,fontSize:12,lineHeight:21,textAlign:'right',marginTop:5}, heroButton:{borderRadius:Radius.sm,paddingHorizontal:16,paddingVertical:10,marginTop:Spacing.three}, heroButtonText:{color:'#fff',fontFamily:Fonts.sans,fontSize:12,fontWeight:'800'}, sectionTitle:{fontFamily:Fonts.sans,fontSize:16,fontWeight:'800',textAlign:'right',marginBottom:Spacing.two}, productCard:{borderWidth:1,borderRadius:Radius.md,padding:Spacing.three,flexDirection:'row-reverse',alignItems:'center',gap:Spacing.three,marginBottom:Spacing.two}, productIcon:{width:48,height:48,borderRadius:Radius.sm,alignItems:'center',justifyContent:'center'}, productTitle:{fontFamily:Fonts.sans,fontSize:15,fontWeight:'800',textAlign:'right'}, productBody:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:18,textAlign:'right',marginTop:3}, sectionHead:{flexDirection:'row-reverse',alignItems:'center',justifyContent:'space-between',marginTop:Spacing.four}, marketPill:{borderRadius:Radius.sm,padding:Spacing.three,alignItems:'flex-end',marginBottom:Spacing.two}, error:{padding:Spacing.three,borderRadius:Radius.sm,textAlign:'right',fontFamily:Fonts.sans,marginBottom:Spacing.two}, watchRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',borderRadius:Radius.sm,padding:Spacing.three,marginBottom:Spacing.two}, watchLeft:{flexDirection:'row',alignItems:'center',gap:Spacing.two}, watchName:{fontFamily:Fonts.sans,fontSize:14,fontWeight:'800'}, realTag:{fontFamily:Fonts.mono,fontSize:8,color:Brand.positive,marginTop:2}, watchRight:{alignItems:'flex-end',gap:2}, price:{fontFamily:Fonts.mono,fontSize:13} });

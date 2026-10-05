@@ -5,7 +5,7 @@ on:
   push:
     branches: [feat/biap-global]
     paths:
-      - 'mobile/**'
+      - 'mobile-global/**'
       - '.github/workflows/biap-global-apk.yml'
   workflow_dispatch:
 
@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 30
     defaults:
       run:
-        working-directory: mobile
+        working-directory: mobile-global
     env:
       CI: '1'
       NODE_ENV: production
@@ -36,7 +36,7 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: mobile/package-lock.json
+          cache-dependency-path: mobile-global/package-lock.json
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -121,7 +121,7 @@ jobs:
         with:
           name: biap-global-android-universal-${{ github.sha }}
           path: |
-            mobile/BIAP-Global-*-universal.apk
-            mobile/BIAP-Global-*-universal.apk.sha256
+            mobile-global/BIAP-Global-*-universal.apk
+            mobile-global/BIAP-Global-*-universal.apk.sha256
           if-no-files-found: error
           retention-days: 30

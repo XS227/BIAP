@@ -1,316 +1,67 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
-import { analyzeGlobalInstrument, GlobalAnalysis, GlobalAgentSignal, GlobalInstrument } from '@/lib/global-api';
-import { getGlobalMarketSelection } from '@/lib/global-market-selection';
-import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
+import { BottomTabInset, Brand, Colors, Fonts, Spacing, ThemeColors } from '@/constants/theme';
+import { fetchRecommendation, formatPrice, parsePct, Recommendation, StockItem, MarketSymbolResult } from '@/lib/api';
+import { fetchMarketSymbols } from '@/lib/market-symbols';
+import { fetchTsetmcHistory, fetchTsetmcQuote, PricePoint } from '@/lib/market-quote';
+import { getDemoMode } from '@/lib/demo-mode';
+import { isFavorite, toggleFavorite } from '@/lib/favorites';
+import { RecommendationCard } from '@/components/recommendation-card';
+import { KiashaDecisionCard } from '@/components/kiasha-decision-card';
+import { RealTradeGate } from '@/components/real-trade-gate';
 
-function n(value: number | null | undefined, digits = 2) {
-  if (value == null || !Number.isFinite(Number(value))) return '—';
-  return Number(value).toLocaleString('en-US', { maximumFractionDigits: digits });
+const COMPANY_ANALYSES = [
+  { key:'kpi-extract', title:'KPI', icon:'🎯' },
+  { key:'financial-model', title:'مدل مالی', icon:'📈' },
+  { key:'pricing', title:'قیمت‌گذاری', icon:'💰' },
+  { key:'sql', title:'SQL / داده', icon:'🗄️' },
+  { key:'swot', title:'SWOT', icon:'⚔️' },
+  { key:'executive-report', title:'گزارش مدیریتی', icon:'📋' },
+] as const;
+
+function MiniChart({points,colors}:{points:PricePoint[];colors:ThemeColors}){const sample=useMemo(()=>points.length<=24?points:points.filter((_,i)=>i%Math.ceil(points.length/24)===0).slice(-24),[points]);if(sample.length<2)return null;const values=sample.map(p=>p.close),min=Math.min(...values),max=Math.max(...values),range=Math.max(1,max-min),up=values.at(-1)!>=values[0],accent=up?Brand.stockGreen:Brand.negative;return <View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><View style={styles.head}><Text style={[styles.meta,{color:accent}]}>{up?'▲':'▼'} {(((values.at(-1)!-values[0])/values[0])*100).toFixed(2)}٪</Text><Text style={[styles.cardTitle,{color:colors.text}]}>روند ۶۰ روز</Text></View><View style={styles.bars}>{sample.map((p,i)=><View key={`${p.date}-${i}`} style={[styles.bar,{height:18+((p.close-min)/range)*90,backgroundColor:accent,opacity:.35+i/sample.length*.65}]}/>)}</View></View>}
+function Row({label,value,colors}:{label:string;value:string;colors:ThemeColors}){return <View style={[styles.row,{borderBottomColor:colors.backgroundSelected}]}><Text style={[styles.rowValue,{color:colors.text}]}>{value}</Text><Text style={[styles.rowLabel,{color:colors.textSecondary}]}>{label}</Text></View>}
+
+// Real TSETMC instrument metrics (day range, volume, market cap, P/E, EPS,
+// sector) -- on the wire since 2026-08-27 (see rec.extendedMarket) but never
+// rendered anywhere until now. Only shown when dataSource is 'live'; every
+// row is skipped individually when BIAP has no verified value for it.
+function ExtendedMarketPanel({rec,colors}:{rec:Recommendation;colors:ThemeColors}){
+  const m=rec.dataSource==='live'?rec.extendedMarket:null;
+  if(!m)return null;
+  const rows:[string,string][]=[
+    m.dayLow!=null&&m.dayHigh!=null?['بازه امروز',`${formatPrice(m.dayLow)} - ${formatPrice(m.dayHigh)}`]:null,
+    m.price52wLow!=null&&m.price52wHigh!=null?['بازه ۵۲ هفته',`${formatPrice(m.price52wLow)} - ${formatPrice(m.price52wHigh)}`]:null,
+    m.volumeToday!=null?['حجم معاملات امروز',m.volumeToday.toLocaleString('fa-IR')]:null,
+    m.avgVolume30d!=null?['میانگین حجم ۳۰ روز',Math.round(m.avgVolume30d).toLocaleString('fa-IR')]:null,
+    m.marketCap!=null?['ارزش بازار',`${(m.marketCap/1_000_000_000).toLocaleString('fa-IR',{maximumFractionDigits:1})} میلیارد ریال`]:null,
+    m.pe!=null?['P/E',m.pe.toLocaleString('fa-IR',{maximumFractionDigits:2})]:null,
+    m.sectorAvgPe!=null?['P/E میانگین صنعت',m.sectorAvgPe.toLocaleString('fa-IR',{maximumFractionDigits:2})]:null,
+    (m.epsValue??m.estimatedEps)!=null?['EPS',formatPrice(m.epsValue??m.estimatedEps??undefined)]:null,
+    m.sectorName?['صنعت',m.sectorName]:null,
+  ].filter((r):r is [string,string]=>r!=null);
+  if(!rows.length)return null;
+  return <View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.cardTitle,{color:colors.text}]}>اطلاعات تکمیلی بازار (TSETMC)</Text>{rows.map(([label,value])=><Row key={label} label={label} value={value} colors={colors}/>)}</View>;
 }
 
-function priceN(value: number | null | undefined) {
-  if (value == null || !Number.isFinite(Number(value))) return '—';
-  const x = Math.abs(Number(value));
-  const digits = x >= 1 ? 2 : x >= 0.1 ? 3 : x >= 0.01 ? 4 : x >= 0.001 ? 5 : 6;
-  return Number(value).toLocaleString('en-US', { maximumFractionDigits: digits });
+export default function StockDetailScreen(){
+ const {code}=useLocalSearchParams<{code:string}>();const colors=useColorScheme()==='dark'?Colors.dark:Colors.light;
+ const[symbol,setSymbol]=useState<MarketSymbolResult|null>(null),[item,setItem]=useState<StockItem|null>(null),[history,setHistory]=useState<PricePoint[]>([]),[rec,setRec]=useState<Recommendation|null>(null),[demo,setDemo]=useState(false),[favorite,setFavorite]=useState(false),[loading,setLoading]=useState(true),[refreshing,setRefreshing]=useState(false),[retryInfo,setRetryInfo]=useState<{at:string;ok:boolean}|null>(null);
+ const resolve=useCallback(async(forceRetry=false)=>{if(!code)return;try{const candidates=await fetchMarketSymbols({q:code,limit:30});const found=candidates.find(s=>s.code===code)||candidates.find(s=>s.symbol===code)||{code,symbol:code,name:code,market:null};const[recommendation,demoMode]=await Promise.all([fetchRecommendation(found.symbol||found.code,55000),getDemoMode()]);const fundamental=String(recommendation?.codalFundamentals?.symbol??'').trim();const displayTicker=!/^\d+$/.test(found.symbol)?found.symbol:(!/^\d+$/.test(fundamental)&&fundamental?fundamental:found.symbol);const resolved={...found,symbol:displayTicker,name:!/^\d+$/.test(found.name)?found.name:(recommendation?.name||displayTicker||found.name),code:recommendation?.code&&/^\d+$/.test(recommendation.code)?recommendation.code:found.code};setSymbol(resolved);setRec(recommendation);setDemo(demoMode);setFavorite(await isFavorite(resolved.code));const[q,h]=await Promise.all([fetchTsetmcQuote(resolved,7000,false),fetchTsetmcHistory(resolved,60,10000)]);setItem(q);setHistory(h);if(forceRetry)setRetryInfo({at:new Date().toISOString(),ok:Boolean(recommendation)});}finally{setLoading(false);setRefreshing(false)}},[code]);
+ useEffect(()=>{setLoading(true);setRetryInfo(null);void resolve(false)},[resolve]);
+ const retry=async()=>{setRefreshing(true);await resolve(true)};
+ const pct=item?.changePercent!==undefined&&!item?.error?parsePct(item.changePercent):null;const livePrice=item&&!item.error?(item.lastPrice??item.closingPrice??null):null;const onFav=async()=>{if(symbol)setFavorite(await toggleFavorite(symbol))};
+ const openCompanyAnalysis=(key:string)=>{if(!symbol)return;router.push({pathname:'/module',params:{key,code:symbol.symbol||symbol.code,companyMode:'listed'}} as never)};
+ return <SafeAreaView style={[styles.safe,{backgroundColor:colors.background}]}><ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={retry} tintColor={Brand.stockGreen}/>} contentContainerStyle={[styles.content,{paddingBottom:BottomTabInset+Spacing.four}]}>
+   <View style={styles.header}><Pressable onPress={()=>router.back()} style={[styles.back,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.backText,{color:colors.text}]}>← بازگشت</Text></Pressable><Text style={[styles.headerLabel,{color:colors.textSecondary}]}>جزئیات نماد</Text></View>
+   {loading?<ActivityIndicator color={Brand.primary} style={{marginTop:40}}/>:symbol&&item?<><View style={[styles.priceCard,{backgroundColor:colors.backgroundElement}]}><View style={styles.head}><Pressable onPress={onFav} style={[styles.favorite,{backgroundColor:favorite?'#4c1d95':colors.backgroundSelected}]}><Text style={{fontSize:23,color:favorite?'#ffd166':colors.textSecondary}}>{favorite?'★':'☆'}</Text></Pressable><View style={styles.identity}><Text style={[styles.symbol,{color:colors.text}]}>{symbol.symbol}</Text><Text style={[styles.company,{color:colors.textSecondary}]}>{symbol.name}</Text></View></View><View style={styles.priceLine}><Text style={[styles.price,{color:colors.text}]}>{livePrice===null?'—':formatPrice(livePrice)}</Text><Text style={[styles.unit,{color:colors.textSecondary}]}>ریال</Text></View>{pct!==null?<Text style={[styles.change,{color:pct>=0?Brand.stockGreen:Brand.negative}]}>{pct>=0?'▲':'▼'} {Math.abs(pct).toFixed(2)}٪</Text>:<Text style={[styles.meta,{color:colors.textSecondary}]}>قیمت تأییدشده فعلاً دریافت نشد.</Text>}</View>
+   <View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.cardTitle,{color:colors.text}]}>تحلیل این شرکت با ماژول‌های BIAP</Text><Text style={[styles.state,{color:colors.textSecondary}]}>برای شرکت بورسی، BIAP ابتدا TSETMC / Tindex / CODAL را بررسی می‌کند. اگر یک ماژول به داده داخلی نیاز داشته باشد، فقط همان فیلدهای ناقص را درخواست می‌کند.</Text><View style={styles.analysisGrid}>{COMPANY_ANALYSES.map(m=><Pressable key={m.key} onPress={()=>openCompanyAnalysis(m.key)} style={[styles.analysisButton,{borderColor:colors.backgroundSelected}]}><Text style={styles.analysisIcon}>{m.icon}</Text><Text style={[styles.analysisText,{color:colors.text}]}>{m.title}</Text></Pressable>)}</View></View>
+   {history.length>=2?<MiniChart points={history} colors={colors}/>:<View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.state,{color:colors.textSecondary}]}>تاریخچه معتبر در دسترس نیست؛ نمودار ساختگی نمایش داده نمی‌شود.</Text></View>}
+   <View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><Row label="آخرین قیمت" value={`${formatPrice(item.lastPrice)} ریال`} colors={colors}/><Row label="قیمت پایانی" value={`${formatPrice(item.closingPrice)} ریال`} colors={colors}/><Row label="قیمت دیروز" value={`${formatPrice(item.yesterdayPrice)} ریال`} colors={colors}/><Row label="شناسه بازار" value={symbol.code} colors={colors}/></View>
+   {rec?<ExtendedMarketPanel rec={rec} colors={colors}/>:null}
+   {rec?<><KiashaDecisionCard rec={rec} colors={colors} demo={demo}/>{demo?<View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><View style={styles.head}><View style={styles.demoBadge}><Text style={styles.demoBadgeText}>DEMO</Text></View><Text style={[styles.cardTitle,{color:colors.text}]}>حالت آزمایشی فعال</Text></View><Text style={[styles.state,{color:colors.textSecondary}]}>معامله آزمایشی در Demo-wallet انجام می‌شود و به کارگزاری ارسال نمی‌شود.</Text></View>:<RealTradeGate colors={colors}/>}<RecommendationCard rec={rec} colors={colors}/></>:<View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.cardTitle,{color:colors.text}]}>تحلیل کیا‌شا دریافت نشد</Text><Text style={[styles.state,{color:colors.textSecondary}]}>می‌توانید دوباره تلاش کنید. اگر منبع داده همچنان پاسخ ندهد، نتیجه به‌صورت شفاف ثبت می‌شود.</Text><Pressable disabled={refreshing} onPress={retry} style={[styles.retry,{backgroundColor:Brand.primary,opacity:refreshing?0.65:1}]}>{refreshing?<ActivityIndicator color="#fff"/>:<Text style={styles.retryText}>تلاش دوباره برای تحلیل کیا‌شا</Text>}</Pressable>{retryInfo?<Text style={[styles.retryResult,{color:retryInfo.ok?Brand.positive:Brand.warning}]}>{retryInfo.ok?'✓ تلاش انجام شد و داده تأییدشده دریافت شد.':'تلاش انجام شد، اما هنوز داده تأییدشده در دسترس نیست.'}{'  '}• {new Date(retryInfo.at).toLocaleTimeString('fa-IR')}</Text>:null}</View>}
+   <Text style={[styles.disclaimer,{color:colors.textSecondary}]}>قیمت، تاریخچه و تحلیل فقط از مسیرهای تأییدشده BIAP/TSETMC/CODAL؛ مقدار ناموجود ساخته نمی‌شود.</Text></>:<View style={[styles.card,{backgroundColor:colors.backgroundElement}]}><Text style={[styles.state,{color:colors.textSecondary}]}>اطلاعات این نماد فعلاً قابل دریافت نیست.</Text></View>}
+ </ScrollView></SafeAreaView>
 }
-
-function pct(value: number | null | undefined, digits = 1) {
-  if (value == null || !Number.isFinite(Number(value))) return '—';
-  return `${Number(value).toLocaleString('en-US', { maximumFractionDigits: digits })}%`;
-}
-
-function friendly(value: string | null | undefined) {
-  if (!value) return '—';
-  return value.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-function ratio(numerator: number | null | undefined, denominator: number | null | undefined, pctValue = false) {
-  if (numerator == null || denominator == null || Number(denominator) === 0) return null;
-  const value = Number(numerator) / Number(denominator);
-  return pctValue ? value * 100 : value;
-}
-
-function sourceName(provider: string | null | undefined) {
-  const key = String(provider || '').toLowerCase();
-  if (key.includes('sec-edgar')) return 'SEC EDGAR · Official filing';
-  if (key.includes('esef')) return 'ESEF · Official filing';
-  if (key.includes('yahoo-public-chart')) return key.startsWith('cached:') ? 'Verified market cache' : 'Yahoo · Public market history';
-  if (key.includes('biap-derived-metrics')) return 'BIAP · Derived metrics';
-  if (key.includes('official-issuer')) return 'Issuer · Official financial statement';
-  return provider ? provider.replace(/[-_]/g, ' ') : 'Source';
-}
-
-function sourceTypeName(value: string | null | undefined) {
-  const key = String(value || '').toLowerCase();
-  if (key.includes('official_regulatory')) return 'Official regulatory evidence';
-  if (key.includes('official_issuer')) return 'Official issuer evidence';
-  if (key.includes('daily_market_history_cache')) return 'Verified cached market history';
-  if (key.includes('public_daily_market_history')) return 'Public market history';
-  if (key.includes('derived')) return 'Derived analytical metric';
-  return value ? value.replace(/_/g, ' ') : 'Evidence';
-}
-
-function decisionColor(call: string | undefined, secondary: string) {
-  if (call === 'BUY_CANDIDATE') return Brand.positive;
-  if (call === 'HOLD_OR_WATCH') return Brand.warning;
-  if (call === 'AVOID_OR_REVIEW') return Brand.negative;
-  return secondary;
-}
-
-function signalColor(signal: GlobalAgentSignal, secondary: string) {
-  if (signal.vote >= 0.25) return Brand.positive;
-  if (signal.vote <= -0.25) return Brand.negative;
-  return secondary;
-}
-
-function Metric({ label, value, colors }: { label: string; value: string; colors: typeof Colors.light | typeof Colors.dark }) {
-  return <View style={[styles.metric, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.metricValue, { color: colors.text }]}>{value}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{label}</Text></View>;
-}
-
-function signalDisplay(signal: GlobalAgentSignal) {
-  const confidence = Number(signal.confidence || 0);
-  const vote = Number(signal.vote || 0);
-  if (confidence <= 0.001) return 'NO DATA';
-  if (Math.abs(vote) <= 0.001) return 'NEUTRAL';
-  return `${vote > 0 ? '+' : ''}${n(vote, 3)}`;
-}
-
-function AgentCard({ signal, colors }: { signal: GlobalAgentSignal; colors: typeof Colors.light | typeof Colors.dark }) {
-  const tone = signalColor(signal, colors.textSecondary);
-  const name = signal.agent.charAt(0).toUpperCase() + signal.agent.slice(1);
-  const label = signalDisplay(signal);
-  const hasData = Number(signal.confidence || 0) > 0.001;
-  return <View style={[styles.agentCard, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
-    <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>{name} Agent</Text><Text style={[styles.agentVote, { color: tone }]}>{label}</Text></View>
-    <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>{hasData ? `Confidence ${Math.round((signal.confidence || 0) * 100)}% • verified inputs available` : 'No verified inputs available'}</Text>
-    <Text style={[styles.agentReason, { color: colors.textSecondary }]}>{signal.reasoning || (hasData ? 'Verified inputs produced a neutral signal.' : 'No verified signal data.')}</Text>
-  </View>;
-}
-
-export default function GlobalStockDetailScreen() {
-  const params = useLocalSearchParams<{ code?: string; country?: string; exchange?: string; currency?: string; name?: string; isin?: string; lei?: string }>();
-  const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
-  const [analysis, setAnalysis] = useState<GlobalAnalysis | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
-
-  const load = useCallback(async () => {
-    const ticker = String(params.code || '').trim();
-    if (!ticker) { setError('Ticker is missing.'); setLoading(false); return; }
-    try {
-      setError('');
-      const selected = await getGlobalMarketSelection();
-      const instrument: GlobalInstrument = {
-        country: String(params.country || selected.country).toUpperCase(),
-        exchange: String(params.exchange || selected.exchange),
-        currency: String(params.currency || selected.currency).toUpperCase(),
-        ticker,
-        name: String(params.name || ticker),
-        isin: params.isin ? String(params.isin) : null,
-        lei: params.lei ? String(params.lei) : null,
-      };
-      if (!isSupportedGlobalEquityInstrument(instrument)) {
-        setAnalysis(null);
-        setError(unsupportedGlobalInstrumentMessage(instrument));
-        return;
-      }
-      setAnalysis(await analyzeGlobalInstrument(instrument));
-    } catch (err) {
-      setAnalysis(null);
-      setError(err instanceof Error ? err.message.slice(0, 320) : 'Analysis is unavailable.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [params.code, params.country, params.exchange, params.currency, params.name, params.isin, params.lei]);
-
-  useEffect(() => { setLoading(true); void load(); }, [load]);
-  const company = analysis?.company;
-  const sourcePlan = analysis?.sourcePlan;
-  const decision = analysis?.decisionTable;
-  const governance = analysis?.governance;
-  const distress = analysis?.distress;
-  const credit = analysis?.creditScoring;
-  const signals = Array.isArray(analysis?.signals) ? analysis!.signals! : [];
-  const sources = Array.isArray(company?.sources) ? company!.sources! : [];
-  const callTone = decisionColor(analysis?.call, colors.textSecondary);
-  const price = company?.price;
-  const priceTimestamp = company?.price_observed_at;
-  const lowPriceWarning = price != null && Number.isFinite(Number(price)) && Number(price) > 0 && Number(price) < 0.1;
-  const extremeVolatilityWarning = company?.volatility_annualized_pct != null && Number(company.volatility_annualized_pct) >= 250;
-  const dm = useMemo(() => {
-    const server = decision?.metrics || {};
-    const position52wPct = server.position52wPct ?? (
-      company?.price != null && company?.price_52w_low != null && company?.price_52w_high != null && Number(company.price_52w_high) > Number(company.price_52w_low)
-        ? Math.max(0, Math.min(100, (Number(company.price) - Number(company.price_52w_low)) / (Number(company.price_52w_high) - Number(company.price_52w_low)) * 100))
-        : null
-    );
-    const peVsSectorPct = server.peVsSectorPct ?? (
-      company?.pe != null && Number(company.pe) > 0 && company?.sector_pe != null && Number(company.sector_pe) > 0
-        ? (Number(company.pe) / Number(company.sector_pe) - 1) * 100
-        : null
-    );
-    return {
-      ...server,
-      position52wPct,
-      volumeVs30d: server.volumeVs30d ?? ratio(company?.volume_today, company?.avg_volume_30d),
-      peVsSectorPct,
-      dividendYieldPct: server.dividendYieldPct ?? company?.dividend_yield_pct ?? null,
-      debtToEquity: server.debtToEquity ?? ratio(company?.total_debt, company?.total_equity),
-      currentRatio: server.currentRatio ?? ratio(company?.current_assets, company?.current_liabilities),
-      roePct: server.roePct ?? ratio(company?.net_income, company?.total_equity, true),
-      roaPct: server.roaPct ?? ratio(company?.net_income, company?.total_assets, true),
-    };
-  }, [company, decision?.metrics]);
-  const marketRows = useMemo(() => [
-    ['Price', price == null ? '—' : `${priceN(price)} ${analysis?.currency || ''}`],
-    ['52-week range', company?.price_52w_low == null || company?.price_52w_high == null ? '—' : `${priceN(company.price_52w_low)} – ${priceN(company.price_52w_high)}`],
-    ['1M / 3M / 6M', `${pct(company?.return_1m_pct)} / ${pct(company?.return_3m_pct)} / ${pct(company?.return_6m_pct)}`],
-    ['Annualized volatility', pct(company?.volatility_annualized_pct)],
-    ['Max drawdown', pct(company?.max_drawdown_pct)],
-    ['Beta', n(company?.beta)],
-    ['Volume / 30d avg.', `${n(company?.volume_today, 0)} / ${n(company?.avg_volume_30d, 0)}`],
-  ], [company, price, analysis?.currency]);
-  const valuationRows = useMemo(() => [
-    ['Market cap', n(company?.market_cap, 0)], ['P/E', n(company?.pe)], ['P/B', n(company?.pb)], ['EV/EBITDA', n(company?.ev_ebitda)], ['Peer benchmark P/E', n(company?.sector_pe)],
-    ['Dividend yield', pct(company?.dividend_yield_pct)], ['EPS', n(company?.eps)], ['Book value / share', n(company?.book_value_per_share)],
-  ], [company]);
-  const financialRows = useMemo(() => [
-    ['Revenue', n(company?.revenue, 0)], ['Revenue YoY', pct(company?.revenue_yoy_pct)], ['Net income', n(company?.net_income, 0)], ['Net margin', pct(company?.net_margin_pct)],
-    ['Assets', n(company?.total_assets, 0)], ['Liabilities', n(company?.total_liabilities, 0)], ['Equity', n(company?.total_equity, 0)], ['Operating cash flow', n(company?.operating_cash_flow, 0)], ['Free cash flow', n(company?.free_cash_flow, 0)], ['Debt', n(company?.total_debt, 0)],
-  ], [company]);
-
-  const valuationMissing = [
-    company?.market_cap, company?.pe, company?.pb, company?.ev_ebitda,
-    company?.sector_pe, company?.dividend_yield_pct, company?.eps, company?.book_value_per_share,
-  ].every((value) => value == null);
-  const fundamentalsMissing = [
-    company?.revenue, company?.net_income, company?.total_assets, company?.total_liabilities,
-    company?.total_equity, company?.operating_cash_flow, company?.free_cash_flow, company?.total_debt,
-  ].every((value) => value == null);
-
-  const decisionRows = useMemo(() => [
-    ['Kiasha call', friendly(analysis?.call)],
-    ['Decision confidence', analysis?.decisionConfidence == null ? (analysis?.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`) : `${Math.round(analysis.decisionConfidence * 100)}%`],
-    ['Evidence confidence', analysis?.evidenceConfidence == null ? '—' : `${Math.round(analysis.evidenceConfidence * 100)}%`],
-    ['Overall calibrated', analysis?.overallCalibratedConfidence == null ? (analysis?.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`) : `${Math.round(analysis.overallCalibratedConfidence * 100)}%`],
-    ['Short-term outlook', friendly(decision?.shortTermOutlook)],
-    ['Long-term outlook', friendly(decision?.longTermOutlook)],
-    ['Momentum', friendly(decision?.momentum)],
-    ['Risk level', friendly(decision?.riskLevel)],
-    ['Drawdown risk', friendly(decision?.drawdownRisk)],
-    ['52-week position', pct(dm?.position52wPct)],
-    ['Volume vs 30d', dm?.volumeVs30d == null ? '—' : `${n(dm.volumeVs30d, 2)}x`],
-    ['Valuation vs peers', friendly(decision?.valuationView)],
-    ['P/E vs peer benchmark', pct(dm?.peVsSectorPct)],
-    ['Dividend / income', friendly(decision?.incomeProfile)],
-    ['Dividend yield', pct(dm?.dividendYieldPct)],
-    ['Debt / equity', dm?.debtToEquity == null ? '—' : `${n(dm.debtToEquity, 2)}x`],
-    ['Current ratio', dm?.currentRatio == null ? '—' : `${n(dm.currentRatio, 2)}x`],
-    ['ROE', pct(dm?.roePct)],
-    ['ROA', pct(dm?.roaPct)],
-    ['New position', friendly(decision?.kiasha?.newPositionAction || analysis?.call)],
-    ['If already owned', friendly(decision?.kiasha?.existingHolderAction)],
-    ['Evidence', analysis?.evidence?.status || '—'],
-  ], [analysis?.call, analysis?.confidence, analysis?.decisionConfidence, analysis?.evidenceConfidence, analysis?.overallCalibratedConfidence, analysis?.evidence?.status, decision, dm]);
-
-  return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} tintColor={Brand.primary} />} contentContainerStyle={styles.content}>
-    <View style={styles.maxWidth}>
-      <View style={styles.header}><Pressable onPress={() => router.back()} style={[styles.back, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.backText, { color: colors.text }]}>← Back</Text></Pressable><Text style={[styles.headerMeta, { color: colors.textSecondary }]}>Global stock analysis</Text></View>
-      {loading ? <View style={{ marginTop: 50, alignItems: 'center' }}><ActivityIndicator color={Brand.primary} /><Text style={[styles.body, { color: colors.textSecondary, marginTop: 12 }]}>Loading verified market, filing and decision data…</Text></View> : error ? <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Analysis unavailable</Text><Text style={[styles.body, { color: colors.textSecondary }]}>{error}</Text><Pressable onPress={() => { setLoading(true); void load(); }} style={[styles.action, { backgroundColor: Brand.primary }]}><Text style={styles.actionText}>Retry analysis</Text></Pressable></View> : analysis ? <>
-        <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}>
-          <View style={styles.rowBetween}><View style={{ flex: 1 }}><Text style={[styles.ticker, { color: colors.text }]}>{analysis.ticker}</Text><Text style={[styles.companyName, { color: colors.textSecondary }]}>{analysis.name}</Text><Text style={[styles.identity, { color: colors.textSecondary }]}>{analysis.country} • {analysis.exchange} • {analysis.mic || 'MIC n/a'} • {analysis.currency}</Text></View><View style={[styles.callPill, { borderColor: callTone }]}><Text style={[styles.callText, { color: callTone }]}>{analysis.call}</Text></View></View>
-          <View style={styles.priceRow}><Text style={[styles.price, { color: colors.text }]}>{price == null ? '—' : priceN(price)}</Text><Text style={[styles.currency, { color: colors.textSecondary }]}>{analysis.currency}</Text></View>
-          <Text style={[styles.timestamp, { color: colors.textSecondary }]}>{priceTimestamp ? `Price observed ${priceTimestamp}` : 'Verified price timestamp unavailable'}</Text>
-        </View>
-
-        {(lowPriceWarning || extremeVolatilityWarning) ? <View style={[styles.caution, { backgroundColor: colors.backgroundElement, borderColor: Brand.warning }]}><Text style={[styles.cautionTitle, { color: Brand.warning }]}>Market-data caution</Text><Text style={[styles.body, { color: colors.textSecondary }]}>{lowPriceWarning ? 'This is a very low-priced instrument; BIAP preserves extra decimal precision instead of rounding it to zero. ' : ''}{extremeVolatilityWarning ? 'Observed volatility is extreme, so risk metrics should be interpreted with extra caution and remain subject to the Evidence gate.' : ''}</Text></View> : null}
-
-        <View style={styles.metrics}><Metric label="Kiasha score" value={analysis.score == null ? '—' : n(analysis.score, 3)} colors={colors}/><Metric label="Decision confidence" value={analysis.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`} colors={colors}/><Metric label="Evidence" value={analysis.evidence?.status || '—'} colors={colors}/></View>
-
-        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Kiasha decision</Text><Text style={[styles.body, { color: colors.textSecondary }]}>Kiasha combines the six scoring agent signals after provider normalization, then applies the Evidence/Verification gate. Evidence PASS means the data is sufficiently verified; it is not itself a BUY signal. A new BUY candidate also needs a positive score and enough decision confidence.</Text></View>
-
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Investor decision table</Text>
-        <View style={[styles.card, { backgroundColor: colors.backgroundElement, marginTop: 0 }]}>
-          {!decision ? <View style={[styles.caution, { borderColor: Brand.warning, backgroundColor: colors.backgroundElement }]}><Text style={[styles.cautionTitle, { color: Brand.warning }]}>Decision summary partially unavailable</Text><Text style={[styles.body, { color: colors.textSecondary }]}>Core verified company metrics are still shown below. Pull to refresh or use Retry if the server decision summary did not arrive.</Text></View> : null}
-          {decisionRows.map(([label, value]) => <View key={label} style={[styles.dataRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>{label}</Text><Text style={[styles.dataValue, { color: colors.text }]}>{value}</Text></View>)}
-          <Text style={[styles.body, { color: colors.textSecondary }]}>The base stock score is the same for every user. Personal risk, horizon, income and growth preferences are applied separately by Portfolio Agent.</Text>
-        </View>
-
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Core analysis agents</Text>
-        {signals.map((signal) => <AgentCard key={signal.agent} signal={signal} colors={colors} />)}
-
-        <View style={[styles.agentCard, { backgroundColor: colors.backgroundElement, borderColor: analysis.evidence?.status === 'PASS' ? Brand.positive : analysis.evidence?.status === 'WARN' ? Brand.warning : Brand.negative }]}>
-          <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>Evidence / Verification Agent</Text><Text style={[styles.agentVote, { color: analysis.evidence?.status === 'PASS' ? Brand.positive : analysis.evidence?.status === 'WARN' ? Brand.warning : Brand.negative }]}>{analysis.evidence?.status || '—'}</Text></View>
-          <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Coverage {analysis.evidence?.coverage == null ? '—' : `${Math.round(analysis.evidence.coverage * 100)}%`} • Freshness {analysis.evidence?.freshness_score == null ? '—' : n(analysis.evidence.freshness_score, 2)}</Text>
-          <Text style={[styles.agentReason, { color: colors.textSecondary }]}>{analysis.evidence?.reasoning || 'Evidence assessment unavailable.'}</Text>
-          {analysis.evidence?.missing_critical?.length ? <Text style={[styles.warning, { color: Brand.warning }]}>Missing critical: {analysis.evidence.missing_critical.join(', ')}</Text> : null}
-        </View>
-
-        <View style={[styles.agentCard, { backgroundColor: colors.backgroundElement, borderColor: governance?.action === 'ACCEPT' ? Brand.positive : governance?.action === 'REVIEW' ? Brand.warning : Brand.negative }]}>
-          <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>Agent 8 · Decision Governance</Text><Text style={[styles.agentVote, { color: governance?.action === 'ACCEPT' ? Brand.positive : governance?.action === 'REVIEW' ? Brand.warning : Brand.negative }]}>{governance?.action || '—'}</Text></View>
-          <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Final call {friendly(governance?.final_call || analysis.call)} • {governance?.accepted ? 'accepted' : governance?.escalated ? 'human review' : governance?.abstained ? 'abstained' : 'pending'}</Text>
-          <Text style={[styles.agentReason, { color: colors.textSecondary }]}>{governance?.reasoning || 'Governance assessment unavailable.'}</Text>
-          {governance?.hard_blocks?.length ? <Text style={[styles.warning, { color: Brand.negative }]}>Hard blocks: {governance.hard_blocks.join(' • ')}</Text> : null}
-          {governance?.review_reasons?.length ? <Text style={[styles.warning, { color: Brand.warning }]}>Review: {governance.review_reasons.join(' • ')}</Text> : null}
-        </View>
-
-        <View style={[styles.agentCard, { backgroundColor: colors.backgroundElement, borderColor: distress?.status === 'HIGH_RISK' ? Brand.negative : distress?.status === 'ELEVATED_RISK' ? Brand.warning : distress?.status === 'LOW_RISK' ? Brand.positive : colors.backgroundSelected }]}>
-          <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>Agent 9 · Distress & Credit</Text><Text style={[styles.agentVote, { color: distress?.status === 'HIGH_RISK' ? Brand.negative : distress?.status === 'ELEVATED_RISK' ? Brand.warning : distress?.status === 'LOW_RISK' ? Brand.positive : colors.textSecondary }]}>{friendly(distress?.status)}</Text></View>
-          <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Zmijewski {distress?.distress_probability == null ? '—' : `${(distress.distress_probability * 100).toFixed(1)}%`} • Altman Z'' {distress?.altman_z_double_prime == null ? '—' : n(distress.altman_z_double_prime, 2)} • ICR {distress?.interest_coverage == null ? '—' : `${n(distress.interest_coverage, 2)}x`}</Text>
-          <Text style={[styles.agentReason, { color: colors.textSecondary }]}>{distress?.reasoning || 'Insufficient verified inputs for distress models.'}</Text>
-          {distress?.synthetic_credit_band ? <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Credit band: {friendly(distress.synthetic_credit_band)}</Text> : null}
-          {distress?.positive_block ? <Text style={[styles.warning, { color: Brand.negative }]}>Positive-decision safety gate active.</Text> : null}
-          {distress?.missing_inputs?.length ? <Text style={[styles.warning, { color: Brand.warning }]}>Not guessed: {distress.missing_inputs.join(', ')}</Text> : null}
-        </View>
-
-        <View style={[styles.agentCard, { backgroundColor: colors.backgroundElement, borderColor: credit?.indicated_rating_sp ? Brand.positive : credit?.status ? Brand.warning : colors.backgroundSelected }]}>
-          <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>Agent 10 · Corporate Credit Scoring</Text><Text style={[styles.agentVote, { color: credit?.indicated_rating_sp ? Brand.positive : Brand.warning }]}>{credit?.indicated_rating_sp || friendly(credit?.status) || '—'}</Text></View>
-          <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>
-            {credit?.indicated_rating_moodys ? `Moody's grid ${credit.indicated_rating_moodys} • S&P equivalent ${credit.indicated_rating_sp} • 1y PD ${credit.pd_1y == null ? '—' : (credit.pd_1y * 100).toFixed(2) + '%'}` : 'Canonical Agent 10 legal-entity grid'}
-          </Text>
-          <Text style={[styles.agentReason, { color: colors.textSecondary }]}>
-            {credit?.weight_coverage == null ? (credit?.status || 'Credit-scoring inputs unavailable.') : `Grid coverage ${Math.round(credit.weight_coverage * 100)}% • ${credit.investment_grade == null ? 'rating not produced' : credit.investment_grade ? 'investment-grade indicated band' : 'non-investment-grade indicated band'}`}
-          </Text>
-          {credit?.factors ? Object.entries(credit.factors).map(([key, factor]) => <Text key={key} style={[styles.agentConfidence, { color: colors.textSecondary }]}>{friendly(key)}: {factor.value == null ? '—' : typeof factor.value === 'number' ? n(factor.value, 2) : String(factor.value)} • {factor.category || '—'}</Text>) : null}
-          {credit?.factors_missing && Object.keys(credit.factors_missing).length ? <Text style={[styles.warning, { color: Brand.warning }]}>Not guessed: {Object.entries(credit.factors_missing).map(([key, why]) => `${friendly(key)} — ${why}`).join(' • ')}</Text> : null}
-          {credit?.agent9_crosscheck ? <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Agent 9 cross-check: {credit.agent9_crosscheck.damodaran_icr_rating || 'rating —'}{credit.agent9_crosscheck.zmijewski_p_distress == null ? '' : ` • Zmijewski ${(credit.agent9_crosscheck.zmijewski_p_distress * 100).toFixed(1)}%`}</Text> : null}
-          <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Report only • never changes the investment call</Text>
-        </View>
-
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Market & risk</Text>
-        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>{marketRows.map(([label, value]) => <View key={label} style={[styles.dataRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>{label}</Text><Text style={[styles.dataValue, { color: colors.text }]}>{value}</Text></View>)}</View>
-
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Valuation</Text>
-        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>{valuationRows.map(([label, value]) => <View key={label} style={[styles.dataRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>{label}</Text><Text style={[styles.dataValue, { color: colors.text }]}>{value}</Text></View>)}{valuationMissing ? <Text style={[styles.body, { color: colors.textSecondary }]}>Trusted valuation inputs are not available for this instrument yet. BIAP leaves them blank rather than estimating unsupported values.</Text> : null}</View>
-
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Fundamentals</Text>
-        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>{financialRows.map(([label, value]) => <View key={label} style={[styles.dataRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>{label}</Text><Text style={[styles.dataValue, { color: colors.text }]}>{value}</Text></View>)}{fundamentalsMissing ? <Text style={[styles.body, { color: colors.textSecondary }]}>{sourcePlan?.status === 'market-ready' ? `Official filing adapter not connected yet. Planned source: ${sourcePlan.filings || 'issuer/regulator filings'}. Market data can still be analyzed, but Evidence remains blocked without verified fundamentals.` : sourcePlan?.runtimeConfigured === false ? (sourcePlan.runtimeNote || `Official connector exists for ${sourcePlan.filings || 'regulatory filings'}, but it is not configured on this server yet.`) : sourcePlan?.status === 'connected' ? `Official source is connected (${sourcePlan.filings || 'regulatory filings'}), but no verified filing matched this listing yet. Evidence may BLOCK until issuer identity/filing coverage is available.` : 'No verified filing was matched for this listing. Evidence may BLOCK the decision until official fundamentals are available.'}</Text> : null}</View>
-
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Evidence sources</Text>
-        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>{sources.length ? sources.map((source, index) => <View key={`${source.provider}-${index}`} style={[styles.sourceRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.sourceProvider, { color: colors.text }]}>{sourceName(source.provider)}</Text><Text style={[styles.sourceMeta, { color: colors.textSecondary }]}>{sourceTypeName(source.source_type)} • quality {source.quality == null ? '—' : n(source.quality, 2)}{source.observed_at ? ` • ${source.observed_at}` : ''}</Text></View>) : <Text style={[styles.body, { color: colors.textSecondary }]}>No verified provenance records were returned. Evidence Agent should block a directional recommendation.</Text>}</View>
-
-        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Portfolio Agent</Text><Text style={[styles.body, { color: colors.textSecondary }]}>Portfolio construction is intentionally separate from single-stock analysis. Open the Portfolio tab to combine qualified candidates using capital, base currency, risk tolerance, concentration caps, FX and cash reserve.</Text><Pressable onPress={() => router.push('/portfolio')} style={[styles.action, { backgroundColor: Brand.primary }]}><Text style={styles.actionText}>Open Portfolio Agent</Text></Pressable></View>
-
-        <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>No missing market or filing value is fabricated. NO_RECOMMENDATION is a valid result when sources are missing, stale, ambiguous or conflicting.</Text>
-      </> : null}
-    </View>
-  </ScrollView></SafeAreaView>;
-}
-
-const styles = StyleSheet.create({
-  safe: { flex: 1 }, content: { paddingHorizontal: Spacing.three, paddingBottom: BottomTabInset + Spacing.six }, maxWidth: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: Spacing.three }, back: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 18 }, backText: { fontFamily: Fonts.sans, fontSize: 11, fontWeight: '700' }, headerMeta: { fontFamily: Fonts.sans, fontSize: 10.5 },
-  hero: { borderRadius: Radius.lg, padding: Spacing.four }, rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }, ticker: { fontFamily: Fonts.mono, fontSize: 26, fontWeight: '900' }, companyName: { fontFamily: Fonts.sans, fontSize: 12, marginTop: 3 }, identity: { fontFamily: Fonts.mono, fontSize: 9, marginTop: 5 }, callPill: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 }, callText: { fontFamily: Fonts.mono, fontSize: 8.5, fontWeight: '900' }, priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 18 }, price: { fontFamily: Fonts.mono, fontSize: 31, fontWeight: '900' }, currency: { fontFamily: Fonts.mono, fontSize: 11 }, timestamp: { fontFamily: Fonts.mono, fontSize: 8.5, marginTop: 4 },
-  caution: { borderWidth: 1, borderRadius: Radius.md, padding: Spacing.three, marginTop: 10 }, cautionTitle: { fontFamily: Fonts.sans, fontSize: 11, fontWeight: '900' },
-  metrics: { flexDirection: 'row', gap: 8, marginTop: 10 }, metric: { flex: 1, borderRadius: Radius.md, paddingVertical: 14, paddingHorizontal: 8, alignItems: 'center' }, metricValue: { fontFamily: Fonts.mono, fontSize: 15, fontWeight: '900', textAlign: 'center' }, metricLabel: { fontFamily: Fonts.sans, fontSize: 8.5, marginTop: 4, textAlign: 'center' },
-  sectionTitle: { fontFamily: Fonts.sans, fontSize: 15, fontWeight: '900', marginTop: 20, marginBottom: 8 }, card: { borderRadius: Radius.lg, padding: Spacing.three, marginTop: 10 }, cardTitle: { fontFamily: Fonts.sans, fontSize: 14, fontWeight: '900' }, body: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 17, marginTop: 5 },
-  agentCard: { borderWidth: 1, borderRadius: Radius.lg, padding: Spacing.three, marginBottom: 8 }, agentName: { fontFamily: Fonts.sans, fontSize: 12.5, fontWeight: '900' }, agentVote: { fontFamily: Fonts.mono, fontSize: 12, fontWeight: '900' }, agentConfidence: { fontFamily: Fonts.mono, fontSize: 9, marginTop: 5 }, agentReason: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 17, marginTop: 6 }, warning: { fontFamily: Fonts.sans, fontSize: 9.5, lineHeight: 15, marginTop: 6 },
-  dataRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, paddingVertical: 9, borderBottomWidth: StyleSheet.hairlineWidth }, dataLabel: { fontFamily: Fonts.sans, fontSize: 10, flex: 1 }, dataValue: { fontFamily: Fonts.mono, fontSize: 10, fontWeight: '800', flex: 1, textAlign: 'right' }, sourceRow: { paddingVertical: 9, borderBottomWidth: StyleSheet.hairlineWidth }, sourceProvider: { fontFamily: Fonts.mono, fontSize: 10, fontWeight: '900' }, sourceMeta: { fontFamily: Fonts.mono, fontSize: 8.5, marginTop: 3 },
-  action: { minHeight: 46, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center', marginTop: 12 }, actionText: { color: '#fff', fontFamily: Fonts.sans, fontSize: 11, fontWeight: '900' }, disclaimer: { fontFamily: Fonts.sans, fontSize: 9.5, lineHeight: 15, textAlign: 'center', marginTop: 22 },
-});
+const styles=StyleSheet.create({safe:{flex:1},content:{paddingHorizontal:Spacing.three},header:{flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center',paddingVertical:Spacing.three},back:{paddingHorizontal:Spacing.three,paddingVertical:Spacing.two,borderRadius:Spacing.two},backText:{fontFamily:Fonts.sans,fontSize:13},headerLabel:{fontFamily:Fonts.sans,fontSize:12},priceCard:{borderRadius:Spacing.three,padding:Spacing.four,alignItems:'flex-end'},head:{width:'100%',flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center'},identity:{flex:1,alignItems:'flex-end'},favorite:{width:38,height:38,borderRadius:19,alignItems:'center',justifyContent:'center'},symbol:{fontFamily:Fonts.sans,fontSize:24,fontWeight:'900'},company:{fontFamily:Fonts.sans,fontSize:11,marginTop:3,textAlign:'right'},priceLine:{flexDirection:'row-reverse',alignItems:'baseline',gap:6,marginTop:Spacing.three},price:{fontFamily:Fonts.mono,fontSize:31,fontWeight:'900'},unit:{fontFamily:Fonts.sans,fontSize:12},change:{fontFamily:Fonts.mono,fontSize:15,fontWeight:'900',marginTop:5},card:{borderRadius:Spacing.three,padding:Spacing.three,marginTop:Spacing.three},cardTitle:{fontFamily:Fonts.sans,fontSize:14,fontWeight:'900',textAlign:'right'},meta:{fontFamily:Fonts.mono,fontSize:10,marginTop:5},bars:{height:115,flexDirection:'row',alignItems:'flex-end',gap:3,marginTop:Spacing.three},bar:{flex:1,borderRadius:3,minWidth:2},row:{flexDirection:'row-reverse',justifyContent:'space-between',paddingVertical:Spacing.three,borderBottomWidth:StyleSheet.hairlineWidth},rowLabel:{fontFamily:Fonts.sans,fontSize:12},rowValue:{fontFamily:Fonts.mono,fontSize:12,fontWeight:'700',maxWidth:'65%'},state:{fontFamily:Fonts.sans,fontSize:11.5,lineHeight:20,textAlign:'right',marginTop:Spacing.two},retry:{width:'100%',paddingVertical:Spacing.three,borderRadius:Spacing.two,alignItems:'center',marginTop:Spacing.three},retryText:{color:'#fff',fontFamily:Fonts.sans,fontSize:13,fontWeight:'900'},retryResult:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:18,textAlign:'right',marginTop:Spacing.three},demoBadge:{backgroundColor:'#6d28d9',borderRadius:12,paddingHorizontal:8,paddingVertical:4},demoBadgeText:{color:'#fff',fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},disclaimer:{fontFamily:Fonts.sans,fontSize:10,textAlign:'center',marginVertical:Spacing.three},analysisGrid:{flexDirection:'row-reverse',flexWrap:'wrap',gap:8,marginTop:Spacing.three},analysisButton:{flexBasis:'31%',flexGrow:1,borderWidth:1,borderRadius:12,paddingVertical:10,paddingHorizontal:6,alignItems:'center',minHeight:72,justifyContent:'center'},analysisIcon:{fontSize:18},analysisText:{fontFamily:Fonts.sans,fontSize:10.5,fontWeight:'800',textAlign:'center',marginTop:5}});

@@ -50,10 +50,10 @@ requires registration).
 
 - `main` → `feat/biap-global`: synced 2026-10-05 (merge `0cbd418`), main is
   0 commits ahead.
-- `feat/biap-global` → `main`: NOT merged. `mobile/` on this branch is a
-  different app (`com.biap.global` 0.3.16) than the Iran production app on
-  main (`com.biap.mobile` 1.0.5). Merging as-is would replace the Iran app;
-  the Global app must first move to its own directory (e.g. `mobile-global/`).
+- `feat/biap-global` → `main`: unblocked. The Global app (`com.biap.global`)
+  now lives in `mobile-global/`; `mobile/` is identical to the Iran app on
+  `main` (`com.biap.mobile`). The Global APK workflow builds from
+  `mobile-global/`. Merge to `main` still requires review (1 180 commits).
 
 ## Not verifiable from the server
 
