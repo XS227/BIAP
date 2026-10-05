@@ -21,6 +21,15 @@
    "verified_at": "2026-10-05T10:39:40+00:00"
   },
   {
+   "isin": "DE0006042708",
+   "lei": "52990061BHKV91FGSB18",
+   "ticker": "HAW",
+   "package_url": "https://www.hawesko-holding.com/media/pages/investor-relations/geschaftsbericht/0aa0ec0cc7-1777359281/hwh-2025-12-31-de.zip",
+   "landing_url": "https://www.hawesko-holding.com/",
+   "period_end": "2025-12-31",
+   "verified_at": "2026-10-05T11:32:05+00:00"
+  },
+  {
    "isin": "DE0005759807",
    "lei": "391200ZOAI9BOLGC1D37",
    "ticker": "IXX",

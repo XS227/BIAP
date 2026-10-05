@@ -48,7 +48,7 @@ Unternehmensregister disallows automated retrieval (robots.txt) and
 filings.xbrl.org has no German filings, so BIAP reads issuer-hosted ESEF
 packages from a verified registry (`analysis/global_markets/data/de_issuer_esef.json`).
 Production PASS/WARN with official FY2025 data: SAP SIE ALV (existing) + BEI DBK
-IXX PAH3 S92 SDF SIX2 SIX3 UTDI = 12. A crawl of 293 issuer sites found
+HAW IXX PAH3 S92 SDF SIX2 SIX3 UTDI = 13. A crawl of 320 issuer sites found
 current ESEF packages for only ~3%; most German issuers publish ESEF only to
 the register. Broader coverage needs a licensed feed or manual curation.
 
