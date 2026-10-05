@@ -150,7 +150,7 @@ def _leaf_class(detail: str) -> str:
     # Only collapse this well-understood chain when every terminal reason is
     # an explicitly recognized absence/coverage/neutral condition.
     if "official esef report carries no inline xbrl tags" in detail.lower():
-        cleaned = re.sub(r"(?i)[a-z0-9_-]+:(?:[a-z0-9_./-]+):(?=official esef report carries)", "", detail)
+        cleaned = re.sub(r"(?i)[a-z0-9_-]+:(?:[a-z0-9_./:-]+?):\s*(?=official esef report carries)", "", detail)
         cleaned = re.sub(r"(?i)amf-infofi:[^:;() ]+:\s*", "", cleaned)
         cleaned = re.sub(r"(?i)official esef report carries no inline xbrl tags \(untagged report\)", "carries no inline xbrl", cleaned)
         cleaned = re.sub(r"(?i)sec cik not found for ticker [a-z0-9.]+", "sec cik not found", cleaned)

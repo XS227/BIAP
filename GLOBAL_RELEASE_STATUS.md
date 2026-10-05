@@ -25,7 +25,7 @@ gets price + labelled non-official metrics, but no BUY candidate.
 
 ## Tier B — partial (PASS 1–3/6)
 
-FR Paris 3/6, NL Amsterdam 3/6, GB LSE 3/6, AE ADX 3/6, BE Brussels 2/6,
+FR Paris 3/6, NL Amsterdam 3/6, GB LSE 3/6, AE ADX 3/6,
 GR Athens 1/6, AE DFM 1/6. Gaps are mostly ESEF index lag and issuers without
 a structured report.
 
@@ -39,6 +39,13 @@ These need a new official-source adapter each (or a licensed data feed); they
 are not bugs in existing code. Several have no free machine-readable official
 source (AU: no XBRL mandate, ASX data licensed; DE: Unternehmensregister
 requires registration).
+
+## Belgium (update 2026-10-05)
+
+New national OAM locator for FSMA STORI (`BelgiumSTORILocator`, ISIN-filtered
+public web API). Production audit, 28 samples: **22 PASS/WARN** (was 2/6).
+Remaining: holding companies lodging untagged ESEF xhtml (KBCA, CLEX, TUB —
+no machine-readable figures), MOPF/BNB without a usable lodgement, BIOS stale.
 
 ## India (update 2026-10-05)
 
