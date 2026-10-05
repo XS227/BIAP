@@ -33,12 +33,20 @@ a structured report.
 
 AU ASX, CA TSX/TSXV, CH SIX,
 HK HKEX, IN NSE/BSE, KR KRX (also no verified price), NZ NZX, SA Tadawul,
-SG SGX, ZA JSE, PT Lisbon (0/6, index lag).
+SG SGX, ZA JSE.
 
 These need a new official-source adapter each (or a licensed data feed); they
 are not bugs in existing code. Several have no free machine-readable official
 source (AU: no XBRL mandate, ASX data licensed; DE: Unternehmensregister
 requires registration).
+
+## Portugal (update 2026-10-05)
+
+New national OAM locator for CMVM SDI (`PortugalCMVMLocator`). All 30 Lisbon
+instruments checked in production: **28 PASS/WARN** on official CMVM ESEF
+filings (FY2025, or FY ending 2025-06/2026-06 for the football SADs).
+Remaining: GLINT (package embeds subsidiary Glintt España's LEI; guard kept)
+and SCT (FY2025 package has no ProfitLoss tag; only FY2024 usable → stale).
 
 ## Germany (update 2026-10-05)
 
