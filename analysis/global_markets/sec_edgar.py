@@ -103,7 +103,12 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
                     continue
                 form = str(row.get("form") or "").upper()
                 fp = row.get("fp")
-                if form in {"10-K", "10-K/A"}:
+                if form in {"10-K", "10-K/A", "20-F", "20-F/A"}:
+                    # Foreign private issuers can file Form 20-F while still
+                    # preparing the financial statements under US GAAP (for
+                    # example PC, PASW and ODD on Nasdaq). Companyfacts already
+                    # separates the US-GAAP namespace, so annual 20-F facts are
+                    # safe to consume here alongside domestic 10-K facts.
                     if fp not in {None, "FY"}:
                         continue
                 elif form in {"10-12B", "10-12B/A", "10-12G", "10-12G/A"}:
@@ -364,6 +369,6 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
                 observed_at=filed_at,
                 period_end=period_end,
                 quality=1.0,
-                notes="standard US-GAAP facts from SEC companyfacts; annual 10-K/10-K-A or audited FY facts from 10-12B/10-12G registration statements",
+                notes="standard US-GAAP facts from SEC companyfacts; annual 10-K/10-K-A/20-F/20-F-A or audited FY facts from 10-12B/10-12G registration statements",
             ),
         )
