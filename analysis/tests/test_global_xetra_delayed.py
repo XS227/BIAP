@@ -116,7 +116,7 @@ def test_xetra_download_falls_back_when_newest_advertised_file_is_missing(monkey
             return self._payload
 
     def fake_request(url, *, accept):
-        if url.endswith("/api/"):
+        if url.endswith("/api/DETR-posttrade"):
             return Resp(payload={
                 "CurrentFiles": [
                     "DETR-posttrade-daily-2026-10-01.json.gz",
