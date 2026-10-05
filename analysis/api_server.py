@@ -19,6 +19,7 @@ from business_dataset_store import delete_dataset, get_dataset, save_dataset
 from codal_data import base_url as codal_base_url
 from company_builder import availability, build_company_from_quote, build_company_from_symbol
 from data_sample import SAMPLE_COMPANY
+from deadline import DeadlineExceeded, run_with_deadline
 from excel_business_import import parse_excel_base64
 from execution import (
     ExecutionPolicyError,
@@ -194,7 +195,12 @@ def symbols(market: Optional[str] = Query(default=None, description="TSE, IFB or
 @app.get("/stock/recommendation/{code}")
 def recommendation(code: str):
     _require_warm_ready()
-    company, source = _company_or_404(code)
+    # Return a bounded, explicit unavailable response rather than leaving a
+    # mobile client waiting on slow upstream CODAL/TSETMC streaming.
+    try:
+        company, source = run_with_deadline(_company_or_404, code, timeout=18.0)
+    except DeadlineExceeded as exc:
+        raise HTTPException(status_code=503, detail={"message": "upstream company data timed out", "retryable": True}) from exc
     decision = decide(company)
     market = company.get("market") or {}
     return {

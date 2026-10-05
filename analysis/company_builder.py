@@ -36,7 +36,7 @@ def _fanout_timeout() -> float:
     never hang company-data assembly -- and, by extension, an Auto-Invest run.
     """
     try:
-        return max(5.0, float(os.getenv("BIAP_COMPANY_BUILD_TIMEOUT_SECONDS", "30")))
+        return max(5.0, float(os.getenv("BIAP_COMPANY_BUILD_TIMEOUT_SECONDS", "9")))
     except (TypeError, ValueError):
         return 30.0
 

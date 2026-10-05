@@ -11,6 +11,7 @@ if str(ANALYSIS_DIR) not in sys.path:
 
 import agents
 import kiasha
+import listed_company_ingestion
 from performance_store import PerformanceStore
 
 
@@ -62,3 +63,20 @@ def _market_session_check_disabled_by_default(monkeypatch):
     own explicit policy, never through this env var.
     """
     monkeypatch.setenv("BIAP_ENFORCE_MARKET_SESSION", "false")
+
+
+@pytest.fixture(autouse=True)
+def _codal_issuer_directory_disabled_by_default(monkeypatch):
+    """Prevent any test from making a real CODAL issuer-directory network call.
+
+    listed_company_ingestion._classify_and_register() bulk-fetches CODAL's
+    issuer directory (list_companies()) once per refresh_universe()/run_batch()
+    call as a classification signal. Any test that reaches that path without
+    mocking it (registry/ingestion/universe-filter/migration tests -- none of
+    which are testing CODAL connectivity itself) would otherwise make a real,
+    slow HTTP request per call, exactly the class of hang
+    ``_external_tsetmc_enrichment_disabled_by_default`` above already guards
+    against for TSETMC. Tests that actually exercise CODAL cross-referencing
+    override this back via monkeypatch.
+    """
+    monkeypatch.setattr(listed_company_ingestion, "list_companies", lambda: [])

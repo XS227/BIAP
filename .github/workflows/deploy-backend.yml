@@ -121,6 +121,12 @@ jobs:
           cd "$APP_DIR"
 
           test -d .git || { echo "Not a git checkout: $APP_DIR" >&2; exit 1; }
+
+          # analysis/logs is runtime output, not source. Older deployed commits did
+          # not ignore it yet, so remove only this known generated directory before
+          # enforcing the clean-tree safety gate. Any other local change still
+          # blocks deployment.
+          rm -rf analysis/logs
           if [[ -n "$(git status --porcelain)" ]]; then
             echo "Refusing deploy: VPS working tree has local changes." >&2
             git status --short

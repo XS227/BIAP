@@ -10,3 +10,4 @@ codal_pdf_text_cache.json.tmp
 .env.*
 *.sqlite3.bak-*
 .runtime/
+analysis/logs/

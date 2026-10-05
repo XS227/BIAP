@@ -296,15 +296,33 @@ class AutoInvestStore:
             ).fetchall()
         return [str(row["user_id"]) for row in rows]
 
-    def claim_today(self, *, user_id: str, now_utc: datetime) -> Optional[str]:
-        """Claim today's logical run, or reopen it only after a transient no-fill result."""
+    def claim_today(
+        self,
+        *,
+        user_id: str,
+        now_utc: datetime,
+        stale_running_after_seconds: float = 1800.0,
+    ) -> Optional[str]:
+        """Claim today's logical run, or reopen a transient no-fill / crashed run.
+
+        A run is reopened when it finished RETRYABLE (a clean no-fill result),
+        or when it has been stuck in RUNNING far longer than any legitimate
+        call chain can take (crash, SIGKILL, OOM-kill, or a manually launched
+        force-run that was interrupted before it could call ``finish()``).
+        Without this, a single killed process permanently blocks the rest of
+        that Tehran day's Auto Invest for this user, since every later
+        non-force run would see a non-RETRYABLE status and skip silently.
+        ``stale_running_after_seconds`` is kept generous (well above the
+        run/market-scan/manual-order budgets combined) so a genuinely
+        still-running process is never reclaimed out from under itself.
+        """
         day = now_utc.astimezone(_TZ).date().isoformat()
         now = now_utc.isoformat()
         new_run_id = f"auto_{uuid4().hex}"
         with self._connect() as conn:
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(
-                "SELECT run_id,status FROM kiasha_auto_runs WHERE user_id=? AND tehran_day=?",
+                "SELECT run_id,status,started_at FROM kiasha_auto_runs WHERE user_id=? AND tehran_day=?",
                 (user_id, day),
             ).fetchone()
             if row is None:
@@ -313,11 +331,21 @@ class AutoInvestStore:
                     (new_run_id, user_id, day, now),
                 )
                 return new_run_id
-            if str(row["status"]) != "RETRYABLE":
+            status = str(row["status"])
+            reclaimable = status == "RETRYABLE"
+            if not reclaimable and status == "RUNNING":
+                try:
+                    started_at = datetime.fromisoformat(str(row["started_at"]))
+                except ValueError:
+                    started_at = None
+                if started_at is not None:
+                    age = (now_utc - started_at).total_seconds()
+                    reclaimable = age > stale_running_after_seconds
+            if not reclaimable:
                 return None
             run_id = str(row["run_id"])
             conn.execute(
-                "UPDATE kiasha_auto_runs SET started_at=?,finished_at=NULL,status='RUNNING',result_json=NULL WHERE run_id=? AND status='RETRYABLE'",
+                "UPDATE kiasha_auto_runs SET started_at=?,finished_at=NULL,status='RUNNING',result_json=NULL WHERE run_id=?",
                 (now, run_id),
             )
             return run_id
@@ -458,26 +486,33 @@ def run_user_auto_invest(user_id: str, *, force: bool = False) -> dict[str, Any]
     if run_id is None:
         run_id = f"manual_{uuid4().hex}"
 
-    account = AUDIT.ensure_paper_account(
-        user_id=user_id,
-        initial_cash=float(os.getenv("KIASHA_PAPER_INITIAL_CASH", "100000000")),
-    )
-    horizon = settings["horizon"]
-    max_trades = int(settings["maxDailyTrades"])
     results: list[dict[str, Any]] = []
-    sold_codes: set[str] = set()
-    candidate_limit = max(max_trades, min(int(os.getenv("KIASHA_AUTO_MAX_CANDIDATES", "6")), 8))
-    starting_capital = _paper_sizing_capital(account)
-    daily_budget = starting_capital * _daily_budget_pct() / 100.0
-    reserve_cash = starting_capital * _min_cash_reserve_pct() / 100.0
-    spent_this_run = 0.0
-    run_started = time_module.monotonic()
-    run_budget = _run_budget_seconds()
-
-    def _run_budget_exceeded() -> bool:
-        return time_module.monotonic() - run_started > run_budget
-
     try:
+        # Everything below (including the initial account load) must stay
+        # inside this try/except: a failure here previously left the claimed
+        # "auto_" row stuck in RUNNING forever (no finish() call), which
+        # silently blocked every later non-force run for the rest of that
+        # Tehran day. See ``AutoInvestStore.claim_today`` for the matching
+        # stale-RUNNING reclaim, which only recovers such a row after a long
+        # timeout -- this try/except is what should normally prevent it.
+        account = AUDIT.ensure_paper_account(
+            user_id=user_id,
+            initial_cash=float(os.getenv("KIASHA_PAPER_INITIAL_CASH", "100000000")),
+        )
+        horizon = settings["horizon"]
+        max_trades = int(settings["maxDailyTrades"])
+        sold_codes: set[str] = set()
+        candidate_limit = max(max_trades, min(int(os.getenv("KIASHA_AUTO_MAX_CANDIDATES", "6")), 8))
+        starting_capital = _paper_sizing_capital(account)
+        daily_budget = starting_capital * _daily_budget_pct() / 100.0
+        reserve_cash = starting_capital * _min_cash_reserve_pct() / 100.0
+        spent_this_run = 0.0
+        run_started = time_module.monotonic()
+        run_budget = _run_budget_seconds()
+
+        def _run_budget_exceeded() -> bool:
+            return time_module.monotonic() - run_started > run_budget
+
         for position in list(account.get("positions", [])):
             if _filled_count(results) >= max_trades:
                 break

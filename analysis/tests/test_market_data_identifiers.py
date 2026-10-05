@@ -104,6 +104,17 @@ def test_extended_market_data_resolves_symbol_before_requests(monkeypatch):
     assert all("123456" in url for url in urls)
 
 
+def test_find_quote_numeric_code_bypasses_watchlist(monkeypatch):
+    monkeypatch.setattr(
+        md,
+        "fetch_watchlist",
+        lambda **kwargs: (_ for _ in ()).throw(AssertionError("watchlist should not be called")),
+    )
+    expected = md.LiveQuote("123456", "TEST", 1000, 990, 980, 20, 2.04)
+    monkeypatch.setattr(md, "_fetch_tsetmc_quote", lambda code, **kwargs: expected)
+    assert md.find_quote("123456", use_cache=False) is expected
+
+
 def test_find_quote_degrades_to_none_when_symbol_cannot_resolve(monkeypatch):
     def unavailable(*args, **kwargs):
         raise md.MarketDataUnavailable("watchlist unavailable")
@@ -154,3 +165,20 @@ def test_tsetmc_quote_degrades_to_none_on_network_timeout(monkeypatch):
     monkeypatch.setattr(md, "fetch_symbol_universe", lambda **kwargs: [_tsetmc_item()])
     monkeypatch.setattr(md.httpx, "Client", _StalledHttpClient)
     assert md._fetch_tsetmc_quote("ارفع", timeout=1) is None
+
+
+def test_numeric_quote_does_not_fetch_bulk_symbol_universe(monkeypatch):
+    monkeypatch.setattr(md, "fetch_symbol_universe", lambda **kwargs: (_ for _ in ()).throw(AssertionError("bulk universe must not run")))
+    seen = []
+    def fake_read(url, *, timeout):
+        seen.append(url)
+        if "GetClosingPriceInfo" in url:
+            return {"closingPriceInfo": {"pDrCotVal": 1010, "pClosing": 1000, "priceYesterday": 990}}
+        if "GetInstrumentInfo" in url:
+            return {"instrumentInfo": {"lVal18AFC": "فولاد", "lVal30": "فولاد مبارکه اصفهان"}}
+        raise AssertionError(url)
+    monkeypatch.setattr(md, "_read_json", fake_read)
+    quote = md._fetch_tsetmc_quote("46348559193224090", timeout=1)
+    assert quote is not None and quote.name == "فولاد"
+    assert len(seen) == 2
+    assert all("GetInstrument" in u or "GetClosingPriceInfo" in u for u in seen)

@@ -335,9 +335,36 @@ def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuot
     if last_price is not None and yesterday_price not in (None, 0):
         change = last_price - yesterday_price
         change_percent = (change / yesterday_price) * 100.0
+    # For numeric instrument codes, resolve the canonical ticker directly from
+    # TSETMC InstrumentInfo. Do not depend on the persisted registry being warm:
+    # CODAL enrichment needs a Persian symbol, and passing the numeric insCode
+    # silently disables fundamentals. This is a small direct lookup, unlike the
+    # expensive full-universe request we intentionally avoid here.
+    # Numeric insCodes are already verified identifiers. Resolve their display
+    # ticker with the small InstrumentInfo endpoint directly; never block the
+    # quote hot path on the bulk symbol-universe download. Persian symbols still
+    # use the verified universe/search resolver above.
+    if _is_tsetmc_instrument_code(code):
+        display_name = str(instrument_code)
+        try:
+            info_payload = _read_json(
+                f"{tsetmc_api_base()}/Instrument/GetInstrumentInfo/{instrument_code}",
+                timeout=timeout,
+            )
+            info = info_payload.get("instrumentInfo")
+            if isinstance(info, dict):
+                ticker = str(info.get("lVal18AFC") or "").strip()
+                issuer_name = str(info.get("lVal30") or "").strip()
+                display_name = ticker or issuer_name or display_name
+                if display_name != str(instrument_code):
+                    _symbol_name_cache[str(instrument_code)] = (time.monotonic(), display_name)
+        except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
+            pass
+    else:
+        display_name = _resolve_symbol_name(str(instrument_code), timeout=timeout)
     return LiveQuote(
         code=str(instrument_code),
-        name=_resolve_symbol_name(str(instrument_code), timeout=timeout),
+        name=display_name,
         last_price=last_price,
         closing_price=closing_price,
         yesterday_price=yesterday_price,
@@ -358,15 +385,18 @@ def fetch_extended_market_data(code: str, *, timeout: float = 12.0, use_cache: b
     tsetmc = tsetmc_api_base()
     try:
         current = _read_json(f"{tsetmc}/ClosingPrice/GetClosingPriceInfo/{instrument_code}", timeout=timeout)
-        history = _read_json(f"{tsetmc}/ClosingPrice/GetClosingPriceDailyList/{instrument_code}/400", timeout=timeout)
         instrument_payload = _read_json(f"{tsetmc}/Instrument/GetInstrumentInfo/{instrument_code}", timeout=timeout)
     except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
         return None
 
+    # The relay's large DailyList response can trickle for tens of seconds.
+    # InstrumentInfo already exposes verified maxYear/minYear/qTotTran5JAvg,
+    # which are the fields this baseline needs, so do not block every company
+    # on the historical payload.
     row = current.get("closingPriceInfo")
-    rows = history.get("closingPriceDaily")
+    rows: list[dict] = []
     instrument = instrument_payload.get("instrumentInfo")
-    if not isinstance(row, dict) or not isinstance(rows, list) or not rows:
+    if not isinstance(row, dict):
         return None
     if not isinstance(instrument, dict):
         instrument = {}
@@ -441,11 +471,15 @@ def fetch_extended_market_data(code: str, *, timeout: float = 12.0, use_cache: b
 
 
 def find_quote(code: str, *, timeout: float = 8.0, use_cache: bool = True) -> Optional[LiveQuote]:
-    try:
-        quotes = fetch_watchlist(timeout=timeout, use_cache=use_cache)
-        for q in quotes:
-            if q.code == code:
-                return q
-    except MarketDataUnavailable:
-        pass
+    # Listed-company ingestion uses verified numeric TSETMC instrument codes.
+    # Do not hit the legacy BIAP watchlist first for those codes: the endpoint
+    # may be unavailable and the numeric code can be resolved directly.
+    if _is_tsetmc_instrument_code(code):
+        # Numeric identifiers need only two small direct endpoints; do not let
+        # an upstream stall consume the entire recommendation deadline.
+        return _fetch_tsetmc_quote(code, timeout=min(timeout, 4.0))
+
+    # The legacy BIAP /stock/watchlist route is not deployed in production
+    # (HTTP 404). Resolve through the canonical TSETMC instrument endpoint
+    # rather than issuing a failing watchlist request for every company.
     return _fetch_tsetmc_quote(code, timeout=timeout)

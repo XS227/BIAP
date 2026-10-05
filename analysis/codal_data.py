@@ -15,6 +15,7 @@ filing. Missing or ambiguous fields stay unavailable.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, replace
+from deadline import DeadlineExceeded, run_parallel_with_deadline
 from html import unescape
 from html.parser import HTMLParser
 import json
@@ -34,6 +35,8 @@ _YEARS_TTL = 60 * 60
 _FILINGS_TTL = 5 * 60
 _CODAL_PAGE_LENGTH = 12
 _FINANCIAL_LETTER_TYPE = 6
+_RATE_LIMIT_COOLDOWN_SECONDS = 15 * 60
+_rate_limited_until = 0.0
 
 
 class CodalDataUnavailable(RuntimeError):
@@ -116,6 +119,10 @@ def www_base_url() -> str:
 
 
 def _get_json(path: str, params: Optional[dict[str, Any]] = None) -> Any:
+    global _rate_limited_until
+    now = time.monotonic()
+    if now < _rate_limited_until:
+        raise CodalDataUnavailable("CODAL search temporarily cooling down after upstream 429")
     url = f"{base_url()}{path}"
     if params:
         url = f"{url}?{urlencode(params)}"
@@ -130,7 +137,11 @@ def _get_json(path: str, params: Optional[dict[str, Any]] = None) -> Any:
     try:
         with urlopen(req, timeout=_TIMEOUT) as resp:
             raw = resp.read().decode("utf-8", errors="replace")
-    except (HTTPError, URLError, TimeoutError, OSError) as exc:
+    except HTTPError as exc:
+        if exc.code == 429:
+            _rate_limited_until = time.monotonic() + _RATE_LIMIT_COOLDOWN_SECONDS
+        raise CodalDataUnavailable(f"CODAL request failed: {exc}") from exc
+    except (URLError, TimeoutError, OSError) as exc:
         raise CodalDataUnavailable(f"CODAL request failed: {exc}") from exc
     try:
         return json.loads(raw)
@@ -156,9 +167,45 @@ def find_company(symbol: str) -> Optional[dict[str, Any]]:
     wanted = symbol.strip()
     if not wanted:
         return None
-    for row in list_companies():
-        if str(row.get("sy", "")).strip() == wanted:
-            return row
+
+    # The full /companies payload is ~750 KB and the relay can trickle it for
+    # well beyond the request timeout. Resolve issuer metadata from the much
+    # smaller symbol-filtered search response first.
+    try:
+        payload = _get_json(
+            "/api/search/v2/q",
+            {
+                "Symbol": wanted,
+                "PageNumber": 1,
+                "Length": 2,
+                "CompanyState": 0,
+                "CompanyType": -1,
+                "FromDate": "1404/01/01",
+                "ToDate": "1405/12/29",
+                "Mains": "true",
+                "Childs": "true",
+                "Publisher": "false",
+                "search": "true",
+            },
+        )
+        rows = payload.get("Letters") if isinstance(payload, dict) else None
+        if isinstance(rows, list):
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                row_symbol = str(row.get("Symbol", "")).strip()
+                if row_symbol == wanted:
+                    return {
+                        "sy": row_symbol,
+                        "n": row.get("CompanyName"),
+                        "i": row.get("CompanyID") or row.get("CompanyId"),
+                    }
+    except CodalDataUnavailable:
+        pass
+
+    # Do not fall back to the ~750 KB company directory here. On the
+    # production relay that response can take minutes and would stall every
+    # baseline company. Filing/year endpoints remain authoritative enrichment.
     return None
 
 
@@ -277,40 +324,49 @@ def latest_financial_filings(symbol: str, limit: int = 3) -> list[CodalFiling]:
     if cached and now - cached[0] < _FILINGS_TTL:
         return cached[1][:limit]
 
-    attempts = [
-        {
-            "LetterType": _FINANCIAL_LETTER_TYPE,
-            "PageNumber": 1,
-            "Length": _CODAL_PAGE_LENGTH,
-            "CompanyState": 0,
-            "CompanyType": -1,
-            "Mains": "true",
-            "Childs": "false",
-            "Publisher": "false",
-            "search": "true",
-        },
-        {
-            "LetterType": _FINANCIAL_LETTER_TYPE,
-            "PageNumber": 1,
-            "Length": _CODAL_PAGE_LENGTH,
-            "CompanyState": -1,
-            "CompanyType": -1,
-            "Mains": "true",
-            "Childs": "false",
-            "Publisher": "false",
-            "search": "true",
-        },
-    ]
-
+    # CODAL's live v2 API returns no rows for numeric LetterType=6 even
+    # when the issuer has filings. Inspect small unfiltered pages instead.
+    # A small page size avoids the relay's slow large-response streaming.
     filings: list[CodalFiling] = []
-    for params in attempts:
+    seen: set[str] = set()
+    completed = False
+    for page in range(1, 13):
         try:
-            filings = _search_payload(wanted, params)
+            payload = _get_json("/api/search/v2/q", {
+                "Symbol": wanted, "PageNumber": page, "Length": 2,
+            })
         except CodalDataUnavailable:
-            continue
-        if filings:
+            if not completed:
+                raise  # Do not cache a timeout/rate-limit as "no filings".
             break
-
+        if not isinstance(payload, dict) or not isinstance(payload.get("Letters"), list):
+            raise CodalDataUnavailable("unexpected CODAL filing search response")
+        completed = True
+        rows = payload["Letters"]
+        for row in rows:
+            if not isinstance(row, dict) or str(row.get("Symbol", "")).strip() != wanted:
+                continue
+            title = str(row.get("Title") or "").replace("\\u200c", " ")
+            # Do not treat monthly activity, board notices, or forecasts as
+            # financial statements merely because they have Excel exports.
+            if "صورت" not in title or "مالی" not in title:
+                continue
+            filing = _normalize_filing(row)
+            if not filing.excel_url:
+                continue
+            identity = filing.tracing_no or filing.excel_url
+            if identity not in seen:
+                seen.add(identity)
+                filings.append(filing)
+        if len(filings) >= limit or len(rows) < 2:
+            break
+    # A relay returning zero letters for an issuer with verified financial
+    # years is not evidence that the issuer has no financial reports.
+    # Fail closed instead of persisting a misleading empty result.
+    known_years = _years_cache.get(wanted)
+    if not filings and known_years and known_years[1]:
+        raise CodalDataUnavailable("CODAL report search returned no filings despite verified financial years; relay/search source needs repair")
+    # Only cache a genuine completed empty search, not transport failures.
     _financial_filings_cache[wanted] = (now, filings)
     return filings[:limit]
 
@@ -536,18 +592,39 @@ def fundamentals_for_symbol(symbol: str) -> Optional[CodalFundamentals]:
 
 
 def metadata_for_symbol(symbol: str) -> Optional[CodalMetadata]:
-    company = find_company(symbol)
-    if company is None:
+    # Financial years are independent, verified issuer evidence. Fetch them
+    # concurrently with optional discovery so a trickling CODAL search page
+    # cannot suppress a fast and valid metadata result.
+    # The production relay serializes some requests: collect the tiny years
+    # response first so concurrent slow searches cannot starve it.
+    try:
+        years = financial_years(symbol)
+    except CodalDataUnavailable:
+        years = []
+    # Once CODAL rejects requests, avoid spawning more optional searches.
+    if time.monotonic() < _rate_limited_until:
+        return (CodalMetadata(symbol=symbol, company_name=None, company_id=None,
+                financial_years=years, latest_filings=[], latest_financial_filings=[])
+                if years else None)
+    results = run_parallel_with_deadline([
+        lambda: find_company(symbol),
+        lambda: latest_filings(symbol, limit=3),
+    ], timeout=3.0)
+    company, filings = (
+        value if not isinstance(value, BaseException) else None
+        for value in results
+    )
+    company = company or {}
+    filings = filings or []
+    # Financial filings are fetched by the fundamentals pipeline separately.
+    # Do not duplicate its expensive paginated discovery in metadata.
+    if not company and not years and not filings:
         return None
-    years = financial_years(symbol)
-    filings = latest_filings(symbol, limit=5)
-    financial_filings = latest_financial_filings(symbol, limit=3)
     return CodalMetadata(
         symbol=symbol,
         company_name=(str(company.get("n")).strip() if company.get("n") else None),
         company_id=(str(company.get("i")).strip() if company.get("i") else None),
         financial_years=years,
         latest_filings=[item.to_dict() for item in filings],
-        latest_financial_filings=[item.to_dict() for item in financial_filings],
+        latest_financial_filings=[],
     )
-

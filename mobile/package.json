@@ -50,7 +50,19 @@
         "expo",
         "expo-router",
         "expo-sharing",
-        "expo-glass-effect"
+        "expo-glass-effect",
+        "expo-constants",
+        "expo-device",
+        "expo-document-picker",
+        "expo-file-system",
+        "expo-font",
+        "expo-image",
+        "expo-linear-gradient",
+        "expo-linking",
+        "expo-splash-screen",
+        "expo-symbols",
+        "expo-system-ui",
+        "expo-web-browser"
       ]
     }
   },

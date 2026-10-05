@@ -107,7 +107,10 @@ class ListedCompanyStore:
                     market=COALESCE(excluded.market,listed_companies.market),
                     source_universe=excluded.source_universe,
                     source_updated_at=excluded.source_updated_at,
-                    provenance_json=excluded.provenance_json,
+                    provenance_json=CASE
+                        WHEN listed_companies.company_json IS NOT NULL THEN listed_companies.provenance_json
+                        ELSE excluded.provenance_json
+                    END,
                     updated_at=excluded.updated_at
                 """,
                 rows,
@@ -182,6 +185,80 @@ class ListedCompanyStore:
     def count(self) -> int:
         with self._connect() as conn:
             return int(conn.execute("SELECT COUNT(*) FROM listed_companies").fetchone()[0])
+
+    def _split_by_enrichment(self, codes: Iterable[str]) -> tuple[list[str], list[tuple[str, str]]]:
+        """Return (never_enriched_codes_sorted, [(enriched_at, code), ...]) for the given codes.
+
+        Queried fresh from persisted DB truth every call -- there is no
+        separate index/cursor to keep in sync, so this can never drift out of
+        step with what has actually been enriched.
+        """
+        wanted = [str(c) for c in dict.fromkeys(str(c) for c in codes if str(c))]
+        if not wanted:
+            return [], []
+        placeholders = ",".join("?" for _ in wanted)
+        with self._connect() as conn:
+            rows = conn.execute(
+                f"SELECT code, company_json, enriched_at FROM listed_companies WHERE code IN ({placeholders})",
+                wanted,
+            ).fetchall()
+        known = {row["code"]: row for row in rows}
+        never_enriched = []
+        enriched = []
+        for code in wanted:
+            row = known.get(code)
+            if row is None or row["company_json"] is None:
+                never_enriched.append(code)
+            else:
+                enriched.append((row["enriched_at"] or "", code))
+        never_enriched.sort()
+        enriched.sort(key=lambda pair: pair[0])
+        return never_enriched, enriched
+
+    def order_by_enrichment_priority(self, codes: Iterable[str]) -> list[str]:
+        """Never-enriched codes first (by code), then enriched codes oldest-first.
+
+        Used by the scheduler so daily capacity always goes to genuine
+        companies that have never been enriched before re-enrichment/refresh
+        consumes any of it. Recomputed fresh on every call (see
+        ``_split_by_enrichment``), so callers never need to persist/resume an
+        index into this list across runs.
+        """
+        never_enriched, enriched = self._split_by_enrichment(codes)
+        return never_enriched + [code for _, code in enriched]
+
+    def never_enriched_count(self, codes: Iterable[str]) -> int:
+        never_enriched, _ = self._split_by_enrichment(codes)
+        return len(never_enriched)
+
+    def verified_enrichment_codes(self) -> set[str]:
+        """Codes whose already-fetched enrichment payload independently proves a genuine issuer.
+
+        "Proof" means CODAL's own issuer-directory metadata was matched
+        (``codal_metadata``), or live TSETMC market data was actually
+        observed (a non-null price/market flow) -- never the mere presence
+        of a company_json blob, which company_builder also populates for
+        symbols that ultimately had no verified data at all.
+        """
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT code, company_json FROM listed_companies WHERE company_json IS NOT NULL"
+            ).fetchall()
+        verified: set[str] = set()
+        for row in rows:
+            try:
+                company = json.loads(row["company_json"])
+            except (TypeError, ValueError):
+                continue
+            if not isinstance(company, dict):
+                continue
+            if company.get("codal_metadata"):
+                verified.add(str(row["code"]))
+                continue
+            market = company.get("market") or {}
+            if isinstance(market, dict) and (market.get("price") or market.get("market_flow")):
+                verified.add(str(row["code"]))
+        return verified
 
     def pending_codes(self, *, start: int = 0, limit: int = 100) -> list[str]:
         with self._connect() as conn:

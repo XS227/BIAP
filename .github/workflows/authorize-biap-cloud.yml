@@ -1,0 +1,58 @@
+name: Authorize BIAP cloud SSH
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/authorize-biap-cloud.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  authorize:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+      VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+      VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      BIAP_CLOUD_PUBLIC_KEY: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEb9dXFmv3IoJoWLdNoBuXeysjbeoq/jpP/3pG3M5mp2 biap-cloud"
+
+    steps:
+      - name: Validate deploy credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$VPS_SSH_KEY"
+          echo "Target: ${VPS_USER}@${VPS_HOST}:${VPS_PORT:-22}"
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/biap_deploy_key
+          chmod 600 ~/.ssh/biap_deploy_key
+
+      - name: Add BIAP cloud public key
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT="${VPS_PORT:-22}"
+          ssh -i ~/.ssh/biap_deploy_key -p "$PORT" -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 "$VPS_USER@$VPS_HOST" \
+            "BIAP_CLOUD_PUBLIC_KEY='$BIAP_CLOUD_PUBLIC_KEY' bash -s" <<'REMOTE'
+          set -euo pipefail
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          touch "$HOME/.ssh/authorized_keys"
+          chmod 600 "$HOME/.ssh/authorized_keys"
+          if ! grep -qxF "$BIAP_CLOUD_PUBLIC_KEY" "$HOME/.ssh/authorized_keys"; then
+            printf '%s\n' "$BIAP_CLOUD_PUBLIC_KEY" >> "$HOME/.ssh/authorized_keys"
+          fi
+          grep -qxF "$BIAP_CLOUD_PUBLIC_KEY" "$HOME/.ssh/authorized_keys"
+          echo "BIAP cloud public key authorized for $(whoami)@$(hostname)"
+          REMOTE
