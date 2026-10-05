@@ -36,7 +36,9 @@ _EXCLUDED_NAME = re.compile(
     r"depositary|depository|\bdep\s+shs\b|\badr\b|\bads\b|"
     r"\betf\b|\betn\b|exchange[- ]traded|"
     r"notes?\b|debenture|bond\b|fund\b|certificate|"
-    r"subscription|contingent\s+value"
+    r"subscription|contingent\s+value|"
+    r"blank\s+check|acquisition\s+(?:corp|corporation|company|co)\b|"
+    r"merger\s+(?:corp|corporation|company|co)\b"
     r")",
     re.IGNORECASE,
 )
