@@ -40,6 +40,23 @@ are not bugs in existing code. Several have no free machine-readable official
 source (AU: no XBRL mandate, ASX data licensed; DE: Unternehmensregister
 requires registration).
 
+## Greece, Nordics (update 2026-10-05)
+
+- Greece: `GreeceAthensLocator` (Euronext Athens issuer "Financial Statements
+  ESEF", ISIN -> issuer code from official JSON directories) + home-state OAM
+  routing (Belgian issuers VIO/CENER -> FSMA STORI). Audit 20 samples: **8
+  PASS/WARN** (was 1/6). Many smaller Athens issuers have only PDFs at the
+  exchange (no ESEF listed there).
+- Denmark: `DenmarkVirkLocator` (Erhvervsstyrelsen ESEF via distribution.virk.dk
+  by CVR) merged with Nasdaq Copenhagen annual-report announcements (banks).
+  **17/20** (was 4/6). Faroese issuers have no Danish CVR.
+- Iceland: `NasdaqNordicNewsLocator` (ESEF package attached to the Annual
+  Financial Report exchange notice). **13/17** (was 4/6).
+- Norway: Newsweb share-class signs + LEI-named packages filed in other
+  categories (Elkem). **20/20**. Sweden: extensionless inner ESEF zips (K-Fast).
+  **16/20**.
+- Ireland: no public Irish OAM API found; 9/14 via filings.xbrl.org/home state.
+
 ## United Kingdom (update 2026-10-05)
 
 New national OAM locator for the FCA National Storage Mechanism

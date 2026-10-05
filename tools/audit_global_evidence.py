@@ -135,7 +135,9 @@ _COVERAGE = (
     "no reviewed issuer-published esef package",
     "nse lists no integrated filings", "nse integrated filings contain no annual",
     "issuer identity is not uniquely resolved",  # issuer not (uniquely) on the national OAM register
-    "no official oam esef locator for",  # BIAP has no national-OAM integration for this country yet  # BSE-only issuers (BSE API not reachable)
+    "no official oam esef locator for",  # BIAP has no national-OAM integration for this country yet
+    "nasdaq nordic announcements list no esef annual report", "no danish cvr number verifiable",
+    "virk.dk lists no esef annual report", "euronext athens lists no esef annual financial report",  # BSE-only issuers (BSE API not reachable)
 )
 
 
