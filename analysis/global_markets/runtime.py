@@ -314,7 +314,6 @@ def build_registry() -> ProviderRegistry:
     sec_foreign_ifrs = SECForeignIFRSFundamentalsProvider(user_agent=sec_user_agent)
     official_europe = FallbackFundamentalsProvider(esef, sec_foreign_ifrs)
     esef_with_fallback = FallbackFundamentalsProvider(official_europe, public_fundamentals)
-    esef_persistent = PersistentFundamentalsProvider(esef_with_fallback)
 
     # A small number of issuers publish audited statements before the generic
     # ESEF index used above exposes the new period. Prefer the separately
@@ -402,12 +401,11 @@ def build_registry() -> ProviderRegistry:
             provider = no_provider
         elif country == "IT":
             provider = it_provider
-        elif country == "SE" or oam_esef.supports(country):
-            # Every country with a national-OAM locator reads the lodged ESEF
-            # report first; filings.xbrl.org stays the second official path.
-            provider = se_provider
         else:
-            provider = esef_persistent
+            # National-OAM ESEF first (the listing country's OAM, or the
+            # issuer's home-state OAM for cross-listed foreign issuers), then
+            # filings.xbrl.org/SEC as the second official path.
+            provider = se_provider
         for exchange in COUNTRY_PACKS[country].exchanges:
             register_fundamentals(country, exchange.code, provider)
 

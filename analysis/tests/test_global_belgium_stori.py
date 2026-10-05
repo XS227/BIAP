@@ -49,3 +49,12 @@ def test_requires_isin_and_esef_lodgement():
 
 def test_belgium_is_served_by_national_oam_provider():
     assert NationalOAMESEFProvider().supports("BE")
+
+
+def test_cross_listed_foreign_issuer_uses_home_state_oam():
+    provider = NationalOAMESEFProvider()
+    athens_listed_belgian = GlobalCompany(country="GR", exchange="ATHENS", currency="EUR", ticker="VIO",
+                                          name="VIOHALCO", isin="BE0974271034")
+    assert isinstance(provider.locator_for(athens_listed_belgian), BelgiumSTORILocator)
+    greek = GlobalCompany(country="GR", exchange="ATHENS", currency="EUR", ticker="PROF", name="PROFILE", isin="GRS472003011")
+    assert provider.locator_for(greek) is None

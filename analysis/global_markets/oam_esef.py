@@ -1201,6 +1201,89 @@ class UKNSMLocator(OAMLocator):
         return filings
 
 
+class GreeceAthensLocator(OAMLocator):
+    """Euronext Athens issuer "Financial Statements ESEF" (Greek OAM).
+
+    Euronext Athens publishes its stock and issuer directories as JSON
+    (ISIN -> issuer name -> issuer code) and lists each issuer's lodged ESEF
+    financial reports (iXBRL zip) on the issuer's financial-data page. The ISIN
+    is the register-side identity match; the package's embedded LEI is the
+    proof checked by NationalOAMESEFProvider.
+    """
+
+    oam = "gr-athens-esef"
+    country = "GR"
+    base = "https://athens.euronext.com"
+
+    def _directory(self, name: str) -> list[dict]:
+        def fetch() -> str:
+            with self.http.client() as client:
+                response = client.get(f"{self.base}/sites/default/files/json_data_files/{name}_en.json")
+            response.raise_for_status()
+            return response.text
+
+        payload = json.loads(self.http.cached_text(f"athens-{name}", fetch))
+        rows = payload.get("data") if isinstance(payload, dict) else payload
+        return rows if isinstance(rows, list) else []
+
+    def _issuer_code(self, isin: str) -> str:
+        stock = [r for r in self._directory("stocks") if str(r.get("ISIN") or "").upper() == isin]
+        if len(stock) != 1:
+            raise GlobalProviderError(f"Euronext Athens stock directory has no unique row for {isin}")
+        def norm(value: object) -> str:
+            return " ".join(str(value or "").split()).upper()
+
+        # The issuer directory uses either the full or the short issuer name.
+        names = [norm(stock[0].get(k)) for k in ("_issuerFullName", "Issuer") if norm(stock[0].get(k))]
+        codes: set[str] = set()
+        for key in names:
+            codes = {str(r.get("Code")) for r in self._directory("issuers") if norm(r.get("Name")) == key}
+            if codes:
+                break
+        if len(codes) != 1:
+            raise GlobalProviderError(f"Euronext Athens issuer identity is not uniquely resolved for {isin}")
+        return next(iter(codes))
+
+    def annual_filings(self, company: GlobalCompany, lei: str, legal_name: str) -> list[OAMFiling]:
+        isin = (company.isin or "").upper()
+        if not isin:
+            raise GlobalProviderError("Euronext Athens lookup requires the instrument ISIN")
+        code = self._issuer_code(isin)
+        page = f"{self.base}/en/market-data/issuers/{code}/financial-data"
+
+        def fetch() -> str:
+            with self.http.client() as client:
+                response = client.get(page, params={"term_node_tid_depth": "2"})
+            response.raise_for_status()
+            return response.text
+
+        html = self.http.cached_text(f"athens-esef:{code}", fetch)
+        filings = []
+        for row in re.findall(r"<tr[^>]*>(.*?)</tr>", html, re.S):
+            link = re.search(r'href="([^"]+?\.zip(?:/[0-9a-f-]+)?)"', row, re.I)
+            if not link:
+                continue
+            title = html_unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", row))).strip()
+            meta = re.search(r"\((\d{4}),\s*([^,)]+),\s*([^)]+)\)", title)
+            if not meta or not re.search(r"annual|year statement", meta.group(2), re.I):
+                continue  # half-year / interim ESEF statements are not annual reports
+            stamp = re.search(r"(\d{2})-(\d{2})-(\d{4})", title)
+            scope_text = meta.group(3).strip().lower()
+            url = link.group(1) if link.group(1).startswith("http") else self.base + link.group(1)
+            filings.append(OAMFiling(
+                oam=self.oam, document_id=f"ATHENS-ESEF:{code}:{hashlib.sha1(url.encode()).hexdigest()[:16]}",
+                package_url=url, landing_url=f"{page}?term_node_tid_depth=2",
+                published_at=f"{stamp.group(3)}-{stamp.group(2)}-{stamp.group(1)}" if stamp else None,
+                label=title.split("|")[0][:200],
+                scope="consolidated" if scope_text in {"consolidated", "both"} else ("separate" if "company" in scope_text or "parent" in scope_text else None),
+            ))
+        # Newest fiscal year first; consolidated before others.
+        filings.sort(key=lambda f: (f.published_at or "", f.scope == "consolidated"), reverse=True)
+        if not filings:
+            raise GlobalProviderError(f"Euronext Athens lists no ESEF annual financial report for issuer {code}")
+        return filings
+
+
 class ItalySDIRLocator(OAMLocator):
     """Both Italian authorized storage mechanisms, merged and ranked.
 
@@ -1254,6 +1337,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
             BelgiumSTORILocator(self.http),
             NetherlandsAFMLocator(self.http),
             UKNSMLocator(self.http),
+            GreeceAthensLocator(self.http),
         ]
         self.locators = {locator.country: locator for locator in chosen}
 
@@ -1359,8 +1443,17 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
         }
 
     # -- provider ------------------------------------------------------------
+    def locator_for(self, company: GlobalCompany) -> Optional[OAMLocator]:
+        """The issuer's home-member-state OAM (ISIN country) when BIAP has a
+        locator for it, else the listing country's. A Belgian issuer listed in
+        Athens (e.g. Viohalco) lodges its ESEF report with FSMA, not in Greece."""
+        home = (company.isin or "")[:2].upper()
+        if home and home != company.country.upper() and home in self.locators:
+            return self.locators[home]
+        return self.locators.get(company.country.upper())
+
     def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
-        locator = self.locators.get(company.country.upper())
+        locator = self.locator_for(company)
         if locator is None:
             raise GlobalProviderError(f"no official OAM ESEF locator for {company.country}")
         lei, legal_name = self._resolve_lei(company)
