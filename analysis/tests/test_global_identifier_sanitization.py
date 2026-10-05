@@ -38,4 +38,6 @@ def test_analysis_request_ignores_restricted_cached_isin():
     )
     company = _seed(req)
     assert company.ticker == "EQNR"
-    assert company.isin is None
+    # A valid ISIN may be enriched from the authoritative cached universe.
+    assert company.isin is None or (len(company.isin) == 12 and company.isin.isalnum())
+    assert company.isin != "REQUEST_ACCESS_VIA_ADD_ONS"

@@ -68,6 +68,15 @@ _CONCEPTS = {
     ),
     "interest_expense": ("ifrs-full:FinanceCosts", "ifrs-full:InterestExpense"),
     "eps": ("ifrs-full:BasicEarningsLossPerShare", "ifrs-full:DilutedEarningsLossPerShare"),
+    # Bank (Bank of Italy Circular 262) layout: no IFRS Revenue / Equity total
+    # is tagged. These concepts let the normalizer use the issuer's own tagged
+    # totals instead, and only under the bank guards in normalized_fields.
+    "owners_equity": ("ifrs-full:EquityAttributableToOwnersOfParent",),
+    "noncontrolling_interests": ("ifrs-full:NoncontrollingInterests",),
+    "equity_and_liabilities": ("ifrs-full:EquityAndLiabilities",),
+    "bank_operating_income": (),
+    "bank_fee_income": ("ifrs-full:FeeAndCommissionIncomeExpense",),
+    "bank_interest_revenue": ("ifrs-full:InterestRevenueCalculatedUsingEffectiveInterestMethod",),
 }
 
 _EXTENSION_LOCAL_PATTERNS = {
@@ -101,8 +110,31 @@ _EXTENSION_LOCAL_PATTERNS = {
         r"^interestexpenses$",
         r"^financecosts$",
     ),
+    # Issuer total of the equity section, e.g. isp:TotalEquity.
+    "equity": (r"^totalequity$",),
+    "owners_equity": (
+        r"^(?:total)?equityattributabletoownersofparent(?:atendofperiod)?$",
+    ),
+    # Circular 262 item 120 "Margine di intermediazione" / "Net interest and
+    # other banking income" (isp:GrossIncome, bperbanca:GrossIncome,
+    # finecobank:MargineDiIntermediazione).
+    "bank_operating_income": (
+        r"^grossincome$",
+        r"^netinterestandotherbankingincome$",
+        r"^marginediintermediazione$",
+    ),
+    # Circular 262 item 10 "Interessi attivi e proventi assimilati".
+    "bank_interest_revenue": (r"^interestincomeandsimilarrevenues$",),
 }
 _ALLOWED_DIMENSIONS = {"concept", "entity", "period", "unit"}
+# The statement of changes in equity tags the owners' total column with this
+# single IFRS member; any other axis/member is a component, never a total.
+_OWNERS_TOTAL_DIMENSION = ("ifrs-full:ComponentsOfEquityAxis", "ifrs-full:EquityAttributableToOwnersOfParentMember")
+# The same statement's non-controlling-interests column. A total-equity
+# concept on exactly the owners column is owners' equity and on exactly this
+# column is NCI (Banca Mediolanum ext:TotalEquity, Banca Profilo
+# ifrs-full:Equity): owners + NCI columns = total equity under IFRS.
+_NCI_DIMENSION = ("ifrs-full:ComponentsOfEquityAxis", "ifrs-full:NoncontrollingInterestsMember")
 
 
 def _concept_local_name(concept: object) -> str:
@@ -223,6 +255,12 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             json_url = str(attrs.get("json_url") or "").strip()
             if not period or not json_url:
                 continue
+            # A report cannot cover a period that ends after it was filed.
+            # Mis-indexed entries exist (Recordati 5011: the FY2022 report
+            # indexed as 2032-12-31) and would otherwise sort first.
+            filed = str(attrs.get("date_added") or attrs.get("processed") or "")[:10] or date.today().isoformat()
+            if period[:10] > filed:
+                continue
             try:
                 errors = int(attrs.get("error_count") or 0)
             except (TypeError, ValueError):
@@ -273,9 +311,15 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             old = unique_by_end.get(row[1])
             if old is None or abs(row[0] - 365) < abs(old[0] - 365):
                 unique_by_end[row[1]] = row
-        ordered = sorted((row for row in unique_by_end.values() if row[1] <= period_end), key=lambda row: row[1], reverse=True)
-        index = 1 if previous else 0
-        return ordered[index][2] if len(ordered) > index else None
+        # Flows are anchored to the balance-sheet date like instants are: a
+        # short (transition) period ending on period_end must not be filled
+        # with the prior fiscal year's annual flows (Mediobanca FY2025 is
+        # 2025-07-01..2025-12-31; its last annual P&L ends 2025-06-30).
+        target = period_end - timedelta(days=365) if previous else period_end
+        tolerance = 10 if previous else 7
+        near = [row for row in unique_by_end.values() if abs((row[1] - target).days) <= tolerance]
+        near.sort(key=lambda row: abs((row[1] - target).days))
+        return near[0][2] if near else None
 
     @staticmethod
     def _instant_value(facts: list[dict], period_end: date) -> Optional[float]:
@@ -291,6 +335,52 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                 choices.append((distance, value))
         choices.sort(key=lambda item: item[0])
         return choices[0][1] if choices else None
+
+    @staticmethod
+    def _is_concept(concept: str, key: str) -> bool:
+        return concept.lower() in {c.lower() for c in _CONCEPTS[key]} or _extension_key(concept) == key
+
+    @classmethod
+    def _owners_equity_facts(cls, facts: list[dict]) -> list[dict]:
+        """Owners' equity totals: plain facts, or the single IFRS owners-total
+        column of the statement of changes in equity (no other dimension)."""
+        return cls._column_facts(facts, "owners_equity", _OWNERS_TOTAL_DIMENSION, plain=True)
+
+    @classmethod
+    def _column_facts(cls, facts: list[dict], key: str, column: tuple[str, str], *, plain: bool) -> list[dict]:
+        axis, member = column
+        result = []
+        for fact in facts:
+            dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+            if not cls._is_concept(str(dims.get("concept") or ""), key) or _num(fact.get("value")) is None:
+                continue
+            extra = {k: v for k, v in dims.items() if k not in _ALLOWED_DIMENSIONS}
+            if (plain and not extra) or extra == {axis: member}:
+                result.append(fact)
+        return result
+
+    def _equity(self, facts: list[dict], concept_facts: dict, period_end: date) -> tuple[Optional[float], Optional[str]]:
+        direct = [f for f in concept_facts["equity"] if str(f["dimensions"].get("concept") or "").lower() == "ifrs-full:equity"]
+        value = self._instant_value(direct, period_end)
+        if value is not None:
+            return value, "direct_ifrs_equity"
+        bound = self._instant_value(concept_facts["equity_and_liabilities"], period_end)
+
+        def plausible(amount: Optional[float]) -> bool:
+            return amount is not None and (bound is None or abs(amount) <= abs(bound))
+
+        value = self._instant_value([f for f in concept_facts["equity"] if f not in direct], period_end)
+        if plausible(value):
+            return value, "issuer_extension_total_equity"
+        owners = self._instant_value(self._owners_equity_facts(facts), period_end)
+        if owners is None:
+            owners = self._instant_value(self._column_facts(facts, "equity", _OWNERS_TOTAL_DIMENSION, plain=False), period_end)
+        minority = self._instant_value(concept_facts["noncontrolling_interests"], period_end)
+        if minority is None:
+            minority = self._instant_value(self._column_facts(facts, "equity", _NCI_DIMENSION, plain=False), period_end)
+        if owners is not None and minority is not None and plausible(owners + minority):
+            return owners + minority, "owners_equity_plus_noncontrolling_interests"
+        return None, None
 
     @staticmethod
     def _pct_change(current: Optional[float], previous: Optional[float]) -> Optional[float]:
@@ -313,6 +403,20 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         }
         revenue = self._duration_value(concept_facts["revenue"], period_end)
         revenue_prev = self._duration_value(concept_facts["revenue"], period_end, previous=True)
+        revenue_method = "ifrs_revenue" if revenue is not None else None
+        # Banks tag no IFRS Revenue; their top line is the tagged item 120
+        # subtotal. Used only for a bank-structured filing (fee/commission
+        # result and effective-interest revenue both tagged for the year).
+        if (
+            revenue is None
+            and self._duration_value(concept_facts["bank_fee_income"], period_end) is not None
+            and self._duration_value(concept_facts["bank_interest_revenue"], period_end) is not None
+        ):
+            revenue = self._duration_value(concept_facts["bank_operating_income"], period_end)
+            if revenue is not None:
+                revenue_prev = self._duration_value(concept_facts["bank_operating_income"], period_end, previous=True)
+                revenue_method = "bank_net_interest_and_other_banking_income"
+        total_equity, equity_method = self._equity(facts, concept_facts, period_end)
         net_income = self._duration_value(concept_facts["net_income"], period_end)
         net_income_prev = self._duration_value(concept_facts["net_income"], period_end, previous=True)
         operating_income = self._duration_value(concept_facts["operating_income"], period_end)
@@ -361,7 +465,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             "net_margin_prev_pct": self._margin(net_income_prev, revenue_prev),
             "total_assets": self._instant_value(concept_facts["assets"], period_end),
             "total_liabilities": self._instant_value(concept_facts["liabilities"], period_end),
-            "total_equity": self._instant_value(concept_facts["equity"], period_end),
+            "total_equity": total_equity,
             "retained_earnings": self._instant_value(concept_facts["retained_earnings"], period_end),
             "current_assets": self._instant_value(concept_facts["current_assets"], period_end),
             "current_liabilities": self._instant_value(concept_facts["current_liabilities"], period_end),
@@ -372,6 +476,8 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             "interest_expense": self._duration_value(concept_facts["interest_expense"], period_end),
             "eps": self._duration_value(concept_facts["eps"], period_end),
             "__normalization_meta__": {
+                "revenue_method": revenue_method,
+                "equity_method": equity_method,
                 "ebitda_method": ebitda_method,
                 "debt_method": debt_method,
                 "capex": capex,

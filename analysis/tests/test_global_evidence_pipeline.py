@@ -255,7 +255,7 @@ def test_official_provenance_survives_cache_roundtrip(tmp_path):
     official = [s for s in restored.sources if is_official_fundamental_source(s)]
     assert official and official[0].source_id == "DOC-1" and official[0].source_url == "https://oam.example/1"
     stored = json.loads(next(tmp_path.rglob("latest.json")).read_text())
-    assert stored["schemaVersion"] == 3
+    assert stored["schemaVersion"] == 4
     assert stored["evidenceContract"]["isOfficial"] is True
     assert stored["evidenceContract"]["officialDocumentId"] == "DOC-1"
 

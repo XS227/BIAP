@@ -43,6 +43,7 @@ from .hkex_issuer import HKEXIssuerFundamentalsProvider
 from .hkex_official import HKEXOfficialUniverseProvider
 from .india_official import NSEOfficialUniverseProvider
 from .italy_issuer import ItalyIssuerFundamentalsProvider
+from .enel_issuer_esef import EnelIssuerESEFProvider
 from .iran_adapter import IranLegacyProvider
 from .jpx_official import JPXOfficialUniverseProvider
 from .jse_official import JSEOfficialUniverseProvider
@@ -351,7 +352,9 @@ def build_registry() -> ProviderRegistry:
     # ESEF package is exposed; exact issuer parsers bridge that gap without
     # relabelling vendor metrics as official.
     it_issuer = ItalyIssuerFundamentalsProvider()
-    it_official = FallbackFundamentalsProvider(nordic_oam_official, it_issuer)
+    it_official = FallbackFundamentalsProvider(
+        FallbackFundamentalsProvider(nordic_oam_official, EnelIssuerESEFProvider()), it_issuer
+    )
     it_provider = PersistentFundamentalsProvider(
         FallbackFundamentalsProvider(it_official, public_fundamentals)
     )

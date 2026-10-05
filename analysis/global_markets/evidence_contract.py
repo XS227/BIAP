@@ -86,7 +86,7 @@ def official_fundamental_status(company: GlobalCompany, *, now: Optional[datetim
         )
     error = raw.get("fundamentals_primary_error")
     if error:
-        return STATUS_OFFICIAL_SOURCE_UNAVAILABLE, str(error)[:300]
+        return STATUS_OFFICIAL_SOURCE_UNAVAILABLE, str(error)[:900]
     if raw.get("yahoo_fundamentals_supplement_only") or raw.get("fundamentals_fallback_reason"):
         return STATUS_OFFICIAL_SOURCE_UNAVAILABLE, "no official filing adapter returned data for this market/issuer"
     return STATUS_OFFICIAL_SOURCE_UNAVAILABLE, "no official financial-statement source attached"

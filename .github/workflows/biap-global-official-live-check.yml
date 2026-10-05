@@ -74,4 +74,47 @@ jobs:
               assert expected_provider in providers, result
               assert 'fundamental_source' not in (evidence.get('missing_critical') or []), result
               assert evidence.get('status') in {'PASS','WARN'}, result
+
+          # Android regression: the stock screen posts exactly these fields and,
+          # when opened from a deep link / watchlist, often WITHOUT isin/lei and
+          # with name == ticker. Both shapes must reach the same official
+          # evidence, and a payload may never carry official evidence while
+          # Evidence reports missing fundamental_source (CI green / app BLOCK).
+          canaries = [
+              ('SE', 'NASDAQ_STOCKHOLM', 'VOLCAR.B', 'SEK'),
+              ('SE', 'NASDAQ_STOCKHOLM', 'QLINEA', 'SEK'),
+              ('NO', 'EURONEXT_OSLO', 'BONHR', 'NOK'),
+              ('NO', 'EURONEXT_OSLO', 'AKBM', 'NOK'),
+              ('FR', 'EURONEXT_PARIS', 'OREGE', 'EUR'),
+              ('FI', 'NASDAQ_HELSINKI', 'AKTIA', 'EUR'),
+          ]
+          for country, exchange, ticker, currency in canaries:
+              q = urllib.parse.urlencode({'q': ticker, 'limit': 20})
+              with urllib.request.urlopen(f'{base}/instruments/{country}/{exchange}?{q}', timeout=45) as r:
+                  catalog = json.load(r)
+              exact = next((row for row in (catalog.get('instruments') or []) if str(row.get('ticker') or '').upper() == ticker), None)
+              assert exact, (country, exchange, ticker)
+              shapes = {
+                  'catalog': {k: exact.get(k) for k in ('country', 'exchange', 'ticker', 'name', 'currency', 'isin', 'lei')},
+                  'deeplink': {'country': country, 'exchange': exchange, 'ticker': ticker, 'name': ticker, 'currency': currency},
+              }
+              for shape, body in shapes.items():
+                  body = {k: v for k, v in body.items() if v}
+                  req = urllib.request.Request(
+                      f'{base}/analyze', data=json.dumps(body).encode(),
+                      headers={'Content-Type':'application/json','Accept':'application/json'}, method='POST'
+                  )
+                  with urllib.request.urlopen(req, timeout=150) as r:
+                      payload = json.load(r)
+                  ev = payload.get('evidence') or {}
+                  fe = payload.get('fundamentalEvidence') or {}
+                  missing = ev.get('missing_critical') or []
+                  result = {'shape': shape, 'ticker': ticker, 'evidence': ev.get('status'), 'missing': missing,
+                            'source': fe.get('fundamental_source'), 'doc': fe.get('officialDocumentId'),
+                            'period': fe.get('reportPeriod'), 'official': ev.get('official_fundamental_status'),
+                            'governance': (payload.get('governance') or {}).get('action')}
+                  print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+                  assert not (fe.get('isOfficial') and 'fundamental_source' in missing), result
+                  assert fe.get('isOfficial') and fe.get('officialDocumentId'), result
+                  assert 'fundamental_source' not in missing, result
           PY

@@ -47,7 +47,10 @@ _OFFICIAL_FINANCIAL_TOKENS = ("filing", "regulatory", "xbrl", "financial_stateme
 _CACHE_SOURCE_TOKENS = (*_OFFICIAL_FINANCIAL_TOKENS, "fundamental", "financial_metrics", "company_registry")
 # v3: canonical evidence contract stored with every snapshot; official flag is
 # re-verified against stored source rows on read.
-CACHE_SCHEMA_VERSION = 3
+# v4: ESEF flows anchored to the report's period end (no prior-fiscal-year
+# flows in a transition period) and bank Circular 262 revenue/equity,
+# including owners/NCI statement-of-changes-in-equity columns.
+CACHE_SCHEMA_VERSION = 4
 MAX_OFFICIAL_FILING_AGE_DAYS = int(os.environ.get("BIAP_GLOBAL_MAX_OFFICIAL_FILING_AGE_DAYS", "550"))
 
 
@@ -145,7 +148,7 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
             payload = json.loads(self._latest_path(company).read_text(encoding="utf-8"))
         except (OSError, ValueError, TypeError):
             return None
-        if not isinstance(payload, dict) or payload.get("schemaVersion") not in {1, 2, CACHE_SCHEMA_VERSION}:
+        if not isinstance(payload, dict) or payload.get("schemaVersion") not in {1, 2, 3, CACHE_SCHEMA_VERSION}:
             return None
         identity = payload.get("identity") if isinstance(payload.get("identity"), dict) else {}
         if str(identity.get("country") or "").upper() != company.country.upper():
