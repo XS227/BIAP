@@ -177,9 +177,13 @@ def _seed(req: InstrumentRequest):
         # so provider-specific identity metadata (verified SEC aliases, legal
         # issuer names, etc.) survives the search -> analyze boundary without
         # requiring clients to round-trip internal raw_provider_fields.
+        membership_error = None
         try:
             registry = build_registry()
             provider = registry.universe(seed.country, seed.exchange)
+            upstream = getattr(provider, "upstream", provider)
+            provider_id = str(getattr(upstream, "provider_id", "") or "")
+            authoritative = provider_id.startswith("official-")
             search = getattr(provider, "search_instruments", None)
             candidates = []
             if callable(search):
@@ -210,11 +214,17 @@ def _seed(req: InstrumentRequest):
                     isin=_clean_isin(req.isin) or exact.isin,
                     lei=_clean_lei(req.lei) or exact.lei,
                 )
+            if authoritative:
+                membership_error = ValueError(
+                    f"{seed.ticker} is not listed in the official {seed.country}/{seed.exchange} universe"
+                )
         except Exception:
-            # Universe resolution enriches identity but is not required for the
-            # legacy analyze contract. Provider outages must not turn a valid
-            # sanitized request into an API failure.
+            # A genuine provider outage may still use the sanitized legacy seed,
+            # but a successful authoritative lookup that proves the ticker is
+            # not on the selected venue must never be downgraded to a guessed MIC.
             pass
+        if membership_error is not None:
+            raise membership_error
         return seed
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
