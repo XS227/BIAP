@@ -383,7 +383,7 @@ class NSEIntegratedFilingFundamentalsProvider(FundamentalsProvider):
             raise GlobalProviderError(f"NSE lists no integrated filings for symbol {symbol}")
         detail = "; ".join(errors)[:400]
         raise GlobalProviderError(
-            f"NSE integrated filings contain no audited annual results for {symbol}" + (f" ({detail})" if detail else "")
+            f"NSE integrated filings contain no annual (12-month) results for {symbol}" + (f" ({detail})" if detail else "")
         )
 
     def _previous(self, rows: list[dict], period_end: str, scope: Optional[str], isin: str) -> Optional[dict]:

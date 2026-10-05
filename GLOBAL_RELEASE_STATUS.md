@@ -32,13 +32,22 @@ a structured report.
 ## Tier C — no official fundamentals source wired (0/6, COVERAGE_GAP)
 
 AU ASX, CA TSX/TSXV, CH SIX,
-HK HKEX, IN NSE/BSE, KR KRX (also no verified price), NZ NZX, SA Tadawul,
+HK HKEX, KR KRX (also no verified price), NZ NZX, SA Tadawul,
 SG SGX, ZA JSE.
 
 These need a new official-source adapter each (or a licensed data feed); they
 are not bugs in existing code. Several have no free machine-readable official
 source (AU: no XBRL mandate, ASX data licensed; DE: Unternehmensregister
 requires registration).
+
+## India (update 2026-10-05)
+
+New provider `NSEIntegratedFilingFundamentalsProvider`: SEBI Integrated Filing
+(Financials) XBRL published by NSE (12-month FY context, ISIN verified, bank
+format, split re-issued ISINs, rounding-unit guard). Production audit, 20
+samples each: **NSE 18/20, BSE 12/20 PASS/WARN** (was 0). Remaining gaps are
+issuers that file only with BSE: BSE's API returns 403 to this server, so they
+stay on labelled vendor data.
 
 ## Portugal (update 2026-10-05)
 
