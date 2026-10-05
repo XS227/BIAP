@@ -175,6 +175,44 @@ def test_duerr_official_annual_report_is_parsed(monkeypatch):
     assert enriched.sources[-1].audit_status == "audited"
 
 
+def test_bmm_official_annual_report_is_parsed(monkeypatch):
+    provider = GermanIssuerFundamentalsProvider()
+    text = """
+      Brüder Mannesmann Aktiengesellschaft Konzernabschluss 2025
+      Umsatzerlöse 19.919.704,63 24.232.406,25
+      Konzern-Jahresüberschuss 757.810,32 -350.793,44
+      Summe 33.563.595,47 36.810.634,57
+      Eigenkapital 10.334.755,49 9.576.945,17
+      Kassenbestand, Guthaben bei Kreditinstituten 1.743.271,54 2.123.470,42
+      Cashflow aus der laufenden Geschäftstätigkeit 143.741,58 -407.869,98
+      Bestätigungsvermerk des unabhängigen Abschlussprüfers
+    """
+    monkeypatch.setattr(provider, "_get_pdf_text", lambda url: " ".join(text.split()))
+
+    company = GlobalCompany(
+        country="DE",
+        exchange="FRANKFURT",
+        mic_code="XFRA",
+        currency="EUR",
+        ticker="BMM",
+        name="BRUEDER MANNESM.AG O.N.",
+        isin="DE0005275507",
+    )
+    enriched = provider.enrich_fundamentals(company)
+
+    assert enriched.revenue == pytest.approx(19_919_704.63)
+    assert enriched.revenue_prev == pytest.approx(24_232_406.25)
+    assert enriched.net_income == pytest.approx(757_810.32)
+    assert enriched.total_assets == pytest.approx(33_563_595.47)
+    assert enriched.total_equity == pytest.approx(10_334_755.49)
+    assert enriched.total_liabilities == pytest.approx(23_228_839.98)
+    assert enriched.cash_and_equivalents == pytest.approx(1_743_271.54)
+    assert enriched.operating_cash_flow == pytest.approx(143_741.58)
+    assert enriched.filing_period_end == "2025-12-31"
+    assert enriched.sources[-1].audit_status == "audited"
+    assert enriched.raw_provider_fields["de_esef_obligation"] == "not_required_open_market"
+
+
 def test_german_issuer_adapter_rejects_ticker_name_collision():
     provider = GermanIssuerFundamentalsProvider()
     with pytest.raises(GlobalProviderError, match="identity mismatch"):
