@@ -109,6 +109,11 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
 
     @classmethod
     def _annual_series(cls, gaap: dict, tags: tuple[str, ...], count: int = 2) -> list[dict]:
+        # Issuers sometimes migrate between standard US-GAAP tags. Prefer the
+        # candidate series whose newest annual fact is actually most recent;
+        # tag order is only a tie-breaker, never a reason to select stale data.
+        best: list[dict] = []
+        best_key: tuple[str, str] = ("", "")
         for tag in tags:
             concept = gaap.get(tag)
             if not isinstance(concept, dict):
@@ -124,8 +129,14 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
                 if len(unique) >= count:
                     break
             if unique:
-                return unique
-        return []
+                key = (
+                    str(unique[0].get("end") or ""),
+                    str(unique[0].get("filed") or ""),
+                )
+                if key > best_key:
+                    best = unique
+                    best_key = key
+        return best
 
     @classmethod
     def _latest(cls, gaap: dict, tags: tuple[str, ...]) -> Optional[dict]:
@@ -191,21 +202,117 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         # or paid-in-capital dollar concepts, which would silently corrupt market cap.
         shares = self._latest(gaap, ("CommonStockSharesOutstanding",))
 
-        revenue = self._value(revenues[0] if revenues else None)
-        revenue_prev = self._value(revenues[1] if len(revenues) > 1 else None)
-        income = self._value(net_income[0] if net_income else None)
-        income_prev = self._value(net_income[1] if len(net_income) > 1 else None)
+        # Anchor the normalized snapshot to one fiscal period. A company can
+        # legitimately stop using a generic revenue concept (for example a
+        # pre-revenue biotech) while its balance sheet, loss and cash flow keep
+        # advancing. Never let one stale concept date the whole filing, and
+        # never mix an older fact into a newer normalized statement.
+        core_rows = [
+            revenues[0] if revenues else None,
+            net_income[0] if net_income else None,
+            assets,
+            liabilities,
+            equity,
+            current_assets,
+            current_liabilities,
+            cash,
+            ocf,
+            eps,
+        ]
+        period_end = max(
+            (str(row.get("end") or "") for row in core_rows if row and row.get("end")),
+            default="",
+        ) or None
+
+        def current_period_row(row: Optional[dict]) -> Optional[dict]:
+            if row is None or period_end is None:
+                return row
+            return row if str(row.get("end") or "") == period_end else None
+
+        def current_series_row(rows: list[dict]) -> Optional[dict]:
+            if period_end is None:
+                return rows[0] if rows else None
+            return next(
+                (row for row in rows if str(row.get("end") or "") == period_end),
+                None,
+            )
+
+        def previous_series_row(rows: list[dict], current: Optional[dict]) -> Optional[dict]:
+            if current is None:
+                return None
+            if period_end is None:
+                return rows[1] if len(rows) > 1 else None
+            return next(
+                (
+                    row for row in rows
+                    if str(row.get("end") or "")
+                    and str(row.get("end") or "") < period_end
+                ),
+                None,
+            )
+
+        revenue_row = current_series_row(revenues)
+        revenue_prev_row = previous_series_row(revenues, revenue_row)
+        income_row = current_series_row(net_income)
+        income_prev_row = previous_series_row(net_income, income_row)
+
+        gross_profit = current_period_row(gross_profit)
+        operating_income = current_period_row(operating_income)
+        assets = current_period_row(assets)
+        liabilities = current_period_row(liabilities)
+        equity = current_period_row(equity)
+        current_assets = current_period_row(current_assets)
+        current_liabilities = current_period_row(current_liabilities)
+        cash = current_period_row(cash)
+        ocf = current_period_row(ocf)
+        capex = current_period_row(capex)
+        debt_current = current_period_row(debt_current)
+        debt_noncurrent = current_period_row(debt_noncurrent)
+        debt_total = current_period_row(debt_total)
+        interest = current_period_row(interest)
+        eps = current_period_row(eps)
+        dividend_per_share = current_period_row(dividend_per_share)
+
+        revenue = self._value(revenue_row)
+        revenue_prev = self._value(revenue_prev_row)
+        income = self._value(income_row)
+        income_prev = self._value(income_prev_row)
         ocf_value = self._value(ocf)
         capex_value = self._value(capex)
         fcf = None if ocf_value is None or capex_value is None else ocf_value - abs(capex_value)
         total_debt = self._value(debt_total)
         if total_debt is None:
-            parts = [value for value in (self._value(debt_current), self._value(debt_noncurrent)) if value is not None]
+            parts = [
+                value
+                for value in (self._value(debt_current), self._value(debt_noncurrent))
+                if value is not None
+            ]
             total_debt = sum(parts) if parts else None
 
-        period_row = revenues[0] if revenues else (net_income[0] if net_income else assets)
-        period_end = (str(period_row.get("end") or "") or None) if period_row else None
-        filed_at = (str(period_row.get("filed") or "") or None) if period_row else None
+        current_rows = [
+            revenue_row,
+            income_row,
+            gross_profit,
+            operating_income,
+            assets,
+            liabilities,
+            equity,
+            current_assets,
+            current_liabilities,
+            cash,
+            ocf,
+            capex,
+            debt_current,
+            debt_noncurrent,
+            debt_total,
+            interest,
+            eps,
+            dividend_per_share,
+        ]
+        filed_at = max(
+            (str(row.get("filed") or "") for row in current_rows if row and row.get("filed")),
+            default="",
+        ) or None
 
         enriched = replace(
             company,
