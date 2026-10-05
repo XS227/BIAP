@@ -25,6 +25,7 @@ from .gleif import _legal_core
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, append_source
 from .sec_edgar import SEC_FACTS_BASE
+from .sec_identity import cik_by_name, identity_matches, issuer_names
 
 
 # Local exchange symbols can differ from the issuer's US ADR ticker. Aliases are
@@ -138,19 +139,44 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
         if company.country.strip().upper() == "US":
             raise GlobalProviderError("foreign SEC IFRS fallback is not used for US issuers")
 
-        cik = self._resolve_cik(company)
-        padded = f"{cik:010d}"
-        source_url = f"{SEC_FACTS_BASE}/CIK{padded}.json"
-        payload = self._get_json(source_url)
-        entity_name = str(payload.get("entityName") or "").strip()
-        if not entity_name or not self._identity_matches(company, entity_name):
-            jse_issuer = str(company.raw_provider_fields.get("jse_issuer_name") or "").strip()
+        jse_issuer = str(company.raw_provider_fields.get("jse_issuer_name") or "").strip()
+        names = issuer_names(company, [jse_issuer] if jse_issuer else [])
+
+        def matches(entity: str) -> bool:
+            return bool(entity) and (self._identity_matches(company, entity) or identity_matches(entity, names))
+
+        try:
+            cik: Optional[int] = self._resolve_cik(company)
+        except GlobalProviderError as exc:
+            cik, ticker_error = None, exc
+        else:
+            ticker_error = None
+        payload: dict = {}
+        entity_name = ""
+        if cik is not None:
+            payload = self._get_json(f"{SEC_FACTS_BASE}/CIK{cik:010d}.json")
+            entity_name = str(payload.get("entityName") or "").strip()
+        if cik is None or not matches(entity_name):
+            # The local ticker may be another US filer's symbol (TSX CNR vs
+            # NYSE CNR) or absent from the SEC map: resolve by the issuer's
+            # legal name, accepted only for exactly one SEC filer.
+            by_name = cik_by_name(self, names)
+            if by_name is not None and by_name != cik:
+                alt = self._get_json(f"{SEC_FACTS_BASE}/CIK{by_name:010d}.json")
+                alt_name = str(alt.get("entityName") or "").strip()
+                if matches(alt_name):
+                    cik, payload, entity_name = by_name, alt, alt_name
+        if cik is None:
+            raise ticker_error or GlobalProviderError(f"SEC CIK not found for ticker {company.ticker}")
+        if not matches(entity_name):
             sec_alias = str(company.raw_provider_fields.get("sec_ticker_alias") or "").strip()
             raise GlobalProviderError(
                 "SEC ticker identity does not match selected issuer "
                 f"{company.name!r}; entityName={entity_name!r}; "
                 f"jseIssuer={jse_issuer!r}; secAlias={sec_alias!r}; cik={cik}"
             )
+        padded = f"{cik:010d}"
+        source_url = f"{SEC_FACTS_BASE}/CIK{padded}.json"
 
         ifrs = self._facts(payload)
         if not ifrs:
