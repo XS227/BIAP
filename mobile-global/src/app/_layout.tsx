@@ -11,6 +11,7 @@ import { ModuleHelpOverlay } from '@/components/module-help-overlay';
 import RegisterScreen from '@/app/register';
 import { getValidAccessToken } from '@/lib/auth-session';
 import { trackAppOpen } from '@/lib/activity';
+import { checkForUpdateSilently } from '@/lib/app-update';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -23,6 +24,10 @@ export default function RootLayout() {
   const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
   const [checking, setChecking] = useState(!GLOBAL_PREVIEW);
   const [fontsLoaded] = useFonts({ Vazirmatn_400Regular, Vazirmatn_700Bold });
+
+  useEffect(() => {
+    void checkForUpdateSilently();
+  }, []);
 
   useEffect(() => {
     if (GLOBAL_PREVIEW) return;

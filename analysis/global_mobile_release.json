@@ -1,0 +1,11 @@
+{
+  "version": "0.3.17",
+  "versionCode": 20,
+  "releasedAt": "2026-10-05",
+  "changes": [
+    "In-app update check: BIAP Global now tells you when a newer APK is available",
+    "Official annual filings for Portugal, Belgium, Netherlands, UK, Greece, Denmark, Iceland and India (NSE/BSE)",
+    "Germany: issuer-published ESEF reports for more companies; Norway/Sweden filing coverage fixes",
+    "Agent 10 partial factor view"
+  ]
+}

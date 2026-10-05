@@ -6,6 +6,7 @@ import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing,
 import { getGlobalMarketSelection, type GlobalMarketSelection } from '@/lib/global-market-selection';
 import { getSelectedGlobalCompany } from '@/lib/global-company-selection';
 import type { GlobalInstrument } from '@/lib/global-api';
+import { checkForUpdateInteractive } from '@/lib/app-update';
 
 type Item = { icon:string; title:string; sub:string; onPress:()=>void; accent?:string };
 
@@ -31,6 +32,7 @@ export default function MoreScreen(){
     {icon:'🧠',title:'Kiasha',sub:'Evidence-gated market scan and ranked stock ideas for the selected market.',onPress:()=>router.push('/kiasha'),accent:'#7c3aed'},
     {icon:'🧾',title:'Orders / Execution',sub:'Paper-first execution area. Global live brokerage remains disabled until a broker adapter is approved.',onPress:()=>router.push('/orders'),accent:Brand.warning},
     {icon:'👤',title:'Profile & Settings',sub:'Account and app settings.',onPress:()=>router.push('/profile'),accent:'#64748b'},
+    {icon:'🔄',title:'Check for updates',sub:`Installed version ${version}. Download the newest BIAP Global APK.`,onPress:()=>{void checkForUpdateInteractive();},accent:Brand.primary},
   ];
   return <SafeAreaView style={[styles.safe,{backgroundColor:colors.background}]}><ScrollView contentContainerStyle={styles.content}><View style={styles.max}>
     <View style={styles.header}><Text style={[styles.title,{color:colors.text}]}>More</Text><Text style={[styles.sub,{color:colors.textSecondary}]}>BIAP Global tools, modules and configuration</Text></View>
