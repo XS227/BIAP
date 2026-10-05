@@ -984,6 +984,57 @@ class PortugalCMVMLocator(OAMLocator):
             _stream_json_base64(response.iter_bytes(), marker, out, max_bytes)
 
 
+class BelgiumSTORILocator(OAMLocator):
+    """FSMA STORI (Belgian OAM): lodged annual financial reports by ISIN.
+
+    STORI's public web API filters by ISIN and document type and returns the
+    lodged ESEF package (zip) and/or the inline XBRL report (xhtml) per
+    filing. The ISIN filter is the register-side identity match; the package's
+    embedded LEI remains the proof checked by NationalOAMESEFProvider.
+    """
+
+    oam = "be-fsma-stori"
+    country = "BE"
+    api = "https://webapi.fsma.be/api/v1/en/stori"
+    annual_report_type = "9813c451-9fd4-41ba-ba7d-4e0dda0d3051"  # "Annual financial report"
+
+    def annual_filings(self, company: GlobalCompany, lei: str, legal_name: str) -> list[OAMFiling]:
+        isin = (company.isin or "").upper()
+        if not isin:
+            raise GlobalProviderError("FSMA STORI lookup requires the instrument ISIN")
+
+        def fetch() -> str:
+            with self.http.client() as client:
+                response = client.post(f"{self.api}/result", json={
+                    "startRowIndex": 0, "pageSize": 50, "isinCode": isin,
+                    "documentTypeId": self.annual_report_type, "isDocumentTypeGroup": False,
+                })
+            response.raise_for_status()
+            return response.text
+
+        payload = json.loads(self.http.cached_text(f"fsma-stori-annual:{isin}", fetch))
+        items = sorted(payload.get("storiResultItems") or [], key=lambda r: str(r.get("datePublication") or ""), reverse=True)
+        filings = []
+        for item in items:
+            docs = [d for d in item.get("mainDocuments") or [] if str(d.get("fileType")).lower() in {"zip", "xhtml"}]
+            if not docs:
+                continue
+            # Prefer the full report package, English before other languages.
+            docs.sort(key=lambda d: (str(d.get("fileType")).lower() == "zip",
+                                     str(d.get("language") or "").lower() == "en"), reverse=True)
+            doc = docs[0]
+            filings.append(OAMFiling(
+                oam=self.oam, document_id=f"FSMA-STORI:{doc['fileDataId']}",
+                package_url=f"{self.api}/download?fileDataId={doc['fileDataId']}",
+                landing_url="https://www.fsma.be/en/stori",
+                published_at=str(item.get("datePublication") or "")[:10] or None,
+                label=f"{item.get('companyName')}: {item.get('reportingTopicName')} ({doc.get('originalFileName')})",
+            ))
+        if not filings:
+            raise GlobalProviderError(f"FSMA STORI lists no ESEF annual financial report for {isin}")
+        return filings
+
+
 class ItalySDIRLocator(OAMLocator):
     """Both Italian authorized storage mechanisms, merged and ranked.
 
@@ -1034,6 +1085,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
             SpainCNMVLocator(self.http),
             ItalySDIRLocator(self.http),
             PortugalCMVMLocator(self.http),
+            BelgiumSTORILocator(self.http),
         ]
         self.locators = {locator.country: locator for locator in chosen}
 
