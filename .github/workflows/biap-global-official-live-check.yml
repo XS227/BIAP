@@ -87,7 +87,7 @@ jobs:
               ('SE', 'NASDAQ_STOCKHOLM', 'VOLCAR.B', 'SEK'),
               ('SE', 'NASDAQ_STOCKHOLM', 'QLINEA', 'SEK'),
               ('NO', 'EURONEXT_OSLO', 'BONHR', 'NOK'),
-              ('NO', 'EURONEXT_OSLO', 'AKBM', 'NOK'),
+              ('NO', 'EURONEXT_OSLO', 'AKSO', 'NOK'),  # AKBM: no longer in Euronext/OpenFIGI Oslo directories (2026-10-05)
               ('FR', 'EURONEXT_PARIS', 'OREGE', 'EUR'),
               ('FI', 'NASDAQ_HELSINKI', 'AKTIA', 'EUR'),
           ]

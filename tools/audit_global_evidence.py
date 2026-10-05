@@ -44,7 +44,7 @@ SAMPLES = int(os.environ.get("BIAP_AUDIT_SAMPLES_PER_MARKET", "4"))
 WORKERS = int(os.environ.get("BIAP_AUDIT_WORKERS", "6"))
 TIMEOUT = int(os.environ.get("BIAP_AUDIT_TIMEOUT", "150"))
 ONLY = {m.strip().upper() for m in (os.environ.get("BIAP_AUDIT_MARKETS") or "").split(",") if m.strip()}
-CANARIES = [c for c in (os.environ.get("BIAP_AUDIT_CANARIES") or "SE:NASDAQ_STOCKHOLM:VOLCAR.B,SE:NASDAQ_STOCKHOLM:QLINEA,NO:EURONEXT_OSLO:BONHR,NO:EURONEXT_OSLO:AKBM").split(",") if c]
+CANARIES = [c for c in (os.environ.get("BIAP_AUDIT_CANARIES") or "SE:NASDAQ_STOCKHOLM:VOLCAR.B,SE:NASDAQ_STOCKHOLM:QLINEA,NO:EURONEXT_OSLO:BONHR,NO:EURONEXT_OSLO:AKSO").split(",") if c]
 OUT = os.environ.get("BIAP_AUDIT_OUT", "global-evidence-audit")
 MAX_API_FAILURE_PCT = float(os.environ.get("BIAP_AUDIT_MAX_API_FAILURE_PCT", "15"))
 
