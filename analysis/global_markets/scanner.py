@@ -496,12 +496,14 @@ class GlobalMarketScanner:
                         selected_universe, country.upper(), spec
                     )
                     fallback_source = "Twelve Data licensed batch market feed"
-                screening_errors = [
-                    f"official Xetra delayed source unavailable: {str(exc)[:180]}",
-                    *fallback_errors,
-                ]
+                # A successful configured fallback is still live market
+                # data. Keep only errors from that fallback in the readiness
+                # gate; preserve the official-source outage in the source label
+                # instead of falsely blocking an otherwise complete scan.
+                screening_errors = list(fallback_errors)
                 market_source = (
-                    f"{fallback_source} (fallback after Deutsche Boerse delayed-source outage)"
+                    f"{fallback_source} (fallback after Deutsche Boerse delayed-source outage: "
+                    f"{str(exc)[:120]})"
                 )
         elif self.euronext_live.supported(country.upper(), spec.code):
             quotes, screening_errors, market_source = self.euronext_live.batch_quotes(selected_universe, country.upper(), spec)
