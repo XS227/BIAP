@@ -91,11 +91,40 @@ def test_sec_20f_fallback_rejects_ticker_collision_with_wrong_issuer(monkeypatch
         provider.enrich_fundamentals(company())
 
 
-def test_sec_20f_fallback_rejects_us_issuer():
+def test_sec_20f_fallback_accepts_us_listed_foreign_private_issuer(monkeypatch):
     provider = SECForeignIFRSFundamentalsProvider(user_agent="BIAP test contact@example.com")
-    seed = GlobalCompany(country="US", exchange="NASDAQ", currency="USD", ticker="SAP", name="SAP SE")
-    with pytest.raises(GlobalProviderError, match="not used for US"):
-        provider.enrich_fundamentals(seed)
+    seed = GlobalCompany(
+        country="US",
+        exchange="NASDAQ",
+        mic_code="XNAS",
+        currency="USD",
+        ticker="AKAN",
+        name="Akanda Corp. - Common Shares",
+    )
+    monkeypatch.setattr(provider, "_resolve_cik", lambda company: 1888014)
+    payload = {
+        "entityName": "AKANDA CORP.",
+        "facts": {
+            "ifrs-full": {
+                "Revenue": {
+                    "units": {"USD": [
+                        {"val": 1000000, "end": "2025-12-31", "filed": "2026-06-09", "form": "20-F", "fp": "FY"},
+                        {"val": 900000, "end": "2024-12-31", "filed": "2025-04-30", "form": "20-F", "fp": "FY"},
+                    ]}
+                },
+                "ProfitLoss": fact(-250000, filed="2026-06-09", unit="USD"),
+                "Assets": fact(5000000, filed="2026-06-09", unit="USD"),
+                "Liabilities": fact(2000000, filed="2026-06-09", unit="USD"),
+                "Equity": fact(3000000, filed="2026-06-09", unit="USD"),
+                "CashFlowsFromUsedInOperatingActivities": fact(-100000, filed="2026-06-09", unit="USD"),
+            }
+        },
+    }
+    monkeypatch.setattr(provider, "_get_json", lambda url: payload)
+    enriched = provider.enrich_fundamentals(seed)
+    assert enriched.filing_period_end == "2025-12-31"
+    assert enriched.raw_provider_fields["sec_form"] == "20-F"
+    assert any(source.provider == provider.provider_id for source in enriched.sources)
 
 
 
