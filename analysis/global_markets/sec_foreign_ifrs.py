@@ -162,7 +162,10 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
             # legal name, accepted only for exactly one SEC filer.
             by_name = cik_by_name(self, names)
             if by_name is not None and by_name != cik:
-                alt = self._get_json(f"{SEC_FACTS_BASE}/CIK{by_name:010d}.json")
+                try:
+                    alt = self._get_json(f"{SEC_FACTS_BASE}/CIK{by_name:010d}.json")
+                except GlobalProviderError:
+                    alt = {}  # SEC filer without XBRL company facts (404)
                 alt_name = str(alt.get("entityName") or "").strip()
                 if matches(alt_name):
                     cik, payload, entity_name = by_name, alt, alt_name

@@ -124,8 +124,9 @@ _LEGIT = (
     "carries no inline xbrl", "non-esef filing", "not an esef", "lists no esef annual financial report",
     "has no issuer page", "contains no completed annual", "no esef annual financial report",
     "lists no annual esef package", "no esef annual financial report obligation",
-    "report entity [",
-    "lodged untagged", "no inline xbrl",  # e.g. UK investment trusts (untagged ESEF permitted)  # lodged package embeds another entity's LEI (issuer error, guard kept)
+    "report entity [",  # lodged package embeds another entity's LEI (issuer error, guard kept)
+    "lodged untagged", "no inline xbrl",  # e.g. UK investment trusts (untagged ESEF permitted)
+    "sec annual ifrs filing is stale",  # issuer stopped filing with the SEC
 )
 _COVERAGE = (
     "no verified local filing record", "fundamentals are not verified for", "issuer parser for",
