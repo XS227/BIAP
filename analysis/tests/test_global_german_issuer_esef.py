@@ -51,15 +51,51 @@ def test_registry_rejects_non_https(tmp_path):
 
 def test_open_market_listing_has_no_esef_obligation():
     provider = GermanIssuerESEFProvider(registry={})
-    company = _company(ticker="XYZ", isin="DE000A0XYZ00", raw_provider_fields={"primary_market_mic": "FRAA"})
+    company = _company(
+        ticker="XYZ", isin="DE000A0XYZ00",
+        raw_provider_fields={"primary_market_mic": "FRAA", "reporting_market": "FRAB"},
+    )
+    with pytest.raises(GlobalProviderError, match="no ESEF annual financial report obligation"):
+        provider.enrich_fundamentals(company)
+
+
+def test_scale_listing_has_no_esef_obligation():
+    provider = GermanIssuerESEFProvider(registry={})
+    company = _company(
+        ticker="XYZ", isin="DE000A0XYZ00",
+        raw_provider_fields={"primary_market_mic": "XFRA", "reporting_market": "FRAS"},
+    )
     with pytest.raises(GlobalProviderError, match="no ESEF annual financial report obligation"):
         provider.enrich_fundamentals(company)
 
 
 def test_regulated_listing_without_reviewed_package_is_coverage_gap():
     provider = GermanIssuerESEFProvider(registry={})
-    company = _company(ticker="XYZ", isin="DE000A0XYZ00", raw_provider_fields={"primary_market_mic": "XFRA"})
+    company = _company(
+        ticker="XYZ", isin="DE000A0XYZ00",
+        raw_provider_fields={"primary_market_mic": "FRAB", "reporting_market": "FRAA"},
+    )
     with pytest.raises(GlobalProviderError, match="no reviewed issuer-published ESEF package"):
+        provider.enrich_fundamentals(company)
+
+
+def test_xetra_regulated_listing_without_reviewed_package_is_coverage_gap():
+    provider = GermanIssuerESEFProvider(registry={})
+    company = _company(
+        ticker="XYZ", isin="DE000A0XYZ00",
+        raw_provider_fields={"primary_market_mic": "XFRA", "reporting_market": "XETA"},
+    )
+    with pytest.raises(GlobalProviderError, match="no reviewed issuer-published ESEF package"):
+        provider.enrich_fundamentals(company)
+
+
+def test_missing_reporting_market_never_creates_false_exemption():
+    provider = GermanIssuerESEFProvider(registry={})
+    company = _company(
+        ticker="XYZ", isin="DE000A0XYZ00",
+        raw_provider_fields={"primary_market_mic": "MUNB"},
+    )
+    with pytest.raises(GlobalProviderError, match="obligation not safely determined"):
         provider.enrich_fundamentals(company)
 
 
