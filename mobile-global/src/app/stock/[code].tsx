@@ -36,9 +36,13 @@ function ratio(numerator: number | null | undefined, denominator: number | null 
 
 function sourceName(provider: string | null | undefined) {
   const key = String(provider || '').toLowerCase();
+  if (key.startsWith('cached:')) {
+    if (key.includes('yahoo-public-chart')) return 'Verified market cache';
+    return 'Verified fundamentals cache';
+  }
   if (key.includes('sec-edgar')) return 'SEC EDGAR · Official filing';
   if (key.includes('esef')) return 'ESEF · Official filing';
-  if (key.includes('yahoo-public-chart')) return key.startsWith('cached:') ? 'Verified market cache' : 'Yahoo · Public market history';
+  if (key.includes('yahoo-public-chart')) return 'Yahoo · Public market history';
   if (key.includes('biap-derived-metrics')) return 'BIAP · Derived metrics';
   if (key.includes('official-issuer')) return 'Issuer · Official financial statement';
   return provider ? provider.replace(/[-_]/g, ' ') : 'Source';
