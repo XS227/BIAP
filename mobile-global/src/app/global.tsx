@@ -5,7 +5,7 @@ import { Brand, Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { fetchGlobalCountries, GlobalCountry, GlobalExchange } from '@/lib/global-api';
 import { getGlobalMarketSelection, setGlobalMarketSelection } from '@/lib/global-market-selection';
 
-const PRIORITY = ['US', 'GB', 'NO', 'SE', 'JP', 'AU', 'IR'];
+const PRIORITY = ['US', 'GB', 'DE', 'NO', 'SE', 'JP', 'AU', 'IR'];
 
 export default function GlobalScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';

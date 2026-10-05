@@ -410,6 +410,10 @@ const FALLBACK_COUNTRIES: GlobalCountry[] = [
   { country: 'GB', name: 'United Kingdom', marketProvider: 'Licensed global feed', fundamentalsProvider: 'UKSEF/ESEF', officialEvidenceSource: 'UKSEF + Companies House / issuer evidence', exchanges: [
     { code: 'LSE', label: 'London Stock Exchange', mic: 'XLON', currencies: ['GBP'] },
   ] },
+  { country: 'DE', name: 'Germany', marketProvider: 'Xetra/Frankfurt + licensed feed', fundamentalsProvider: 'ESEF', officialEvidenceSource: 'Issuer/OAM + ESEF filings', exchanges: [
+    { code: 'XETRA', label: 'Xetra', mic: 'XETR', currencies: ['EUR'] },
+    { code: 'FRANKFURT', label: 'Frankfurt Stock Exchange', mic: 'XFRA', currencies: ['EUR'] },
+  ] },
   { country: 'NO', name: 'Norway', marketProvider: 'Euronext / licensed feed', fundamentalsProvider: 'ESEF', officialEvidenceSource: 'ESEF + Euronext Oslo disclosures', exchanges: [
     { code: 'EURONEXT_OSLO', label: 'Euronext Oslo Børs', mic: 'XOSL', currencies: ['NOK'] },
   ] },
