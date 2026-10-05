@@ -92,6 +92,52 @@ def test_xetra_posttrade_does_not_add_modified_trade_to_volume():
     assert stats["DE0007164600"]["lastPrice"] == 184.0
 
 
+def test_xetra_download_falls_back_when_newest_advertised_file_is_missing(monkeypatch):
+    client = DeutscheBoerseXetraDelayedClient()
+    good = _gzip_rows([
+        {
+            "instrumentIdentificationCode": "DE0007164600",
+            "priceCurrency": "EUR",
+            "price": 184.12,
+            "quantity": 50,
+            "tradingDateAndTime": "2026-10-01T19:53:13Z",
+            "mmtModificationInd": "-",
+            "venueOfExecution": "XETA",
+        }
+    ])
+    # Production validation requires a non-trivial gzip payload.
+    good = gzip.compress(gzip.decompress(good) + b" " * 2_000)
+
+    class Resp:
+        def __init__(self, *, payload=None, content=b""):
+            self._payload = payload
+            self.content = content
+        def json(self):
+            return self._payload
+
+    def fake_request(url, *, accept):
+        if url.endswith("/api/"):
+            return Resp(payload={
+                "CurrentFiles": [
+                    "DETR-posttrade-daily-2026-10-01.json.gz",
+                    "DETR-posttrade-daily-2026-10-02.json.gz",
+                ]
+            })
+        if url.endswith("2026-10-02.json.gz"):
+            from global_markets.providers import GlobalProviderError
+            raise GlobalProviderError("HTTP 404")
+        if url.endswith("2026-10-01.json.gz"):
+            return Resp(content=good)
+        raise AssertionError(url)
+
+    monkeypatch.setattr(client, "_request", fake_request)
+    quote_date, source_url, content = client._download_daily()
+
+    assert quote_date == "2026-10-01"
+    assert source_url.endswith("2026-10-01.json.gz")
+    assert content[:2] == b"\x1f\x8b"
+
+
 def test_xetra_client_builds_stage_one_quotes(monkeypatch):
     client=DeutscheBoerseXetraDelayedClient()
     content=_gzip_rows([
