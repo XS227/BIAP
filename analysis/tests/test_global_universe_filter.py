@@ -77,3 +77,17 @@ def test_stockholm_minifuture_symbol_is_not_treated_as_company_equity():
         },
         symbol="MINI.S.DAX.AVA.919", currency="SEK",
     )
+
+
+def test_us_closed_end_fund_is_not_treated_as_operating_stock():
+    spec = get_exchange("US", "NYSE")
+    assert not _ordinary_equity_row(
+        country="US", spec=spec,
+        row={
+            "name": "Eaton Vance Tax-Advantaged Global Dividend Opportunities Fund",
+            "type": "Common Stock",
+            "currency": "USD",
+            "mic_code": "XNYS",
+        },
+        symbol="ETO", currency="USD",
+    )
