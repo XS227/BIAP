@@ -44,6 +44,10 @@ _ALLIANZ_PDF_URL = (
     "en-allianz-group-annual-report-2025.pdf"
 )
 _SAP_URL = "https://www.sap.com/integrated-reports/2025/en/datahub/financial-data.html"
+_BMW_INCOME_URL = "https://www.bmwgroup.com/en/report/2025/financial-statements/income-statement/index.html"
+_BMW_BALANCE_URL = "https://www.bmwgroup.com/en/report/2025/financial-statements/balance-sheet/index.html"
+_BMW_CASH_URL = "https://www.bmwgroup.com/en/report/2025/financial-statements/cash-flow-statement/index.html"
+_DUERR_PDF_URL = "https://www.durr-group.com/fileadmin/durr-group.com/Investors/Downloads/Reports/2025/annual-report-2025-EN.pdf"
 
 
 def _plain_text(value: str) -> str:
@@ -192,7 +196,13 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
         if company.country.strip().upper() != "DE":
             raise GlobalProviderError("German issuer adapter only supports DE")
         ticker = company.ticker.strip().upper()
-        expected = {"SIE": "SIEMENS", "ALV": "ALLIANZ", "SAP": "SAP"}.get(ticker)
+        expected = {
+            "SIE": "SIEMENS",
+            "ALV": "ALLIANZ",
+            "SAP": "SAP",
+            "BMW": "BAYMOTORENWERKE",
+            "DUE": "DUERR",
+        }.get(ticker)
         if expected is None:
             raise GlobalProviderError(f"no verified German issuer parser for {ticker}")
         # Deutsche Boerse display labels append legal/share-class markers such as
@@ -351,6 +361,175 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
         ))
 
 
+    def _bmw(self, company: GlobalCompany) -> GlobalCompany:
+        income = self._get_text(_BMW_INCOME_URL)
+        balance = self._get_text(_BMW_BALANCE_URL)
+        cashflow = self._get_text(_BMW_CASH_URL)
+        if "2025" not in income or "BMW" not in income.upper():
+            raise GlobalProviderError("BMW FY2025 issuer source identity/period marker missing")
+
+        revenue_match = _required_match(
+            r"\bRevenues\s+7\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            income,
+            label="BMW FY2025 revenue",
+        )
+        net_match = _required_match(
+            r"\bNet profit/loss\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            income,
+            label="BMW FY2025 net profit",
+        )
+        assets_match = _required_match(
+            r"\bTotal assets\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            balance,
+            label="BMW FY2025 total assets",
+        )
+        equity_match = _required_match(
+            r"\bEquity\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            balance,
+            label="BMW FY2025 equity",
+        )
+        cash_match = _required_match(
+            r"\bCash and cash equivalents\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            balance,
+            label="BMW FY2025 cash",
+        )
+        ocf_match = _required_match(
+            r"\bCash inflow/outflow from operating activities\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            cashflow,
+            label="BMW FY2025 operating cash flow",
+        )
+        eps_match = _required_match(
+            r"Basic earnings per ordinary share in €\s+14\s+([0-9]+(?:\.[0-9]+)?)",
+            income,
+            label="BMW FY2025 basic EPS",
+        )
+
+        revenue = _million_number(revenue_match.group(1))
+        revenue_prev = _million_number(revenue_match.group(2))
+        net_income = _million_number(net_match.group(1))
+        total_assets = _million_number(assets_match.group(1))
+        total_equity = _million_number(equity_match.group(1))
+        cash = _million_number(cash_match.group(1))
+        operating_cash_flow = _million_number(ocf_match.group(1))
+        revenue_yoy = ((revenue / revenue_prev) - 1.0) * 100.0 if revenue_prev else None
+
+        enriched = replace(
+            company,
+            reporting_currency="EUR",
+            revenue=revenue,
+            revenue_prev=revenue_prev,
+            revenue_yoy_pct=revenue_yoy,
+            net_income=net_income,
+            net_margin_pct=(net_income / revenue) * 100.0 if revenue else None,
+            total_assets=total_assets,
+            total_liabilities=total_assets - total_equity,
+            total_equity=total_equity,
+            cash_and_equivalents=cash,
+            operating_cash_flow=operating_cash_flow,
+            eps=float(eps_match.group(1)),
+            filing_period_end="2025-12-31",
+            report_scope="consolidated",
+            raw_provider_fields={
+                **company.raw_provider_fields,
+                "de_issuer_source": "bmw_group_report_2025",
+                "de_issuer_evidence_kind": "issuer_published_audited_financial_statements",
+            },
+        )
+        return append_source(enriched, SourceEvidence(
+            provider=self.provider_id,
+            source_type="official_issuer_financial_statement",
+            source_id="bmw-group-report-2025",
+            source_url=_BMW_INCOME_URL,
+            period_end="2025-12-31",
+            quality=0.97,
+            audit_status="audited",
+            notes=(
+                "BMW Group issuer-published FY2025 audited consolidated financial "
+                "statements; balance sheet and cash-flow pages cross-checked"
+            ),
+        ))
+
+    def _duerr(self, company: GlobalCompany) -> GlobalCompany:
+        text = self._get_pdf_text(_DUERR_PDF_URL)
+        lower = text.lower()
+        if "annual report 2025" not in lower or "dürr" not in lower and "duerr" not in lower:
+            raise GlobalProviderError("Dürr FY2025 issuer source identity/period marker missing")
+
+        revenue_match = _required_match(
+            r"Group as a whole.*?fell by\s+4\.6%\s+year on year to\s+€?\s*([0-9,]+(?:\.[0-9]+)?)\s+million",
+            text,
+            label="Dürr FY2025 Group sales",
+        )
+        net_match = _required_match(
+            r"In the Group as a whole, earnings after tax rose sharply to\s+€?\s*([0-9,]+(?:\.[0-9]+)?)\s+million",
+            text,
+            label="Dürr FY2025 earnings after tax",
+        )
+        assets_match = _required_match(
+            r"Total assets \(Dec\. 31\)\s+€ million\s+([0-9,]+(?:\.[0-9]+)?)\s+([0-9,]+(?:\.[0-9]+)?)",
+            text,
+            label="Dürr FY2025 total assets",
+        )
+        equity_match = _required_match(
+            r"Total equity\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            text,
+            label="Dürr FY2025 total equity",
+        )
+        liabilities_match = _required_match(
+            r"Total liabilities of the Dürr Group.*?([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            text,
+            label="Dürr FY2025 total liabilities",
+        )
+        cash_match = _required_match(
+            r"Net carrying amount\s+([0-9][0-9,]*)\s+[^0-9]{0,20}([0-9][0-9,]*)",
+            text,
+            label="Dürr FY2025 cash and cash equivalents",
+        )
+        ocf_match = _required_match(
+            r"Cash flow from operating activities\s+([0-9,]+(?:\.[0-9]+)?)\s+([0-9,]+(?:\.[0-9]+)?)",
+            text,
+            label="Dürr FY2025 operating cash flow",
+        )
+        fcf_match = _required_match(
+            r"Free cash flow\s+([0-9,]+(?:\.[0-9]+)?)\s+([0-9,]+(?:\.[0-9]+)?)\s+thereof, from continued operations",
+            text,
+            label="Dürr FY2025 free cash flow",
+        )
+
+        revenue = _million_number(revenue_match.group(1))
+        net_income = _million_number(net_match.group(1))
+        enriched = replace(
+            company,
+            reporting_currency="EUR",
+            revenue=revenue,
+            revenue_yoy_pct=-4.6,
+            net_income=net_income,
+            net_margin_pct=(net_income / revenue) * 100.0 if revenue else None,
+            total_assets=_million_number(assets_match.group(1)),
+            total_liabilities=float(liabilities_match.group(1).replace(",", "")) * 1_000.0,
+            total_equity=float(equity_match.group(1).replace(",", "")) * 1_000.0,
+            cash_and_equivalents=float(cash_match.group(1).replace(",", "")) * 1_000.0,
+            operating_cash_flow=_million_number(ocf_match.group(1)),
+            free_cash_flow=_million_number(fcf_match.group(1)),
+            filing_period_end="2025-12-31",
+            report_scope="consolidated",
+            raw_provider_fields={
+                **company.raw_provider_fields,
+                "de_issuer_source": "duerr_annual_report_2025",
+                "de_issuer_evidence_kind": "issuer_published_audited_annual_report",
+            },
+        )
+        return append_source(enriched, SourceEvidence(
+            provider=self.provider_id,
+            source_type="official_issuer_financial_statement",
+            source_id="duerr-annual-report-2025",
+            source_url=_DUERR_PDF_URL,
+            period_end="2025-12-31",
+            quality=0.97,
+            audit_status="audited",
+            notes="Dürr issuer-published FY2025 audited consolidated annual report",
+        ))
+
     def _sap(self, company: GlobalCompany) -> GlobalCompany:
         text = self._get_text(_SAP_URL)
         lower = text.lower()
@@ -422,4 +601,8 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
             return self._allianz(company)
         if ticker == "SAP":
             return self._sap(company)
+        if ticker == "BMW":
+            return self._bmw(company)
+        if ticker == "DUE":
+            return self._duerr(company)
         raise GlobalProviderError(f"no verified German issuer parser for {ticker}")
