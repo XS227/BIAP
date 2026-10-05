@@ -6,7 +6,10 @@ on:
     paths:
       - 'analysis/global_markets/german_issuer.py'
       - 'analysis/global_markets/runtime.py'
+      - 'analysis/global_markets/scanner.py'
+      - 'analysis/global_markets/xetra_delayed.py'
       - 'analysis/tests/test_global_german_issuer.py'
+      - 'analysis/tests/test_global_xetra_delayed.py'
       - '.github/workflows/biap-global-xetra-production-refresh.yml'
   workflow_dispatch:
 
@@ -66,7 +69,17 @@ jobs:
           sap_seed=GlobalCompany(country='DE',exchange='XETRA',mic_code='XETR',currency='EUR',ticker='SAP',name='SAP SE O.N.')
           sap=p.enrich_fundamentals(sap_seed)
           print(json.dumps({'SAP_PROVIDER':[s.provider for s in sap.sources], 'SAP_PERIOD':sap.filing_period_end, 'SAP_REVENUE':sap.revenue, 'SAP_EPS':sap.eps, 'SAP_PRIMARY_ERROR':sap.raw_provider_fields.get('fundamentals_primary_error')},sort_keys=True))
-          assert any(s.provider == 'de-official-issuer-financials' for s in sap.sources)
+          official_sap = [
+              s for s in sap.sources
+              if s.provider in {
+                  'de-official-issuer-financials',
+                  'de-issuer-esef-v1',
+                  'sec-edgar-foreign-ifrs-cached',
+              } or str(s.source_type or '').startswith('official_')
+          ]
+          assert official_sap, 'SAP must retain at least one verified official filing source'
+          assert sap.filing_period_end == '2025-12-31'
+          assert sap.revenue is not None
           result = scan_global_market(
               country='DE',
               exchange='XETRA',
