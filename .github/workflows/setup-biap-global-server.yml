@@ -1,4 +1,4 @@
-# Redeploy after Germany Reporting Market / universe cache schema v24 fix: 2026-10-05
+# Redeploy after US SEC period-alignment fix + universe cache schema v24 test: 2026-10-05
 name: Setup BIAP Global server
 
 on:
