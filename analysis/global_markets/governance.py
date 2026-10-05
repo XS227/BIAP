@@ -25,7 +25,7 @@ def decision_governance_agent(
     hard_blocks: list[str] = []
     reviews: list[str] = []
 
-    if evidence.status == "BLOCK" or proposed_call == "NO_RECOMMENDATION":
+    if evidence.status == "BLOCK":
         hard_blocks.append("task/evidence gate is out of scope or blocked")
 
     if proposed_call == "BUY_CANDIDATE" and distress.positive_block:
