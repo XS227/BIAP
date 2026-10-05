@@ -132,7 +132,8 @@ _COVERAGE = (
     "no official financial-statement source attached", "no esef filing found for lei",
     "no strict cvm issuer match", "requires a verified lei or full legal company name",
     "no reviewed issuer-published esef package",
-    "nse lists no integrated filings", "nse integrated filings contain no annual",  # BSE-only issuers (BSE API not reachable)
+    "nse lists no integrated filings", "nse integrated filings contain no annual",
+    "issuer identity is not uniquely resolved",  # issuer not (uniquely) on the national OAM register  # BSE-only issuers (BSE API not reachable)
 )
 
 
