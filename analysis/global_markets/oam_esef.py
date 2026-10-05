@@ -1372,6 +1372,89 @@ class DenmarkVirkLocator(OAMLocator):
         return filings
 
 
+class NasdaqNordicNewsLocator(OAMLocator):
+    """Nasdaq Nordic regulated company announcements with ESEF attachments.
+
+    Issuers on Nasdaq Copenhagen/Iceland publish their annual financial report
+    as a regulated exchange notice whose attachments include the ESEF package
+    (zip). Announcements are found by issuer-name search and kept only when the
+    announcing company's name matches the issuer's legal name and the category
+    is "Annual Financial Report"; the package's embedded LEI is verified.
+    """
+
+    oam = "nasdaq-nordic-news"
+    country = "IS"
+    api = "https://api.news.eu.nasdaq.com/news/query.action"
+
+    def annual_filings(self, company: GlobalCompany, lei: str, legal_name: str) -> list[OAMFiling]:
+        from difflib import SequenceMatcher
+        core = _pt_name_core(legal_name)
+        term = re.sub(r"[^\w\s&-]", " ", re.sub(r"(?i)\b(hf|h\.f|a/s|as|asa|ab|oyj|plc|ltd)\b\.?", " ", legal_name)).strip()
+        term = " ".join(term.split()[:3]) or company.ticker
+
+        def fetch() -> str:
+            params = {"type": "json", "showAttachments": "true", "showCompany": "true", "countResults": "false",
+                      "freeText": term, "cnscategory": "Annual Financial Report",
+                      "globalGroup": "exchangeNotice", "globalName": "NordicAllMarkets",
+                      "displayLanguage": "en", "language": "en", "timeZone": "CET",
+                      "dateMask": "yyyy-MM-dd HH:mm:ss", "limit": "60", "start": "0", "dir": "DESC"}
+            with self.http.client() as client:
+                response = client.get(self.api, params=params)
+            response.raise_for_status()
+            return response.text
+
+        items = (json.loads(self.http.cached_text(f"nasdaq-news-afr:{term.upper()}", fetch)).get("results") or {}).get("item") or []
+        filings = []
+        for item in items:
+            if "annual financial report" not in str(item.get("cnsCategory") or "").lower():
+                continue
+            name_core = _pt_name_core(str(item.get("company") or ""))
+            if not core or (name_core != core and SequenceMatcher(None, name_core, core).ratio() < 0.9):
+                continue
+            for attachment in item.get("attachment") or []:
+                if not str(attachment.get("fileName") or "").lower().endswith((".zip", ".xbri", ".xhtml")):
+                    continue
+                url = str(attachment.get("attachmentUrl") or "")
+                if not url.startswith("https://attachment.news.eu.nasdaq.com/"):
+                    continue
+                filings.append(OAMFiling(
+                    oam=self.oam, document_id=f"NASDAQ-NEWS:{item.get('disclosureId') or item.get('id')}:{url.rsplit('/', 1)[-1]}",
+                    package_url=url, landing_url=str(item.get("messageUrl") or "https://www.nasdaqomxnordic.com/news/companynews"),
+                    published_at=str(item.get("published") or "")[:10] or None,
+                    label=f"{item.get('company')}: {item.get('headline')} ({attachment.get('fileName')})"[:200],
+                ))
+        filings.sort(key=lambda f: f.published_at or "", reverse=True)
+        if not filings:
+            raise GlobalProviderError(f"Nasdaq Nordic announcements list no ESEF annual report for {legal_name!r}")
+        return filings
+
+
+class DenmarkCombinedLocator(OAMLocator):
+    """virk.dk filings plus Nasdaq Copenhagen announcements, newest first.
+
+    Danish banks/insurers no longer appear on virk.dk for recent years, but
+    publish the ESEF package with their annual-report announcement."""
+
+    oam = "dk-combined"
+    country = "DK"
+
+    def __init__(self, http: "OAMHttp") -> None:
+        super().__init__(http)
+        self.parts = [DenmarkVirkLocator(http), NasdaqNordicNewsLocator(http)]
+
+    def annual_filings(self, company: GlobalCompany, lei: str, legal_name: str) -> list[OAMFiling]:
+        filings: list[OAMFiling] = []
+        errors: list[str] = []
+        for part in self.parts:
+            try:
+                filings += part.annual_filings(company, lei, legal_name)
+            except GlobalProviderError as exc:
+                errors.append(str(exc))
+        if not filings:
+            raise GlobalProviderError("; ".join(errors))
+        return sorted(filings, key=lambda f: f.published_at or "", reverse=True)
+
+
 class ItalySDIRLocator(OAMLocator):
     """Both Italian authorized storage mechanisms, merged and ranked.
 
@@ -1426,7 +1509,8 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
             NetherlandsAFMLocator(self.http),
             UKNSMLocator(self.http),
             GreeceAthensLocator(self.http),
-            DenmarkVirkLocator(self.http),
+            DenmarkCombinedLocator(self.http),
+            NasdaqNordicNewsLocator(self.http),
         ]
         self.locators = {locator.country: locator for locator in chosen}
 
