@@ -1,0 +1,98 @@
+name: Sync main from BIAP Global
+
+# Keeps main following feat/biap-global. Global-only changes are merged
+# automatically after the Global tests pass; anything that touches Iran code,
+# the Iran app (mobile/) or non-Global workflows is opened as a PR for review.
+# Pushes made with GITHUB_TOKEN do not trigger other workflows, so a Global-only
+# sync never redeploys the Iran backend.
+
+on:
+  push:
+    branches: [feat/biap-global]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sync-main-from-global
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/biap-global
+          fetch-depth: 0
+
+      - name: Classify changes main..feat/biap-global
+        id: scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          CHANGED="$(git diff --name-only origin/main...HEAD)"
+          if [ -z "$CHANGED" ]; then
+            echo "main already contains feat/biap-global"
+            echo "mode=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Paths owned by BIAP Global. Everything else needs human review.
+          GLOBAL_RE='^(analysis/global_[^/]+|analysis/global_markets/|analysis/tests/test_global_|analysis/tests/fixtures/|mobile-global/|\.github/workflows/(biap-global-|publish-biap-global-|setup-biap-global-|configure-biap-global-|sync-main-from-global\.yml)|tools/|docs/audits/|web-showcase/global/|deploy/(configure-global-route|setup-global-data|sync-global-sources)\.sh$|deploy/systemd/biap-global|GLOBAL_[A-Z_]+\.md$|ITALY_[A-Z_]+\.(md|json)$)'
+          OTHER="$(printf '%s\n' "$CHANGED" | grep -Ev "$GLOBAL_RE" || true)"
+          printf 'Changed files:\n%s\n' "$CHANGED"
+          if [ -n "$OTHER" ]; then
+            printf 'Needs review (outside BIAP Global):\n%s\n' "$OTHER"
+            echo "mode=pr" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=merge" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.scope.outputs.mode == 'merge'
+        with:
+          python-version: '3.12'
+
+      - name: Global tests
+        if: steps.scope.outputs.mode == 'merge'
+        working-directory: analysis
+        run: |
+          python -m pip install -q -r requirements.txt pytest
+          python -m pytest -q tests/test_global_*.py ../tools/tests
+
+      - name: Merge feat/biap-global into main
+        id: merge
+        if: steps.scope.outputs.mode == 'merge'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "biap-global-sync[bot]"
+          git config user.email "biap-global-sync@users.noreply.github.com"
+          git checkout -B main origin/main
+          if git merge --no-ff --no-edit -m "Sync main with feat/biap-global ($(git rev-parse --short origin/feat/biap-global))" origin/feat/biap-global; then
+            git push origin main
+            echo "result=merged" >> "$GITHUB_OUTPUT"
+          else
+            git merge --abort || true
+            echo "Merge conflict; opening a PR for review instead." >&2
+            echo "result=conflict" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open or update review PR
+        if: steps.scope.outputs.mode == 'pr' || steps.merge.outputs.result == 'conflict'
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXISTING="$(gh pr list --base main --head feat/biap-global --state open --json number -q '.[0].number' || true)"
+          BODY="Automatic sync of main with feat/biap-global needs review: the changes touch files outside BIAP Global (Iran code, mobile/ or other workflows) or do not merge cleanly. See the 'Sync main from BIAP Global' run log for the file list."
+          if [ -n "$EXISTING" ]; then
+            gh pr comment "$EXISTING" --body "New commits on feat/biap-global ($(git rev-parse --short HEAD)) still need review before syncing main."
+          else
+            gh pr create --base main --head feat/biap-global --title "Sync main with BIAP Global (needs review)" --body "$BODY"
+          fi
