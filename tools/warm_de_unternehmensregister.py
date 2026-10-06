@@ -352,6 +352,7 @@ def process_queue(
     years: list[int],
     timeout_ms: int,
     headless: bool,
+    seed_only: bool = False,
 ) -> dict[str, int]:
     queue_path = source_index_path(DEFAULT_QUEUE)
     queue = read_json(queue_path, default={})
@@ -362,6 +363,17 @@ def process_queue(
         write_json_atomic(queue_path, queue)
     if not queue:
         return {"seeded": 0, "processed": 0, "resolved": 0, "failed": 0}
+    if seed_only:
+        return {
+            "seeded": seeded,
+            "queued": sum(
+                1 for row in queue.values()
+                if isinstance(row, dict) and row.get("status") != "resolved"
+            ),
+            "processed": 0,
+            "resolved": 0,
+            "failed": 0,
+        }
 
     try:
         from playwright.sync_api import sync_playwright
@@ -454,12 +466,14 @@ def main() -> int:
     ap.add_argument("--years", default=os.environ.get("BIAP_DE_WORKER_YEARS"))
     ap.add_argument("--timeout-ms", type=int, default=int(os.environ.get("BIAP_DE_WORKER_TIMEOUT_MS", "45000")))
     ap.add_argument("--headed", action="store_true")
+    ap.add_argument("--seed-only", action="store_true")
     args = ap.parse_args()
     result = process_queue(
         max_items=args.max,
         years=_years(args.years),
         timeout_ms=max(10000, args.timeout_ms),
         headless=not args.headed,
+        seed_only=args.seed_only,
     )
     print(json.dumps(result, sort_keys=True))
     return 0 if result["failed"] == 0 else 2
