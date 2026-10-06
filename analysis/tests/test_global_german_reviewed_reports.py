@@ -48,3 +48,36 @@ def test_reviewed_german_report_requires_exact_isin_and_ticker():
         provider.enrich_fundamentals(_mbg(isin="DE0000000001"))
     with pytest.raises(GlobalProviderError, match="ticker mismatch"):
         provider.enrich_fundamentals(_mbg(ticker="NOTMBG"))
+
+
+@pytest.mark.parametrize(
+    ("ticker", "isin", "period", "revenue", "assets", "current_assets", "current_liabilities"),
+    [
+        ("SHL", "DE000SHL1006", "2025-09-30", 23_375_000_000, 44_370_000_000, 14_098_000_000, 12_644_000_000),
+        ("KBX", "DE000KBX1006", "2025-12-31", 7_817_000_000, 8_883_000_000, 4_897_000_000, 2_622_000_000),
+        ("BEZ", "DE0005201602", "2025-12-31", 162_900_000, 129_752_000, 74_171_000, 73_636_000),
+    ],
+)
+def test_reviewed_report_registry_covers_remaining_regulated_canaries(
+    ticker, isin, period, revenue, assets, current_assets, current_liabilities
+):
+    provider = GermanReviewedAnnualReportProvider()
+    company = GlobalCompany(
+        country="DE",
+        exchange="XETRA",
+        mic_code="XETR",
+        currency="EUR",
+        ticker=ticker,
+        name=ticker,
+        isin=isin,
+    )
+
+    enriched = provider.enrich_fundamentals(company)
+
+    assert enriched.filing_period_end == period
+    assert enriched.revenue == revenue
+    assert enriched.total_assets == assets
+    assert enriched.current_assets == current_assets
+    assert enriched.current_liabilities == current_liabilities
+    assert enriched.sources[-1].provider == "de-reviewed-issuer-annual-report"
+    assert enriched.sources[-1].audit_status == "audited"
