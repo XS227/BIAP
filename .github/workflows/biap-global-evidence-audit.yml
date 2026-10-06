@@ -10,6 +10,11 @@ on:
     branches: [feat/biap-global]
     paths:
       - 'tools/audit_global_evidence.py'
+      - 'analysis/global_markets/data/de_verified_annual_reports.json'
+      - 'analysis/global_markets/german_reviewed_reports.py'
+      - 'analysis/global_markets/evidence_contract.py'
+      - 'analysis/global_markets/governance.py'
+      - 'analysis/global_markets/agents.py'
       - 'analysis/global_markets/german_issuer_esef.py'
       - 'analysis/global_markets/german_issuer.py'
       - 'analysis/global_markets/scanner.py'
