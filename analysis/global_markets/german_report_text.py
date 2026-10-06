@@ -118,7 +118,10 @@ _ALIASES = {
         "interest and similar expenses", "interest expenses", "interest expense",
         "zinsaufwendungen",
     ),
-    "eps": ("earnings per share", "ergebnis je aktie"),
+    "eps": (
+        "basic earnings per share", "diluted earnings per share",
+        "earnings per share", "ergebnis je aktie",
+    ),
 }
 
 _FIELD_SECTION = {
@@ -178,7 +181,11 @@ def _normalize_lines(text: str) -> str:
     return "\n".join(lines)
 
 
-def _parse_number(token: str) -> Optional[float]:
+def _parse_number(
+    token: str,
+    *,
+    decimal_comma: Optional[bool] = None,
+) -> Optional[float]:
     raw = str(token or "").strip().replace("\u2212", "-").replace("−", "-").replace("–", "-")
     negative = raw.startswith("-") or (raw.startswith("(") and raw.endswith(")"))
     raw = raw.strip("-() ").replace("'", "").replace("’", "").replace(" ", "")
@@ -189,20 +196,39 @@ def _parse_number(token: str) -> Optional[float]:
         thousands = "." if decimal == "," else ","
         raw = raw.replace(thousands, "").replace(decimal, ".")
     elif "," in raw:
-        parts = raw.split(",")
-        if len(parts) > 2 or (len(parts) == 2 and len(parts[1]) == 3):
-            raw = "".join(parts)
-        else:
+        if decimal_comma is True:
             raw = raw.replace(",", ".")
+        elif decimal_comma is False:
+            raw = raw.replace(",", "")
+        else:
+            parts = raw.split(",")
+            if len(parts) > 2 or (len(parts) == 2 and len(parts[1]) == 3):
+                raw = "".join(parts)
+            else:
+                raw = raw.replace(",", ".")
     elif "." in raw:
-        parts = raw.split(".")
-        if len(parts) > 2 or (len(parts) == 2 and len(parts[1]) == 3):
-            raw = "".join(parts)
+        if decimal_comma is True:
+            raw = raw.replace(".", "")
+        elif decimal_comma is False:
+            pass
+        else:
+            parts = raw.split(".")
+            if len(parts) > 2 or (len(parts) == 2 and len(parts[1]) == 3):
+                raw = "".join(parts)
     try:
         value = float(raw)
     except ValueError:
         return None
     return -value if negative else value
+
+
+def _segment_decimal_comma(segment: str) -> Optional[bool]:
+    head = segment[:1200].lower()
+    if any(token in head for token in ("consolidated", "statement of", "annual report")):
+        return False
+    if any(token in head for token in ("konzern", "bilanz", "gewinn- und verlustrechnung")):
+        return True
+    return None
 
 
 def _multiplier_from_text(text: str) -> float:
@@ -293,6 +319,7 @@ def _statement_windows(text: str, section: str) -> list[tuple[int, int]]:
 
 def _tail_starts_with_value(tail: str) -> bool:
     stripped = tail.strip()
+    stripped = re.sub(r"^\(\s*in\s+(?:eur|€)\s*\)\s*", "", stripped, flags=re.I)
     # optional note reference like "(10)", "4.1", "5.10", "8.1, 8.2"
     stripped = re.sub(r"^\(?\d{1,3}(?:\.\d{1,2})?\)?(?:\s*,\s*\d+(?:\.\d+)?)?\s*", "", stripped)
     stripped = stripped.lstrip(":; ")
@@ -304,6 +331,7 @@ def _tail_starts_with_value(tail: str) -> bool:
 def _row_values(segment: str, aliases: tuple[str, ...], *, field: str) -> Optional[list[float]]:
     lines = segment.split("\n")
     block_multiplier = _multiplier_from_text(segment[:900])
+    decimal_comma = _segment_decimal_comma(segment)
     for alias in aliases:
         alias_low = alias.lower()
         for idx, line in enumerate(lines):
@@ -323,7 +351,7 @@ def _row_values(segment: str, aliases: tuple[str, ...], *, field: str) -> Option
             tokens = [m.group(0) for m in _NUMBER.finditer(candidate)]
             values: list[float] = []
             for token in tokens[:8]:
-                value = _parse_number(token)
+                value = _parse_number(token, decimal_comma=decimal_comma)
                 if value is None:
                     continue
                 if 1900 <= abs(value) <= 2100 and float(value).is_integer():
