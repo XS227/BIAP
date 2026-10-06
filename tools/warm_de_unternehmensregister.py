@@ -14,6 +14,7 @@ than fabricate values.
 from __future__ import annotations
 
 import argparse
+import html as html_lib
 import io
 from datetime import datetime, timedelta, timezone
 import json
@@ -21,6 +22,7 @@ import os
 from pathlib import Path
 import re
 import sys
+import unicodedata
 from typing import Any, Optional
 from urllib.parse import parse_qsl, quote_plus, urlencode, urljoin, urlsplit, urlunsplit
 
@@ -175,6 +177,291 @@ def _select_publication(page, year: int) -> bool:
 
 
 
+
+
+
+_SEARCH_EXCLUDED_HOSTS = (
+    "annualreports.com", "financialreports.eu", "eqs-news.com",
+    "marketscreener.com", "stockanalysis.com", "bloomberg.com",
+    "tradingview.com", "finance.yahoo.com", "reuters.com", "northdata.com",
+    "linkedin.com", "wikipedia.org", "investing.com", "onvista.de",
+    "ariva.de", "research-hub.de", "quartr.com", "simplywall.st",
+    "cashmarket.deutsche-boerse.com", "live.deutsche-boerse.com",
+    "webdisclosure.com", "ad-hoc-news.de", "aktiencheck.de",
+    "finanznachrichten.de", "finanzen.net", "finanzen.ch",
+    "boerse.de", "boersen-zeitung.de", "wallstreet-online.de",
+)
+_LEGAL_STOPWORDS = {
+    "ag", "se", "gmbh", "kgaa", "kg", "co", "holding", "holdings",
+    "group", "aktiengesellschaft", "gesellschaft", "mbh", "the",
+}
+
+
+def _host(url: str) -> str:
+    return (urlsplit(str(url or "")).hostname or "").lower().strip(".")
+
+
+def _site_key(url: str) -> str:
+    host = _host(url)
+    parts = host.split(".")
+    if len(parts) <= 2:
+        return host
+    if parts[-2:] in (["co", "uk"], ["com", "au"]):
+        return ".".join(parts[-3:])
+    return ".".join(parts[-2:])
+
+
+def _search_host_excluded(url: str) -> bool:
+    host = _host(url)
+    return any(host == item or host.endswith("." + item) for item in _SEARCH_EXCLUDED_HOSTS)
+
+
+def _ascii_words(value: str) -> list[str]:
+    text = unicodedata.normalize("NFKD", str(value or ""))
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    words = re.findall(r"[A-Za-z0-9]+", text.lower())
+    return [w for w in words if w not in _LEGAL_STOPWORDS and len(w) >= 3]
+
+
+def _identity_match(text: str, *, legal_name: str, isin: str) -> bool:
+    body = unicodedata.normalize("NFKD", str(text or "")).lower()
+    compact = re.sub(r"[^a-z0-9]+", "", body)
+    if isin and isin.lower() in body:
+        return True
+    words = _ascii_words(legal_name)
+    if not words:
+        return False
+    matched = sum(1 for word in words if word in body or word in compact)
+    required = 1 if len(words) == 1 else min(2, len(words))
+    return matched >= required
+
+
+def _host_name_score(url: str, legal_name: str) -> int:
+    host_compact = re.sub(r"[^a-z0-9]+", "", _host(url))
+    score = 0
+    for word in _ascii_words(legal_name):
+        if word in host_compact:
+            score += 25 if len(word) >= 5 else 12
+    low = str(url).lower()
+    if any(token in low for token in ("investor", "/ir/", "/ir-", "publication", "report", "finanz")):
+        score += 15
+    return score
+
+
+def _brave_search_urls(query: str, *, limit: int = 40) -> list[str]:
+    import httpx
+
+    response = httpx.get(
+        "https://search.brave.com/search",
+        params={"q": query, "source": "web"},
+        timeout=22.0,
+        follow_redirects=True,
+        headers={"User-Agent": "Mozilla/5.0 BIAP-Global official-source discovery"},
+    )
+    response.raise_for_status()
+    found: list[str] = []
+    for match in re.finditer(r'href=["\'](https?://[^"\']+)', response.text, re.I):
+        url = html_lib.unescape(match.group(1)).strip()
+        host = _host(url)
+        if not host or host.endswith("brave.com") or host.endswith("brave.app"):
+            continue
+        if url not in found:
+            found.append(url)
+        if len(found) >= limit:
+            break
+    return found
+
+
+def _verified_official_page(
+    browser,
+    url: str,
+    *,
+    legal_name: str,
+    isin: str,
+    timeout_ms: int,
+) -> Optional[str]:
+    if _search_host_excluded(url) or ".pdf" in url.lower():
+        return None
+    page = browser.new_page()
+    page.set_default_timeout(timeout_ms)
+    try:
+        page.goto(url, wait_until="domcontentloaded")
+        page.wait_for_timeout(900)
+        _click_optional(
+            page,
+            (
+                "Nur technisch notwendige Cookies akzeptieren",
+                "Alle akzeptieren", "Accept all", "Accept", "Akzeptieren",
+            ),
+        )
+        body = page.inner_text("body")
+        if not _identity_match(body, legal_name=legal_name, isin=isin):
+            return None
+        corporate = body.lower()
+        if not any(
+            marker in corporate
+            for marker in (
+                "investor", "unternehmen", "company", "about us",
+                "impressum", "legal notice", "financial", "publikation",
+            )
+        ):
+            return None
+        return page.url
+    except Exception:
+        return None
+    finally:
+        page.close()
+
+
+def _discover_official_pages(
+    browser,
+    *,
+    legal_name: str,
+    isin: str,
+    timeout_ms: int,
+) -> list[str]:
+    queries = (
+        f'"{legal_name}" official website investor relations',
+        f'"{legal_name}" investor relations',
+        f'{isin} "{legal_name}"',
+    )
+    ranked: list[tuple[int, str]] = []
+    seen: set[str] = set()
+    order = 0
+    for query in queries:
+        try:
+            urls = _brave_search_urls(query)
+        except Exception:
+            continue
+        for url in urls:
+            order += 1
+            if url in seen or _search_host_excluded(url):
+                continue
+            seen.add(url)
+            score = _host_name_score(url, legal_name) + max(0, 40 - order)
+            ranked.append((score, url))
+    ranked.sort(reverse=True)
+
+    verified: list[str] = []
+    keys: set[str] = set()
+    for _, url in ranked[:18]:
+        page_url = _verified_official_page(
+            browser, url, legal_name=legal_name, isin=isin, timeout_ms=timeout_ms
+        )
+        if not page_url:
+            continue
+        key = _site_key(page_url)
+        if not key or key in keys:
+            continue
+        keys.add(key)
+        verified.append(page_url)
+        if len(verified) >= 4:
+            break
+    return verified
+
+
+def _report_identity_ok(text: str, *, legal_name: str, isin: str) -> bool:
+    return _identity_match(text[:250000], legal_name=legal_name, isin=isin)
+
+
+def _try_verified_report_candidate(
+    browser,
+    url: str,
+    *,
+    legal_name: str,
+    isin: str,
+    year: int,
+    timeout_ms: int,
+) -> Optional[tuple[str, str]]:
+    try:
+        if ".pdf" in url.lower() or "/media/document/" in url.lower():
+            text = _pdf_text_from_url(url)
+            if not _report_identity_ok(text, legal_name=legal_name, isin=isin):
+                return None
+            parse_german_annual_report_text(text, expected_year=year)
+            return text, url
+        result = _try_ir_report_url(browser, url, year, timeout_ms)
+        if result is None:
+            return None
+        text, source_url = result
+        if not _report_identity_ok(text, legal_name=legal_name, isin=isin):
+            return None
+        parse_german_annual_report_text(text, expected_year=year)
+        return text, source_url
+    except Exception:
+        return None
+
+
+def fetch_brave_official_report(
+    browser,
+    *,
+    legal_name: str,
+    isin: str,
+    years: list[int],
+    timeout_ms: int,
+) -> Optional[tuple[int, str, str]]:
+    """Discover only the issuer's verified official site, then its annual report.
+
+    Brave is used only as a locator. Financial values are accepted exclusively
+    from a verified issuer domain/report that independently passes identity,
+    period and strict statement parsing checks.
+    """
+    official_pages = _discover_official_pages(
+        browser, legal_name=legal_name, isin=isin, timeout_ms=timeout_ms
+    )
+    if not official_pages:
+        return None
+    official_keys = {_site_key(url) for url in official_pages}
+
+    for year in years:
+        candidates: list[tuple[int, str]] = []
+        seen: set[str] = set()
+
+        for url in official_pages:
+            if url not in seen:
+                candidates.append((80 + _report_link_score("", url, year), url))
+                seen.add(url)
+
+        search_queries = [
+            f'"{legal_name}" annual report {year} PDF',
+            f'"{legal_name}" Geschäftsbericht {year} PDF',
+        ]
+        for key in sorted(official_keys):
+            search_queries.extend(
+                (
+                    f'site:{key} "annual report" {year} PDF',
+                    f'site:{key} Geschäftsbericht {year} PDF',
+                )
+            )
+
+        for query in search_queries:
+            try:
+                urls = _brave_search_urls(query)
+            except Exception:
+                continue
+            for url in urls:
+                if url in seen or _site_key(url) not in official_keys:
+                    continue
+                seen.add(url)
+                score = _report_link_score("", url, year)
+                if score <= 0 and str(year) not in url:
+                    score = 5
+                candidates.append((score, url))
+
+        candidates.sort(reverse=True)
+        for _, url in candidates[:35]:
+            result = _try_verified_report_candidate(
+                browser,
+                url,
+                legal_name=legal_name,
+                isin=isin,
+                year=year,
+                timeout_ms=timeout_ms,
+            )
+            if result is not None:
+                text, source_url = result
+                return year, text, source_url
+    return None
 
 def _clean_external_url(value: str) -> Optional[str]:
     text = str(value or "").strip().rstrip(".,);]}>")
@@ -425,6 +712,16 @@ def fetch_unternehmensregister_report(
     try:
         page.goto(f"{BASE}/de/suche?areas=all", wait_until="domcontentloaded")
         page.wait_for_timeout(1800)
+        try:
+            initial_body = page.inner_text("body")
+        except Exception:
+            initial_body = ""
+        if (
+            "/access-denied" in page.url
+            or "IP-Adresse gesperrt" in initial_body
+            or "IP address is blocked" in initial_body
+        ):
+            raise GlobalProviderError("Unternehmensregister access denied for worker IP")
         _click_optional(
             page,
             (
@@ -497,14 +794,17 @@ def _write_verified_record(
     year: int,
     report_text: str,
     source_url: str,
+    source_provider: str = "unternehmensregister-de-auto",
+    source_type: str = "official_regulatory_financial_statement",
+    verification_mode: str = "unternehmensregister-browser+strict-statement-parser",
 ) -> Path:
     parsed = parse_german_annual_report_text(report_text, expected_year=year)
     ticker = _safe_ticker(row["ticker"])
     payload = {
         "verified": True,
-        "sourceProvider": "unternehmensregister-de-auto",
-        "sourceType": "official_regulatory_financial_statement",
-        "sourceId": f"unternehmensregister:{row.get('isin') or ticker}:{parsed.period_end}",
+        "sourceProvider": source_provider,
+        "sourceType": source_type,
+        "sourceId": f"{source_provider}:{row.get('isin') or ticker}:{parsed.period_end}",
         "sourceUrl": source_url,
         "periodEnd": parsed.period_end,
         "observedAt": utcnow(),
@@ -513,7 +813,7 @@ def _write_verified_record(
         "quality": 0.98 if parsed.audited else 0.94,
         "provenanceStatus": "independently_verified",
         "auditStatus": "audited" if parsed.audited else "unknown",
-        "verificationMode": "unternehmensregister-browser+strict-statement-parser",
+        "verificationMode": verification_mode,
         "sha256": sha256_bytes(report_text.encode("utf-8")),
         "rawProviderFields": {
             "de_auto_resolver": True,
@@ -687,12 +987,28 @@ def process_queue(
                     if not isin:
                         raise GlobalProviderError("queued Germany issuer has no ISIN")
                     resolution = resolver.resolve_isin(isin, country="DE")
-                    year, report_text, source_url = fetch_unternehmensregister_report(
+                    discovery = fetch_brave_official_report(
                         browser,
-                        company_name=resolution.legal_name,
+                        legal_name=resolution.legal_name,
+                        isin=isin,
                         years=years,
                         timeout_ms=timeout_ms,
                     )
+                    source_provider = "issuer-ir-search-de-auto"
+                    source_type = "official_issuer_financial_statement"
+                    verification_mode = "brave-locator+issuer-domain+strict-statement-parser"
+                    if discovery is None:
+                        year, report_text, source_url = fetch_unternehmensregister_report(
+                            browser,
+                            company_name=resolution.legal_name,
+                            years=years,
+                            timeout_ms=timeout_ms,
+                        )
+                        source_provider = "unternehmensregister-de-auto"
+                        source_type = "official_regulatory_financial_statement"
+                        verification_mode = "unternehmensregister-browser+strict-statement-parser"
+                    else:
+                        year, report_text, source_url = discovery
                     path = _write_verified_record(
                         row,
                         legal_name=resolution.legal_name,
@@ -700,6 +1016,9 @@ def process_queue(
                         year=year,
                         report_text=report_text,
                         source_url=source_url,
+                        source_provider=source_provider,
+                        source_type=source_type,
+                        verification_mode=verification_mode,
                     )
                     row.update(
                         {
