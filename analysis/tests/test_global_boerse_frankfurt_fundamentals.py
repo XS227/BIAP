@@ -89,13 +89,15 @@ def test_boerse_frankfurt_key_data_normalizes_tiw_without_inventing_period(monke
     assert enriched.operating_income == -4_910_000
     assert enriched.net_income == -6_450_000
     assert enriched.total_assets == 26_540_000
-    assert enriched.total_liabilities == 33_310_000
+    assert enriched.total_liabilities == 32_210_000
     assert enriched.total_equity == -5_670_000
     assert enriched.current_assets == 2_060_000
     assert enriched.current_liabilities == 10_090_000
     assert enriched.eps == -0.32
     assert enriched.filing_period_end is None
     assert enriched.raw_provider_fields["de_bf_report_year"] == 2025
+    assert enriched.raw_provider_fields["de_bf_liabilities_reported"] == 33_310_000
+    assert enriched.raw_provider_fields["de_bf_liabilities_normalized_by_identity"] is True
     assert enriched.raw_provider_fields["de_bf_period_granularity"] == "year_only"
 
     source = enriched.sources[-1]
@@ -117,7 +119,7 @@ def test_exchange_key_data_clears_false_source_block_but_stays_warn_without_exac
     assert assessment.freshness_score == pytest.approx(0.25)
 
 
-def test_boerse_frankfurt_rejects_incompatible_balance_sheet(monkeypatch):
+def test_boerse_frankfurt_normalizes_liabilities_from_assets_and_equity(monkeypatch):
     payload = _payload()
     payload["data"][0] = {
         **payload["data"][0],
@@ -128,5 +130,20 @@ def test_boerse_frankfurt_rejects_incompatible_balance_sheet(monkeypatch):
     provider = BoerseFrankfurtFundamentalsProvider()
     monkeypatch.setattr(provider, "_get_json", lambda url: payload)
 
-    with pytest.raises(GlobalProviderError, match="accounting identity mismatch"):
+    enriched = provider.enrich_fundamentals(_company())
+
+    assert enriched.total_liabilities == 90_000_000
+    assert enriched.raw_provider_fields["de_bf_liabilities_reported"] == 20_000_000
+
+
+def test_boerse_frankfurt_rejects_stale_annual_year(monkeypatch):
+    payload = _payload()
+    payload["data"] = [
+        {**payload["data"][0], "year": 2024},
+        {**payload["data"][1], "year": 2023},
+    ]
+    provider = BoerseFrankfurtFundamentalsProvider()
+    monkeypatch.setattr(provider, "_get_json", lambda url: payload)
+
+    with pytest.raises(GlobalProviderError, match="too old"):
         provider.enrich_fundamentals(_company())
