@@ -32,6 +32,7 @@ jobs:
           cases = [
               ("DE", "XETRA", "BMW", "EUR", {"de-official-issuer-financials"}),
               ("DE", "FRANKFURT", "DUE", "EUR", {"de-official-issuer-financials"}),
+              ("DE", "FRANKFURT", "JEN", "EUR", {"de-official-issuer-financials"}),
               ("DE", "FRANKFURT", "BMM", "EUR", {"de-official-issuer-financials"}),
               ("DE", "FRANKFURT", "SAP", "EUR", {"sec-edgar-foreign-ifrs-cached", "de-official-issuer-financials"}),
           ]
