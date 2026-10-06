@@ -67,6 +67,24 @@ def decision_governance_agent(
             reasoning="Escalated to human review: " + "; ".join(reviews),
         )
 
+    # A disagreement between otherwise well-supported analysis agents is not an
+    # evidence-quality defect, but it must still prevent automatic acceptance.
+    # Keep Evidence PASS truthful while routing the decision itself to REVIEW.
+    if evidence.contradictions:
+        reviews.append("high-confidence agent disagreement")
+        if distress.status == "ELEVATED_RISK":
+            reviews.append("elevated independent distress risk")
+        return GovernanceAssessment(
+            action="REVIEW",
+            final_call="NO_RECOMMENDATION",
+            accepted=False,
+            escalated=True,
+            abstained=True,
+            hard_blocks=(),
+            review_reasons=tuple(reviews),
+            reasoning="Escalated to human review: " + "; ".join(reviews),
+        )
+
     if conf >= accept_threshold:
         return GovernanceAssessment(
             action="ACCEPT",
