@@ -14,7 +14,7 @@ than fabricate values.
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 import os
 from pathlib import Path
@@ -262,6 +262,41 @@ def _write_verified_record(
 
 
 
+
+
+def _parse_time(value: Any) -> Optional[datetime]:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _eligible_now(row: dict[str, Any]) -> bool:
+    attempts = int(row.get("attempts") or 0)
+    if attempts <= 0:
+        return True
+    last_attempt = _parse_time(row.get("lastAttemptAt"))
+    last_seen = _parse_time(row.get("lastSeenAt"))
+    if row.get("priority") == "interactive" and last_seen and (
+        last_attempt is None or last_seen > last_attempt
+    ):
+        return True
+    if last_attempt is None:
+        return True
+    cooldown_hours = min(24, 2 ** min(attempts, 4))
+    return datetime.now(timezone.utc) >= last_attempt + timedelta(hours=cooldown_hours)
+
+
+def _recency_rank(row: dict[str, Any]) -> float:
+    seen = _parse_time(row.get("lastSeenAt"))
+    return -(seen.timestamp() if seen else 0.0)
+
 def seed_full_german_universe(queue: dict[str, Any]) -> int:
     """Add the whole cached Frankfurt/Xetra ordinary-equity universe to the queue.
 
@@ -341,13 +376,17 @@ def process_queue(
     pending = [
         (identity, row)
         for identity, row in queue.items()
-        if isinstance(row, dict) and row.get("status") != "resolved"
+        if (
+            isinstance(row, dict)
+            and row.get("status") != "resolved"
+            and _eligible_now(row)
+        )
     ]
     pending.sort(
         key=lambda item: (
             0 if item[1].get("priority") == "interactive" else 1,
             int(item[1].get("attempts") or 0),
-            str(item[1].get("lastSeenAt") or ""),
+            _recency_rank(item[1]),
         )
     )
     pending = pending[: max(0, max_items)]
