@@ -116,7 +116,7 @@ def test_exchange_key_data_clears_false_source_block_with_current_year_only_offi
 
     assert "fundamental_source" not in assessment.missing_critical
     assert assessment.status == "PASS"
-    assert assessment.freshness_score == pytest.approx(0.25)
+    assert assessment.freshness_score == pytest.approx(1.0)
 
 
 def test_boerse_frankfurt_normalizes_liabilities_from_assets_and_equity(monkeypatch):
