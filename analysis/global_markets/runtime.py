@@ -378,6 +378,7 @@ def build_registry() -> ProviderRegistry:
         provider_names=(
             GermanIssuerFundamentalsProvider.provider_id,
             "unternehmensregister-de-auto",
+            "issuer-ir-search-de-auto",
         ),
         enqueue_missing=True,
         queue_name="de-fundamentals-missing",
