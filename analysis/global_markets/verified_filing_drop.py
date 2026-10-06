@@ -8,12 +8,13 @@ marked verified and carrying source provenance.
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
-from .source_cache import data_root, read_json
+from .source_cache import data_root, read_json, source_index_path, write_json_atomic
 
 _ALLOWED_SOURCE_TYPES = {
     "official_regulatory_filing",
@@ -27,7 +28,7 @@ _ALLOWED_FIELDS = {
     "revenue", "revenue_prev", "revenue_yoy_pct", "gross_profit",
     "operating_income", "ebitda", "net_income", "net_margin_pct",
     "net_margin_prev_pct", "total_assets", "total_liabilities",
-    "total_equity", "current_assets", "current_liabilities",
+    "total_equity", "retained_earnings", "current_assets", "current_liabilities",
     "cash_and_equivalents", "operating_cash_flow", "free_cash_flow",
     "total_debt", "interest_expense", "eps", "audit_opinion",
 }
@@ -36,9 +37,48 @@ _ALLOWED_FIELDS = {
 class VerifiedFilingDropProvider(FundamentalsProvider):
     provider_id = "verified-filing-drop"
 
-    def __init__(self, *, country: str, provider_names: tuple[str, ...]) -> None:
+    def __init__(
+        self,
+        *,
+        country: str,
+        provider_names: tuple[str, ...],
+        enqueue_missing: bool = False,
+        queue_name: Optional[str] = None,
+    ) -> None:
         self.country = country.strip().upper()
         self.provider_names = {name.strip().lower() for name in provider_names}
+        self.enqueue_missing = bool(enqueue_missing)
+        self.queue_name = (
+            str(queue_name or f"{self.country.lower()}-fundamentals-missing").strip()
+        )
+
+    def _enqueue(self, company: GlobalCompany) -> None:
+        if not self.enqueue_missing:
+            return
+        path = source_index_path(self.queue_name)
+        payload = read_json(path, default={})
+        if not isinstance(payload, dict):
+            payload = {}
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        identity = (company.isin or company.lei or company.ticker).strip().upper()
+        if not identity:
+            return
+        previous = payload.get(identity) if isinstance(payload.get(identity), dict) else {}
+        payload[identity] = {
+            **previous,
+            "country": company.country,
+            "exchange": company.exchange,
+            "ticker": company.ticker,
+            "name": company.name,
+            "isin": company.isin,
+            "lei": company.lei,
+            "reportingMarket": company.raw_provider_fields.get("reporting_market"),
+            "marketSegment": company.raw_provider_fields.get("market_segment"),
+            "firstSeenAt": previous.get("firstSeenAt") or now,
+            "lastSeenAt": now,
+            "status": "pending",
+        }
+        write_json_atomic(path, payload)
 
     def _path(self, company: GlobalCompany) -> Path:
         safe = "".join(ch for ch in company.ticker if ch.isalnum() or ch in {"-", "_", "."})
@@ -68,7 +108,11 @@ class VerifiedFilingDropProvider(FundamentalsProvider):
         path = self._path(company)
         record = read_json(path)
         if not isinstance(record, dict):
-            raise GlobalProviderError(f"no verified local filing record at {path}")
+            self._enqueue(company)
+            raise GlobalProviderError(
+                f"no verified local filing record at {path}; "
+                f"official-source discovery queued"
+            )
         if record.get("verified") is not True:
             raise GlobalProviderError(f"local filing record for {company.identity()} is not verified")
         provider = str(record.get("sourceProvider") or "").strip().lower()
@@ -89,13 +133,19 @@ class VerifiedFilingDropProvider(FundamentalsProvider):
             if key not in values:
                 continue
             kwargs[key] = values[key] if key == "audit_opinion" else self._number(values[key])
+        record_raw = record.get("rawProviderFields")
+        if not isinstance(record_raw, dict):
+            record_raw = {}
         kwargs.update({
+            "sector": str(record.get("sector") or company.sector or "").strip() or None,
+            "industry": str(record.get("industry") or company.industry or "").strip() or None,
             "reporting_currency": str(record.get("currency") or company.reporting_currency or company.currency),
             "filing_period_end": period_end,
             "filing_observed_at": observed_at,
             "report_scope": str(record.get("reportScope") or "consolidated"),
             "raw_provider_fields": {
                 **company.raw_provider_fields,
+                **record_raw,
                 "verified_filing_path": str(path),
                 "verified_filing_hash": record.get("sha256"),
                 "verified_filing_verification_mode": record.get("verificationMode"),
@@ -111,4 +161,6 @@ class VerifiedFilingDropProvider(FundamentalsProvider):
             period_end=period_end,
             quality=float(record.get("quality") or 0.95),
             notes="verified normalized filing stored in BIAP Global server evidence cache",
+            provenance_status=str(record.get("provenanceStatus") or "independently_verified"),
+            audit_status=str(record.get("auditStatus") or "unknown"),
         ))
