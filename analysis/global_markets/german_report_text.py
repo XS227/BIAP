@@ -276,7 +276,10 @@ def _explicit_multiplier(text: str) -> Optional[float]:
     for pattern, multiplier in patterns:
         for match in re.finditer(pattern, low, re.I):
             hits.append((match.start(), multiplier))
-    return max(hits, default=(-1, None), key=lambda row: row[0])[1]
+    # In a statement header, the first explicit unit is the table scale.
+    # Later row-local units (e.g. "earnings per share (in EUR)") must not
+    # override the scale of the whole statement.
+    return min(hits, default=(10**18, None), key=lambda row: row[0])[1]
 
 
 def _statement_multiplier(text: str, start: int, end: int) -> float:
@@ -288,8 +291,8 @@ def _statement_multiplier(text: str, start: int, end: int) -> float:
     if local is not None:
         return local
     before = text[max(0, start - 1200):start]
-    inherited = _explicit_multiplier(before)
-    return inherited if inherited is not None else 1.0
+    inherited = _multiplier_from_text(before)
+    return inherited
 
 
 def _nearest_multiplier(text: str, pos: int) -> float:
@@ -297,8 +300,7 @@ def _nearest_multiplier(text: str, pos: int) -> float:
     # short forward look is intentionally avoided so later tables cannot
     # retroactively change the scale of the current metric.
     before = text[max(0, pos - 1000):pos]
-    inherited = _explicit_multiplier(before)
-    return inherited if inherited is not None else 1.0
+    return _multiplier_from_text(before)
 
 
 def _all_section_starts(text: str) -> list[int]:
