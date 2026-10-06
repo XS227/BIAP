@@ -205,6 +205,72 @@
         "total_debt": 56008000,
         "audit_opinion": "unqualified"
       }
+    },
+    {
+      "ticker": "KGR",
+      "isin": "DE0006336001",
+      "sourceId": "lewag-holding-annual-report-2025",
+      "sourceUrl": "https://www.lewag.de/pdf/lewag_geschaeftsbericht_2025_netz.pdf",
+      "periodEnd": "2025-12-31",
+      "observedAt": "2026-03-31T00:00:00+00:00",
+      "currency": "EUR",
+      "reportScope": "consolidated",
+      "audited": true,
+      "quality": 0.98,
+      "sector": "Industrials",
+      "industry": "Industrial Machinery",
+      "fundamentals": {
+        "revenue": 118573759.47,
+        "revenue_prev": 125063258.48,
+        "operating_income": 2359113.63,
+        "ebitda": 6188325.81,
+        "net_income": 702427.68,
+        "total_assets": 104494653.19,
+        "total_liabilities": 64019708.27,
+        "total_equity": 40474944.92,
+        "current_assets": 57038308.93,
+        "current_liabilities": 50972933.75,
+        "cash_and_equivalents": 6350742.28,
+        "operating_cash_flow": 2440000,
+        "free_cash_flow": -1924000,
+        "total_debt": 27660183.21,
+        "interest_expense": 1271156.7,
+        "eps": 0.19,
+        "audit_opinion": "unqualified"
+      }
+    },
+    {
+      "ticker": "INS",
+      "isin": "DE000A2NBX80",
+      "sourceId": "instone-real-estate-group-annual-report-2025",
+      "sourceUrl": "https://ir.de.instone.de/media/document/4a67faa8-5046-4469-a977-cfeabb9f4bb3/assets/Instone_Geschaftsbericht_2025_EN.pdf",
+      "periodEnd": "2025-12-31",
+      "observedAt": "2026-03-17T00:00:00+00:00",
+      "currency": "EUR",
+      "reportScope": "consolidated",
+      "audited": true,
+      "quality": 0.99,
+      "sector": "Real Estate",
+      "industry": "Residential Real Estate Development",
+      "fundamentals": {
+        "revenue": 405899000,
+        "revenue_prev": 434575000,
+        "operating_income": 64898000,
+        "net_income": 45358000,
+        "total_assets": 1818151000,
+        "total_liabilities": 1203214000,
+        "total_equity": 614937000,
+        "retained_earnings": 239662000,
+        "current_assets": 1722954000,
+        "current_liabilities": 841806000,
+        "cash_and_equivalents": 367481000,
+        "operating_cash_flow": -14808000,
+        "free_cash_flow": -16900000,
+        "total_debt": 500566000,
+        "interest_expense": 23664000,
+        "eps": 1.03,
+        "audit_opinion": "unqualified"
+      }
     }
   ]
 }
