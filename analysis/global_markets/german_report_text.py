@@ -121,7 +121,7 @@ def _normalize_lines(text: str) -> str:
     return "\n".join(lines)
 
 
-def _parse_number(token: str) -> Optional[float]:
+def _parse_number(token: str, *, decimal_single_separator: bool = False) -> Optional[float]:
     raw = str(token or "").strip().replace("\u2212", "-").replace("–", "-")
     negative = raw.startswith("-") or (raw.startswith("(") and raw.endswith(")"))
     raw = raw.strip("-() ").replace("'", "").replace("’", "").replace(" ", "")
@@ -133,13 +133,19 @@ def _parse_number(token: str) -> Optional[float]:
         raw = raw.replace(thousands, "").replace(decimal, ".")
     elif "," in raw:
         parts = raw.split(",")
-        if len(parts) > 2 or (len(parts) == 2 and len(parts[1]) == 3 and len(parts[0]) >= 1):
+        if (
+            not decimal_single_separator
+            and (len(parts) > 2 or (len(parts) == 2 and len(parts[1]) == 3 and len(parts[0]) >= 1))
+        ):
             raw = "".join(parts)
         else:
             raw = raw.replace(",", ".")
     elif "." in raw:
         parts = raw.split(".")
-        if len(parts) > 2 or (len(parts) == 2 and len(parts[1]) == 3 and len(parts[0]) >= 1):
+        if (
+            not decimal_single_separator
+            and (len(parts) > 2 or (len(parts) == 2 and len(parts[1]) == 3 and len(parts[0]) >= 1))
+        ):
             raw = "".join(parts)
     try:
         value = float(raw)
@@ -203,9 +209,13 @@ def _row_candidates(text: str, aliases: tuple[str, ...], windows: list[tuple[int
                 absolute = start + i
                 tail = segment[i + len(alias): i + len(alias) + 180]
                 tokens = [m.group(0) for m in _NUMBER.finditer(tail)]
+                multiplier = _nearest_multiplier(text, absolute)
                 values = []
                 for token in tokens[:6]:
-                    value = _parse_number(token)
+                    value = _parse_number(
+                        token,
+                        decimal_single_separator=multiplier >= 1_000_000.0,
+                    )
                     if value is None:
                         continue
                     if 1900 <= abs(value) <= 2100 and float(value).is_integer():
@@ -218,7 +228,6 @@ def _row_candidates(text: str, aliases: tuple[str, ...], windows: list[tuple[int
                     if len(values) >= 3 and abs(values[0][1]) < 100:
                         values = values[1:]
                     if values:
-                        multiplier = _nearest_multiplier(text, absolute)
                         out.append((absolute, values[0][1] * multiplier))
                 cursor = i + len(alias_low)
     return out
