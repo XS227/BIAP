@@ -713,7 +713,7 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
             text, label="JENOPTIK FY2025 non-current liabilities",
         )
         current_liab_match = _required_match(
-            r"\bCurrent liabilit(?:ies|es)\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            r"(?<!Non-)\bCurrent liabil(?:ities|ties|ites)\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
             text, label="JENOPTIK FY2025 current liabilities",
         )
         ocf_match = _required_match(
@@ -733,7 +733,7 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
             text, label="JENOPTIK FY2025 non-current debt",
         )
         debt_c_match = _required_match(
-            r"\bCurrent financial debt\s+8\.1, 8\.2\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            r"(?<!Non-)\bCurrent financial debt\s+8\.1, 8\.2\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
             text, label="JENOPTIK FY2025 current debt",
         )
 
