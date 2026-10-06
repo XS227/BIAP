@@ -380,10 +380,16 @@ def _row_values(
     multiplier_override: Optional[float] = None,
 ) -> Optional[list[float]]:
     lines = segment.split("\n")
+    # The statement's own unit declaration always wins. An inherited scale is
+    # only a fallback for layouts where the unit sits immediately above the
+    # statement heading.
+    local_multiplier = _explicit_multiplier(segment[:1200])
     block_multiplier = (
-        multiplier_override
+        local_multiplier
+        if local_multiplier is not None
+        else multiplier_override
         if multiplier_override is not None
-        else _multiplier_from_text(segment[:900])
+        else 1.0
     )
     decimal_comma = _segment_decimal_comma(segment)
     for alias in aliases:
