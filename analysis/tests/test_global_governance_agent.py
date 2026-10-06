@@ -146,3 +146,47 @@ def test_governance_keeps_negative_direction_when_distress_corroborates():
     )
     assert g.final_call == "AVOID_OR_REVIEW"
     assert g.abstained is False
+
+
+def test_governance_never_accepts_warn_evidence_even_at_high_confidence():
+    c = _company(
+        country="DE",
+        exchange="FRANKFURT",
+        currency="EUR",
+        ticker="LONGTAIL",
+        name="German Long Tail",
+        mic_code="XFRA",
+        isin="DE0000000001",
+        sources=[
+            SourceEvidence(
+                provider="market",
+                source_type="daily_market_history",
+                source_id="m1",
+                source_url="https://example.test/m",
+                quality=0.95,
+                provenance_status="independently_verified",
+            ),
+            SourceEvidence(
+                provider="yahoo-public-fundamentals-global",
+                source_type="public_vendor_financial_metrics",
+                source_id="LONGTAIL.F",
+                source_url="https://finance.yahoo.com/quote/LONGTAIL.F/financials/",
+                quality=0.72,
+            ),
+        ],
+    )
+    e = evidence_agent(c, (), now=datetime(2026, 9, 29, 9, tzinfo=timezone.utc))
+    d = distress_agent(c)
+    g = decision_governance_agent(
+        proposed_call="BUY_CANDIDATE",
+        score=0.80,
+        overall_confidence=0.95,
+        decision_confidence=0.95,
+        evidence=e,
+        distress=d,
+    )
+    assert e.status == "WARN"
+    assert g.action == "REVIEW"
+    assert g.final_call == "NO_RECOMMENDATION"
+    assert g.abstained is True
+    assert "evidence gate returned WARN" in g.reasoning

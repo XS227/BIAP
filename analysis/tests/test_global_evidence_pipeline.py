@@ -212,6 +212,29 @@ def test_vendor_fallback_is_never_official_and_blocks():
     assert evidence.official_fundamental_status == STATUS_OFFICIAL_SOURCE_UNAVAILABLE
 
 
+def test_germany_complete_secondary_fundamentals_warns_not_blocks():
+    company = _full(
+        _Vendor()
+    )
+    company = replace(
+        company,
+        country="DE",
+        exchange="FRANKFURT",
+        currency="EUR",
+        ticker="KGR",
+        name="LEWAG HOLDING AG",
+        mic_code="XFRA",
+        isin="DE0006336001",
+    )
+    evidence = evidence_agent(company)
+    assert evidence.status == "WARN"
+    assert "fundamental_source" not in evidence.missing_critical
+    assert evidence.official_fundamental_status == STATUS_OFFICIAL_SOURCE_UNAVAILABLE
+    assert "secondary_only_no_official_filing" in evidence.reasoning
+    contract = fundamental_evidence_contract(company)
+    assert contract["isOfficial"] is False
+
+
 def test_vendor_source_type_with_official_words_is_still_not_official():
     tricky = SourceEvidence(provider="some-vendor", source_type="vendor_regulatory_filing_mirror")
     assert not is_official_fundamental_source(tricky)
