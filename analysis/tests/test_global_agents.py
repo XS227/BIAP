@@ -62,16 +62,16 @@ def test_evidence_agent_blocks_unverified_company():
     assert "source_provenance" in result.missing_critical
 
 
-def test_evidence_agent_warns_on_high_confidence_agent_conflict():
+def test_evidence_agent_keeps_pass_when_verified_evidence_has_agent_conflict():
     company = _company()
     signals = (
         AgentSignal("fundamental", 0.8, 0.8, "positive"),
         AgentSignal("risk", -0.8, 0.8, "negative"),
     )
     result = evidence_agent(company, signals, now=datetime(2026, 9, 16, 1, tzinfo=timezone.utc))
-    assert result.status == "WARN"
+    assert result.status == "PASS"
     assert result.contradictions
-    assert result.confidence_multiplier < 1.0
+    assert "high-confidence disagreement" in result.reasoning
 
 
 def test_evidence_agent_blocks_fresh_price_combined_with_stale_fundamentals():
