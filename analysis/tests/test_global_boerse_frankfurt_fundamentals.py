@@ -107,7 +107,7 @@ def test_boerse_frankfurt_key_data_normalizes_tiw_without_inventing_period(monke
     assert source.period_end is None
 
 
-def test_exchange_key_data_clears_false_source_block_but_stays_warn_without_exact_period(monkeypatch):
+def test_exchange_key_data_clears_false_source_block_with_current_year_only_official_data(monkeypatch):
     provider = BoerseFrankfurtFundamentalsProvider()
     monkeypatch.setattr(provider, "_get_json", lambda url: _payload())
 
@@ -115,7 +115,7 @@ def test_exchange_key_data_clears_false_source_block_but_stays_warn_without_exac
     assessment = evidence_agent(enriched)
 
     assert "fundamental_source" not in assessment.missing_critical
-    assert assessment.status == "WARN"
+    assert assessment.status == "PASS"
     assert assessment.freshness_score == pytest.approx(0.25)
 
 
