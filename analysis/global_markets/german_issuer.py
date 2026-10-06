@@ -713,7 +713,7 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
             text, label="JENOPTIK FY2025 non-current liabilities",
         )
         current_liab_match = _required_match(
-            r"(?<!Non-)\bCurrent liabilit(?:ies|es|ties)\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            r"(?<!Non-)\bCurrent liabil(?:ities|ties|ites)\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
             text, label="JENOPTIK FY2025 current liabilities",
         )
         ocf_match = _required_match(
