@@ -16,7 +16,7 @@ from .providers import GlobalProviderError
 
 
 _SPACE = re.compile(r"[ \t\u00a0]+")
-_NUMBER = re.compile(r"(?<![A-Za-z])[-−–]?\(?\d[\d .,'’]*\d|[-−–]?\(?\d\)?")
+_NUMBER = re.compile(r"(?<![A-Za-z0-9])[-−–]?\(?\d+(?:[.,'’]\d+)*\)?")
 _YEAR = re.compile(r"\b(20\d{2})\b")
 
 _BALANCE_MARKERS = (
@@ -158,8 +158,16 @@ def _nearest_multiplier(text: str, pos: int) -> float:
     window = text[max(0, pos - 800):pos].lower()
     hits: list[tuple[int, float]] = []
     patterns = (
-        (r"\b(?:in|angaben in)\s+(?:mio\.?|million)\s*(?:eur|€)", 1_000_000.0),
-        (r"\b(?:in|angaben in)\s+(?:teur|keur|thousand\s+euros?|eur\s+thousand)", 1_000.0),
+        (
+            r"\b(?:in|angaben in)\s+(?:(?:mio\.?|million(?:s)?|mn)\s*(?:eur|€)|"
+            r"(?:eur|€)\s*(?:mio\.?|million(?:s)?|mn))",
+            1_000_000.0,
+        ),
+        (
+            r"\b(?:in|angaben in)\s+(?:(?:teur|keur|thousand\s+euros?)|"
+            r"(?:eur|€)\s+thousand)",
+            1_000.0,
+        ),
         (r"\b(?:in|angaben in)\s+(?:eur|€)\b", 1.0),
     )
     for pattern, multiplier in patterns:
@@ -207,7 +215,7 @@ def _row_candidates(text: str, aliases: tuple[str, ...], windows: list[tuple[int
                 if i < 0:
                     break
                 absolute = start + i
-                tail = segment[i + len(alias): i + len(alias) + 180]
+                tail = segment[i + len(alias): i + len(alias) + 240].split("\n", 1)[0]
                 tokens = [m.group(0) for m in _NUMBER.finditer(tail)]
                 multiplier = _nearest_multiplier(text, absolute)
                 values = []

@@ -1,0 +1,19 @@
+[Unit]
+Description=BIAP Global Germany official-filing discovery worker
+After=network-online.target biap-global.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/biap-global/BIAP
+Environment=BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global
+Environment=PLAYWRIGHT_BROWSERS_PATH=/var/lib/biap-global/playwright
+Environment=BIAP_DE_WORKER_MAX=20
+ExecStart=/home/ubuntu/biap-global/BIAP/analysis/.venv-global/bin/python /home/ubuntu/biap-global/BIAP/tools/warm_de_unternehmensregister.py
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=false
+ReadWritePaths=/var/lib/biap-global /home/ubuntu/biap-global/BIAP/.runtime
