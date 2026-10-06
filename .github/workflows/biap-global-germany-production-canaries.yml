@@ -6,6 +6,9 @@ on:
     paths:
       - '.github/workflows/biap-global-germany-production-canaries.yml'
       - 'analysis/global_markets/german_issuer.py'
+      - 'analysis/global_markets/evidence_contract.py'
+      - 'analysis/global_markets/governance.py'
+      - 'analysis/global_markets/agents.py'
       - 'analysis/global_markets/german_issuer_esef.py'
       - 'analysis/global_markets/german_reviewed_reports.py'
       - 'analysis/global_markets/data/de_verified_annual_reports.json'
