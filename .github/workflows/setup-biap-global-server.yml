@@ -337,6 +337,12 @@ jobs:
           $SUDO systemctl restart biap-global.service
           $SUDO systemctl enable --now biap-global-source-sync.timer
           $SUDO systemctl enable --now biap-global-de-fundamentals.timer
+
+          # Seed the full German ordinary-equity universe immediately. This is
+          # browser-free and makes the resolver market-wide on deploy; the
+          # scheduled worker then consumes the queue in bounded batches.
+          PLAYWRIGHT_BROWSERS_PATH=/var/lib/biap-global/playwright             BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global             "$APP_DIR/analysis/.venv-global/bin/python"             "$APP_DIR/tools/warm_de_unternehmensregister.py" --seed-only
+
           $SUDO systemctl start --no-block biap-global-de-fundamentals.service || true
           for attempt in 1 2 3 4 5 6; do
             if curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8091/health >/tmp/biap-global-health.json; then cat /tmp/biap-global-health.json; break; fi
