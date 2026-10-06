@@ -1,4 +1,4 @@
-# Redeploy evidence/governance separation after green regression: 2026-10-06T21:06Z
+# Redeploy DE year-only official freshness fix: 2026-10-06T23:05Z
 name: Setup BIAP Global server
 
 on:
