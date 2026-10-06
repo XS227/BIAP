@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "description": "Reviewed official issuer annual-report fundamentals for German listings absent from the ESEF registry.",
+  "issuers": [
+    {
+      "ticker": "MBG",
+      "isin": "DE0007100000",
+      "sourceId": "mercedes-benz-group-annual-report-2025",
+      "sourceUrl": "https://group.mercedes-benz.com/documents/investors/reports/annual-report/mercedes-benz/mercedes-benz-annual-report-2025-incl-combined-management-report-mbg-ag.pdf",
+      "periodEnd": "2025-12-31",
+      "observedAt": "2026-03-03T00:00:00+00:00",
+      "currency": "EUR",
+      "reportScope": "consolidated",
+      "audited": true,
+      "quality": 0.98,
+      "fundamentals": {
+        "revenue": 132214000000,
+        "revenue_prev": 145594000000,
+        "operating_income": 5820000000,
+        "net_income": 5331000000,
+        "total_assets": 255466000000,
+        "total_liabilities": 161226000000,
+        "total_equity": 94240000000,
+        "retained_earnings": 77631000000,
+        "current_assets": 102132000000,
+        "current_liabilities": 73768000000,
+        "cash_and_equivalents": 12254000000,
+        "operating_cash_flow": 18006000000,
+        "free_cash_flow": 8264000000,
+        "total_debt": 100006000000,
+        "eps": 5.34
+      }
+    }
+  ]
+}
