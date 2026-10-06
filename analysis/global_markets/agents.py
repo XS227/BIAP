@@ -145,6 +145,23 @@ def _fundamental_freshness(
 
     value = (company.filing_period_end or "").strip()[:10]
     if not value:
+        # Some official exchange annual datasets (notably Börse Frankfurt
+        # historical key data) publish a fiscal/report year but no exact period
+        # end. Do not invent a calendar date. Treat the latest prior fiscal year
+        # as current annual evidence, while keeping older years conservative.
+        raw = company.raw_provider_fields or {}
+        if raw.get("de_bf_historical_key_data") and raw.get("de_bf_period_granularity") == "year_only":
+            try:
+                report_year = int(raw.get("de_bf_report_year"))
+            except (TypeError, ValueError):
+                report_year = 0
+            current_year = (now or datetime.now(timezone.utc)).astimezone(timezone.utc).year
+            if report_year >= current_year - 1:
+                return 1.0, None
+            if report_year == current_year - 2:
+                return 0.25, None
+            if report_year > 0:
+                return 0.05, None
         return 0.25, None
     try:
         period_end = date.fromisoformat(value)
