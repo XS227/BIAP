@@ -76,25 +76,28 @@ def _click_optional(page, labels: tuple[str, ...]) -> None:
 
 
 def _solve_gate(page, attempts: int = 5) -> bool:
+    """Solve only the publication security checkbox, never search-filter checkboxes."""
     for _ in range(attempts):
         body = page.inner_text("body")
         if "Ich bin ein Mensch" not in body and "Sicherheitsabfrage" not in body:
             return True
         clicked = False
-        for selector in (
-            "label:has-text('Ich bin ein Mensch')",
-            "text=Ich bin ein Mensch",
-            "input[type=checkbox]",
-            ".fc-button",
-            "[class*=captcha] label",
-        ):
+        selectors = (
+            "label.fox-internal-control input[type=checkbox].fox-internal-visually-hidden",
+            "input[type=checkbox].fox-internal-visually-hidden",
+            "label.fox-internal-control:has-text('Ich bin ein Mensch')",
+            ".fox-internal-control:has-text('Ich bin ein Mensch')",
+        )
+        for selector in selectors:
             try:
-                page.locator(selector).first.click(timeout=3500)
-                clicked = True
-                break
+                locator = page.locator(selector)
+                if locator.count():
+                    locator.first.click(timeout=3500, force=True)
+                    clicked = True
+                    break
             except Exception:
                 continue
-        page.wait_for_timeout(5000 if clicked else 2500)
+        page.wait_for_timeout(6500 if clicked else 2200)
     body = page.inner_text("body")
     return "Ich bin ein Mensch" not in body and "Sicherheitsabfrage" not in body
 
@@ -124,42 +127,47 @@ def _extract_report_text(page) -> str:
 
 
 def _select_publication(page, year: int) -> bool:
-    """Prefer consolidated/annual financial publications for the requested year."""
-    candidates = (
-        f"Konzernabschluss {year}",
-        f"Konzernfinanzbericht {year}",
-        f"Jahresfinanzbericht {year}",
-        f"Geschäftsjahr vom 01.01.{year}",
-        f"Geschaeftsjahr vom 01.01.{year}",
-        str(year),
-    )
-    for text in candidates:
+    """Open the best real annual-report publication link for the requested year."""
+    links = page.locator("a[data-testid='normal-pub']")
+    ranked: list[tuple[int, int]] = []
+    wanted_year = str(year)
+    for idx in range(min(links.count(), 200)):
         try:
-            locator = page.get_by_text(text, exact=False)
-            count = locator.count()
-            if count:
-                # Prefer a match whose surrounding row/card mentions a
-                # consolidated or annual financial statement.
-                for idx in range(min(count, 12)):
-                    candidate = locator.nth(idx)
-                    try:
-                        surrounding = candidate.locator("xpath=ancestor::*[self::tr or self::li or self::article or self::div][1]").inner_text(timeout=1500)
-                    except Exception:
-                        surrounding = candidate.inner_text(timeout=1500)
-                    low = surrounding.lower()
-                    if any(
-                        marker in low
-                        for marker in (
-                            "konzernabschluss",
-                            "konzernfinanzbericht",
-                            "jahresfinanzbericht",
-                            "jahresabschluss",
-                        )
-                    ):
-                        candidate.click(timeout=7000)
-                        return True
-                locator.first.click(timeout=7000)
-                return True
+            link = links.nth(idx)
+            text = (link.inner_text(timeout=1200) or "").strip()
+            low = text.lower()
+            if wanted_year not in text:
+                continue
+            if "halbjahr" in low or "quartal" in low or "zwischen" in low or "hinweis" in low:
+                continue
+            score = 0
+            if "konzernabschluss" in low:
+                score += 100
+            if "jahres- und konzernabschluss" in low:
+                score += 95
+            if "konzernfinanzbericht" in low or "jahresfinanzbericht" in low:
+                score += 90
+            if "jahresabschluss" in low:
+                score += 70
+            if f"01.01.{year}" in text and f"31.12.{year}" in text:
+                score += 25
+            try:
+                parent = link.locator("xpath=..").inner_text(timeout=800).lower()
+            except Exception:
+                parent = low
+            if "ergänzung" in parent or "ergänzt am" in parent:
+                score -= 5
+            ranked.append((score, idx))
+        except Exception:
+            continue
+    for _, idx in sorted(ranked, reverse=True):
+        try:
+            link = links.nth(idx)
+            href = link.get_attribute("href")
+            if not href:
+                continue
+            link.click(timeout=7000)
+            return True
         except Exception:
             continue
     return False
