@@ -122,13 +122,20 @@ class GermanReviewedAnnualReportProvider(FundamentalsProvider):
         quality = float(row.get("quality") or 0.97)
         audited = bool(row.get("audited"))
 
+        row_raw = row.get("rawProviderFields")
+        if not isinstance(row_raw, dict):
+            row_raw = {}
+
         kwargs.update({
+            "sector": str(row.get("sector") or company.sector or "").strip() or None,
+            "industry": str(row.get("industry") or company.industry or "").strip() or None,
             "reporting_currency": str(row.get("currency") or company.reporting_currency or company.currency),
             "filing_period_end": period_end,
             "filing_observed_at": observed_at,
             "report_scope": str(row.get("reportScope") or "consolidated"),
             "raw_provider_fields": {
                 **company.raw_provider_fields,
+                **row_raw,
                 "de_reviewed_annual_report": source_id,
                 "de_reviewed_verification_mode": "reviewed_official_issuer_annual_report",
                 "de_reviewed_source_host": urlparse(source_url).netloc.lower(),
