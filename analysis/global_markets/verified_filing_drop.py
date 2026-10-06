@@ -76,6 +76,8 @@ class VerifiedFilingDropProvider(FundamentalsProvider):
             "marketSegment": company.raw_provider_fields.get("market_segment"),
             "firstSeenAt": previous.get("firstSeenAt") or now,
             "lastSeenAt": now,
+            "requestCount": int(previous.get("requestCount") or 0) + 1,
+            "priority": "interactive",
             "status": "pending",
         }
         write_json_atomic(path, payload)
