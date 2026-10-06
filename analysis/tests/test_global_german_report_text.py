@@ -106,3 +106,123 @@ def test_parser_fails_closed_on_incompatible_balance_sheet_rows():
 
     with pytest.raises(GlobalProviderError, match="accounting identity mismatch"):
         parse_german_annual_report_text(text, expected_year=2025)
+
+
+
+def test_takkt_style_statement_tables_choose_primary_rows():
+    text = """
+    TAKKT Group Annual Report 2025
+    Financial year from 01/01/2025 to 12/31/2025
+    Content
+    Consolidated statement of income
+    Consolidated statement of financial position
+    Consolidated statement of cash flows
+
+    Consolidated statement of income in EUR thousand
+    Notes 2025 2024
+    Sales (1) 964,276 1,052,890
+    Gross profit 368,687 413,873
+    EBITDA 19,827 55,690
+    EBIT -138,912 -40,495
+    Interest and similar expenses (7) -9,699 -9,112
+    Profit before tax -148,597 -50,814
+    Profit -120,240 -41,285
+    Basic earnings per share (in EUR) (10) -1.88 -0.64
+
+    Consolidated statement of financial position in EUR thousand
+    Assets Notes 12/31/2025 12/31/2024
+    Non-current assets 500,076 669,430
+    Current assets 216,298 253,270
+    Cash and cash equivalents 14,454 8,131
+    Total assets 716,374 922,700
+    Equity 362,271 542,600
+    Non-current financial liabilities 97,258 76,300
+    Non-current liabilities 170,691 191,400
+    Current financial liabilities 33,500 28,500
+    Current liabilities 183,412 188,700
+    Total equity and liabilities 716,374 922,700
+
+    Consolidated statement of cash flows in EUR thousand
+    Cash flow from operating activities 93,900 80,000
+
+    Free cash flow in EUR million
+    10.3 68.0
+
+    Independent auditors' report.
+    In our opinion, the consolidated financial statements give a true and fair
+    view in accordance with IFRS.
+    """ + (" Additional audited notes and disclosures." * 50)
+
+    parsed = parse_german_annual_report_text(text, expected_year=2025)
+
+    assert parsed.fundamentals["revenue"] == pytest.approx(964_276_000)
+    assert parsed.fundamentals["revenue_prev"] == pytest.approx(1_052_890_000)
+    assert parsed.fundamentals["ebitda"] == pytest.approx(19_827_000)
+    assert parsed.fundamentals["operating_income"] == pytest.approx(-138_912_000)
+    assert parsed.fundamentals["net_income"] == pytest.approx(-120_240_000)
+    assert parsed.fundamentals["interest_expense"] == pytest.approx(-9_699_000)
+    assert parsed.fundamentals["eps"] == pytest.approx(-1.88)
+    assert parsed.fundamentals["total_assets"] == pytest.approx(716_374_000)
+    assert parsed.fundamentals["total_equity"] == pytest.approx(362_271_000)
+    assert parsed.fundamentals["total_liabilities"] == pytest.approx(354_103_000)
+    assert parsed.fundamentals["current_assets"] == pytest.approx(216_298_000)
+    assert parsed.fundamentals["current_liabilities"] == pytest.approx(183_412_000)
+    assert parsed.fundamentals["cash_and_equivalents"] == pytest.approx(14_454_000)
+    assert parsed.fundamentals["operating_cash_flow"] == pytest.approx(93_900_000)
+    assert parsed.fundamentals["total_debt"] == pytest.approx(130_758_000)
+
+
+def test_prosieben_style_parser_ignores_held_for_sale_note_rows():
+    text = """
+    ProSiebenSat.1 Media SE Annual Report 2025
+    Financial year from 01/01/2025 to 12/31/2025
+
+    Consolidated Income Statement in EUR m
+    2025 2024
+    Revenue 3,675 3,918
+    EBITDA 31 100
+    EBIT -190 -120
+    Net income -181 -122
+    Basic earnings per share (in EUR) -0.73 -0.52
+
+    Consolidated Statement of Financial Position in EUR m
+    12/31/2025 12/31/2024
+    Non-current assets 4,400 4,700
+    Current assets 2,100 2,200
+    Cash and cash equivalents 541 608
+    Total assets 6,500 6,900
+    Equity 1,177 1,469
+    Non-current financial liabilities 1,500 1,600
+    Non-current liabilities 2,700 2,800
+    Current financial liabilities 700 750
+    Current liabilities 2,623 2,631
+    Total equity and liabilities 6,500 6,900
+
+    Consolidated Statement of Cash Flows in EUR m
+    Cash flows from operating activities 450 500
+
+    Notes to the Consolidated Statement of Financial Position
+    ASSETS HELD FOR SALE
+    Current assets 5
+    Total assets 28
+    LIABILITIES HELD FOR SALE
+    Current liabilities 12
+    Total liabilities 17
+
+    Independent auditor's report.
+    In our opinion, the consolidated financial statements give a true and fair
+    view in accordance with IFRS.
+    """ + (" Further audited disclosures." * 60)
+
+    parsed = parse_german_annual_report_text(text, expected_year=2025)
+
+    assert parsed.fundamentals["revenue"] == pytest.approx(3_675_000_000)
+    assert parsed.fundamentals["net_income"] == pytest.approx(-181_000_000)
+    assert parsed.fundamentals["total_assets"] == pytest.approx(6_500_000_000)
+    assert parsed.fundamentals["total_equity"] == pytest.approx(1_177_000_000)
+    assert parsed.fundamentals["total_liabilities"] == pytest.approx(5_323_000_000)
+    assert parsed.fundamentals["current_assets"] == pytest.approx(2_100_000_000)
+    assert parsed.fundamentals["current_liabilities"] == pytest.approx(2_623_000_000)
+    assert parsed.fundamentals["cash_and_equivalents"] == pytest.approx(541_000_000)
+    assert parsed.fundamentals["operating_cash_flow"] == pytest.approx(450_000_000)
+    assert parsed.fundamentals["eps"] == pytest.approx(-0.73)

@@ -1,9 +1,14 @@
-"""Strict text normalizer for German official annual reports.
+"""Strict statement-aware normalizer for German issuer annual reports.
 
-This module is intentionally conservative. It accepts only statement rows that
-can be tied to a reporting period and a financial-statement section. It never
-fills missing values with market/vendor estimates. Derived liabilities are
-allowed only from the accounting identity Assets = Liabilities + Equity.
+The parser intentionally fails closed. It only accepts values found in the
+issuer's primary consolidated income/balance/cash-flow statements (plus a small
+set of explicitly named official-report metrics), anchors values to one annual
+period, and validates the accounting identity before the snapshot can become
+verified evidence.
+
+It is designed for text extracted from issuer-published audited PDFs. It does
+not promote vendor/search-result numbers and it never fills missing values with
+estimates.
 """
 from __future__ import annotations
 
@@ -15,91 +20,142 @@ from typing import Optional
 from .providers import GlobalProviderError
 
 
-_SPACE = re.compile(r"[ \t\u00a0]+")
-_NUMBER = re.compile(r"(?<![A-Za-z0-9])[-−–]?\(?\d+(?:[.,'’]\d+)*\)?")
-_YEAR = re.compile(r"\b(20\d{2})\b")
+_CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+_SPACE = re.compile(r"\s+")
+_NUMBER = re.compile(r"[-−–]?\s*\(?\d+(?:[.,'’]\d+)*\)?")
 
-_BALANCE_MARKERS = (
-    "konzernbilanz",
-    "consolidated statement of financial position",
-    "consolidated balance sheet",
-    "bilanz",
-)
-_INCOME_MARKERS = (
-    "konzern-gewinn- und verlustrechnung",
-    "konzerngewinn- und verlustrechnung",
-    "consolidated income statement",
-    "consolidated statement of profit or loss",
-    "gewinn- und verlustrechnung",
-)
-_CASHFLOW_MARKERS = (
-    "konzern-kapitalflussrechnung",
-    "konzernkapitalflussrechnung",
-    "consolidated statement of cash flows",
-    "consolidated cash flow statement",
-    "kapitalflussrechnung",
-)
+_SECTION_MARKERS = {
+    "income": (
+        "konzern-gewinn- und verlustrechnung",
+        "konzerngewinn- und verlustrechnung",
+        "consolidated statement of income",
+        "consolidated income statement",
+        "consolidated statement of profit or loss",
+        "consolidated profit and loss statement",
+        "gewinn- und verlustrechnung",
+    ),
+    "balance": (
+        "konzernbilanz",
+        "consolidated statement of financial position",
+        "consolidated balance sheet",
+        "statement of financial position",
+        "bilanz",
+    ),
+    "cashflow": (
+        "konzern-kapitalflussrechnung",
+        "konzernkapitalflussrechnung",
+        "consolidated statement of cash flows",
+        "consolidated cash flow statement",
+        "statement of cash flows",
+        "kapitalflussrechnung",
+    ),
+}
+
+_SECTION_HINTS = {
+    "income": (
+        "revenue", "revenues", "sales", "umsatzerlöse", "umsatzerloese",
+        "ebit", "ebitda", "net income", "profit", "earnings per share",
+        "jahresüberschuss", "jahresueberschuss", "konzernergebnis",
+    ),
+    "balance": (
+        "total assets", "summe aktiva", "bilanzsumme", "total equity",
+        "eigenkapital", "current assets", "umlaufvermögen", "umlaufvermoegen",
+        "current liabilities", "kurzfristige verbindlichkeiten",
+        "cash and cash equivalents",
+    ),
+    "cashflow": (
+        "cash flows from operating activities", "cash flow from operating activities",
+        "cashflow aus laufender geschäftstätigkeit",
+        "cashflow aus laufender geschaeftstaetigkeit",
+        "cash and cash equivalents",
+    ),
+}
 
 _ALIASES = {
     "revenue": (
-        "umsatzerlöse", "umsatzerloese", "revenue", "sales revenue",
+        "umsatzerlöse", "umsatzerloese", "revenues", "revenue", "sales",
     ),
+    "gross_profit": ("gross profit", "bruttoergebnis"),
     "operating_income": (
-        "betriebsergebnis", "operating profit", "operating income", "ebit",
+        "operating profit", "operating income", "betriebsergebnis", "ebit",
     ),
     "ebitda": ("ebitda",),
     "net_income": (
-        "konzernergebnis", "jahresüberschuss", "jahresueberschuss",
-        "jahresfehlbetrag", "profit for the year", "loss for the year",
-        "net income", "earnings after tax",
+        "net income", "profit for the year", "loss for the year",
+        "earnings after tax", "konzernergebnis", "jahresüberschuss",
+        "jahresueberschuss", "jahresfehlbetrag", "profit",
     ),
-    "total_assets": ("summe aktiva", "bilanzsumme", "total assets"),
+    "total_assets": ("total assets", "summe aktiva", "bilanzsumme"),
     "total_liabilities": (
-        "summe schulden", "summe verbindlichkeiten", "total liabilities",
+        "total liabilities", "summe schulden", "summe verbindlichkeiten",
     ),
-    "total_equity": ("eigenkapital", "total equity", "shareholders' equity"),
-    "retained_earnings": ("gewinnrücklagen", "gewinnruecklagen", "retained earnings"),
-    "current_assets": ("umlaufvermögen", "umlaufvermoegen", "current assets"),
+    "total_equity": (
+        "total equity", "shareholders' equity", "shareholders’ equity",
+        "eigenkapital", "equity",
+    ),
+    "retained_earnings": (
+        "retained earnings", "gewinnrücklagen", "gewinnruecklagen",
+    ),
+    "current_assets": ("current assets", "umlaufvermögen", "umlaufvermoegen"),
     "current_liabilities": (
-        "kurzfristige verbindlichkeiten", "kurzfristige schulden", "current liabilities",
+        "current liabilities", "kurzfristige verbindlichkeiten",
+        "kurzfristige schulden",
     ),
     "cash_and_equivalents": (
+        "cash and cash equivalents",
         "zahlungsmittel und zahlungsmitteläquivalente",
         "zahlungsmittel und zahlungsmittelaequivalente",
-        "liquide mittel", "cash and cash equivalents",
+        "liquide mittel",
     ),
     "operating_cash_flow": (
+        "cash flows from operating activities",
+        "cash flow from operating activities",
         "cashflow aus laufender geschäftstätigkeit",
         "cashflow aus laufender geschaeftstaetigkeit",
         "cash flow aus laufender geschäftstätigkeit",
-        "cash flows from operating activities",
-        "cash flow from operating activities",
     ),
-    "total_debt": (
-        "finanzverbindlichkeiten", "financial liabilities", "interest-bearing debt",
-        "borrowings",
+    "interest_expense": (
+        "interest and similar expenses", "interest expenses", "interest expense",
+        "zinsaufwendungen",
     ),
-    "interest_expense": ("zinsaufwendungen", "interest expense", "interest expenses"),
-    "eps": ("ergebnis je aktie", "earnings per share", "eps"),
+    "eps": (
+        "basic earnings per share", "diluted earnings per share",
+        "earnings per share", "ergebnis je aktie",
+    ),
 }
 
-_SECTION_FOR_FIELD = {
-    "revenue": _INCOME_MARKERS,
-    "operating_income": _INCOME_MARKERS,
-    "ebitda": _INCOME_MARKERS,
-    "net_income": _INCOME_MARKERS,
-    "total_assets": _BALANCE_MARKERS,
-    "total_liabilities": _BALANCE_MARKERS,
-    "total_equity": _BALANCE_MARKERS,
-    "retained_earnings": _BALANCE_MARKERS,
-    "current_assets": _BALANCE_MARKERS,
-    "current_liabilities": _BALANCE_MARKERS,
-    "cash_and_equivalents": _BALANCE_MARKERS,
-    "operating_cash_flow": _CASHFLOW_MARKERS,
-    "total_debt": _BALANCE_MARKERS,
-    "interest_expense": _INCOME_MARKERS,
-    "eps": _INCOME_MARKERS,
+_FIELD_SECTION = {
+    "revenue": "income",
+    "gross_profit": "income",
+    "operating_income": "income",
+    "ebitda": "income",
+    "net_income": "income",
+    "total_assets": "balance",
+    "total_liabilities": "balance",
+    "total_equity": "balance",
+    "retained_earnings": "balance",
+    "current_assets": "balance",
+    "current_liabilities": "balance",
+    "cash_and_equivalents": "balance",
+    "operating_cash_flow": "cashflow",
+    "interest_expense": "income",
+    "eps": "income",
 }
+
+_DEBT_TOTAL_ALIASES = (
+    "total financial liabilities", "total financial debt",
+    "financial debt", "borrowings", "financial liabilities",
+    "finanzverbindlichkeiten",
+)
+_DEBT_NONCURRENT_ALIASES = (
+    "non-current financial liabilities", "non-current borrowings",
+    "langfristige finanzverbindlichkeiten",
+)
+_DEBT_CURRENT_ALIASES = (
+    "current financial liabilities", "current borrowings",
+    "kurzfristige finanzverbindlichkeiten",
+)
+_FCF_ALIASES = ("free cash flow", "free cashflow", "freier cashflow")
 
 
 @dataclass(frozen=True)
@@ -113,16 +169,24 @@ class ParsedGermanReport:
 
 
 def _normalize_lines(text: str) -> str:
-    lines = []
+    lines: list[str] = []
     for raw in str(text or "").replace("\r", "\n").split("\n"):
+        raw = _CONTROL.sub(" ", raw)
         line = _SPACE.sub(" ", raw).strip()
+        # PDF extractors often separate a Unicode minus/en-dash from the
+        # numeric cell with a thin space. Rejoin only when a number follows.
+        line = re.sub(r"([−–-])\s+(?=\d)", r"\1", line)
         if line:
             lines.append(line)
     return "\n".join(lines)
 
 
-def _parse_number(token: str, *, decimal_single_separator: bool = False) -> Optional[float]:
-    raw = str(token or "").strip().replace("\u2212", "-").replace("–", "-")
+def _parse_number(
+    token: str,
+    *,
+    decimal_comma: Optional[bool] = None,
+) -> Optional[float]:
+    raw = str(token or "").strip().replace("\u2212", "-").replace("−", "-").replace("–", "-")
     negative = raw.startswith("-") or (raw.startswith("(") and raw.endswith(")"))
     raw = raw.strip("-() ").replace("'", "").replace("’", "").replace(" ", "")
     if not raw or not any(ch.isdigit() for ch in raw):
@@ -132,21 +196,25 @@ def _parse_number(token: str, *, decimal_single_separator: bool = False) -> Opti
         thousands = "." if decimal == "," else ","
         raw = raw.replace(thousands, "").replace(decimal, ".")
     elif "," in raw:
-        parts = raw.split(",")
-        if (
-            not decimal_single_separator
-            and (len(parts) > 2 or (len(parts) == 2 and len(parts[1]) == 3 and len(parts[0]) >= 1))
-        ):
-            raw = "".join(parts)
-        else:
+        if decimal_comma is True:
             raw = raw.replace(",", ".")
+        elif decimal_comma is False:
+            raw = raw.replace(",", "")
+        else:
+            parts = raw.split(",")
+            if len(parts) > 2 or (len(parts) == 2 and len(parts[1]) == 3):
+                raw = "".join(parts)
+            else:
+                raw = raw.replace(",", ".")
     elif "." in raw:
-        parts = raw.split(".")
-        if (
-            not decimal_single_separator
-            and (len(parts) > 2 or (len(parts) == 2 and len(parts[1]) == 3 and len(parts[0]) >= 1))
-        ):
-            raw = "".join(parts)
+        if decimal_comma is True:
+            raw = raw.replace(".", "")
+        elif decimal_comma is False:
+            pass
+        else:
+            parts = raw.split(".")
+            if len(parts) > 2 or (len(parts) == 2 and len(parts[1]) == 3):
+                raw = "".join(parts)
     try:
         value = float(raw)
     except ValueError:
@@ -154,101 +222,272 @@ def _parse_number(token: str, *, decimal_single_separator: bool = False) -> Opti
     return -value if negative else value
 
 
-def _nearest_multiplier(text: str, pos: int) -> float:
-    window = text[max(0, pos - 800):pos].lower()
-    hits: list[tuple[int, float]] = []
+def _segment_decimal_comma(segment: str) -> Optional[bool]:
+    head = segment[:1200].lower()
+    if any(token in head for token in ("consolidated", "statement of", "annual report")):
+        return False
+    if any(token in head for token in ("konzern", "bilanz", "gewinn- und verlustrechnung")):
+        return True
+    return None
+
+
+def _multiplier_from_text(text: str) -> float:
+    low = text.lower()
     patterns = (
         (
-            r"\b(?:in|angaben in)\s+(?:(?:mio\.?|million(?:s)?|mn)\s*(?:eur|€)|"
-            r"(?:eur|€)\s*(?:mio\.?|million(?:s)?|mn))",
+            r"(?:\bin\s+|\bangaben\s+in\s+)?(?:eur|€)\s*"
+            r"(?:mio\.?|million(?:s)?|mn|m)\b|"
+            r"\b(?:mio\.?|million(?:s)?|mn)\s*(?:eur|€)\b",
             1_000_000.0,
         ),
         (
-            r"\b(?:in|angaben in)\s+(?:(?:teur|keur|thousand\s+euros?)|"
-            r"(?:eur|€)\s+thousand)",
+            r"(?:\bin\s+|\bangaben\s+in\s+)?(?:eur|€)\s*"
+            r"(?:thousand|000s?|teur|keur)\b|"
+            r"\b(?:teur|keur|thousand\s+euros?)\b",
             1_000.0,
         ),
-        (r"\b(?:in|angaben in)\s+(?:eur|€)\b", 1.0),
+        (r"(?:\bin\s+|\bangaben\s+in\s+)(?:eur|€)\b", 1.0),
     )
+    hits: list[tuple[int, float]] = []
     for pattern, multiplier in patterns:
-        for m in re.finditer(pattern, window, re.I):
-            hits.append((m.start(), multiplier))
-    return max(hits, default=(-1, 1.0), key=lambda x: x[0])[1]
+        for match in re.finditer(pattern, low, re.I):
+            hits.append((match.start(), multiplier))
+    return max(hits, default=(-1, 1.0), key=lambda row: row[0])[1]
 
 
-def _statement_windows(text: str, markers: tuple[str, ...]) -> list[tuple[int, int]]:
+def _explicit_multiplier(text: str) -> Optional[float]:
+    low = str(text or "").lower()
+    patterns = (
+        (
+            r"(?:\bin\s+|\bangaben\s+in\s+)?(?:eur|€)\s*"
+            r"(?:mio\.?|million(?:s)?|mn|m)\b|"
+            r"\b(?:mio\.?|million(?:s)?|mn)\s*(?:eur|€)\b",
+            1_000_000.0,
+        ),
+        (
+            r"(?:\bin\s+|\bangaben\s+in\s+)?(?:eur|€)\s*"
+            r"(?:thousand|000s?|teur|keur)\b|"
+            r"\b(?:teur|keur|thousand\s+euros?)\b",
+            1_000.0,
+        ),
+        (r"(?:\bin\s+|\bangaben\s+in\s+)(?:eur|€)\b", 1.0),
+    )
+    hits: list[tuple[int, float]] = []
+    for pattern, multiplier in patterns:
+        for match in re.finditer(pattern, low, re.I):
+            hits.append((match.start(), multiplier))
+    # In a statement header, the first explicit unit is the table scale.
+    # Later row-local units (e.g. "earnings per share (in EUR)") must not
+    # override the scale of the whole statement.
+    return min(hits, default=(10**18, None), key=lambda row: row[0])[1]
+
+
+def _statement_multiplier(text: str, start: int, end: int) -> float:
+    # Prefer the unit declared in the statement header itself. Only if the
+    # statement has no explicit unit do we inherit the nearest declaration
+    # before it. Never inspect following sections (e.g. a later FCF table).
+    header = text[start:min(end, start + 1000)]
+    local = _explicit_multiplier(header)
+    if local is not None:
+        return local
+    before = text[max(0, start - 1200):start]
+    inherited = _multiplier_from_text(before)
+    return inherited
+
+
+def _nearest_multiplier(text: str, pos: int) -> float:
+    # For non-statement named metrics prefer the nearest preceding unit. A
+    # short forward look is intentionally avoided so later tables cannot
+    # retroactively change the scale of the current metric.
+    before = text[max(0, pos - 1000):pos]
+    return _multiplier_from_text(before)
+
+
+def _all_section_starts(text: str) -> list[int]:
     low = text.lower()
-    starts = []
-    for marker in markers:
-        start = 0
+    starts: set[int] = set()
+    for markers in _SECTION_MARKERS.values():
+        for marker in markers:
+            cursor = 0
+            while True:
+                idx = low.find(marker, cursor)
+                if idx < 0:
+                    break
+                starts.add(idx)
+                cursor = idx + len(marker)
+    return sorted(starts)
+
+
+def _statement_windows(text: str, section: str) -> list[tuple[int, int]]:
+    low = text.lower()
+    starts: list[int] = []
+    for marker in _SECTION_MARKERS[section]:
+        cursor = 0
         while True:
-            idx = low.find(marker, start)
+            idx = low.find(marker, cursor)
             if idx < 0:
                 break
             starts.append(idx)
-            start = idx + len(marker)
+            cursor = idx + len(marker)
     if not starts:
-        return [(0, len(text))]
-    all_markers = tuple(dict.fromkeys(_BALANCE_MARKERS + _INCOME_MARKERS + _CASHFLOW_MARKERS))
-    windows: list[tuple[int, int]] = []
-    for s in sorted(set(starts)):
-        next_positions = [
-            low.find(marker, s + 20)
-            for marker in all_markers
-            if low.find(marker, s + 20) >= 0
-        ]
-        end = min(next_positions) if next_positions else min(len(text), s + 18000)
-        windows.append((s, max(s + 500, end)))
-    return windows
+        return []
 
-
-def _row_candidates(text: str, aliases: tuple[str, ...], windows: list[tuple[int, int]]) -> list[tuple[int, float]]:
-    out: list[tuple[int, float]] = []
-    for start, end in windows:
+    every_start = _all_section_starts(text)
+    ranked: list[tuple[float, int, int]] = []
+    for start in sorted(set(starts)):
+        later = [x for x in every_start if x > start + 80]
+        end = min(later) if later else min(len(text), start + 18000)
+        end = min(end, start + 18000)
         segment = text[start:end]
-        low = segment.lower()
-        for alias in aliases:
-            cursor = 0
-            alias_low = alias.lower()
-            while True:
-                i = low.find(alias_low, cursor)
-                if i < 0:
-                    break
-                absolute = start + i
-                tail = segment[i + len(alias): i + len(alias) + 240].split("\n", 1)[0]
-                tokens = [m.group(0) for m in _NUMBER.finditer(tail)]
-                multiplier = _nearest_multiplier(text, absolute)
-                values = []
-                for token in tokens[:6]:
-                    value = _parse_number(
-                        token,
-                        decimal_single_separator=multiplier >= 1_000_000.0,
-                    )
-                    if value is None:
-                        continue
-                    if 1900 <= abs(value) <= 2100 and float(value).is_integer():
-                        continue
-                    values.append((token, value))
-                if values:
-                    # Statement rows commonly contain a note number before the
-                    # current/prior-year values. When 3+ numeric cells exist,
-                    # discard the first small cell as the note reference.
-                    if len(values) >= 3 and abs(values[0][1]) < 100:
-                        values = values[1:]
-                    if values:
-                        out.append((absolute, values[0][1] * multiplier))
-                cursor = i + len(alias_low)
-    return out
+        segment_low = segment.lower()
+        header = segment[:900].lower()
+
+        score = 0.0
+        if len(segment) >= 900:
+            score += 4.0
+        else:
+            score -= 20.0
+        if re.search(r"\b20\d{2}\b", header):
+            score += 5.0
+        if _multiplier_from_text(header) != 1.0 or re.search(r"\bin\s+(?:eur|€)\b", header):
+            score += 6.0
+        score += min(28.0, 4.0 * sum(term in segment_low for term in _SECTION_HINTS[section]))
+        before = text[max(0, start - 180):start].lower()
+        if "content" in before or "inhalt" in before:
+            score -= 8.0
+        # Real statement blocks contain many numeric cells; TOC references do not.
+        score += min(10.0, len(_NUMBER.findall(segment[:6000])) / 12.0)
+        ranked.append((score, start, end))
+
+    ranked.sort(key=lambda row: (row[0], -row[1]), reverse=True)
+    return [(start, end) for _, start, end in ranked]
 
 
-def _extract_field(text: str, field: str) -> Optional[float]:
-    windows = _statement_windows(text, _SECTION_FOR_FIELD[field])
-    candidates = _row_candidates(text, _ALIASES[field], windows)
-    if not candidates:
-        return None
-    # Prefer the earliest row inside the first matching statement block. Notes
-    # and management commentary normally occur later in the document.
-    return sorted(candidates, key=lambda x: x[0])[0][1]
+def _tail_starts_with_value(tail: str) -> bool:
+    stripped = tail.strip()
+    stripped = re.sub(r"^\(\s*in\s+(?:eur|€)\s*\)\s*", "", stripped, flags=re.I)
+    # optional note reference like "(10)", "4.1", "5.10", "8.1, 8.2"
+    stripped = re.sub(r"^\(?\d{1,3}(?:\.\d{1,2})?\)?(?:\s*,\s*\d+(?:\.\d+)?)?\s*", "", stripped)
+    stripped = stripped.lstrip(":; ")
+    if not stripped:
+        return False
+    return bool(re.match(r"^[−–\-(\d]", stripped))
+
+
+def _row_values(
+    segment: str,
+    aliases: tuple[str, ...],
+    *,
+    field: str,
+    multiplier_override: Optional[float] = None,
+) -> Optional[list[float]]:
+    lines = segment.split("\n")
+    # The statement's own unit declaration always wins. An inherited scale is
+    # only a fallback for layouts where the unit sits immediately above the
+    # statement heading.
+    local_multiplier = _explicit_multiplier(segment[:1200])
+    block_multiplier = (
+        local_multiplier
+        if local_multiplier is not None
+        else multiplier_override
+        if multiplier_override is not None
+        else 1.0
+    )
+    decimal_comma = _segment_decimal_comma(segment)
+    for alias in aliases:
+        alias_low = alias.lower()
+        for idx, line in enumerate(lines):
+            low = line.lower().strip()
+            if field == "current_assets" and low.startswith(("non-current assets", "non current assets")):
+                continue
+            if field == "current_liabilities" and low.startswith(("non-current liabilities", "non current liabilities")):
+                continue
+            if not low.startswith(alias_low):
+                continue
+            tail = line[len(alias):].strip()
+            if not _tail_starts_with_value(tail):
+                continue
+            candidate = tail
+            if len(_NUMBER.findall(candidate)) < 1 and idx + 1 < len(lines):
+                candidate += " " + lines[idx + 1]
+            tokens = [m.group(0) for m in _NUMBER.finditer(candidate)]
+            values: list[float] = []
+            for token in tokens[:8]:
+                value = _parse_number(token, decimal_comma=decimal_comma)
+                if value is None:
+                    continue
+                values.append(value)
+            if not values:
+                continue
+            # Drop a numeric note reference when it survived the textual strip.
+            if len(values) >= 3 and abs(values[0]) < 100:
+                values = values[1:]
+            multiplier = 1.0 if field == "eps" or re.search(r"\bin\s+(?:eur|€)\b", line, re.I) else block_multiplier
+            return [value * multiplier for value in values]
+    return None
+
+
+def _extract_field_values(text: str, field: str) -> Optional[list[float]]:
+    section = _FIELD_SECTION[field]
+    for start, end in _statement_windows(text, section):
+        multiplier = _statement_multiplier(text, start, end)
+        values = _row_values(
+            text[start:end],
+            _ALIASES[field],
+            field=field,
+            multiplier_override=multiplier,
+        )
+        if values:
+            return values
+    return None
+
+
+def _extract_total_debt(text: str) -> Optional[float]:
+    for start, end in _statement_windows(text, "balance"):
+        segment = text[start:end]
+        multiplier = _statement_multiplier(text, start, end)
+        total = _row_values(
+            segment, _DEBT_TOTAL_ALIASES, field="total_debt",
+            multiplier_override=multiplier,
+        )
+        if total:
+            return total[0]
+        noncurrent = _row_values(
+            segment, _DEBT_NONCURRENT_ALIASES, field="total_debt",
+            multiplier_override=multiplier,
+        )
+        current = _row_values(
+            segment, _DEBT_CURRENT_ALIASES, field="total_debt",
+            multiplier_override=multiplier,
+        )
+        if noncurrent and current:
+            return noncurrent[0] + current[0]
+    return None
+
+
+def _extract_named_metric_anywhere(text: str, aliases: tuple[str, ...]) -> Optional[float]:
+    lines = text.split("\n")
+    offsets: list[int] = []
+    cursor = 0
+    for line in lines:
+        offsets.append(cursor)
+        cursor += len(line) + 1
+    for alias in aliases:
+        low_alias = alias.lower()
+        for idx, line in enumerate(lines):
+            low = line.lower().strip()
+            if not low.startswith(low_alias):
+                continue
+            tail = line[len(alias):].strip()
+            if not _tail_starts_with_value(tail):
+                continue
+            values = [_parse_number(m.group(0)) for m in _NUMBER.finditer(tail)]
+            values = [v for v in values if v is not None]
+            if not values:
+                continue
+            multiplier = _nearest_multiplier(text, offsets[idx])
+            return values[0] * multiplier
+    return None
 
 
 def _period_end(text: str, expected_year: Optional[int]) -> str:
@@ -256,26 +495,29 @@ def _period_end(text: str, expected_year: Optional[int]) -> str:
     patterns = (
         re.compile(r"\b(3[01]|[12]\d|0?[1-9])\.(0?[1-9]|1[0-2])\.(20\d{2})\b"),
         re.compile(r"\b(20\d{2})-(0[1-9]|1[0-2])-(3[01]|[12]\d|0[1-9])\b"),
+        re.compile(r"\b(0?[1-9]|1[0-2])/(3[01]|[12]\d|0?[1-9])/(20\d{2})\b"),
     )
     dates: list[date] = []
     for pattern in patterns:
-        for m in pattern.finditer(text[:30000]):
+        for match in pattern.finditer(text[:50000]):
             try:
                 if pattern is patterns[0]:
-                    d = date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+                    day = date(int(match.group(3)), int(match.group(2)), int(match.group(1)))
+                elif pattern is patterns[1]:
+                    day = date(int(match.group(1)), int(match.group(2)), int(match.group(3)))
                 else:
-                    d = date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+                    day = date(int(match.group(3)), int(match.group(1)), int(match.group(2)))
             except ValueError:
                 continue
-            if year is None or d.year == year:
-                dates.append(d)
+            if year is None or day.year == year:
+                dates.append(day)
     if dates:
-        # Prefer the latest date in the expected fiscal year. Publication dates
-        # are usually in the following year and are therefore excluded.
         return max(dates).isoformat()
     if year is not None:
         annual = re.search(
-            rf"(?:geschäftsjahr|geschaeftsjahr|financial year).{{0,80}}(?:01[./-]01[./-]{year}).{{0,120}}(?:31[./-]12[./-]{year})",
+            rf"(?:geschäftsjahr|geschaeftsjahr|financial year).{{0,100}}"
+            rf"(?:01[./-]01[./-]{year}|01/01/{year}).{{0,160}}"
+            rf"(?:31[./-]12[./-]{year}|12/31/{year})",
             text,
             re.I | re.S,
         )
@@ -295,7 +537,12 @@ def parse_german_annual_report_text(
 
     scope = (
         "consolidated"
-        if re.search(r"konzernabschluss|konzernbilanz|consolidated financial statements|consolidated statement", clean, re.I)
+        if re.search(
+            r"konzernabschluss|konzernbilanz|consolidated financial statements|"
+            r"consolidated statement",
+            clean,
+            re.I,
+        )
         else "separate"
     )
     audited = bool(
@@ -303,17 +550,40 @@ def parse_german_annual_report_text(
             r"uneingeschränk(?:ter|ten|tes)\s+bestätigungsvermerk|"
             r"uneingeschraenk(?:ter|ten|tes)\s+bestaetigungsvermerk|"
             r"unmodified\s+(?:audit\s+)?opinion|"
-            r"in our opinion.{0,240}(?:true and fair|in accordance with)",
+            r"in our opinion.{0,320}(?:true and fair|in accordance with)",
             clean,
             re.I | re.S,
         )
     )
 
     fundamentals: dict[str, float] = {}
+    extracted: dict[str, list[float]] = {}
     for field in _ALIASES:
-        value = _extract_field(clean, field)
-        if value is not None:
-            fundamentals[field] = value
+        values = _extract_field_values(clean, field)
+        if values:
+            extracted[field] = values
+            fundamentals[field] = values[0]
+
+    revenue_values = extracted.get("revenue") or []
+    if len(revenue_values) > 1:
+        fundamentals["revenue_prev"] = revenue_values[1]
+        if revenue_values[1] != 0:
+            fundamentals["revenue_yoy_pct"] = (
+                revenue_values[0] / revenue_values[1] - 1.0
+            ) * 100.0
+
+    revenue = fundamentals.get("revenue")
+    net_income = fundamentals.get("net_income")
+    if revenue not in (None, 0) and net_income is not None:
+        fundamentals["net_margin_pct"] = net_income / revenue * 100.0
+
+    total_debt = _extract_total_debt(clean)
+    if total_debt is not None:
+        fundamentals["total_debt"] = total_debt
+
+    free_cash_flow = _extract_named_metric_anywhere(clean, _FCF_ALIASES)
+    if free_cash_flow is not None:
+        fundamentals["free_cash_flow"] = free_cash_flow
 
     assets = fundamentals.get("total_assets")
     equity = fundamentals.get("total_equity")
@@ -332,9 +602,6 @@ def parse_german_annual_report_text(
     if liabilities is not None:
         gap = abs(assets - (liabilities + equity))
         scale = max(abs(assets), 1.0)
-        # This gate only tolerates statement rounding; it is not an investment
-        # threshold. A large accounting-identity mismatch means the parser
-        # selected incompatible rows and must fail closed.
         if gap / scale > 0.002:
             raise GlobalProviderError(
                 f"official German report accounting identity mismatch ({gap / scale:.4%})"
