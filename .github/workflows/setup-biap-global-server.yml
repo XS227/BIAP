@@ -196,6 +196,22 @@ jobs:
             touch /var/lib/biap-global/playwright/.deps-v1
           fi
           PLAYWRIGHT_BROWSERS_PATH=/var/lib/biap-global/playwright             "$APP_DIR/analysis/.venv-global/bin/python" -m playwright install chromium
+          PLAYWRIGHT_BROWSERS_PATH=/var/lib/biap-global/playwright "$APP_DIR/analysis/.venv-global/bin/python" - <<'PY'
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as pw:
+              browser = pw.chromium.launch(headless=True, args=["--disable-dev-shm-usage", "--no-sandbox"])
+              page = browser.new_page()
+              response = page.goto(
+                  "https://www.unternehmensregister.de/de/suche?areas=all",
+                  wait_until="domcontentloaded",
+                  timeout=45000,
+              )
+              status = response.status if response else None
+              print("Germany resolver browser smoke:", status, page.url)
+              if status is None or status >= 500:
+                  raise SystemExit(f"Unternehmensregister browser smoke failed: HTTP {status}")
+              browser.close()
+          PY
           if [[ ! -f analysis/.env.global ]]; then cp analysis/.env.global.example analysis/.env.global; fi
           if [[ -s /tmp/biap-global-provider.env ]]; then
             while IFS='=' read -r key _rest; do
@@ -337,6 +353,12 @@ jobs:
           $SUDO systemctl restart biap-global.service
           $SUDO systemctl enable --now biap-global-source-sync.timer
           $SUDO systemctl enable --now biap-global-de-fundamentals.timer
+
+          # Seed the full German ordinary-equity universe immediately. This is
+          # browser-free and makes the resolver market-wide on deploy; the
+          # scheduled worker then consumes the queue in bounded batches.
+          PLAYWRIGHT_BROWSERS_PATH=/var/lib/biap-global/playwright             BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global             "$APP_DIR/analysis/.venv-global/bin/python"             "$APP_DIR/tools/warm_de_unternehmensregister.py" --seed-only
+
           $SUDO systemctl start --no-block biap-global-de-fundamentals.service || true
           for attempt in 1 2 3 4 5 6; do
             if curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8091/health >/tmp/biap-global-health.json; then cat /tmp/biap-global-health.json; break; fi
