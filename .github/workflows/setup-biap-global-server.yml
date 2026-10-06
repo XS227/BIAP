@@ -1,4 +1,4 @@
-# Redeploy after Börse Frankfurt market-wide fundamentals provider + passing DE regression: 2026-10-06T20:30Z
+# Redeploy evidence/governance separation after green regression: 2026-10-06T21:06Z
 name: Setup BIAP Global server
 
 on:
