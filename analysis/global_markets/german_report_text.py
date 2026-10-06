@@ -158,8 +158,16 @@ def _nearest_multiplier(text: str, pos: int) -> float:
     window = text[max(0, pos - 800):pos].lower()
     hits: list[tuple[int, float]] = []
     patterns = (
-        (r"\b(?:in|angaben in)\s+(?:mio\.?|million)\s*(?:eur|€)", 1_000_000.0),
-        (r"\b(?:in|angaben in)\s+(?:teur|keur|thousand\s+euros?|eur\s+thousand)", 1_000.0),
+        (
+            r"\b(?:in|angaben in)\s+(?:(?:mio\.?|million(?:s)?|mn)\s*(?:eur|€)|"
+            r"(?:eur|€)\s*(?:mio\.?|million(?:s)?|mn))",
+            1_000_000.0,
+        ),
+        (
+            r"\b(?:in|angaben in)\s+(?:(?:teur|keur|thousand\s+euros?)|"
+            r"(?:eur|€)\s+thousand)",
+            1_000.0,
+        ),
         (r"\b(?:in|angaben in)\s+(?:eur|€)\b", 1.0),
     )
     for pattern, multiplier in patterns:
