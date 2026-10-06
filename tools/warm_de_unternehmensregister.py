@@ -14,6 +14,7 @@ than fabricate values.
 from __future__ import annotations
 
 import argparse
+import io
 from datetime import datetime, timedelta, timezone
 import json
 import os
@@ -21,7 +22,7 @@ from pathlib import Path
 import re
 import sys
 from typing import Any, Optional
-from urllib.parse import parse_qsl, quote_plus, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, quote_plus, urlencode, urljoin, urlsplit, urlunsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "analysis"))
@@ -174,6 +175,233 @@ def _select_publication(page, year: int) -> bool:
 
 
 
+
+def _clean_external_url(value: str) -> Optional[str]:
+    text = str(value or "").strip().rstrip(".,);]}>")
+    if not text:
+        return None
+    if text.startswith("www."):
+        text = "https://" + text
+    if not text.startswith(("http://", "https://")):
+        return None
+    host = (urlsplit(text).hostname or "").lower()
+    if not host:
+        return None
+    blocked = (
+        "unternehmensregister.de",
+        "bundesanzeiger.de",
+        "publikations-plattform.de",
+        "gleif.org",
+        "deutsche-boerse.com",
+    )
+    if any(host == item or host.endswith("." + item) for item in blocked):
+        return None
+    return text
+
+
+def _official_site_candidates(page) -> list[str]:
+    """Extract issuer website/IR URLs printed by Unternehmensregister results."""
+    found: list[str] = []
+    try:
+        body = page.inner_text("body")
+    except Exception:
+        body = ""
+    for raw in re.findall(r"https?://[^\s<>\"']+", body):
+        cleaned = _clean_external_url(raw)
+        if cleaned and cleaned not in found:
+            found.append(cleaned)
+    try:
+        anchors = page.locator("a[href]")
+        for idx in range(min(anchors.count(), 300)):
+            href = anchors.nth(idx).get_attribute("href") or ""
+            cleaned = _clean_external_url(href)
+            if cleaned and cleaned not in found:
+                found.append(cleaned)
+    except Exception:
+        pass
+    return found[:12]
+
+
+def _report_link_score(text: str, href: str, year: int) -> int:
+    combined = f"{text} {href}".lower()
+    if str(year) not in combined:
+        return -1000
+    if any(
+        bad in combined
+        for bad in (
+            "halbjahr", "half-year", "half year", "quartal", "quarter",
+            "presentation", "präsentation", "praesentation",
+            "research", "analyst", "sustainability", "nachhaltigkeit",
+        )
+    ):
+        return -1000
+    score = 0
+    for needle, weight in (
+        ("annual report", 100),
+        ("geschäftsbericht", 100),
+        ("geschaeftsbericht", 100),
+        ("jahresbericht", 95),
+        ("financial report", 90),
+        ("finanzbericht", 90),
+        ("annual-report", 85),
+        ("annual_report", 85),
+        ("report", 25),
+        ("bericht", 25),
+    ):
+        if needle in combined:
+            score += weight
+    if ".pdf" in combined:
+        score += 45
+    if "investor" in combined or "/ir" in combined:
+        score += 10
+    return score
+
+
+def _pdf_text_from_url(url: str, timeout_s: float = 35.0) -> str:
+    import httpx
+    from pypdf import PdfReader
+
+    response = httpx.get(
+        url,
+        timeout=timeout_s,
+        follow_redirects=True,
+        headers={"User-Agent": "BIAP-Global/1.0 official-filing resolver"},
+    )
+    response.raise_for_status()
+    content = response.content
+    content_type = str(response.headers.get("content-type") or "").lower()
+    if not (content.startswith(b"%PDF") or "pdf" in content_type):
+        raise GlobalProviderError(f"official IR report is not a PDF: {url}")
+    reader = PdfReader(io.BytesIO(content))
+    chunks: list[str] = []
+    max_pages = min(len(reader.pages), 450)
+    for idx in range(max_pages):
+        try:
+            text = reader.pages[idx].extract_text() or ""
+        except Exception:
+            text = ""
+        if text:
+            chunks.append(text)
+    result = "\n".join(chunks).strip()
+    if len(result) < 500:
+        raise GlobalProviderError(f"official IR PDF text extraction too short: {url}")
+    return result
+
+
+def _rank_page_report_links(page, year: int) -> list[tuple[int, str]]:
+    ranked: list[tuple[int, str]] = []
+    seen: set[str] = set()
+    links = page.locator("a[href]")
+    for idx in range(min(links.count(), 500)):
+        try:
+            link = links.nth(idx)
+            href = link.get_attribute("href") or ""
+            text = (link.inner_text(timeout=500) or "").strip()
+            full = urljoin(page.url, href)
+            score = _report_link_score(text, full, year)
+            if score > 0 and full not in seen:
+                ranked.append((score, full))
+                seen.add(full)
+        except Exception:
+            continue
+    ranked.sort(reverse=True)
+    return ranked
+
+
+def _try_ir_report_url(browser, url: str, year: int, timeout_ms: int) -> Optional[tuple[str, str]]:
+    page = browser.new_page()
+    page.set_default_timeout(timeout_ms)
+    try:
+        page.goto(url, wait_until="domcontentloaded")
+        page.wait_for_timeout(1600)
+        _click_optional(
+            page,
+            (
+                "Nur technisch notwendige Cookies akzeptieren",
+                "Alle akzeptieren",
+                "Accept all",
+                "Accept",
+                "Akzeptieren",
+            ),
+        )
+        body = page.inner_text("body")
+        if str(year) in body and _has_financial_content(body):
+            return body, page.url
+
+        # Some IR pages hide the selected year behind tabs/buttons. Clicking a
+        # visible year is safe because discovery is read-only.
+        for label in (str(year + 1), str(year)):
+            try:
+                button = page.get_by_text(label, exact=True)
+                if button.count():
+                    button.first.click(timeout=1800)
+                    page.wait_for_timeout(1000)
+                    break
+            except Exception:
+                pass
+
+        ranked = _rank_page_report_links(page, year)
+        for _, candidate in ranked[:12]:
+            low = candidate.lower()
+            try:
+                if ".pdf" in low:
+                    text = _pdf_text_from_url(candidate)
+                    return text, candidate
+                child = browser.new_page()
+                child.set_default_timeout(timeout_ms)
+                try:
+                    child.goto(candidate, wait_until="domcontentloaded")
+                    child.wait_for_timeout(1200)
+                    child_body = child.inner_text("body")
+                    if _has_financial_content(child_body):
+                        return child_body, child.url
+                    nested = _rank_page_report_links(child, year)
+                    for _, nested_url in nested[:8]:
+                        if ".pdf" in nested_url.lower():
+                            text = _pdf_text_from_url(nested_url)
+                            return text, nested_url
+                finally:
+                    child.close()
+            except Exception:
+                continue
+        return None
+    except Exception:
+        return None
+    finally:
+        page.close()
+
+
+def fetch_official_ir_report(
+    browser,
+    *,
+    search_page,
+    years: list[int],
+    timeout_ms: int,
+) -> Optional[tuple[int, str, str]]:
+    """Try the official issuer website exposed by Unternehmensregister."""
+    candidates = _official_site_candidates(search_page)
+    # IR/publication URLs first, then issuer homepages.
+    candidates.sort(
+        key=lambda u: (
+            0 if any(k in u.lower() for k in ("invest", "/ir", "publication", "finanz", "report")) else 1,
+            len(u),
+        )
+    )
+    for year in years:
+        for url in candidates:
+            result = _try_ir_report_url(browser, url, year, timeout_ms)
+            if result is None:
+                continue
+            text, source_url = result
+            try:
+                # Validate strictly before accepting the candidate. This also
+                # rejects analyst/research PDFs that happen to contain the year.
+                parse_german_annual_report_text(text, expected_year=year)
+            except Exception:
+                continue
+            return year, text, source_url
+    return None
+
 def _results_page_url(base_url: str, offset: int) -> str:
     parts = urlsplit(base_url)
     query = dict(parse_qsl(parts.query, keep_blank_values=True))
@@ -218,6 +446,18 @@ def fetch_unternehmensregister_report(
         page.keyboard.press("Enter")
         page.wait_for_timeout(4500)
         results_url = page.url
+
+        # Prefer the issuer's own official IR/financial-report page exposed by
+        # Unternehmensregister. This avoids the register document security gate
+        # for the common case and still stays on an official issuer source.
+        ir_result = fetch_official_ir_report(
+            browser,
+            search_page=page,
+            years=years,
+            timeout_ms=timeout_ms,
+        )
+        if ir_result is not None:
+            return ir_result
 
         max_result_pages = max(
             1,
