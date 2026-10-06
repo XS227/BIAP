@@ -273,3 +273,59 @@ def test_allianz_falls_back_to_official_annual_report_pdf(monkeypatch):
     assert enriched.revenue == 102_802_000_000
     assert enriched.net_income == 11_430_000_000
     assert enriched.sources[-1].source_url.endswith("en-allianz-group-annual-report-2025.pdf")
+
+
+def test_jenoptik_official_annual_report_is_parsed(monkeypatch):
+    provider = GermanIssuerFundamentalsProvider()
+    text = """
+      JENOPTIK Annual Report 2025
+      Consolidated Statement of Profit or Loss
+      in thousand euros Note No. 01/01 - 31/12/2025 01/01 - 31/12/2024
+      Revenue 4.1 1,045,973 1,115,787
+      Gross profit 336,268 373,148
+      EBIT 114,528 146,574
+      Earnings after tax 74,234 94,243
+      Earnings per share in euros (undiluted = diluted) 4.10 1.26 1.62
+      Consolidated Statement of Financial Position
+      Current assets 553,920 588,719
+      Cash and cash equivalents 81,716 84,897
+      Total assets 1,676,540 1,740,009
+      Equity 5.10 1,009,559 967,196
+      Non-current liabilities 320,763 511,996
+      Current liabilties 346,217 260,817
+      Non-current financial debt 8.1, 8.2 274,027 463,899
+      Current financial debt 8.1, 8.2 127,177 17,217
+      Cash flows from operating activities 196,038 167,120
+      Capital expenditure for intangible assets –8,227 –9,878
+      Capital expenditure for property, plant and equipment –64,380 –83,235
+    """
+    monkeypatch.setattr(provider, "_get_pdf_text", lambda url: " ".join(text.split()))
+    company = GlobalCompany(
+        country="DE",
+        exchange="FRANKFURT",
+        mic_code="XFRA",
+        currency="EUR",
+        ticker="JEN",
+        name="JENOPTIK AG NA O.N.",
+        isin="DE000A2NB601",
+    )
+
+    enriched = provider.enrich_fundamentals(company)
+
+    assert enriched.revenue == 1_045_973_000
+    assert enriched.revenue_prev == 1_115_787_000
+    assert enriched.gross_profit == 336_268_000
+    assert enriched.operating_income == 114_528_000
+    assert enriched.net_income == 74_234_000
+    assert enriched.total_assets == 1_676_540_000
+    assert enriched.total_liabilities == 666_980_000
+    assert enriched.total_equity == 1_009_559_000
+    assert enriched.current_assets == 553_920_000
+    assert enriched.current_liabilities == 346_217_000
+    assert enriched.cash_and_equivalents == 81_716_000
+    assert enriched.operating_cash_flow == 196_038_000
+    assert enriched.free_cash_flow == 123_431_000
+    assert enriched.total_debt == 401_204_000
+    assert enriched.eps == 1.26
+    assert enriched.filing_period_end == "2025-12-31"
+    assert enriched.sources[-1].audit_status == "audited"
