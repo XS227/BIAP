@@ -190,3 +190,27 @@ def test_governance_never_accepts_warn_evidence_even_at_high_confidence():
     assert g.final_call == "NO_RECOMMENDATION"
     assert g.abstained is True
     assert "evidence gate returned WARN" in g.reasoning
+
+
+def test_governance_reviews_high_confidence_agent_disagreement_even_with_pass_evidence():
+    c = _company()
+    signals = (
+        AgentSignal("fundamental", 0.8, 0.8, "positive"),
+        AgentSignal("risk", -0.8, 0.8, "negative"),
+    )
+    e = evidence_agent(c, signals, now=datetime(2026, 9, 29, 9, tzinfo=timezone.utc))
+    d = distress_agent(c)
+    g = decision_governance_agent(
+        proposed_call="BUY_CANDIDATE",
+        score=0.70,
+        overall_confidence=0.90,
+        decision_confidence=0.90,
+        evidence=e,
+        distress=d,
+    )
+    assert e.status == "PASS"
+    assert e.contradictions
+    assert g.action == "REVIEW"
+    assert g.final_call == "NO_RECOMMENDATION"
+    assert g.abstained is True
+    assert "high-confidence agent disagreement" in g.reasoning

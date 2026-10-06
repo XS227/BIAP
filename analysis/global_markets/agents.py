@@ -1,9 +1,11 @@
 """BIAP Global verification and portfolio agents.
 
 EvidenceAgent is deliberately conservative: it can WARN or BLOCK when source
-coverage/freshness is insufficient or when high-confidence analysis signals
-materially disagree. PortfolioAgent only allocates candidates that survive the
-evidence gate and have verified FX/price information. It never places orders.
+coverage/freshness is insufficient. High-confidence disagreement between
+analysis agents is recorded for Decision Governance, but does not downgrade the
+quality of otherwise verified evidence. PortfolioAgent only allocates candidates
+that survive the evidence gate and have verified FX/price information. It never
+places orders.
 """
 
 from __future__ import annotations
@@ -265,8 +267,9 @@ def evidence_agent(
         0.0,
         min(1.0, (0.45 * coverage) + (0.30 * freshness_score) + (0.25 * source_quality)),
     )
-    if contradictions:
-        confidence_multiplier *= 0.70
+    # Agent disagreement is a decision/governance concern, not an evidence-
+    # quality defect. Preserve it in EvidenceAssessment.contradictions so the
+    # governance layer can force REVIEW, but do not lower evidence confidence.
     if secondary_only_fundamentals:
         # Secondary fundamentals are useful for research but cannot inherit
         # the confidence of audited/official issuer evidence.
@@ -284,7 +287,6 @@ def evidence_agent(
         secondary_only_fundamentals
         or coverage < 0.35
         or freshness_score < 0.65
-        or contradictions
         or provenance_status == "user_entered"
     ):
         status = "WARN"
