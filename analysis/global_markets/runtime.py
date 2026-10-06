@@ -375,7 +375,12 @@ def build_registry() -> ProviderRegistry:
     de_issuer = GermanIssuerFundamentalsProvider()
     de_drop = VerifiedFilingDropProvider(
         country="DE",
-        provider_names=(GermanIssuerFundamentalsProvider.provider_id,),
+        provider_names=(
+            GermanIssuerFundamentalsProvider.provider_id,
+            "unternehmensregister-de-auto",
+        ),
+        enqueue_missing=True,
+        queue_name="de-fundamentals-missing",
     )
     de_issuer_resilient = FallbackFundamentalsProvider(de_issuer, de_drop)
     # Reviewed audited issuer annual-report snapshots are data-driven, so
