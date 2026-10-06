@@ -476,7 +476,9 @@ def main() -> int:
         seed_only=args.seed_only,
     )
     print(json.dumps(result, sort_keys=True))
-    return 0 if result["failed"] == 0 else 2
+    # Missing/unparseable issuers are an expected data state and remain queued
+    # with backoff. Only worker infrastructure failures raise before this point.
+    return 0
 
 
 if __name__ == "__main__":
