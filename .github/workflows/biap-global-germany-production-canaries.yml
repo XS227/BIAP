@@ -7,6 +7,8 @@ on:
       - '.github/workflows/biap-global-germany-production-canaries.yml'
       - 'analysis/global_markets/german_issuer.py'
       - 'analysis/global_markets/german_issuer_esef.py'
+      - 'analysis/global_markets/german_reviewed_reports.py'
+      - 'analysis/global_markets/data/de_verified_annual_reports.json'
       - 'analysis/global_markets/scanner.py'
       - 'analysis/global_markets/xetra_delayed.py'
   workflow_dispatch:
@@ -30,15 +32,19 @@ jobs:
 
           base = "https://biap.dadashi.no/global-api/global"
           cases = [
-              ("DE", "XETRA", "BMW", "EUR", {"de-official-issuer-financials"}),
-              ("DE", "FRANKFURT", "DUE", "EUR", {"de-official-issuer-financials"}),
-              ("DE", "FRANKFURT", "JEN", "EUR", {"de-official-issuer-financials"}),
-              ("DE", "FRANKFURT", "BMM", "EUR", {"de-official-issuer-financials"}),
-              ("DE", "FRANKFURT", "SAP", "EUR", {"sec-edgar-foreign-ifrs-cached", "de-official-issuer-financials"}),
+              ("DE", "XETRA", "BMW", "EUR", {"de-official-issuer-financials"}, "2025-12-31"),
+              ("DE", "FRANKFURT", "DUE", "EUR", {"de-official-issuer-financials"}, "2025-12-31"),
+              ("DE", "FRANKFURT", "JEN", "EUR", {"de-official-issuer-financials"}, "2025-12-31"),
+              ("DE", "FRANKFURT", "BMM", "EUR", {"de-official-issuer-financials"}, "2025-12-31"),
+              ("DE", "XETRA", "MBG", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-12-31"),
+              ("DE", "XETRA", "SHL", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-09-30"),
+              ("DE", "XETRA", "KBX", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-12-31"),
+              ("DE", "XETRA", "BEZ", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-12-31"),
+              ("DE", "FRANKFURT", "SAP", "EUR", {"sec-edgar-foreign-ifrs-cached", "de-official-issuer-financials"}, "2025-12-31"),
           ]
 
           failures = []
-          for country, exchange, ticker, currency, expected in cases:
+          for country, exchange, ticker, currency, expected, expected_period in cases:
               q = urllib.parse.urlencode({"q": ticker, "limit": 20})
               with urllib.request.urlopen(f"{base}/instruments/{country}/{exchange}?{q}", timeout=45) as r:
                   catalog = json.load(r)
@@ -88,14 +94,17 @@ jobs:
                   "call": payload.get("call"),
                   "primaryError": (company.get("raw_provider_fields") or {}).get("fundamentals_primary_error"),
                   "fallbackError": (company.get("raw_provider_fields") or {}).get("fundamentals_fallback_error"),
-                  "issuerSource": (company.get("raw_provider_fields") or {}).get("de_issuer_source"),
+                  "issuerSource": (
+                      (company.get("raw_provider_fields") or {}).get("de_issuer_source")
+                      or (company.get("raw_provider_fields") or {}).get("de_reviewed_annual_report")
+                  ),
               }
               print(json.dumps(result, ensure_ascii=False, sort_keys=True))
               checks = [
                   (bool(providers.intersection(expected)), "expected_official_provider"),
                   ("fundamental_source" not in result["missing"], "fundamental_source"),
                   (result["evidence"] in {"PASS", "WARN"}, "evidence_status"),
-                  (result["period"] == "2025-12-31", "period"),
+                  (result["period"] == expected_period, "period"),
               ]
               failed = [name for ok, name in checks if not ok]
               if failed:
