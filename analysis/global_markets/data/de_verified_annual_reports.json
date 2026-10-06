@@ -119,6 +119,92 @@
         "free_cash_flow": 5100000,
         "eps": 0.252
       }
+    },
+    {
+      "ticker": "MUX",
+      "isin": "DE000A2NB650",
+      "sourceId": "mutares-annual-report-2025",
+      "sourceUrl": "https://ir.mutares.com/wp-content/uploads/2026/04/Mutares_2025_Annual_Report_final_PW.pdf",
+      "periodEnd": "2025-12-31",
+      "observedAt": "2026-04-27T00:00:00+00:00",
+      "currency": "EUR",
+      "reportScope": "consolidated",
+      "audited": true,
+      "quality": 0.98,
+      "sector": "Industrials",
+      "industry": "Diversified Industrial / Private Equity Turnaround",
+      "fundamentals": {
+        "revenue": 6484000000,
+        "ebitda": 675300000,
+        "operating_income": 92500000,
+        "net_income": -73500000,
+        "total_assets": 5184200000,
+        "total_liabilities": 4616800000,
+        "total_equity": 567400000,
+        "retained_earnings": 429200000,
+        "current_assets": 2914700000,
+        "current_liabilities": 3325200000,
+        "cash_and_equivalents": 507100000,
+        "operating_cash_flow": 101800000,
+        "free_cash_flow": -219500000,
+        "total_debt": 1654900000,
+        "audit_opinion": "unqualified"
+      }
+    },
+    {
+      "ticker": "UBK",
+      "isin": "DE0005570808",
+      "sourceId": "umweltbank-consolidated-financial-statements-2025",
+      "sourceUrl": "https://www.umweltbank.de/download/13429-UmweltBank_Konzernabschluss_2025.pdf",
+      "periodEnd": "2025-12-31",
+      "observedAt": "2026-06-12T00:00:00+00:00",
+      "currency": "EUR",
+      "reportScope": "consolidated",
+      "audited": true,
+      "quality": 0.98,
+      "sector": "Banking",
+      "industry": "Bank",
+      "fundamentals": {
+        "net_income": 12264000,
+        "total_assets": 7030980000,
+        "total_liabilities": 6768632000,
+        "total_equity": 262348000,
+        "retained_earnings": 110880000,
+        "cash_and_equivalents": 39130000,
+        "audit_opinion": "unqualified"
+      }
+    },
+    {
+      "ticker": "BENH",
+      "isin": "DE000A11QLP3",
+      "sourceId": "beno-holding-annual-report-2025",
+      "sourceUrl": "https://www.beno-gruppe.de/wp-content/uploads/2026/07/BENO_GB_2025.pdf",
+      "periodEnd": "2025-12-31",
+      "observedAt": "2026-07-21T00:00:00+00:00",
+      "currency": "EUR",
+      "reportScope": "consolidated",
+      "audited": true,
+      "quality": 0.98,
+      "sector": "Real Estate",
+      "industry": "Industrial Real Estate",
+      "rawProviderFields": {
+        "agent10_ffo": 2246000
+      },
+      "fundamentals": {
+        "revenue": 9204000,
+        "revenue_prev": 8728000,
+        "operating_income": 6542000,
+        "net_income": 4745000,
+        "total_assets": 99396000,
+        "total_liabilities": 64462000,
+        "total_equity": 34934000,
+        "current_assets": 6495000,
+        "current_liabilities": 10988000,
+        "cash_and_equivalents": 4776000,
+        "operating_cash_flow": 3595000,
+        "total_debt": 56008000,
+        "audit_opinion": "unqualified"
+      }
     }
   ]
 }
