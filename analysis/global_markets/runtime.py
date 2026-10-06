@@ -17,6 +17,7 @@ from .adx_official import ADXOfficialUniverseProvider
 from .b3_official import B3OfficialUniverseProvider
 from .bist_official import BISTOfficialUniverseProvider
 from .bse_official import BSEOfficialUniverseProvider
+from .boerse_frankfurt_fundamentals import BoerseFrankfurtFundamentalsProvider
 from .cached_esef import CachedESEFFundamentalsProvider
 from .cached_fundamentals import PersistentFundamentalsProvider
 from .cached_market import PersistentMarketProvider
