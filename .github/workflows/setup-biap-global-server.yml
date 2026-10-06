@@ -14,6 +14,8 @@ on:
       - 'deploy/configure-global-route.sh'
       - 'deploy/systemd/biap-global*.service'
       - 'deploy/systemd/biap-global*.timer'
+      - 'tools/warm_de_unternehmensregister.py'
+      - 'tools/requirements-de-worker.txt'
       - 'web-showcase/global/**'
       - '.github/workflows/setup-biap-global-server.yml'
   workflow_dispatch:
@@ -181,7 +183,18 @@ jobs:
           python3 -m venv analysis/.venv-global
           analysis/.venv-global/bin/python -m pip install -q --upgrade pip
           analysis/.venv-global/bin/python -m pip install -q -r analysis/requirements.txt
+          analysis/.venv-global/bin/python -m pip install -q -r tools/requirements-de-worker.txt
           BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global BIAP_GLOBAL_SERVICE_USER="$(id -un)" BIAP_GLOBAL_SERVICE_GROUP="$(id -gn)" bash deploy/setup-global-data.sh
+
+          # Germany official-filing resolver runs out-of-band in a browser so
+          # API requests stay fast. Keep browser binaries persistent across
+          # deploys and install host libraries only once per dependency marker.
+          if [[ "$(id -u)" -eq 0 ]]; then DE_SUDO=""; else DE_SUDO="sudo -n"; fi
+          if [[ ! -f /var/lib/biap-global/playwright/.deps-v1 ]]; then
+            $DE_SUDO env DEBIAN_FRONTEND=noninteractive               "$APP_DIR/analysis/.venv-global/bin/python" -m playwright install-deps chromium
+            touch /var/lib/biap-global/playwright/.deps-v1
+          fi
+          PLAYWRIGHT_BROWSERS_PATH=/var/lib/biap-global/playwright             "$APP_DIR/analysis/.venv-global/bin/python" -m playwright install chromium
           if [[ ! -f analysis/.env.global ]]; then cp analysis/.env.global.example analysis/.env.global; fi
           if [[ -s /tmp/biap-global-provider.env ]]; then
             while IFS='=' read -r key _rest; do
@@ -316,10 +329,14 @@ jobs:
           $SUDO install -m 0644 deploy/systemd/biap-global.service /etc/systemd/system/biap-global.service
           $SUDO install -m 0644 deploy/systemd/biap-global-source-sync.service /etc/systemd/system/biap-global-source-sync.service
           $SUDO install -m 0644 deploy/systemd/biap-global-source-sync.timer /etc/systemd/system/biap-global-source-sync.timer
+          $SUDO install -m 0644 deploy/systemd/biap-global-de-fundamentals.service /etc/systemd/system/biap-global-de-fundamentals.service
+          $SUDO install -m 0644 deploy/systemd/biap-global-de-fundamentals.timer /etc/systemd/system/biap-global-de-fundamentals.timer
           $SUDO systemctl daemon-reload
           $SUDO systemctl enable --now biap-global.service
           $SUDO systemctl restart biap-global.service
           $SUDO systemctl enable --now biap-global-source-sync.timer
+          $SUDO systemctl enable --now biap-global-de-fundamentals.timer
+          $SUDO systemctl start --no-block biap-global-de-fundamentals.service || true
           for attempt in 1 2 3 4 5 6; do
             if curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8091/health >/tmp/biap-global-health.json; then cat /tmp/biap-global-health.json; break; fi
             sleep 2
@@ -342,7 +359,7 @@ jobs:
           PY
 
           bash deploy/configure-global-route.sh
-          $SUDO systemctl list-timers --all biap-global-source-sync.timer --no-pager || true
+          $SUDO systemctl list-timers --all biap-global-source-sync.timer biap-global-de-fundamentals.timer --no-pager || true
           # Kick off the SE/NO official-OAM ESEF warm in the background so the
           # first app request for a Nordic issuer does not pay the cold OAM
           # package download. Safe to run concurrently with the service.
