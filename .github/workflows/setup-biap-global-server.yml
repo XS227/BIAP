@@ -196,6 +196,22 @@ jobs:
             touch /var/lib/biap-global/playwright/.deps-v1
           fi
           PLAYWRIGHT_BROWSERS_PATH=/var/lib/biap-global/playwright             "$APP_DIR/analysis/.venv-global/bin/python" -m playwright install chromium
+          PLAYWRIGHT_BROWSERS_PATH=/var/lib/biap-global/playwright "$APP_DIR/analysis/.venv-global/bin/python" - <<'PY'
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as pw:
+              browser = pw.chromium.launch(headless=True, args=["--disable-dev-shm-usage", "--no-sandbox"])
+              page = browser.new_page()
+              response = page.goto(
+                  "https://www.unternehmensregister.de/de/suche?areas=all",
+                  wait_until="domcontentloaded",
+                  timeout=45000,
+              )
+              status = response.status if response else None
+              print("Germany resolver browser smoke:", status, page.url)
+              if status is None or status >= 500:
+                  raise SystemExit(f"Unternehmensregister browser smoke failed: HTTP {status}")
+              browser.close()
+          PY
           if [[ ! -f analysis/.env.global ]]; then cp analysis/.env.global.example analysis/.env.global; fi
           if [[ -s /tmp/biap-global-provider.env ]]; then
             while IFS='=' read -r key _rest; do
