@@ -45,6 +45,7 @@ from .india_official import NSEOfficialUniverseProvider
 from .italy_issuer import ItalyIssuerFundamentalsProvider
 from .enel_issuer_esef import EnelIssuerESEFProvider
 from .german_issuer_esef import GermanIssuerESEFProvider
+from .german_reviewed_reports import GermanReviewedAnnualReportProvider
 from .india_nse_filings import NSEIntegratedFilingFundamentalsProvider
 from .iran_adapter import IranLegacyProvider
 from .jpx_official import JPXOfficialUniverseProvider
@@ -377,9 +378,13 @@ def build_registry() -> ProviderRegistry:
         provider_names=(GermanIssuerFundamentalsProvider.provider_id,),
     )
     de_issuer_resilient = FallbackFundamentalsProvider(de_issuer, de_drop)
+    # Reviewed audited issuer annual-report snapshots are data-driven, so
+    # German coverage can expand without one parser class per issuer.
+    de_reviewed = GermanReviewedAnnualReportProvider()
+    de_reviewed_or_issuer = FallbackFundamentalsProvider(de_reviewed, de_issuer_resilient)
     # Issuer-hosted ESEF packages (reviewed registry, LEI-verified on every
-    # read) come before the narrow per-issuer HTML/PDF parsers.
-    de_issuer_esef = FallbackFundamentalsProvider(GermanIssuerESEFProvider(), de_issuer_resilient)
+    # read) remain the strongest Germany-specific source and come first.
+    de_issuer_esef = FallbackFundamentalsProvider(GermanIssuerESEFProvider(), de_reviewed_or_issuer)
     # Germany is deliberately NOT routed through the generic public ESEF index:
     # the public index currently has no German filings, so doing so only forces
     # hundreds of unnecessary GLEIF identity lookups and can turn GLEIF rate/
