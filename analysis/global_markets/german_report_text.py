@@ -235,16 +235,18 @@ def _multiplier_from_text(text: str) -> float:
     low = text.lower()
     patterns = (
         (
-            r"\b(?:in|angaben in)\s+(?:(?:mio\.?|million(?:s)?|mn|m)\s*(?:eur|€)|"
-            r"(?:eur|€)\s*(?:mio\.?|million(?:s)?|mn|m))\b",
+            r"(?:\bin\s+|\bangaben\s+in\s+)?(?:eur|€)\s*"
+            r"(?:mio\.?|million(?:s)?|mn|m)\b|"
+            r"\b(?:mio\.?|million(?:s)?|mn)\s*(?:eur|€)\b",
             1_000_000.0,
         ),
         (
-            r"\b(?:in|angaben in)\s+(?:(?:teur|keur|thousand\s+euros?)|"
-            r"(?:eur|€)\s+(?:thousand|000s?))\b",
+            r"(?:\bin\s+|\bangaben\s+in\s+)?(?:eur|€)\s*"
+            r"(?:thousand|000s?|teur|keur)\b|"
+            r"\b(?:teur|keur|thousand\s+euros?)\b",
             1_000.0,
         ),
-        (r"\b(?:in|angaben in)\s+(?:eur|€)\b", 1.0),
+        (r"(?:\bin\s+|\bangaben\s+in\s+)(?:eur|€)\b", 1.0),
     )
     hits: list[tuple[int, float]] = []
     for pattern, multiplier in patterns:
@@ -328,9 +330,19 @@ def _tail_starts_with_value(tail: str) -> bool:
     return bool(re.match(r"^[−–\-(\d]", stripped))
 
 
-def _row_values(segment: str, aliases: tuple[str, ...], *, field: str) -> Optional[list[float]]:
+def _row_values(
+    segment: str,
+    aliases: tuple[str, ...],
+    *,
+    field: str,
+    multiplier_override: Optional[float] = None,
+) -> Optional[list[float]]:
     lines = segment.split("\n")
-    block_multiplier = _multiplier_from_text(segment[:900])
+    block_multiplier = (
+        multiplier_override
+        if multiplier_override is not None
+        else _multiplier_from_text(segment[:900])
+    )
     decimal_comma = _segment_decimal_comma(segment)
     for alias in aliases:
         alias_low = alias.lower()
@@ -370,7 +382,13 @@ def _row_values(segment: str, aliases: tuple[str, ...], *, field: str) -> Option
 def _extract_field_values(text: str, field: str) -> Optional[list[float]]:
     section = _FIELD_SECTION[field]
     for start, end in _statement_windows(text, section):
-        values = _row_values(text[start:end], _ALIASES[field], field=field)
+        multiplier = _nearest_multiplier(text, start)
+        values = _row_values(
+            text[start:end],
+            _ALIASES[field],
+            field=field,
+            multiplier_override=multiplier,
+        )
         if values:
             return values
     return None
@@ -379,11 +397,21 @@ def _extract_field_values(text: str, field: str) -> Optional[list[float]]:
 def _extract_total_debt(text: str) -> Optional[float]:
     for start, end in _statement_windows(text, "balance"):
         segment = text[start:end]
-        total = _row_values(segment, _DEBT_TOTAL_ALIASES, field="total_debt")
+        multiplier = _nearest_multiplier(text, start)
+        total = _row_values(
+            segment, _DEBT_TOTAL_ALIASES, field="total_debt",
+            multiplier_override=multiplier,
+        )
         if total:
             return total[0]
-        noncurrent = _row_values(segment, _DEBT_NONCURRENT_ALIASES, field="total_debt")
-        current = _row_values(segment, _DEBT_CURRENT_ALIASES, field="total_debt")
+        noncurrent = _row_values(
+            segment, _DEBT_NONCURRENT_ALIASES, field="total_debt",
+            multiplier_override=multiplier,
+        )
+        current = _row_values(
+            segment, _DEBT_CURRENT_ALIASES, field="total_debt",
+            multiplier_override=multiplier,
+        )
         if noncurrent and current:
             return noncurrent[0] + current[0]
     return None
