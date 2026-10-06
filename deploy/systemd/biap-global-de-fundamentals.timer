@@ -1,0 +1,12 @@
+[Unit]
+Description=Continuously fill missing BIAP Germany official fundamentals
+
+[Timer]
+OnBootSec=4min
+OnUnitInactiveSec=10min
+Persistent=true
+RandomizedDelaySec=45
+Unit=biap-global-de-fundamentals.service
+
+[Install]
+WantedBy=timers.target
