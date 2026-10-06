@@ -43,6 +43,8 @@ jobs:
               ("DE", "FRANKFURT", "MUX", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-12-31"),
               ("DE", "FRANKFURT", "UBK", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-12-31"),
               ("DE", "FRANKFURT", "BENH", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-12-31"),
+              ("DE", "FRANKFURT", "KGR", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-12-31"),
+              ("DE", "FRANKFURT", "INS", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-12-31"),
               ("DE", "FRANKFURT", "SAP", "EUR", {"sec-edgar-foreign-ifrs-cached", "de-official-issuer-financials"}, "2025-12-31"),
           ]
 
