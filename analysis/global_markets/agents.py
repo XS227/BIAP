@@ -49,6 +49,7 @@ _EVIDENCE_FIELDS = (
 
 _MARKET_SOURCE_TOKENS = ("market", "price", "quote", "history")
 _FUNDAMENTAL_SOURCE_TOKENS = ("filing", "regulatory", "xbrl", "fundamental", "financial_statement")
+_SECONDARY_FUNDAMENTAL_SOURCE_TOKENS = ("public_vendor_financial_metrics",)
 _VERIFIED_SOURCE_TOKENS = (
     "official", "regulatory", "xbrl", "filing", "exchange", "sec", "edgar",
     "esef", "edinet", "opendart", "issuer", "companies_house",
@@ -192,9 +193,29 @@ def evidence_agent(
         missing_critical.append("source_provenance")
     if not _has_source_type(company, _MARKET_SOURCE_TOKENS):
         missing_critical.append("market_source")
-    # Canonical contract: the same official-financial-statement test used by
-    # the fundamentals cache and the API payload (vendor types never count).
-    if not official_fundamental_sources(company):
+    # Canonical contract: official filings remain the only evidence that can
+    # clear the gate to PASS. Germany has a long tail of valid listed issuers
+    # whose issuer/Company-Register reports are not machine-resolvable by BIAP
+    # yet. For those DE listings only, a cited public-vendor fundamentals
+    # snapshot may keep the analysis usable as WARN, but never as PASS.
+    # Governance separately forces every WARN to NO_RECOMMENDATION.
+    official_sources = official_fundamental_sources(company)
+    secondary_fundamental_source = _has_source_type(
+        company, _SECONDARY_FUNDAMENTAL_SOURCE_TOKENS
+    )
+    secondary_core_fields = (
+        "revenue", "net_income", "total_assets", "total_liabilities", "total_equity",
+    )
+    secondary_core_coverage = sum(
+        getattr(company, field) is not None for field in secondary_core_fields
+    )
+    secondary_only_fundamentals = (
+        not official_sources
+        and company.country.upper() == "DE"
+        and secondary_fundamental_source
+        and secondary_core_coverage >= 4
+    )
+    if not official_sources and not secondary_only_fundamentals:
         missing_critical.append("fundamental_source")
     official_status, official_detail = official_fundamental_status(company, now=now)
 
@@ -246,6 +267,10 @@ def evidence_agent(
     )
     if contradictions:
         confidence_multiplier *= 0.70
+    if secondary_only_fundamentals:
+        # Secondary fundamentals are useful for research but cannot inherit
+        # the confidence of audited/official issuer evidence.
+        confidence_multiplier = min(confidence_multiplier, 0.50)
     if provenance_status == "user_entered":
         # Manual input may be useful for research, but it is not independent
         # verification and cannot silently inherit an "audited" label.
@@ -255,7 +280,13 @@ def evidence_agent(
 
     if missing_critical:
         status = "BLOCK"
-    elif coverage < 0.35 or freshness_score < 0.65 or contradictions or provenance_status == "user_entered":
+    elif (
+        secondary_only_fundamentals
+        or coverage < 0.35
+        or freshness_score < 0.65
+        or contradictions
+        or provenance_status == "user_entered"
+    ):
         status = "WARN"
     else:
         status = "PASS"
@@ -275,6 +306,8 @@ def evidence_agent(
         reasons.append("fundamentalPeriodAgeDays=unavailable")
     else:
         reasons.append(f"fundamentalPeriodAgeDays={fundamental_age_days:.1f}")
+    if secondary_only_fundamentals:
+        reasons.append("fundamentalProvenance=secondary_only_no_official_filing")
     if missing_critical:
         reasons.append("missing=" + ",".join(dict.fromkeys(missing_critical)))
     reasons.append(f"officialFundamentals={official_status} ({official_detail})")
