@@ -89,6 +89,8 @@ def test_reviewed_report_registry_covers_remaining_regulated_canaries(
         ("MUX", "DE000A2NB650", "Industrials", 5_184_200_000),
         ("UBK", "DE0005570808", "Banking", 7_030_980_000),
         ("BENH", "DE000A11QLP3", "Real Estate", 99_396_000),
+        ("KGR", "DE0006336001", "Industrials", 104_494_653.19),
+        ("INS", "DE000A2NBX80", "Real Estate", 1_818_151_000),
     ],
 )
 def test_mux_umweltbank_beno_reviewed_reports(ticker, isin, expected_sector, expected_assets):
@@ -124,3 +126,14 @@ def test_mux_umweltbank_beno_reviewed_reports(ticker, isin, expected_sector, exp
         assert enriched.operating_income == 6_542_000
         assert enriched.raw_provider_fields["agent10_ffo"] == 2_246_000
         assert enriched.total_debt == 56_008_000
+    elif ticker == "KGR":
+        assert enriched.revenue == 118_573_759.47
+        assert enriched.current_assets == 57_038_308.93
+        assert enriched.current_liabilities == 50_972_933.75
+        assert enriched.interest_expense == 1_271_156.70
+    elif ticker == "INS":
+        assert enriched.revenue == 405_899_000
+        assert enriched.retained_earnings == 239_662_000
+        assert enriched.current_assets == 1_722_954_000
+        assert enriched.current_liabilities == 841_806_000
+        assert enriched.total_debt == 500_566_000
