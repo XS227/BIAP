@@ -40,6 +40,9 @@ jobs:
               ("DE", "XETRA", "SHL", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-09-30"),
               ("DE", "XETRA", "KBX", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-12-31"),
               ("DE", "XETRA", "BEZ", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-12-31"),
+              ("DE", "FRANKFURT", "MUX", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-12-31"),
+              ("DE", "FRANKFURT", "UBK", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-12-31"),
+              ("DE", "FRANKFURT", "BENH", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-12-31"),
               ("DE", "FRANKFURT", "SAP", "EUR", {"sec-edgar-foreign-ifrs-cached", "de-official-issuer-financials"}, "2025-12-31"),
           ]
 
@@ -109,6 +112,51 @@ jobs:
               failed = [name for ok, name in checks if not ok]
               if failed:
                   failures.append({"ticker": ticker, "failed": failed, "result": result})
+
+          blocked_cases = [("DE", "FRANKFURT", "TCU", "EUR")]
+          for country, exchange, ticker, currency in blocked_cases:
+              q = urllib.parse.urlencode({"q": ticker, "limit": 20})
+              with urllib.request.urlopen(f"{base}/instruments/{country}/{exchange}?{q}", timeout=45) as r:
+                  catalog = json.load(r)
+              exact = next(
+                  (row for row in (catalog.get("instruments") or [])
+                   if str(row.get("ticker") or "").upper() == ticker),
+                  None,
+              )
+              assert exact, (country, exchange, ticker, catalog)
+              body = {
+                  "country": country,
+                  "exchange": exchange,
+                  "ticker": exact.get("ticker") or ticker,
+                  "name": exact.get("name") or ticker,
+                  "currency": exact.get("currency") or currency,
+                  "isin": exact.get("isin"),
+                  "lei": exact.get("lei"),
+              }
+              req = urllib.request.Request(
+                  f"{base}/analyze",
+                  data=json.dumps(body).encode(),
+                  headers={"Content-Type": "application/json", "Accept": "application/json"},
+                  method="POST",
+              )
+              with urllib.request.urlopen(req, timeout=180) as r:
+                  payload = json.load(r)
+              evidence = payload.get("evidence") or {}
+              result = {
+                  "ticker": ticker,
+                  "reportingMarket": (exact.get("raw_provider_fields") or {}).get("reporting_market"),
+                  "evidence": evidence.get("status"),
+                  "official": evidence.get("official_fundamental_status"),
+                  "missing": evidence.get("missing_critical") or [],
+                  "detail": evidence.get("official_fundamental_detail"),
+              }
+              print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+              if not (
+                  result["reportingMarket"] == "FRAA"
+                  and result["evidence"] == "BLOCK"
+                  and "fundamental_source" in result["missing"]
+              ):
+                  failures.append({"ticker": ticker, "failed": ["expected_safety_block"], "result": result})
 
           if failures:
               print("GERMANY_CANARY_FAILURES=" + json.dumps(failures, ensure_ascii=False, sort_keys=True))
