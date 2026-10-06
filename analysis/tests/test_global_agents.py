@@ -188,6 +188,7 @@ def test_evidence_agent_accepts_current_official_year_only_boerse_frankfurt_data
 def test_evidence_agent_keeps_old_year_only_boerse_frankfurt_data_warned():
     company = _company(ticker="OLD", country="DE", exchange="FRANKFURT", currency="EUR")
     company.filing_period_end = None
+    company.price_observed_at = "2026-10-06T06:00:00+00:00"
     company.sources.append(
         SourceEvidence(
             provider="official-boerse-frankfurt-historical-key-data",
