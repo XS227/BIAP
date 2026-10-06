@@ -159,7 +159,11 @@ jobs:
               if not (
                   result["reportingMarket"] == "FRAA"
                   and result["evidence"] == "BLOCK"
-                  and "fundamental_source" in result["missing"]
+                  and result["official"] == "OFFICIAL_SOURCE_UNAVAILABLE"
+                  and (
+                      "fundamental_source" in result["missing"]
+                      or "fresh_fundamentals" in result["missing"]
+                  )
               ):
                   failures.append({"ticker": ticker, "failed": ["expected_safety_block"], "result": result})
 
