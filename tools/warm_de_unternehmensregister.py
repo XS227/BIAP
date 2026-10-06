@@ -261,6 +261,56 @@ def _write_verified_record(
     return out
 
 
+
+def seed_full_german_universe(queue: dict[str, Any]) -> int:
+    """Add the whole cached Frankfurt/Xetra ordinary-equity universe to the queue.
+
+    Existing interactive rows keep their timestamps/priority. This turns the
+    Germany resolver into a market-wide background fill instead of a
+    ticker-by-ticker repair loop.
+    """
+    seeded = 0
+    now = utcnow()
+    for exchange in ("FRANKFURT", "XETRA"):
+        path = data_root() / "universe" / "DE" / f"{exchange}.json"
+        payload = read_json(path, default={})
+        rows = payload.get("instruments") if isinstance(payload, dict) else None
+        if not isinstance(rows, list):
+            continue
+        for raw in rows:
+            if not isinstance(raw, dict):
+                continue
+            ticker = str(raw.get("ticker") or "").upper().strip()
+            isin = str(raw.get("isin") or "").upper().strip()
+            if not ticker or not isin.startswith("DE"):
+                continue
+            identity = isin
+            previous = queue.get(identity) if isinstance(queue.get(identity), dict) else {}
+            if previous.get("status") == "resolved":
+                continue
+            raw_fields = raw.get("raw_provider_fields")
+            if not isinstance(raw_fields, dict):
+                raw_fields = {}
+            queue[identity] = {
+                **previous,
+                "country": "DE",
+                "exchange": exchange,
+                "ticker": ticker,
+                "name": str(raw.get("name") or ticker),
+                "isin": isin,
+                "lei": raw.get("lei") or previous.get("lei"),
+                "reportingMarket": raw_fields.get("reporting_market"),
+                "marketSegment": raw_fields.get("market_segment"),
+                "firstSeenAt": previous.get("firstSeenAt") or now,
+                "lastSeenAt": previous.get("lastSeenAt") or now,
+                "requestCount": int(previous.get("requestCount") or 0),
+                "priority": previous.get("priority") or "batch",
+                "status": previous.get("status") or "pending",
+            }
+            if not previous:
+                seeded += 1
+    return seeded
+
 def process_queue(
     *,
     max_items: int,
@@ -270,8 +320,13 @@ def process_queue(
 ) -> dict[str, int]:
     queue_path = source_index_path(DEFAULT_QUEUE)
     queue = read_json(queue_path, default={})
-    if not isinstance(queue, dict) or not queue:
-        return {"processed": 0, "resolved": 0, "failed": 0}
+    if not isinstance(queue, dict):
+        queue = {}
+    seeded = seed_full_german_universe(queue)
+    if seeded:
+        write_json_atomic(queue_path, queue)
+    if not queue:
+        return {"seeded": 0, "processed": 0, "resolved": 0, "failed": 0}
 
     try:
         from playwright.sync_api import sync_playwright
@@ -287,7 +342,15 @@ def process_queue(
         (identity, row)
         for identity, row in queue.items()
         if isinstance(row, dict) and row.get("status") != "resolved"
-    ][: max(0, max_items)]
+    ]
+    pending.sort(
+        key=lambda item: (
+            0 if item[1].get("priority") == "interactive" else 1,
+            int(item[1].get("attempts") or 0),
+            str(item[1].get("lastSeenAt") or ""),
+        )
+    )
+    pending = pending[: max(0, max_items)]
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch(
@@ -343,7 +406,7 @@ def process_queue(
         finally:
             browser.close()
 
-    return {"processed": processed, "resolved": resolved, "failed": failed}
+    return {"seeded": seeded, "processed": processed, "resolved": resolved, "failed": failed}
 
 
 def main() -> int:
