@@ -60,6 +60,7 @@ _BMW_VERIFIED_FY2025 = {
 }
 _DUERR_PDF_URL = "https://www.durr-group.com/fileadmin/durr-group.com/Investors/Downloads/Reports/2025/annual-report-2025-EN.pdf"
 _BMM_PDF_URL = "https://bmag-online.de/wp-content/uploads/2026/08/BMAG-GB-2025.pdf"
+_JEN_PDF_URL = "https://www.jenoptik.com/-/media/websitedocuments/ir/berichte-und-tabellen/2025/online/en/jenoptik-annual-report-2025.pdf"
 
 
 def _plain_text(value: str) -> str:
@@ -76,6 +77,10 @@ def _million_number(value: str) -> float:
 
 def _billion_number(value: str) -> float:
     return float(value.replace(",", "").strip()) * 1_000_000_000.0
+
+
+def _thousand_number(value: str) -> float:
+    return float(value.replace(",", "").strip()) * 1_000.0
 
 
 def _german_number(value: str) -> float:
@@ -220,6 +225,7 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
             "BMW": "BAYMOTORENWERKE",
             "DUE": "DUERR",
             "BMM": "BRUEDERMANNESM",
+            "JEN": "JENOPTIK",
         }.get(ticker)
         if expected is None:
             raise GlobalProviderError(f"no verified German issuer parser for {ticker}")
@@ -658,6 +664,132 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
             ),
         ))
 
+    def _jenoptik(self, company: GlobalCompany) -> GlobalCompany:
+        if company.isin and company.isin.upper() != "DE000A2NB601":
+            raise GlobalProviderError(f"JENOPTIK ISIN mismatch: {company.isin}")
+        text = self._get_pdf_text(_JEN_PDF_URL)
+        lower = text.lower()
+        if "jenoptik annual report 2025" not in lower or "consolidated statement of profit or loss" not in lower:
+            raise GlobalProviderError("JENOPTIK FY2025 issuer source identity/period marker missing")
+
+        revenue_match = _required_match(
+            r"\bRevenue\s+4\.1\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            text, label="JENOPTIK FY2025 revenue",
+        )
+        gross_match = _required_match(
+            r"\bGross profit\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            text, label="JENOPTIK FY2025 gross profit",
+        )
+        ebit_match = _required_match(
+            r"\bEBIT\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            text, label="JENOPTIK FY2025 EBIT",
+        )
+        net_match = _required_match(
+            r"\bEarnings after tax\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            text, label="JENOPTIK FY2025 earnings after tax",
+        )
+        eps_match = _required_match(
+            r"Earnings per share in euros \(undiluted = diluted\)\s+4\.10\s+([0-9]+(?:\.[0-9]+)?)\s+([0-9]+(?:\.[0-9]+)?)",
+            text, label="JENOPTIK FY2025 EPS",
+        )
+        current_assets_match = _required_match(
+            r"\bCurrent assets\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            text, label="JENOPTIK FY2025 current assets",
+        )
+        cash_match = _required_match(
+            r"\bCash and cash equivalents\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            text, label="JENOPTIK FY2025 cash",
+        )
+        assets_match = _required_match(
+            r"\bTotal assets\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            text, label="JENOPTIK FY2025 total assets",
+        )
+        equity_match = _required_match(
+            r"\bEquity\s+5\.10\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            text, label="JENOPTIK FY2025 equity",
+        )
+        noncurrent_liab_match = _required_match(
+            r"\bNon-current liabilities\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            text, label="JENOPTIK FY2025 non-current liabilities",
+        )
+        current_liab_match = _required_match(
+            r"\bCurrent liabilit(?:ies|es)\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            text, label="JENOPTIK FY2025 current liabilities",
+        )
+        ocf_match = _required_match(
+            r"\bCash flows from operating activities\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            text, label="JENOPTIK FY2025 operating cash flow",
+        )
+        capex_int_match = _required_match(
+            r"Capital expenditure for intangible assets\s+[−–-]?([0-9][0-9,]*)\s+[−–-]?([0-9][0-9,]*)",
+            text, label="JENOPTIK FY2025 intangible capex",
+        )
+        capex_ppe_match = _required_match(
+            r"Capital expenditure for property, plant and equipment\s+[−–-]?([0-9][0-9,]*)\s+[−–-]?([0-9][0-9,]*)",
+            text, label="JENOPTIK FY2025 PPE capex",
+        )
+        debt_nc_match = _required_match(
+            r"\bNon-current financial debt\s+8\.1, 8\.2\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            text, label="JENOPTIK FY2025 non-current debt",
+        )
+        debt_c_match = _required_match(
+            r"\bCurrent financial debt\s+8\.1, 8\.2\s+([0-9][0-9,]*)\s+([0-9][0-9,]*)",
+            text, label="JENOPTIK FY2025 current debt",
+        )
+
+        revenue = _thousand_number(revenue_match.group(1))
+        revenue_prev = _thousand_number(revenue_match.group(2))
+        net_income = _thousand_number(net_match.group(1))
+        total_assets = _thousand_number(assets_match.group(1))
+        total_equity = _thousand_number(equity_match.group(1))
+        current_assets = _thousand_number(current_assets_match.group(1))
+        current_liabilities = _thousand_number(current_liab_match.group(1))
+        noncurrent_liabilities = _thousand_number(noncurrent_liab_match.group(1))
+        operating_cash_flow = _thousand_number(ocf_match.group(1))
+        capex = _thousand_number(capex_int_match.group(1)) + _thousand_number(capex_ppe_match.group(1))
+        total_debt = _thousand_number(debt_nc_match.group(1)) + _thousand_number(debt_c_match.group(1))
+
+        enriched = replace(
+            company,
+            reporting_currency="EUR",
+            revenue=revenue,
+            revenue_prev=revenue_prev,
+            revenue_yoy_pct=((revenue / revenue_prev) - 1.0) * 100.0 if revenue_prev else None,
+            gross_profit=_thousand_number(gross_match.group(1)),
+            operating_income=_thousand_number(ebit_match.group(1)),
+            net_income=net_income,
+            net_margin_pct=(net_income / revenue) * 100.0 if revenue else None,
+            total_assets=total_assets,
+            total_liabilities=noncurrent_liabilities + current_liabilities,
+            total_equity=total_equity,
+            current_assets=current_assets,
+            current_liabilities=current_liabilities,
+            cash_and_equivalents=_thousand_number(cash_match.group(1)),
+            operating_cash_flow=operating_cash_flow,
+            free_cash_flow=operating_cash_flow - capex,
+            total_debt=total_debt,
+            eps=float(eps_match.group(1)),
+            filing_period_end="2025-12-31",
+            filing_observed_at="2026-03-25T00:00:00+00:00",
+            report_scope="consolidated",
+            raw_provider_fields={
+                **company.raw_provider_fields,
+                "de_issuer_source": "jenoptik_annual_report_2025",
+                "de_issuer_evidence_kind": "issuer_published_audited_annual_report",
+            },
+        )
+        return append_source(enriched, SourceEvidence(
+            provider=self.provider_id,
+            source_type="official_issuer_financial_statement",
+            source_id="jenoptik-annual-report-2025",
+            source_url=_JEN_PDF_URL,
+            observed_at="2026-03-25T00:00:00+00:00",
+            period_end="2025-12-31",
+            quality=0.97,
+            audit_status="audited",
+            notes="JENOPTIK issuer-published FY2025 audited consolidated annual report",
+        ))
+
     def _sap(self, company: GlobalCompany) -> GlobalCompany:
         text = self._get_text(_SAP_URL)
         lower = text.lower()
@@ -735,4 +867,6 @@ class GermanIssuerFundamentalsProvider(FundamentalsProvider):
             return self._duerr(company)
         if ticker == "BMM":
             return self._bmm(company)
+        if ticker == "JEN":
+            return self._jenoptik(company)
         raise GlobalProviderError(f"no verified German issuer parser for {ticker}")
