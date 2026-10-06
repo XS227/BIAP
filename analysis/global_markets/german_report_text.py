@@ -16,7 +16,7 @@ from .providers import GlobalProviderError
 
 
 _SPACE = re.compile(r"[ \t\u00a0]+")
-_NUMBER = re.compile(r"(?<![A-Za-z])[-−–]?\(?\d[\d .,'’]*\d|[-−–]?\(?\d\)?")
+_NUMBER = re.compile(r"(?<![A-Za-z0-9])[-−–]?\(?\d+(?:[.,'’]\d+)*\)?")
 _YEAR = re.compile(r"\b(20\d{2})\b")
 
 _BALANCE_MARKERS = (
@@ -207,7 +207,7 @@ def _row_candidates(text: str, aliases: tuple[str, ...], windows: list[tuple[int
                 if i < 0:
                     break
                 absolute = start + i
-                tail = segment[i + len(alias): i + len(alias) + 180]
+                tail = segment[i + len(alias): i + len(alias) + 240].split("\n", 1)[0]
                 tokens = [m.group(0) for m in _NUMBER.finditer(tail)]
                 multiplier = _nearest_multiplier(text, absolute)
                 values = []
