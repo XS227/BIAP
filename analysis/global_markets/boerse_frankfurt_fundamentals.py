@@ -139,33 +139,37 @@ class BoerseFrankfurtFundamentalsProvider(FundamentalsProvider):
         revenue_prev = _number(previous.get("salesRevenue")) if previous else None
         net_income = _number(row.get("incomeNet"))
         total_assets = _number(row.get("assetsTotal"))
-        total_liabilities = _number(row.get("liabilitiesTotal"))
         total_equity = _number(row.get("equityTotal"))
+        reported_liabilities = _number(row.get("liabilitiesTotal"))
 
-        minimum = {
-            "revenue": revenue,
-            "net_income": net_income,
-            "total_assets": total_assets,
-            "total_liabilities": total_liabilities,
-            "total_equity": total_equity,
-        }
-        if sum(value is not None for value in minimum.values()) < 4:
+        # The Börse Frankfurt field named liabilitiesTotal does not always
+        # represent complete accounting liabilities (notably for financials and
+        # some IFRS presentations). Use the accounting identity whenever assets
+        # and total equity are available; retain the exchange-reported value as
+        # a diagnostic instead of rejecting otherwise valid official key data.
+        total_liabilities = (
+            total_assets - total_equity
+            if total_assets is not None and total_equity is not None
+            else reported_liabilities
+        )
+
+        # Revenue is not a meaningful top-line concept for every bank/insurer,
+        # so official exchange evidence requires the three universal statement
+        # anchors instead of forcing industrial-company semantics.
+        if (
+            net_income is None
+            or total_assets is None
+            or total_equity is None
+        ):
             raise GlobalProviderError(
-                f"Börse Frankfurt FY{year} key data lacks minimum core fundamentals"
+                f"Börse Frankfurt FY{year} key data lacks minimum statement anchors"
             )
 
-        if (
-            total_assets is not None
-            and total_liabilities is not None
-            and total_equity is not None
-        ):
-            gap = abs(total_assets - (total_liabilities + total_equity))
-            scale = max(abs(total_assets), 1.0)
-            if gap / scale > 0.08:
-                raise GlobalProviderError(
-                    f"Börse Frankfurt FY{year} accounting identity mismatch "
-                    f"({gap / scale:.2%})"
-                )
+        current_year = datetime.now(timezone.utc).year
+        if year < current_year - 1:
+            raise GlobalProviderError(
+                f"Börse Frankfurt latest annual key data FY{year} is too old"
+            )
 
         shares = _number(row.get("outstandingShares"))
         dividend_per_share = _number(row.get("dividendPerShare"))
@@ -180,6 +184,10 @@ class BoerseFrankfurtFundamentalsProvider(FundamentalsProvider):
             "de_bf_period_granularity": "year_only",
             "de_bf_exact_period_end_available": False,
             "de_bf_source_url": url,
+            "de_bf_liabilities_reported": reported_liabilities,
+            "de_bf_liabilities_normalized_by_identity": (
+                total_assets is not None and total_equity is not None
+            ),
         }
 
         enriched = replace(
