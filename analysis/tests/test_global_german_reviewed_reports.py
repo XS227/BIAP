@@ -81,3 +81,46 @@ def test_reviewed_report_registry_covers_remaining_regulated_canaries(
     assert enriched.current_liabilities == current_liabilities
     assert enriched.sources[-1].provider == "de-reviewed-issuer-annual-report"
     assert enriched.sources[-1].audit_status == "audited"
+
+
+@pytest.mark.parametrize(
+    ("ticker", "isin", "expected_sector", "expected_assets"),
+    [
+        ("MUX", "DE000A2NB650", "Industrials", 5_184_200_000),
+        ("UBK", "DE0005570808", "Banking", 7_030_980_000),
+        ("BENH", "DE000A11QLP3", "Real Estate", 99_396_000),
+    ],
+)
+def test_mux_umweltbank_beno_reviewed_reports(ticker, isin, expected_sector, expected_assets):
+    provider = GermanReviewedAnnualReportProvider()
+    company = GlobalCompany(
+        country="DE",
+        exchange="FRANKFURT",
+        mic_code="XFRA",
+        currency="EUR",
+        ticker=ticker,
+        name=ticker,
+        isin=isin,
+    )
+
+    enriched = provider.enrich_fundamentals(company)
+
+    assert enriched.filing_period_end == "2025-12-31"
+    assert enriched.total_assets == expected_assets
+    assert enriched.sector == expected_sector
+    assert enriched.sources[-1].provider == "de-reviewed-issuer-annual-report"
+    assert enriched.sources[-1].audit_status == "audited"
+    assert enriched.audit_opinion == "unqualified"
+
+    if ticker == "MUX":
+        assert enriched.ebitda == 675_300_000
+        assert enriched.current_assets == 2_914_700_000
+        assert enriched.current_liabilities == 3_325_200_000
+        assert enriched.total_debt == 1_654_900_000
+    elif ticker == "UBK":
+        assert enriched.industry == "Bank"
+        assert enriched.net_income == 12_264_000
+    elif ticker == "BENH":
+        assert enriched.operating_income == 6_542_000
+        assert enriched.raw_provider_fields["agent10_ffo"] == 2_246_000
+        assert enriched.total_debt == 56_008_000
