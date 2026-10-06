@@ -45,6 +45,28 @@ def decision_governance_agent(
 
     conf = max(0.0, min(1.0, float(overall_confidence)))
 
+    # WARN evidence is research-grade only. It must never be promoted to an
+    # actionable call merely because the model confidence is numerically high.
+    # This is especially important for Germany's long-tail listings where a
+    # public-vendor fundamentals snapshot may be available before an official
+    # annual report has been resolved by the ingestion layer.
+    if evidence.status == "WARN":
+        reviews.append("evidence gate returned WARN")
+        if evidence.contradictions:
+            reviews.append("high-confidence agent disagreement")
+        if distress.status == "ELEVATED_RISK":
+            reviews.append("elevated independent distress risk")
+        return GovernanceAssessment(
+            action="REVIEW",
+            final_call="NO_RECOMMENDATION",
+            accepted=False,
+            escalated=True,
+            abstained=True,
+            hard_blocks=(),
+            review_reasons=tuple(reviews),
+            reasoning="Escalated to human review: " + "; ".join(reviews),
+        )
+
     if conf >= accept_threshold:
         return GovernanceAssessment(
             action="ACCEPT",
