@@ -155,6 +155,17 @@ def test_portfolio_agent_does_not_allocate_blocked_candidate():
 def test_evidence_agent_accepts_current_official_year_only_boerse_frankfurt_data():
     company = _company(ticker="TIW", country="DE", exchange="FRANKFURT", currency="EUR")
     company.filing_period_end = None
+    company.sources.append(
+        SourceEvidence(
+            provider="official-boerse-frankfurt-historical-key-data",
+            source_type="official_exchange_fundamental_metrics",
+            source_id="BF-HKD:DE0000000001:FY2025",
+            source_url="https://api.boerse-frankfurt.de/",
+            quality=0.96,
+            provenance_status="independently_verified",
+            audit_status="unknown",
+        )
+    )
     company.raw_provider_fields = {
         "de_bf_historical_key_data": True,
         "de_bf_report_year": 2025,
@@ -176,6 +187,17 @@ def test_evidence_agent_accepts_current_official_year_only_boerse_frankfurt_data
 def test_evidence_agent_keeps_old_year_only_boerse_frankfurt_data_warned():
     company = _company(ticker="OLD", country="DE", exchange="FRANKFURT", currency="EUR")
     company.filing_period_end = None
+    company.sources.append(
+        SourceEvidence(
+            provider="official-boerse-frankfurt-historical-key-data",
+            source_type="official_exchange_fundamental_metrics",
+            source_id="BF-HKD:DE0000000002:FY2024",
+            source_url="https://api.boerse-frankfurt.de/",
+            quality=0.96,
+            provenance_status="independently_verified",
+            audit_status="unknown",
+        )
+    )
     company.raw_provider_fields = {
         "de_bf_historical_key_data": True,
         "de_bf_report_year": 2024,
