@@ -21,6 +21,7 @@ for path in \
   "$DATA_DIR/universe" \
   "$DATA_DIR/market" \
   "$DATA_DIR/source-index" \
+  "$DATA_DIR/playwright" \
   "$DATA_DIR/filings/US" \
   "$DATA_DIR/filings/EU" \
   "$DATA_DIR/filings/GB" \
