@@ -255,8 +255,50 @@ def _multiplier_from_text(text: str) -> float:
     return max(hits, default=(-1, 1.0), key=lambda row: row[0])[1]
 
 
+def _explicit_multiplier(text: str) -> Optional[float]:
+    low = str(text or "").lower()
+    patterns = (
+        (
+            r"(?:\bin\s+|\bangaben\s+in\s+)?(?:eur|€)\s*"
+            r"(?:mio\.?|million(?:s)?|mn|m)\b|"
+            r"\b(?:mio\.?|million(?:s)?|mn)\s*(?:eur|€)\b",
+            1_000_000.0,
+        ),
+        (
+            r"(?:\bin\s+|\bangaben\s+in\s+)?(?:eur|€)\s*"
+            r"(?:thousand|000s?|teur|keur)\b|"
+            r"\b(?:teur|keur|thousand\s+euros?)\b",
+            1_000.0,
+        ),
+        (r"(?:\bin\s+|\bangaben\s+in\s+)(?:eur|€)\b", 1.0),
+    )
+    hits: list[tuple[int, float]] = []
+    for pattern, multiplier in patterns:
+        for match in re.finditer(pattern, low, re.I):
+            hits.append((match.start(), multiplier))
+    return max(hits, default=(-1, None), key=lambda row: row[0])[1]
+
+
+def _statement_multiplier(text: str, start: int, end: int) -> float:
+    # Prefer the unit declared in the statement header itself. Only if the
+    # statement has no explicit unit do we inherit the nearest declaration
+    # before it. Never inspect following sections (e.g. a later FCF table).
+    header = text[start:min(end, start + 1000)]
+    local = _explicit_multiplier(header)
+    if local is not None:
+        return local
+    before = text[max(0, start - 1200):start]
+    inherited = _explicit_multiplier(before)
+    return inherited if inherited is not None else 1.0
+
+
 def _nearest_multiplier(text: str, pos: int) -> float:
-    return _multiplier_from_text(text[max(0, pos - 1000):pos + 300])
+    # For non-statement named metrics prefer the nearest preceding unit. A
+    # short forward look is intentionally avoided so later tables cannot
+    # retroactively change the scale of the current metric.
+    before = text[max(0, pos - 1000):pos]
+    inherited = _explicit_multiplier(before)
+    return inherited if inherited is not None else 1.0
 
 
 def _all_section_starts(text: str) -> list[int]:
@@ -366,8 +408,6 @@ def _row_values(
                 value = _parse_number(token, decimal_comma=decimal_comma)
                 if value is None:
                     continue
-                if 1900 <= abs(value) <= 2100 and float(value).is_integer():
-                    continue
                 values.append(value)
             if not values:
                 continue
@@ -382,7 +422,7 @@ def _row_values(
 def _extract_field_values(text: str, field: str) -> Optional[list[float]]:
     section = _FIELD_SECTION[field]
     for start, end in _statement_windows(text, section):
-        multiplier = _nearest_multiplier(text, start)
+        multiplier = _statement_multiplier(text, start, end)
         values = _row_values(
             text[start:end],
             _ALIASES[field],
@@ -397,7 +437,7 @@ def _extract_field_values(text: str, field: str) -> Optional[list[float]]:
 def _extract_total_debt(text: str) -> Optional[float]:
     for start, end in _statement_windows(text, "balance"):
         segment = text[start:end]
-        multiplier = _nearest_multiplier(text, start)
+        multiplier = _statement_multiplier(text, start, end)
         total = _row_values(
             segment, _DEBT_TOTAL_ALIASES, field="total_debt",
             multiplier_override=multiplier,
@@ -434,7 +474,7 @@ def _extract_named_metric_anywhere(text: str, aliases: tuple[str, ...]) -> Optio
             if not _tail_starts_with_value(tail):
                 continue
             values = [_parse_number(m.group(0)) for m in _NUMBER.finditer(tail)]
-            values = [v for v in values if v is not None and not (1900 <= abs(v) <= 2100 and float(v).is_integer())]
+            values = [v for v in values if v is not None]
             if not values:
                 continue
             multiplier = _nearest_multiplier(text, offsets[idx])
