@@ -21,7 +21,7 @@ from pathlib import Path
 import re
 import sys
 from typing import Any, Optional
-from urllib.parse import quote_plus
+from urllib.parse import parse_qsl, quote_plus, urlencode, urlsplit, urlunsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "analysis"))
@@ -173,6 +173,18 @@ def _select_publication(page, year: int) -> bool:
     return False
 
 
+
+def _results_page_url(base_url: str, offset: int) -> str:
+    parts = urlsplit(base_url)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    if offset > 0:
+        query["from"] = str(offset)
+    else:
+        query.pop("from", None)
+    return urlunsplit(
+        (parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment)
+    )
+
 def fetch_unternehmensregister_report(
     browser,
     *,
@@ -207,21 +219,29 @@ def fetch_unternehmensregister_report(
         page.wait_for_timeout(4500)
         results_url = page.url
 
+        max_result_pages = max(
+            1,
+            min(7, int(os.environ.get("BIAP_DE_UR_RESULT_PAGES", "5"))),
+        )
         for year in years:
-            page.goto(results_url, wait_until="domcontentloaded")
-            page.wait_for_timeout(2200)
-            if not _select_publication(page, year):
-                continue
-            page.wait_for_timeout(2500)
-            if not _solve_gate(page):
-                continue
-            page.wait_for_timeout(900)
-            text = _extract_report_text(page)
-            if _has_financial_content(text):
-                source_url = (
-                    f"{BASE}/de/suche?areas=all&companyName={quote_plus(company_name)}"
+            for page_no in range(max_result_pages):
+                page.goto(
+                    _results_page_url(results_url, page_no * 30),
+                    wait_until="domcontentloaded",
                 )
-                return year, text, source_url
+                page.wait_for_timeout(1400)
+                if not _select_publication(page, year):
+                    continue
+                page.wait_for_timeout(1200)
+                if not _solve_gate(page):
+                    continue
+                page.wait_for_timeout(700)
+                text = _extract_report_text(page)
+                if _has_financial_content(text):
+                    source_url = (
+                        f"{BASE}/de/suche?areas=all&companyName={quote_plus(company_name)}"
+                    )
+                    return year, text, source_url
         raise GlobalProviderError(
             f"no readable current official Unternehmensregister annual report for {company_name}"
         )
