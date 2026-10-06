@@ -150,3 +150,44 @@ def test_portfolio_agent_does_not_allocate_blocked_candidate():
     result = portfolio_agent(profile, [PortfolioCandidate(company, _signals(), blocked)])
     assert result.status == "NO_RECOMMENDATION"
     assert not result.allocations
+
+
+def test_evidence_agent_accepts_current_official_year_only_boerse_frankfurt_data():
+    company = _company(ticker="TIW", country="DE", exchange="FRANKFURT", currency="EUR")
+    company.filing_period_end = None
+    company.raw_provider_fields = {
+        "de_bf_historical_key_data": True,
+        "de_bf_report_year": 2025,
+        "de_bf_period_granularity": "year_only",
+        "de_bf_exact_period_end_available": False,
+    }
+
+    result = evidence_agent(
+        company,
+        _signals(),
+        now=datetime(2026, 10, 7, 0, tzinfo=timezone.utc),
+    )
+
+    assert result.status == "PASS"
+    assert result.freshness_score == 1.0
+    assert "fundamentalPeriodAgeDays=unavailable" in result.reasoning
+
+
+def test_evidence_agent_keeps_old_year_only_boerse_frankfurt_data_warned():
+    company = _company(ticker="OLD", country="DE", exchange="FRANKFURT", currency="EUR")
+    company.filing_period_end = None
+    company.raw_provider_fields = {
+        "de_bf_historical_key_data": True,
+        "de_bf_report_year": 2024,
+        "de_bf_period_granularity": "year_only",
+        "de_bf_exact_period_end_available": False,
+    }
+
+    result = evidence_agent(
+        company,
+        _signals(),
+        now=datetime(2026, 10, 7, 0, tzinfo=timezone.utc),
+    )
+
+    assert result.status == "WARN"
+    assert result.freshness_score == 0.25
