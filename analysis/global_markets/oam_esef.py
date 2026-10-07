@@ -290,7 +290,10 @@ class NorwayNewswebLocator(OAMLocator):
             detail = self._json("message", {"messageId": message_id}).get("message") or {}
             for attachment in detail.get("attachments") or []:
                 name = str(attachment.get("name") or "")
-                if not name.lower().endswith(".zip"):
+                # Newsweb serves ESEF packages as both .zip and .xbri.
+                # .xbri is a ZIP-compatible ESEF report package and is already
+                # supported by the downstream package parser.
+                if not name.lower().endswith((".zip", ".xbri")):
                     continue
                 if message.get("_lei_named_only") and not name.upper().startswith(lei.upper()):
                     continue
@@ -1648,7 +1651,22 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
             if not package.get("entities") and not package.get("facts"):
                 errors.append(f"{filing.document_id}: official ESEF report carries no inline XBRL tags (untagged report)")
                 continue
-            if lei.upper() not in {e.upper() for e in package.get("entities") or []}:
+            entity_ids = {e.upper() for e in package.get("entities") or []}
+            entity_lei_verified = lei.upper() in entity_ids
+            # Elliptic Laboratories ASA FY2024/FY2025 packages are official
+            # Newsweb ELABS annual filings, but the issuer-authored iXBRL
+            # contexts incorrectly carry Bloomberg Finance L.P.'s LEI. Keep
+            # the global LEI hard gate; allow only this documented issuer/OAM
+            # anomaly and record it explicitly in provenance.
+            newsweb_elabs_entity_anomaly = (
+                company.country.upper() == "NO"
+                and company.ticker.upper() == "ELABS"
+                and lei.upper() == "21380012EQMN8XOXBQ51"
+                and filing.oam == "no-oslo-newsweb"
+                and filing.document_id in {"NEWSWEB:671702:324302", "NEWSWEB:644779:303171"}
+                and entity_ids == {"5493001KJTIIGC8Y1R12"}
+            )
+            if not entity_lei_verified and not newsweb_elabs_entity_anomaly:
                 errors.append(f"{filing.document_id}: report entity {package.get('entities')} != LEI {lei}")
                 continue
             facts = package["facts"]
@@ -1678,7 +1696,9 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                     "oam_report_file": package.get("reportFile"),
                     "oam_published_at": filing.published_at,
                     "oam_retrieved_at": retrieved,
-                    "oam_entity_lei_verified": True,
+                    "oam_entity_lei_verified": entity_lei_verified,
+                    "oam_entity_identity_exception": "ELABS_NEWSWEB_WRONG_EMBEDDED_LEI" if newsweb_elabs_entity_anomaly else None,
+                    "oam_report_entity_ids": sorted(entity_ids),
                     "oam_credit_extraction": normalization_meta,
                 },
             )
@@ -1692,7 +1712,9 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                 quality=0.95,
                 notes=(
                     f"Issuer ESEF annual report lodged with national OAM {filing.oam}; "
-                    f"inline XBRL entity LEI={lei} verified; {filing.label or ''}".strip()
-                ),
+                    + (f"inline XBRL entity LEI={lei} verified; " if entity_lei_verified else
+                       f"documented ELABS Newsweb embedded-LEI anomaly; expected LEI={lei}, report entity={','.join(sorted(entity_ids))}; ")
+                    + (filing.label or "")
+                ).strip(),
             ))
         raise GlobalProviderError("official OAM ESEF package unusable: " + "; ".join(errors)[:600])
