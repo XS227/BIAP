@@ -45,7 +45,7 @@ Global test suite: 567 passed.
 
 ## 4. Remaining blockers (none fixed by relaxing evidence)
 
-- US:TAP.A fix is deployed but not yet re-verified live per-ticker in a full audit (only unit-tested + deployed).
+- Verified after deploy: US:TAP.A now PASS live (SEC CIK 24545, FY2025-12-31, NI −2.14bn, EPS −10.75); CI on 2ba6354 all green incl. the all-markets evidence audit (DE exhaustive).
 - Exchange-wide source gaps unchanged from the 395 audit: AU, CA (TSX/TSXV), CH, HK, KR, NZ, SA, SG, ZA — need new adapters / licensed or keyed sources (KR needs a free OpenDART key from the user).
 - Newer-period OAM coverage: FI (HONBS), IS (HEIMAR, KALD, AMRQ), GB (HEMO), DK banks (DJUR, LOLB) and Greenland GRLA (no CVR) — upstream indexes lack the newer ESEF.
 - Open decisions needing the user: SKF.A lapsed-LEI exception; Commerzbank manual `de_issuer_esef.json` entry; Kerry KRZ needs a Euronext Dublin OAM locator.
