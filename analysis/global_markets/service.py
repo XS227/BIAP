@@ -181,6 +181,20 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
 
     derived: list[str] = []
     eps = company.eps
+    if (
+        eps not in (None, 0)
+        and company.net_income not in (None, 0)
+        and (float(eps) > 0) != (float(company.net_income) > 0)
+    ):
+        # Volvo Cars FY2025: the filing tags BasicEarningsLossPerShare = +0.06
+        # while ProfitLoss = -2,968m. The filed figures contradict each other,
+        # so neither a P/E derived from the EPS nor a provider-supplied P/E is
+        # trustworthy. Withhold both (never flip the sign) and document it.
+        derived.append(
+            f"eps_withheld:sign_contradicts_net_income(eps={float(eps):.6g},net_income={float(company.net_income):.6g});pe_suppressed"
+        )
+        eps = None
+        pe = None
     if same_currency and price not in (None, 0) and eps not in (None, 0):
         # A per-share fact mis-scaled by the filer (EPS 0.655 tagged in
         # thousands -> 655) reaches us from any source, including snapshots

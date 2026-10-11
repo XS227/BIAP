@@ -57,7 +57,7 @@ _CACHE_SOURCE_TOKENS = (*_OFFICIAL_FINANCIAL_TOKENS, "fundamental", "financial_m
 # v8: ESEF debt includes IFRS loans-received lines next to bonds issued.
 # v9: KAP income statement (Flight rows) merged with 1000TL units, SEC equity
 # balance-sheet check + assessed-tax revenue tag, ESEF revenue fallbacks.
-CACHE_SCHEMA_VERSION = 10
+CACHE_SCHEMA_VERSION = 11
 
 # Official providers whose records were found defective after the fact.
 # Snapshots built from them are ignored (neither fresh nor stale fallback).
@@ -159,7 +159,7 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
             payload = json.loads(self._latest_path(company).read_text(encoding="utf-8"))
         except (OSError, ValueError, TypeError):
             return None
-        if not isinstance(payload, dict) or payload.get("schemaVersion") not in {1, 2, 3, 4, 6, 7, 8, 9, CACHE_SCHEMA_VERSION}:
+        if not isinstance(payload, dict) or payload.get("schemaVersion") not in {1, 2, 3, 4, 6, 7, 8, 9, 10, CACHE_SCHEMA_VERSION}:
             return None
         identity = payload.get("identity") if isinstance(payload.get("identity"), dict) else {}
         if str(identity.get("country") or "").upper() != company.country.upper():
