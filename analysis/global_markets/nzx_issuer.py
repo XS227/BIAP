@@ -22,6 +22,7 @@ from pypdf import PdfReader
 
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
+from .pdf_statements import PDFExtractionError, extract_primary_statements, read_pdf_pages
 
 
 _PROVIDER_ID = "official-nzx-issuer-annual-report-v5"
@@ -211,6 +212,82 @@ def _next_payload(html: str) -> dict:
     return value
 
 
+_LEGAL_NAMES = {
+    "NZX": "NZX Limited",
+    "SUM": "Summerset Group Holdings Limited",
+    "SCL": "Scales Corporation Limited",
+}
+_CROSSCHECK_FIELDS = {
+    "revenue": "revenue",
+    "net_income": "net_income",
+    "total_assets": "total_assets",
+    "total_liabilities": "total_liabilities",
+    "total_equity": "total_equity",
+    "cash_and_equivalents": "cash_and_equivalents",
+    "operating_cash_flow": "operating_cash_flow",
+}
+
+
+def pdf_evidence(
+    content: bytes, *, legal_name: str, period_end: str, currency: str, report_url: str,
+) -> dict:
+    """Fail-closed PDF extraction -> per-field evidence (document URL, page,
+    label, raw text, scale, scope, fiscal period end, currency)."""
+    try:
+        result = extract_primary_statements(
+            read_pdf_pages(content),
+            expected_period_end=period_end,
+            expected_currency=currency,
+            legal_name=legal_name,
+        )
+    except PDFExtractionError as exc:
+        raise GlobalProviderError(f"NZX PDF statement extraction blocked: {exc}") from exc
+    provenance = result.provenance()
+    return {
+        "values": result.values(),
+        "fields": {
+            name: {"document_url": report_url, "fiscal_period_end": period_end, "currency": result.currency, **info}
+            for name, info in provenance.items()
+        },
+        "audit_opinion": result.audit_opinion,
+        "audit_pages": result.audit_pages,
+        "statement_pages": result.statement_pages,
+        "checks": result.checks,
+    }
+
+
+def pdf_provenance_crosscheck(
+    content: bytes, *, ticker: str, period_end: str, metrics: dict, report_url: str,
+) -> dict:
+    """Cross-check the issuer parser against the PDF extractor.
+
+    A value disagreement (>0.5%) raises GlobalProviderError (BLOCK). If the
+    extractor itself cannot read the PDF it fails closed and the result is
+    recorded as status "unverified" -- the numbers keep only the issuer
+    parser's evidence and gain no page-level provenance.
+    """
+    try:
+        evidence = pdf_evidence(
+            content, legal_name=_LEGAL_NAMES[ticker], period_end=period_end, currency="NZD", report_url=report_url,
+        )
+    except GlobalProviderError as exc:
+        return {"status": "unverified", "reason": str(exc)}
+    values = evidence.pop("values")
+    agreed: dict[str, dict] = {}
+    for key, field in _CROSSCHECK_FIELDS.items():
+        legacy, pdf_value = metrics.get(key), values.get(field)
+        if legacy is None or pdf_value is None:
+            continue
+        if abs(legacy - pdf_value) > max(1.0, abs(legacy) * 0.005):
+            raise GlobalProviderError(
+                f"NZX PDF cross-check disagreement for {key}: parser={legacy} extractor={pdf_value}"
+            )
+        agreed[key] = evidence["fields"][field]
+    if not agreed:
+        return {"status": "unverified", "reason": "no comparable fields"}
+    return {"status": "verified", **{**evidence, "fields": agreed}}
+
+
 class NZXIssuerFundamentalsProvider(FundamentalsProvider):
     provider_id = _PROVIDER_ID
 
@@ -342,6 +419,9 @@ class NZXIssuerFundamentalsProvider(FundamentalsProvider):
         if year is None or year > datetime.now(timezone.utc).year:
             raise GlobalProviderError("NZX annual-report period year could not be verified")
 
+        crosscheck = pdf_provenance_crosscheck(
+            pdf.content, ticker=ticker, period_end=f"{year}-12-31", metrics=metrics, report_url=report_url,
+        )
         revenue = metrics["revenue"]
         net_income = metrics["net_income"]
         net_margin = (net_income / revenue * 100.0) if revenue and net_income is not None else None
@@ -367,6 +447,7 @@ class NZXIssuerFundamentalsProvider(FundamentalsProvider):
                 "nzx_annual_report_url": report_url,
                 "nzx_annual_report_title": title,
                 "nzx_annual_report_pdf_verified": True,
+                "nzx_pdf_provenance": crosscheck,
             },
         )
         return append_source(
