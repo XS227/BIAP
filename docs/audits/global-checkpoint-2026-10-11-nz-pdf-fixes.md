@@ -16,3 +16,9 @@ No acceptance rule was loosened: period, scale, currency, balance tie, ambiguity
 - SCL legacy parser fails at baseline (not touched). FPH annual-report announcement not located by the locator.
 - Venv for tests: ~/biap-global/venv-pdf (system python lacks pypdf).
 - Push touches analysis/global_markets/** -> CD auto-deploys prod; re-run any live-check workflow that started during the restart.
+
+## Final verification (2026-10-11, no new development)
+- `test_global_nzx_pdf_regressions.py` at b59a451: 7 passed, 0 failed, 0 skipped (venv-pdf).
+- Working tree clean; HEAD == origin/feat/biap-global == b59a451; main synced (5104606).
+- CI on b59a451: Global check, Sync main, Setup BIAP Global server (prod deploy), both live checks all success.
+- Prod service biap-global active on :8091.
