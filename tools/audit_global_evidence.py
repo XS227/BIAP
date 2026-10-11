@@ -18,6 +18,8 @@ Every result is classified:
   LEGIT_OFFICIAL_UNAVAILABLE  the official source was reached and holds no machine-readable
                          report for the issuer (untagged/PDF-only report, no OAM issuer page,
                          no completed annual period)
+  LEGIT_FISCAL_TRANSITION  verified short transition period (e.g. Mediobanca 6 months); annual
+                         scoring is deliberately BLOCKed, never relaxed
   INDEX_LAG              official filing found only for an older period while a newer period
                          exists; the issuer's national OAM is not integrated (coverage gap)
   COVERAGE_GAP           no official financial-statement adapter/credentials for this market/issuer
@@ -319,6 +321,10 @@ def _classify(payload: dict) -> dict:
     if fe.get("isOfficial") and "fundamental_source" in missing:
         cls = "PIPELINE_FAILURE"
         detail = "official evidence attached but Evidence reports missing fundamental_source"
+    elif "fundamental_core_figures" in missing and (fe.get("fiscalYearTransition") or {}).get("status") == "VERIFIED_TRANSITION_PERIOD":
+        # Deliberate gate: a short transition period must never be scored as an annual P&L.
+        cls = "LEGIT_FISCAL_TRANSITION"
+        detail = "verified fiscal-year transition period (" + str((fe.get("fiscalYearTransition") or {}).get("periodLabel")) + "); annual scoring stays BLOCK"
     elif "fundamental_core_figures" in missing:
         cls = "PIPELINE_FAILURE"
         detail = "official source attached but its parsed statement has no P&L core figures"
@@ -418,12 +424,13 @@ def main() -> int:
         if r.get("_canary"):
             continue
         key = f"{r['country']}/{r['exchange']}"
-        m = by_market.setdefault(key, {"universe": totals.get(key), "sampled": 0, "officialValid": 0, "officialStale": 0, "legitUnavailable": 0, "indexLag": 0, "coverageGap": 0, "pipelineFailure": 0, "suspectValues": 0, "marketData": 0, "apiFailure": 0, "pass": 0, "block": 0, "blockReasons": {}})
+        m = by_market.setdefault(key, {"universe": totals.get(key), "sampled": 0, "officialValid": 0, "officialStale": 0, "legitUnavailable": 0, "fiscalTransition": 0, "indexLag": 0, "coverageGap": 0, "pipelineFailure": 0, "suspectValues": 0, "marketData": 0, "apiFailure": 0, "pass": 0, "block": 0, "blockReasons": {}})
         m["sampled"] += 1
         cls = r["classification"]
         m["officialValid"] += int(bool(r.get("official")) and r.get("officialStatus") == "OFFICIAL_CURRENT")
         m["officialStale"] += int(cls == "LEGIT_OFFICIAL_STALE")
         m["legitUnavailable"] += int(cls == "LEGIT_OFFICIAL_UNAVAILABLE")
+        m["fiscalTransition"] += int(cls == "LEGIT_FISCAL_TRANSITION")
         m["indexLag"] += int(cls == "INDEX_LAG")
         m["coverageGap"] += int(cls == "COVERAGE_GAP")
         m["pipelineFailure"] += int(cls == "PIPELINE_FAILURE")

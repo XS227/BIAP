@@ -1,6 +1,7 @@
 import pytest
 
 from global_markets.cached_fundamentals import PersistentFundamentalsProvider
+from global_markets.models import GlobalCompany
 from global_markets.fallback_fundamentals import FallbackFundamentalsProvider
 from global_markets.providers import GlobalProviderError
 from global_markets.runtime import build_registry
@@ -455,3 +456,20 @@ def test_btbd_newer_10k_read_from_ixbrl_when_companyfacts_lags_and_instance_malf
     submissions["filings"]["recent"]["isXBRL"] = [0, 0]
     stale = provider.enrich_fundamentals(company)
     assert stale.filing_period_end == "2024-12-31"
+
+
+def _class_company(ticker):
+    return GlobalCompany(country="US", exchange="NYSE", mic_code="XNYS", currency="USD", ticker=ticker, name="Molson Coors Beverage Company Class A Common Stock")
+
+
+def test_share_class_ticker_resolves_via_sec_hyphen_form(monkeypatch):
+    provider = SECEdgarFundamentalsProvider(user_agent="BIAP test contact@example.com")
+    monkeypatch.setattr(provider, "_ticker_map", lambda: {"TAP": 24545, "TAP-A": 24545})
+    assert provider._resolve_cik(_class_company("TAP.A")) == 24545
+
+
+def test_unknown_share_class_is_not_guessed_from_base_ticker(monkeypatch):
+    provider = SECEdgarFundamentalsProvider(user_agent="BIAP test contact@example.com")
+    monkeypatch.setattr(provider, "_ticker_map", lambda: {"TAP": 24545})
+    with pytest.raises(GlobalProviderError):
+        provider._resolve_cik(_class_company("TAP.A"))
