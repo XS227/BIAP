@@ -85,6 +85,12 @@ _CONCEPTS = {
     "current_other_loans": ("ifrs-full:CurrentLoansReceivedAndCurrentPortionOfNoncurrentLoansReceived",),
     "noncurrent_other_loans": ("ifrs-full:NoncurrentPortionOfNoncurrentLoansReceived",),
     "interest_expense": ("ifrs-full:FinanceCosts", "ifrs-full:InterestExpense"),
+    # Used only to detect gross-up: issuers such as Eni tag derivative/FX
+    # gross flows in FinanceCosts that are offset by a similar FinanceIncome.
+    "interest_expense_only": ("ifrs-full:InterestExpense",),
+    "finance_costs_only": ("ifrs-full:FinanceCosts",),
+    "finance_income": ("ifrs-full:FinanceIncome",),
+    "net_finance_cost": ("ifrs-full:FinanceIncomeCost",),
     # Cash-flow lines for the S&P-style FFO derivation (EBITDA - interest
     # paid + interest received - income taxes paid).
     "interest_paid": (
@@ -371,6 +377,30 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             if (exact or extension) and cls._plain_fact(fact) and _num(fact.get("value")) is not None:
                 result.append(fact)
         return result
+
+    @classmethod
+    def _interest_expense(cls, concept_facts: dict, period_end: date) -> Optional[float]:
+        """Interest cost for coverage ratios, never a gross-up.
+
+        A tagged InterestExpense wins. Gross FinanceCosts is used unless it is an
+        extreme gross-up (Eni: costs 8.2bn vs income 7.2bn from derivatives/FX,
+        net 0.8bn); then the issuer's own reported net finance cost is used
+        when it is a cost, else the figure is withheld.
+        """
+        direct = cls._duration_value(concept_facts.get("interest_expense_only", []), period_end)
+        if direct is not None:
+            return direct
+        costs = cls._duration_value(concept_facts.get("finance_costs_only", []), period_end)
+        if costs is None:
+            return cls._duration_value(concept_facts["interest_expense"], period_end)
+        income = cls._duration_value(concept_facts.get("finance_income", []), period_end)
+        net = cls._duration_value(concept_facts.get("net_finance_cost", []), period_end)
+        # Only an extreme gross-up (income nearly cancels the costs and the
+        # issuer's own net line is <= 1/8 of gross) replaces the gross figure.
+        if income is None or net is None or costs <= 0 or income < 0.8 * costs or abs(net) * 8 > costs:
+            return costs
+        return abs(net) if net < 0 else None
+
 
     @staticmethod
     def _duration_value(facts: list[dict], period_end: date, *, previous: bool = False) -> Optional[float]:
@@ -745,7 +775,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             "operating_cash_flow": ocf,
             "free_cash_flow": fcf,
             "total_debt": debt,
-            "interest_expense": self._duration_value(concept_facts["interest_expense"], period_end),
+            "interest_expense": self._interest_expense(concept_facts, period_end),
             "eps": eps,
             "__normalization_meta__": {
                 "revenue_method": revenue_method,
