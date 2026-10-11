@@ -113,29 +113,34 @@ jobs:
         run: |
           set -euo pipefail
           PORT="${VPS_PORT:-22}"
+          # Stage under $HOME: the VPS /tmp is a small per-user-quota tmpfs and
+          # cannot hold the ~105 MB APK (publish failed with scp write Failure).
+          # The arm64 alias is the same file, so it is uploaded once.
+          STAGE='.biap-global-apk-staging'
+          ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" "rm -rf ~/$STAGE && mkdir -p ~/$STAGE"
           scp -i ~/.ssh/biap_global_key -P "$PORT" -o BatchMode=yes \
             /tmp/BIAP-Global-latest.apk \
             /tmp/BIAP-Global-latest.apk.sha256 \
-            /tmp/BIAP-Global-latest-arm64.apk \
-            /tmp/BIAP-Global-latest-arm64.apk.sha256 \
             /tmp/BIAP-Global-latest-arm64.name \
-            "$VPS_USER@$VPS_HOST:/tmp/"
+            "$VPS_USER@$VPS_HOST:$STAGE/"
           ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
           set -euo pipefail
           if [[ "$(id -u)" -eq 0 ]]; then SUDO=""; else SUDO="sudo -n"; fi
           WEB_ROOT=/var/www/biap-global-web
           DOWNLOAD_DIR="$WEB_ROOT/download"
           $SUDO install -d -m 0755 "$DOWNLOAD_DIR"
-          VERSIONED_NAME="$(cat /tmp/BIAP-Global-latest-arm64.name)"
+          S="$HOME/.biap-global-apk-staging"
+          VERSIONED_NAME="$(cat "$S/BIAP-Global-latest-arm64.name")"
           test -n "$VERSIONED_NAME"
-          $SUDO install -m 0644 /tmp/BIAP-Global-latest.apk "$DOWNLOAD_DIR/BIAP-Global-latest.apk"
-          $SUDO install -m 0644 /tmp/BIAP-Global-latest.apk.sha256 "$DOWNLOAD_DIR/BIAP-Global-latest.apk.sha256"
-          $SUDO install -m 0644 /tmp/BIAP-Global-latest.apk "$DOWNLOAD_DIR/$VERSIONED_NAME"
-          $SUDO install -m 0644 /tmp/BIAP-Global-latest.apk.sha256 "$DOWNLOAD_DIR/$VERSIONED_NAME.sha256"
-          $SUDO install -m 0644 /tmp/BIAP-Global-latest-arm64.apk "$DOWNLOAD_DIR/BIAP-Global-latest-arm64.apk"
-          $SUDO install -m 0644 /tmp/BIAP-Global-latest-arm64.apk.sha256 "$DOWNLOAD_DIR/BIAP-Global-latest-arm64.apk.sha256"
-          $SUDO install -m 0644 /tmp/BIAP-Global-latest-arm64.name "$DOWNLOAD_DIR/BIAP-Global-latest-arm64.name"
-          rm -f /tmp/BIAP-Global-latest.apk /tmp/BIAP-Global-latest.apk.sha256 /tmp/BIAP-Global-latest-arm64.apk /tmp/BIAP-Global-latest-arm64.apk.sha256 /tmp/BIAP-Global-latest-arm64.name
+          (cd "$S" && echo "$(cat BIAP-Global-latest.apk.sha256)  BIAP-Global-latest.apk" | sha256sum -c -)
+          $SUDO install -m 0644 "$S/BIAP-Global-latest.apk" "$DOWNLOAD_DIR/BIAP-Global-latest.apk"
+          $SUDO install -m 0644 "$S/BIAP-Global-latest.apk.sha256" "$DOWNLOAD_DIR/BIAP-Global-latest.apk.sha256"
+          $SUDO install -m 0644 "$S/BIAP-Global-latest.apk" "$DOWNLOAD_DIR/$VERSIONED_NAME"
+          $SUDO install -m 0644 "$S/BIAP-Global-latest.apk.sha256" "$DOWNLOAD_DIR/$VERSIONED_NAME.sha256"
+          $SUDO install -m 0644 "$S/BIAP-Global-latest.apk" "$DOWNLOAD_DIR/BIAP-Global-latest-arm64.apk"
+          $SUDO install -m 0644 "$S/BIAP-Global-latest.apk.sha256" "$DOWNLOAD_DIR/BIAP-Global-latest-arm64.apk.sha256"
+          $SUDO install -m 0644 "$S/BIAP-Global-latest-arm64.name" "$DOWNLOAD_DIR/BIAP-Global-latest-arm64.name"
+          rm -rf "$S"
           ls -lh "$DOWNLOAD_DIR/BIAP-Global-latest.apk"
           REMOTE
 

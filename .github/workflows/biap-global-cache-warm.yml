@@ -63,7 +63,7 @@ jobs:
           ssh -i ~/.ssh/biap_global_key -p "$PORT" -o BatchMode=yes "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
           set -euo pipefail
           APP_DIR=/home/ubuntu/biap-global/BIAP
-          WORK_DIR=/tmp/biap-global-cache-warm-$
+          WORK_DIR=/home/ubuntu/biap-global/.wt-cache-warm
           cd "$APP_DIR"
           git fetch origin feat/biap-global
           git worktree remove --force "$WORK_DIR" 2>/dev/null || rm -rf "$WORK_DIR"
@@ -90,8 +90,8 @@ jobs:
           if ! "$PY" -m global_markets.cvm_itr_sync; then
             echo "CVM_ITR: refresh failed; existing verified index preserved" >&2
           fi
-          "$PY" -m global_markets.market_cache_warm | tee /tmp/biap-global-market-cache-warm.json
-          "$PY" -m global_markets.official_cache_warm | tee /tmp/biap-global-cache-warm.json
+          "$PY" -m global_markets.market_cache_warm | tee "$APP_DIR/../.cache-warm-market.json"
+          "$PY" -m global_markets.official_cache_warm | tee "$APP_DIR/../.cache-warm-official.json"
           echo "fundamentals_latest_files=$(find "$BIAP_GLOBAL_DATA_DIR/fundamentals" -type f -name latest.json 2>/dev/null | wc -l)"
           echo "fundamentals_period_files=$(find "$BIAP_GLOBAL_DATA_DIR/fundamentals" -type f -path '*/history/*.json' 2>/dev/null | wc -l)"
           echo "sec_raw_cache_files=$(find "$BIAP_GLOBAL_DATA_DIR/cache/sec-edgar" -type f -name '*.json' 2>/dev/null | wc -l)"
