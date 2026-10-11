@@ -38,3 +38,11 @@ def test_pence_and_unscaled_per_share_values_are_kept():
     )
     assert round(facts["ifrs-full:BasicEarningsLossPerShare"], 6) == 0.123
     assert facts["ifrs-full:DilutedEarningsLossPerShare"] == 1.25
+
+
+def test_decimal_per_share_value_in_thousands_is_dropped():
+    # Logista FY2025 (CNMV IFA): EPS "2,13" tagged scale="3".
+    facts = _facts(
+        '<ix:nonFraction contextRef="c" name="ifrs-full:BasicEarningsLossPerShare" unitRef="eps" decimals="2" scale="3" format="ixt:num-comma-decimal">2,13</ix:nonFraction>'
+    )
+    assert "ifrs-full:BasicEarningsLossPerShare" not in facts

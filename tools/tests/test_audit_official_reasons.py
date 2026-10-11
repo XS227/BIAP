@@ -56,3 +56,44 @@ def test_stale_frankfurt_key_data_without_esef_obligation_is_legit_unavailable()
               'no ESEF annual financial report obligation); fallback unavailable (primary fundamentals unavailable '
               '(no reviewed German annual-report snapshot for DE0005760029); fallback unavailable (Börse Frankfurt latest annual key data FY2024 is too old)))')
     assert audit._leaf_class(detail) == 'LEGIT_OFFICIAL_UNAVAILABLE'
+
+
+def test_truncated_stale_detail_with_untagged_reports_is_not_pipeline_failure():
+    payload = {'evidence': {'status': 'BLOCK', 'missing_critical': ['fundamental_source'],
+        'official_fundamental_status': 'OFFICIAL_STALE',
+        'official_fundamental_detail': 'latest official period 2022-12-31 is 1380 days old; newer period only from non-official source; newer official source unavailable: official OAM ESEF package unusable: FSMA-STORI:653d9062-d0fa-463c-b9dd-e7b91a44ef5b: official ESEF report carries no inline XBRL tags (untagged report); FSMA-STORI:8490ee7f-eafb-40a9-9259-6fe3d69acab2: official ESEF repo'}}
+    assert audit._classify(payload)['classification'] != 'PIPELINE_FAILURE'
+
+
+def test_greenland_issuer_without_cvr_is_coverage_gap():
+    detail = ("primary fundamentals unavailable (no Danish CVR number verifiable for LEI 549300EQF6IH6OIAYL40 (GLEIF registeredAs); "
+              "Nasdaq Nordic announcements list no ESEF annual report for 'GRØNLANDSBANKEN, AKTIESELSKAB'); fallback unavailable "
+              "(primary fundamentals unavailable (no ESEF filing found for LEI 549300EQF6IH6OIAYL40); fallback unavailable "
+              "(primary fundamentals unavailable (SEC CIK not found for ticker GRLA); fallback unavailable (SEC CIK not found for ticker GRLA)))")
+    assert audit._leaf_class(detail) == 'COVERAGE_GAP'
+
+
+def test_canadian_ticker_owned_by_other_sec_filer_is_coverage_gap():
+    detail = ("primary fundamentals unavailable (SEC ticker identity does not match selected issuer 'Elysee Development Corp.'; "
+              "entityName='ENTERGY LOUISIANA, LLC'; jseIssuer=''; secAlias=''; cik=1348952); fallback unavailable "
+              "(SEC returned no standard US-GAAP company facts for US:XTSX:ELC)")
+    assert audit._leaf_class(detail) == 'COVERAGE_GAP'
+
+
+def test_value_sanity_flags_thousand_scaled_eps_and_untied_balance_sheet():
+    payload = {'currency': 'EUR', 'evidence': {'status': 'PASS', 'missing_critical': []},
+        'company': {'price': 11.1},
+        'fundamentalEvidence': {'isOfficial': True, 'values': {'reporting_currency': 'EUR', 'revenue': 1.0e8, 'eps': 655.0,
+            'total_assets': 12.7e9, 'total_liabilities': 5.99e9, 'total_equity': -0.23e9}}}
+    flags = audit._value_flags(payload)
+    assert any('EPS' in f for f in flags) and any('balance sheet' in f for f in flags)
+    assert audit._classify(payload)['classification'] == 'SUSPECT_VALUES'
+
+
+def test_value_sanity_accepts_consistent_official_payload():
+    payload = {'currency': 'NOK', 'evidence': {'status': 'PASS', 'missing_critical': []},
+        'company': {'price': 417.9},
+        'fundamentalEvidence': {'isOfficial': True, 'reportPeriod': '2025-12-31', 'filingDate': '2026-03-19',
+            'values': {'reporting_currency': 'USD', 'revenue': 1.06e11, 'net_income': 5.1e9, 'eps': 1.94,
+            'total_assets': 131.7e9, 'total_liabilities': 91.2e9, 'total_equity': 40.5e9}}}
+    assert audit._value_flags(payload) == []

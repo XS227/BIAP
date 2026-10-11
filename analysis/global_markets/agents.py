@@ -186,6 +186,13 @@ def _has_source_type(company: GlobalCompany, tokens: tuple[str, ...]) -> bool:
     return False
 
 
+def _official_core_figures(company: GlobalCompany) -> bool:
+    """At least one P&L figure and two of revenue/net income/assets/equity."""
+    core = ("revenue", "net_income", "total_assets", "total_equity")
+    present = sum(getattr(company, field) is not None for field in core)
+    return present >= 2 and (company.revenue is not None or company.net_income is not None)
+
+
 def evidence_agent(
     company: GlobalCompany,
     signals: Iterable[AgentSignal] = (),
@@ -236,6 +243,11 @@ def evidence_agent(
     )
     if not official_sources and not secondary_only_fundamentals:
         missing_critical.append("fundamental_source")
+    elif official_sources and not _official_core_figures(company):
+        # An official source whose parsed statement lacks every P&L figure
+        # (KAP AGHOL FY2025: only equity and current items were read) is a
+        # parser gap, not evidence; it must not clear the gate.
+        missing_critical.append("fundamental_core_figures")
     official_status, official_detail = official_fundamental_status(company, now=now)
 
     available = sum(getattr(company, field) is not None for field in _EVIDENCE_FIELDS)

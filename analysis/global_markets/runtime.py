@@ -552,11 +552,24 @@ def build_registry() -> ProviderRegistry:
 
     # ASX/issuer disclosures are licensing-sensitive. An authorized ingestion
     # job writes normalized verified records to the server filing drop.
+    # Australia has no XBRL filing mandate; ASX issuers that also file annual
+    # reports with the SEC (20-F IFRS, or 10-K for CDI-listed US companies)
+    # use the same strict ticker + legal-name identity chain as CA/CH/ZA.
+    # Every other ASX issuer stays on labelled vendor data, Evidence-BLOCKED.
     au = VerifiedFilingDropProvider(
         country="AU",
         provider_names=("asx", "asx-issuer", "issuer", "bhp-official-annual-report"),
     )
-    au_with_fallback = FallbackFundamentalsProvider(au, public_fundamentals)
+    au_official = FallbackFundamentalsProvider(
+        au,
+        FallbackFundamentalsProvider(
+            SECForeignIFRSFundamentalsProvider(user_agent=sec_user_agent),
+            SECCrossListedUSGAAPFundamentalsProvider(user_agent=sec_user_agent),
+        ),
+    )
+    au_with_fallback = PersistentFundamentalsProvider(
+        FallbackFundamentalsProvider(au_official, public_fundamentals)
+    )
     for exchange in COUNTRY_PACKS["AU"].exchanges:
         register_fundamentals("AU", exchange.code, au_with_fallback)
 

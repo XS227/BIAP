@@ -275,9 +275,13 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
         if instance_error:
             instance_fields["sec_instance_error"] = instance_error[:400]
 
+        # A non-US listing keeps its exchange-published name (ASX "RIO TINTO
+        # LIMITED" stays distinct from SEC filer "Rio Tinto plc" in a dual-listed
+        # group's joint 20-F); the SEC filer name is kept as provenance.
+        keep_local_name = company.country.strip().upper() != "US" and bool(company.name)
         enriched = replace(
             company,
-            name=entity_name or company.name,
+            name=company.name if keep_local_name else (entity_name or company.name),
             reporting_currency=reporting_currency,
             revenue=revenue,
             revenue_prev=revenue_prev,
@@ -300,7 +304,7 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
             eps=self._value(eps),
             filing_period_end=period_end,
             filing_observed_at=filed_at,
-            raw_provider_fields={**company.raw_provider_fields, "sec_cik": cik, "sec_form": filing_form, **instance_fields},
+            raw_provider_fields={**company.raw_provider_fields, "sec_cik": cik, "sec_form": filing_form, "sec_entity_name": entity_name, **instance_fields},
         )
         return append_source(
             enriched,

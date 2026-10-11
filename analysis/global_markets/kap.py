@@ -72,14 +72,15 @@ def _number(value: object) -> Optional[float]:
 
 
 def _currency_scale(value: object) -> tuple[str, float]:
-    text = _ascii_upper(value).replace(" ", "")
+    text = _ascii_upper(value).replace(" ", "").replace(".", "")
     if not text:
         return "TRY", 1.0
-    match = re.search(r"(1000000|1000)?(?:TL|TRY)$", text)
+    match = re.search(r"(1000000|1000)?(TL|TRY|USD|EUR)$", text)
     if not match:
-        return "TRY", 1.0
+        # An unrecognised presentation unit must not be read as plain TRY.
+        raise GlobalProviderError(f"KAP presentation currency/unit {value!r} is not recognised")
     factor = float(match.group(1) or 1)
-    return "TRY", factor
+    return ("TRY" if match.group(2) in {"TL", "TRY"} else match.group(2)), factor
 
 
 class _LinkParser(HTMLParser):

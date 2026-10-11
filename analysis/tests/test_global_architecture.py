@@ -81,6 +81,22 @@ def test_evidence_blocks_market_only_data_even_with_good_price():
     assert "fundamental_source" in evidence.missing_critical
 
 
+def test_evidence_blocks_official_source_without_pnl_core_figures():
+    # KAP AGHOL FY2025: only equity and current items parsed from the summary.
+    company = _verified_company(revenue=None, revenue_yoy_pct=None, net_income=None, net_margin_pct=None,
+                                total_assets=None, total_liabilities=None, operating_cash_flow=None)
+    evidence = evidence_agent(company, _signals(), now=datetime(2026, 9, 16, 1, tzinfo=timezone.utc))
+    assert evidence.status == "BLOCK"
+    assert "fundamental_core_figures" in evidence.missing_critical
+
+
+def test_evidence_accepts_bank_style_official_core_without_revenue():
+    company = _verified_company(revenue=None, revenue_yoy_pct=None, net_margin_pct=None)
+    evidence = evidence_agent(company, _signals(), now=datetime(2026, 9, 16, 1, tzinfo=timezone.utc))
+    assert "fundamental_core_figures" not in evidence.missing_critical
+    assert evidence.status in {"PASS", "WARN"}
+
+
 def test_evidence_blocks_stale_price():
     company = _verified_company(price_observed_at="2026-08-01T00:00:00+00:00")
     evidence = evidence_agent(company, _signals(), now=datetime(2026, 9, 16, 1, tzinfo=timezone.utc))

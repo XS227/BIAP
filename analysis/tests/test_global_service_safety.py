@@ -131,7 +131,7 @@ def test_recent_market_scan_supplies_non_official_peer_pe_benchmark(monkeypatch,
     assert any(source.provider == "biap-derived-metrics" for source in enriched.sources)
 
 
-def test_eps_above_price_leaves_pe_underived():
+def test_eps_above_price_is_withheld_and_pe_underived():
     # CIR FY2025 ESEF tags EPS 0.0325 with scale=3 -> 32.5 vs price 0.73.
     company = GlobalCompany(
         country="IT", exchange="EURONEXT_MILAN", mic_code="XMIL", currency="EUR",
@@ -139,4 +139,35 @@ def test_eps_above_price_leaves_pe_underived():
     )
     enriched = _derive_metrics(company)
     assert enriched.pe is None
-    assert "pe_not_derived:eps_exceeds_price" in enriched.raw_provider_fields["derived_metrics"]
+    assert enriched.eps is None
+    assert any(d.startswith("eps_withheld:implausible_vs_price") for d in enriched.raw_provider_fields["derived_metrics"])
+
+
+def test_cached_thousand_scaled_eps_is_withheld():
+    # Revenio FY2025 snapshot: EPS 0.655 EUR carried as 655 (price EUR 11.10).
+    company = GlobalCompany(
+        country="FI", exchange="NASDAQ_HELSINKI", mic_code="XHEL", currency="EUR",
+        ticker="REG1V", name="Revenio", price=11.1, reporting_currency="EUR", eps=655.0,
+    )
+    assert _derive_metrics(company).eps is None
+
+
+def test_penny_stock_loss_per_share_is_kept():
+    # Loss per share a few times a penny-stock price is a real figure.
+    company = GlobalCompany(
+        country="CH", exchange="SIX", mic_code="XSWX", currency="CHF",
+        ticker="ADXN", name="Addex", price=0.0232, reporting_currency="CHF", eps=-0.06,
+    )
+    enriched = _derive_metrics(company)
+    assert enriched.eps == -0.06
+    assert enriched.pe is None
+
+
+def test_cross_currency_eps_is_not_compared_with_price():
+    company = GlobalCompany(
+        country="NO", exchange="EURONEXT_OSLO", mic_code="XOSL", currency="NOK",
+        ticker="EQNR", name="Equinor", price=417.9, reporting_currency="USD", eps=1.94,
+    )
+    enriched = _derive_metrics(company)
+    assert enriched.eps == 1.94
+    assert enriched.pe is None

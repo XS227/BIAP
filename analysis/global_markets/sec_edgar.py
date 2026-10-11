@@ -173,6 +173,40 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         rows = cls._annual_series(gaap, tags, count=1)
         return rows[0] if rows else None
 
+    @classmethod
+    def _consistent_equity(cls, gaap: dict, assets: Optional[dict], liabilities: Optional[dict]) -> Optional[dict]:
+        """Total equity, cross-checked against the balance-sheet identity.
+
+        The NCI-inclusive total is preferred, but filers occasionally tag an
+        equity component with it (Agilent FY2025: accumulated OCI -226m under
+        StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest,
+        parent equity 6,741m). When both totals exist for the same period, the
+        one satisfying assets = liabilities + equity (2%) wins; without a
+        liabilities fact, a negative NCI-inclusive total never overrides a
+        positive parent total.
+        """
+        preferred = cls._latest(gaap, ("StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest", "StockholdersEquity"))
+        including = cls._latest(gaap, ("StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",))
+        parent = cls._latest(gaap, ("StockholdersEquity",))
+        if not (preferred and including and parent) or including.get("end") != parent.get("end"):
+            return preferred
+        if preferred.get("end") != including.get("end"):
+            return preferred
+        inc, par = cls._value(including), cls._value(parent)
+        if inc is None or par is None or inc == par:
+            return preferred
+        a = cls._value(assets) if assets and assets.get("end") == including.get("end") else None
+        l = cls._value(liabilities) if liabilities and liabilities.get("end") == including.get("end") else None
+        if a and l is not None:
+            def ties(e: float) -> bool:
+                return abs(a - (l + e)) <= 0.02 * abs(a)
+            if not ties(inc) and ties(par):
+                return parent
+            return including
+        if inc < 0 < par:
+            return parent
+        return including
+
     @staticmethod
     def _value(row: Optional[dict]) -> Optional[float]:
         if not row:
@@ -213,13 +247,13 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         if not gaap:
             raise GlobalProviderError(f"SEC returned no standard US-GAAP company facts for {company.identity()}")
 
-        revenues = self._annual_series(gaap, ("RevenueFromContractWithCustomerExcludingAssessedTax", "Revenues", "SalesRevenueNet"))
+        revenues = self._annual_series(gaap, ("RevenueFromContractWithCustomerExcludingAssessedTax", "Revenues", "SalesRevenueNet", "RevenueFromContractWithCustomerIncludingAssessedTax"))
         net_income = self._annual_series(gaap, ("NetIncomeLoss", "ProfitLoss"))
         gross_profit = self._latest(gaap, ("GrossProfit",))
         operating_income = self._latest(gaap, ("OperatingIncomeLoss",))
         assets = self._latest(gaap, ("Assets",))
         liabilities = self._latest(gaap, ("Liabilities",))
-        equity = self._latest(gaap, ("StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest", "StockholdersEquity"))
+        equity = self._consistent_equity(gaap, assets, liabilities)
         retained_earnings = self._latest(gaap, ("RetainedEarningsAccumulatedDeficit",))
         current_assets = self._latest(gaap, ("AssetsCurrent",))
         current_liabilities = self._latest(gaap, ("LiabilitiesCurrent",))

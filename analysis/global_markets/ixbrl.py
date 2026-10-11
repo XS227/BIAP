@@ -182,7 +182,12 @@ def _misscaled_per_share(raw: dict, measures: list[str]) -> bool:
     rescaled. Negative scales stay valid (UK EPS shown in pence, scale=-2).
     """
     per_share = len(measures) == 2 and "shares" in measures[1].lower()
-    return per_share and int(raw.get("scale") or 0) > 0 and abs(raw.get("shown") or 0) < 1
+    if not per_share or int(raw.get("scale") or 0) <= 0:
+        return False
+    # Logista FY2025 shows EPS "2,13" with scale="3" (EUR 2,130/share): a
+    # per-share amount stated in thousands never carries decimals either.
+    shown = abs(raw.get("shown") or 0)
+    return shown < 1 or abs(shown - round(shown)) > 1e-9
 
 
 def extract_facts(chunks: Iterable[str]) -> tuple[list[dict], set[str]]:
