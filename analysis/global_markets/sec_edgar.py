@@ -92,7 +92,13 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
                 return int(explicit)
             except (TypeError, ValueError) as exc:
                 raise GlobalProviderError(f"invalid SEC CIK for {company.identity()}") from exc
-        cik = self._ticker_map().get(company.ticker.strip().upper())
+        ticker = company.ticker.strip().upper()
+        mapping = self._ticker_map()
+        # SEC lists share classes with a hyphen (TAP-A, BRK-B); exchanges use a dot.
+        # Only the exact ticker or its dot->hyphen form is tried, never a prefix guess.
+        cik = mapping.get(ticker)
+        if cik is None and "." in ticker:
+            cik = mapping.get(ticker.replace(".", "-"))
         if cik is None:
             raise GlobalProviderError(f"SEC CIK not found for ticker {company.ticker.strip().upper()}")
         return cik
