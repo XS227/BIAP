@@ -391,9 +391,11 @@ def build_registry() -> ProviderRegistry:
     de_issuer = GermanIssuerFundamentalsProvider()
     de_drop = VerifiedFilingDropProvider(
         country="DE",
+        # "unternehmensregister-de-auto" (2026-10-06 browser worker) is
+        # revoked: 25 of its 27 records mix units (BMM net income 0.76 vs
+        # EUR 757,810 filed) and the register disallows automated access.
         provider_names=(
             GermanIssuerFundamentalsProvider.provider_id,
-            "unternehmensregister-de-auto",
             "issuer-ir-search-de-auto",
         ),
         enqueue_missing=True,
