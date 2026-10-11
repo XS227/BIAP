@@ -1757,6 +1757,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                     normalized.setdefault("__normalization_meta__", {})["total_liabilities_method"] = "derived_assets_minus_equity_same_oam_filing"
             reporting_currency = normalized.pop("reporting_currency")
             normalization_meta = normalized.pop("__normalization_meta__", {})
+            transition = normalization_meta.pop("fiscal_year_transition", None)
             retrieved = str(package.get("parsedAt") or _utc_now().isoformat())
             enriched = replace(
                 company,
@@ -1780,6 +1781,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                     "oam_entity_identity_exception": "ELABS_NEWSWEB_WRONG_EMBEDDED_LEI" if newsweb_elabs_entity_anomaly else None,
                     "oam_report_entity_ids": sorted(entity_ids),
                     "oam_credit_extraction": normalization_meta,
+                    **({"fiscal_year_transition": transition} if transition else {}),
                     **_agent10_fields(normalization_meta),
                 },
             )

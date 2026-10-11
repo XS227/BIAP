@@ -101,6 +101,22 @@ _VALUE_FIELDS = (
 )
 
 
+def _transition_block(transition: object, best: Optional[SourceEvidence], company: GlobalCompany) -> Optional[dict]:
+    """Separately labelled short-period figures; never merged into ``values``."""
+    if not isinstance(transition, dict) or best is None:
+        return None
+    return {
+        **transition,
+        "provenance": {
+            "provider": best.provider,
+            "sourceId": best.source_id,
+            "sourceUrl": best.source_url,
+            "filingDate": company.filing_observed_at,
+            "isOfficial": True,
+        },
+    }
+
+
 def fundamental_evidence_contract(company: GlobalCompany, *, now: Optional[datetime] = None) -> dict:
     """One canonical, market-independent fundamentals-evidence object."""
     official = official_fundamental_sources(company)
@@ -147,4 +163,5 @@ def fundamental_evidence_contract(company: GlobalCompany, *, now: Optional[datet
         ),
         # Only when a source explicitly states it; never inferred.
         "auditStatus": audit if audit in {"audited", "unaudited"} else None,
+        "fiscalYearTransition": _transition_block(raw.get("fiscal_year_transition"), best, company),
     }
