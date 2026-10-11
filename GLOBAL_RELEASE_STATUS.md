@@ -10,6 +10,54 @@ PASS = official/structured filing evidence attached and all evidence gates
 cleared. BLOCK never means fabricated data was hidden: the instrument still
 gets price + labelled non-official metrics, but no BUY candidate.
 
+## Update 2026-10-11 (session checkpoint)
+
+Commits on `feat/biap-global`: `bd7608a` audit classifier, `9cd72f1` ES CNMV
+NIF, `4c7a5b5` FR AMF `.xbri` + IT eMarket duplicate rows, `97b8fc2`
+mis-scaled EPS guard. Tests: 794 passed (analysis) + 8 (tools).
+
+Production audit, 20 deterministic catalog samples per exchange (prod
+service before these fixes; `audit-runs/1011-priority20/` on the VPS).
+Counts are for the sampled instruments only, not whole markets:
+
+| Market | Tested | PASS | WARN | BLOCK | BLOCK causes |
+|---|---|---|---|---|---|
+| NO Oslo | 20 | 20 | 0 | 0 | — |
+| DE Xetra | 20 | 18 | 1 | 1 | coverage gap (no reviewed report) |
+| IT Milan | 20 | 18 | 0 | 2 | CIR pipeline (fixed `4c7a5b5`), AEF stale filer |
+| FI Helsinki | 20 | 18 | 0 | 2 | no FI OAM locator (index lag / gap) |
+| US NASDAQ | 20 | 18 | 0 | 2 | AAME (NT 10-K, no FY2025 10-K), AURE stale filer |
+| US NYSE | 20 | 18 | 0 | 2 | AADX (2026 IPO, S-1 + 10-Q only), HQL (closed-end fund, no 10-K) |
+| SE Stockholm | 20 | 17 | 0 | 3 | untagged ESEF (ABB, IBT.B); SKF iXBRL carries lapsed LEI 894500JU9WRAJQOVBI12 ("SKF Group") ≠ 549300B6HWYEE57O8J84 — LEI gate kept |
+| DE Frankfurt | 20 | 16 | 2 | 2 | coverage gap (no reviewed report) |
+| FR Paris | 20 | 16 | 0 | 4 | EN, ALTA fixed (`.xbri`); AELIS, SELER untagged |
+| GB LSE | 20 | 11 | 0 | 9 | all investment trusts lodging untagged reports on FCA NSM (legit) |
+
+Patched test server (same 20-sample selection): FR 18/20 PASS, IT 18/20
+(CIR PASS after fix; sample run predates it), ES 18/19.
+
+Fixed today:
+- FR: AMF lodges 2026 ESEF reports as `.xbri`; locator skipped them.
+- ES: LDA — GLEIF registeredAs is not a NIF and CNMV search misses the full
+  legal name; name stem is now tried (still ISIN-register + LEI gated).
+- IT: CIR — duplicate eMarket register rows; only the row listing ESEF wins.
+- EPS: CIR tags EUR 0.0325 with scale=3 (=EUR 32.50); such facts are dropped
+  and P/E is never derived when EPS > price (P/E was 0.022).
+- Audit classifier: 26 of 27 "pipeline failures" were known coverage /
+  legit-absence leaves (HK, SG, AU, CH, untagged FR/SE/GB, NSE wording).
+
+Open / next:
+- Deploy these commits (push triggers prod deploy) and re-audit prod.
+- SKF.A: issuer-side LEI error; exception only with explicit approval.
+- FI has no OAM locator (ACG1V, AUROORA); evaluate a Finnish OAM source.
+- Old cached OAM snapshots may still hold mis-scaled EPS; P/E guard
+  covers valuation, EPS field itself refreshes on next filing.
+- Tier C (AU, CA, CH, HK, NZ, SA, SG, ZA, KR) unchanged: needs new official
+  adapters or licensed feeds — scope decision for the owner.
+- Server disk: root 95% → 91% (npm/pip caches + pytest temp removed).
+  Two ~7–8 GB staging data copies (`~/biap-global/claude-staging-data`,
+  `~/biap-global-staging-data`) and 1.8 GB journal await owner approval.
+
 ## Tier A — official fundamentals working (sample PASS ≥ 4/6)
 
 | Market | Sample PASS | Official source | Remaining BLOCKs |
