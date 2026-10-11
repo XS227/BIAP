@@ -129,3 +129,43 @@ US: PASS (TSLA, JPM) / WARN (GOOG+GOOGL double listing in /analyze). GB: PASS (H
 3. Sector-level peer P/E needs a rescan to populate sectors; non-US sector sources missing.
 4. TSLA EBITDA is a lower bound (amortization not separately tagged in companyfacts).
 5. APK build/validation: needs JDK + Android SDK + emulator/device, or an owner-approved EAS build.
+
+
+---
+# Session 3 (2026-10-11 23:30Z) — EPS anomaly closed, staging re-verified on `1b2860e`
+
+Starting point: HEAD `1b2860e` (unpushed), prod `biap-global.service` live on `7586ea3` (health checked 23:27Z), staging uvicorn :8097 on `1b2860e` with empty-start data dir `staging-1012/data4`. Verified commits `dff6ddb`, `0e8266d`, `7586ea3` preserved; nothing rewritten.
+
+## Priority 1 — data accuracy
+- Volvo Cars FY2025 EPS: filed `BasicEarningsLossPerShare` = +0.06 while `ProfitLoss` = -2,968m (ESEF iXBRL, verified earlier). `1b2860e` withholds EPS and P/E when EPS sign contradicts net income, with a documented warning. Staging 2026-10-11 re-check: VOLCAR.B `eps=None`, `pe=None` — **PASS**. EPS was not flipped or invented.
+- Agent 9/10 reconciliation: staging ENI ICR 6.12x with same interest base 819m in both agents; Agent 10 EBITDA/interest 15.09x (Aa) — consistent (EBIT vs EBITDA basis). VOLCAR.B stays HIGH_RISK/REVIEW. **PASS**.
+- TSLA EBITDA 9.385bn is labelled lower bound (only `Depreciation` tagged; separately reported amortization missing). **WARN, documented**.
+
+## Priority 2 — sector peers
+- Staging rescan (fresh data dir) of US NASDAQ (2997/3017 screened, 25 deep-analyzed, 7 recs) and SE Stockholm (402/403 screened, 25 deep): sector present on 24/25 US and 25/25 SE deep rows; `sectorPe` shown only from same-sector cohort (GOOG/GOOGL 46.79, Technology); TSLA, JPM, VOLCAR.B abstain (cohort <3). No fall-back to exchange-wide P/E.
+- **WARN/not done:** GB, FR, IT, NO, DE rows have no sector source (ESEF adapters expose none; no authoritative classification wired), so sector peer valuation abstains there. Cohort = deep-analyzed sample only (25/exchange), not full universe. Prod scan caches were NOT refreshed.
+
+## Priority 3 — staging / production
+Staging :8097 (`1b2860e`), fresh fetch, `/global/analyze`:
+| Market | Ticker | Call | Evidence | Official/freshness | Notes |
+|---|---|---|---|---|---|
+| US | TSLA | NO_REC | PASS | OFFICIAL_CURRENT, LAST_ANNUAL_FILING | sector Consumer Disc., sectorPe abstains |
+| US | GOOGL, GOOG | BUY_CAND both | PASS | same | sectorPe 46.79; issuer collapse is in rankings/portfolio, not single /analyze |
+| US | JPM | NO_REC | PASS | same | distress NOT_APPLICABLE |
+| SE | VOLCAR.B | NO_REC | PASS | same | EPS/P-E withheld, HIGH_RISK |
+| IT | ENI | NO_REC | PASS | same | ICR 6.12x; distress INSUFFICIENT_DATA (one model only, low-risk withheld) |
+| GB | HSBA | NO_REC | PASS | same | NOT_APPLICABLE (deposit-taker) |
+| FR | MC | NO_REC | PASS | same | ICR missing -> INSUFFICIENT_DATA |
+| NO | EQNR | NO_REC | PASS | same | INSUFFICIENT_DATA distress (ICR available, 1 model) |
+| DE | SAP | NO_REC | PASS | same | Germany still CONDITIONAL |
+Regression: **928 passed** (`env -i … PYTHONPATH=. venv-pdf/bin/python -m pytest tests ../tools`, from `analysis/`).
+Production: not restarted by me. Pushing triggers the repo's deploy; owner fallback script `deploy/restart-global-prod.sh <commit>` (backs up fundamentals + scan-cache, runs tests, restarts, health-checks, prints rollback target = previous live commit `7586ea3`). Post-push prod health must be confirmed (see GLOBAL_RELEASE_STATUS.md).
+
+## Priority 4 — Android: **BLOCK / NOT VERIFIED**
+Host: 1 vCPU, ~2 GB RAM (≈0.5 GB free, swap in use), 11 GB disk, no JDK/SDK/adb/emulator, and it also runs production services. A local React Native 0.86 / Expo 57 Gradle build here would very likely OOM and could take production down, so I did not install the toolchain. EAS/cloud builds not used (paid/third-party). No APK built or installed; mobile `tsc` clean only. Last known APK 0.3.18 (versionCode 21) was NOT device-tested. Reproducible route: the repo's Global APK GitHub workflow, or a separate ≥8 GB RAM machine with JDK 17 + Android SDK (`npx expo prebuild && ./gradlew assembleRelease`), then `adb install` + smoke test against the deployed API.
+
+## Priority 5 — release audit
+Coverage funnel (US NASDAQ staging): discovered 3017 → lightweight-screened 2997 → deep-analyzed 25 → recommendations (qualified BUY) 7; SE: 403 → 402 → 25 → 0. Broader per-market PASS/WARN/BLOCK counts from the 2026-10-11 200-sample audit (prod `4058808`) in GLOBAL_RELEASE_STATUS.md were not re-run. Financials (JPM, HSBA) use NOT_APPLICABLE distress models, gates unchanged.
+
+## Verdict
+**Release-ready: NO** — blockers: (1) APK not built/installed/validated; (2) sector-peer valuation only covers US/SE where sectors exist, none for GB/FR/IT/NO/DE; prod caches not rescanned; (3) Germany conditional (CBK, EMH, GRF, WBAH); (4) 25-name deep-analysis cohort is small; (5) post-push prod deploy must be verified.
