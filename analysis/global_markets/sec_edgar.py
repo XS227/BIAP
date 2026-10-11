@@ -302,7 +302,7 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         debt_current = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligationsCurrent", "LongTermDebtCurrent"))
         debt_noncurrent = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligationsNoncurrent", "LongTermDebtNoncurrent"))
         debt_total = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligations", "LongTermDebt"))
-        interest = self._latest(gaap, ("InterestExpenseNonOperating", "InterestExpenseDebt", "InterestExpense"))
+        interest = self._latest(gaap, ("InterestExpenseNonOperating", "InterestExpenseNonoperating", "InterestExpenseDebt", "InterestExpense"))
         eps = self._latest(gaap, ("EarningsPerShareDiluted", "EarningsPerShareBasic"))
         dividend_per_share = self._latest(
             gaap,

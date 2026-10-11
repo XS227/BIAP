@@ -25,6 +25,7 @@ from .decision_support import build_decision_table, profile_assessment
 from .distress import distress_agent
 from .governance import decision_governance_agent
 from .fx import TwelveDataFXProvider
+from .issuer import issuer_key_of
 from .models import DistressAssessment, GlobalCompany, InvestorProfile, SourceEvidence
 from .providers import ProviderDiagnostics, ProviderRegistry
 from .runtime import build_registry
@@ -134,6 +135,9 @@ def _peer_pe_benchmark(company: GlobalCompany) -> tuple[Optional[float], Optiona
         if not isinstance(peer, dict):
             continue
         if str(peer.get("ticker") or "").strip().upper() == company.ticker.strip().upper():
+            continue
+        # Another share class of the same issuer (GOOG vs GOOGL) is not a peer.
+        if issuer_key_of(peer) == issuer_key_of(company):
             continue
         try:
             pe = float(peer.get("pe"))
@@ -255,7 +259,15 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
         raw_provider_fields={
             **company.raw_provider_fields,
             "derived_metrics": derived,
-            **({"peer_pe_benchmark_scope": peer_scope, "peer_pe_benchmark_count": peer_count} if peer_scope else {}),
+            **({
+                "peer_pe_benchmark_scope": peer_scope,
+                "peer_pe_benchmark_count": peer_count,
+                # The cohort is the deep-analyzed sample of the daily scan,
+                # not every listed company; exchange-wide medians are not
+                # sector-specific and must not be read as a sector P/E.
+                "peer_pe_benchmark_cohort": "deep_analyzed_scan_sample_excluding_same_issuer",
+                "peer_pe_benchmark_is_sector_specific": peer_scope == "same_sector_scan_median",
+            } if peer_scope else {}),
         },
         sources=[
             *company.sources,

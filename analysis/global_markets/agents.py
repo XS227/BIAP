@@ -17,6 +17,7 @@ from math import floor
 from typing import Iterable, Mapping, Optional
 
 from .decision_support import preference_adjustment
+from .issuer import issuer_key_of
 from .evidence_contract import official_fundamental_sources, official_fundamental_status
 from .models import (
     AgentSignal,
@@ -436,27 +437,32 @@ def portfolio_agent(
 
     scored: list[tuple[PortfolioCandidate, float, float]] = []
     excluded: list[str] = []
+    rejections: list[dict] = []
+
+    def reject(identity: str, constraint: str, text: str, **details) -> None:
+        excluded.append(f"{identity}: {text}")
+        rejections.append({"identity": identity, "constraint": constraint, **details})
 
     for candidate in candidates:
         company = candidate.company
         identity = company.identity()
         if candidate.evidence.blocked:
-            excluded.append(f"{identity}: evidence blocked ({candidate.evidence.reasoning})")
+            reject(identity, "evidence_gate", f"evidence blocked ({candidate.evidence.reasoning})", missing=list(candidate.evidence.missing_critical))
             continue
         if candidate.distress is not None and candidate.distress.positive_block:
-            excluded.append(f"{identity}: distress safety gate ({candidate.distress.reasoning})")
+            reject(identity, "distress_gate", f"distress safety gate ({candidate.distress.reasoning})", status=candidate.distress.status)
             continue
         if allowed_countries and company.country.upper() not in allowed_countries:
-            excluded.append(f"{identity}: country outside investor scope")
+            reject(identity, "allowed_countries", "country outside investor scope", value=company.country.upper(), allowed=sorted(allowed_countries))
             continue
         if allowed_exchanges and company.exchange.upper() not in allowed_exchanges:
-            excluded.append(f"{identity}: exchange outside investor scope")
+            reject(identity, "allowed_exchanges", "exchange outside investor scope", value=company.exchange.upper(), allowed=sorted(allowed_exchanges))
             continue
         if company.currency.upper() not in normalized_fx:
-            excluded.append(f"{identity}: verified FX to {profile.base_currency.upper()} unavailable")
+            reject(identity, "fx_unavailable", f"verified FX to {profile.base_currency.upper()} unavailable", currency=company.currency.upper())
             continue
         if company.price is None or company.price <= 0:
-            excluded.append(f"{identity}: verified positive price unavailable")
+            reject(identity, "price_unavailable", "verified positive price unavailable")
             continue
 
         score, confidence = _candidate_score(candidate)
@@ -464,13 +470,20 @@ def portfolio_agent(
         suitability_adjustment = preference_adjustment(company, profile)
         score += suitability_adjustment
         if score < min_score or confidence < min_confidence:
-            excluded.append(
-                f"{identity}: below decision threshold score={score:.3f} confidence={confidence:.3f}"
+            reject(
+                identity, "decision_threshold",
+                f"below decision threshold score={score:.3f} (min {min_score}) "
+                f"confidence={confidence:.3f} (min {min_confidence})",
+                score=round(score, 4), min_score=min_score,
+                confidence=round(confidence, 4), min_confidence=min_confidence,
             )
             continue
         scored.append((candidate, score, confidence))
 
     scored.sort(key=lambda item: (item[1] * item[2], item[2], item[1]), reverse=True)
+    for cut, _, _ in scored[max(0, profile.max_positions):]:
+        reject(cut.company.identity(), "max_positions", f"qualified but ranked below the max_positions={profile.max_positions} cut",
+               max_positions=profile.max_positions)
     scored = scored[: max(0, profile.max_positions)]
     if not scored:
         return PortfolioProposal(
@@ -480,6 +493,7 @@ def portfolio_agent(
             cash_pct=100.0,
             allocations=(),
             excluded=tuple(excluded),
+        rejections=tuple(rejections),
             reasoning="no candidate cleared evidence, scope, FX, risk and confidence gates",
         )
 
@@ -488,6 +502,7 @@ def portfolio_agent(
     desirability_total = sum(desirabilities)
 
     country_used: defaultdict[str, float] = defaultdict(float)
+    issuer_used: defaultdict[str, float] = defaultdict(float)
     sector_used: defaultdict[str, float] = defaultdict(float)
     allocations: list[PortfolioAllocation] = []
     allocated_pct = 0.0
@@ -499,23 +514,43 @@ def portfolio_agent(
         room_country = max(0.0, profile.max_country_pct - country_used[company.country.upper()])
         sector_key = (company.sector or "UNKNOWN").upper()
         room_sector = max(0.0, profile.max_sector_pct - sector_used[sector_key])
+        issuer = issuer_key_of(company)
+        # One issuer = one risk: GOOG + GOOGL share a single position cap.
+        room_issuer = max(0.0, profile.max_position_pct - issuer_used[issuer])
         remaining = max(0.0, investable_pct - allocated_pct)
-        weight = min(proposed, room_position, room_country, room_sector, remaining)
+        limits = (
+            ("max_position_pct", room_position, profile.max_position_pct),
+            ("max_issuer_pct", room_issuer, profile.max_position_pct),
+            ("max_country_pct", room_country, profile.max_country_pct),
+            ("max_sector_pct", room_sector, profile.max_sector_pct),
+            ("investable_cash", remaining, investable_pct),
+        )
+        weight = min(proposed, *(room for _, room, _ in limits))
         if weight <= 0.01:
-            excluded.append(f"{company.identity()}: diversification/concentration cap")
+            binding = min(limits, key=lambda item: item[1])
+            excluded.append(
+                f"{company.identity()}: constraint {binding[0]} exhausted "
+                f"(limit {binding[2]:.2f}%, room {binding[1]:.2f}%, proposed {proposed:.2f}%"
+                + (f", issuer {issuer} already holds {issuer_used[issuer]:.2f}%" if binding[0] == "max_issuer_pct" else "")
+                + ")"
+            )
+            rejections.append({
+                "identity": company.identity(), "constraint": binding[0], "limit": binding[2],
+                "room": round(binding[1], 4), "proposed": round(proposed, 4), "issuer": issuer,
+            })
             continue
 
         amount_base = profile.capital * weight / 100.0
         fx_rate = normalized_fx[company.currency.upper()]
         per_share_base = company.price * fx_rate
         if per_share_base <= 0:
-            excluded.append(f"{company.identity()}: invalid converted share price")
+            reject(company.identity(), "invalid_price", "invalid converted share price")
             continue
         raw_quantity = floor(amount_base / per_share_base)
         lot_size = max(1, int(company.lot_size or 1))
         quantity = (raw_quantity // lot_size) * lot_size
         if quantity <= 0:
-            excluded.append(f"{company.identity()}: allocation cannot buy one minimum lot")
+            reject(company.identity(), "minimum_lot", f"allocation {amount_base:.2f} {profile.base_currency.upper()} cannot buy one minimum lot ({lot_size} x {per_share_base:.2f})", amount=round(amount_base, 2), lot_size=lot_size, per_share_base=round(per_share_base, 4))
             continue
 
         allocation = PortfolioAllocation(
@@ -541,6 +576,7 @@ def portfolio_agent(
         allocations.append(allocation)
         allocated_pct += weight
         country_used[company.country.upper()] += weight
+        issuer_used[issuer] += weight
         sector_used[sector_key] += weight
 
     if not allocations:
@@ -551,6 +587,7 @@ def portfolio_agent(
             cash_pct=100.0,
             allocations=(),
             excluded=tuple(excluded),
+        rejections=tuple(rejections),
             reasoning="eligible candidates could not be allocated within portfolio/lot constraints",
         )
 
@@ -562,5 +599,6 @@ def portfolio_agent(
         cash_pct=round(100.0 - allocated_pct, 4),
         allocations=tuple(allocations),
         excluded=tuple(excluded),
+        rejections=tuple(rejections),
         reasoning="paper proposal only; no broker order was submitted",
     )
