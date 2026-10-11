@@ -44,3 +44,13 @@ def test_tying_balance_sheet_with_negative_equity_is_not_a_unit_mismatch():
 def test_non_tying_or_untestable_balance_sheet_still_flags():
     assert any("does not tie" in f for f in audit._value_flags(_bs(150000.0, 11770000.0, 100.0)))
     assert any("unit mismatch" in f for f in audit._value_flags(_bs(150.0, 11770000.0, None)))
+
+
+def test_redeemable_preferred_explains_balance_sheet_gap_only_when_sec_confirms():
+    # US:ORGO FY2025: L 164.812m + E 300.129m + temporary equity 133.789m = assets 598.73m
+    fe = {"sourceProvider": "sec-edgar-xbrl-cached", "officialDocumentId": "CIK0001661181", "reportPeriod": "2025-12-31"}
+    args = (598730000.0, 164812000.0, 300129000.0)
+    assert audit._mezzanine_explains_gap(fe, *args, fetch=lambda c, e: 133789000.0)
+    assert not audit._mezzanine_explains_gap(fe, *args, fetch=lambda c, e: None)  # unreachable -> fail closed
+    assert not audit._mezzanine_explains_gap(fe, *args, fetch=lambda c, e: 50e6)  # does not close the gap
+    assert not audit._mezzanine_explains_gap({**fe, "sourceProvider": "official-oam-se"}, *args, fetch=lambda c, e: 133789000.0)
