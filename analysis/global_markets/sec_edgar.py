@@ -22,6 +22,38 @@ from .sec_filing_instance import SECFilingInstanceReader, merge_facts
 
 SEC_TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 SEC_FACTS_BASE = "https://data.sec.gov/api/xbrl/companyfacts"
+SEC_SUBMISSIONS_BASE = "https://data.sec.gov/submissions"
+# Standard US-GAAP D&A concepts, most complete first. `Depreciation` alone
+# (Tesla) excludes separately reported amortization/impairment, so an EBITDA
+# built from it is a lower bound and is labelled as such.
+DNA_TAGS_COMPLETE = ("DepreciationDepletionAndAmortization", "DepreciationAndAmortization", "DepreciationAmortizationAndAccretionNet")
+DNA_TAGS_PARTIAL = ("Depreciation",)
+# SIC division ranges -> broad sector; peers are only compared inside one sector.
+_SIC_SECTORS = (
+    (100, 999, "Agriculture"), (1000, 1499, "Mining & Energy"), (1500, 1799, "Construction"),
+    (2000, 2399, "Consumer Staples"), (2400, 2799, "Materials & Paper"), (2800, 2829, "Chemicals"),
+    (2830, 2836, "Health Care"), (2837, 2899, "Chemicals"), (2900, 2999, "Mining & Energy"),
+    (3000, 3499, "Industrials"), (3500, 3569, "Industrials"), (3570, 3579, "Technology"),
+    (3580, 3599, "Industrials"), (3600, 3699, "Technology"), (3700, 3799, "Consumer Discretionary"),
+    (3800, 3829, "Technology"), (3840, 3851, "Health Care"), (3852, 3999, "Industrials"),
+    (4000, 4799, "Transportation"), (4800, 4899, "Communication Services"), (4900, 4999, "Utilities"),
+    (5000, 5199, "Wholesale Trade"), (5200, 5999, "Retail"), (6000, 6799, "Financials"),
+    (7000, 7299, "Consumer Services"), (7370, 7379, "Technology"), (7300, 8099, "Business & Health Services"),
+    (8100, 8999, "Services"),
+)
+
+
+def sector_from_sic(sic: Any) -> Optional[str]:
+    try:
+        code = int(sic)
+    except (TypeError, ValueError):
+        return None
+    # Later, narrower ranges win (7370-7379 inside 7300-8099).
+    hit = None
+    for lo, hi, name in _SIC_SECTORS:
+        if lo <= code <= hi and (hit is None or (hi - lo) < hit[0]):
+            hit = (hi - lo, name)
+    return hit[1] if hit else None
 # Successor registrants under Exchange Act Rule 12g-3(a) take over the listed
 # ticker but have no annual facts until their first 10-K. Until then the
 # predecessor's audited 10-K (same consolidated group) is the latest annual
@@ -60,6 +92,14 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         if not isinstance(payload, dict):
             raise GlobalProviderError("unexpected SEC JSON response")
         return payload
+
+    def _sic(self, cik: int) -> tuple[Optional[int], Optional[str]]:
+        """SIC code/description from SEC submissions; sector is best-effort metadata."""
+        try:
+            data = self._get_json(f"{SEC_SUBMISSIONS_BASE}/CIK{cik:010d}.json")
+            return int(data.get("sic")), str(data.get("sicDescription") or "") or None
+        except (GlobalProviderError, TypeError, ValueError):
+            return None, None
 
     def _ticker_map(self) -> dict[str, int]:
         global _ticker_cache
@@ -302,6 +342,7 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         debt_current = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligationsCurrent", "LongTermDebtCurrent"))
         debt_noncurrent = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligationsNoncurrent", "LongTermDebtNoncurrent"))
         debt_total = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligations", "LongTermDebt"))
+        dna_candidates = {tag: self._latest(gaap, (tag,)) for tag in DNA_TAGS_COMPLETE + DNA_TAGS_PARTIAL}
         interest = self._latest(gaap, ("InterestExpenseNonOperating", "InterestExpenseNonoperating", "InterestExpenseDebt", "InterestExpense"))
         eps = self._latest(gaap, ("EarningsPerShareDiluted", "EarningsPerShareBasic"))
         dividend_per_share = self._latest(
@@ -407,6 +448,17 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         debt_noncurrent = current_period_row(debt_noncurrent)
         debt_total = current_period_row(debt_total)
         interest = current_period_row(interest)
+        # A stale complete tag (TSLA DepreciationAndAmortization = FY2017) must
+        # not shadow the current-period tag, so choose by period, not by order.
+        dna_tag, dna = next(
+            ((tag, row) for tag, row in dna_candidates.items() if current_period_row(row)),
+            (None, None),
+        )
+        operating_income_value = self._value(operating_income)
+        dna_value = self._value(dna)
+        ebitda = None
+        if operating_income_value is not None and dna_value is not None and dna_value >= 0:
+            ebitda = operating_income_value + dna_value
         eps = current_period_row(eps)
         dividend_per_share = current_period_row(dividend_per_share)
 
@@ -483,6 +535,7 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             free_cash_flow=fcf,
             total_debt=total_debt,
             interest_expense=self._value(interest),
+            ebitda=company.ebitda if company.ebitda is not None else ebitda,
             eps=self._value(eps),
             dividend_per_share=self._value(dividend_per_share),
             shares_outstanding=company.shares_outstanding or self._value(shares),
@@ -491,9 +544,26 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             raw_provider_fields={
                 **company.raw_provider_fields,
                 "sec_cik": cik,
+                **({"ebitda_derivation": {
+                    "formula": f"OperatingIncomeLoss + {dna_tag}",
+                    "operating_income": operating_income_value,
+                    "depreciation_amortization": dna_value,
+                    "period_end": period_end,
+                    "lower_bound": dna_tag in DNA_TAGS_PARTIAL,
+                }} if ebitda is not None else {}),
                 **({"sec_predecessor_cik": predecessor_cik} if predecessor_cik else {}),
             },
         )
+        if not enriched.sector:
+            sic, sic_desc = self._sic(int(cik if not predecessor_cik else predecessor_cik))
+            sector = sector_from_sic(sic)
+            if sector:
+                enriched = replace(
+                    enriched,
+                    sector=sector,
+                    industry=enriched.industry or sic_desc,
+                    raw_provider_fields={**enriched.raw_provider_fields, "sec_sic": sic, "sector_source": "sec-sic"},
+                )
         return append_source(
             enriched,
             SourceEvidence(

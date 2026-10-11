@@ -217,11 +217,17 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
 
     peer_scope = None
     peer_count = 0
+    exchange_pe_median = None
     if sector_pe is None:
         peer_pe, peer_scope, peer_count = _peer_pe_benchmark(company)
-        if peer_pe is not None:
+        if peer_pe is not None and peer_scope == "same_sector_scan_median":
             sector_pe = peer_pe
             derived.append(f"sector_pe={peer_scope}")
+        elif peer_pe is not None:
+            # An exchange-wide median is not a sector benchmark: keep it as
+            # context only so valuation agents never score against it.
+            exchange_pe_median = peer_pe
+            derived.append(f"exchange_pe_median={peer_scope}(informational, not used as sector_pe)")
 
     if same_currency and price not in (None, 0) and book_value_per_share not in (None, 0) and float(book_value_per_share) > 0 and pb is None:
         pb = float(price) / float(book_value_per_share)
@@ -267,6 +273,7 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
                 # sector-specific and must not be read as a sector P/E.
                 "peer_pe_benchmark_cohort": "deep_analyzed_scan_sample_excluding_same_issuer",
                 "peer_pe_benchmark_is_sector_specific": peer_scope == "same_sector_scan_median",
+                **({"exchange_pe_median_informational": exchange_pe_median} if exchange_pe_median is not None else {}),
             } if peer_scope else {}),
         },
         sources=[
