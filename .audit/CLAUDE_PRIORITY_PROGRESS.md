@@ -169,3 +169,24 @@ Coverage funnel (US NASDAQ staging): discovered 3017 → lightweight-screened 29
 
 ## Verdict
 **Release-ready: NO** — blockers: (1) APK not built/installed/validated; (2) sector-peer valuation only covers US/SE where sectors exist, none for GB/FR/IT/NO/DE; prod caches not rescanned; (3) Germany conditional (CBK, EMH, GRF, WBAH); (4) 25-name deep-analysis cohort is small; (5) post-push prod deploy must be verified.
+
+
+---
+# Session 4 (2026-10-11 ~23:55Z) — production verification on `1d8c4c2`
+
+No code changed. Starting state: clean tree, `origin/feat/biap-global` = HEAD `1d8c4c2`; `/global-api/health` reports `1d8c4c2` (prod redeployed by the push; I did not restart anything).
+Read-only POST `/global/analyze` against **prod** (`scratch/prio1012/probe3.py`, plus VOLCAR.B/ENI/EQNR with exchange codes `NASDAQ_STOCKHOLM`/`EURONEXT_MILAN`/`EURONEXT_OSLO`; `STO`/`MIL`/`OSL` are rejected with HTTP 400 — probe error, not an API bug):
+| Ticker | Call | Evidence | Result |
+|---|---|---|---|
+| TSLA | NO_REC | PASS, OFFICIAL_CURRENT 2025-12-31 | ICR 12.9x, EBITDA 9.385bn (lower bound), sector Consumer Discretionary — PASS |
+| GOOGL / GOOG | BUY_CAND | PASS | ICR 175x — WARN: both listed in /analyze (issuer collapse is in rankings/portfolio) |
+| VOLCAR.B | NO_REC | PASS | eps=None, P/E=None, ICR 0.24x HIGH_RISK — PASS (EPS withheld) |
+| ENI | NO_REC | PASS | ICR 6.12x — PASS |
+| EQNR | NO_REC | PASS | ICR 17.7x — PASS |
+| HSBA, JPM | NO_REC | PASS | distress NOT_APPLICABLE — PASS |
+| MC | NO_REC | PASS | ICR missing -> INSUFFICIENT_DATA — PASS |
+| SAP (DE) | NO_REC | PASS | conditional market |
+Prod fixes are therefore live and match staging. Single-ticker samples only.
+
+Not done (unchanged blockers): no authoritative sector source for GB/FR/IT/NO/DE (not guessed); APK not built (host 2 GB RAM, no JDK/SDK, runs prod; EAS not approved) — NOT VERIFIED; Germany conditional.
+**Release-ready: NO.** Next: (1) build APK on a >=8 GB machine or approved CI, install on device/emulator; (2) choose a sector source (e.g. licensed GICS/ICB feed or ESEF-adjacent NACE data) for non-US markets and rescan; (3) German coverage gaps (CBK, EMH, GRF, WBAH).

@@ -1,5 +1,7 @@
 # BIAP Global — release status
 
+## Update 2026-10-11 23:55Z — prod verified on `1d8c4c2` (health + read-only probes match staging); release-ready still **NO** (APK NOT VERIFIED, non-US/SE sector peers, Germany conditional). See Session 4 in `.audit/CLAUDE_PRIORITY_PROGRESS.md`.
+
 ## Update 2026-10-11 23:35Z (priority pass 3) — release-ready: **NO**
 Code `1b2860e` (on `feat/biap-global`): Volvo Cars EPS/P-E withheld when EPS sign contradicts net income; sector-only peer P/E with cohort provenance; TSLA EBITDA lower bound labelled. Staging (:8097, fresh data) PASS on TSLA, GOOG, GOOGL, JPM, VOLCAR.B, ENI, HSBA, MC, EQNR; SAP conditional (DE). 928 tests pass. Details, caveats and rollback: `.audit/CLAUDE_PRIORITY_PROGRESS.md` (Session 3).
 Open: APK NOT VERIFIED (host cannot build safely); sector peers only where a sector source exists (US, SE); Germany conditional; confirm prod commit after push (`curl .../global-api/health`); rollback target `7586ea3` via `deploy/restart-global-prod.sh`.
