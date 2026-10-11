@@ -146,3 +146,19 @@ def test_stale_official_snapshot_is_not_fresh_or_used_on_outage(tmp_path):
     )
     with pytest.raises(GlobalProviderError, match="offline"):
         unavailable.enrich_fundamentals(_seed())
+
+
+class RevokedRegisterProvider(OfficialProvider):
+    provider_id = "unternehmensregister-de-auto"
+
+
+def test_snapshot_from_revoked_provider_is_never_served(tmp_path):
+    # The 2026-10-06 Unternehmensregister browser records mix units (BMM net
+    # income 0.76 vs EUR 757,810 filed): neither fresh nor outage fallback.
+    PersistentFundamentalsProvider(RevokedRegisterProvider(), data_dir=str(tmp_path), fresh_hours=24).enrich_fundamentals(_seed())
+    with pytest.raises(GlobalProviderError):
+        PersistentFundamentalsProvider(FailingProvider(), data_dir=str(tmp_path), fresh_hours=24).enrich_fundamentals(_seed())
+    official = OfficialProvider()
+    refreshed = PersistentFundamentalsProvider(official, data_dir=str(tmp_path), fresh_hours=24).enrich_fundamentals(_seed())
+    assert official.calls == 1
+    assert any(source.provider == "official-test" for source in refreshed.sources)

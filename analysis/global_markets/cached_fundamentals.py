@@ -56,6 +56,10 @@ _CACHE_SOURCE_TOKENS = (*_OFFICIAL_FINANCIAL_TOKENS, "fundamental", "financial_m
 # FFO (Agents 9/10 inputs) after the all-facts OAM package parse.
 # v8: ESEF debt includes IFRS loans-received lines next to bonds issued.
 CACHE_SCHEMA_VERSION = 8
+
+# Official providers whose records were found defective after the fact.
+# Snapshots built from them are ignored (neither fresh nor stale fallback).
+_REVOKED_OFFICIAL_PROVIDERS = frozenset({"unternehmensregister-de-auto"})
 MAX_OFFICIAL_FILING_AGE_DAYS = int(os.environ.get("BIAP_GLOBAL_MAX_OFFICIAL_FILING_AGE_DAYS", "550"))
 
 
@@ -161,6 +165,11 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         if str(identity.get("exchange") or "").upper() != company.exchange.upper():
             return None
         if str(identity.get("ticker") or "").upper() != company.ticker.upper():
+            return None
+        if any(
+            isinstance(raw, dict) and str(raw.get("provider") or "").strip().lower() in _REVOKED_OFFICIAL_PROVIDERS
+            for raw in payload.get("sources") or []
+        ):
             return None
         # A snapshot may claim officialEvidence without carrying a verifiable
         # official source row (older writers, or metadata lost in transit).

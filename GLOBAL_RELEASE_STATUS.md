@@ -46,6 +46,13 @@ Fixed today:
 - Audit classifier: 26 of 27 "pipeline failures" were known coverage /
   legit-absence leaves (HK, SG, AU, CH, untagged FR/SE/GB, NSE wording).
 
+- DE: production served mixed-unit figures from 27 `unternehmensregister-de-auto`
+  records (2026-10-06 browser worker; 25/27 defective, e.g. BMM net income
+  0.76 vs EUR 757,810 filed, MRK EBITDA 0.6). Provider revoked in the DE drop
+  chain and its 28 cached snapshots are ignored; records left on disk
+  (`/var/lib/biap-global/filings/DE/`) for owner review. Test server: 25
+  PASS (issuer report or Börse Frankfurt key data), 2 WARN, 1 BLOCK (GRF).
+
 Open / next:
 - Deploy these commits (push triggers prod deploy) and re-audit prod.
 - SKF.A: issuer-side LEI error; exception only with explicit approval.
