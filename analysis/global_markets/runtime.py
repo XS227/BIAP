@@ -328,7 +328,14 @@ def build_registry() -> ProviderRegistry:
     # UK can additionally corroborate the legal entity against Companies House
     # when its free API credential has been configured.
     esef = CachedESEFFundamentalsProvider()
-    official_europe = FallbackFundamentalsProvider(esef, sec_foreign_ifrs)
+    # SEC fallback for European listings: IFRS 20-F/40-F first, then US-GAAP
+    # 10-K filers secondary-listed in Europe (JBT Marel on Nasdaq Iceland).
+    # Both require an exact legal-name match to the selected issuer.
+    sec_non_us = FallbackFundamentalsProvider(
+        sec_foreign_ifrs,
+        SECCrossListedUSGAAPFundamentalsProvider(user_agent=sec_user_agent),
+    )
+    official_europe = FallbackFundamentalsProvider(esef, sec_non_us)
     esef_with_fallback = FallbackFundamentalsProvider(official_europe, public_fundamentals)
 
     # A small number of issuers publish audited statements before the generic
@@ -420,7 +427,7 @@ def build_registry() -> ProviderRegistry:
     # transport errors into apparent BIAP pipeline failures. Prefer BIAP's
     # reviewed issuer-hosted ESEF/issuer statements, then the strict SEC foreign
     # IFRS route for cross-listed issuers such as SAP.
-    de_official = FallbackFundamentalsProvider(de_issuer_esef, sec_foreign_ifrs)
+    de_official = FallbackFundamentalsProvider(de_issuer_esef, sec_non_us)
     de_with_fallback = FallbackFundamentalsProvider(de_official, public_fundamentals)
     de_provider = PersistentFundamentalsProvider(de_with_fallback)
     companies_house_key = (os.environ.get("BIAP_COMPANIES_HOUSE_API_KEY") or "").strip()

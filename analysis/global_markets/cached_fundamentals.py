@@ -54,7 +54,8 @@ _CACHE_SOURCE_TOKENS = (*_OFFICIAL_FINANCIAL_TOKENS, "fundamental", "financial_m
 # liability derivation changes; historical snapshots remain fallback evidence.
 # v7: ESEF retained-earnings column, D&A/debt/capex lines and filing-derived
 # FFO (Agents 9/10 inputs) after the all-facts OAM package parse.
-CACHE_SCHEMA_VERSION = 7
+# v8: ESEF debt includes IFRS loans-received lines next to bonds issued.
+CACHE_SCHEMA_VERSION = 8
 MAX_OFFICIAL_FILING_AGE_DAYS = int(os.environ.get("BIAP_GLOBAL_MAX_OFFICIAL_FILING_AGE_DAYS", "550"))
 
 
@@ -152,7 +153,7 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
             payload = json.loads(self._latest_path(company).read_text(encoding="utf-8"))
         except (OSError, ValueError, TypeError):
             return None
-        if not isinstance(payload, dict) or payload.get("schemaVersion") not in {1, 2, 3, 4, 6, CACHE_SCHEMA_VERSION}:
+        if not isinstance(payload, dict) or payload.get("schemaVersion") not in {1, 2, 3, 4, 6, 7, CACHE_SCHEMA_VERSION}:
             return None
         identity = payload.get("identity") if isinstance(payload.get("identity"), dict) else {}
         if str(identity.get("country") or "").upper() != company.country.upper():
@@ -184,6 +185,12 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
     def _stale_official_filing(cls, payload: dict) -> bool:
         if not bool(payload.get("officialEvidence")):
             return False
+        if not payload.get("filingPeriodEnd"):
+            # An official claim with no filing period cannot be current
+            # (e.g. an SEC successor CIK before its first 10-K). Börse
+            # Frankfurt year-only key data is the one reviewed undated form.
+            raw = payload.get("raw_provider_fields") if isinstance(payload.get("raw_provider_fields"), dict) else {}
+            return raw.get("de_bf_period_granularity") != "year_only"
         age_days = cls._filing_age_days(payload)
         return age_days is not None and age_days > MAX_OFFICIAL_FILING_AGE_DAYS
 
