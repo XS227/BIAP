@@ -42,10 +42,20 @@ script, edit the live copy, run `install-and-test.sh`, then copy it back here.
 1. Takes `watchdog.lock` with `flock -n`. If another tick is running, it exits.
 2. Looks for a live job: a `claude` process whose command line is the finish task or a
    `[BIAP-WATCHDOG` resume prompt.
-3. Activity is the newest mtime among the job transcripts, CHECKPOINT.md, the job log,
-   `session-1011-final/`, `audit-runs/` and `wt-final/`.
-   - Job alive and active within the last 40 min: logs `OK` and does nothing else.
-   - Job alive but idle for 40 min or more: sends TERM, then KILL after 30 s, then resumes.
+3. Activity is the newest **filesystem mtime** among the job transcripts, CHECKPOINT.md, the job
+   log, `session-1011-final/`, `audit-runs/` and `wt-final/`. Timestamps the job writes inside
+   files are never used, because the job guesses them (it labelled real 11:32Z as "12:20Z").
+   Mtimes more than 5 min in the future are ignored, and the system clock is NTP-synced.
+   - File activity within the last 40 min: logs `OK` and does nothing else.
+   - No file activity for 40–120 min: compares the cumulative CPU of the job's child processes
+     (live descendants plus reaped children, from `/proc`) with the previous tick's sample in
+     `state/cpu_sample`. Elapsed time between samples comes from `/proc/uptime`, so wall-clock
+     jumps don't affect it. If the children used 5 s or more of CPU, a long command is running
+     and the job is not stalled. If there's no valid previous sample, it decides next tick. A
+     stall is acted on only after two consecutive ticks agree (in practice about 40–60 min idle
+     with no CPU progress).
+   - No file activity for 120 min or more: stalled regardless of CPU.
+   - When stalled: sends TERM, then KILL after 30 s, then resumes.
    - No job and no completion marker: resumes.
 4. Resume runs `claude -p --resume <latest finish-job session> "<resume prompt>"` in tmux session
    `biap-finish`, wrapped in `flock -n $WD/job.lock`. A second job cannot start even if two
@@ -81,7 +91,8 @@ sudo systemctl disable --now biap-finish-watchdog.timer   # remove permanently
 
 # test without side effects (decide and log only; never kill/start/disable)
 WD_DRY_RUN=1 bash ~/biap-global/watchdog/biap-finish-watchdog.sh
-WD_DRY_RUN=1 WD_NOW_OFFSET_MIN=60 bash ~/biap-global/watchdog/biap-finish-watchdog.sh   # simulate a stall
+WD_DRY_RUN=1 WD_NOW_OFFSET_MIN=60 bash ~/biap-global/watchdog/biap-finish-watchdog.sh   # 60 min file-idle (CPU check applies)
+WD_DRY_RUN=1 WD_NOW_OFFSET_MIN=130 bash ~/biap-global/watchdog/biap-finish-watchdog.sh  # past the 120 min hard limit
 
 bash ~/biap-global/watchdog/install-and-test.sh       # (re)install units and run tests 1-4
 ```

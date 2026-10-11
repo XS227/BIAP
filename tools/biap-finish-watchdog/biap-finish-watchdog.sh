@@ -8,7 +8,7 @@
 # and any live `claude -p` BIAP job (incl. the original unlocked tmux one) blocks a resume.
 #
 # Env overrides (for testing): WD_DRY_RUN=1 (decide + log, never kill/start/disable),
-# WD_STALL_MIN, WD_NOW_OFFSET_MIN (pretend the clock is N min later).
+# WD_STALL_MIN, WD_HARD_STALL_MIN, WD_NOW_OFFSET_MIN (pretend the clock is N min later).
 set -uo pipefail
 
 export HOME=/home/ubuntu
@@ -29,6 +29,8 @@ BRANCH=feat/biap-global
 REPORT=docs/BIAP_GLOBAL_FINAL_REPORT_2026-10-11.md
 TIMER=biap-finish-watchdog.timer
 STALL_MIN=${WD_STALL_MIN:-40}
+HARD_STALL_MIN=${WD_HARD_STALL_MIN:-120}   # file-idle this long = stalled even if child CPU moves
+MIN_CHILD_CPU_TICKS=500                   # 5 s of child CPU between ticks = a command is really working
 MAX_ATTEMPTS=8
 DRY=${WD_DRY_RUN:-0}
 NOW=$(( $(date +%s) + ${WD_NOW_OFFSET_MIN:-0} * 60 ))
@@ -54,11 +56,25 @@ job_pids() {
   done
 }
 
-# --- newest activity among transcripts, checkpoint, job log, session work dirs
+# --- newest activity (file mtimes) among transcripts, checkpoint, job log, session work dirs.
+# Uses filesystem mtimes only, never timestamps written inside files (the job's own text times
+# are unreliable). Mtimes in the future (clock skew) are ignored.
 last_activity() {
   find "$TRANSCRIPTS" "$CHECKPOINT" "$JOB_LOG" "$ROOT/session-1011-final" "$ROOT/audit-runs" "$ROOT/wt-final" \
-       -maxdepth 3 -type f -not -path '*/.git/*' -printf '%T@\n' 2>/dev/null | sort -n | tail -1 | cut -d. -f1
+       -maxdepth 3 -type f -not -path '*/.git/*' -printf '%T@\n' 2>/dev/null \
+    | awk -v now="$NOW" '{t=int($1); if (t <= now + 300 && t > max) max=t} END {print max+0}'
 }
+
+# --- cumulative CPU ticks of everything the job ran (live descendants + reaped children).
+# Monotonic while the same job pids live; used to tell a long-running command from a hang.
+descendants() { local p c; for p in "$@"; do for c in $(pgrep -P "$p"); do echo "$c"; descendants "$c"; done; done; }
+job_child_cpu() {
+  local total=0 p f
+  for p in "$@"; do f=($(sed 's/^.*) //' /proc/$p/stat 2>/dev/null)); [ ${#f[@]} -gt 15 ] && total=$(( total + f[14] + f[15] )); done
+  for p in $(descendants "$@"); do f=($(sed 's/^.*) //' /proc/$p/stat 2>/dev/null)); [ ${#f[@]} -gt 15 ] && total=$(( total + f[11] + f[12] + f[14] + f[15] )); done
+  echo "$total"
+}
+uptime_s() { cut -d. -f1 /proc/uptime; }
 
 # --- newest finish-job transcript (session id to resume)
 latest_session() {
@@ -158,21 +174,41 @@ stop_watchdog() {
 
 # ------------------------------------------------------------------ main
 pids=$(job_pids | tr '\n' ' ')
-act=$(last_activity); idle_min=$(( (NOW - ${act:-0}) / 60 ))
+act=$(last_activity); idle_min=$(( (NOW - ${act:-0}) / 60 )); [ "$idle_min" -lt 0 ] && idle_min=0
 status_line=$(grep -E '^WATCHDOG_STATUS: (COMPLETE|BLOCKED)' "$CHECKPOINT" 2>/dev/null | tail -1)
 
 if [ -n "$pids" ]; then
+  # Stall = no file activity for >= STALL_MIN *and* no child-process CPU progress across two
+  # consecutive ticks (elapsed measured with /proc/uptime, immune to wall-clock jumps), or no
+  # file activity at all for >= HARD_STALL_MIN.
+  cpu=$(job_child_cpu $pids); up=$(uptime_s)
+  p_up= p_cpu= p_pids=; [ -f "$STATE/cpu_sample" ] && read -r p_up p_cpu p_pids < "$STATE/cpu_sample"
+  [ "$DRY" = 1 ] || echo "$up $cpu $pids" > "$STATE/cpu_sample"
   if [ "$idle_min" -lt "$STALL_MIN" ]; then
-    log OK "job running (pids $pids), last activity ${idle_min}m ago"
+    log OK "job running (pids $pids), last file activity ${idle_min}m ago, child cpu ${cpu} ticks"
     exit 0
   fi
-  log WARN "job pids $pids stalled: no activity for ${idle_min}m (>= ${STALL_MIN}m); killing and resuming"
+  if [ "$idle_min" -lt "$HARD_STALL_MIN" ]; then
+    if [ -z "${p_up:-}" ] || [ "${p_pids:-}" != "$(echo $pids)" ] || [ $(( up - p_up )) -gt 3600 ] || [ $(( up - p_up )) -lt 0 ]; then
+      log WARN "job pids $pids: no file activity for ${idle_min}m; no valid previous CPU sample — will decide next tick"
+      exit 0
+    fi
+    d=$(( cpu - p_cpu ))
+    if [ "$d" -ge "$MIN_CHILD_CPU_TICKS" ]; then
+      log OK "job pids $pids: no file activity for ${idle_min}m but child processes used ${d} CPU ticks over $(( (up - p_up) / 60 ))m — long-running command, not stalled"
+      exit 0
+    fi
+    reason="no file activity ${idle_min}m and child cpu +${d} ticks over $(( (up - p_up) / 60 ))m"
+  else
+    reason="no file activity ${idle_min}m (>= hard limit ${HARD_STALL_MIN}m)"
+  fi
+  log WARN "job pids $pids stalled: $reason; killing and resuming"
   if [ "$DRY" != 1 ]; then
     kill -TERM $pids 2>/dev/null; sleep 30
     for p in $pids; do kill -0 "$p" 2>/dev/null && kill -KILL "$p"; done
-    sleep 2
+    sleep 2; rm -f "$STATE/cpu_sample"
   fi
-  start_job "stalled ${idle_min}m"
+  start_job "stalled: $reason"
   exit 0
 fi
 
