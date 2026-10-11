@@ -122,3 +122,16 @@ def test_cnmv_name_search_also_tries_stem_before_legal_form():
     terms = SpainCNMVLocator._search_terms("LINEA DIRECTA ASEGURADORA SOCIEDAD ANONIMA COMPAÑIA DE SEGUROS Y REASEGUROS")
     assert terms[-1] == "LINEA DIRECTA ASEGURADORA"
     assert SpainCNMVLocator._search_terms("IBERDROLA, S.A.") == ["IBERDROLA, S.A.", "IBERDROLA"]
+
+
+def test_amf_locator_accepts_xbri_report_packages():
+    # Bouygues' DEU 2025 (2026-03-19) is lodged only as FC134619630_20260319.xbri.
+    rows = [
+        {"url_de_recuperation": "https://fr.ftp.opendatasoft.com/datadila/INFOFI/134/8888/01/FC134619630_20260319.xbri",
+         "informationdeposee_inf_dat_emt": "2026-03-19T10:00:00+00:00", "fichierdecontenu_inf_fic_nom": "FC134619630_20260319.xbri",
+         "informationdeposee_inf_tit_inf": "DOCUMENT D'ENREGISTREMENT UNIVERSEL 2025"},
+    ]
+    locator = FranceAMFInfoFinanciereLocator(_Http({"results": rows}))
+    company = GlobalCompany(country="FR", exchange="EURONEXT_PARIS", currency="EUR", ticker="EN", name="BOUYGUES", isin="FR0000120503")
+    filings = locator.annual_filings(company, "969500MOCLNQFNZN0D63", "BOUYGUES")
+    assert [f.document_id for f in filings] == ["AMF-INFOFI:FC134619630_20260319.xbri"]
