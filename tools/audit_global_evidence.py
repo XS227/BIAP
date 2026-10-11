@@ -53,6 +53,7 @@ ONLY = {m.strip().upper() for m in (os.environ.get("BIAP_AUDIT_MARKETS") or "").
 CANARIES = [c for c in (os.environ.get("BIAP_AUDIT_CANARIES") or "SE:NASDAQ_STOCKHOLM:VOLCAR.B,SE:NASDAQ_STOCKHOLM:QLINEA,NO:EURONEXT_OSLO:BONHR,NO:EURONEXT_OSLO:AKSO").split(",") if c]
 OUT = os.environ.get("BIAP_AUDIT_OUT", "global-evidence-audit")
 MAX_API_FAILURE_PCT = float(os.environ.get("BIAP_AUDIT_MAX_API_FAILURE_PCT", "15"))
+RAW_DIR = os.environ.get("BIAP_AUDIT_RAW_DIR")  # optional: keep every analyze payload for evidence review
 
 
 def _req(path: str, body: dict | None = None, timeout: int = 45):
@@ -172,6 +173,11 @@ def _analyze(row: dict) -> dict:
         payload = _req("/global/analyze", body, timeout=TIMEOUT)
     except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
         return {**body, "classification": "API_FAILURE", "error": f"{type(exc).__name__}: {str(exc)[:160]}", "seconds": round(time.time() - started, 1)}
+    if RAW_DIR:
+        os.makedirs(RAW_DIR, exist_ok=True)
+        name = "_".join(str(body.get(k) or "").replace("/", "-") for k in ("country", "exchange", "ticker"))
+        with open(os.path.join(RAW_DIR, name + (".deeplink" if not row.get("isin") and row.get("name") == row.get("ticker") else "") + ".json"), "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, ensure_ascii=False)
     return {**body, **_classify(payload), "seconds": round(time.time() - started, 1)}
 
 
@@ -180,6 +186,7 @@ def _analyze(row: dict) -> dict:
 _NEUTRAL = (
     "sec cik not found", "sec ticker identity does not match",  # opportunistic SEC path outside the US
     "sec returned no standard ifrs company facts",  # same opportunistic SEC path, issuer not an SEC IFRS filer
+    "sec returned no standard us-gaap company facts",  # same, issuer not an SEC US-GAAP filer
     "official-source discovery queued",  # status note appended to a coverage leaf, not a failure
 )
 _LEGIT = (
@@ -206,16 +213,17 @@ _COVERAGE = (
 )
 
 
-def _leaf_class(detail: str) -> str:
+def _leaf_class(detail: str, truncated: bool = False) -> str:
     import re
+    detail = re.sub(r"(?i)\(gleif registeredas\)", "", detail)  # qualifier, not a nested leaf
     # SEC identity diagnostics carry their own ';'-separated details.
     detail = re.sub(r"(?i)(sec ticker identity does not match|sec cik not found)[^()]*(\([^()]*\))?[^()]*", "sec cik not found", detail)
     detail = re.sub(r"(?i)annual \(12-month\) results", "annual 12-month results", detail)  # NSE wording, not a nested leaf
     leaves = [x.strip(" .;:()").lower() for x in re.split(
         r"primary fundamentals unavailable\s*\(|fallback unavailable\s*\(|official oam esef package unusable:|[();]", detail)]
     leaves = [x for x in leaves if len(x) > 6]
-    if len(detail) >= 295 and leaves and detail.count("(") > detail.count(")"):
-        leaves = leaves[:-1]  # older servers truncated the reason mid-leaf
+    if leaves and (truncated or (len(detail) >= 295 and detail.count("(") > detail.count(")"))):
+        leaves = leaves[:-1]  # the server truncates the reason (300 chars) mid-leaf
     # An official OAM can publish an untagged report: its document identifier
     # and nested fallback wrappers are diagnostics, not parser failures.
     # Only collapse this well-understood chain when every terminal reason is
@@ -248,6 +256,56 @@ def _leaf_class(detail: str) -> str:
     return "COVERAGE_GAP"
 
 
+def _num(value):
+    return value if isinstance(value, (int, float)) and not isinstance(value, bool) else None
+
+
+def _value_flags(payload: dict) -> list[str]:
+    """Internal-consistency checks on the figures behind an Evidence PASS/WARN.
+
+    Each flag is a contradiction that a correct official filing cannot
+    produce (or a unit/identity slip), so a PASS carrying one is a false PASS
+    candidate. Deliberately conservative: absent fields are never flagged.
+    """
+    fe = payload.get("fundamentalEvidence") or {}
+    company = payload.get("company") or {}
+    values = {**company, **(fe.get("values") or {})}
+    v = {k: _num(values.get(k)) for k in ("revenue", "net_income", "total_assets", "total_liabilities", "total_equity", "cash_and_equivalents", "eps", "operating_cash_flow")}
+    flags = []
+    if fe.get("isOfficial") and all(v[k] is None for k in ("revenue", "net_income", "total_assets")):
+        flags.append("no core figures (revenue/net income/assets) in official evidence")
+    ident = fe.get("identity") or {}
+    for key in ("isin", "lei"):
+        a, b = ident.get(key), payload.get(key)
+        if a and b and str(a).upper() != str(b).upper():
+            flags.append(f"evidence {key} {a} != instrument {key} {b}")
+    if v["total_assets"] is not None and v["total_assets"] <= 0:
+        flags.append("total assets <= 0")
+    a, l, e = v["total_assets"], v["total_liabilities"], v["total_equity"]
+    if a and l is not None and e is not None and a > 0 and abs(a - (l + e)) / a > 0.10:
+        flags.append(f"balance sheet does not tie: assets {a:.4g} vs liabilities+equity {l + e:.4g}")
+    if a and v["cash_and_equivalents"] is not None and a > 0 and v["cash_and_equivalents"] > a * 1.01:
+        flags.append("cash exceeds total assets")
+    if a and l is not None and a > 0 and l > a * 50:
+        flags.append("liabilities > 50x assets (unit mismatch)")
+    price = _num(company.get("price"))
+    same_ccy = (values.get("reporting_currency") or payload.get("currency")) == payload.get("currency")
+    if v["eps"] is not None and price and same_ccy and not (-20.0 <= v["eps"] / price <= 1.0):
+        flags.append(f"EPS {v['eps']:.4g} implausible vs price {price:.4g} (per-share scale)")
+    pe = _num(company.get("pe"))
+    if pe is not None and not same_ccy:
+        flags.append("P/E computed across reporting/trading currency mismatch")
+    if pe is not None and 0 < pe < 0.5:
+        flags.append(f"implausible P/E {pe:.3g}")
+    period = fe.get("reportPeriod") or company.get("filing_period_end")
+    if period and str(period)[:10] > time.strftime("%Y-%m-%d", time.gmtime(time.time() + 86400 * 31)):
+        flags.append(f"report period {period} is in the future")
+    filed = str(fe.get("filingDate") or "")[:10]
+    if period and filed and filed < str(period)[:10]:
+        flags.append(f"filed {filed} before period end {period}")
+    return flags
+
+
 def _classify(payload: dict) -> dict:
     ev = payload.get("evidence") or {}
     fe = payload.get("fundamentalEvidence") or {}
@@ -261,13 +319,19 @@ def _classify(payload: dict) -> dict:
     if fe.get("isOfficial") and "fundamental_source" in missing:
         cls = "PIPELINE_FAILURE"
         detail = "official evidence attached but Evidence reports missing fundamental_source"
+    elif "fundamental_core_figures" in missing:
+        cls = "PIPELINE_FAILURE"
+        detail = "official source attached but its parsed statement has no P&L core figures"
+    elif status in {"PASS", "WARN"} and _value_flags(payload):
+        cls = "SUSPECT_VALUES"
+        detail = "; ".join(_value_flags(payload))
     elif status in {"PASS", "WARN"}:
         cls = "OK"
     elif not any(m in missing for m in ("fundamental_source", "fresh_fundamentals", "valid_fundamental_period")):
         cls = "MARKET_DATA"
     elif official_status == "OFFICIAL_STALE":
         text = str(detail or "")
-        if "newer official source unavailable" in text and _leaf_class(text.split("newer official source unavailable:", 1)[1]) == "PIPELINE_FAILURE":
+        if "newer official source unavailable" in text and _leaf_class(text.split("newer official source unavailable:", 1)[1], truncated=len(text) >= 295) == "PIPELINE_FAILURE":
             cls = "PIPELINE_FAILURE"
         elif "newer period only from non-official source" in text:
             cls = "INDEX_LAG"
@@ -299,6 +363,11 @@ def _classify(payload: dict) -> dict:
         "fundamentalsProvider": diag.get("fundamentalsProvider"),
         "fundamentalsError": diag.get("fundamentalsError"),
         "classification": cls,
+        "reportingCurrency": ((fe.get("values") or {}).get("reporting_currency") or company.get("reporting_currency")),
+        "keyValues": {k: (fe.get("values") or {}).get(k, company.get(k)) for k in ("revenue", "net_income", "total_assets", "total_equity", "eps")},
+        "price": company.get("price"),
+        "pe": company.get("pe"),
+        "sourceUrl": fe.get("sourceUrl"),
     }
 
 
@@ -349,7 +418,7 @@ def main() -> int:
         if r.get("_canary"):
             continue
         key = f"{r['country']}/{r['exchange']}"
-        m = by_market.setdefault(key, {"universe": totals.get(key), "sampled": 0, "officialValid": 0, "officialStale": 0, "legitUnavailable": 0, "indexLag": 0, "coverageGap": 0, "pipelineFailure": 0, "marketData": 0, "apiFailure": 0, "pass": 0, "block": 0, "blockReasons": {}})
+        m = by_market.setdefault(key, {"universe": totals.get(key), "sampled": 0, "officialValid": 0, "officialStale": 0, "legitUnavailable": 0, "indexLag": 0, "coverageGap": 0, "pipelineFailure": 0, "suspectValues": 0, "marketData": 0, "apiFailure": 0, "pass": 0, "block": 0, "blockReasons": {}})
         m["sampled"] += 1
         cls = r["classification"]
         m["officialValid"] += int(bool(r.get("official")) and r.get("officialStatus") == "OFFICIAL_CURRENT")
@@ -358,6 +427,7 @@ def main() -> int:
         m["indexLag"] += int(cls == "INDEX_LAG")
         m["coverageGap"] += int(cls == "COVERAGE_GAP")
         m["pipelineFailure"] += int(cls == "PIPELINE_FAILURE")
+        m["suspectValues"] += int(cls == "SUSPECT_VALUES")
         m["marketData"] += int(cls == "MARKET_DATA")
         m["apiFailure"] += int(cls == "API_FAILURE")
         m["pass"] += int(r.get("evidence") in {"PASS", "WARN"})
@@ -369,10 +439,10 @@ def main() -> int:
     report = {"base": BASE, "generatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "seconds": round(time.time() - t0), "markets": by_market, "canaries": canaries, "rows": [r for r in results if not r.get("_canary")]}
     with open(OUT + ".json", "w", encoding="utf-8") as fh:
         json.dump(report, fh, ensure_ascii=False, indent=1)
-    lines = ["| country/exchange | universe | sampled | official valid | stale | official unavailable | index lag | coverage gap | pipeline fail | market data | api fail | PASS | BLOCK | BLOCK reasons |", "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    lines = ["| country/exchange | universe | sampled | official valid | stale | official unavailable | index lag | coverage gap | pipeline fail | suspect values | market data | api fail | PASS | BLOCK | BLOCK reasons |", "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for key in sorted(by_market):
         m = by_market[key]
-        lines.append(f"| {key} | {m['universe']} | {m['sampled']} | {m['officialValid']} | {m['officialStale']} | {m['legitUnavailable']} | {m['indexLag']} | {m['coverageGap']} | {m['pipelineFailure']} | {m['marketData']} | {m['apiFailure']} | {m['pass']} | {m['block']} | {'; '.join(f'{k}×{v}' for k, v in m['blockReasons'].items())} |")
+        lines.append(f"| {key} | {m['universe']} | {m['sampled']} | {m['officialValid']} | {m['officialStale']} | {m['legitUnavailable']} | {m['indexLag']} | {m['coverageGap']} | {m['pipelineFailure']} | {m['suspectValues']} | {m['marketData']} | {m['apiFailure']} | {m['pass']} | {m['block']} | {'; '.join(f'{k}×{v}' for k, v in m['blockReasons'].items())} |")
     lines += ["", "| canary | evidence | official | source | document | period | ageDays | missing | governance |", "|---|---|---|---|---|---|---|---|---|"]
     for r in canaries:
         lines.append(f"| {r['country']}:{r['ticker']} ({r.get('shape')}) | {r.get('evidence')} | {r.get('official')} | {r.get('fundamentalSource')} | {r.get('officialDocumentId')} | {r.get('reportPeriod')} | {r.get('fundamentalAgeDays')} | {','.join(r.get('missing') or [])} | {r.get('governance')} |")
@@ -391,6 +461,9 @@ def main() -> int:
     contradictions = [r for r in report["rows"] if r.get("official") and "fundamental_source" in (r.get("missing") or [])]
     if contradictions:
         failures.append(f"{len(contradictions)} payload(s) carry official evidence yet report missing fundamental_source")
+    suspect = [r for r in report["rows"] + canaries if r["classification"] == "SUSPECT_VALUES"]
+    if suspect:
+        failures.append(f"{len(suspect)} PASS/WARN payload(s) fail value sanity: " + "; ".join(f"{r['country']}:{r.get('ticker')} ({r.get('officialDetail')})" for r in suspect[:10]))
     api = sum(1 for r in report["rows"] if r["classification"] == "API_FAILURE")
     if report["rows"] and api * 100.0 / len(report["rows"]) > MAX_API_FAILURE_PCT:
         failures.append(f"API failures {api}/{len(report['rows'])}")
