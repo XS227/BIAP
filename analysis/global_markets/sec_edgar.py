@@ -18,6 +18,7 @@ import httpx
 
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
+from .sec_filing_instance import SECFilingInstanceReader, merge_facts
 
 SEC_TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 SEC_FACTS_BASE = "https://data.sec.gov/api/xbrl/companyfacts"
@@ -31,6 +32,10 @@ VERIFIED_PREDECESSOR_CIKS = {
     # 0001193125-26-291990 (both 2026-07-01), successor registrant per 12g-3(a).
     2115436: 34088,
 }
+# Companyfacts can lag a filed 10-K (BTBD FY2025: filed 2026-03-30, no 10-K
+# facts months later). Only look for a newer filed instance when the newest
+# annual period is older than this many days.
+COMPANYFACTS_LAG_CHECK_DAYS = 365
 _ticker_lock = threading.Lock()
 _ticker_cache: Optional[dict[str, int]] = None
 
@@ -227,6 +232,32 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             return None
         return income / revenue * 100.0
 
+    def _with_newer_filing_instance(self, cik: int, gaap: dict) -> dict:
+        """Add facts of a newer filed annual 10-K that companyfacts lags behind.
+
+        Same strict rules as the 20-F reader: the instance identifier must equal
+        the identity-verified CIK, only non-dimensional fiscal-year contexts are
+        used, and conflicting duplicates are dropped. Failure never raises: the
+        companyfacts result (and its freshness gate) stands unchanged.
+        """
+        latest = ""
+        for tag in ("Revenues", "RevenueFromContractWithCustomerExcludingAssessedTax", "NetIncomeLoss", "ProfitLoss", "Assets"):
+            rows = self._annual_rows(gaap.get(tag) or {})
+            if rows:
+                latest = max(latest, str(rows[0].get("end") or ""))
+        try:
+            age_days = (date.today() - date.fromisoformat(latest)).days if latest else None
+        except ValueError:
+            age_days = None
+        if age_days is not None and age_days <= COMPANYFACTS_LAG_CHECK_DAYS:
+            return gaap
+        reader = SECFilingInstanceReader(get_json=self._get_json, user_agent=self.user_agent, taxonomy="us-gaap")
+        try:
+            extra, filing = reader.newer_annual_facts(cik, latest or None)
+        except GlobalProviderError:
+            return gaap
+        return merge_facts(gaap, extra) if filing else gaap
+
     def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
         if company.country.strip().upper() != "US":
             raise GlobalProviderError("SEC EDGAR fundamentals adapter only supports US issuers")
@@ -247,6 +278,7 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             predecessor_cik = None
         if not gaap:
             raise GlobalProviderError(f"SEC returned no standard US-GAAP company facts for {company.identity()}")
+        gaap = self._with_newer_filing_instance(int(cik if not predecessor_cik else predecessor_cik), gaap)
 
         revenues = self._annual_series(gaap, ("RevenueFromContractWithCustomerExcludingAssessedTax", "Revenues", "SalesRevenueNet", "RevenueFromContractWithCustomerIncludingAssessedTax"))
         net_income = self._annual_series(gaap, ("NetIncomeLoss", "ProfitLoss"))
