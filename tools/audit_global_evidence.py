@@ -179,13 +179,15 @@ def _analyze(row: dict) -> dict:
 # here is treated as a BIAP pipeline failure so new failure modes surface.
 _NEUTRAL = (
     "sec cik not found", "sec ticker identity does not match",  # opportunistic SEC path outside the US
+    "sec returned no standard ifrs company facts",  # same opportunistic SEC path, issuer not an SEC IFRS filer
+    "official-source discovery queued",  # status note appended to a coverage leaf, not a failure
 )
 _LEGIT = (
     "carries no inline xbrl", "non-esef filing", "not an esef", "lists no esef annual financial report",
     "has no issuer page", "contains no completed annual", "no esef annual financial report",
     "lists no annual esef package", "no esef annual financial report obligation",
     "report entity [",  # lodged package embeds another entity's LEI (issuer error, guard kept)
-    "lodged untagged", "no inline xbrl",  # e.g. UK investment trusts (untagged ESEF permitted)
+    "lodged untagged", "no inline xbrl", "untagged report",  # e.g. UK investment trusts (untagged ESEF permitted)
     "sec annual ifrs filing is stale",  # issuer stopped filing with the SEC
 )
 _COVERAGE = (
@@ -193,12 +195,14 @@ _COVERAGE = (
     "current filing fundamentals are not verified", "no official filing adapter returned data",
     "no official financial-statement source attached", "no esef filing found for lei",
     "no strict cvm issuer match", "requires a verified lei or full legal company name",
-    "no reviewed issuer-published esef package",
+    "no reviewed issuer-published esef package", "no reviewed fca nsm annual-report snapshot",
+    "no reviewed german annual-report snapshot",
     "nse lists no integrated filings", "nse integrated filings contain no annual",
     "issuer identity is not uniquely resolved",  # issuer not (uniquely) on the national OAM register
     "no official oam esef locator for",  # BIAP has no national-OAM integration for this country yet
     "nasdaq nordic announcements list no esef annual report", "no danish cvr number verifiable",
     "virk.dk lists no esef annual report", "euronext athens lists no esef annual financial report",  # BSE-only issuers (BSE API not reachable)
+    "latest annual key data fy",  # exchange key-data fallback is stale; newer issuer report not integrated
 )
 
 
@@ -206,6 +210,7 @@ def _leaf_class(detail: str) -> str:
     import re
     # SEC identity diagnostics carry their own ';'-separated details.
     detail = re.sub(r"(?i)(sec ticker identity does not match|sec cik not found)[^()]*(\([^()]*\))?[^()]*", "sec cik not found", detail)
+    detail = re.sub(r"(?i)annual \(12-month\) results", "annual 12-month results", detail)  # NSE wording, not a nested leaf
     leaves = [x.strip(" .;:()").lower() for x in re.split(
         r"primary fundamentals unavailable\s*\(|fallback unavailable\s*\(|official oam esef package unusable:|[();]", detail)]
     leaves = [x for x in leaves if len(x) > 6]

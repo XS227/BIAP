@@ -185,8 +185,14 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
         derived.append("book_value_per_share=equity/shares_outstanding")
 
     if same_currency and price not in (None, 0) and company.eps not in (None, 0) and float(company.eps) > 0 and pe is None:
-        pe = float(price) / float(company.eps)
-        derived.append("pe=price/eps")
+        # Annual EPS above the share price almost always means a mis-scaled
+        # filing fact (CIR FY2025: EUR 0.0325 tagged in thousands -> P/E
+        # 0.02). Leave P/E underived rather than score a bogus valuation.
+        if float(price) / float(company.eps) >= 1.0:
+            pe = float(price) / float(company.eps)
+            derived.append("pe=price/eps")
+        else:
+            derived.append("pe_not_derived:eps_exceeds_price")
 
     if (
         same_currency

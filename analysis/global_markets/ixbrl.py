@@ -168,7 +168,21 @@ class _IXBRLParser(HTMLParser):
             "unit": fact["unit"],
             "decimals": fact["decimals"],
             "value": value,
+            "scale": scale,
+            "shown": value / (10 ** scale) if scale else value,
         })
+
+
+def _misscaled_per_share(raw: dict, measures: list[str]) -> bool:
+    """A per-share amount displayed below 1 but tagged in thousands/millions.
+
+    CIR's FY2025 ESEF report shows basic EPS "0,0325" (EUR) with scale="3",
+    which as tagged means EUR 32.50 per share (P/E 0.02). Nobody presents a
+    fraction of a thousand euros per share, so the fact is dropped, never
+    rescaled. Negative scales stay valid (UK EPS shown in pence, scale=-2).
+    """
+    per_share = len(measures) == 2 and "shares" in measures[1].lower()
+    return per_share and int(raw.get("scale") or 0) > 0 and abs(raw.get("shown") or 0) < 1
 
 
 def extract_facts(chunks: Iterable[str]) -> tuple[list[dict], set[str]]:
@@ -199,6 +213,8 @@ def extract_facts(chunks: Iterable[str]) -> tuple[list[dict], set[str]]:
         else:
             continue
         measures = parser.units.get(raw["unit"] or "", [])
+        if _misscaled_per_share(raw, measures):
+            continue
         dims = {
             "concept": raw["name"],
             "entity": f"scheme:{(ctx.get('entity') or '').strip()}",

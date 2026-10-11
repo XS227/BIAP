@@ -127,3 +127,30 @@ def test_register_acronym_halves_are_a_last_resort_tier():
 ])
 def test_statutory_alias_clauses_list_every_name(legal_name, expected):
     assert expected <= set(_it_name_variants(legal_name))
+
+
+class _EMarketHttp:
+    """eMarket STORAGE pages: register select plus per-issuer annual listings."""
+
+    def __init__(self, listings):
+        self.listings = listings
+
+    def cached_text(self, key, fetch):
+        if key == "emarket:issuers":
+            options = "".join(f'<option value="{k}">{n}</option>' for k, n in EMARKET)
+            return f'<select id="edit-azienda">{options}</select>'
+        if key.startswith("emarket:annual:"):
+            return self.listings.get(key.rsplit(":", 1)[1], "")
+        raise GlobalProviderError("unexpected fetch " + key)
+
+
+def test_emarket_duplicate_register_rows_resolve_to_the_one_with_esef():
+    from global_markets.oam_esef import ItalyEMarketStorageLocator
+    # 2026-10: "CIR" (89) lists the FY2025 ESEF package; "C.I.R." (121) is empty.
+    package = '<div class="views-row"><a href="/sites/default/files/xbrl/2026-04/20260403_181379.zip">ESEF</a></div>'
+    locator = ItalyEMarketStorageLocator(_EMarketHttp({"89": package, "121": ""}))
+    assert locator._issuer_id("CIR S.P.A. - COMPAGNIE INDUSTRIALI RIUNITE") == "89"
+    # Both rows listing packages stays ambiguous: refuse.
+    locator = ItalyEMarketStorageLocator(_EMarketHttp({"89": package, "121": package}))
+    with pytest.raises(GlobalProviderError):
+        locator._issuer_id("CIR S.P.A. - COMPAGNIE INDUSTRIALI RIUNITE")

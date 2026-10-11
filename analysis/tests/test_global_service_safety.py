@@ -129,3 +129,14 @@ def test_recent_market_scan_supplies_non_official_peer_pe_benchmark(monkeypatch,
     assert enriched.raw_provider_fields["peer_pe_benchmark_scope"] == "same_sector_scan_median"
     assert enriched.raw_provider_fields["peer_pe_benchmark_count"] == 5
     assert any(source.provider == "biap-derived-metrics" for source in enriched.sources)
+
+
+def test_eps_above_price_leaves_pe_underived():
+    # CIR FY2025 ESEF tags EPS 0.0325 with scale=3 -> 32.5 vs price 0.73.
+    company = GlobalCompany(
+        country="IT", exchange="EURONEXT_MILAN", mic_code="XMIL", currency="EUR",
+        ticker="CIR", name="CIR", price=0.729, reporting_currency="EUR", eps=32.5,
+    )
+    enriched = _derive_metrics(company)
+    assert enriched.pe is None
+    assert "pe_not_derived:eps_exceeds_price" in enriched.raw_provider_fields["derived_metrics"]

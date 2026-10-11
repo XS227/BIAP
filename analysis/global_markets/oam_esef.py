@@ -320,7 +320,7 @@ class FranceAMFInfoFinanciereLocator(OAMLocator):
     The OAM's open-data feed indexes every regulated-information document with
     the depositing issuer's LEI and ISIN. Annual financial reports (003000) and
     universal registration documents (300005, which embed the annual financial
-    report) lodged as ESEF zip/XHTML are candidates; PDFs are never ESEF.
+    report) lodged as ESEF zip/xbri/XHTML are candidates; PDFs are never ESEF.
     """
 
     oam = "fr-amf-info-financiere"
@@ -363,7 +363,8 @@ class FranceAMFInfoFinanciereLocator(OAMLocator):
         for row in rows:
             url = str(row.get("url_de_recuperation") or "").strip()
             published = str(row.get("informationdeposee_inf_dat_emt") or "") or None
-            if not url.lower().endswith((".zip", ".xhtml", ".html")) or url in seen:
+            # Since 2026 AMF lodges ESEF report packages as .xbri (a zip).
+            if not url.lower().endswith((".zip", ".xbri", ".xhtml", ".html")) or url in seen:
                 continue
             if published and published[:10] < cutoff:
                 continue
@@ -407,6 +408,16 @@ class SpainCNMVLocator(OAMLocator):
             value = value[2:]
         return value if re.fullmatch(r"[A-Z]\d{7}[A-Z0-9]", value) else None
 
+    @staticmethod
+    def _search_terms(legal_name: str) -> list[str]:
+        """CNMV's entity search misses long GLEIF names such as "LINEA DIRECTA
+        ASEGURADORA SOCIEDAD ANONIMA COMPAÑIA DE SEGUROS Y REASEGUROS"; also try
+        the name without its legal-form suffix and anything after it."""
+        name = legal_name.strip()
+        core = re.sub(r"[,\s]+(S\.?\s?A\.?(\s?U\.?)?|SOCIMI,?\s?S\.?A\.?)$", "", name, flags=re.I)
+        stem = re.split(r"[,\s]+(?:SOCIEDAD\s+AN[OÓ]NIMA|S\.A\.)(?:[,\s]|$)", name, maxsplit=1, flags=re.I)[0].strip()
+        return [t for t in dict.fromkeys([name, core, stem]) if len(t) >= 4]
+
     def _nif_by_name(self, legal_name: str, isin: Optional[str]) -> Optional[str]:
         """CNMV entity search by GLEIF legal name. A candidate NIF is accepted
         only when CNMV's own ISIN register for it lists the instrument's ISIN,
@@ -414,9 +425,8 @@ class SpainCNMVLocator(OAMLocator):
         if not legal_name or not isin:
             return None
         search = "https://www.cnmv.es/portal/Consultas/BusquedaPorEntidad"
-        core = re.sub(r"[,\s]+(S\.?\s?A\.?(\s?U\.?)?|SOCIMI,?\s?S\.?A\.?)$", "", legal_name.strip(), flags=re.I)
         candidates: list[str] = []
-        for term in dict.fromkeys([legal_name.strip(), core]):
+        for term in self._search_terms(legal_name):
             def fetch(term: str = term) -> str:
                 with self.http.client() as client:
                     first = client.get(search)
@@ -554,6 +564,20 @@ def _it_name_variants(legal_name: str) -> list[str]:
     return [v for v in dict.fromkeys(variants) if v]
 
 
+def _it_register_matches(
+    legal_name: str, register: Iterable[tuple[str, str]], other_names: Iterable[str] = (),
+    *, register_parts: bool = False,
+) -> set[str]:
+    cores = {_it_name_core(v) for name in (legal_name, *other_names) for v in _it_name_variants(name)} - {""}
+
+    def register_cores(name: str) -> set[str]:
+        # 'IGD - IMMOBILIARE GRANDE DISTRIBUZIONE': acronym and long name.
+        parts = [name, *name.split(" - ")] if register_parts else [name]
+        return {_it_name_core(part) for part in parts}
+
+    return {key for key, name in register if register_cores(name) & cores}
+
+
 def _it_unique_register_id(
     legal_name: str, register: Iterable[tuple[str, str]], storage: str, other_names: Iterable[str] = (),
     *, register_parts: bool = False,
@@ -563,14 +587,7 @@ def _it_unique_register_id(
     ``other_names`` are GLEIF otherNames of the same LEI (e.g. the previous
     legal name 'MONDO TV S.P.A.' of 'MONDO TV S.P.A. ICC').
     """
-    cores = {_it_name_core(v) for name in (legal_name, *other_names) for v in _it_name_variants(name)} - {""}
-
-    def register_cores(name: str) -> set[str]:
-        # 'IGD - IMMOBILIARE GRANDE DISTRIBUZIONE': acronym and long name.
-        parts = [name, *name.split(" - ")] if register_parts else [name]
-        return {_it_name_core(part) for part in parts}
-
-    matches = {key for key, name in register if register_cores(name) & cores}
+    matches = _it_register_matches(legal_name, register, other_names, register_parts=register_parts)
     if len(matches) != 1:
         raise GlobalProviderError(f"{storage} issuer identity is not uniquely resolved for {legal_name!r}")
     return next(iter(matches))
@@ -785,7 +802,24 @@ class ItalyEMarketStorageLocator(OAMLocator):
         start = html.find('id="edit-azienda"')
         select = html[start:html.find("</select>", start)] if start >= 0 else ""
         register = [(value, html_unescape(name)) for value, name in re.findall(r'<option value="(\d+)"[^>]*>([^<]*)<', select)]
-        return _it_register_id(self.http, lei, legal_name, register, "eMarket STORAGE")
+        try:
+            return _it_register_id(self.http, lei, legal_name, register, "eMarket STORAGE")
+        except GlobalProviderError:
+            # The register keeps duplicate rows for one issuer ("C.I.R." and
+            # "CIR"). Never pick by name: accept a candidate only when it is
+            # the single one listing an ESEF annual package. The package's
+            # inline-XBRL entity LEI is still the hard identity gate.
+            candidates = sorted(_it_register_matches(legal_name, register))
+            if not 2 <= len(candidates) <= 3:
+                raise
+            with_esef = [key for key in candidates if self._annual_xbrl_links(key)]
+            if len(with_esef) != 1:
+                raise
+            return with_esef[0]
+
+    def _annual_xbrl_links(self, issuer: str) -> list[str]:
+        html = self._get(f"emarket:annual:{issuer}", {"categoria": self.annual_category, "azienda": issuer})
+        return re.findall(r'href="(/sites/default/files/xbrl/[^"]+\.(?:zip|xbri|xhtml|html))"', html, flags=re.I)
 
     def annual_filings(self, company: GlobalCompany, lei: str, legal_name: str) -> list[OAMFiling]:
         issuer = self._issuer_id(legal_name, lei)
