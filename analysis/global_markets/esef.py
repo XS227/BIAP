@@ -100,6 +100,22 @@ _CONCEPTS = {
         "ifrs-full:IncomeTaxesPaidRefundClassifiedAsOperatingActivities",
     ),
     "eps": ("ifrs-full:BasicEarningsLossPerShare", "ifrs-full:DilutedEarningsLossPerShare"),
+    # Continuing-operations EPS equals EPS only when no discontinued
+    # operation result is tagged for the year (e.g. Komplett ASA FY2025).
+    "eps_continuing": (
+        "ifrs-full:BasicEarningsLossPerShareFromContinuingOperations",
+        "ifrs-full:DilutedEarningsLossPerShareFromContinuingOperations",
+    ),
+    "discontinued_profit": ("ifrs-full:ProfitLossFromDiscontinuedOperations",),
+    # Top line tagged as "revenue and operating income" (Norwegian "sum
+    # driftsinntekter", e.g. Komplett, Scana, Axactor) when no IFRS Revenue
+    # total is tagged; separately tagged other income is netted out.
+    "revenue_and_operating_income": ("ifrs-full:RevenueAndOperatingIncome",),
+    "other_operating_income": ("ifrs-full:OtherIncome", "ifrs-full:OtherOperatingIncome"),
+    # Sale of goods is the whole top line only when no services revenue is
+    # tagged for the year (e.g. Sildarvinnslan FY2024); otherwise it is a part.
+    "revenue_sale_of_goods": ("ifrs-full:RevenueFromSaleOfGoods",),
+    "revenue_rendering_of_services": ("ifrs-full:RevenueFromRenderingOfServices",),
     # Bank (Bank of Italy Circular 262) layout: no IFRS Revenue / Equity total
     # is tagged. These concepts let the normalizer use the issuer's own tagged
     # totals instead, and only under the bank guards in normalized_fields.
@@ -459,6 +475,34 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             return owners + minority, "owners_equity_plus_noncontrolling_interests"
         return None, None
 
+    def _revenue_from_operating_total(
+        self, concept_facts: dict, period_end: date
+    ) -> tuple[Optional[float], Optional[float], Optional[str]]:
+        """Revenue from an issuer's tagged "revenue and operating income" total.
+
+        Other income tagged for the same year is subtracted; a year whose
+        total is tagged without any other-income line uses the total as-is.
+        Both years are derived the same way so growth is like for like.
+        """
+        totals = concept_facts["revenue_and_operating_income"]
+        other = concept_facts["other_operating_income"]
+        current_total = self._duration_value(totals, period_end)
+        if current_total is None:
+            return None, None, None
+        current_other = self._duration_value(other, period_end)
+        netted = current_other is not None
+        previous_total = self._duration_value(totals, period_end, previous=True)
+        previous_other = self._duration_value(other, period_end, previous=True)
+        revenue = current_total - current_other if netted else current_total
+        if previous_total is None or netted != (previous_other is not None):
+            revenue_prev = None
+        else:
+            revenue_prev = previous_total - previous_other if netted else previous_total
+        if revenue <= 0:
+            return None, None, None
+        method = "revenue_and_operating_income_minus_other_income" if netted else "revenue_and_operating_income_total"
+        return revenue, revenue_prev, method
+
     @staticmethod
     def _pct_change(current: Optional[float], previous: Optional[float]) -> Optional[float]:
         return None if current is None or previous in (None, 0) else (current / previous - 1.0) * 100.0
@@ -493,6 +537,18 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             if revenue is not None:
                 revenue_prev = self._duration_value(concept_facts["bank_operating_income"], period_end, previous=True)
                 revenue_method = "bank_net_interest_and_other_banking_income"
+        if (
+            revenue is None
+            and self._duration_value(concept_facts["revenue_rendering_of_services"], period_end) is None
+        ):
+            revenue = self._duration_value(concept_facts["revenue_sale_of_goods"], period_end)
+            if revenue is not None:
+                revenue_prev = self._duration_value(concept_facts["revenue_sale_of_goods"], period_end, previous=True)
+                revenue_method = "revenue_from_sale_of_goods_only_revenue_line"
+        if revenue is None:
+            derived = self._revenue_from_operating_total(concept_facts, period_end)
+            if derived[0] is not None:
+                revenue, revenue_prev, revenue_method = derived
         total_equity, equity_method = self._equity(facts, concept_facts, period_end)
         total_assets = self._instant_value(concept_facts["assets"], period_end)
         total_liabilities = self._instant_value(concept_facts["liabilities"], period_end)
@@ -589,6 +645,10 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                 else "ebitda_minus_interest_paid_minus_income_taxes_paid"
             )
 
+        eps = self._duration_value(concept_facts["eps"], period_end)
+        if eps is None and not self._duration_value(concept_facts["discontinued_profit"], period_end):
+            eps = self._duration_value(concept_facts["eps_continuing"], period_end)
+
         reporting_currency = None
         for key in ("revenue", "net_income", "assets"):
             for fact in concept_facts.get(key, []):
@@ -621,7 +681,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             "free_cash_flow": fcf,
             "total_debt": debt,
             "interest_expense": self._duration_value(concept_facts["interest_expense"], period_end),
-            "eps": self._duration_value(concept_facts["eps"], period_end),
+            "eps": eps,
             "__normalization_meta__": {
                 "revenue_method": revenue_method,
                 "equity_method": equity_method,
