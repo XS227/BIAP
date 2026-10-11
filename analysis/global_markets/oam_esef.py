@@ -1446,31 +1446,53 @@ class NasdaqNordicNewsLocator(OAMLocator):
         term = re.sub(r"[^\w\s&-]", " ", re.sub(r"(?i)\b(hf|h\.f|a/s|as|asa|ab|oyj|plc|ltd)\b\.?", " ", legal_name)).strip()
         term = " ".join(term.split()[:3]) or company.ticker
 
-        def fetch() -> str:
+        def fetch(category: Optional[str]) -> str:
             params = {"type": "json", "showAttachments": "true", "showCompany": "true", "countResults": "false",
-                      "freeText": term, "cnscategory": "Annual Financial Report",
-                      "globalGroup": "exchangeNotice", "globalName": "NordicAllMarkets",
+                      "freeText": term, "globalGroup": "exchangeNotice", "globalName": "NordicAllMarkets",
                       "displayLanguage": "en", "language": "en", "timeZone": "CET",
                       "dateMask": "yyyy-MM-dd HH:mm:ss", "limit": "60", "start": "0", "dir": "DESC"}
+            if category:
+                params["cnscategory"] = category
             with self.http.client() as client:
                 response = client.get(self.api, params=params)
             response.raise_for_status()
             return response.text
 
-        items = (json.loads(self.http.cached_text(f"nasdaq-news-afr:{term.upper()}", fetch)).get("results") or {}).get("item") or []
+        def items_for(category: Optional[str], key: str) -> list:
+            return (json.loads(self.http.cached_text(key, lambda: fetch(category))).get("results") or {}).get("item") or []
+
+        def package_attachments(item: dict, lei_only: bool) -> list[dict]:
+            found = []
+            for attachment in item.get("attachment") or []:
+                name = str(attachment.get("fileName") or "")
+                if not name.lower().endswith((".zip", ".xbri", ".xhtml")):
+                    continue
+                # Outside the "Annual Financial Report" category (e.g. Kaldalon files its ESEF zip with
+                # the "Financial Statement Release") accept only the ESEF naming "<LEI>-<period end>-...".
+                if lei_only and not re.match(rf"(?i){re.escape(lei)}-\d{{4}}-\d{{2}}-\d{{2}}[-.]", name):
+                    continue
+                found.append(attachment)
+            return found
+
+        items = [(item, False) for item in items_for("Annual Financial Report", f"nasdaq-news-afr:{term.upper()}")]
+        try:
+            items += [(item, True) for item in items_for("Financial Statement Release", f"nasdaq-news-fsr:{term.upper()}")]
+        except (httpx.HTTPError, ValueError):
+            if not items:
+                raise
         filings = []
-        for item in items:
-            if "annual financial report" not in str(item.get("cnsCategory") or "").lower():
+        seen_urls: set[str] = set()
+        for item, lei_only in items:
+            if not lei_only and "annual financial report" not in str(item.get("cnsCategory") or "").lower():
                 continue
             name_core = _pt_name_core(str(item.get("company") or ""))
             if not core or (name_core != core and SequenceMatcher(None, name_core, core).ratio() < 0.9):
                 continue
-            for attachment in item.get("attachment") or []:
-                if not str(attachment.get("fileName") or "").lower().endswith((".zip", ".xbri", ".xhtml")):
-                    continue
+            for attachment in package_attachments(item, lei_only):
                 url = str(attachment.get("attachmentUrl") or "")
-                if not url.startswith("https://attachment.news.eu.nasdaq.com/"):
+                if not url.startswith("https://attachment.news.eu.nasdaq.com/") or url in seen_urls:
                     continue
+                seen_urls.add(url)
                 filings.append(OAMFiling(
                     oam=self.oam, document_id=f"NASDAQ-NEWS:{item.get('disclosureId') or item.get('id')}:{url.rsplit('/', 1)[-1]}",
                     package_url=url, landing_url=str(item.get("messageUrl") or "https://www.nasdaqomxnordic.com/news/companynews"),
