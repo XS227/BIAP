@@ -58,3 +58,35 @@ def test_combined_locator_merges_newest_first():
     combined = DenmarkCombinedLocator(OAMHttp())
     combined.parts = [_A(), _B()]
     assert [f.document_id for f in combined.annual_filings(COMPANY, "L", "D")] == ["news", "virk"]
+
+
+KALDALON_LEI = "254900A1SVOQEMA2WP49"
+KALDALON = {"results": {"item": [
+    {"disclosureId": 10, "published": "2026-03-26 09:00:00", "company": "Kaldalón hf.", "cnsCategory": "Annual Financial Report",
+     "headline": "Annual and Sustainability Report 2025 Published", "attachment": []},
+    {"disclosureId": 11, "published": "2026-03-04 09:00:00", "company": "Kaldalón hf.", "cnsCategory": "Financial Statement Release",
+     "headline": "Financial Statements 2025", "attachment": [
+         {"fileName": f"{KALDALON_LEI}-2025-12-31-1-is.zip", "attachmentUrl": "https://attachment.news.eu.nasdaq.com/k1"},
+         {"fileName": "Kaldalon - Samstuarsreikningur 2025.pdf", "attachmentUrl": "https://attachment.news.eu.nasdaq.com/k2"}]},
+    {"disclosureId": 12, "published": "2026-08-20 09:00:00", "company": "Kaldalón hf.", "cnsCategory": "Half Year financial report",
+     "headline": "Interim", "attachment": [{"fileName": "interim.zip", "attachmentUrl": "https://attachment.news.eu.nasdaq.com/k3"}]},
+    {"disclosureId": 13, "published": "2026-03-04 09:00:00", "company": "Kaldalón hf.", "cnsCategory": "Financial Statement Release",
+     "headline": "Other issuer's package", "attachment": [
+         {"fileName": "549300EQF6IH6OIAYL40-2025-12-31-1-is.zip", "attachmentUrl": "https://attachment.news.eu.nasdaq.com/k4"}]},
+    {"disclosureId": 14, "published": "2026-03-04 09:00:00", "company": "Other Company hf.", "cnsCategory": "Financial Statement Release",
+     "headline": "Same LEI, different announcer", "attachment": [
+         {"fileName": f"{KALDALON_LEI}-2025-12-31-1-is.zip", "attachmentUrl": "https://attachment.news.eu.nasdaq.com/k5"}]},
+]}}
+KALDALON_CO = GlobalCompany(country="IS", exchange="NASDAQ_ICELAND", currency="ISK", ticker="KALD", name="Kaldalón")
+
+
+def test_lei_named_esef_zip_in_financial_statement_release_is_found():
+    filings = _News(KALDALON).annual_filings(KALDALON_CO, KALDALON_LEI, "Kaldalón hf.")
+    # Only this issuer's LEI-named package from this issuer's own announcement; interim zips,
+    # other issuers' LEIs and other announcers are all rejected.
+    assert [f.package_url for f in filings] == ["https://attachment.news.eu.nasdaq.com/k1"]
+
+
+def test_unrelated_category_zip_without_lei_name_is_never_accepted():
+    with pytest.raises(GlobalProviderError, match="no ESEF annual report"):
+        _News({"results": {"item": [KALDALON["results"]["item"][2]]}}).annual_filings(KALDALON_CO, KALDALON_LEI, "Kaldalón hf.")
