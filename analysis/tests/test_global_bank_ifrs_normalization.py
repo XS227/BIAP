@@ -5,6 +5,8 @@ eMarket STORAGE: Intesa Sanpaolo 181345 (LEI 2W8N8UU78PMDQKZENC08) and BPER
 Banca 181086 (LEI N747OI7JINV7RUUH6190). Neither tags ifrs-full:Revenue or a
 plain ifrs-full:Equity total.
 """
+import pytest
+from dataclasses import asdict, replace
 from datetime import date
 
 from global_markets.esef import ESEFFundamentalsProvider, concept_is_relevant
@@ -233,3 +235,104 @@ def test_owners_column_without_any_nci_is_still_not_total_equity():
     ]
     result, meta = normalize(facts)
     assert result["total_equity"] is None and meta["equity_method"] is None
+
+
+# --- explicit fiscal-year transition handling (Mediobanca) -------------------
+
+def _mb_facts():
+    return [
+        fact("ifrs-full:ProfitLoss", 513250e3, "2025-07-01/2025-12-31"),
+        fact("ifrs-full:ProfitLoss", 1332501e3, "2024-07-01/2025-06-30"),
+        fact("ifrs-full:CashFlowsFromUsedInOperatingActivities", 1243910e3, "2025-07-01/2025-12-31"),
+        fact("ifrs-full:Assets", 106006555e3, "2025-12-31"),
+    ]
+
+
+def test_transition_figures_exposed_separately_and_never_annualized():
+    result, meta = normalize(_mb_facts())
+    # Annual fields (the only inputs of annual scoring) stay empty.
+    assert result["net_income"] is None and result["operating_cash_flow"] is None and result["revenue"] is None
+    t = meta["fiscal_year_transition"]
+    assert t["status"] == "VERIFIED_TRANSITION_PERIOD"
+    assert (t["periodStart"], t["periodEnd"], t["months"]) == ("2025-07-01", "2025-12-31", 6)
+    assert "6-month" in t["periodLabel"] and t["balanceSheetDate"] == "2025-12-31"
+    assert t["figures"] == {"net_income": 513250e3, "operating_cash_flow": 1243910e3}
+    assert t["priorAnnualPeriod"] == {"start": "2024-07-01", "end": "2025-06-30", "netIncome": 1332501e3}
+    assert t["annualizable"] is False and t["usedForAnnualScoring"] is False
+    assert t["annualScoringStatus"] == "BLOCK_NO_12_MONTH_INCOME_STATEMENT"
+    assert 513250e3 * 2 not in t["figures"].values()
+
+
+def test_regular_annual_report_has_no_transition_block():
+    facts = [fact("ifrs-full:ProfitLoss", 1e6, "2025-01-01/2025-12-31"), fact("ifrs-full:Assets", 5e6, "2025-12-31")]
+    result, meta = normalize(facts)
+    assert result["net_income"] == 1e6 and meta["fiscal_year_transition"] is None
+
+
+@pytest.mark.parametrize("drop", ["prior", "adjacent"])
+def test_unverified_short_period_is_not_exposed(drop):
+    facts = _mb_facts()
+    if drop == "prior":                      # no 12-month year before the short period
+        facts = [f for f in facts if "2024-07-01" not in f["dimensions"]["period"]]
+    else:                                    # prior year does not abut the short period
+        facts[1] = fact("ifrs-full:ProfitLoss", 1332501e3, "2024-01-01/2024-12-31")
+    result, meta = normalize(facts)
+    assert meta["fiscal_year_transition"] is None and result["net_income"] is None
+
+
+def test_contract_labels_transition_with_provenance_and_keeps_values_empty():
+    from global_markets.evidence_contract import fundamental_evidence_contract
+    from global_markets.models import GlobalCompany, SourceEvidence
+
+    result, meta = normalize(_mb_facts())
+    company = GlobalCompany(
+        country="IT", exchange="EURONEXT_MILAN", currency="EUR", ticker="MB", name="MEDIOBANCA",
+        filing_period_end="2025-12-31", filing_observed_at="2026-04-07",
+        raw_provider_fields={"fiscal_year_transition": meta["fiscal_year_transition"]},
+        total_assets=result["total_assets"],
+    )
+    company = replace(company, sources=[SourceEvidence(
+        provider="esef-xbrl-cached-v2", source_type="official_regulatory_xbrl", source_id="24491",
+        source_url="https://filings.xbrl.org/x", observed_at="2026-04-07", period_end="2025-12-31", quality=0.96)])
+    contract = fundamental_evidence_contract(company)
+    block = contract["fiscalYearTransition"]
+    assert block["provenance"]["sourceId"] == "24491" and block["provenance"]["isOfficial"] is True
+    assert block["figures"]["net_income"] == 513250e3
+    assert contract["values"]["net_income"] is None and contract["values"]["revenue"] is None
+
+
+def test_transition_company_stays_blocked_by_evidence_core_figures_gate():
+    from datetime import datetime, timezone
+
+    from global_markets.agents import evidence_agent
+    from global_markets.models import AgentSignal, GlobalCompany, SourceEvidence
+
+    result, meta = normalize(_mb_facts())
+    company = GlobalCompany(
+        country="IT", exchange="EURONEXT_MILAN", currency="EUR", ticker="MB", name="MEDIOBANCA",
+        isin="IT0000062957", lei="PSNL19R2RXX5U3QWHI44", mic_code="MTAA",
+        filing_period_end="2025-12-31", filing_observed_at="2026-04-07", price=10.0,
+        total_assets=result["total_assets"], total_equity=11447879e3, total_liabilities=94558676e3,
+        raw_provider_fields={"fiscal_year_transition": meta["fiscal_year_transition"]},
+        sources=[SourceEvidence(provider="esef-xbrl-cached-v2", source_type="official_regulatory_xbrl",
+                                source_id="24491", source_url="https://filings.xbrl.org/x",
+                                observed_at="2026-04-07", period_end="2025-12-31", quality=0.96)],
+    )
+    evidence = evidence_agent(company, [], now=datetime(2026, 10, 11, 1, tzinfo=timezone.utc))
+    assert evidence.status == "BLOCK"
+    assert "fundamental_core_figures" in evidence.missing_critical
+
+
+def test_annual_scoring_models_ignore_transition_figures():
+    from global_markets.credit_scoring import score_legal_entity_company
+    from global_markets.distress import distress_agent
+    from global_markets.models import GlobalCompany
+
+    _, meta = normalize(_mb_facts())
+    base = dict(country="IT", exchange="EURONEXT_MILAN", currency="EUR", ticker="MB", name="MEDIOBANCA",
+                total_assets=106006555e3, total_liabilities=94558676e3, total_equity=11447879e3,
+                filing_period_end="2025-12-31")
+    plain = GlobalCompany(**base)
+    with_transition = GlobalCompany(**base, raw_provider_fields={"fiscal_year_transition": meta["fiscal_year_transition"]})
+    assert asdict(distress_agent(plain)) == asdict(distress_agent(with_transition))
+    assert score_legal_entity_company(plain) == score_legal_entity_company(with_transition)

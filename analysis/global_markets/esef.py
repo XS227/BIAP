@@ -511,6 +511,71 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
     def _margin(value: Optional[float], revenue: Optional[float]) -> Optional[float]:
         return None if value is None or revenue in (None, 0) else value / revenue * 100.0
 
+    # A verified fiscal-year transition: the report's flows cover one short
+    # period (5-8 months) ending on the balance-sheet date, immediately after a
+    # 12-month fiscal year. Such figures are exposed separately and are never
+    # annualized or placed in the annual fields that feed scoring models.
+    TRANSITION_MIN_DAYS = 150
+    TRANSITION_MAX_DAYS = 250
+
+    @staticmethod
+    def _window_flow(facts: list[dict], target_end: date, min_days: int, max_days: int, *, tolerance: int):
+        """``(value, start, end)`` of the flow whose period ends at ``target_end`` and
+        lasts ``min_days..max_days``; ``None`` when absent or ambiguous."""
+        found: dict[tuple[date, date], set[float]] = {}
+        for fact in facts:
+            dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+            start, end = _period_parts(dims.get("period"))
+            value = _num(fact.get("value"))
+            if start is None or end is None or value is None or end <= start:
+                continue
+            if min_days <= (end - start).days <= max_days and abs((end - target_end).days) <= tolerance:
+                found.setdefault((start, end), set()).add(value)
+        if len(found) != 1:
+            return None
+        (start, end), values = next(iter(found.items()))
+        return (next(iter(values)), start, end) if len(values) == 1 else None
+
+    def fiscal_year_transition(self, facts: list[dict], period_end: date) -> Optional[dict]:
+        """Verified transition-period figures, or ``None``.
+
+        Verified means: no 12-month net income ends at ``period_end``; exactly
+        one 5-8 month net income ends there; and a 12-month net income ends the
+        day before that short period starts (the last annual year).
+        """
+        net = self._concept_facts(facts, _CONCEPTS["net_income"], extension_key="net_income")
+        if self._duration_value(net, period_end) is not None:
+            return None
+        current = self._window_flow(net, period_end, self.TRANSITION_MIN_DAYS, self.TRANSITION_MAX_DAYS, tolerance=7)
+        if current is None:
+            return None
+        _, start, end = current
+        prior = self._window_flow(net, start - timedelta(days=1), 300, 400, tolerance=5)
+        if prior is None:
+            return None
+        days = (end - start).days + 1
+        figures: dict[str, Optional[float]] = {}
+        for key, name in (("net_income", "net_income"), ("ocf", "operating_cash_flow"), ("bank_operating_income", "bank_operating_income")):
+            rows = self._concept_facts(facts, _CONCEPTS[key], extension_key=key)
+            hit = self._window_flow(rows, end, self.TRANSITION_MIN_DAYS, self.TRANSITION_MAX_DAYS, tolerance=7)
+            if hit is not None and hit[1] == start:
+                figures[name] = hit[0]
+        return {
+            "status": "VERIFIED_TRANSITION_PERIOD",
+            "periodLabel": f"{start.isoformat()}..{end.isoformat()} ({round(days / 30.4)}-month fiscal-year transition period)",
+            "periodStart": start.isoformat(),
+            "periodEnd": end.isoformat(),
+            "months": round(days / 30.4),
+            "days": days,
+            "balanceSheetDate": period_end.isoformat(),
+            "figures": figures,
+            "priorAnnualPeriod": {"start": prior[1].isoformat(), "end": prior[2].isoformat(), "netIncome": prior[0]},
+            "annualizable": False,
+            "usedForAnnualScoring": False,
+            "annualScoringStatus": "BLOCK_NO_12_MONTH_INCOME_STATEMENT",
+            "method": "same-filing IFRS facts; short period only; never annualized",
+        }
+
     def normalized_fields(self, facts: list[dict], period_end: date) -> dict:
         """Map plain annual IFRS facts to GlobalCompany fields.
 
@@ -693,6 +758,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                 "debt_method": debt_method,
                 "capex": capex,
                 "fcf_method": "operating_cash_flow_minus_abs_capex" if fcf is not None else None,
+                "fiscal_year_transition": self.fiscal_year_transition(facts, period_end),
                 "ffo": ffo,
                 "ffo_method": ffo_method,
             },
@@ -718,6 +784,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         normalized = self.normalized_fields(facts, period_end)
         reporting_currency = normalized.pop("reporting_currency")
         normalization_meta = normalized.pop("__normalization_meta__", {})
+        transition = normalization_meta.pop("fiscal_year_transition", None)
 
         try:
             errors = int(attrs.get("error_count") or 0)
@@ -750,6 +817,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                 "esef_validation_inconsistencies": inconsistencies,
                 "esef_json_url": json_url,
                 "esef_credit_extraction": normalization_meta,
+                **({"fiscal_year_transition": transition} if transition else {}),
                 **_agent10_fields(normalization_meta),
             },
         )
