@@ -33,7 +33,7 @@ _FUNDAMENTAL_FIELDS = (
     "revenue", "revenue_prev", "revenue_yoy_pct", "gross_profit",
     "operating_income", "ebitda", "net_income", "net_margin_pct",
     "net_margin_prev_pct", "total_assets", "total_liabilities",
-    "total_equity", "current_assets", "current_liabilities",
+    "total_equity", "retained_earnings", "current_assets", "current_liabilities",
     "cash_and_equivalents", "operating_cash_flow", "free_cash_flow",
     "total_debt", "interest_expense", "audit_opinion",
     "filing_period_end", "filing_observed_at", "report_scope",
@@ -50,7 +50,11 @@ _CACHE_SOURCE_TOKENS = (*_OFFICIAL_FINANCIAL_TOKENS, "fundamental", "financial_m
 # v4: ESEF flows anchored to the report's period end (no prior-fiscal-year
 # flows in a transition period) and bank Circular 262 revenue/equity,
 # including owners/NCI statement-of-changes-in-equity columns.
-CACHE_SCHEMA_VERSION = 4
+# v6: refresh previously normalized snapshots after ESEF balance-sheet
+# liability derivation changes; historical snapshots remain fallback evidence.
+# v7: ESEF retained-earnings column, D&A/debt/capex lines and filing-derived
+# FFO (Agents 9/10 inputs) after the all-facts OAM package parse.
+CACHE_SCHEMA_VERSION = 7
 MAX_OFFICIAL_FILING_AGE_DAYS = int(os.environ.get("BIAP_GLOBAL_MAX_OFFICIAL_FILING_AGE_DAYS", "550"))
 
 
@@ -148,7 +152,7 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
             payload = json.loads(self._latest_path(company).read_text(encoding="utf-8"))
         except (OSError, ValueError, TypeError):
             return None
-        if not isinstance(payload, dict) or payload.get("schemaVersion") not in {1, 2, 3, CACHE_SCHEMA_VERSION}:
+        if not isinstance(payload, dict) or payload.get("schemaVersion") not in {1, 2, 3, 4, 6, CACHE_SCHEMA_VERSION}:
             return None
         identity = payload.get("identity") if isinstance(payload.get("identity"), dict) else {}
         if str(identity.get("country") or "").upper() != company.country.upper():

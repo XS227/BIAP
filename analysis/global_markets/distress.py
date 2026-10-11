@@ -196,10 +196,15 @@ def distress_agent(company: GlobalCompany) -> DistressAssessment:
         status = "HIGH_RISK"
     elif elevated:
         status = "ELEVATED_RISK"
-    elif available_models:
+    elif len(available_models) >= 2:
         status = "LOW_RISK"
     else:
+        # One surviving ratio is useful evidence, but not enough to label a
+        # company low risk. Keep the computed metric visible and disclose that
+        # cross-model corroboration is incomplete.
         status = "INSUFFICIENT_DATA"
+        if available_models:
+            reasons.append("only one distress model available; low-risk classification withheld")
 
     return DistressAssessment(
         status=status,

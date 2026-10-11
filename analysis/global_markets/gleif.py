@@ -114,6 +114,14 @@ _DISPLAY_SECURITY_SUFFIXES: tuple[tuple[str, ...], ...] = (
     ("SER", "C"),
     ("CLASS", "A", "ORDINARY", "SHARES"),
     ("CLASS", "B", "ORDINARY", "SHARES"),
+    # US listing catalogs (Nasdaq Trader) name the listed class, e.g.
+    # "BBB Foods Inc. Class A Common Shares" for SEC filer BBB FOODS INC.
+    ("CLASS", "A", "COMMON", "SHARES"),
+    ("CLASS", "B", "COMMON", "SHARES"),
+    ("CLASS", "C", "COMMON", "SHARES"),
+    ("CLASS", "A", "COMMON", "STOCK"),
+    ("CLASS", "B", "COMMON", "STOCK"),
+    ("CLASS", "C", "COMMON", "STOCK"),
     ("CLASS", "A", "SHARES"),
     ("CLASS", "B", "SHARES"),
     ("ORDINARY", "SHARES"),

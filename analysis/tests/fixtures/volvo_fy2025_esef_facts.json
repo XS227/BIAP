@@ -1,0 +1,627 @@
+[
+{
+"value": "479183000000.0",
+"dimensions": {
+"concept": "ifrs-full:Revenue",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "526816000000.0",
+"dimensions": {
+"concept": "ifrs-full:Revenue",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "116869000000.0",
+"dimensions": {
+"concept": "ifrs-full:GrossProfit",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "144049000000.0",
+"dimensions": {
+"concept": "ifrs-full:GrossProfit",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "48506000000.0",
+"dimensions": {
+"concept": "ifrs-full:ProfitLossFromOperatingActivities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "66611000000.0",
+"dimensions": {
+"concept": "ifrs-full:ProfitLossFromOperatingActivities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "1819000000.0",
+"dimensions": {
+"concept": "ifrs-full:InterestExpense",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "1592000000.0",
+"dimensions": {
+"concept": "ifrs-full:InterestExpense",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "34707000000.0",
+"dimensions": {
+"concept": "ifrs-full:ProfitLoss",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "50576000000.0",
+"dimensions": {
+"concept": "ifrs-full:ProfitLoss",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "16.94",
+"dimensions": {
+"concept": "ifrs-full:BasicEarningsLossPerShare",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK/xbrli:shares"
+}
+},
+{
+"value": "24.78",
+"dimensions": {
+"concept": "ifrs-full:BasicEarningsLossPerShare",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK/xbrli:shares"
+}
+},
+{
+"value": "34707000000.0",
+"dimensions": {
+"concept": "ifrs-full:ProfitLoss",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "50576000000.0",
+"dimensions": {
+"concept": "ifrs-full:ProfitLoss",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "73361000000.0",
+"dimensions": {
+"concept": "ifrs-full:CashAndCashEquivalents",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "85171000000.0",
+"dimensions": {
+"concept": "ifrs-full:CashAndCashEquivalents",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "305570000000.0",
+"dimensions": {
+"concept": "ifrs-full:CurrentAssets",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "358309000000.0",
+"dimensions": {
+"concept": "ifrs-full:CurrentAssets",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "648590000000.0",
+"dimensions": {
+"concept": "ifrs-full:Assets",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "714564000000.0",
+"dimensions": {
+"concept": "ifrs-full:Assets",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "178477000000.0",
+"dimensions": {
+"concept": "ifrs-full:Equity",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "197361000000.0",
+"dimensions": {
+"concept": "ifrs-full:Equity",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "18891000000.0",
+"dimensions": {
+"concept": "ifrs-full:NoncurrentProvisions",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "24999000000.0",
+"dimensions": {
+"concept": "ifrs-full:NoncurrentProvisions",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "82620000000.0",
+"dimensions": {
+"concept": "ifrs-full:NoncurrentPortionOfNoncurrentBondsIssued",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "109031000000.0",
+"dimensions": {
+"concept": "ifrs-full:NoncurrentPortionOfNoncurrentBondsIssued",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "54614000000.0",
+"dimensions": {
+"concept": "abvolvo:OvrigaLanLangfristigSkuld",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "50824000000.0",
+"dimensions": {
+"concept": "abvolvo:OvrigaLanLangfristigSkuld",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "185309000000.0",
+"dimensions": {
+"concept": "ifrs-full:NoncurrentLiabilities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "211216000000.0",
+"dimensions": {
+"concept": "ifrs-full:NoncurrentLiabilities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "15039000000.0",
+"dimensions": {
+"concept": "ifrs-full:CurrentProvisions",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "19690000000.0",
+"dimensions": {
+"concept": "ifrs-full:CurrentProvisions",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "64960000000.0",
+"dimensions": {
+"concept": "ifrs-full:CurrentBondsIssuedAndCurrentPortionOfNoncurrentBondsIssued",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "45460000000.0",
+"dimensions": {
+"concept": "ifrs-full:CurrentBondsIssuedAndCurrentPortionOfNoncurrentBondsIssued",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "45866000000.0",
+"dimensions": {
+"concept": "abvolvo:OvrigaLanKortfristigSkuld",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "58292000000.0",
+"dimensions": {
+"concept": "abvolvo:OvrigaLanKortfristigSkuld",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "250874000000.0",
+"dimensions": {
+"concept": "ifrs-full:CurrentLiabilities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "261298000000.0",
+"dimensions": {
+"concept": "ifrs-full:CurrentLiabilities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "648590000000.0",
+"dimensions": {
+"concept": "ifrs-full:EquityAndLiabilities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "714564000000.0",
+"dimensions": {
+"concept": "ifrs-full:EquityAndLiabilities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "48506000000.0",
+"dimensions": {
+"concept": "ifrs-full:ProfitLossFromOperatingActivities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "66611000000.0",
+"dimensions": {
+"concept": "ifrs-full:ProfitLossFromOperatingActivities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "4020000000.0",
+"dimensions": {
+"concept": "abvolvo:AvskrivningarImmateriellaAnlaggningstillgangar",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "4153000000.0",
+"dimensions": {
+"concept": "abvolvo:AvskrivningarImmateriellaAnlaggningstillgangar",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "10425000000.0",
+"dimensions": {
+"concept": "abvolvo:AvskrivningarMateriellaAnlaggningstillgangar",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "9187000000.0",
+"dimensions": {
+"concept": "abvolvo:AvskrivningarMateriellaAnlaggningstillgangar",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "9041000000.0",
+"dimensions": {
+"concept": "abvolvo:AvskrivningarLeasingtillgangar",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "9208000000.0",
+"dimensions": {
+"concept": "abvolvo:AvskrivningarLeasingtillgangar",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "1920000000.0",
+"dimensions": {
+"concept": "ifrs-full:InterestReceivedClassifiedAsOperatingActivities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "2750000000.0",
+"dimensions": {
+"concept": "ifrs-full:InterestReceivedClassifiedAsOperatingActivities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "1458000000.0",
+"dimensions": {
+"concept": "ifrs-full:InterestPaidClassifiedAsOperatingActivities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "1244000000.0",
+"dimensions": {
+"concept": "ifrs-full:InterestPaidClassifiedAsOperatingActivities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "11507000000.0",
+"dimensions": {
+"concept": "ifrs-full:IncomeTaxesPaidClassifiedAsOperatingActivities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "18439000000.0",
+"dimensions": {
+"concept": "ifrs-full:IncomeTaxesPaidClassifiedAsOperatingActivities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "45595000000.0",
+"dimensions": {
+"concept": "ifrs-full:CashFlowsFromUsedInOperatingActivities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "46444000000.0",
+"dimensions": {
+"concept": "ifrs-full:CashFlowsFromUsedInOperatingActivities",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "18344000000.0",
+"dimensions": {
+"concept": "abvolvo:InvesteringarIMateriellaAnlaggningstillgangar",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "13892000000.0",
+"dimensions": {
+"concept": "abvolvo:InvesteringarIMateriellaAnlaggningstillgangar",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "85171000000.0",
+"dimensions": {
+"concept": "ifrs-full:CashAndCashEquivalents",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "73361000000.0",
+"dimensions": {
+"concept": "ifrs-full:CashAndCashEquivalents",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "85171000000.0",
+"dimensions": {
+"concept": "ifrs-full:CashAndCashEquivalents",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "50389000000.0",
+"dimensions": {
+"concept": "ifrs-full:ProfitLoss",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK",
+"ifrs-full:ComponentsOfEquityAxis": "ifrs-full:RetainedEarningsMember"
+}
+},
+{
+"value": "50576000000.0",
+"dimensions": {
+"concept": "ifrs-full:ProfitLoss",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-01-01/2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "182842000000.0",
+"dimensions": {
+"concept": "ifrs-full:Equity",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-12-31",
+"unit": "iso4217:SEK",
+"ifrs-full:ComponentsOfEquityAxis": "ifrs-full:RetainedEarningsMember"
+}
+},
+{
+"value": "197361000000.0",
+"dimensions": {
+"concept": "ifrs-full:Equity",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2024-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "34456000000.0",
+"dimensions": {
+"concept": "ifrs-full:ProfitLoss",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK",
+"ifrs-full:ComponentsOfEquityAxis": "ifrs-full:RetainedEarningsMember"
+}
+},
+{
+"value": "34707000000.0",
+"dimensions": {
+"concept": "ifrs-full:ProfitLoss",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-01-01/2025-12-31",
+"unit": "iso4217:SEK"
+}
+},
+{
+"value": "179569000000.0",
+"dimensions": {
+"concept": "ifrs-full:Equity",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-12-31",
+"unit": "iso4217:SEK",
+"ifrs-full:ComponentsOfEquityAxis": "ifrs-full:RetainedEarningsMember"
+}
+},
+{
+"value": "178477000000.0",
+"dimensions": {
+"concept": "ifrs-full:Equity",
+"entity": "scheme:549300HGV012CNC8JD22",
+"period": "2025-12-31",
+"unit": "iso4217:SEK"
+}
+}
+]

@@ -60,3 +60,12 @@ def test_analyze_seed_keeps_legacy_fallback_only_for_real_provider_outage(monkey
     seed = global_routes._seed(req)
     assert seed.ticker == "AAPL"
     assert seed.exchange == "NASDAQ"
+
+
+def test_analyze_preserves_membership_http_400(monkeypatch):
+    monkeypatch.setattr(global_routes, "build_registry", lambda: _Registry(_OfficialProvider()))
+    req = global_routes.InstrumentRequest(country="US", exchange="NASDAQ", ticker="QXO", name="QXO Inc", currency="USD")
+    with pytest.raises(HTTPException) as exc:
+        global_routes.global_analyze(req)
+    assert exc.value.status_code == 400
+    assert "not listed in the official US/NASDAQ universe" in str(exc.value.detail)

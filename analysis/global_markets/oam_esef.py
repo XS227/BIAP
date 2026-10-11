@@ -52,7 +52,7 @@ from zoneinfo import ZoneInfo
 import httpx
 
 from .cached_esef import CachedESEFFundamentalsProvider
-from .esef import _CONCEPTS, concept_is_relevant
+from .esef import _CONCEPTS, _agent10_fields, concept_is_relevant
 from .ixbrl import annual_period_end, extract_facts
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, append_source
@@ -62,7 +62,10 @@ USER_AGENT = "BIAP-Global/1.0 official-OAM ESEF evidence (+https://setai.no)"
 MAX_PACKAGE_BYTES = 300 * 1024 * 1024
 LISTING_TTL_SECONDS = 6 * 3600
 # v3: bank equity/operating-income concepts kept (esef._CONCEPTS additions).
-PACKAGE_SCHEMA_VERSION = 3
+# v4: every parsed fact is kept. A concept whitelist silently dropped balance
+# sheet/cash-flow lines (AB Volvo FY2025: 177 of 892 facts), so adding a
+# normalizer rule required re-downloading every package.
+PACKAGE_SCHEMA_VERSION = 4
 _ROME = ZoneInfo("Europe/Rome")
 _WANTED_CONCEPTS = {c.lower() for concepts in _CONCEPTS.values() for c in concepts}
 
@@ -1570,7 +1573,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
             except GlobalProviderError:
                 # An older parse of the same immutable, LEI-checked document
                 # keeps fewer concepts but is still the official filing.
-                if usable and cached.get("schemaVersion") == 2:
+                if usable and cached.get("schemaVersion") in {2, 3}:
                     return cached
                 raise
             if zipfile.is_zipfile(target):
@@ -1613,7 +1616,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
 
     def _parse_text(self, filing: OAMFiling, chunks, member: str) -> dict:
         facts, entities = extract_facts(chunks)
-        kept = [f for f in facts if concept_is_relevant(f["dimensions"].get("concept"))]
+        kept = list(facts)
         return {
             "schemaVersion": PACKAGE_SCHEMA_VERSION,
             "documentId": filing.document_id,
@@ -1676,6 +1679,17 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                 continue
             period_end = date.fromisoformat(period_text)
             normalized = self.normalized_fields(facts, period_end)
+            # Guard against an older parsed OAM package omitting the aggregate
+            # liabilities tag while preserving same-period assets and equity.
+            # Both values originate from this one verified annual filing.
+            if (normalized.get("total_liabilities") is None
+                    and normalized.get("total_assets") is not None
+                    and normalized.get("total_equity") is not None):
+                assets = normalized["total_assets"]
+                equity = normalized["total_equity"]
+                if 0 <= equity <= assets:
+                    normalized["total_liabilities"] = assets - equity
+                    normalized.setdefault("__normalization_meta__", {})["total_liabilities_method"] = "derived_assets_minus_equity_same_oam_filing"
             reporting_currency = normalized.pop("reporting_currency")
             normalization_meta = normalized.pop("__normalization_meta__", {})
             retrieved = str(package.get("parsedAt") or _utc_now().isoformat())
@@ -1700,6 +1714,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                     "oam_entity_identity_exception": "ELABS_NEWSWEB_WRONG_EMBEDDED_LEI" if newsweb_elabs_entity_anomaly else None,
                     "oam_report_entity_ids": sorted(entity_ids),
                     "oam_credit_extraction": normalization_meta,
+                    **_agent10_fields(normalization_meta),
                 },
             )
             return append_source(enriched, SourceEvidence(

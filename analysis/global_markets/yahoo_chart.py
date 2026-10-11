@@ -66,7 +66,12 @@ class YahooChartMarketProvider(MarketDataProvider):
         country = company.country.strip().upper()
         if country not in _SUFFIX:
             raise GlobalProviderError(f"Yahoo public fallback is not enabled for {country}")
-        base = company.ticker.strip().upper().replace(".", "-")
+        ticker = company.ticker.strip().upper()
+        if country == "GB":
+            # LSE TIDMs pad short codes with a trailing dot (BA., RR., BP.);
+            # Yahoo lists those as BA.L, so only internal dots become dashes.
+            ticker = ticker.rstrip(".")
+        base = ticker.replace(".", "-")
         if not base:
             raise GlobalProviderError("ticker is required")
         return base + _SUFFIX[country]

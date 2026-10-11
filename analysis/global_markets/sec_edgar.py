@@ -196,7 +196,8 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         operating_income = self._latest(gaap, ("OperatingIncomeLoss",))
         assets = self._latest(gaap, ("Assets",))
         liabilities = self._latest(gaap, ("Liabilities",))
-        equity = self._latest(gaap, ("StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"))
+        equity = self._latest(gaap, ("StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest", "StockholdersEquity"))
+        retained_earnings = self._latest(gaap, ("RetainedEarningsAccumulatedDeficit",))
         current_assets = self._latest(gaap, ("AssetsCurrent",))
         current_liabilities = self._latest(gaap, ("LiabilitiesCurrent",))
         cash = self._latest(gaap, ("CashAndCashEquivalentsAtCarryingValue", "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents"))
@@ -205,7 +206,7 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         debt_current = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligationsCurrent", "LongTermDebtCurrent"))
         debt_noncurrent = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligationsNoncurrent", "LongTermDebtNoncurrent"))
         debt_total = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligations", "LongTermDebt"))
-        interest = self._latest(gaap, ("InterestExpenseNonOperating", "InterestExpenseDebt"))
+        interest = self._latest(gaap, ("InterestExpenseNonOperating", "InterestExpenseDebt", "InterestExpense"))
         eps = self._latest(gaap, ("EarningsPerShareDiluted", "EarningsPerShareBasic"))
         dividend_per_share = self._latest(
             gaap,
@@ -277,6 +278,7 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         assets = current_period_row(assets)
         liabilities = current_period_row(liabilities)
         equity = current_period_row(equity)
+        retained_earnings = current_period_row(retained_earnings)
         current_assets = current_period_row(current_assets)
         current_liabilities = current_period_row(current_liabilities)
         cash = current_period_row(cash)
@@ -304,6 +306,15 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
                 if value is not None
             ]
             total_debt = sum(parts) if parts else None
+
+        # SEC companyfacts often omits the standalone Liabilities tag.
+        # Derive it only from same-period assets and consolidated equity.
+        liability_value = self._value(liabilities)
+        if liability_value is None and assets and equity:
+            asset_value = self._value(assets)
+            equity_value = self._value(equity)
+            if asset_value is not None and equity_value is not None and asset_value >= equity_value:
+                liability_value = asset_value - equity_value
 
         current_rows = [
             revenue_row,
@@ -343,8 +354,9 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             net_margin_pct=self._margin(income, revenue),
             net_margin_prev_pct=self._margin(income_prev, revenue_prev),
             total_assets=self._value(assets),
-            total_liabilities=self._value(liabilities),
+            total_liabilities=liability_value,
             total_equity=self._value(equity),
+            retained_earnings=self._value(retained_earnings),
             current_assets=self._value(current_assets),
             current_liabilities=self._value(current_liabilities),
             cash_and_equivalents=self._value(cash),

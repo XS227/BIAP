@@ -22,6 +22,15 @@ from .providers import GlobalProviderError
 _SEC_SUFFIX = re.compile(r"\s*[/\\]\s*[A-Z]{2,4}\s*[/\\]?\s*$")  # "/CAN/", "/CN", "\BC\"
 _ARTICLE_SUFFIX = re.compile(r"\s*\(\s*the\s*\)\s*$", re.I)  # "Bank of Nova Scotia (The)"
 _ARTICLE_PREFIX = re.compile(r"^\s*the\s+", re.I)
+# US listing catalogs (Nasdaq Trader) flag a re-issued symbol with "(NEW)" and
+# punctuate the UK legal form as "p.l.c."; neither is part of the issuer name.
+_LISTING_MARKER = re.compile(r"\(\s*new\s*\)", re.I)
+_PLC_DOTTED = re.compile(r"\bp\.\s*l\.\s*c\.?(?=\s|$)", re.I)
+# The listed security class trails the issuer name in those catalogs and can
+# hide a reversed article: "Gabelli Equity Trust, Inc. (The) Common Stock".
+_SECURITY_DESCRIPTOR = re.compile(
+    r"\s+(?:class\s+[a-c]\s+)?(?:common\s+(?:stock|shares)|ordinary\s+shares)\s*$", re.I
+)
 
 _titles_lock = threading.Lock()
 _titles: Optional[dict[str, set[int]]] = None
@@ -29,10 +38,11 @@ _gleif_names: dict[str, Optional[str]] = {}
 
 
 def sec_core(name: str) -> str:
-    text = str(name or "").strip()
+    text = _PLC_DOTTED.sub("plc", _LISTING_MARKER.sub(" ", str(name or ""))).strip()
     previous = None
     while text != previous:
         previous = text
+        text = _SECURITY_DESCRIPTOR.sub("", text)
         text = _SEC_SUFFIX.sub("", text)
         text = _ARTICLE_SUFFIX.sub("", text)
         text = _ARTICLE_PREFIX.sub("", text)

@@ -70,6 +70,8 @@ from .twelve_data import TwelveDataMarketProvider
 from .tsx_official import TMXOfficialUniverseProvider
 from .universe import IranUniverseProvider, TwelveDataUniverseProvider
 from .us_official import NasdaqTraderUSUniverseProvider
+from .uk_reviewed_reports import UKReviewedNSMAnnualReportProvider
+from .us_reviewed_reports import USReviewedSECAnnualReportProvider
 from .verified_filing_drop import VerifiedFilingDropProvider
 from .yahoo_fundamentals import YahooFundamentalsProvider
 
@@ -306,8 +308,14 @@ def build_registry() -> ProviderRegistry:
     # US exchanges also list foreign private issuers that report on 20-F/40-F
     # under IFRS. Try the normal US-GAAP 10-K parser first, then the strict
     # foreign-issuer IFRS parser before declaring official fundamentals absent.
+    # Registered closed-end funds (Form N-CSR) have no companyfacts at all; a
+    # reviewed, SHA-256-pinned EDGAR annual report is used only when both
+    # XBRL paths fail or are stale.
     us_sec = PersistentFundamentalsProvider(
-        FallbackFundamentalsProvider(sec_domestic, sec_foreign_ifrs)
+        FallbackFundamentalsProvider(
+            FallbackFundamentalsProvider(sec_domestic, sec_foreign_ifrs),
+            USReviewedSECAnnualReportProvider(),
+        )
     )
     for exchange in COUNTRY_PACKS["US"].exchanges:
         register_fundamentals("US", exchange.code, us_sec)
@@ -417,8 +425,14 @@ def build_registry() -> ProviderRegistry:
     de_provider = PersistentFundamentalsProvider(de_with_fallback)
     companies_house_key = (os.environ.get("BIAP_COMPANIES_HOUSE_API_KEY") or "").strip()
     # UK: the FCA National Storage Mechanism (official OAM) first, then the
-    # filings.xbrl.org/SEC chain, then labelled vendor metrics.
-    uk_official = FallbackFundamentalsProvider(nordic_oam_official, public_fundamentals)
+    # filings.xbrl.org/SEC chain. Audited NSM annual reports lodged without
+    # inline XBRL (investment trusts, shells) use reviewed, SHA-256-pinned NSM
+    # snapshots only when that tagged chain fails or is stale; labelled vendor
+    # metrics stay last and display-only.
+    uk_tagged_or_reviewed = FallbackFundamentalsProvider(
+        nordic_oam_official, UKReviewedNSMAnnualReportProvider()
+    )
+    uk_official = FallbackFundamentalsProvider(uk_tagged_or_reviewed, public_fundamentals)
     uk_base = (
         CorroboratingFundamentalsProvider(
             uk_official,

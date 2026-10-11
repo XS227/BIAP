@@ -49,8 +49,19 @@ _CONCEPTS = {
     "current_liabilities": ("ifrs-full:CurrentLiabilities",),
     "cash": ("ifrs-full:CashAndCashEquivalents",),
     "ocf": ("ifrs-full:CashFlowsFromUsedInOperatingActivities",),
+    # Pure D&A add-backs from the cash-flow statement (impairment-inclusive
+    # variants are deliberately excluded).
+    "depreciation_amortisation_cash_flow": (
+        "ifrs-full:AdjustmentsForDepreciationAndAmortisationExpense",
+    ),
+    # Separately tagged D&A lines, summed only when no D&A total is tagged.
+    "depreciation_amortisation_component": (
+        "ifrs-full:AdjustmentsForDepreciationExpense",
+        "ifrs-full:AdjustmentsForAmortisationExpense",
+    ),
     "capex": (
         "ifrs-full:PurchaseOfPropertyPlantAndEquipment",
+        "ifrs-full:PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities",
         "ifrs-full:PaymentsToAcquirePropertyPlantAndEquipment",
     ),
     "borrowings": (
@@ -66,7 +77,27 @@ _CONCEPTS = {
         "ifrs-full:NoncurrentBorrowings",
         "ifrs-full:NoncurrentInterestBearingLoansAndBorrowings",
     ),
+    # Bonds issued and issuer "other loans" are separate debt lines on the
+    # balance sheet; they are used only when no borrowings line is tagged.
+    "current_bonds": ("ifrs-full:CurrentBondsIssuedAndCurrentPortionOfNoncurrentBondsIssued",),
+    "noncurrent_bonds": ("ifrs-full:NoncurrentPortionOfNoncurrentBondsIssued",),
+    "current_other_loans": (),
+    "noncurrent_other_loans": (),
     "interest_expense": ("ifrs-full:FinanceCosts", "ifrs-full:InterestExpense"),
+    # Cash-flow lines for the S&P-style FFO derivation (EBITDA - interest
+    # paid + interest received - income taxes paid).
+    "interest_paid": (
+        "ifrs-full:InterestPaidClassifiedAsOperatingActivities",
+        "ifrs-full:InterestPaidClassifiedAsFinancingActivities",
+    ),
+    "interest_received": (
+        "ifrs-full:InterestReceivedClassifiedAsOperatingActivities",
+        "ifrs-full:InterestReceivedClassifiedAsInvestingActivities",
+    ),
+    "income_taxes_paid": (
+        "ifrs-full:IncomeTaxesPaidClassifiedAsOperatingActivities",
+        "ifrs-full:IncomeTaxesPaidRefundClassifiedAsOperatingActivities",
+    ),
     "eps": ("ifrs-full:BasicEarningsLossPerShare", "ifrs-full:DilutedEarningsLossPerShare"),
     # Bank (Bank of Italy Circular 262) layout: no IFRS Revenue / Equity total
     # is tagged. These concepts let the normalizer use the issuer's own tagged
@@ -89,6 +120,17 @@ _EXTENSION_LOCAL_PATTERNS = {
         r"^depreciationandamorti[sz]ation(?:expense|expenses)?$",
         r"^depreciationamorti[sz]ationandimpairment(?:expense|expenses)?$",
     ),
+    # Swedish-language extension lines (e.g. AB Volvo abvolvo:Avskrivningar*):
+    # depreciation/amortisation of intangible, tangible, leased and
+    # right-of-use assets. Impairment ("nedskrivningar") is never matched.
+    "depreciation_amortisation_component": (
+        r"^avskrivningar(?:pa)?(?:immateriella|materiella|leasing|nyttjanderatts)[a-z]*$",
+    ),
+    "capex": (
+        r"^investeringari(?:materiella)anlaggningstillgangar$",
+    ),
+    "current_other_loans": (r"^ovrigalankortfristigskuld$",),
+    "noncurrent_other_loans": (r"^ovrigalanlangfristigskuld$",),
     "retained_earnings": (
         r"^retainedearnings(?:accumulatedlosses)?$",
         r"^retainedearningsaccumulatedloss$",
@@ -135,6 +177,9 @@ _OWNERS_TOTAL_DIMENSION = ("ifrs-full:ComponentsOfEquityAxis", "ifrs-full:Equity
 # column is NCI (Banca Mediolanum ext:TotalEquity, Banca Profilo
 # ifrs-full:Equity): owners + NCI columns = total equity under IFRS.
 _NCI_DIMENSION = ("ifrs-full:ComponentsOfEquityAxis", "ifrs-full:NoncontrollingInterestsMember")
+# The retained-earnings column of the same statement: a total-equity concept on
+# exactly this column is the closing retained earnings balance.
+_RETAINED_EARNINGS_DIMENSION = ("ifrs-full:ComponentsOfEquityAxis", "ifrs-full:RetainedEarningsMember")
 
 
 def _concept_local_name(concept: object) -> str:
@@ -200,6 +245,14 @@ def _period_parts(raw: Any) -> tuple[Optional[date], Optional[date]]:
         return None, None
 
 
+def _agent10_fields(meta: dict) -> dict:
+    """Expose a filing-derived FFO to Agent 10 with its derivation method."""
+    ffo = (meta or {}).get("ffo")
+    if ffo is None:
+        return {}
+    return {"agent10_ffo": ffo, "agent10_ffo_method": meta.get("ffo_method")}
+
+
 def _unit_currency(raw: Any) -> Optional[str]:
     match = re.search(r"(?:iso4217:|currency:)([A-Z]{3})", str(raw or ""), re.IGNORECASE)
     return match.group(1).upper() if match else None
@@ -228,9 +281,17 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         if company.lei:
             resolution = self.gleif.verify_lei(company.lei)
             return resolution.lei, resolution.legal_name
+        # ISIN is a certified security-to-issuer identity key and is stronger
+        # than abbreviated exchange display names (e.g. COOR, Catella A).
+        if company.isin:
+            try:
+                resolution = self.gleif.resolve_isin(company.isin, country=company.country)
+                return resolution.lei, resolution.legal_name
+            except GlobalProviderError:
+                pass
         if not company.name or company.name == company.ticker:
-            raise GlobalProviderError("ESEF requires a verified LEI or full legal company name")
-        resolution = self.gleif.resolve_exact_legal_name(company.name)
+            raise GlobalProviderError("ESEF requires a verified LEI, ISIN, or full legal company name")
+        resolution = self.gleif.resolve_exact_legal_name(company.name, country=company.country)
         return resolution.lei, resolution.legal_name
 
     def _latest_filing(self, lei: str, country: str) -> dict:
@@ -320,6 +381,21 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         near = [row for row in unique_by_end.values() if abs((row[1] - target).days) <= tolerance]
         near.sort(key=lambda row: abs((row[1] - target).days))
         return near[0][2] if near else None
+
+    @classmethod
+    def _distinct_concept_durations(cls, facts: list[dict], period_end: date) -> dict[str, float]:
+        """One annual value per distinct concept (no double counting of a line
+        tagged twice in the same filing)."""
+        by_concept: dict[str, list[dict]] = {}
+        for fact in facts:
+            dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+            by_concept.setdefault(str(dims.get("concept") or ""), []).append(fact)
+        values = {}
+        for concept, rows in by_concept.items():
+            value = cls._duration_value(rows, period_end)
+            if value is not None:
+                values[concept] = value
+        return values
 
     @staticmethod
     def _instant_value(facts: list[dict], period_end: date) -> Optional[float]:
@@ -417,11 +493,56 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                 revenue_prev = self._duration_value(concept_facts["bank_operating_income"], period_end, previous=True)
                 revenue_method = "bank_net_interest_and_other_banking_income"
         total_equity, equity_method = self._equity(facts, concept_facts, period_end)
+        total_assets = self._instant_value(concept_facts["assets"], period_end)
+        total_liabilities = self._instant_value(concept_facts["liabilities"], period_end)
+        liabilities_method = "direct_ifrs_liabilities" if total_liabilities is not None else None
+        # The balance-sheet identity is valid only for the same consolidated
+        # entity, reporting currency and balance-sheet date. This normalizer
+        # has already selected the filing's matching period and unit.
+        if total_liabilities is None and total_assets is not None and total_equity is not None:
+            derived_liabilities = total_assets - total_equity
+            if derived_liabilities >= 0 and total_equity <= total_assets:
+                total_liabilities = derived_liabilities
+                liabilities_method = "derived_assets_minus_equity_same_filing_period"
+        if total_liabilities is None and total_assets is None and total_equity is not None:
+            # Balance-sheet total "equity and liabilities" is the same identity
+            # when the assets total itself is not tagged.
+            balance_total = self._instant_value(concept_facts["equity_and_liabilities"], period_end)
+            if balance_total is not None and 0 <= total_equity <= balance_total:
+                total_liabilities = balance_total - total_equity
+                liabilities_method = "derived_equity_and_liabilities_minus_equity_same_filing_period"
+        retained_earnings = self._instant_value(concept_facts["retained_earnings"], period_end)
+        retained_earnings_method = "direct_retained_earnings_tag" if retained_earnings is not None else None
+        if retained_earnings is None:
+            # Statement of changes in equity: closing balance of the IFRS
+            # retained-earnings column (exactly one ComponentsOfEquityAxis
+            # member, no other dimension), e.g. AB Volvo FY2025.
+            column = [
+                f for f in self._column_facts(facts, "equity", _RETAINED_EARNINGS_DIMENSION, plain=False)
+                if str(f["dimensions"].get("concept") or "").lower() == "ifrs-full:equity"
+            ]
+            retained_earnings = self._instant_value(column, period_end)
+            if retained_earnings is not None:
+                retained_earnings_method = "equity_statement_retained_earnings_column"
         net_income = self._duration_value(concept_facts["net_income"], period_end)
         net_income_prev = self._duration_value(concept_facts["net_income"], period_end, previous=True)
         operating_income = self._duration_value(concept_facts["operating_income"], period_end)
         direct_ebitda = self._duration_value(concept_facts["ebitda"], period_end)
         depreciation_amortisation = self._duration_value(concept_facts["depreciation_amortisation"], period_end)
+        da_method = "income_statement_da_total" if depreciation_amortisation is not None else None
+        if depreciation_amortisation is None:
+            depreciation_amortisation = self._duration_value(concept_facts["depreciation_amortisation_cash_flow"], period_end)
+            if depreciation_amortisation is not None:
+                da_method = "cash_flow_da_add_back"
+        if depreciation_amortisation is None:
+            # Distinct D&A lines (intangibles, PP&E, leased assets) tagged
+            # separately with no total: sum one value per distinct concept.
+            component_values = self._distinct_concept_durations(
+                concept_facts["depreciation_amortisation_component"], period_end
+            )
+            if component_values:
+                depreciation_amortisation = sum(abs(value) for value in component_values.values())
+                da_method = "sum_of_tagged_da_components:" + ",".join(sorted(component_values))
         ebitda = direct_ebitda
         ebitda_method = "direct_explicit_tag" if direct_ebitda is not None else None
         if ebitda is None and operating_income is not None and depreciation_amortisation is not None:
@@ -441,6 +562,31 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             debt = sum(present) if present else None
             if debt is not None:
                 debt_method = "current_plus_noncurrent_borrowings"
+        if debt is None:
+            # No borrowings line at all: bonds issued plus issuer "other loans"
+            # are the interest-bearing debt lines of the balance sheet.
+            lines = {
+                key: self._instant_value(concept_facts[key], period_end)
+                for key in ("current_bonds", "noncurrent_bonds", "current_other_loans", "noncurrent_other_loans")
+            }
+            present_lines = {key: value for key, value in lines.items() if value is not None}
+            if any(key.endswith("bonds") for key in present_lines):
+                candidate = sum(abs(value) for value in present_lines.values())
+                if total_liabilities is None or candidate <= total_liabilities:
+                    debt = candidate
+                    debt_method = "sum_of_bonds_and_loans:" + ",".join(sorted(present_lines))
+        ffo = None
+        ffo_method = None
+        interest_paid = self._duration_value(concept_facts["interest_paid"], period_end)
+        taxes_paid = self._duration_value(concept_facts["income_taxes_paid"], period_end)
+        if ebitda is not None and interest_paid is not None and taxes_paid is not None:
+            interest_received = self._duration_value(concept_facts["interest_received"], period_end)
+            ffo = ebitda - abs(interest_paid) + abs(interest_received or 0.0) - taxes_paid
+            ffo_method = (
+                "ebitda_minus_interest_paid_plus_interest_received_minus_income_taxes_paid"
+                if interest_received is not None
+                else "ebitda_minus_interest_paid_minus_income_taxes_paid"
+            )
 
         reporting_currency = None
         for key in ("revenue", "net_income", "assets"):
@@ -463,10 +609,10 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             "net_income": net_income,
             "net_margin_pct": self._margin(net_income, revenue),
             "net_margin_prev_pct": self._margin(net_income_prev, revenue_prev),
-            "total_assets": self._instant_value(concept_facts["assets"], period_end),
-            "total_liabilities": self._instant_value(concept_facts["liabilities"], period_end),
+            "total_assets": total_assets,
+            "total_liabilities": total_liabilities,
             "total_equity": total_equity,
-            "retained_earnings": self._instant_value(concept_facts["retained_earnings"], period_end),
+            "retained_earnings": retained_earnings,
             "current_assets": self._instant_value(concept_facts["current_assets"], period_end),
             "current_liabilities": self._instant_value(concept_facts["current_liabilities"], period_end),
             "cash_and_equivalents": self._instant_value(concept_facts["cash"], period_end),
@@ -478,10 +624,16 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             "__normalization_meta__": {
                 "revenue_method": revenue_method,
                 "equity_method": equity_method,
+                "liabilities_method": liabilities_method,
+                "retained_earnings_method": retained_earnings_method,
                 "ebitda_method": ebitda_method,
+                "depreciation_amortisation": depreciation_amortisation,
+                "depreciation_amortisation_method": da_method,
                 "debt_method": debt_method,
                 "capex": capex,
                 "fcf_method": "operating_cash_flow_minus_abs_capex" if fcf is not None else None,
+                "ffo": ffo,
+                "ffo_method": ffo_method,
             },
         }
 
@@ -537,6 +689,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                 "esef_validation_inconsistencies": inconsistencies,
                 "esef_json_url": json_url,
                 "esef_credit_extraction": normalization_meta,
+                **_agent10_fields(normalization_meta),
             },
         )
         return append_source(enriched, SourceEvidence(
