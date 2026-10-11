@@ -65,9 +65,21 @@ def read_pdf_pages(content: bytes) -> dict[int, str]:
     pages: dict[int, str] = {}
     for index, page in enumerate(reader.pages, start=1):
         try:
-            pages[index] = page.extract_text(extraction_mode="layout") or ""
+            text = page.extract_text(extraction_mode="layout") or ""
         except Exception:
-            pages[index] = ""
+            text = ""
+        if len(text.strip()) < 20:
+            # Layout mode drops text drawn through a rotated text matrix (e.g. an
+            # auditor's report whose page is /Rotate 0 but whose text is rotated),
+            # returning an empty page. Plain extraction still reads it; the
+            # statement parsers do not need column layout for such pages.
+            try:
+                plain = page.extract_text() or ""
+            except Exception:
+                plain = ""
+            if len(plain.strip()) > len(text.strip()):
+                text = plain
+        pages[index] = text
     return pages
 
 
@@ -177,6 +189,7 @@ def _split_chunks(line: str, *, space_thousands: bool) -> list[Chunk]:
     line = re.sub(r"(?<=\d\))(?=[A-Za-z])", "  ", line)  # "(750.1)Other" glue
     line = re.sub(r"(?<=\d\.\d) (?=[A-Z][a-z]{2,})", "  ", line)  # "2,308.4 Profit after tax" side-by-side glue
     raw = [Chunk(m.group(0), m.start(), m.end()) for m in re.finditer(r"\S(?:.*?\S)?(?=\s{2,}|\s*$)", line)]
+    raw = _join_split_labels(line, raw)
     chunks: list[Chunk] = []
     for chunk in raw:
         tokens = chunk.text.split(" ")
@@ -190,6 +203,33 @@ def _split_chunks(line: str, *, space_thousands: bool) -> list[Chunk]:
             continue
         chunks.append(chunk)
     return chunks
+
+
+def _join_split_labels(line: str, raw: list[Chunk]) -> list[Chunk]:
+    """Re-join a label that the PDF printed with a double space ("Profit  for the period").
+
+    Only a two-space gap between two non-numeric chunks, the second starting in
+    lower case, is joined; real column gaps are wider. A wrong join can only
+    make a label unrecognisable (field missing -> rejection), never move a value.
+    """
+    joined: list[Chunk] = []
+    for chunk in raw:
+        prev = joined[-1] if joined else None
+        if (
+            prev is not None
+            and chunk.start - prev.end == 2
+            and prev.text[-1:].isalpha()
+            and chunk.text[:1].islower()
+            and not _is_number_chunk(prev.text)
+            and not _is_number_chunk(chunk.text)
+        ):
+            joined[-1] = Chunk(f"{prev.text} {chunk.text}", prev.start, chunk.end)
+        else:
+            joined.append(chunk)
+    return joined
+
+
+_NOTE_REFS = re.compile(r"^\d{1,2}(?:\.\d+)?(?:/\d{1,2}(?:\.\d+)?)+$")
 
 
 def _is_number_chunk(text: str) -> bool:
@@ -368,7 +408,10 @@ def page_segments(page: PageModel, header_end: Optional[int] = None) -> list[tup
         chunks = _split_chunks(line, space_thousands=page.space_thousands)
         segments: list[Segment] = []
         for chunk in chunks:
-            if _is_number_chunk(chunk.text) and segments:
+            if _NOTE_REFS.match(chunk.text) and segments:
+                # multi-note reference such as "8/9" or "3/17/19": a note cell, never a value
+                segments[-1].cells.append(Cell(chunk.text, None, chunk.center))
+            elif _is_number_chunk(chunk.text) and segments:
                 segments[-1].cells.append(Cell(chunk.text, parse_number(chunk.text), chunk.center))
             elif not _is_number_chunk(chunk.text):
                 label, note = _label_and_note(chunk.text)
@@ -471,7 +514,8 @@ FIELD_TIERS: dict[str, dict[str, tuple[tuple[str, ...], ...]]] = {
     "balance": {
         "total_assets": (("totalassets",),),
         "total_liabilities": (("totalliabilities",),),
-        "total_equity": (("totalequity", "totalshareholdersequity", "totalequityandreserves", "totalstockholdersequity", "totalnetassets"), ("equity",)),
+        "total_equity": (("totalequity", "totalshareholdersequity", "totalequityandreserves", "totalstockholdersequity", "totalnetassets",
+                         "totalequityattributabletoshareholders"), ("equity",)),
         "total_equity_and_liabilities": (("totalequityandliabilities", "totalliabilitiesandequity", "totalequityandliabilitiesandreserves"),),
         "current_assets": (("totalcurrentassets", "currentassets"),),
         "current_liabilities": (("totalcurrentliabilities", "currentliabilities"),),
