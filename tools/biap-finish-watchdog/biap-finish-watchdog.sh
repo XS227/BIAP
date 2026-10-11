@@ -36,7 +36,7 @@ DRY=${WD_DRY_RUN:-0}
 NOW=$(( $(date +%s) + ${WD_NOW_OFFSET_MIN:-0} * 60 ))
 
 mkdir -p "$STATE" "$(dirname "$LOG")"
-log() { echo "$(date -u +%FT%TZ) [$1] ${*:2}" | tee -a "$LOG"; }
+log() { local t=""; [ "${WD_DRY_RUN:-0}" = 1 ] && t="[DRY] "; echo "$(date -u +%FT%TZ) ${t}[$1] ${*:2}" | tee -a "$LOG"; }
 
 exec 9>"$WD/watchdog.lock"
 if ! flock -n 9; then log INFO "another watchdog run holds the lock; skipping"; exit 0; fi
