@@ -407,6 +407,16 @@ class SpainCNMVLocator(OAMLocator):
             value = value[2:]
         return value if re.fullmatch(r"[A-Z]\d{7}[A-Z0-9]", value) else None
 
+    @staticmethod
+    def _search_terms(legal_name: str) -> list[str]:
+        """CNMV's entity search misses long GLEIF names such as "LINEA DIRECTA
+        ASEGURADORA SOCIEDAD ANONIMA COMPAÑIA DE SEGUROS Y REASEGUROS"; also try
+        the name without its legal-form suffix and anything after it."""
+        name = legal_name.strip()
+        core = re.sub(r"[,\s]+(S\.?\s?A\.?(\s?U\.?)?|SOCIMI,?\s?S\.?A\.?)$", "", name, flags=re.I)
+        stem = re.split(r"[,\s]+(?:SOCIEDAD\s+AN[OÓ]NIMA|S\.A\.)(?:[,\s]|$)", name, maxsplit=1, flags=re.I)[0].strip()
+        return [t for t in dict.fromkeys([name, core, stem]) if len(t) >= 4]
+
     def _nif_by_name(self, legal_name: str, isin: Optional[str]) -> Optional[str]:
         """CNMV entity search by GLEIF legal name. A candidate NIF is accepted
         only when CNMV's own ISIN register for it lists the instrument's ISIN,
@@ -414,9 +424,8 @@ class SpainCNMVLocator(OAMLocator):
         if not legal_name or not isin:
             return None
         search = "https://www.cnmv.es/portal/Consultas/BusquedaPorEntidad"
-        core = re.sub(r"[,\s]+(S\.?\s?A\.?(\s?U\.?)?|SOCIMI,?\s?S\.?A\.?)$", "", legal_name.strip(), flags=re.I)
         candidates: list[str] = []
-        for term in dict.fromkeys([legal_name.strip(), core]):
+        for term in self._search_terms(legal_name):
             def fetch(term: str = term) -> str:
                 with self.http.client() as client:
                     first = client.get(search)

@@ -15,7 +15,7 @@ from global_markets import firds_lei_index
 from global_markets.esef_country import CountryAwareESEFFundamentalsProvider
 from global_markets.gleif import LEIResolution
 from global_markets.models import GlobalCompany
-from global_markets.oam_esef import FranceAMFInfoFinanciereLocator, NationalOAMESEFProvider, OAMFiling, OAMLocator
+from global_markets.oam_esef import FranceAMFInfoFinanciereLocator, NationalOAMESEFProvider, OAMFiling, OAMLocator, SpainCNMVLocator
 from global_markets.providers import GlobalProviderError
 
 
@@ -113,3 +113,12 @@ def test_untagged_official_report_is_not_official_evidence(monkeypatch):
     company = GlobalCompany(country="FR", exchange="EURONEXT_PARIS", currency="EUR", ticker="AELIS", name="AELIS FARMA")
     with pytest.raises(GlobalProviderError, match="no inline XBRL"):
         provider.enrich_fundamentals(company)
+
+
+def test_cnmv_name_search_also_tries_stem_before_legal_form():
+    # GLEIF registeredAs for Línea Directa is a Registro Mercantil number, not
+    # a NIF; CNMV's entity search only finds the issuer by its short name.
+    # Any NIF found this way is still verified against CNMV's ISIN register.
+    terms = SpainCNMVLocator._search_terms("LINEA DIRECTA ASEGURADORA SOCIEDAD ANONIMA COMPAÑIA DE SEGUROS Y REASEGUROS")
+    assert terms[-1] == "LINEA DIRECTA ASEGURADORA"
+    assert SpainCNMVLocator._search_terms("IBERDROLA, S.A.") == ["IBERDROLA, S.A.", "IBERDROLA"]
