@@ -369,3 +369,89 @@ def test_btbd_same_sec_accession_two_day_fiscal_date_offset(monkeypatch):
     result = provider.enrich_fundamentals(company)
     assert result.revenue is None
     assert result.net_income is None
+
+
+_BTBD_IXBRL = """<html xmlns:ix="http://www.xbrl.org/2013/inlineXBRL" xmlns:xbrli="http://www.xbrl.org/2003/instance"
+ xmlns:xbrldi="http://xbrl.org/2006/xbrldi" xmlns:us-gaap="http://fasb.org/us-gaap/2025" xmlns:iso4217="http://www.xbrl.org/2003/iso4217"><body>
+<ix:header><ix:resources>
+<xbrli:context id="c_fy"><xbrli:entity><xbrli:identifier scheme="http://www.sec.gov/CIK">{cik}</xbrli:identifier></xbrli:entity><xbrli:period><xbrli:startDate>2024-12-30</xbrli:startDate><xbrli:endDate>2025-12-28</xbrli:endDate></xbrli:period></xbrli:context>
+<xbrli:context id="c_prior"><xbrli:entity><xbrli:identifier scheme="http://www.sec.gov/CIK">{cik}</xbrli:identifier></xbrli:entity><xbrli:period><xbrli:startDate>2024-01-01</xbrli:startDate><xbrli:endDate>2024-12-29</xbrli:endDate></xbrli:period></xbrli:context>
+<xbrli:context id="c_end"><xbrli:entity><xbrli:identifier scheme="http://www.sec.gov/CIK">{cik}</xbrli:identifier></xbrli:entity><xbrli:period><xbrli:instant>2025-12-28</xbrli:instant></xbrli:period></xbrli:context>
+<xbrli:context id="c_seg"><xbrli:entity><xbrli:identifier scheme="http://www.sec.gov/CIK">{cik}</xbrli:identifier><xbrli:segment><xbrldi:explicitMember dimension="us-gaap:StatementBusinessSegmentsAxis">x:AMember</xbrldi:explicitMember></xbrli:segment></xbrli:entity><xbrli:period><xbrli:startDate>2024-12-30</xbrli:startDate><xbrli:endDate>2025-12-28</xbrli:endDate></xbrli:period></xbrli:context>
+<xbrli:unit id="usd"><xbrli:measure>iso4217:USD</xbrli:measure></xbrli:unit>
+</ix:resources></ix:header>
+<ix:nonFraction name="us-gaap:Revenues" contextRef="c_fy" unitRef="usd" decimals="0">13,486,629</ix:nonFraction>
+<ix:nonFraction name="us-gaap:Revenues" contextRef="c_prior" unitRef="usd" decimals="0">14,823,472</ix:nonFraction>
+<ix:nonFraction name="us-gaap:Revenues" contextRef="c_seg" unitRef="usd" decimals="0">99,999,999</ix:nonFraction>
+<ix:nonFraction name="us-gaap:NetIncomeLoss" contextRef="c_fy" unitRef="usd" decimals="0" sign="-">687,839</ix:nonFraction>
+<ix:nonFraction name="us-gaap:NetIncomeLoss" contextRef="c_prior" unitRef="usd" decimals="0" sign="-">2,311,208</ix:nonFraction>
+<ix:nonFraction name="us-gaap:Assets" contextRef="c_end" unitRef="usd" decimals="0">10,745,052</ix:nonFraction>
+<ix:nonFraction name="us-gaap:Liabilities" contextRef="c_end" unitRef="usd" decimals="0">4,326,664</ix:nonFraction>
+<ix:nonFraction name="us-gaap:StockholdersEquity" contextRef="c_end" unitRef="usd" decimals="0">6,418,388</ix:nonFraction>
+</body></html>"""
+
+
+def test_ixbrl_document_parser_is_strict_about_identity_and_dimensions():
+    from global_markets.sec_filing_instance import parse_ixbrl_document
+
+    html = _BTBD_IXBRL.format(cik="0001718224").encode()
+    facts = parse_ixbrl_document(html, cik=1718224, form="10-K", filed="2026-03-30", accession="0001477932-26-001755")
+    revenue = {row["end"]: row["val"] for row in facts["Revenues"]["units"]["USD"]}
+    assert revenue == {"2025-12-28": 13_486_629, "2024-12-29": 14_823_472}  # segment fact excluded
+    assert facts["NetIncomeLoss"]["units"]["USD"][0]["accn"] == "0001477932-26-001755"
+    # A document filed under another entity's identifier yields nothing.
+    other = _BTBD_IXBRL.format(cik="0000000042").encode()
+    assert parse_ixbrl_document(other, cik=1718224, form="10-K", filed="2026-03-30") == {}
+
+
+def test_btbd_newer_10k_read_from_ixbrl_when_companyfacts_lags_and_instance_malformed(monkeypatch):
+    from global_markets.models import GlobalCompany
+    from global_markets.sec_filing_instance import SECFilingInstanceReader
+
+    provider = SECEdgarFundamentalsProvider(user_agent="BIAP test contact@example.com")
+    company = GlobalCompany(country="US", exchange="NASDAQ", currency="USD", ticker="BTBD", name="BT BRANDS, INC.")
+    monkeypatch.setattr(provider, "_resolve_cik", lambda company: 1718224)
+    old = "0001477932-25-002248"
+
+    def concept(value, end, start=None):
+        row = {"val": value, "end": end, "accn": old, "filed": "2025-03-31", "form": "10-K", "fp": "FY", "fy": 2024}
+        if start:
+            row["start"] = start
+        return {"units": {"USD": [row]}}
+
+    facts = {"us-gaap": {
+        "Assets": concept(11_996_797, "2024-12-31"), "Liabilities": concept(5_031_570, "2024-12-31"),
+        "StockholdersEquity": concept(6_965_227, "2024-12-31"),
+        "Revenues": concept(14_823_472, "2024-12-31", "2024-01-01"),
+        "NetIncomeLoss": concept(-2_311_208, "2024-12-31", "2024-01-01"),
+    }}
+    submissions = {"filings": {"recent": {
+        "form": ["10-K", "10-K/A"], "isXBRL": [1, 1],
+        "accessionNumber": ["0001477932-26-001755", "0001477932-25-003198"],
+        "reportDate": ["2025-12-28", "2024-12-29"], "filingDate": ["2026-03-30", "2025-05-01"],
+        "primaryDocument": ["btbd_10k.htm", "btbd_10ka.htm"],
+    }}}
+
+    def get_json(url):
+        if "submissions" in url:
+            return submissions
+        if url.endswith("index.json"):
+            return {"directory": {"item": [{"name": "btbd_10k_htm.xml"}]}}
+        return {"entityName": "BT BRANDS, INC.", "facts": facts}
+
+    def get_bytes(self, url):
+        if url.endswith("_htm.xml"):
+            return b"<xbrl><unterminated"  # SEC-extracted instance not well-formed
+        return _BTBD_IXBRL.format(cik="0001718224").encode()
+
+    monkeypatch.setattr(provider, "_get_json", get_json)
+    monkeypatch.setattr(SECFilingInstanceReader, "_get_bytes", get_bytes)
+    result = provider.enrich_fundamentals(company)
+    assert result.filing_period_end == "2025-12-28"
+    assert (result.revenue, result.net_income) == (13_486_629, -687_839)
+    assert result.total_assets - result.total_liabilities == result.total_equity
+
+    # Without a newer filed 10-K the old, stale period stays as-is (no invention).
+    submissions["filings"]["recent"]["isXBRL"] = [0, 0]
+    stale = provider.enrich_fundamentals(company)
+    assert stale.filing_period_end == "2024-12-31"

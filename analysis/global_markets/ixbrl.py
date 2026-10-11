@@ -193,6 +193,21 @@ def _misscaled_per_share(raw: dict, measures: list[str]) -> bool:
 def extract_facts(chunks: Iterable[str]) -> tuple[list[dict], set[str]]:
     """Parse iXBRL text chunks into xBRL-JSON-shaped numeric facts.
 
+    See ``extract_facts_and_identifiers`` for the variant that also reports
+    non-LEI entity identifiers.
+    """
+    facts, entities, _ = extract_facts_and_identifiers(chunks)
+    return facts, entities
+
+
+def extract_facts_and_identifiers(chunks: Iterable[str]) -> tuple[list[dict], set[str], set[str]]:
+    """Like ``extract_facts`` plus every context identifier as ``scheme|value``.
+
+    Some national registers (Denmark's virk.dk) identify the reporting entity
+    by its registry number (scheme ``http://www.dcca.dk/cvr``) instead of an
+    LEI. Callers must still verify such an identifier against an independent
+    LEI-to-registry link before trusting the document.
+
     Returns ``(facts, entity_identifiers)``. ``entity_identifiers`` lists the
     LEIs (scheme ISO 17442) used by the report's contexts, which callers must
     compare with the resolved issuer LEI before trusting the document.
@@ -207,6 +222,10 @@ def extract_facts(chunks: Iterable[str]) -> tuple[list[dict], set[str]]:
     for ctx in parser.contexts.values():
         if ctx.get("entity") and (ctx.get("scheme") or "").rstrip("/") == LEI_SCHEME:
             entities.add(ctx["entity"].strip().upper())
+    identifiers = {
+        f"{(ctx.get('scheme') or '').rstrip('/')}|{ctx['entity'].strip()}"
+        for ctx in parser.contexts.values() if ctx.get("entity")
+    }
     for raw in parser.facts:
         ctx = parser.contexts.get(raw["context"])
         if not ctx:
@@ -230,7 +249,7 @@ def extract_facts(chunks: Iterable[str]) -> tuple[list[dict], set[str]]:
         for axis, member in (ctx.get("dims") or {}).items():
             dims[axis] = member
         facts.append({"value": str(raw["value"]), "decimals": raw["decimals"], "dimensions": dims})
-    return facts, entities
+    return facts, entities, identifiers
 
 
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")

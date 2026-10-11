@@ -53,7 +53,7 @@ import httpx
 
 from .cached_esef import CachedESEFFundamentalsProvider
 from .esef import _CONCEPTS, _agent10_fields, concept_is_relevant
-from .ixbrl import annual_period_end, extract_facts
+from .ixbrl import annual_period_end, extract_facts_and_identifiers
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, append_source
 from .source_cache import data_root, read_json, write_json_atomic
@@ -96,6 +96,15 @@ class OAMLocator(ABC):
     @abstractmethod
     def annual_filings(self, company: GlobalCompany, lei: str, legal_name: str) -> list[OAMFiling]:
         """Return official annual ESEF package candidates, newest first."""
+
+    def registry_identifiers(self, lei: str) -> set[str]:
+        """``scheme|value`` registry identifiers independently tied to ``lei``.
+
+        Empty by default: the report's embedded LEI is then the only identity
+        proof. A locator may return registry numbers (e.g. Danish CVR) that an
+        independent source (GLEIF) links to the LEI.
+        """
+        return set()
 
 
 class OAMHttp:
@@ -1360,6 +1369,7 @@ class DenmarkVirkLocator(OAMLocator):
 
     oam = "dk-virk-regnskab"
     country = "DK"
+    CVR_SCHEME = "http://www.dcca.dk/cvr"
     search = "http://distribution.virk.dk/offentliggoerelser/_search"
 
     def _cvr(self, lei: str) -> Optional[str]:
@@ -1375,6 +1385,10 @@ class DenmarkVirkLocator(OAMLocator):
             return None
         value = re.sub(r"\D", "", str(entity.get("registeredAs") or ""))
         return value if len(value) == 8 and str(entity.get("jurisdiction") or "").upper().startswith("DK") else None
+
+    def registry_identifiers(self, lei: str) -> set[str]:
+        cvr = self._cvr(lei)
+        return {f"{self.CVR_SCHEME}|{cvr}"} if cvr else set()
 
     def annual_filings(self, company: GlobalCompany, lei: str, legal_name: str) -> list[OAMFiling]:
         cvr = self._cvr(lei)
@@ -1494,6 +1508,9 @@ class DenmarkCombinedLocator(OAMLocator):
             raise GlobalProviderError("; ".join(errors))
         return sorted(filings, key=lambda f: f.published_at or "", reverse=True)
 
+    def registry_identifiers(self, lei: str) -> set[str]:
+        return set().union(*(part.registry_identifiers(lei) for part in self.parts))
+
 
 class ItalySDIRLocator(OAMLocator):
     """Both Italian authorized storage mechanisms, merged and ranked.
@@ -1596,7 +1613,10 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
         path = self._facts_cache_path(filing)
         cached = read_json(path)
         usable = isinstance(cached, dict) and isinstance(cached.get("facts"), list)
-        if usable and cached.get("schemaVersion") == PACKAGE_SCHEMA_VERSION:
+        # virk.dk packages cached before context identifiers were recorded are
+        # re-read once: Danish reports carry a CVR identifier, not an LEI.
+        needs_identifiers = filing.oam == DenmarkVirkLocator.oam and "identifiers" not in (cached or {})
+        if usable and cached.get("schemaVersion") == PACKAGE_SCHEMA_VERSION and not needs_identifiers:
             return cached
         tmp_dir = OAMHttp.cache_dir() / "tmp"
         tmp_dir.mkdir(parents=True, exist_ok=True)
@@ -1649,7 +1669,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
             return self._parse_text(filing, iter(lambda: text.read(1 << 20), ""), member)
 
     def _parse_text(self, filing: OAMFiling, chunks, member: str) -> dict:
-        facts, entities = extract_facts(chunks)
+        facts, entities, identifiers = extract_facts_and_identifiers(chunks)
         kept = list(facts)
         return {
             "schemaVersion": PACKAGE_SCHEMA_VERSION,
@@ -1657,6 +1677,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
             "packageUrl": filing.package_url,
             "reportFile": member,
             "entities": sorted(entities),
+            "identifiers": sorted(identifiers),
             "parsedAt": _utc_now().isoformat(),
             "factCount": len(facts),
             "facts": kept,
@@ -1690,6 +1711,16 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                 continue
             entity_ids = {e.upper() for e in package.get("entities") or []}
             entity_lei_verified = lei.upper() in entity_ids
+            # Registry-number identity (Danish virk.dk reports carry the CVR,
+            # not an LEI). Accepted only when the report declares no LEI at
+            # all and every one of its context identifiers is exactly the
+            # registry number GLEIF links to this issuer's LEI.
+            report_ids = {str(i) for i in package.get("identifiers") or []}
+            registry_ids = locator.registry_identifiers(lei) if filing.oam == DenmarkVirkLocator.oam else set()
+            registry_entity_verified = bool(
+                not entity_lei_verified and not entity_ids and registry_ids
+                and report_ids and report_ids <= registry_ids
+            )
             # Elliptic Laboratories ASA FY2024/FY2025 packages are official
             # Newsweb ELABS annual filings, but the issuer-authored iXBRL
             # contexts incorrectly carry Bloomberg Finance L.P.'s LEI. Keep
@@ -1703,7 +1734,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                 and filing.document_id in {"NEWSWEB:671702:324302", "NEWSWEB:644779:303171"}
                 and entity_ids == {"5493001KJTIIGC8Y1R12"}
             )
-            if not entity_lei_verified and not newsweb_elabs_entity_anomaly:
+            if not entity_lei_verified and not registry_entity_verified and not newsweb_elabs_entity_anomaly:
                 errors.append(f"{filing.document_id}: report entity {package.get('entities')} != LEI {lei}")
                 continue
             facts = package["facts"]
@@ -1745,6 +1776,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                     "oam_published_at": filing.published_at,
                     "oam_retrieved_at": retrieved,
                     "oam_entity_lei_verified": entity_lei_verified,
+                    "oam_entity_registry_verified": registry_entity_verified,
                     "oam_entity_identity_exception": "ELABS_NEWSWEB_WRONG_EMBEDDED_LEI" if newsweb_elabs_entity_anomaly else None,
                     "oam_report_entity_ids": sorted(entity_ids),
                     "oam_credit_extraction": normalization_meta,
@@ -1762,6 +1794,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                 notes=(
                     f"Issuer ESEF annual report lodged with national OAM {filing.oam}; "
                     + (f"inline XBRL entity LEI={lei} verified; " if entity_lei_verified else
+                       f"inline XBRL entity {','.join(sorted(report_ids))} verified against GLEIF registry link of LEI={lei}; " if registry_entity_verified else
                        f"documented ELABS Newsweb embedded-LEI anomaly; expected LEI={lei}, report entity={','.join(sorted(entity_ids))}; ")
                     + (filing.label or "")
                 ).strip(),

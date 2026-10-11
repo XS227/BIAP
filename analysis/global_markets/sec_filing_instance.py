@@ -32,6 +32,8 @@ from .source_cache import data_root
 SEC_SUBMISSIONS_BASE = "https://data.sec.gov/submissions"
 SEC_ARCHIVES_BASE = "https://www.sec.gov/Archives/edgar/data"
 ANNUAL_FORMS = frozenset({"20-F", "20-F/A", "40-F", "40-F/A"})
+US_GAAP_ANNUAL_FORMS = frozenset({"10-K", "10-K/A"})
+_US_GAAP_NS_PREFIX = "http://fasb.org/us-gaap/"
 _IFRS_NS_PREFIX = "https://xbrl.ifrs.org/taxonomy/"
 _IFRS_NS_PREFIX_LEGACY = "http://xbrl.ifrs.org/taxonomy/"
 _XSI_NIL = "{http://www.w3.org/2001/XMLSchema-instance}nil"
@@ -52,13 +54,13 @@ def _parse_date(text: str) -> Optional[date]:
         return None
 
 
-def annual_xbrl_filings(submissions: dict) -> list[dict]:
-    """Annual 20-F/40-F filings flagged as XBRL, newest report period first."""
+def annual_xbrl_filings(submissions: dict, forms_allowed: frozenset = ANNUAL_FORMS) -> list[dict]:
+    """Annual filings of ``forms_allowed`` flagged as XBRL, newest report period first."""
     recent = ((submissions or {}).get("filings") or {}).get("recent") or {}
     forms = recent.get("form") or []
     rows: list[dict] = []
     for index, form in enumerate(forms):
-        if form not in ANNUAL_FORMS:
+        if form not in forms_allowed:
             continue
 
         def col(name: str):
@@ -97,8 +99,10 @@ def instance_candidates(cik: int, filing: dict, index_payload: Optional[dict]) -
     return [f"{folder}/{name}" for name in names]
 
 
-def parse_instance(xml_bytes: bytes, *, cik: int, form: str, filed: str) -> dict:
-    """Return ``{concept: {"units": {unit: [row, ...]}}}`` for ifrs-full facts."""
+def parse_instance(xml_bytes: bytes, *, cik: int, form: str, filed: str, taxonomy: str = "ifrs",
+                   accession: str = "") -> dict:
+    """Return ``{concept: {"units": {unit: [row, ...]}}}`` for ifrs-full (or us-gaap) facts."""
+    prefixes = (_US_GAAP_NS_PREFIX,) if taxonomy == "us-gaap" else (_IFRS_NS_PREFIX, _IFRS_NS_PREFIX_LEGACY)
     try:
         root = ET.fromstring(xml_bytes)
     except ET.ParseError as exc:
@@ -149,7 +153,7 @@ def parse_instance(xml_bytes: bytes, *, cik: int, form: str, filed: str) -> dict
     conflicts: set[tuple[str, str, str, Optional[str]]] = set()
     for node in root:
         namespace = _namespace(node.tag)
-        if not (namespace.startswith(_IFRS_NS_PREFIX) or namespace.startswith(_IFRS_NS_PREFIX_LEGACY)):
+        if not namespace.startswith(prefixes):
             continue
         if node.attrib.get(_XSI_NIL) == "true":
             continue
@@ -166,6 +170,10 @@ def parse_instance(xml_bytes: bytes, *, cik: int, form: str, filed: str) -> dict
             conflicts.add(key)
         seen[key] = value
 
+    return _rows_from_facts(seen, conflicts, form=form, filed=filed, accession=accession)
+
+
+def _rows_from_facts(seen: dict, conflicts: set, *, form: str, filed: str, accession: str) -> dict:
     # Many 20-F filers add an unaudited single-year convenience translation
     # (e.g. TWD statements with a USD column). Keep only the primary reporting
     # currency -- the one carrying most monetary facts -- so metrics are never
@@ -188,16 +196,69 @@ def parse_instance(xml_bytes: bytes, *, cik: int, form: str, filed: str) -> dict
             continue
         row = {"val": int(value) if value.is_integer() else value, "end": end, "filed": filed,
                "form": form, "fp": "FY", "fy": fy, "frame": None}
+        if accession:
+            row["accn"] = accession
         if start:
             row["start"] = start
         facts.setdefault(concept, {"units": {}})["units"].setdefault(unit, []).append(row)
     return facts
 
 
-class SECFilingInstanceReader:
-    """Fetch the newest annual IFRS XBRL instance newer than companyfacts."""
+def parse_ixbrl_document(html: bytes, *, cik: int, form: str, filed: str, accession: str = "") -> dict:
+    """us-gaap facts from a filing's inline-XBRL primary document.
 
-    def __init__(self, *, get_json: Callable[[str], dict], user_agent: str, timeout: float = 60.0) -> None:
+    Fallback for filings whose SEC-extracted ``_htm.xml`` instance is not
+    well-formed. Same rules as ``parse_instance``: entity identifier equals the
+    verified CIK, no dimensional facts, fiscal-year durations (350-380 days) or
+    instants, nil/non-numeric and conflicting duplicates dropped.
+    """
+    from .ixbrl import extract_facts
+
+    parsed, _ = extract_facts([html.decode("utf-8", "replace")])
+    seen: dict = {}
+    conflicts: set = set()
+    for fact in parsed:
+        dims = fact.get("dimensions") or {}
+        if any(key not in {"concept", "entity", "period", "unit"} for key in dims):
+            continue
+        concept = str(dims.get("concept") or "")
+        if not concept.startswith("us-gaap:"):
+            continue
+        try:
+            if int(str(dims.get("entity") or "").rsplit(":", 1)[-1].strip()) != int(cik):
+                continue
+            value = float(fact["value"])
+        except (ValueError, KeyError, TypeError):
+            continue
+        unit = str(dims.get("unit") or "").replace("iso4217:", "").replace("xbrli:", "")
+        if not unit:
+            continue
+        parts = str(dims.get("period") or "").split("/")
+        if len(parts) == 1:
+            end, start = _parse_date(parts[0]), None
+            if end is None:
+                continue
+        elif len(parts) == 2:
+            start, end = _parse_date(parts[0]), _parse_date(parts[1])
+            if start is None or end is None or not 350 <= (end - start).days <= 380:
+                continue
+        else:
+            continue
+        key = (concept.split(":", 1)[1], unit, end.isoformat(), start.isoformat() if start else None)
+        if key in seen and seen[key] != value:
+            conflicts.add(key)
+        seen[key] = value
+    return _rows_from_facts(seen, conflicts, form=form, filed=filed, accession=accession)
+
+
+class SECFilingInstanceReader:
+    """Fetch the newest annual XBRL instance (IFRS 20-F/40-F or US-GAAP 10-K) newer than companyfacts."""
+
+    def __init__(self, *, get_json: Callable[[str], dict], user_agent: str, timeout: float = 60.0,
+                 taxonomy: str = "ifrs") -> None:
+        if taxonomy not in {"ifrs", "us-gaap"}:
+            raise ValueError(f"unsupported XBRL taxonomy {taxonomy!r}")
+        self.taxonomy = taxonomy
         self._get_json = get_json
         self.user_agent = user_agent
         self.timeout = max(10.0, float(timeout))
@@ -233,7 +294,9 @@ class SECFilingInstanceReader:
         Returns ``({}, None)`` when SEC lists no newer annual XBRL filing.
         """
         submissions = self._get_json(f"{SEC_SUBMISSIONS_BASE}/CIK{cik:010d}.json")
-        for filing in annual_xbrl_filings(submissions):
+        for filing in annual_xbrl_filings(
+            submissions, US_GAAP_ANNUAL_FORMS if self.taxonomy == "us-gaap" else ANNUAL_FORMS
+        ):
             if newer_than and filing["reportDate"] <= newer_than:
                 break
             folder = f"{SEC_ARCHIVES_BASE}/{cik}/{filing['accession'].replace('-', '')}"
@@ -243,9 +306,21 @@ class SECFilingInstanceReader:
                 index_payload = None
             for url in instance_candidates(cik, filing, index_payload):
                 try:
-                    facts = parse_instance(self._get_bytes(url), cik=cik, form=filing["form"], filed=filing["filingDate"])
+                    facts = parse_instance(self._get_bytes(url), cik=cik, form=filing["form"], filed=filing["filingDate"],
+                                          taxonomy=self.taxonomy, accession=filing["accession"])
                 except GlobalProviderError:
                     continue
+                if facts:
+                    return facts, {**filing, "instanceUrl": url,
+                                   "readAt": datetime.now(timezone.utc).isoformat()}
+            primary = filing.get("primaryDocument") or ""
+            if self.taxonomy == "us-gaap" and primary.endswith(".htm"):
+                url = f"{folder}/{primary}"
+                try:
+                    facts = parse_ixbrl_document(self._get_bytes(url), cik=cik, form=filing["form"],
+                                                 filed=filing["filingDate"], accession=filing["accession"])
+                except GlobalProviderError:
+                    facts = {}
                 if facts:
                     return facts, {**filing, "instanceUrl": url,
                                    "readAt": datetime.now(timezone.utc).isoformat()}
