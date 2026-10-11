@@ -262,6 +262,48 @@ def _num(value):
     return value if isinstance(value, (int, float)) and not isinstance(value, bool) else None
 
 
+_MEZZANINE_TAGS = (
+    "TemporaryEquityCarryingAmountAttributableToParent",
+    "TemporaryEquityCarryingAmountIncludingPortionAttributableToNoncontrollingInterests",
+    "TemporaryEquityCarryingAmount",
+    "RedeemableNoncontrollingInterestEquityCarryingAmount",
+)
+_SEC_UA = {"User-Agent": "BIAP global evidence audit (khabat.setaei@gmail.com)", "Accept": "application/json"}
+
+
+def _sec_mezzanine(cik: str, period_end: str):
+    """Temporary (mezzanine) equity at ``period_end`` from the SEC filing itself, or None."""
+    req = urllib.request.Request(f"https://data.sec.gov/api/xbrl/companyfacts/CIK{int(cik):010d}.json", headers=_SEC_UA)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            gaap = (json.load(resp).get("facts") or {}).get("us-gaap") or {}
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+        return None
+    total = 0.0
+    for tag in _MEZZANINE_TAGS:
+        rows = [r for r in (gaap.get(tag, {}).get("units", {}).get("USD") or []) if r.get("end") == period_end and r.get("form") in ("10-K", "10-K/A", "20-F", "40-F")]
+        if rows:
+            total += float(rows[-1]["val"])
+            break
+    return total or None
+
+
+def _mezzanine_explains_gap(fe: dict, a: float, l: float, e: float, fetch=_sec_mezzanine) -> bool:
+    """True when assets = liabilities + equity + SEC-reported temporary equity (within 2%).
+
+    Redeemable preferred stock sits between liabilities and equity (US:ORGO FY2025:
+    133.8m), so liabilities+equity alone legitimately undershoots assets. Fail-closed:
+    only SEC-sourced payloads qualify, and an unreachable/absent fact keeps the flag.
+    """
+    if not str(fe.get("sourceProvider") or "").startswith("sec-edgar") or not fe.get("reportPeriod"):
+        return False
+    cik = str(fe.get("officialDocumentId") or "").removeprefix("CIK")
+    if not cik.isdigit():
+        return False
+    temp = fetch(cik, str(fe["reportPeriod"]))
+    return bool(temp) and temp > 0 and abs(a - (l + e + temp)) / a <= 0.02
+
+
 def _value_flags(payload: dict) -> list[str]:
     """Internal-consistency checks on the figures behind an Evidence PASS/WARN.
 
@@ -284,7 +326,7 @@ def _value_flags(payload: dict) -> list[str]:
     if v["total_assets"] is not None and v["total_assets"] <= 0:
         flags.append("total assets <= 0")
     a, l, e = v["total_assets"], v["total_liabilities"], v["total_equity"]
-    if a and l is not None and e is not None and a > 0 and abs(a - (l + e)) / a > 0.10:
+    if a and l is not None and e is not None and a > 0 and abs(a - (l + e)) / a > 0.10 and not _mezzanine_explains_gap(fe, a, l, e):
         flags.append(f"balance sheet does not tie: assets {a:.4g} vs liabilities+equity {l + e:.4g}")
     if a and v["cash_and_equivalents"] is not None and a > 0 and v["cash_and_equivalents"] > a * 1.01:
         flags.append("cash exceeds total assets")
