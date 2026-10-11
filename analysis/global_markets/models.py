@@ -231,3 +231,5 @@ class PortfolioProposal:
     allocations: tuple[PortfolioAllocation, ...]
     excluded: tuple[str, ...] = ()
     reasoning: str = ""
+    # Structured, per-candidate, per-constraint reasons behind `excluded`.
+    rejections: tuple[dict, ...] = ()

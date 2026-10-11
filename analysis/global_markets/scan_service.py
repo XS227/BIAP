@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Optional
 
 from .country_packs import COUNTRY_PACKS
+from .issuer import collapse_issuers
 from .models import GlobalCompany
 from .runtime import build_registry
 from .scanner import GlobalMarketScanner
@@ -22,6 +23,41 @@ from .source_cache import data_root, read_json, write_json_atomic
 
 
 _SCAN_CACHE_SCHEMA_VERSION = 3
+
+
+def build_coverage_funnel(market_summary: list[dict]) -> dict:
+    """Five distinct stages; a later stage is never implied by an earlier one.
+
+    discovered -> lightweight-screened (price/market data only) -> deep-analyzed
+    (full agent run on official filings) -> evidence-PASS -> qualified BUY.
+    "2997/3017 screened" says nothing about how many were deeply analyzed.
+    """
+    def total(key: str) -> int:
+        return sum(int(m.get(key) or 0) for m in market_summary)
+
+    discovered, screened, deep = total("eligibleEquities"), total("screenedEquities"), total("deepAnalyzed")
+    stages = {
+        "discovered": discovered,
+        "lightweightScreened": screened,
+        "deepAnalyzed": deep,
+        "evidencePass": total("evidencePass"),
+        "qualifiedBuy": total("qualifiedBuy"),
+    }
+    pct = lambda n: None if discovered <= 0 else round(100.0 * n / discovered, 2)
+    return {
+        "stages": stages,
+        "pctOfDiscovered": {k: pct(v) for k, v in stages.items()},
+        "definitions": {
+            "lightweightScreened": "market-data screen only; no filing was read",
+            "deepAnalyzed": "full agent analysis with fundamentals attempted",
+            "evidencePass": "official-filing evidence gates all cleared",
+            "qualifiedBuy": "BUY_CANDIDATE with evidence PASS; still subject to portfolio constraints",
+        },
+        "warning": (
+            "screening coverage must not be read as analysis coverage"
+            if screened > 0 and deep < screened else None
+        ),
+    }
 
 
 def _global_top_markets() -> tuple[tuple[str, str], ...]:
@@ -246,7 +282,15 @@ def scan_global_top10(
                 if (row.get("evidence") or {}).get("status") != "PASS":
                     continue
                 candidates.append(row)
+        deep_rows = [r for r in (result.get("deepResults") or []) if isinstance(r, dict)]
+        evidence_pass = sum(1 for r in deep_rows if (r.get("evidence") or {}).get("status") == "PASS")
+        qualified_buy = sum(
+            1 for r in deep_rows
+            if r.get("call") == "BUY_CANDIDATE" and (r.get("evidence") or {}).get("status") == "PASS"
+        )
         market_summary.append({
+            "evidencePass": evidence_pass,
+            "qualifiedBuy": qualified_buy,
             "country": country,
             "exchange": exchange,
             "status": result.get("status") or "UNKNOWN",
@@ -277,8 +321,14 @@ def scan_global_top10(
         if current is None or rank > current_rank:
             deduped[key] = row
 
+    # Company ranking is per issuer: GOOG/GOOGL (or a dual listing) is one
+    # company with one risk. The other securities remain on the lead row.
+    issuer_rows = collapse_issuers(
+        list(deduped.values()),
+        lambda row: (float(row.get("score") or 0.0) * float(row.get("confidence") or 0.0)),
+    )
     ranked = sorted(
-        deduped.values(),
+        issuer_rows,
         key=lambda row: (
             float(row.get("score") or 0.0) * float(row.get("confidence") or 0.0),
             float(row.get("confidence") or 0.0),
@@ -308,7 +358,9 @@ def scan_global_top10(
     )
     if eligible_markets == 0:
         recommendations = []
+    funnel = build_coverage_funnel(market_summary)
     return {
+        "coverageFunnel": funnel,
         "status": status,
         "scope": "COVERAGE_QUALIFIED_GLOBAL_MARKETS",
         "refreshPolicy": "SCHEDULED_CACHE_ONLY",

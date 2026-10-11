@@ -313,6 +313,11 @@ export type GlobalTop10Response = {
   deepAnalyzed?: number;
   globalCoveragePct?: number;
   connectedCoveragePct?: number;
+  coverageFunnel?: {
+    stages: { discovered: number; lightweightScreened: number; deepAnalyzed: number; evidencePass: number; qualifiedBuy: number };
+    pctOfDiscovered: Record<string, number | null>;
+    warning?: string | null;
+  };
   recommendations: GlobalAnalysis[];
   markets?: Array<{
     country: string;
@@ -395,6 +400,7 @@ export type GlobalPortfolioResponse = {
       reasoning?: string;
     }>;
     excluded?: string[];
+    rejections?: Array<{ identity: string; constraint: string; [k: string]: unknown }>;
     reasoning?: string;
   };
   fxToBase?: Record<string, number>;

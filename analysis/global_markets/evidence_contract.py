@@ -117,6 +117,42 @@ def _transition_block(transition: object, best: Optional[SourceEvidence], compan
     }
 
 
+# An annual filing older than this is still inside the 550-day gate, but it is
+# the last annual report, not current information (newer interim reports exist
+# for quarterly filers and are not read by the annual adapters).
+LAST_ANNUAL_AFTER_DAYS = 200
+
+
+def freshness_tier(status: str, age: Optional[int]) -> str:
+    """Never let OFFICIAL_CURRENT imply the figures are recent."""
+    if status != STATUS_OFFICIAL_CURRENT:
+        return "NOT_CURRENT"
+    if age is None:
+        return "PERIOD_UNKNOWN"
+    return "LAST_ANNUAL_FILING" if age > LAST_ANNUAL_AFTER_DAYS else "RECENT_ANNUAL_FILING"
+
+
+def fundamental_limitations(company: GlobalCompany, *, status: str, age: Optional[int]) -> list[str]:
+    out: list[str] = []
+    if status == STATUS_OFFICIAL_CURRENT and age is not None and age > LAST_ANNUAL_AFTER_DAYS:
+        out.append(
+            f"last annual filing only: period ended {age} days ago; later interim "
+            "(quarterly/half-year) results are not included in these figures"
+        )
+    if status != STATUS_OFFICIAL_CURRENT:
+        out.append("no current official fundamentals; figures must not be read as filed data")
+    if company.interest_expense in (None, 0):
+        out.append(
+            "interest coverage unavailable: interest expense not reported/extracted "
+            "(not treated as zero, no rating inferred)"
+        )
+    if company.operating_income is None:
+        out.append("operating income missing: EBIT-based ratios unavailable")
+    if company.ebitda is None:
+        out.append("EBITDA missing: debt/EBITDA and EBITDA/interest unavailable")
+    return out
+
+
 def fundamental_evidence_contract(company: GlobalCompany, *, now: Optional[datetime] = None) -> dict:
     """One canonical, market-independent fundamentals-evidence object."""
     official = official_fundamental_sources(company)
@@ -132,6 +168,7 @@ def fundamental_evidence_contract(company: GlobalCompany, *, now: Optional[datet
     age = _period_age_days(period, now)
     raw = company.raw_provider_fields or {}
     audit = str(getattr(best, "audit_status", "") or "unknown").lower() if best else "unknown"
+    limitations = fundamental_limitations(company, status=status, age=age)
     return {
         "contractVersion": CONTRACT_VERSION,
         "identity": {
@@ -163,5 +200,7 @@ def fundamental_evidence_contract(company: GlobalCompany, *, now: Optional[datet
         ),
         # Only when a source explicitly states it; never inferred.
         "auditStatus": audit if audit in {"audited", "unaudited"} else None,
+        "freshnessTier": freshness_tier(status, age),
+        "limitations": limitations,
         "fiscalYearTransition": _transition_block(raw.get("fiscal_year_transition"), best, company),
     }

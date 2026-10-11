@@ -209,6 +209,49 @@ def _manual(company: GlobalCompany, key: str):
     return None
 
 
+def reconcile_agent9_agent10(company: GlobalCompany, distress: DistressAssessment) -> dict:
+    """Explain why Agent 9 (EBIT/interest) and Agent 10 (EBITDA/interest) differ.
+
+    Both read the same normalized ``interest_expense`` (magnitude) and period;
+    the only legitimate difference is D&A in EBITDA. Anything else is flagged
+    for review, never silently resolved and never turned into a rating.
+    """
+    ebit, ebitda, interest = company.operating_income, company.ebitda, company.interest_expense
+    out: dict = {
+        "same_interest_base": interest,
+        "period": company.filing_period_end,
+        "currency": company.reporting_currency or company.currency,
+        "agent9_icr_ebit": distress.interest_coverage,
+        "agent10_ebitda_interest": None,
+        "flags": [],
+    }
+    flags = out["flags"]
+    if interest in (None, 0):
+        flags.append("interest_expense unavailable: neither ratio computed")
+        out["status"] = "INSUFFICIENT_DATA"
+        return out
+    mag = abs(float(interest))
+    if interest < 0:
+        flags.append("interest_expense reported negative; magnitude used by both agents")
+    if ebitda is not None:
+        out["agent10_ebitda_interest"] = round(float(ebitda) / mag, 4)
+    if ebit is not None and ebitda is not None:
+        if ebitda < ebit:
+            flags.append("EBITDA < EBIT (implies negative D&A): inconsistent inputs, review extraction")
+        out["implied_da"] = round(float(ebitda) - float(ebit), 2)
+    if ebit is not None and ebitda is not None and ebit > 0 and ebitda > 0 and ebitda > 3 * ebit:
+        flags.append("EBITDA > 3x EBIT: D&A-heavy or EBITDA not on the same basis; ratios not comparable")
+    icr = distress.interest_coverage
+    if icr is not None and out["agent10_ebitda_interest"] is not None:
+        if icr < 1.0 <= out["agent10_ebitda_interest"]:
+            flags.append(
+                "EBIT does not cover interest but EBITDA does: Agent 9 HIGH_RISK is "
+                "driven by depreciation/amortisation (capital intensity), not by cash coverage"
+            )
+    out["status"] = "REVIEW" if flags else "CONSISTENT"
+    return out
+
+
 def score_legal_entity_company(company: GlobalCompany, distress: Optional[DistressAssessment] = None) -> dict[str, Any]:
     """Canonical Agent 10 legal-entity grid adapted to one selected BIAP issuer."""
     if (company.sector or "").strip().lower() == "banking":
@@ -331,6 +374,7 @@ def score_legal_entity_company(company: GlobalCompany, distress: Optional[Distre
             cross["zmijewski_p_distress"] = distress.distress_probability
         if cross:
             base["agent9_crosscheck"] = cross
+        base["agent9_reconciliation"] = reconcile_agent9_agent10(company, distress)
 
     base["strict_rating_available"] = False
     base["strict_minimum_coverage"] = _MIN_WEIGHT_COVERAGE

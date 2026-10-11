@@ -169,11 +169,14 @@ def distress_agent(company: GlobalCompany) -> DistressAssessment:
     rating: Optional[str] = None
     default_spread: Optional[float] = None
     if ebit is not None and company.interest_expense not in (None, 0):
-        interest_coverage = float(ebit) / float(company.interest_expense)
+        # Interest expense is a magnitude; filers/providers disagree on sign.
+        # Agent 10 already uses abs(); without it a negative-signed expense
+        # turned a healthy EBIT into ICR<1 and a false HIGH_RISK.
+        interest_coverage = float(ebit) / abs(float(company.interest_expense))
         rating, default_spread = synthetic_credit_rating(interest_coverage)
         available_models.append("interest_coverage")
         reasons.append(
-            f"synthetic credit rating≈{rating} "
+            f"illustrative ICR band≈{rating} (not an agency rating) "
             f"(ICR={interest_coverage:.2f}x, default spread≈{default_spread:.3f})"
         )
     else:

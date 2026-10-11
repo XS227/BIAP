@@ -21,6 +21,7 @@ import httpx
 from .b3_official import B3OfficialClient
 from .bme_official import BMEOfficialDailyClient
 from .bist_official import BISTOfficialDailyClient
+from .issuer import collapse_issuers
 from .country_packs import ExchangeSpec, get_country_pack, get_exchange
 from .eodhd_bulk import EODHDBulkEODProvider
 from .euronext_live import EuronextLiveRegulatedClient
@@ -353,6 +354,13 @@ class GlobalMarketScanner:
             and isinstance(result.get("evidence"), dict)
             and result["evidence"].get("status") == "PASS"
         ]
+        buys.sort(
+            key=lambda result: float(result.get("score") or 0.0) * float(result.get("confidence") or 0.0),
+            reverse=True,
+        )
+        buys = collapse_issuers(
+            buys, lambda r: float(r.get("score") or 0.0) * float(r.get("confidence") or 0.0)
+        )
         buys.sort(
             key=lambda result: float(result.get("score") or 0.0) * float(result.get("confidence") or 0.0),
             reverse=True,
