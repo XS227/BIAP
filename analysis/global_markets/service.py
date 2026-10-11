@@ -176,6 +176,16 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
     price = company.price
 
     derived: list[str] = []
+    eps = company.eps
+    if same_currency and price not in (None, 0) and eps not in (None, 0):
+        # A per-share fact mis-scaled by the filer (EPS 0.655 tagged in
+        # thousands -> 655) reaches us from any source, including snapshots
+        # cached before the iXBRL guard. Positive EPS above the price (P/E < 1)
+        # or a loss per share above 20x the price is withheld, never rescaled.
+        ratio = float(eps) / float(price)
+        if ratio > 1.0 or ratio < -20.0:
+            derived.append(f"eps_withheld:implausible_vs_price(eps={float(eps):.6g},price={float(price):.6g})")
+            eps = None
     if market_cap is None and price not in (None, 0) and shares not in (None, 0):
         market_cap = float(price) * float(shares)
         derived.append("market_cap=price*shares_outstanding")
@@ -184,15 +194,12 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
         book_value_per_share = float(company.total_equity) / float(shares)
         derived.append("book_value_per_share=equity/shares_outstanding")
 
-    if same_currency and price not in (None, 0) and company.eps not in (None, 0) and float(company.eps) > 0 and pe is None:
-        # Annual EPS above the share price almost always means a mis-scaled
-        # filing fact (CIR FY2025: EUR 0.0325 tagged in thousands -> P/E
-        # 0.02). Leave P/E underived rather than score a bogus valuation.
-        if float(price) / float(company.eps) >= 1.0:
-            pe = float(price) / float(company.eps)
-            derived.append("pe=price/eps")
-        else:
-            derived.append("pe_not_derived:eps_exceeds_price")
+    if same_currency and price not in (None, 0) and eps not in (None, 0) and float(eps) > 0 and pe is None:
+        # EPS above the price was withheld above (CIR FY2025: EUR 0.0325
+        # tagged in thousands -> P/E 0.02), so P/E is only derived from a
+        # plausible per-share figure.
+        pe = float(price) / float(eps)
+        derived.append("pe=price/eps")
 
     if (
         same_currency
@@ -239,6 +246,7 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
         company,
         market_cap=market_cap,
         book_value_per_share=book_value_per_share,
+        eps=eps,
         pe=pe,
         sector_pe=sector_pe,
         pb=pb,
