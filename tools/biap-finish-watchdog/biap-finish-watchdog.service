@@ -1,0 +1,17 @@
+[Unit]
+Description=BIAP Global finish-job watchdog (resume tmux claude job if dead/stalled)
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/home/ubuntu/biap-global/watchdog/state/STOPPED
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/biap-global
+Environment=HOME=/home/ubuntu
+ExecStart=/bin/bash /home/ubuntu/biap-global/watchdog/biap-finish-watchdog.sh
+# The resumed job runs in tmux (shared /tmp/tmux-1000 socket) and must outlive this oneshot.
+PrivateTmp=false
+KillMode=process
+TimeoutStartSec=300
