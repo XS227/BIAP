@@ -34,6 +34,15 @@ _SYNTHETIC_RATING_TABLE = [
 
 def _is_financial(company: GlobalCompany) -> bool:
     text = " ".join(filter(None, (company.sector, company.industry))).lower()
+    if not text.strip():
+        # Official filings carry no sector. A balance sheet levered >=15x
+        # (assets/equity) is a deposit-taker/insurer, never an industrial, so
+        # generic interest-coverage distress models do not apply (HSBC 0.44x).
+        try:
+            assets, equity = float(company.total_assets), float(company.total_equity)
+        except (TypeError, ValueError):
+            return False
+        return equity > 0 and assets / equity >= 15.0
     tokens = (
         "bank", "banking", "insurance", "financial", "capital markets",
         "broker", "asset management", "credit services", "mortgage",
