@@ -25,6 +25,7 @@ from .gleif import _legal_core
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, append_source
 from .sec_edgar import SEC_FACTS_BASE
+from .sec_filing_instance import SECFilingInstanceReader, merge_facts
 from .sec_identity import cik_by_name, identity_matches, issuer_names
 
 
@@ -39,6 +40,9 @@ _VERIFIED_LOCAL_TICKER_ALIASES = {
 }
 
 MAX_ANNUAL_FILING_AGE_DAYS = 550
+# Once the newest companyfacts annual period is older than a fiscal year, a
+# newer 20-F/40-F may already be filed but not yet ingested by companyfacts.
+COMPANYFACTS_LAG_CHECK_DAYS = 365
 
 
 class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
@@ -135,6 +139,33 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
             return cik
         return super()._resolve_cik(company)
 
+    def _with_newer_filing_instance(self, cik: int, ifrs: dict) -> tuple[dict, Optional[dict], Optional[str]]:
+        """Add facts from a newer annual 20-F/40-F that companyfacts lags behind.
+
+        The same strict parser and freshness gate run on the merged rows; this
+        only closes the SEC companyfacts ingestion gap for an already filed,
+        CIK-matched annual report.
+        """
+        latest = ""
+        for concept in ("Revenue", "RevenueFromContractsWithCustomers", "ProfitLoss", "Assets"):
+            rows = self._annual_rows(ifrs.get(concept) or {})
+            if rows:
+                latest = max(latest, str(rows[0].get("end") or ""))
+        try:
+            age_days = (date.today() - date.fromisoformat(latest)).days if latest else None
+        except ValueError:
+            age_days = None
+        if age_days is not None and age_days <= COMPANYFACTS_LAG_CHECK_DAYS:
+            return ifrs, None, None
+        reader = SECFilingInstanceReader(get_json=self._get_json, user_agent=self.user_agent)
+        try:
+            extra, filing = reader.newer_annual_facts(cik, latest or None)
+        except GlobalProviderError as exc:
+            return ifrs, None, str(exc)
+        if not filing:
+            return ifrs, None, None
+        return merge_facts(ifrs, extra), filing, None
+
     def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
         # A foreign private issuer may trade on a US exchange while still filing
         # annual reports on Form 20-F/40-F using IFRS (e.g. AKAN on NASDAQ).
@@ -184,6 +215,7 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
         source_url = f"{SEC_FACTS_BASE}/CIK{padded}.json"
 
         ifrs = self._facts(payload)
+        ifrs, instance_filing, instance_error = self._with_newer_filing_instance(cik, ifrs)
         if not ifrs:
             raise GlobalProviderError(f"SEC returned no standard IFRS company facts for {company.identity()}")
 
@@ -233,6 +265,15 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
                 )
         reporting_currency = self._currency(period_row) or company.reporting_currency
         filing_form = str((period_row or {}).get("form") or "").strip() or None
+        from_instance = bool(instance_filing) and period_end == instance_filing["reportDate"]
+        if from_instance:
+            source_url = instance_filing["instanceUrl"]
+        instance_fields = {}
+        if instance_filing:
+            instance_fields["sec_instance_accession"] = instance_filing["accession"]
+            instance_fields["sec_instance_url"] = instance_filing["instanceUrl"]
+        if instance_error:
+            instance_fields["sec_instance_error"] = instance_error[:400]
 
         enriched = replace(
             company,
@@ -259,7 +300,7 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
             eps=self._value(eps),
             filing_period_end=period_end,
             filing_observed_at=filed_at,
-            raw_provider_fields={**company.raw_provider_fields, "sec_cik": cik, "sec_form": filing_form},
+            raw_provider_fields={**company.raw_provider_fields, "sec_cik": cik, "sec_form": filing_form, **instance_fields},
         )
         return append_source(
             enriched,
@@ -271,6 +312,9 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
                 observed_at=filed_at,
                 period_end=period_end,
                 quality=1.0,
-                notes="standard IFRS facts from SEC companyfacts; annual 20-F/40-F and amendments only; issuer legal-name core verified",
+                notes=(
+                    "standard IFRS facts from the filed SEC XBRL instance (companyfacts not yet updated); "
+                    if from_instance else "standard IFRS facts from SEC companyfacts; "
+                ) + "annual 20-F/40-F and amendments only; issuer legal-name core verified",
             ),
         )

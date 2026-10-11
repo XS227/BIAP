@@ -49,6 +49,13 @@ def test_vendor_symbol_routing_is_exchange_specific():
     assert RegionalYahooChartMarketProvider._vendor_symbol(company("HK", "HKEX", "HKD", "700")) == "0700.HK"
 
 
+def test_lse_padded_tidm_maps_to_yahoo_symbol():
+    assert RegionalYahooChartMarketProvider._vendor_symbol(company("GB", "LSE", "GBP", "BA.")) == "BA.L"
+    assert RegionalYahooChartMarketProvider._vendor_symbol(company("GB", "LSE", "GBP", "RR.")) == "RR.L"
+    assert RegionalYahooChartMarketProvider._vendor_symbol(company("GB", "LSE", "GBP", "BT.A")) == "BT-A.L"
+    assert RegionalYahooChartMarketProvider._vendor_symbol(company("GB", "LSE", "GBP", "ANTO")) == "ANTO.L"
+
+
 def test_currency_mismatch_is_rejected():
     item = company("AU", "ASX", "AUD", "BHP")
     with pytest.raises(GlobalProviderError, match="currency mismatch"):

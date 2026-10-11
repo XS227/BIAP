@@ -16,14 +16,15 @@ def test_us_sec_fundamentals_are_registered_without_env(monkeypatch):
     assert isinstance(nyse, PersistentFundamentalsProvider)
     assert isinstance(nasdaq.upstream, FallbackFundamentalsProvider)
     assert isinstance(nyse.upstream, FallbackFundamentalsProvider)
-    assert isinstance(nasdaq.upstream.primary, SECEdgarFundamentalsProvider)
-    assert isinstance(nasdaq.upstream.fallback, SECForeignIFRSFundamentalsProvider)
-    assert isinstance(nyse.upstream.primary, SECEdgarFundamentalsProvider)
-    assert isinstance(nyse.upstream.fallback, SECForeignIFRSFundamentalsProvider)
-    assert nasdaq.upstream.primary.user_agent
-    assert nasdaq.upstream.fallback.user_agent
-    assert nyse.upstream.primary.user_agent
-    assert nyse.upstream.fallback.user_agent
+    from global_markets.us_reviewed_reports import USReviewedSECAnnualReportProvider
+    for provider in (nasdaq, nyse):
+        chain = provider.upstream
+        assert isinstance(chain.fallback, USReviewedSECAnnualReportProvider)
+        assert isinstance(chain.primary, FallbackFundamentalsProvider)
+        assert chain.primary.primary.user_agent
+        assert chain.primary.fallback.user_agent
+
+
 
 
 def test_sec_parser_anchors_to_latest_annual_period_and_drops_stale_revenue(monkeypatch):

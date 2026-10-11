@@ -143,7 +143,7 @@ def test_old_package_parse_is_only_an_outage_fallback(tmp_path, monkeypatch):
 
     monkeypatch.setattr(provider, "_download", offline)
     assert provider.package_facts(filing) == old  # outage: previous parse of the same document
-    assert PACKAGE_SCHEMA_VERSION == 3
+    assert PACKAGE_SCHEMA_VERSION == 4
 
     write_json_atomic(provider._facts_cache_path(filing), {**old, "schemaVersion": 1})
     with pytest.raises(GlobalProviderError):

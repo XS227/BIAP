@@ -1,0 +1,80 @@
+{
+ "schemaVersion": 1,
+ "description": "Reviewed audited annual-report fundamentals for US-listed issuers whose SEC EDGAR annual report carries no XBRL financial statements (registered closed-end funds filing Form N-CSR: the cef taxonomy tags only fees, leverage and NAV per share, and SEC companyfacts returns 404). Values are transcribed from the primary statements of the pinned EDGAR document (USD, full units). Fund conventions: revenue = total investment income; operating_income = net increase in net assets resulting from operations before distributions to preferred stockholders; net_income = net increase in net assets attributable to common stockholders resulting from operations; total_equity = net assets attributable to common stock; total_liabilities = total liabilities plus preferred stock presented outside net assets (at liquidation value), so assets - liabilities = common net assets; total_debt = only senior securities classified as liabilities. Fields not stated in the statements (no comparative statement of operations, unclassified balance sheets) are omitted rather than derived.",
+ "issuers": [
+  {
+   "exchange": "NYSE",
+   "ticker": "GAM",
+   "cik": 40417,
+   "legalName": "General American Investors Company, Inc.",
+   "secEntityName": "GENERAL AMERICAN INVESTORS CO INC",
+   "form": "N-CSR",
+   "accession": "0001999371-26-003330",
+   "sourceId": "SEC-EDGAR:0001999371-26-003330",
+   "sourceUrl": "https://www.sec.gov/Archives/edgar/data/40417/000199937126003330/gai-ncsr_123125.htm",
+   "sha256": "266c723929b45b619067a57de5e36d61dea76783a16f75586244105f7ea56a65",
+   "xbrlCoverage": "N-CSR inline XBRL tags only cef/dei cover items and NAV per share; no statement facts",
+   "periodEnd": "2025-12-31",
+   "observedAt": "2026-02-13T00:00:00+00:00",
+   "currency": "USD",
+   "reportScope": "company",
+   "sector": "Financial Services",
+   "industry": "Asset Management - Closed-End Fund",
+   "quality": 0.97,
+   "rawProviderFields": {
+    "us_reviewed_auditor": "Ernst & Young LLP",
+    "us_reviewed_preferred_outside_net_assets": 190038825,
+    "us_reviewed_nav_per_share": 65.20
+   },
+   "fundamentals": {
+    "revenue": 24306604,
+    "operating_income": 339841269,
+    "net_income": 328533959,
+    "total_assets": 1773357244,
+    "total_liabilities": 207253313,
+    "total_equity": 1566103931,
+    "cash_and_equivalents": 415090,
+    "audit_opinion": "unqualified"
+   }
+  },
+  {
+   "exchange": "NYSE",
+   "ticker": "GAB",
+   "cik": 794685,
+   "legalName": "The Gabelli Equity Trust Inc.",
+   "secEntityName": "GABELLI EQUITY TRUST INC",
+   "form": "N-CSR",
+   "accession": "0001829126-26-002087",
+   "sourceId": "SEC-EDGAR:0001829126-26-002087",
+   "sourceUrl": "https://www.sec.gov/Archives/edgar/data/794685/000182912626002087/gab_ncsr.htm",
+   "sha256": "c101c5b38c62556d25bdd91fbec1dd0f87167c5552783a08fe4cae435bd9a5d7",
+   "xbrlCoverage": "N-CSR inline XBRL tags only cef/dei cover items and NAV per share; no statement facts",
+   "periodEnd": "2025-12-31",
+   "observedAt": "2026-03-09T00:00:00+00:00",
+   "currency": "USD",
+   "reportScope": "company",
+   "sector": "Financial Services",
+   "industry": "Asset Management - Closed-End Fund",
+   "quality": 0.97,
+   "rawProviderFields": {
+    "us_reviewed_auditor": "PricewaterhouseCoopers LLP",
+    "us_reviewed_preferred_outside_net_assets": 244863975,
+    "us_reviewed_nav_per_share": 5.59
+   },
+   "fundamentals": {
+    "revenue": 35774042,
+    "operating_income": 303184887,
+    "net_income": 290922668,
+    "total_assets": 2089235460,
+    "total_liabilities": 350280968,
+    "total_equity": 1738954492,
+    "cash_and_equivalents": 553427,
+    "operating_cash_flow": 163293471,
+    "total_debt": 102590000,
+    "interest_expense": 4608645,
+    "eps": 0.95,
+    "audit_opinion": "unqualified"
+   }
+  }
+ ]
+}

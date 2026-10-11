@@ -175,3 +175,17 @@ def test_portfolio_excludes_distress_blocked_candidate_even_with_positive_signal
     result = portfolio_agent(profile, [PortfolioCandidate(company, signals, evidence, distress)])
     assert result.status == "NO_RECOMMENDATION"
     assert any("distress safety gate" in item for item in result.excluded)
+
+
+def test_single_model_cannot_claim_low_risk():
+    company = _company(
+        net_income=None, total_assets=None, total_liabilities=None,
+        current_assets=None, current_liabilities=None, retained_earnings=None,
+        total_equity=None, operating_income=250.0, interest_expense=50.0,
+    )
+    result = distress_agent(company)
+    assert result.available_models == ("interest_coverage",)
+    assert result.interest_coverage == 5.0
+    assert result.status == "INSUFFICIENT_DATA"
+    assert result.positive_block is False
+    assert "only one distress model available" in result.reasoning

@@ -160,6 +160,11 @@ def _rank_instruments(instruments, query: str):
     return ranked
 
 
+def _ticker_alias_key(value: str) -> str:
+    """Match class-share separator aliases without conflating unrelated symbols."""
+    return re.sub(r"[.\- /]", "", str(value or "").strip().upper())
+
+
 def _seed(req: InstrumentRequest):
     try:
         seed = instrument_seed(
@@ -193,7 +198,10 @@ def _seed(req: InstrumentRequest):
                     query=seed.ticker,
                     limit=30,
                 ))
-            if not candidates:
+            if not candidates or not any(
+                _ticker_alias_key(item.ticker) == _ticker_alias_key(seed.ticker)
+                for item in candidates
+            ):
                 candidates = list(provider.list_instruments(
                     country=seed.country,
                     exchange=seed.exchange,
@@ -201,7 +209,7 @@ def _seed(req: InstrumentRequest):
             exact = next(
                 (
                     item for item in candidates
-                    if item.ticker.strip().upper() == seed.ticker.strip().upper()
+                    if _ticker_alias_key(item.ticker) == _ticker_alias_key(seed.ticker)
                     and (not seed.isin or not item.isin or item.isin.upper() == seed.isin.upper())
                 ),
                 None,
@@ -418,6 +426,8 @@ def global_scan_top10(req: GlobalTop10Request):
 def global_analyze(req: InstrumentRequest):
     try:
         return analyze_company(_seed(req))
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
 

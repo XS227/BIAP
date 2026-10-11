@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 
 from global_markets import esef
 from global_markets.agents import evidence_agent
-from global_markets.cached_fundamentals import PersistentFundamentalsProvider
+from global_markets.cached_fundamentals import CACHE_SCHEMA_VERSION, PersistentFundamentalsProvider
 from global_markets.evidence_contract import (
     STATUS_OFFICIAL_CURRENT,
     STATUS_OFFICIAL_SOURCE_UNAVAILABLE,
@@ -278,7 +278,7 @@ def test_official_provenance_survives_cache_roundtrip(tmp_path):
     official = [s for s in restored.sources if is_official_fundamental_source(s)]
     assert official and official[0].source_id == "DOC-1" and official[0].source_url == "https://oam.example/1"
     stored = json.loads(next(tmp_path.rglob("latest.json")).read_text())
-    assert stored["schemaVersion"] == 4
+    assert stored["schemaVersion"] == CACHE_SCHEMA_VERSION
     assert stored["evidenceContract"]["isOfficial"] is True
     assert stored["evidenceContract"]["officialDocumentId"] == "DOC-1"
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -22,7 +23,8 @@ def _company() -> GlobalCompany:
         name="TIN INN HLDG AG VNA O.N.",
         isin="DE000A40ZTT8",
         price=15.6,
-        price_observed_at="2026-10-06T18:00:00+00:00",
+        # Relative to now: the year-only freshness assertions must not decay with the calendar.
+        price_observed_at=(datetime.now(timezone.utc) - timedelta(hours=6)).isoformat(),
         sources=[
             SourceEvidence(
                 provider="official-deutsche-boerse-t7-universe",
