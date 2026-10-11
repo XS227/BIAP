@@ -77,12 +77,13 @@ _CONCEPTS = {
         "ifrs-full:NoncurrentBorrowings",
         "ifrs-full:NoncurrentInterestBearingLoansAndBorrowings",
     ),
-    # Bonds issued and issuer "other loans" are separate debt lines on the
-    # balance sheet; they are used only when no borrowings line is tagged.
+    # Bonds issued and loans received (IFRS "loans received" lines, or issuer
+    # "other loans") are separate debt lines on the balance sheet; they are
+    # used only when no borrowings line is tagged (e.g. Volvo Car AB FY2025).
     "current_bonds": ("ifrs-full:CurrentBondsIssuedAndCurrentPortionOfNoncurrentBondsIssued",),
     "noncurrent_bonds": ("ifrs-full:NoncurrentPortionOfNoncurrentBondsIssued",),
-    "current_other_loans": (),
-    "noncurrent_other_loans": (),
+    "current_other_loans": ("ifrs-full:CurrentLoansReceivedAndCurrentPortionOfNoncurrentLoansReceived",),
+    "noncurrent_other_loans": ("ifrs-full:NoncurrentPortionOfNoncurrentLoansReceived",),
     "interest_expense": ("ifrs-full:FinanceCosts", "ifrs-full:InterestExpense"),
     # Cash-flow lines for the S&P-style FFO derivation (EBITDA - interest
     # paid + interest received - income taxes paid).

@@ -20,6 +20,16 @@ from .providers import FundamentalsProvider, GlobalProviderError, append_source
 
 SEC_TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 SEC_FACTS_BASE = "https://data.sec.gov/api/xbrl/companyfacts"
+# Successor registrants under Exchange Act Rule 12g-3(a) take over the listed
+# ticker but have no annual facts until their first 10-K. Until then the
+# predecessor's audited 10-K (same consolidated group) is the latest annual
+# official filing. Each pair is reviewed against the reorganization 8-K.
+VERIFIED_PREDECESSOR_CIKS = {
+    # ExxonMobil Holdings Corp <- Exxon Mobil Corp: redomiciliation merger;
+    # predecessor 8-K 0001193125-26-291986 and successor 8-K12B
+    # 0001193125-26-291990 (both 2026-07-01), successor registrant per 12g-3(a).
+    2115436: 34088,
+}
 _ticker_lock = threading.Lock()
 _ticker_cache: Optional[dict[str, int]] = None
 
@@ -155,6 +165,10 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         return best
 
     @classmethod
+    def _has_annual_facts(cls, gaap: dict) -> bool:
+        return any(cls._latest(gaap, (tag,)) for tag in ("NetIncomeLoss", "ProfitLoss", "Assets", "StockholdersEquity"))
+
+    @classmethod
     def _latest(cls, gaap: dict, tags: tuple[str, ...]) -> Optional[dict]:
         rows = cls._annual_series(gaap, tags, count=1)
         return rows[0] if rows else None
@@ -187,6 +201,15 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         source_url = f"{SEC_FACTS_BASE}/CIK{padded}.json"
         payload = self._get_json(source_url)
         gaap = self._facts(payload)
+        listed_entity_name = str(payload.get("entityName") or company.name)
+        predecessor_cik = VERIFIED_PREDECESSOR_CIKS.get(cik)
+        if predecessor_cik and not self._has_annual_facts(gaap):
+            payload = self._get_json(f"{SEC_FACTS_BASE}/CIK{predecessor_cik:010d}.json")
+            gaap = self._facts(payload)
+            padded = f"{predecessor_cik:010d}"
+            source_url = f"{SEC_FACTS_BASE}/CIK{padded}.json"
+        else:
+            predecessor_cik = None
         if not gaap:
             raise GlobalProviderError(f"SEC returned no standard US-GAAP company facts for {company.identity()}")
 
@@ -240,6 +263,12 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             (str(row.get("end") or "") for row in core_rows if row and row.get("end")),
             default="",
         ) or None
+        if period_end is None:
+            # Interim-only filers (new registrants, successor issuers) must not
+            # attach an empty "official" source that Evidence counts as current.
+            raise GlobalProviderError(
+                f"SEC company facts contain no annual 10-K/20-F period for {company.identity()} (CIK {cik})"
+            )
 
         def current_period_row(row: Optional[dict]) -> Optional[dict]:
             if row is None or period_end is None:
@@ -343,7 +372,7 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
 
         enriched = replace(
             company,
-            name=str(payload.get("entityName") or company.name),
+            name=listed_entity_name,
             reporting_currency=company.reporting_currency or "USD",
             revenue=revenue,
             revenue_prev=revenue_prev,
@@ -369,7 +398,11 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             shares_outstanding=company.shares_outstanding or self._value(shares),
             filing_period_end=period_end,
             filing_observed_at=filed_at,
-            raw_provider_fields={**company.raw_provider_fields, "sec_cik": cik},
+            raw_provider_fields={
+                **company.raw_provider_fields,
+                "sec_cik": cik,
+                **({"sec_predecessor_cik": predecessor_cik} if predecessor_cik else {}),
+            },
         )
         return append_source(
             enriched,
@@ -381,6 +414,9 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
                 observed_at=filed_at,
                 period_end=period_end,
                 quality=1.0,
-                notes="standard US-GAAP facts from SEC companyfacts; annual 10-K/10-K-A/20-F/20-F-A or audited FY facts from 10-12B/10-12G registration statements",
+                notes=(
+                    f"predecessor registrant CIK {predecessor_cik} annual filing (successor CIK {cik} has no annual facts yet); "
+                    if predecessor_cik else ""
+                ) + "standard US-GAAP facts from SEC companyfacts; annual 10-K/10-K-A/20-F/20-F-A or audited FY facts from 10-12B/10-12G registration statements",
             ),
         )

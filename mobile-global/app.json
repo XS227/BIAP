@@ -2,7 +2,7 @@
   "expo": {
     "name": "BIAP Global",
     "slug": "biap-global",
-    "version": "0.3.17",
+    "version": "0.3.18",
     "orientation": "portrait",
     "icon": "./assets/brand/biap-logo.png",
     "scheme": "biapglobal",
@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "com.biap.global",
-      "versionCode": 20,
+      "versionCode": 21,
       "adaptiveIcon": {
         "backgroundColor": "#0B1020",
         "foregroundImage": "./assets/brand/biap-logo.png"
@@ -45,7 +45,11 @@
       "reactCompiler": true
     },
     "extra": {
-      "router": {}
-    }
+      "router": {},
+      "eas": {
+        "projectId": "1c15de0d-6d5d-49b5-90a3-8ddbe1719a6b"
+      }
+    },
+    "owner": "nasrinx"
   }
 }

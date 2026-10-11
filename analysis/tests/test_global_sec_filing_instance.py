@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from global_markets import sec_filing_instance
+from global_markets import sec_filing_instance, sec_foreign_ifrs
 from global_markets.models import GlobalCompany
 from global_markets.providers import GlobalProviderError
 from global_markets.sec_filing_instance import annual_xbrl_filings, instance_candidates, parse_instance
@@ -184,3 +184,36 @@ def test_us_catalog_listing_markers_do_not_break_exact_identity():
     assert identity_matches("United Microelectronics Corporation", ["United Microelectronics Corporation (NEW) Common Stock"])
     assert sec_core("Newmont Corporation") == "NEWMONT"
     assert not identity_matches("BP Prudhoe Bay Royalty Trust", ["BP p.l.c. Common Stock"])
+
+
+class _FrozenDate(sec_foreign_ifrs.date):
+    today_value = None
+
+    @classmethod
+    def today(cls):
+        return cls.today_value
+
+
+def test_newer_instance_that_is_itself_stale_is_still_rejected(monkeypatch):
+    # Companyfacts (FY2024) and the newer filed 20-F instance (FY2025) are both
+    # older than the freshness limit: the instance closes the ingestion gap but
+    # must never make a stale filing look current.
+    _FrozenDate.today_value = sec_foreign_ifrs.date(2027, 9, 1)
+    monkeypatch.setattr(sec_foreign_ifrs, "date", _FrozenDate)
+    provider, fetched = provider_with(monkeypatch, subs=submissions())
+    with pytest.raises(GlobalProviderError, match="stale: period_end=2025-12-31"):
+        provider.enrich_fundamentals(tsm())
+    assert INSTANCE_URL in fetched
+
+
+def test_submissions_failure_keeps_stale_rejection(monkeypatch):
+    provider, _ = provider_with(monkeypatch, subs=submissions())
+
+    def get_json(url):
+        if "/submissions/" in url:
+            raise GlobalProviderError("SEC submissions HTTP 503")
+        return LAGGING_COMPANYFACTS
+
+    monkeypatch.setattr(provider, "_get_json", get_json)
+    with pytest.raises(GlobalProviderError, match="stale: period_end=2024-12-31"):
+        provider.enrich_fundamentals(tsm())

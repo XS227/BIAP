@@ -80,3 +80,48 @@ def test_crosslisted_10k_rejects_wrong_issuer(monkeypatch):
     })
     with pytest.raises(GlobalProviderError,match="identity"):
         provider.enrich_fundamentals(seed)
+
+
+def test_crosslisted_10k_parses_us_filer_listed_in_iceland(monkeypatch):
+    # JBT Marel Corporation: US 10-K filer, secondary listing on Nasdaq Iceland
+    # (no ESEF report there). Production regression 2026-10-11: BLOCK because
+    # only the SEC IFRS fallback was tried for European venues.
+    provider=SECCrossListedUSGAAPFundamentalsProvider(user_agent="BIAP test contact@example.com")
+    seed=GlobalCompany(country="IS",exchange="NASDAQ_ICELAND",mic_code="XICE",currency="ISK",ticker="JBTM",name="JBT Marel Corp.")
+    monkeypatch.setattr(provider,"_resolve_cik",lambda company:1433660)
+    monkeypatch.setattr(provider,"_get_json",lambda url:{
+        "entityName":"JBT Marel Corporation",
+        "facts":{"us-gaap":{
+            "Revenues":fact(3_798_200_000),
+            "NetIncomeLoss":fact(-50_500_000),
+            "Assets":fact(8_000_000_000),
+            "StockholdersEquity":fact(4_000_000_000),
+        }},
+    })
+
+    enriched=provider.enrich_fundamentals(seed)
+
+    assert (enriched.country,enriched.exchange,enriched.ticker)==("IS","NASDAQ_ICELAND","JBTM")
+    assert enriched.revenue==3_798_200_000
+    assert enriched.net_income==-50_500_000
+    assert enriched.reporting_currency=="USD"
+    assert enriched.filing_period_end=="2025-12-31"
+
+
+def _provider_tree(provider, seen=None):
+    seen=set() if seen is None else seen
+    if id(provider) in seen:
+        return
+    seen.add(id(provider))
+    yield provider
+    for value in vars(provider).values():
+        if hasattr(value,"enrich_fundamentals"):
+            yield from _provider_tree(value,seen)
+
+
+@pytest.mark.parametrize("country,exchange",[("IS","NASDAQ_ICELAND"),("DE","XETRA"),("FR","EURONEXT_PARIS"),("GB","LSE")])
+def test_european_official_chain_includes_crosslisted_10k_fallback(country,exchange):
+    from global_markets.runtime import build_registry
+
+    tree=list(_provider_tree(build_registry().fundamentals(country,exchange)))
+    assert any(isinstance(node,SECCrossListedUSGAAPFundamentalsProvider) for node in tree)

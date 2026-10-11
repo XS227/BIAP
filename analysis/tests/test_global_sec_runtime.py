@@ -1,5 +1,8 @@
+import pytest
+
 from global_markets.cached_fundamentals import PersistentFundamentalsProvider
 from global_markets.fallback_fundamentals import FallbackFundamentalsProvider
+from global_markets.providers import GlobalProviderError
 from global_markets.runtime import build_registry
 from global_markets.sec_edgar import SECEdgarFundamentalsProvider
 from global_markets.sec_foreign_ifrs import SECForeignIFRSFundamentalsProvider
@@ -203,3 +206,130 @@ def test_sec_parser_accepts_us_gaap_annual_facts_from_form_20f(monkeypatch):
     assert enriched.net_income == 120_000_000
     assert enriched.total_assets == 900_000_000
     assert any(source.source_type == "official_regulatory_xbrl" for source in enriched.sources)
+
+
+def test_stale_domestic_10k_is_parsed_but_blocked_by_evidence(monkeypatch):
+    """Domestic SEC data is not discarded when stale; Evidence must BLOCK it.
+
+    The 10-K provider keeps the latest filed period so the gap stays visible
+    (OFFICIAL_STALE) instead of silently falling back to vendor data.
+    """
+    from datetime import datetime, timezone
+
+    from global_markets.agents import evidence_agent
+    from global_markets.evidence_contract import STATUS_OFFICIAL_STALE
+    from global_markets.models import GlobalCompany
+
+    provider = SECEdgarFundamentalsProvider(user_agent="BIAP test contact@example.com")
+    monkeypatch.setattr(provider, "_resolve_cik", lambda company: 1234567)
+
+    def row(value, end, *, start=None):
+        result = {"val": value, "end": end, "filed": "2024-03-01", "form": "10-K", "fp": "FY"}
+        if start:
+            result["start"] = start
+        return result
+
+    payload = {"entityName": "STALE FILER INC", "facts": {"us-gaap": {
+        "Revenues": {"units": {"USD": [row(50_000_000, "2023-12-31", start="2023-01-01")]}},
+        "NetIncomeLoss": {"units": {"USD": [row(4_000_000, "2023-12-31", start="2023-01-01")]}},
+        "Assets": {"units": {"USD": [row(90_000_000, "2023-12-31")]}},
+        "StockholdersEquity": {"units": {"USD": [row(60_000_000, "2023-12-31")]}},
+    }}}
+    monkeypatch.setattr(provider, "_get_json", lambda url: payload)
+    seed = GlobalCompany(
+        country="US", exchange="NASDAQ", mic_code="XNAS", currency="USD",
+        ticker="STLE", name="Stale Filer Inc",
+    )
+
+    enriched = provider.enrich_fundamentals(seed)
+    assert enriched.filing_period_end == "2023-12-31"
+    assert enriched.total_liabilities == 30_000_000
+
+    evidence = evidence_agent(enriched, now=datetime(2026, 10, 11, tzinfo=timezone.utc))
+    assert evidence.status == "BLOCK"
+    assert "fresh_fundamentals" in evidence.missing_critical
+    assert "fundamental_source" not in evidence.missing_critical
+    assert evidence.official_fundamental_status == STATUS_OFFICIAL_STALE
+
+
+def _interim_only_successor_payload():
+    q2 = {"val": 448_000_000_000, "end": "2026-06-30", "filed": "2026-08-03", "form": "10-Q", "fp": "Q2"}
+    return {"entityName": "ExxonMobil Holdings Corp", "facts": {"us-gaap": {
+        "Assets": {"units": {"USD": [q2]}},
+    }}}
+
+
+def _xom_seed():
+    from global_markets.models import GlobalCompany
+
+    return GlobalCompany(
+        country="US", exchange="NYSE", mic_code="XNYS", currency="USD",
+        ticker="XOM", name="Exxon Mobil Corporation",
+    )
+
+
+def test_interim_only_sec_filer_is_rejected_not_attached_as_official(monkeypatch):
+    """A registrant with only 10-Q facts has no annual official period.
+
+    Attaching an empty SEC source made Evidence report OFFICIAL_CURRENT with
+    every fundamental missing (XOM after its 2026 redomiciliation).
+    """
+    provider = SECEdgarFundamentalsProvider(user_agent="BIAP test contact@example.com")
+    monkeypatch.setattr(provider, "_resolve_cik", lambda company: 9_999_999)
+    monkeypatch.setattr(provider, "_get_json", lambda url: _interim_only_successor_payload())
+    with pytest.raises(GlobalProviderError, match="no annual 10-K/20-F period"):
+        provider.enrich_fundamentals(_xom_seed())
+
+
+def test_verified_successor_registrant_reads_predecessor_annual_10k(monkeypatch):
+    provider = SECEdgarFundamentalsProvider(user_agent="BIAP test contact@example.com")
+    monkeypatch.setattr(provider, "_resolve_cik", lambda company: 2115436)
+
+    def fy(value, end="2025-12-31", start=None):
+        row = {"val": value, "end": end, "filed": "2026-02-18", "form": "10-K", "fp": "FY"}
+        if start:
+            row["start"] = start
+        return row
+
+    predecessor = {"entityName": "EXXON MOBIL CORP", "facts": {"us-gaap": {
+        "Revenues": {"units": {"USD": [fy(330_000_000_000, start="2025-01-01")]}},
+        "NetIncomeLoss": {"units": {"USD": [fy(30_000_000_000, start="2025-01-01")]}},
+        "Assets": {"units": {"USD": [fy(450_000_000_000)]}},
+        "StockholdersEquity": {"units": {"USD": [fy(260_000_000_000)]}},
+    }}}
+    fetched = []
+
+    def get_json(url):
+        fetched.append(url)
+        return predecessor if "CIK0000034088" in url else _interim_only_successor_payload()
+
+    monkeypatch.setattr(provider, "_get_json", get_json)
+    enriched = provider.enrich_fundamentals(_xom_seed())
+
+    assert enriched.name == "ExxonMobil Holdings Corp"
+    assert enriched.filing_period_end == "2025-12-31"
+    assert enriched.net_income == 30_000_000_000
+    assert enriched.raw_provider_fields["sec_cik"] == 2115436
+    assert enriched.raw_provider_fields["sec_predecessor_cik"] == 34088
+    source = next(s for s in enriched.sources if s.provider == provider.provider_id)
+    assert source.source_id == "CIK0000034088"
+    assert source.source_url.endswith("CIK0000034088.json")
+    assert "predecessor registrant CIK 34088" in source.notes
+    assert fetched[0].endswith("CIK0002115436.json")
+
+
+def test_successor_with_own_annual_facts_does_not_use_predecessor(monkeypatch):
+    provider = SECEdgarFundamentalsProvider(user_agent="BIAP test contact@example.com")
+    monkeypatch.setattr(provider, "_resolve_cik", lambda company: 2115436)
+    own = {"entityName": "ExxonMobil Holdings Corp", "facts": {"us-gaap": {
+        "NetIncomeLoss": {"units": {"USD": [
+            {"val": 31_000_000_000, "end": "2026-12-31", "start": "2026-01-01",
+             "filed": "2027-02-17", "form": "10-K", "fp": "FY"},
+        ]}},
+    }}}
+    fetched = []
+    monkeypatch.setattr(provider, "_get_json", lambda url: fetched.append(url) or own)
+    enriched = provider.enrich_fundamentals(_xom_seed())
+    assert enriched.filing_period_end == "2026-12-31"
+    assert "sec_predecessor_cik" not in enriched.raw_provider_fields
+    assert not any("CIK0000034088" in url for url in fetched)
