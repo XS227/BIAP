@@ -333,3 +333,39 @@ def test_successor_with_own_annual_facts_does_not_use_predecessor(monkeypatch):
     assert enriched.filing_period_end == "2026-12-31"
     assert "sec_predecessor_cik" not in enriched.raw_provider_fields
     assert not any("CIK0000034088" in url for url in fetched)
+
+
+def test_btbd_same_sec_accession_two_day_fiscal_date_offset(monkeypatch):
+    """BTBD FY2024 SEC accession has 12/31 balance sheet and 12/29 P&L."""
+    from global_markets.models import GlobalCompany
+
+    provider = SECEdgarFundamentalsProvider(user_agent="BIAP test contact@example.com")
+    company = GlobalCompany(country="US", exchange="NASDAQ", currency="USD", ticker="BTBD", name="BT BRANDS, INC.")
+    monkeypatch.setattr(provider, "_resolve_cik", lambda company: 1718224)
+    accession = "0001477932-25-002248"
+
+    def concept(value, end, *, accn=accession, start=None):
+        row = {"val": value, "end": end, "accn": accn, "filed": "2025-03-31", "form": "10-K", "fp": "FY", "fy": 2024}
+        if start:
+            row["start"] = start
+        return {"units": {"USD": [row]}}
+
+    payload = {"entityName": "BT BRANDS, INC.", "facts": {"us-gaap": {
+        "Assets": concept(11_996_797, "2024-12-31"),
+        "Liabilities": concept(5_031_570, "2024-12-31"),
+        "StockholdersEquity": concept(6_965_227, "2024-12-31"),
+        "Revenues": concept(14_823_472, "2024-12-29", start="2024-01-01"),
+        "NetIncomeLoss": concept(-2_311_208, "2024-12-29", start="2024-01-01"),
+    }}}
+    monkeypatch.setattr(provider, "_get_json", lambda url: payload)
+    result = provider.enrich_fundamentals(company)
+    assert result.revenue == 14_823_472
+    assert result.net_income == -2_311_208
+    assert result.filing_period_end == "2024-12-31"
+
+    # A different accession cannot borrow income figures even two days apart.
+    payload["facts"]["us-gaap"]["Revenues"] = concept(14_823_472, "2024-12-29", accn="different", start="2024-01-01")
+    payload["facts"]["us-gaap"]["NetIncomeLoss"] = concept(-2_311_208, "2024-12-29", accn="different", start="2024-01-01")
+    result = provider.enrich_fundamentals(company)
+    assert result.revenue is None
+    assert result.net_income is None

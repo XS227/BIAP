@@ -9,6 +9,7 @@ missing or ambiguous values remain unavailable.
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import date
 import os
 import threading
 from typing import Any, Optional
@@ -309,13 +310,30 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
                 return row
             return row if str(row.get("end") or "") == period_end else None
 
+        # Some issuers use a calendar-year balance-sheet date and a 52/53-week
+        # income-statement date in the SAME audited accession (BTBD FY2024:
+        # 2024-12-31 vs 2024-12-29). Permit a tiny date offset only when the
+        # SEC accession matches; never merge distinct filings or fiscal years.
+        anchor_accessions = {
+            str(row.get("accn")) for row in core_rows
+            if row and row.get("end") == period_end and row.get("accn")
+        }
+
+        def same_audited_period(row: dict) -> bool:
+            end = str(row.get("end") or "")
+            if end == period_end:
+                return True
+            if not (end and period_end and row.get("accn") and str(row["accn"]) in anchor_accessions):
+                return False
+            try:
+                return 0 < (date.fromisoformat(period_end) - date.fromisoformat(end)).days <= 3
+            except ValueError:
+                return False
+
         def current_series_row(rows: list[dict]) -> Optional[dict]:
             if period_end is None:
                 return rows[0] if rows else None
-            return next(
-                (row for row in rows if str(row.get("end") or "") == period_end),
-                None,
-            )
+            return next((row for row in rows if same_audited_period(row)), None)
 
         def previous_series_row(rows: list[dict], current: Optional[dict]) -> Optional[dict]:
             if current is None:
