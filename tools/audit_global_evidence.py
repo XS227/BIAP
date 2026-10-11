@@ -288,7 +288,9 @@ def _value_flags(payload: dict) -> list[str]:
         flags.append(f"balance sheet does not tie: assets {a:.4g} vs liabilities+equity {l + e:.4g}")
     if a and v["cash_and_equivalents"] is not None and a > 0 and v["cash_and_equivalents"] > a * 1.01:
         flags.append("cash exceeds total assets")
-    if a and l is not None and a > 0 and l > a * 50:
+    # A tying balance sheet with deeply negative equity (insolvent shell, e.g. DE:ITN) is real;
+    # the 50x rule only guards figures whose identity cannot be tested.
+    if a and l is not None and e is None and a > 0 and l > a * 50:
         flags.append("liabilities > 50x assets (unit mismatch)")
     price = _num(company.get("price"))
     same_ccy = (values.get("reporting_currency") or payload.get("currency")) == payload.get("currency")
