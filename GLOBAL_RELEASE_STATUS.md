@@ -10,6 +10,31 @@ PASS = official/structured filing evidence attached and all evidence gates
 cleared. BLOCK never means fabricated data was hidden: the instrument still
 gets price + labelled non-official metrics, but no BUY candidate.
 
+## Update 2026-10-11 10:44Z (post-deploy 20-sample audit, prod `4058808`)
+
+Same 200 deterministic samples (10 exchanges) re-run against prod after
+`bd7608a..4058808` deployed (10:19:47Z). 200/200 sampled, 0 API failures,
+8/8 canaries PASS. Raw: `docs/audits/global-evidence-audit-2026-10-11-1044Z-postfix20.*`.
+Tests on this tree: 795 passed (analysis) + 8 (tools).
+
+| Market | PASS before → after | Remaining non-PASS (all verified, none a pipeline bug) |
+|---|---|---|
+| NO Oslo | 20 → 20 | — |
+| DE Xetra | 19 → 19 | EMH BLOCK (Scale, no source); BWB WARN (Open Market, no ESEF duty) |
+| IT Milan | 18 → **19** | AEF stale filer |
+| FI Helsinki | 18 → 18 | ACG1V: FY2025 ESEF on neither filings.xbrl.org nor Nasdaq news (PDF only) nor issuer site → index lag; AUROORA: IPO April 2026, no annual report yet |
+| US NASDAQ | 18 → 18 | AAME (NT 10-K), AURE stale filer |
+| US NYSE | 18 → 18 | AADX 2026 IPO, HQL closed-end fund |
+| SE Stockholm | 17 → 17 | ABB, IBT.B untagged; SKF.A lapsed LEI (needs owner OK) |
+| DE Frankfurt | 18 → 18 | WBAH, EMH no reviewed report; CBK, MBK WARN |
+| FR Paris | 16 → **18** | AELIS, SELER untagged |
+| GB LSE | 11 → 11 | 9 investment trusts with untagged NSM reports |
+
+Commerzbank (CBK, DAX) WARN: filings.xbrl.org lists the entity with 0
+filings, IR site is JS-rendered, the official copy is only in the
+Unternehmensregister (robots-disallowed). Needs a manually reviewed
+`de_issuer_esef.json` entry once the issuer ESEF URL is known.
+
 ## Update 2026-10-11 (session checkpoint)
 
 Commits on `feat/biap-global`: `bd7608a` audit classifier, `9cd72f1` ES CNMV
