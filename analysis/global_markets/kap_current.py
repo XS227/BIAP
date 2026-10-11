@@ -39,6 +39,11 @@ _CURRENT_LABEL_MAP = {
     "OZKAYNAKLAR": "total_equity",
     "FAALIYET BRUT KARI": "gross_profit",
     "NET FAALIYET KARI (ZARARI)": "operating_income",
+    # Net profit totals of the financial-institution (factoring/leasing, e.g.
+    # LIDFA) and insurance (e.g. AGESA) summaries. The insurance line
+    # "DONEM KARI VEYA ZARARI" is pre-tax and deliberately not mapped.
+    "DONEM NET KARI (ZARARI)": "net_income",
+    "DONEM NET KARI VEYA ZARARI": "net_income",
 }
 
 _FLIGHT_RE = re.compile(
@@ -78,8 +83,10 @@ def _period_value(row_text: str, period: str) -> Optional[str]:
     # nakit_2025/12_2, etc. The prefix is intentionally unconstrained because
     # it is presentation metadata; period and explicit children value are what
     # matter. Limit the scan so a value cannot leak in from another row.
+    # Header-style rows (Sunum Para Birimi) key the cell as 2025_12_2 instead.
+    period_key = "(?:" + re.escape(period) + "|" + re.escape(period.replace("/", "_")) + ")"
     pattern = re.compile(
-        r'"[^"\n]*_' + re.escape(period) + r'_\d+".{0,900}?"children":"([^"]*)"',
+        r'"(?:[^"\n]*_)?' + period_key + r'_\d+".{0,900}?"children":"([^"]*)"',
         re.DOTALL,
     )
     match = pattern.search(row_text)
@@ -94,18 +101,46 @@ def _label_rows(text: str):
 
 
 def parse_kap_current_summary(page_html: str) -> dict:
-    """Parse KAP semantic HTML first, then its current server-rendered Flight data."""
+    """Parse KAP semantic HTML and its current server-rendered Flight data.
+
+    The current page renders the balance sheet as an HTML table but streams
+    the income statement only in Flight rows (AEFES, AGHOL FY2025), so the
+    semantic result alone silently lacks revenue and net income. Both are read
+    and merged only when they describe the same annual period; overlapping
+    semantic values win as before.
+    """
+    semantic: Optional[dict] = None
     try:
-        return parse_kap_financial_summary(page_html)
+        semantic = parse_kap_financial_summary(page_html)
     except GlobalProviderError:
         pass
+    try:
+        flight = _parse_flight_summary(page_html)
+    except GlobalProviderError:
+        if semantic is not None:
+            return semantic
+        raise
+    if semantic is None:
+        return flight
+    if semantic.get("period") != flight.get("period") or semantic.get("currency") != flight.get("currency"):
+        return semantic
+    merged = {**flight["metrics"], **semantic["metrics"]}
+    return {
+        **semantic,
+        "metrics": merged,
+        "previousPeriod": semantic.get("previousPeriod") or flight.get("previousPeriod"),
+        "reportScope": semantic.get("reportScope") if semantic.get("reportScope") not in (None, "unknown") else flight.get("reportScope"),
+        "transport": "semantic-html+nextjs-flight",
+    }
 
+
+def _parse_flight_summary(page_html: str) -> dict:
     text = _flight_text(page_html)
     if not text:
         raise GlobalProviderError("KAP page contains neither usable tables nor server-rendered Flight financial data")
     annual_period, previous_period = _annual_periods(text)
 
-    scale = 1.0
+    scale: Optional[float] = None
     currency = "TRY"
     report_scope = "unknown"
     for normalized, pos, _ in _label_rows(text):
@@ -115,6 +150,9 @@ def parse_kap_current_summary(page_html: str) -> dict:
             if raw:
                 currency, scale = _currency_scale(raw)
                 break
+    if scale is None:
+        # Never assume units: "1000TL" read as TL understates every figure 1000x.
+        raise GlobalProviderError(f"KAP Flight summary states no presentation currency/unit for {annual_period}")
 
     for normalized, pos, _ in _label_rows(text):
         if normalized != "FINANSAL TABLO NITELIGI":
