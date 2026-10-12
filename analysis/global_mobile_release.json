@@ -1,9 +1,9 @@
 {
-  "version": "0.3.20",
-  "versionCode": 23,
+  "version": "0.3.21",
+  "versionCode": 24,
   "releasedAt": "2026-10-12",
   "changes": [
-    "Same company listed on several exchanges (or as share classes) now counts once in Global Top 10, country rankings and portfolio limits, including pairs where the SEC and home-exchange names differ",
-    "Market scans retry with backoff; unavailable markets are reported as Unavailable, never as 0 qualified"
+    "Portfolios hold one company once: a second listing of the same issuer (ASML NASDAQ + Amsterdam, GOOG + GOOGL) is rejected as duplicate_issuer instead of splitting the position",
+    "Market cap, P/B and EV/EBITDA are withheld when a share count is stale or inconsistent with net income / EPS (Nextpower share count was 2.5x too low)"
   ]
 }

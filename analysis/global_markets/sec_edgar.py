@@ -384,6 +384,18 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
                 f"SEC company facts contain no annual 10-K/20-F period for {company.identity()} (CIK {cik})"
             )
 
+        # Nextpower (NXT): CommonStockSharesOutstanding is still reported with a
+        # 2023-07-03 context (62.05m) while diluted shares are ~152m, which put
+        # market cap 2.5x too low. A share count must belong to the latest
+        # fiscal year; an older one is withheld, never carried forward.
+        if shares and shares.get("end") and period_end:
+            try:
+                stale = (date.fromisoformat(period_end) - date.fromisoformat(str(shares["end"]))).days > 400
+            except ValueError:
+                stale = True
+            if stale:
+                shares = None
+
         def current_period_row(row: Optional[dict]) -> Optional[dict]:
             if row is None or period_end is None:
                 return row

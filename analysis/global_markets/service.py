@@ -204,6 +204,24 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
         if ratio > 1.0 or ratio < -20.0:
             derived.append(f"eps_withheld:implausible_vs_price(eps={float(eps):.6g},price={float(price):.6g})")
             eps = None
+    if (
+        same_currency
+        and shares not in (None, 0)
+        and eps not in (None, 0)
+        and float(eps) > 0
+        and company.net_income not in (None, 0)
+        and float(company.net_income) > 0
+    ):
+        # Nextpower (NXT): a 2023 share count (62m) next to FY2026 diluted
+        # shares of ~152m (net income / EPS) understated market cap 2.5x. A
+        # share count more than 2x away from net income / EPS is not used for
+        # market cap, book value per share or EV/EBITDA; it is withheld.
+        implied_shares = float(company.net_income) / float(eps)
+        if not 0.5 <= float(shares) / implied_shares <= 2.0:
+            derived.append(
+                f"shares_withheld:inconsistent_with_net_income_over_eps(shares={float(shares):.6g},implied={implied_shares:.6g})"
+            )
+            shares = None
     if market_cap is None and price not in (None, 0) and shares not in (None, 0):
         market_cap = float(price) * float(shares)
         derived.append("market_cap=price*shares_outstanding")
@@ -269,6 +287,7 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
     return replace(
         company,
         market_cap=market_cap,
+        shares_outstanding=shares,
         book_value_per_share=book_value_per_share,
         eps=eps,
         pe=pe,

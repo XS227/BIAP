@@ -524,6 +524,19 @@ def portfolio_agent(
         # One issuer = one risk: GOOG + GOOGL share a single position cap.
         room_issuer = max(0.0, profile.max_position_pct - issuer_used[issuer])
         remaining = max(0.0, investable_pct - allocated_pct)
+        if issuer_used[issuer] > 0:
+            # ASML (NASDAQ + Euronext Amsterdam) and GOOG/GOOGL are one issuer:
+            # a portfolio holds it once, in its best-scored listing, instead of
+            # splitting one position across two lines. Never an unrelated issuer:
+            # `issuer` is the validated LEI/CIK/ISIN identity (see issuer.py).
+            excluded.append(
+                f"{company.identity()}: duplicate_issuer (issuer {issuer} already holds {issuer_used[issuer]:.2f}% in another listing)"
+            )
+            rejections.append({
+                "identity": company.identity(), "constraint": "duplicate_issuer", "limit": profile.max_position_pct,
+                "room": 0.0, "proposed": round(proposed, 4), "issuer": issuer,
+            })
+            continue
         limits = (
             ("max_position_pct", room_position, profile.max_position_pct),
             ("max_issuer_pct", room_issuer, profile.max_position_pct),

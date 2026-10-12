@@ -54,14 +54,20 @@ def test_ranking_collapses_issuer_but_keeps_both_securities():
     assert out[0]["otherSecurities"][0]["ticker"] == "GOOG"
 
 
-def test_portfolio_caps_issuer_across_share_classes_with_traceable_reason():
+def test_portfolio_holds_one_issuer_once_with_traceable_reason():
     googl, goog = _cand("GOOGL", "Alphabet Inc. Class A"), _cand("GOOG", "Alphabet Inc. Class C")
     result = portfolio_agent(_profile(), [googl, goog])
-    total = sum(a.weight_pct for a in result.allocations)
-    assert total <= 10.0 + 1e-6  # one issuer, one 10% cap
-    rej = [r for r in result.rejections if r["constraint"] == "max_issuer_pct"]
+    assert [a.ticker for a in result.allocations].count("GOOGL") + [a.ticker for a in result.allocations].count("GOOG") == 1
+    assert sum(a.weight_pct for a in result.allocations) <= 10.0 + 1e-6
+    rej = [r for r in result.rejections if r["constraint"] == "duplicate_issuer"]
     assert rej and rej[0]["issuer"].startswith("NAME:US:alphabet")
-    assert any("max_issuer_pct" in e for e in result.excluded)
+    assert any("duplicate_issuer" in e for e in result.excluded)
+
+
+def test_portfolio_does_not_merge_unrelated_issuers():
+    result = portfolio_agent(_profile(), [_cand("TSLA", "Tesla, Inc."), _cand("MSFT", "Microsoft Corporation")])
+    assert {a.ticker for a in result.allocations} == {"TSLA", "MSFT"}
+    assert not [r for r in result.rejections if r["constraint"] == "duplicate_issuer"]
 
 
 def test_every_exclusion_has_a_structured_constraint():
