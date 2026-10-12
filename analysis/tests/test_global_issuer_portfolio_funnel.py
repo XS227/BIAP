@@ -81,10 +81,13 @@ def test_every_exclusion_has_a_structured_constraint():
 
 
 def test_coverage_funnel_keeps_stages_separate():
-    f = build_coverage_funnel([{"eligibleEquities": 3017, "screenedEquities": 2997, "deepAnalyzed": 75,
-                                "evidencePass": 40, "qualifiedBuy": 3, "rankingEligible": True}])
-    assert f["stages"] == {"markets": 1, "discovered": 3017, "lightweightScreened": 2997, "deepAnalyzed": 75,
-                           "evidencePass": 40, "qualifiedBuy": 3}
+    f = build_coverage_funnel([{"eligibleEquities": 3017, "screenedEquities": 2997, "queued": 2900, "deepAnalyzed": 75,
+                                "evidencePass": 40, "coreStatementsComplete": 30, "financiallyComplete": 12, "qualifiedBuy": 3, "rankingEligible": True}])
+    assert f["stages"] == {"markets": 1, "discovered": 3017, "lightweightScreened": 2997, "queued": 2900,
+                           "deepAnalyzed": 75, "evidencePass": 40, "coreStatementsComplete": 30, "financiallyComplete": 12, "qualifiedBuy": 3}
+    # evidence PASS (40) is a data-quality gate and must stay distinct from financial completeness (12)
+    assert f["stages"]["financiallyComplete"] < f["stages"]["evidencePass"]
+    assert "NOT financial completeness" in f["definitions"]["evidencePass"]
     assert f["pctOfDiscovered"]["deepAnalyzed"] == 2.49
     assert "must not be read as analysis coverage" in f["warning"]
 

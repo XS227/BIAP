@@ -34,9 +34,11 @@ from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta, timezone
 from html import unescape as html_unescape
 import base64
+import contextlib
 import hashlib
 import io
 import json
+import os
 import re
 import tempfile
 import threading
@@ -60,6 +62,64 @@ from .source_cache import data_root, read_json, write_json_atomic
 
 USER_AGENT = "BIAP-Global/1.0 official-OAM ESEF evidence (+https://setai.no)"
 MAX_PACKAGE_BYTES = 300 * 1024 * 1024
+
+SCRATCH_PREFIX = "biap-oam-"
+SCRATCH_STALE_SECONDS = 2 * 3600
+
+
+def _scratch_dir() -> Path:
+    return OAMHttp.cache_dir() / "tmp"
+
+
+def sweep_stale_scratch(max_age_seconds: float = SCRATCH_STALE_SECONDS) -> int:
+    """Remove orphaned download scratch files left by a killed process.
+
+    Only regular (non-symlink) files directly inside the dedicated scratch
+    directory and older than ``max_age_seconds`` are touched; parsed fact
+    caches, listings and every other directory are never read or removed.
+    """
+    directory = _scratch_dir()
+    removed = 0
+    cutoff = time.time() - max_age_seconds
+    try:
+        entries = list(os.scandir(directory))
+    except OSError:
+        return 0
+    for entry in entries:
+        try:
+            if entry.is_symlink() or not entry.is_file(follow_symlinks=False):
+                continue
+            if entry.stat(follow_symlinks=False).st_mtime > cutoff:
+                continue
+            os.unlink(entry.path)
+            removed += 1
+        except OSError:
+            continue
+    return removed
+
+
+@contextlib.contextmanager
+def _scratch_package():
+    """A private (0600) scratch path for one package download.
+
+    The file is always unlinked on exit, whether parsing succeeded, failed or
+    raised; a stale-file sweep covers processes killed before ``finally`` ran.
+    """
+    directory = _scratch_dir()
+    directory.mkdir(parents=True, exist_ok=True)
+    sweep_stale_scratch()
+    fd, name = tempfile.mkstemp(prefix=SCRATCH_PREFIX, suffix=".zip", dir=directory)
+    os.close(fd)
+    try:
+        yield Path(name)
+    finally:
+        try:
+            os.unlink(name)
+        except FileNotFoundError:
+            pass
+        except OSError:
+            pass
+
 LISTING_TTL_SECONDS = 6 * 3600
 # v3: bank equity/operating-income concepts kept (esef._CONCEPTS additions).
 # v4: every parsed fact is kept. A concept whitelist silently dropped balance
@@ -1640,10 +1700,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
         needs_identifiers = filing.oam == DenmarkVirkLocator.oam and "identifiers" not in (cached or {})
         if usable and cached.get("schemaVersion") == PACKAGE_SCHEMA_VERSION and not needs_identifiers:
             return cached
-        tmp_dir = OAMHttp.cache_dir() / "tmp"
-        tmp_dir.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(dir=tmp_dir, suffix=".zip") as handle:
-            target = Path(handle.name)
+        with _scratch_package() as target:
             try:
                 self._download(filing.package_url, target)
             except GlobalProviderError:

@@ -1,0 +1,11 @@
+[Unit]
+Description=Keep draining the BIAP Global analysis queue until every company has an audited status
+
+[Timer]
+OnBootSec=3min
+OnUnitInactiveSec=5min
+Persistent=true
+Unit=biap-global-analysis-worker.service
+
+[Install]
+WantedBy=timers.target

@@ -11,13 +11,14 @@ and can block stale data. Results are never padded or fabricated.
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import date
+from datetime import date, datetime, timezone
 import math
 import os
 from typing import Any, Optional
 
 import httpx
 
+from .analysis_ledger import AnalysisLedger, drain, rss_mb
 from .b3_official import B3OfficialClient
 from .bme_official import BMEOfficialDailyClient
 from .bist_official import BISTOfficialDailyClient
@@ -309,11 +310,17 @@ class GlobalMarketScanner:
         screening_errors: list[str],
         universe_authoritative: bool,
         universe_source: str,
+        analysis: Optional[dict] = None,
     ) -> dict:
         pack = get_country_pack(country)
         market_coverage = 0.0 if universe_count <= 0 else 100.0 * screened_count / universe_count
-        verified_fundamentals = self._verified_fundamental_count(deep_results)
-        fundamental_coverage = 0.0 if not deep_results else 100.0 * verified_fundamentals / len(deep_results)
+        if analysis is not None:
+            analyzed = int(analysis.get("deepAnalyzed") or 0)
+            verified_fundamentals = max(0, analyzed - int(analysis.get("fundamentalSourceMissing") or 0))
+        else:
+            analyzed = len(deep_results)
+            verified_fundamentals = self._verified_fundamental_count(deep_results)
+        fundamental_coverage = 0.0 if not analyzed else 100.0 * verified_fundamentals / analyzed
         reasons: list[str] = []
         if not universe_authoritative:
             reasons.append("authoritative_universe_unavailable")
@@ -323,11 +330,11 @@ class GlobalMarketScanner:
             reasons.append("universe_discovery_truncated")
         if market_coverage < self.min_market_coverage_pct:
             reasons.append("market_coverage_below_threshold")
-        if deep_results and fundamental_coverage < self.min_fundamental_coverage_pct:
+        if analyzed and fundamental_coverage < self.min_fundamental_coverage_pct:
             reasons.append("official_fundamental_coverage_below_threshold")
         if screening_errors:
             reasons.append("market_data_batch_errors")
-        ranking_eligible = not reasons and universe_count > 0 and bool(deep_results)
+        ranking_eligible = not reasons and universe_count > 0 and analyzed > 0
         return {
             "status": "READY" if ranking_eligible else "BLOCKED" if not live_market_data else "PARTIAL",
             "rankingEligible": ranking_eligible,
@@ -338,7 +345,8 @@ class GlobalMarketScanner:
             "eligibleEquities": universe_count,
             "screenedEquities": screened_count,
             "marketCoveragePct": round(market_coverage, 2),
-            "deepAnalyzed": len(deep_results),
+            "deepAnalyzed": analyzed,
+            "analysisQueued": int((analysis or {}).get("queued") or 0),
             "verifiedFundamentals": verified_fundamentals,
             "fundamentalCoveragePct": round(fundamental_coverage, 2),
             "requiredMarketCoveragePct": self.min_market_coverage_pct,
@@ -383,97 +391,23 @@ class GlobalMarketScanner:
                 break
         return unique
 
-    def scan(
-        self,
-        *,
-        country: str,
-        exchange: str,
-        top_n: int = 10,
-        discovery_limit: int = 5000,
-        deep_limit: int = 25,
-    ) -> dict:
-        top_n = max(1, min(int(top_n), 50))
-        discovery_limit = max(top_n, min(int(discovery_limit), 5000))
-        deep_limit = max(top_n, min(int(deep_limit), 100))
-        spec = get_exchange(country, exchange)
+    def _stage_one_quotes(
+        self, selected_universe: list[GlobalCompany], country: str, spec: ExchangeSpec, ledger: Optional[AnalysisLedger] = None,
+    ) -> tuple[list[dict], list[str], str, bool]:
+        """Whole-exchange screening quotes; a fresh ledger copy avoids refetching.
 
-        if country.upper() == "IR":
-            return self._scan_iran(exchange=spec.code, top_n=top_n, deep_limit=deep_limit)
-
-        registry = build_registry()
-        universe_provider = registry.universe(country, spec.code)
-        universe_provider_id = str(getattr(universe_provider, "provider_id", "unknown"))
-        upstream_universe = getattr(universe_provider, "upstream", universe_provider)
-        authoritative_provider_id = str(getattr(upstream_universe, "provider_id", universe_provider_id))
-        authority_allow = {item.strip().upper() for item in (os.environ.get("BIAP_GLOBAL_AUTHORITATIVE_UNIVERSE_MARKETS") or "").split(",") if item.strip()}
-        market_key = f"{country.upper()}:{spec.code.upper()}"
-        # Reference/demo catalogs are useful for search, but cannot prove the
-        # exact regulated/native segment (e.g. XMIL also exposes GEM cross-listings).
-        # A cached official exchange file remains authoritative because the cache
-        # preserves the upstream identity and freshness metadata.
-        universe_authoritative = authoritative_provider_id.startswith("official-") or market_key in authority_allow
-        universe_source = authoritative_provider_id
-        universe = list(universe_provider.list_instruments(country=country.upper(), exchange=spec.code))
-        resolved_count = len(universe)
-        snapshot_info_fn = getattr(universe_provider, "snapshot_info", None)
-        universe_info = snapshot_info_fn(country=country.upper(), exchange=spec.code) if callable(snapshot_info_fn) else {}
-        try:
-            official_count = max(resolved_count, int((universe_info or {}).get("officialCount") or resolved_count))
-        except (TypeError, ValueError):
-            official_count = resolved_count
-        discovered_count = official_count
-        selected_universe = universe[:discovery_limit]
-        partial = official_count > discovery_limit
-
-        official_market_source = (
-            self.euronext_live.supported(country.upper(), spec.code)
-            or self.lse_official.supported(country.upper(), spec.code)
-            or self.nasdaq_nordic.supported(country.upper(), spec.code)
-            or self.b3_official.supported(country.upper(), spec.code)
-            or self.bme_official.supported(country.upper(), spec.code)
-            or self.bist_official.supported(country.upper(), spec.code)
-            or self.us_screener.supported(country.upper(), spec.code)
-            or self.xetra_delayed.supported(country.upper(), spec.code)
-        )
-        if not self.market_api_key and self.eodhd_bulk is None and not official_market_source:
-            market_provider = registry.market(country, spec.code)
-            cached_companies = market_provider.cached_companies(country=country.upper(), exchange=spec.code) if hasattr(market_provider, "cached_companies") else []
-            allowed_tickers = {item.ticker.upper() for item in selected_universe}
-            cached_quotes = self._cached_quotes(cached_companies, allowed_tickers)
-            ranked = sorted(cached_quotes, key=self._screen_rank, reverse=True)
-            shortlist_tickers = [row["ticker"] for row in ranked[:deep_limit]]
-            quote_by_ticker = {row["ticker"]: row for row in cached_quotes}
-            deep_results = self._deep_results(shortlist_tickers, selected_universe, quote_by_ticker, registry) if cached_quotes else []
-            readiness = self._readiness(
-                country=country.upper(), exchange=spec.code, universe_count=discovered_count,
-                screened_count=len(cached_quotes), deep_results=deep_results, live_market_data=False,
-                market_source="stored market records only", partial_universe=partial, screening_errors=[],
-                universe_authoritative=universe_authoritative, universe_source=universe_source,
-            )
-            return {
-                "status": "MARKET_DATA_REQUIRED" if not cached_quotes else "CACHED_REFERENCE_ONLY",
-                "country": country.upper(),
-                "exchange": spec.code,
-                "mic": spec.mic,
-                "requestedRecommendations": top_n,
-                "recommendationCount": 0,
-                "universeDiscovered": discovered_count,
-                "universeResolved": resolved_count,
-                "universeScreened": len(cached_quotes),
-                "quotesUsable": len(cached_quotes),
-                "deepAnalyzed": len(deep_results),
-                "screeningCoveragePct": readiness["marketCoveragePct"],
-                "fundamentalCoveragePct": readiness["fundamentalCoveragePct"],
-                "screeningErrors": ["Fresh full-exchange batch market data is unavailable. Stored records are diagnostic only and cannot produce a market ranking."],
-                "recommendations": [],
-                "deepResults": deep_results,
-                "catalogOnly": not bool(cached_quotes),
-                "cachedMarketData": bool(cached_quotes),
-                "rankingEligible": False,
-                "dataReadiness": readiness,
-                "notes": "No Top Market result is emitted from stored records. Restore a complete live market source, then rescan the ordinary-equity universe.",
-            }
-
+        A phone-triggered scan therefore only advances the analysis queue and
+        never re-downloads the full market inside the HTTP request.
+        """
+        reuse_minutes = float(os.environ.get("BIAP_GLOBAL_STAGE1_REUSE_MINUTES", "180"))
+        if ledger is not None:
+            age = ledger.stage1_age_minutes()
+            stored = ledger.get_meta("stage1")
+            if age is not None and age < reuse_minutes and isinstance(stored, dict):
+                reused = list(ledger.quotes().values())
+                if reused:
+                    return reused, list(stored.get("errors") or []), str(stored.get("marketSource") or "ledger stage-1 snapshot"), True
+        country = country.upper()
         if self.lse_official.supported(country.upper(), spec.code):
             quotes, screening_errors, market_source = self.lse_official.batch_quotes(selected_universe, country.upper(), spec)
         elif self.nasdaq_nordic.supported(country.upper(), spec.code):
@@ -520,17 +454,186 @@ class GlobalMarketScanner:
         else:
             quotes, screening_errors = self._batch_quotes(selected_universe, country.upper(), spec)
             market_source = "Twelve Data licensed batch market feed"
+        return quotes, screening_errors, market_source, False
+
+    def _advance_queue(
+        self,
+        ledger: AnalysisLedger,
+        selected_universe: list[GlobalCompany],
+        quote_by_ticker: dict[str, dict],
+        registry,
+        *,
+        screening_source: str,
+        batch_limit: int,
+        budget: float,
+        top_n: int,
+        reuse: bool,
+        errors: list[str],
+        market_source: str,
+    ) -> tuple[list[dict], dict, list[dict]]:
+        """Register the whole universe, analyze one bounded batch, report the ledger.
+
+        Returns (compact deepResults rows, ledger summary, ranked BUY rows). The
+        queue, not a liquidity cut-off, decides what is analyzed: PENDING
+        companies are drained most-liquid-first and then every finished company
+        is refreshed once it ages past ``BIAP_GLOBAL_ANALYSIS_REFRESH_HOURS``.
+        """
+        refresh_hours = float(os.environ.get("BIAP_GLOBAL_ANALYSIS_REFRESH_HOURS", "24"))
+        ledger.sync_universe(selected_universe, quote_by_ticker, screening_source=screening_source)
+        if not reuse:
+            ledger.set_meta("stage1", {"errors": errors, "marketSource": market_source})
+            ledger.set_meta("stage1_synced_at", datetime.now(timezone.utc).isoformat())
+        by_ticker = {item.ticker.upper(): item for item in selected_universe}
+
+        def analyze(company: GlobalCompany) -> dict:
+            result = analyze_company(company, registry=registry)
+            result["screening"] = quote_by_ticker.get(company.ticker.upper()) or ledger.quote_for(company.ticker.upper())
+            return result
+
+        batch = drain(
+            ledger, analyze, batch_limit=batch_limit, time_budget_sec=budget, refresh_after_hours=refresh_hours,
+            seed=self._seed_screening_quote, universe_by_ticker=by_ticker,
+        )
+        counts = ledger.counts(refresh_after_hours=refresh_hours)
+        counts["lastBatch"] = {**batch, "batchLimit": batch_limit, "timeBudgetSec": budget, "currentRssMb": rss_mb()}
+        counts["complete"] = counts["queued"] == 0 and counts["refreshDue"] == 0
+        counts["definitions"] = {
+            "discovered": "equities in the exchange universe",
+            "screened": "equities with a usable stage-1 market quote",
+            "queued": "PENDING or ANALYZING (waiting for deep analysis)",
+            "deepAnalyzed": "equities with a completed deep-analysis run (any outcome)",
+            "evidencePass": "evidence gates cleared (data quality only, NOT financial completeness)",
+            "financiallyComplete": "all core statements and credit ratios present from official sources",
+            "buyQualified": "BUY_CANDIDATE with evidence PASS",
+        }
+        buys = list(ledger.full_results(buys_only=True))
+        recommendations = self._recommendations(buys, top_n)
+        cap = max(25, int(os.environ.get("BIAP_GLOBAL_PAYLOAD_DEEP_ROWS", "150")))
+        rows = ledger.summaries(limit=cap)
+        counts["payloadRowsShown"] = len(rows)
+        counts["payloadRowsNote"] = f"deepResults shows the top {cap} rows; GET /global/analysis-ledger lists every company with status, reason and source"
+        return rows, counts, recommendations
+
+    def scan(
+        self,
+        *,
+        country: str,
+        exchange: str,
+        top_n: int = 10,
+        discovery_limit: int = 5000,
+        deep_limit: int = 25,
+        time_budget_sec: Optional[float] = None,
+    ) -> dict:
+        """Screen the whole exchange, then advance its persistent analysis queue.
+
+        ``deep_limit`` is the size of ONE analysis batch (how much work this
+        call may do), not a cap on how many companies get analyzed: every
+        eligible company stays in the ledger queue and is analyzed by later
+        batches, surviving restarts. ``time_budget_sec`` bounds the batch so a
+        phone request can never run into a proxy/Android timeout.
+        """
+        top_n = max(1, min(int(top_n), 50))
+        discovery_limit = max(top_n, min(int(discovery_limit), 5000))
+        batch_limit = max(1, min(int(deep_limit), 500))
+        budget = float(time_budget_sec if time_budget_sec is not None else os.environ.get("BIAP_GLOBAL_BATCH_BUDGET_SEC", "240"))
+        spec = get_exchange(country, exchange)
+
+        if country.upper() == "IR":
+            return self._scan_iran(exchange=spec.code, top_n=top_n, deep_limit=deep_limit)
+
+        registry = build_registry()
+        universe_provider = registry.universe(country, spec.code)
+        universe_provider_id = str(getattr(universe_provider, "provider_id", "unknown"))
+        upstream_universe = getattr(universe_provider, "upstream", universe_provider)
+        authoritative_provider_id = str(getattr(upstream_universe, "provider_id", universe_provider_id))
+        authority_allow = {item.strip().upper() for item in (os.environ.get("BIAP_GLOBAL_AUTHORITATIVE_UNIVERSE_MARKETS") or "").split(",") if item.strip()}
+        market_key = f"{country.upper()}:{spec.code.upper()}"
+        # Reference/demo catalogs are useful for search, but cannot prove the
+        # exact regulated/native segment (e.g. XMIL also exposes GEM cross-listings).
+        # A cached official exchange file remains authoritative because the cache
+        # preserves the upstream identity and freshness metadata.
+        universe_authoritative = authoritative_provider_id.startswith("official-") or market_key in authority_allow
+        universe_source = authoritative_provider_id
+        universe = list(universe_provider.list_instruments(country=country.upper(), exchange=spec.code))
+        resolved_count = len(universe)
+        snapshot_info_fn = getattr(universe_provider, "snapshot_info", None)
+        universe_info = snapshot_info_fn(country=country.upper(), exchange=spec.code) if callable(snapshot_info_fn) else {}
+        try:
+            official_count = max(resolved_count, int((universe_info or {}).get("officialCount") or resolved_count))
+        except (TypeError, ValueError):
+            official_count = resolved_count
+        discovered_count = official_count
+        selected_universe = universe[:discovery_limit]
+        partial = official_count > discovery_limit
+
+        official_market_source = (
+            self.euronext_live.supported(country.upper(), spec.code)
+            or self.lse_official.supported(country.upper(), spec.code)
+            or self.nasdaq_nordic.supported(country.upper(), spec.code)
+            or self.b3_official.supported(country.upper(), spec.code)
+            or self.bme_official.supported(country.upper(), spec.code)
+            or self.bist_official.supported(country.upper(), spec.code)
+            or self.us_screener.supported(country.upper(), spec.code)
+            or self.xetra_delayed.supported(country.upper(), spec.code)
+        )
+        if not self.market_api_key and self.eodhd_bulk is None and not official_market_source:
+            market_provider = registry.market(country, spec.code)
+            cached_companies = market_provider.cached_companies(country=country.upper(), exchange=spec.code) if hasattr(market_provider, "cached_companies") else []
+            allowed_tickers = {item.ticker.upper() for item in selected_universe}
+            cached_quotes = self._cached_quotes(cached_companies, allowed_tickers)
+            ranked = sorted(cached_quotes, key=self._screen_rank, reverse=True)
+            ledger = AnalysisLedger(country, spec.code)
+            deep_results, analysis, _unused = self._advance_queue(
+                ledger, selected_universe, {row["ticker"]: row for row in cached_quotes}, registry,
+                screening_source="stored market records only (diagnostic)", batch_limit=batch_limit,
+                budget=budget, top_n=top_n, reuse=False, errors=[], market_source="stored market records only",
+            )
+            readiness = self._readiness(
+                country=country.upper(), exchange=spec.code, universe_count=discovered_count,
+                screened_count=len(cached_quotes), deep_results=deep_results, live_market_data=False,
+                market_source="stored market records only", partial_universe=partial, screening_errors=[],
+                universe_authoritative=universe_authoritative, universe_source=universe_source, analysis=analysis,
+            )
+            return {
+                "status": "MARKET_DATA_REQUIRED" if not cached_quotes else "CACHED_REFERENCE_ONLY",
+                "country": country.upper(),
+                "exchange": spec.code,
+                "mic": spec.mic,
+                "requestedRecommendations": top_n,
+                "recommendationCount": 0,
+                "universeDiscovered": discovered_count,
+                "universeResolved": resolved_count,
+                "universeScreened": len(cached_quotes),
+                "quotesUsable": len(cached_quotes),
+                "deepAnalyzed": analysis["deepAnalyzed"],
+                "analysisLedger": analysis,
+                "screeningCoveragePct": readiness["marketCoveragePct"],
+                "fundamentalCoveragePct": readiness["fundamentalCoveragePct"],
+                "screeningErrors": ["Fresh full-exchange batch market data is unavailable. Stored records are diagnostic only and cannot produce a market ranking."],
+                "recommendations": [],
+                "deepResults": deep_results,
+                "catalogOnly": not bool(cached_quotes),
+                "cachedMarketData": bool(cached_quotes),
+                "rankingEligible": False,
+                "dataReadiness": readiness,
+                "notes": "No Top Market result is emitted from stored records. Restore a complete live market source, then rescan the ordinary-equity universe.",
+            }
+
+        ledger = AnalysisLedger(country, spec.code)
+        quotes, screening_errors, market_source, stage1_reused = self._stage_one_quotes(selected_universe, country, spec, ledger)
         quote_by_ticker = {row["ticker"]: row for row in quotes}
-        ranked = sorted(quotes, key=self._screen_rank, reverse=True)
-        shortlist_tickers = [row["ticker"] for row in ranked[:deep_limit]]
-        deep_results = self._deep_results(shortlist_tickers, selected_universe, quote_by_ticker, registry)
+        deep_results, analysis, ranked_buys = self._advance_queue(
+            ledger, selected_universe, quote_by_ticker, registry,
+            screening_source=market_source, batch_limit=batch_limit, budget=budget, top_n=top_n,
+            reuse=stage1_reused, errors=screening_errors, market_source=market_source,
+        )
         readiness = self._readiness(
             country=country.upper(), exchange=spec.code, universe_count=discovered_count,
             screened_count=len(quotes), deep_results=deep_results, live_market_data=True,
             market_source=market_source, partial_universe=partial, screening_errors=screening_errors,
-            universe_authoritative=universe_authoritative, universe_source=universe_source,
+            universe_authoritative=universe_authoritative, universe_source=universe_source, analysis=analysis,
         )
-        recommendations = self._recommendations(deep_results, top_n) if readiness["rankingEligible"] else []
+        recommendations = ranked_buys if readiness["rankingEligible"] else []
         if readiness["rankingEligible"]:
             status = "COMPLETE_SCAN" if recommendations else "NO_RECOMMENDATION"
         else:
@@ -547,7 +650,8 @@ class GlobalMarketScanner:
             "universeResolved": resolved_count,
             "universeScreened": len(quotes),
             "quotesUsable": len(quotes),
-            "deepAnalyzed": len(deep_results),
+            "deepAnalyzed": analysis["deepAnalyzed"],
+            "analysisLedger": analysis,
             "screeningCoveragePct": readiness["marketCoveragePct"],
             "fundamentalCoveragePct": readiness["fundamentalCoveragePct"],
             "screeningErrors": screening_errors,

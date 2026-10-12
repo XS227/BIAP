@@ -46,8 +46,11 @@ def build_coverage_funnel(market_summary: list[dict], *, qualified_issuers: Opti
             "markets": len(rows),
             "discovered": total("eligibleEquities"),
             "lightweightScreened": total("screenedEquities"),
+            "queued": total("queued"),
             "deepAnalyzed": total("deepAnalyzed"),
             "evidencePass": total("evidencePass"),
+            "coreStatementsComplete": total("coreStatementsComplete"),
+            "financiallyComplete": total("financiallyComplete"),
             "qualifiedBuy": total("qualifiedBuy"),
         }
 
@@ -70,8 +73,11 @@ def build_coverage_funnel(market_summary: list[dict], *, qualified_issuers: Opti
         },
         "definitions": {
             "lightweightScreened": "market-data screen only; no filing was read",
-            "deepAnalyzed": "full agent analysis with fundamentals attempted (a bounded sample per market, not the universe)",
-            "evidencePass": "official-filing evidence gates all cleared",
+            "queued": "persistent queue: PENDING/ANALYZING companies still waiting for deep analysis (not a cap; they are analyzed in batches)",
+            "deepAnalyzed": "full agent analysis completed for the company (any outcome: COMPLETE, BLOCKED or INSUFFICIENT_DATA)",
+            "evidencePass": "official-filing evidence gates all cleared (data-quality gate only, NOT financial completeness)",
+            "coreStatementsComplete": "revenue, operating income, net income, assets, equity and operating cash flow all present from official filings; enough for fundamental analysis even when market cap or credit ratios are unavailable",
+            "financiallyComplete": "core statements and credit ratios (EBITDA, debt, interest, cash flow, valuation) all present from official sources (strict; a single unavailable ratio such as EBITDA or FFO, or a missing share count, keeps a company out)",
             "qualifiedBuy": "BUY_CANDIDATE securities with evidence PASS; still subject to portfolio constraints",
             "qualifiedIssuers": "qualified BUY after issuer de-duplication, before the Top-N display cap",
         },
@@ -199,6 +205,7 @@ def scan_global_market(
     discovery_limit: int = 1000,
     deep_limit: int = 25,
     origin: str = "interactive",
+    time_budget_sec: Optional[float] = None,
 ) -> dict:
     country = country.strip().upper()
     exchange = exchange.strip().upper()
@@ -209,8 +216,9 @@ def scan_global_market(
             top_n=top_n,
             discovery_limit=discovery_limit,
             deep_limit=deep_limit,
+            time_budget_sec=time_budget_sec,
         )
-        result = {**result, "scanOrigin": origin, "deepLimit": deep_limit}
+        result = {**result, "scanOrigin": origin, "batchLimit": deep_limit}
         _write_scan_cache(country, exchange, result, full_refresh=discovery_limit >= 5000, origin=origin)
         return result
 
@@ -336,9 +344,19 @@ def scan_global_top10(
             1 for r in deep_rows
             if r.get("call") == "BUY_CANDIDATE" and (r.get("evidence") or {}).get("status") == "PASS"
         )
+        ledger_info = result.get("analysisLedger") if isinstance(result.get("analysisLedger"), dict) else {}
+        if ledger_info:
+            # the ledger covers every company; deepResults is only a capped display slice
+            evidence_pass = int(ledger_info.get("evidencePass") or 0)
+            qualified_buy = int(ledger_info.get("buyQualified") or 0)
         market_summary.append({
             "evidencePass": evidence_pass,
             "qualifiedBuy": qualified_buy,
+            "queued": int(ledger_info.get("queued") or 0),
+            "coreStatementsComplete": int(ledger_info.get("coreStatementsComplete") or 0),
+            "financiallyComplete": int(ledger_info.get("financiallyComplete") or 0),
+            "analysisProgressPct": ledger_info.get("progressPct"),
+            "analysisByStatus": ledger_info.get("byStatus"),
             "country": country,
             "exchange": exchange,
             "status": result.get("status") or "UNKNOWN",
@@ -348,7 +366,7 @@ def scan_global_top10(
             "screenedEquities": result.get("universeScreened") or 0,
             "deepAnalyzed": result.get("deepAnalyzed") or len(result.get("deepResults") or []),
             "scanOrigin": result.get("scanOrigin") or "unknown",
-            "deepLimit": result.get("deepLimit"),
+            "batchLimit": result.get("batchLimit"),
             "screeningCoveragePct": result.get("screeningCoveragePct"),
             "fundamentalCoveragePct": result.get("fundamentalCoveragePct"),
             "dataReadiness": result.get("dataReadiness"),

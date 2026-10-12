@@ -354,11 +354,14 @@ jobs:
           $SUDO install -m 0644 deploy/systemd/biap-global-source-sync.timer /etc/systemd/system/biap-global-source-sync.timer
           $SUDO install -m 0644 deploy/systemd/biap-global-de-fundamentals.service /etc/systemd/system/biap-global-de-fundamentals.service
           $SUDO install -m 0644 deploy/systemd/biap-global-de-fundamentals.timer /etc/systemd/system/biap-global-de-fundamentals.timer
+          $SUDO install -m 0644 deploy/systemd/biap-global-analysis-worker.service /etc/systemd/system/biap-global-analysis-worker.service
+          $SUDO install -m 0644 deploy/systemd/biap-global-analysis-worker.timer /etc/systemd/system/biap-global-analysis-worker.timer
           $SUDO systemctl daemon-reload
           $SUDO systemctl enable --now biap-global.service
           $SUDO systemctl restart biap-global.service
           $SUDO systemctl enable --now biap-global-source-sync.timer
           $SUDO systemctl enable --now biap-global-de-fundamentals.timer
+          $SUDO systemctl enable --now biap-global-analysis-worker.timer
 
           # Seed the full German ordinary-equity universe immediately. This is
           # browser-free and makes the resolver market-wide on deploy; the

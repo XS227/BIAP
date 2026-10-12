@@ -128,3 +128,51 @@ def test_official_stage_one_quote_survives_as_market_evidence():
     assert seeded.price_observed_at=="2026-09-24T00:00:00+00:00"
     assert seeded.volume_today==123456
     assert any(source.source_type=="official_exchange_market_quote" for source in seeded.sources)
+
+
+def test_b3_instrument_archive_leaves_no_scratch_when_inner_has_no_xml(tmp_path, monkeypatch):
+    import io
+    import tempfile
+    import zipfile
+
+    import pytest
+
+    from global_markets.providers import GlobalProviderError
+
+    inner = io.BytesIO()
+    with zipfile.ZipFile(inner, "w") as z:
+        z.writestr("readme.txt", "no xml here")
+    outer = io.BytesIO()
+    with zipfile.ZipFile(outer, "w", zipfile.ZIP_STORED) as z:
+        z.writestr("inner.zip", inner.getvalue())
+        z.writestr("pad.bin", b"\0" * 1_100_000)
+    payload = outer.getvalue()
+
+    class _Resp:
+        def __init__(self, body=b""):
+            self.body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def raise_for_status(self):
+            pass
+
+        def iter_content(self, chunk_size=0):
+            yield self.body
+
+    class _Session:
+        def get(self, url, **kwargs):
+            return _Resp(payload if kwargs.get("stream") else b"")
+
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(scratch))
+    client = B3OfficialClient()
+    monkeypatch.setattr(client, "_session", lambda: _Session())
+    with pytest.raises(GlobalProviderError):
+        client._instrument_archive()
+    assert list(scratch.iterdir()) == []

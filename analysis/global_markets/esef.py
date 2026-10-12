@@ -111,6 +111,10 @@ _CONCEPTS = {
         "ifrs-full:IncomeTaxesPaidRefundClassifiedAsOperatingActivities",
     ),
     "eps": ("ifrs-full:BasicEarningsLossPerShare", "ifrs-full:DilutedEarningsLossPerShare"),
+    # Issuer-reported shares outstanding (not "issued": treasury shares would
+    # overstate it). Only the plain, undimensioned fact is read; per-class
+    # facts are dimensioned and therefore never summed or guessed.
+    "shares_outstanding": ("ifrs-full:NumberOfSharesOutstanding",),
     # Continuing-operations EPS equals EPS only when no discontinued
     # operation result is tagged for the year (e.g. Komplett ASA FY2025).
     "eps_continuing": (
@@ -781,6 +785,10 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         if eps is None and not self._duration_value(concept_facts["discontinued_profit"], period_end):
             eps = self._duration_value(concept_facts["eps_continuing"], period_end)
 
+        shares_outstanding = self._instant_value(concept_facts["shares_outstanding"], period_end)
+        if shares_outstanding is not None and shares_outstanding <= 0:
+            shares_outstanding = None
+
         reporting_currency = None
         for key in ("revenue", "net_income", "assets"):
             for fact in concept_facts.get(key, []):
@@ -814,6 +822,9 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             "total_debt": debt,
             "interest_expense": self._interest_expense(concept_facts, period_end),
             "eps": eps,
+            # absent key (not None) when the filing carries no plain share count,
+            # so an existing provider value is never overwritten with a gap
+            **({"shares_outstanding": shares_outstanding} if shares_outstanding is not None else {}),
             "__normalization_meta__": {
                 "revenue_method": revenue_method,
                 "equity_method": equity_method,
