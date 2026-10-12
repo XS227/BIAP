@@ -150,6 +150,16 @@ def missing_reasons(result: dict, missing: list[str]) -> dict:
     source = str(fundamental.get("fundamental_source") or "none")
     present = lambda key: company.get(key) not in (None, "")
     cross_currency = bool(company.get("reporting_currency")) and str(company.get("reporting_currency")).upper() != str(company.get("currency") or "").upper()
+    field_status: dict = {}
+    for meta_key in ("oam_credit_extraction", "esef_credit_extraction"):
+        meta = raw.get(meta_key)
+        if isinstance(meta, dict) and isinstance(meta.get("field_status"), dict):
+            field_status = meta["field_status"]
+
+    def filing_status(field: str) -> str:
+        status = str(field_status.get(field) or "")
+        return f":{status}" if status else ""
+
     reasons: dict[str, str] = {}
     for key in missing:
         if key == "market_cap":
@@ -158,7 +168,7 @@ def missing_reasons(result: dict, missing: list[str]) -> dict:
             elif not present("price"):
                 reasons[key] = "no_verified_price"
             elif not present("shares_outstanding"):
-                reasons[key] = "no_share_count:filing_does_not_tag_plain_NumberOfSharesOutstanding_and_exchange_feed_has_no_market_cap"
+                reasons[key] = "no_share_count" + (filing_status("shares_outstanding") or ":status_unrecorded_snapshot_predates_field_status") + ";exchange_feed_has_no_market_cap"
             else:
                 reasons[key] = "not_derivable"
         elif key == "pe":
@@ -174,11 +184,11 @@ def missing_reasons(result: dict, missing: list[str]) -> dict:
                 reasons[key] = "not_derivable"
         elif key == "ev_ebitda":
             if not present("ebitda"):
-                reasons[key] = "no_ebitda"
+                reasons[key] = "no_ebitda" + filing_status("ebitda")
             elif not present("market_cap"):
                 reasons[key] = "no_market_cap"
             elif not present("total_debt"):
-                reasons[key] = "no_total_debt"
+                reasons[key] = "no_total_debt" + filing_status("total_debt")
             else:
                 reasons[key] = "not_derivable"
         else:

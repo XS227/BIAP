@@ -65,7 +65,12 @@ CACHE_SCHEMA_VERSION = 11
 # IFRS LongtermBorrowings/CurrentBorrowingsAndCurrentPortion... debt tags (Shell
 # FY2025 total_debt) and adds the SEC SIC sector supplement for GB. Snapshots
 # written before it are refreshed once, only when the affected field is empty.
-NORMALIZER_REVISION = 1
+#
+# revision 2: ESEF field_status provenance, debt-component consistency guard and
+# plain/issued share counts mapped by the current extractor. Official snapshots
+# written earlier are re-normalized from the cached filing package (no refetch)
+# once, when shares, debt or EBITDA is empty.
+NORMALIZER_REVISION = 2
 
 # Official providers whose records were found defective after the fact.
 # Snapshots built from them are ignored (neither fresh nor stale fallback).
@@ -246,9 +251,9 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
             return False
         fundamentals = payload.get("fundamentals") if isinstance(payload.get("fundamentals"), dict) else {}
         identity = payload.get("identity") if isinstance(payload.get("identity"), dict) else {}
-        debt_unmapped = fundamentals.get("total_debt") is None
         gb_sector_missing = str(identity.get("country") or "").upper() == "GB" and not fundamentals.get("sector")
-        return debt_unmapped or gb_sector_missing
+        inputs_missing = any(fundamentals.get(key) is None for key in ("shares_outstanding", "total_debt", "ebitda"))
+        return gb_sector_missing or inputs_missing
 
     def _is_fresh(self, payload: dict) -> bool:
         # Schema v2 adds shareholder-return fields such as dividend/share.

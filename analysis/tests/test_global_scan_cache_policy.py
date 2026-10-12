@@ -56,7 +56,7 @@ def test_renormalization_is_targeted_and_rate_limited(monkeypatch):
     assert cf.PersistentFundamentalsProvider._needs_renormalization(base) is True
     assert cf.PersistentFundamentalsProvider._needs_renormalization({**base, "normalizerRevision": cf.NORMALIZER_REVISION}) is False
     assert cf.PersistentFundamentalsProvider._needs_renormalization({**base, "officialEvidence": False}) is False
-    ok = {**base, "fundamentals": {"total_debt": 5.0, "sector": "Energy"}}
+    ok = {**base, "fundamentals": {"total_debt": 5.0, "sector": "Energy", "shares_outstanding": 1.0, "ebitda": 2.0}}
     assert cf.PersistentFundamentalsProvider._needs_renormalization(ok) is False
     assert cf.CACHE_SCHEMA_VERSION == 11  # no global invalidation of every cached issuer
 

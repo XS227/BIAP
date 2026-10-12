@@ -685,6 +685,59 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             return None, None
         return plain[0], "issued_single_class_fallback"
 
+    _IMPAIRMENT_INCLUSIVE_DA = re.compile(r"(depreciation|amortisation|amortization).*impairment|adjustmentsfordepreciationandamortisation", re.I)
+    _BORROWING_NAME = re.compile(r"(borrowing|bondsissued|loansreceived)", re.I)
+
+    @classmethod
+    def _field_status(
+        cls, facts: list[dict], period_end: date, *, shares: Optional[float], shares_basis: Optional[str],
+        operating_income: Optional[float], ebitda: Optional[float], debt: Optional[float], debt_method: Optional[str],
+    ) -> dict[str, str]:
+        """Why each valuation/credit input is present or absent.
+
+        ``not_tagged_*`` means the official structured filing genuinely does not
+        carry the value; ``tagged_*`` means it carries something we deliberately
+        did not use (the reason is named), i.e. an extraction decision, not a
+        data gap.
+        """
+        near_period = []
+        for fact in facts:
+            dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+            _, end = _period_parts(dims.get("period"))
+            if end is not None and abs((period_end - end).days) <= 7:
+                near_period.append((str(dims.get("concept") or ""), cls._plain_fact(fact)))
+
+        def local(concept: str) -> str:
+            return concept.split(":")[-1]
+
+        if shares is not None:
+            shares_status = "extracted_issued_single_class_fallback" if shares_basis else "extracted_plain_outstanding"
+        elif any(local(c).lower() in {"numberofsharesoutstanding", "numberofsharesissued"} for c, _ in near_period):
+            shares_status = "tagged_per_class_or_ambiguous_not_summed"
+        elif any(re.search(r"numberof.*shares|shares.*(outstanding|issued)", local(c), re.I) for c, _ in near_period):
+            shares_status = "tagged_issuer_extension_concept_not_mapped"
+        else:
+            shares_status = "not_tagged_in_filing"
+
+        if ebitda is not None:
+            ebitda_status = "extracted"
+        elif operating_income is None:
+            ebitda_status = "operating_income_not_tagged"
+        elif any(cls._IMPAIRMENT_INCLUSIVE_DA.search(local(c)) for c, _ in near_period):
+            ebitda_status = "tagged_da_impairment_inclusive_only_not_used"
+        else:
+            ebitda_status = "not_tagged_depreciation_amortisation"
+
+        if debt is not None:
+            debt_status = "extracted"
+        elif str(debt_method or "").startswith("withheld:"):
+            debt_status = "tagged_components_inconsistent_withheld"
+        elif any(cls._BORROWING_NAME.search(local(c)) and c.lower().startswith("ifrs-full:") and not re.search(r"(proceeds|repayment|cashflows)", local(c), re.I) for c, _ in near_period):
+            debt_status = "tagged_borrowing_lines_incomplete_not_used"
+        else:
+            debt_status = "not_tagged_borrowings"
+        return {"shares_outstanding": shares_status, "ebitda": ebitda_status, "total_debt": debt_status}
+
     def normalized_fields(self, facts: list[dict], period_end: date) -> dict:
         """Map plain annual IFRS facts to GlobalCompany fields.
 
@@ -793,7 +846,17 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             debt = sum(present) if present else None
             if debt is not None:
                 debt_method = "current_plus_noncurrent_borrowings"
-        if debt is None:
+                # A single bond/loan balance larger than the claimed total means the
+                # tagged borrowings line is a sub-aggregate (Stillfront FY2025:
+                # LongtermBorrowings 984m next to bonds 2,835m). Withhold, never guess.
+                components = [
+                    self._instant_value(concept_facts[key], period_end)
+                    for key in ("current_bonds", "noncurrent_bonds", "current_other_loans", "noncurrent_other_loans")
+                ]
+                if any(value is not None and abs(value) > debt * 1.0001 for value in components):
+                    debt = None
+                    debt_method = "withheld:component_exceeds_borrowings_total"
+        if debt is None and debt_method is None:
             # No borrowings line at all: bonds issued plus issuer "other loans"
             # are the interest-bearing debt lines of the balance sheet.
             lines = {
@@ -868,6 +931,12 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             **({"shares_outstanding": shares_outstanding} if shares_outstanding is not None else {}),
             "__normalization_meta__": {
                 **({"shares_outstanding_basis": shares_basis} if shares_basis else {}),
+                "field_status": self._field_status(
+                    facts, period_end,
+                    shares=shares_outstanding, shares_basis=shares_basis,
+                    operating_income=operating_income, ebitda=ebitda,
+                    debt=debt, debt_method=debt_method,
+                ),
                 "revenue_method": revenue_method,
                 "equity_method": equity_method,
                 "liabilities_method": liabilities_method,
