@@ -10,7 +10,7 @@ from typing import Optional
 from .esef import FILINGS_API
 from .esef_country import CountryAwareESEFFundamentalsProvider
 from .providers import GlobalProviderError
-from .source_cache import data_root, read_json, write_json_atomic
+from .source_cache import data_root, enforce_cache_budget, read_json, write_json_atomic
 
 
 class CachedESEFFundamentalsProvider(CountryAwareESEFFundamentalsProvider):
@@ -56,4 +56,5 @@ class CachedESEFFundamentalsProvider(CountryAwareESEFFundamentalsProvider):
             "fetchedAt": datetime.now(timezone.utc).isoformat(),
             "payload": payload,
         })
+        enforce_cache_budget(path.parent, env_var="BIAP_ESEF_CACHE_MAX_MB", default_mb=3072)
         return payload

@@ -15,7 +15,7 @@ from typing import Optional
 
 from .providers import GlobalProviderError
 from .sec_edgar import SECEdgarFundamentalsProvider, SEC_FACTS_BASE, SEC_TICKERS_URL
-from .source_cache import data_root, read_json, write_json_atomic
+from .source_cache import data_root, enforce_cache_budget, read_json, write_json_atomic
 
 
 class CachedSECEdgarFundamentalsProvider(SECEdgarFundamentalsProvider):
@@ -59,4 +59,5 @@ class CachedSECEdgarFundamentalsProvider(SECEdgarFundamentalsProvider):
             "fetchedAt": datetime.now(timezone.utc).isoformat(),
             "payload": payload,
         })
+        enforce_cache_budget(path.parent, env_var="BIAP_SEC_CACHE_MAX_MB", default_mb=4096)
         return payload

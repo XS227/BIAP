@@ -58,7 +58,7 @@ from .esef import _CONCEPTS, _agent10_fields, concept_is_relevant
 from .ixbrl import annual_period_end, extract_facts_and_identifiers
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, append_source
-from .source_cache import data_root, read_json, write_json_atomic
+from .source_cache import data_root, enforce_cache_budget, read_json, write_json_atomic
 
 USER_AGENT = "BIAP-Global/1.0 official-OAM ESEF evidence (+https://setai.no)"
 MAX_PACKAGE_BYTES = 300 * 1024 * 1024
@@ -1717,6 +1717,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                 with target.open("r", encoding="utf-8", errors="replace") as text:
                     payload = self._parse_text(filing, iter(lambda: text.read(1 << 20), ""), "report.xhtml")
         write_json_atomic(path, payload)
+        enforce_cache_budget(path.parent, env_var="BIAP_OAM_CACHE_MAX_MB", default_mb=1024)
         return payload
 
     def _parse_archive(self, filing: OAMFiling, archive: zipfile.ZipFile, *, depth: int = 0) -> dict:
