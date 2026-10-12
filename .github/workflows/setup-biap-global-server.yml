@@ -359,16 +359,29 @@ jobs:
           $SUDO systemctl daemon-reload
           $SUDO systemctl enable --now biap-global.service
           $SUDO systemctl restart biap-global.service
-          $SUDO systemctl enable --now biap-global-source-sync.timer
-          $SUDO systemctl enable --now biap-global-de-fundamentals.timer
-          $SUDO systemctl enable --now biap-global-analysis-worker.timer
+          # Timers (and the heavy Germany fundamentals job) are OPT-IN. A deploy
+          # only installs unit files and restarts the API; it never starts,
+          # enables, or stops any timer. Operators enable them by hand once
+          # disk/cache checks pass, or set BIAP_GLOBAL_ENABLE_TIMERS=1 here.
+          ENABLE_TIMERS="${BIAP_GLOBAL_ENABLE_TIMERS:-0}"
+          if [[ "$ENABLE_TIMERS" == "1" ]]; then
+            $SUDO systemctl enable --now biap-global-source-sync.timer
+            $SUDO systemctl enable --now biap-global-de-fundamentals.timer
+            $SUDO systemctl enable --now biap-global-analysis-worker.timer
+          else
+            echo "Timers left untouched (BIAP_GLOBAL_ENABLE_TIMERS!=1)"
+          fi
 
-          # Seed the full German ordinary-equity universe immediately. This is
-          # browser-free and makes the resolver market-wide on deploy; the
-          # scheduled worker then consumes the queue in bounded batches.
-          PLAYWRIGHT_BROWSERS_PATH=/var/lib/biap-global/playwright             BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global             "$APP_DIR/analysis/.venv-global/bin/python"             "$APP_DIR/tools/warm_de_unternehmensregister.py" --seed-only
+          if [[ "$ENABLE_TIMERS" == "1" ]]; then
+            # Seed the full German ordinary-equity universe immediately. This is
+            # browser-free and makes the resolver market-wide on deploy; the
+            # scheduled worker then consumes the queue in bounded batches.
+            PLAYWRIGHT_BROWSERS_PATH=/var/lib/biap-global/playwright             BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global             "$APP_DIR/analysis/.venv-global/bin/python"             "$APP_DIR/tools/warm_de_unternehmensregister.py" --seed-only
 
-          $SUDO systemctl start --no-block biap-global-de-fundamentals.service || true
+            $SUDO systemctl start --no-block biap-global-de-fundamentals.service || true
+          else
+            echo "Germany seed/fundamentals job skipped (BIAP_GLOBAL_ENABLE_TIMERS!=1)"
+          fi
           for attempt in 1 2 3 4 5 6; do
             if curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8091/health >/tmp/biap-global-health.json; then cat /tmp/biap-global-health.json; break; fi
             sleep 2
@@ -396,7 +409,9 @@ jobs:
           # first app request for a Nordic issuer does not pay the cold OAM
           # package download. Safe to run concurrently with the service.
           # Transient systemd unit: fully detached from this SSH session.
-          if ! systemctl is-active --quiet biap-global-oam-esef-warm.service; then
+          if [[ "$ENABLE_TIMERS" != "1" ]]; then
+            echo "OAM/ESEF background warm skipped (BIAP_GLOBAL_ENABLE_TIMERS!=1)"
+          elif ! systemctl is-active --quiet biap-global-oam-esef-warm.service; then
             $SUDO systemctl reset-failed biap-global-oam-esef-warm.service 2>/dev/null || true
             $SUDO systemd-run --unit=biap-global-oam-esef-warm --collect \
               --uid="$(id -un)" --gid="$(id -gn)" \
