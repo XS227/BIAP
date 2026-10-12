@@ -12,6 +12,7 @@ from __future__ import annotations
 from dataclasses import asdict, replace
 from datetime import datetime, timezone
 import os
+import re
 from statistics import median
 from typing import Iterable, Optional
 
@@ -157,6 +158,13 @@ def _peer_pe_benchmark(company: GlobalCompany) -> tuple[Optional[float], Optiona
     return None, None, 0
 
 
+_CLASS_SUFFIX = re.compile(r"[.\-/ ](?:[A-Z]|[A-Z]{1,2}\d?|SDB|PREF|PR)$")
+
+
+def _has_share_class_suffix(ticker: str) -> bool:
+    return bool(_CLASS_SUFFIX.search((ticker or "").strip().upper()))
+
+
 def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
     """Fill mathematically derivable valuation fields without inventing inputs.
 
@@ -222,9 +230,28 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
                 f"shares_withheld:inconsistent_with_net_income_over_eps(shares={float(shares):.6g},implied={implied_shares:.6g})"
             )
             shares = None
+    shares_basis = ""
+    for meta_key in ("oam_credit_extraction", "esef_credit_extraction"):
+        meta = company.raw_provider_fields.get(meta_key)
+        if isinstance(meta, dict) and meta.get("shares_outstanding_basis"):
+            shares_basis = str(meta["shares_outstanding_basis"])
+    if (
+        shares_basis
+        and company.shares_outstanding is not None
+        and shares is not None
+        and _has_share_class_suffix(company.ticker)
+    ):
+        # An issued count is the company total across classes; a class-suffixed
+        # ticker prices only one class, so price*issued would be wrong.
+        derived.append("shares_withheld:issued_count_not_verified_single_class(class_suffixed_ticker)")
+        shares = None
     if market_cap is None and price not in (None, 0) and shares not in (None, 0):
         market_cap = float(price) * float(shares)
-        derived.append("market_cap=price*shares_outstanding")
+        derived.append(
+            "market_cap=price*shares_issued(labelled fallback: single-class filing, treasury shares not deducted)"
+            if shares_basis and shares == company.shares_outstanding
+            else "market_cap=price*shares_outstanding"
+        )
 
     if same_currency and shares not in (None, 0) and company.total_equity is not None and book_value_per_share is None:
         book_value_per_share = float(company.total_equity) / float(shares)

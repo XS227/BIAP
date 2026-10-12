@@ -115,6 +115,10 @@ _CONCEPTS = {
     # overstate it). Only the plain, undimensioned fact is read; per-class
     # facts are dimensioned and therefore never summed or guessed.
     "shares_outstanding": ("ifrs-full:NumberOfSharesOutstanding",),
+    # Labelled fallback only (see _single_class_shares_issued): shares ISSUED
+    # include treasury shares, so it is used solely when the filing tags no
+    # outstanding count and no per-class facts exist at all.
+    "shares_issued": ("ifrs-full:NumberOfSharesIssued",),
     # Continuing-operations EPS equals EPS only when no discontinued
     # operation result is tagged for the year (e.g. Komplett ASA FY2025).
     "eps_continuing": (
@@ -647,6 +651,40 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             "method": "same-filing IFRS facts; short period only; never annualized",
         }
 
+    @classmethod
+    def _single_class_shares_issued(cls, facts: list[dict], period_end: date) -> tuple[Optional[float], Optional[str]]:
+        """Issued share count for a verified single-class issuer, else (None, None).
+
+        Accepted only when every check holds; any doubt withholds the count so
+        market cap stays missing rather than guessed:
+        * one plain (undimensioned) ``NumberOfSharesIssued`` instant fact within
+          7 days of the balance-sheet date, in a share unit, positive, and all
+          such facts agree;
+        * no dimensioned (per-class / per-component) issued or outstanding
+          share fact exists at that date, i.e. the filing tags no share classes.
+        """
+        wanted = {"ifrs-full:numberofsharesissued", "ifrs-full:numberofsharesoutstanding"}
+        plain: list[float] = []
+        for fact in facts:
+            dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+            if str(dims.get("concept") or "").lower() not in wanted:
+                continue
+            start, end = _period_parts(dims.get("period"))
+            if end is None or start != end or abs((period_end - end).days) > 7:
+                continue
+            if not cls._plain_fact(fact):
+                return None, None  # per-class facts present: multi-class or unclear
+            if str(dims.get("concept") or "").lower() != "ifrs-full:numberofsharesissued":
+                continue
+            value = _num(fact.get("value"))
+            unit = str(dims.get("unit") or "").lower()
+            if value is None or value <= 0 or "shares" not in unit:
+                return None, None
+            plain.append(value)
+        if not plain or len(set(plain)) != 1:
+            return None, None
+        return plain[0], "issued_single_class_fallback"
+
     def normalized_fields(self, facts: list[dict], period_end: date) -> dict:
         """Map plain annual IFRS facts to GlobalCompany fields.
 
@@ -788,6 +826,9 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         shares_outstanding = self._instant_value(concept_facts["shares_outstanding"], period_end)
         if shares_outstanding is not None and shares_outstanding <= 0:
             shares_outstanding = None
+        shares_basis = None
+        if shares_outstanding is None:
+            shares_outstanding, shares_basis = self._single_class_shares_issued(facts, period_end)
 
         reporting_currency = None
         for key in ("revenue", "net_income", "assets"):
@@ -826,6 +867,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             # so an existing provider value is never overwritten with a gap
             **({"shares_outstanding": shares_outstanding} if shares_outstanding is not None else {}),
             "__normalization_meta__": {
+                **({"shares_outstanding_basis": shares_basis} if shares_basis else {}),
                 "revenue_method": revenue_method,
                 "equity_method": equity_method,
                 "liabilities_method": liabilities_method,
