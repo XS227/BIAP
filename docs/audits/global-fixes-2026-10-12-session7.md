@@ -33,3 +33,29 @@ Backend `pytest tests ../tools`: 967 passed. Mobile `npm run test:api` 8 passed;
 ## 6. Limits
 - No Android device/emulator here → **device testing PENDING**.
 - Not covered: Agents 8/9/10 beyond API outputs above; DE excluded from v1; lint has 18 pre-existing errors.
+
+## 7. Deployment (CONFIRMED after push of b883fcc)
+- CI "Setup BIAP Global server" success; prod `/health` commit `b883fcc9e34de5f8555539eb35e6e88bf40750ef`. Rollback: `git checkout 5b49fad && sudo deploy/restart-global-prod.sh 5b49fad` (previous prod commit; 0.3.20 APK `BIAP-Global-0.3.20-universal.apk` kept in the download dir, sha256 `169723f1…4989`).
+- APK 0.3.21 / versionCode 24: CI run 38209921947 (checkout b883fcc), published by "Publish BIAP Global APK" 06:16Z. `https://biap.dadashi.no/global/download/BIAP-Global-latest.apk` → HTTP 200, 105,350,415 B, sha256 `70e6faee280d13a56b85c040c0c98d33dbe047543af87606b11f03eebaf5d920` (equals CI artifact and `.sha256`), manifest 0.3.21 / com.biap.global; `/global-api/app/release` = 0.3.21 / 24.
+- Prod post-deploy: portfolio (ASML US+NL, GOOG+GOOGL, MSFT, NXT GB) → ASML once, GOOGL once, rejections `duplicate_issuer`; NXT market cap withheld.
+- Device test: **PENDING** (no Android device/emulator).
+
+## 8. Per-market verdict (sample = listed above)
+| Market | Verdict | Evidence |
+|---|---|---|
+| US | PASS | TSLA/ASML/GOOG(L)/NXT/JPM/AAPL/XOM official SEC, checks consistent; NXT market cap now withheld; XOM ICR/EBITDA empty (WARN coverage) |
+| GB | WARN | SHEL/AZN/HSBA/BP/NEXT official FCA/ESEF; P/E withheld for USD reporters; SHEL EBITDA/ICR empty; LSE scan OK, 1 qualified |
+| FR | WARN | MC/TTE/BNP official; sector empty; ICR/EBITDA often empty |
+| IT | WARN | ENI/ISP/ENEL official; sector empty; Agent 9 INSUFFICIENT_DATA |
+| SE | PASS | VOLV.B/ERIC.B/SEB.A complete, sector present |
+| NO | WARN | EQNR/DNB/MOWI official; sector empty; P/E withheld for USD/EUR reporters |
+| NL (not v1) | WARN | ASML official AFM; sector empty |
+| DE | BLOCK (excluded from v1) | unchanged |
+
+## 9. Remaining issues
+1. Real-device Android test PENDING (blocks "release complete").
+2. Sector empty for most EU listings (taxonomy gap, not guessed).
+3. P/E empty when reporting currency ≠ quote currency (no unverified FX/pence conversion).
+4. SHEL EBITDA/FCF/op.income not verifiably tagged; interim reports not ingested.
+5. Interactive scan can hit nginx 120 s 504 under host load (2 GB RAM); app retries/marks Unavailable.
+6. No open BIAP Global PR exists (#48, #49 merged); "Sync main" workflow cannot open PRs (Actions PR permission). Not merged, nothing closed.
