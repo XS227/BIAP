@@ -1,11 +1,9 @@
 {
-  "version": "0.3.19",
-  "versionCode": 22,
+  "version": "0.3.20",
+  "versionCode": 23,
   "releasedAt": "2026-10-12",
   "changes": [
-    "Market scans no longer fail silently: automatic retry with backoff, clear error reasons, and failed markets are shown as Unavailable (never as 0 qualified)",
-    "Portfolio scans run two markets at a time and convert currencies with dated ECB reference rates",
-    "Evidence card states exactly how old the latest official filing is (latest annual filing is not current-quarter data)",
-    "Global Top 10 shows top-N of qualified issuers and keeps price-only screening separate from deep analysis"
+    "Same company listed on several exchanges (or as share classes) now counts once in Global Top 10, country rankings and portfolio limits, including pairs where the SEC and home-exchange names differ",
+    "Market scans retry with backoff; unavailable markets are reported as Unavailable, never as 0 qualified"
   ]
 }

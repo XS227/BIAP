@@ -148,3 +148,20 @@ def test_name_bridge_for_unlisted_pair_requires_unique_home_and_never_merges_two
     keys = resolve_issuer_identities([cik, home, other_home])
     assert keys[0] == "CIK:1306965"  # ambiguous: two distinct home entities, not merged by guess
     assert resolve_issuer_identities([{"name": "Tesla, Inc.", "country": "US", "raw_provider_fields": {"sec_cik": 1318605}}]) == ["CIK:1318605"]
+
+
+def test_cik_bridged_to_lei_asserted_by_a_row_carrying_both_identifiers():
+    lei = "213800LH1BZH3DI6G760"
+    us = {"name": "Completely Different ADS Name", "country": "US", "exchange": "NYSE", "ticker": "X",
+          "raw_provider_fields": {"sec_cik": 313807}}
+    home = {"name": "Another Legal Name p.l.c.", "country": "GB", "exchange": "LSE", "ticker": "Y", "lei": lei,
+            "raw_provider_fields": {"sec_cik": 313807}}
+    assert resolve_issuer_identities([us, home]) == [f"LEI:{lei}"] * 2
+
+
+def test_conflicting_cik_lei_assertions_are_not_used_to_merge():
+    a = {"name": "Alpha", "country": "GB", "ticker": "A", "lei": "A" * 20, "raw_provider_fields": {"sec_cik": 5}}
+    b = {"name": "Beta", "country": "FR", "ticker": "B", "lei": "B" * 20, "raw_provider_fields": {"sec_cik": 5}}
+    us = {"name": "Gamma ADS", "country": "US", "ticker": "G", "raw_provider_fields": {"sec_cik": 5}}
+    keys = resolve_issuer_identities([a, b, us])
+    assert keys[0] != keys[1] and keys[2] == "CIK:5"

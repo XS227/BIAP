@@ -81,7 +81,8 @@ VERIFIED_CIK_TO_LEI = {937966: "724500Y6DUVHQD6OXN27"}
 def resolve_issuer_identities(identities: list[Any]) -> list[str]:
     """Issuer key per identity, merging cross-listings of one legal entity.
 
-    1. ``VERIFIED_CIK_TO_LEI`` maps a SEC CIK to its verified LEI.
+    1. ``VERIFIED_CIK_TO_LEI`` plus CIK<->LEI pairs asserted by a row that carries
+       both identifiers map a SEC CIK to its LEI (conflicting assertions are ignored).
     2. A foreign-registrant listing (SEC CIK or depositary/registry name, i.e. a
        key that cannot match a home listing by itself) adopts the key of the
        other-country listing with the same normalized legal name, but only when
@@ -89,9 +90,24 @@ def resolve_issuer_identities(identities: list[Any]) -> list[str]:
        by guess and the other security stays visible in the response.
     """
     keys = [issuer_key_of(i) for i in identities]
+    # A row that itself carries BOTH a 20-char LEI and a SEC CIK asserts the
+    # CIK<->LEI link (e.g. BP p.l.c. on LSE). Learn it, but only when every
+    # such row agrees on one LEI for that CIK; a conflict is never resolved by guess.
+    learned: dict[int, set[str]] = {}
+    for ident in identities:
+        lei = str(_get(ident, "lei") or "").strip().upper()
+        raw = _get(ident, "raw_provider_fields") or _get(ident, "rawProviderFields") or {}
+        cik = raw.get("sec_cik") if isinstance(raw, dict) else None
+        if len(lei) == 20 and cik not in (None, ""):
+            try:
+                learned.setdefault(int(cik), set()).add(lei)
+            except (TypeError, ValueError):
+                pass
+    cik_to_lei = {cik: next(iter(leis)) for cik, leis in learned.items() if len(leis) == 1}
+    cik_to_lei.update(VERIFIED_CIK_TO_LEI)
     for n, k in enumerate(keys):
-        if k.startswith("CIK:") and int(k[4:]) in VERIFIED_CIK_TO_LEI:
-            keys[n] = f"LEI:{VERIFIED_CIK_TO_LEI[int(k[4:])]}"
+        if k.startswith("CIK:") and int(k[4:]) in cik_to_lei:
+            keys[n] = f"LEI:{cik_to_lei[int(k[4:])]}"
     names = [normalized_issuer_name(_get(i, "name") or _get(i, "issuerName") or "") for i in identities]
     countries = [str(_get(i, "country") or "").upper() for i in identities]
     out = list(keys)
