@@ -274,3 +274,40 @@ def test_requeue_transient_recovers_rows_recorded_before_the_fix(ledger):
     rows = {r["ticker"]: r["status"] for r in ledger._conn().execute("SELECT ticker, status FROM ledger")}
     assert rows == {"T000": al.PENDING, "T001": al.INSUFFICIENT_DATA}
     assert al.is_transient_failure("x request failed: ReadTimeout") and not al.is_transient_failure("request failed: HTTPStatusError")
+
+
+def _masked_local_fault(ticker):
+    out = _result(ticker, evidence="BLOCK", missing=["fundamental_source"], detail="no official financial-statement source attached")
+    out["providerDiagnostics"] = {"fundamentalsStatus": "error", "fundamentalsError": "fundamentals unavailable and no cache exists: OSError: [Errno 28] No space left on device"}
+    return out
+
+
+def test_masked_local_fault_is_retried_not_recorded_as_no_source(ledger):
+    universe = _register(ledger, 1)
+    calls = []
+
+    def disk_then_ok(company):
+        calls.append(company.ticker)
+        return _masked_local_fault(company.ticker) if len(calls) < 2 else _result(company.ticker)
+
+    _drain(ledger, universe, disk_then_ok)
+    assert ledger._conn().execute("SELECT status FROM ledger").fetchone()["status"] == al.PENDING
+    _drain(ledger, universe, disk_then_ok)
+    assert ledger._conn().execute("SELECT status FROM ledger").fetchone()["status"] == al.COMPLETE
+    assert not al.local_provider_failure({"providerDiagnostics": {"fundamentalsError": "primary fundamentals unavailable (no ESEF)"}})
+
+
+def test_requeue_recovers_old_masked_local_faults_once(ledger):
+    _register(ledger, 2)
+    ledger.record_result("T000", _result("T000", evidence="BLOCK", missing=["fundamental_source"], detail="no official financial-statement source attached"))
+    ledger.record_result("T001", _result("T001", evidence="BLOCK", missing=["fundamental_source"], detail="no official financial-statement source attached"))
+    # simulate the pre-fix recording of a masked local fault for T000 only
+    import json as _json, zlib as _zlib
+    conn = ledger._conn()
+    blob = _json.loads(_zlib.decompress(conn.execute("SELECT result FROM ledger WHERE ticker='T000'").fetchone()["result"]))
+    blob["providerDiagnostics"] = _masked_local_fault("T000")["providerDiagnostics"]
+    conn.execute("UPDATE ledger SET result=? WHERE ticker='T000'", (_zlib.compress(_json.dumps(blob).encode()),))
+    assert ledger.requeue_transient() == 1
+    rows = {r["ticker"]: r["status"] for r in conn.execute("SELECT ticker, status FROM ledger")}
+    assert rows == {"T000": al.PENDING, "T001": al.INSUFFICIENT_DATA}
+    assert ledger.requeue_transient() == 0  # one-time scan, not repeated

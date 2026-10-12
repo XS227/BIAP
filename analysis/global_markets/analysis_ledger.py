@@ -77,6 +77,20 @@ _TRANSIENT_FAILURE = re.compile(
 
 def is_transient_failure(reason: Optional[str]) -> bool:
     return bool(reason) and _TRANSIENT_FAILURE.search(str(reason)) is not None
+
+
+# The persistent provider caches wrap any non-provider exception as
+# "<kind> unavailable and no cache exists: <ExceptionName>". That is a local
+# fault (a full disk raises a bare OSError), not an answer from the source, so
+# it must never become a terminal "no official source" verdict.
+_LOCAL_FAILURE = re.compile(r"(?:fundamentals|market data) unavailable and no cache exists: \w+")
+
+
+def local_provider_failure(result: dict) -> bool:
+    diag = result.get("providerDiagnostics") if isinstance(result, dict) else None
+    if not isinstance(diag, dict):
+        return False
+    return any(_LOCAL_FAILURE.search(str(diag.get(k) or "")) for k in ("fundamentalsError", "marketError"))
 _PAYLOAD_COMPANY_KEYS = (
     "name", "ticker", "country", "exchange", "currency", "isin", "lei", "mic_code", "sector", "industry",
     "price", "market_cap", "pe", "pb", "ev_ebitda", "dividend_yield_pct", "eps", "ebitda", "net_income",
@@ -331,6 +345,20 @@ class AnalysisLedger:
             (INSUFFICIENT_DATA, BLOCKED),
         ).fetchall()
         due = [r["ticker"] for r in rows if is_transient_failure(r["reason"]) and int(r["attempts"] or 0) < MAX_ATTEMPTS]
+        if not self.get_meta("local_failure_requeue_v1"):
+            # One-time recovery of verdicts recorded while a local fault (e.g. a
+            # full disk) was masked as "no official source": decode each stored
+            # result once, then never again.
+            for r in rows:
+                if r["ticker"] in due or int(r["attempts"] or 0) >= MAX_ATTEMPTS:
+                    continue
+                blob = conn.execute("SELECT result FROM ledger WHERE ticker=?", (r["ticker"],)).fetchone()["result"]
+                try:
+                    if blob and local_provider_failure(json.loads(zlib.decompress(blob))):
+                        due.append(r["ticker"])
+                except (zlib.error, ValueError):
+                    continue
+            self.set_meta("local_failure_requeue_v1", _now())
         for ticker in due:
             conn.execute(
                 "UPDATE ledger SET status=?, reason=?, started_at=NULL WHERE ticker=? AND status IN (?,?)",
@@ -441,7 +469,7 @@ class AnalysisLedger:
     def record_result(self, ticker: str, result: dict) -> str:
         status, reason, source = classify_result(result)
         attempts = 0
-        if status in (INSUFFICIENT_DATA, BLOCKED) and is_transient_failure(reason):
+        if status in (INSUFFICIENT_DATA, BLOCKED) and (is_transient_failure(reason) or local_provider_failure(result)):
             row = self._conn().execute("SELECT attempts FROM ledger WHERE ticker=?", (ticker,)).fetchone()
             attempts = int(row["attempts"] or 0) + 1 if row else 1
             if attempts < MAX_ATTEMPTS:

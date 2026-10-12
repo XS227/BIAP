@@ -389,7 +389,7 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
                 return self._decode(company, cached, fallback=True)
             if isinstance(exc, GlobalProviderError):
                 raise
-            raise GlobalProviderError(f"fundamentals unavailable and no cache exists: {type(exc).__name__}") from exc
+            raise GlobalProviderError(f"fundamentals unavailable and no cache exists: {type(exc).__name__}: {str(exc)[:120]}") from exc
         if not _official_sources(enriched) and self._current_official(cached):
             # Never let a weaker (vendor/non-official) refresh overwrite a
             # still-current official snapshot. Serve the official snapshot and
