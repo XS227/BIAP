@@ -20,6 +20,7 @@ import sys
 import time
 
 from .evidence_contract import official_fundamental_status
+from .background_scope import is_background_country
 from .runtime import build_registry
 
 MARKETS = (
@@ -46,6 +47,8 @@ def main() -> int:
     registry = build_registry()
     summary = {}
     for country, exchange in MARKETS:
+        if not is_background_country(country):
+            continue
         if only and country not in only:
             continue
         started = time.time()

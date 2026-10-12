@@ -29,6 +29,7 @@ from urllib.parse import parse_qsl, quote_plus, urlencode, urljoin, urlsplit, ur
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "analysis"))
 
+from global_markets.background_scope import is_background_country  # noqa: E402
 from global_markets.german_report_text import parse_german_annual_report_text  # noqa: E402
 from global_markets.gleif import GLEIFResolver  # noqa: E402
 from global_markets.providers import GlobalProviderError  # noqa: E402
@@ -1055,6 +1056,9 @@ def main() -> int:
     ap.add_argument("--headed", action="store_true")
     ap.add_argument("--seed-only", action="store_true")
     args = ap.parse_args()
+    if not is_background_country("DE"):
+        print(json.dumps({"status": "SKIPPED_OUTSIDE_BACKGROUND_ALLOWLIST", "country": "DE"}))
+        return 0
     result = process_queue(
         max_items=args.max,
         years=_years(args.years),

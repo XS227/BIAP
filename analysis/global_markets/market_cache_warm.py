@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import os
 
+from .background_scope import is_background_country
 from .runtime import build_registry
 
 
@@ -104,6 +105,8 @@ def main() -> int:
 
     jobs: list[tuple[str, str, object]] = []
     for (country, exchange), tickers in _TARGETS.items():
+        if not is_background_country(country):
+            continue
         summary["markets"] += 1
         summary["targets"] += len(tickers)
         try:

@@ -16,6 +16,7 @@ import sys
 import time
 
 from .analysis_ledger import AnalysisLedger, ledger_path
+from .background_scope import is_background_country
 from .global_scan_refresh import _markets
 
 MARKER = "BIAP_WORKER_RESULT="
@@ -34,6 +35,9 @@ def _needs_work(country: str, exchange: str) -> bool:
 
 
 def _child(country: str, exchange: str, budget: float) -> int:
+    if not is_background_country(country):
+        print(MARKER + json.dumps({"country": country, "exchange": exchange, "status": "SKIPPED_OUTSIDE_BACKGROUND_ALLOWLIST"}))
+        return 0
     from .scan_service import scan_global_market
 
     try:
