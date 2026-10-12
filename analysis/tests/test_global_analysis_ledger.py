@@ -216,3 +216,61 @@ def test_every_missing_figure_gets_a_cause_and_no_value_is_filled():
     withheld = al.financial_completeness({"company": {**core, "price": 1.0, "shares_outstanding": 5.0,
         "raw_provider_fields": {"derived_metrics": ["shares_withheld:inconsistent_with_net_income_over_eps(shares=5,implied=20)"]}}})
     assert withheld["missingReasons"]["market_cap"].startswith("share_count_withheld")
+
+
+_DROPPED = "primary fundamentals unavailable (KAP request failed: RemoteProtocolError)"
+
+
+def _dropped(ticker):
+    return _result(ticker, evidence="BLOCK", missing=["fundamental_source"], detail=_DROPPED)
+
+
+def test_transient_connection_drop_is_retried_not_recorded_as_a_data_verdict(ledger):
+    universe = _register(ledger, 1)
+    calls = []
+
+    def flaky(company):
+        calls.append(company.ticker)
+        return _dropped(company.ticker) if len(calls) < 2 else _result(company.ticker)
+
+    _drain(ledger, universe, flaky)
+    row = ledger._conn().execute("SELECT status, reason, attempts FROM ledger").fetchone()
+    assert row["status"] == al.PENDING and "retry_transient_source_error" in row["reason"] and row["attempts"] == 1
+    assert len(calls) == 1  # not hammered again inside the same run
+    _drain(ledger, universe, flaky)
+    row = ledger._conn().execute("SELECT status, attempts FROM ledger").fetchone()
+    assert row["status"] == al.COMPLETE and row["attempts"] == 0
+
+
+def test_persistent_connection_drop_ends_terminal_with_cause_after_max_attempts(ledger):
+    universe = _register(ledger, 1)
+    for _ in range(al.MAX_ATTEMPTS):
+        _drain(ledger, universe, lambda c: _dropped(c.ticker))
+    row = ledger._conn().execute("SELECT status, reason FROM ledger").fetchone()
+    assert row["status"] == al.INSUFFICIENT_DATA and "source_unreachable_after_3_attempts" in row["reason"]
+    assert ledger.requeue_transient() == 0  # exhausted rows wait for the normal refresh window
+
+
+def test_http_status_and_absent_data_are_never_treated_as_transient(ledger):
+    universe = _register(ledger, 2)
+    verdicts = {
+        "T000": _result("T000", evidence="BLOCK", missing=["fundamental_source"], detail="SEC request failed: HTTPStatusError"),
+        "T001": _result("T001", evidence="BLOCK", missing=["fundamental_source"], detail="no official financial-statement source attached"),
+    }
+    _drain(ledger, universe, lambda c: verdicts[c.ticker])
+    counts = ledger.counts()
+    assert counts["byStatus"][al.INSUFFICIENT_DATA] == 2 and counts["queued"] == 0
+
+
+def test_requeue_transient_recovers_rows_recorded_before_the_fix(ledger):
+    universe = _register(ledger, 2)
+    ledger.record_result("T000", _result("T000"))
+    ledger.record_result("T001", _result("T001", evidence="BLOCK", missing=["fundamental_source"], detail="no official financial-statement source attached"))
+    ledger._conn().execute(
+        "UPDATE ledger SET status=?, reason=?, attempts=0 WHERE ticker='T000'",
+        (al.BLOCKED, "gate_failed:fresh_fundamentals (KAP request failed: RemoteProtocolError)"),
+    )
+    assert ledger.requeue_transient() == 1
+    rows = {r["ticker"]: r["status"] for r in ledger._conn().execute("SELECT ticker, status FROM ledger")}
+    assert rows == {"T000": al.PENDING, "T001": al.INSUFFICIENT_DATA}
+    assert al.is_transient_failure("x request failed: ReadTimeout") and not al.is_transient_failure("request failed: HTTPStatusError")

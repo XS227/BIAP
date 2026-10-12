@@ -26,6 +26,7 @@ def _needs_work(country: str, exchange: str) -> bool:
         return True
     ledger = AnalysisLedger(country, exchange)
     try:
+        ledger.requeue_transient()
         counts = ledger.counts(refresh_after_hours=float(os.environ.get("BIAP_GLOBAL_ANALYSIS_REFRESH_HOURS", "24")))
     finally:
         ledger.close()
@@ -77,6 +78,7 @@ def main() -> int:
             results.append({"country": country, "exchange": exchange, "status": "DEFERRED_TO_NEXT_RUN"})
             continue
         if not _needs_work(country, exchange):
+            results.append({"country": country, "exchange": exchange, "status": "SKIPPED_NOTHING_QUEUED_OR_DUE"})
             continue
         results.append(_run_market(country, exchange, per_market))
     print(json.dumps({"markets": len(results), "seconds": round(time.monotonic() - started, 1), "results": results}, sort_keys=True, default=str))

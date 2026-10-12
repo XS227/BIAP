@@ -20,6 +20,7 @@ from __future__ import annotations
 import contextlib
 import fcntl
 import json
+import re
 import sqlite3
 import threading
 import time
@@ -63,6 +64,19 @@ _TIER_CORE = ("revenue", "operating_income", "net_income", "total_assets", "tota
 _TIER_VALUATION = ("market_cap", "pe")
 
 MAX_ATTEMPTS = 3
+
+# A source that dropped the connection says nothing about whether the data
+# exists, so such a result must be retried, not recorded as a data verdict.
+# Only transport-level failures match: an HTTP status error or "not found" is
+# a real answer from the source and stays a terminal INSUFFICIENT_DATA/BLOCKED.
+_TRANSIENT_FAILURE = re.compile(
+    r"request failed:\s*(RemoteProtocolError|ReadError|WriteError|ConnectError|ConnectTimeout|ReadTimeout|"
+    r"WriteTimeout|PoolTimeout|TimeoutException|NetworkError|ProtocolError|LocalProtocolError)\b"
+)
+
+
+def is_transient_failure(reason: Optional[str]) -> bool:
+    return bool(reason) and _TRANSIENT_FAILURE.search(str(reason)) is not None
 _PAYLOAD_COMPANY_KEYS = (
     "name", "ticker", "country", "exchange", "currency", "isin", "lei", "mic_code", "sector", "industry",
     "price", "market_cap", "pe", "pb", "ev_ebitda", "dividend_yield_pct", "eps", "ebitda", "net_income",
@@ -302,6 +316,28 @@ class AnalysisLedger:
         )
         return cur.rowcount or 0
 
+    def requeue_transient(self) -> int:
+        """Re-queue finished rows whose verdict was only a dropped connection.
+
+        Rows recorded before transient failures were retried (and rows whose
+        retries are not yet exhausted) go back to PENDING with their evidence
+        kept. Rows that already used MAX_ATTEMPTS stay terminal until the
+        normal refresh window. Safe to call without the worker lock: it only
+        touches rows no worker is analyzing (terminal statuses).
+        """
+        conn = self._conn()
+        rows = conn.execute(
+            "SELECT ticker, reason, attempts FROM ledger WHERE in_universe=1 AND status IN (?,?) AND analyzed_at IS NOT NULL",
+            (INSUFFICIENT_DATA, BLOCKED),
+        ).fetchall()
+        due = [r["ticker"] for r in rows if is_transient_failure(r["reason"]) and int(r["attempts"] or 0) < MAX_ATTEMPTS]
+        for ticker in due:
+            conn.execute(
+                "UPDATE ledger SET status=?, reason=?, started_at=NULL WHERE ticker=? AND status IN (?,?)",
+                (PENDING, "retry_transient_source_error", ticker, INSUFFICIENT_DATA, BLOCKED),
+            )
+        return len(due)
+
     def sync_universe(self, universe: Iterable[Any], quotes: dict[str, dict], *, screening_source: str) -> dict:
         """Register every discovered equity. Idempotent; keeps finished results."""
         conn = self._conn()
@@ -404,14 +440,23 @@ class AnalysisLedger:
 
     def record_result(self, ticker: str, result: dict) -> str:
         status, reason, source = classify_result(result)
+        attempts = 0
+        if status in (INSUFFICIENT_DATA, BLOCKED) and is_transient_failure(reason):
+            row = self._conn().execute("SELECT attempts FROM ledger WHERE ticker=?", (ticker,)).fetchone()
+            attempts = int(row["attempts"] or 0) + 1 if row else 1
+            if attempts < MAX_ATTEMPTS:
+                status = PENDING
+                reason = f"retry_transient_source_error (attempt {attempts}/{MAX_ATTEMPTS}): {reason}"[:300]
+            else:
+                reason = f"source_unreachable_after_{attempts}_attempts: {reason}"[:300]
         financial = financial_completeness(result)
         summary = compact_row(result, status=status, reason=reason, source=source, financial=financial)
         evidence = result.get("evidence") if isinstance(result.get("evidence"), dict) else {}
         self._conn().execute(
-            "UPDATE ledger SET status=?, reason=?, source=?, attempts=0, last_error=NULL, analyzed_at=?, started_at=NULL, "
+            "UPDATE ledger SET status=?, reason=?, source=?, attempts=?, last_error=NULL, analyzed_at=?, started_at=NULL, "
             "call=?, score=?, confidence=?, evidence_status=?, financial_complete=?, financial=?, summary=?, result=? WHERE ticker=?",
             (
-                status, reason, source, _now(), result.get("call"), result.get("score"), result.get("confidence"),
+                status, reason, source, attempts, _now(), result.get("call"), result.get("score"), result.get("confidence"),
                 evidence.get("status"), 1 if financial["complete"] else 0,
                 json.dumps(financial, ensure_ascii=False), json.dumps(summary, ensure_ascii=False, default=str),
                 zlib.compress(json.dumps(result, ensure_ascii=False, default=str).encode("utf-8"), 6), ticker,
@@ -559,6 +604,7 @@ def drain(
         if not owned:
             return {"ran": False, "reason": "another_worker_holds_the_market_lock", "processed": {}, "seconds": 0.0, "peakRssMb": peak}
         ledger.reclaim_interrupted()
+        ledger.requeue_transient()
         while time.monotonic() - started < time_budget_sec and sum(processed.values()) < batch_limit:
             tickers = ledger.next_batch(1, refresh_after_hours=refresh_after_hours, exclude=failed)
             if not tickers:
@@ -577,6 +623,8 @@ def drain(
                 seeded = seed(company, ledger.quote_for(ticker)) if seed else company
                 result = analyze(seeded)
                 status = ledger.record_result(ticker, result)
+                if status == PENDING:
+                    failed.append(ticker)  # transient source error: retry on a later run, not in a tight loop
             except Exception as exc:  # recorded with its cause, never swallowed silently
                 status = ledger.record_error(ticker, f"{type(exc).__name__}: {exc}")
                 failed.append(ticker)
