@@ -50,6 +50,25 @@ export type GlobalEvidence = {
   reasoning?: string;
 };
 
+export type GlobalFundamentalEvidence = {
+  officialStatus?: string;
+  isOfficial?: boolean;
+  sourceProvider?: string | null;
+  reportPeriod?: string | null;
+  fundamentalPeriodAgeDays?: number | null;
+  freshnessTier?: 'RECENT_ANNUAL_FILING' | 'LAST_ANNUAL_FILING' | 'PERIOD_UNKNOWN' | 'NOT_CURRENT' | string;
+  freshnessDetail?: {
+    tier?: string;
+    latestOfficialPeriodEnd?: string | null;
+    periodAgeDays?: number | null;
+    filingDate?: string | null;
+    priceObservedAt?: string | null;
+    priceAgeDays?: number | null;
+    statement?: string;
+  };
+  limitations?: string[];
+};
+
 export type GlobalDistress = {
   status?: 'LOW_RISK' | 'ELEVATED_RISK' | 'HIGH_RISK' | 'INSUFFICIENT_DATA' | 'NOT_APPLICABLE' | string;
   positive_block?: boolean;
@@ -217,6 +236,7 @@ export type GlobalDecisionTable = {
 };
 
 export type GlobalAnalysis = {
+  fundamentalEvidence?: GlobalFundamentalEvidence;
   identity?: string;
   country?: string;
   exchange?: string;

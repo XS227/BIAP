@@ -17,7 +17,7 @@ from math import floor
 from typing import Iterable, Mapping, Optional
 
 from .decision_support import preference_adjustment
-from .issuer import issuer_key_of
+from .issuer import issuer_key_of, resolve_issuer_keys
 from .evidence_contract import freshness_tier, official_fundamental_sources, official_fundamental_status
 from .models import (
     AgentSignal,
@@ -513,14 +513,14 @@ def portfolio_agent(
     allocations: list[PortfolioAllocation] = []
     allocated_pct = 0.0
 
-    for (candidate, score, confidence), desirability in zip(scored, desirabilities):
+    resolved_issuers = resolve_issuer_keys([issuer_key_of(c.company) for c, _, _ in scored])
+    for ((candidate, score, confidence), desirability), issuer in zip(zip(scored, desirabilities), resolved_issuers):
         company = candidate.company
         proposed = investable_pct * desirability / desirability_total
         room_position = max(0.0, profile.max_position_pct)
         room_country = max(0.0, profile.max_country_pct - country_used[company.country.upper()])
         sector_key = (company.sector or "UNKNOWN").upper()
         room_sector = max(0.0, profile.max_sector_pct - sector_used[sector_key])
-        issuer = issuer_key_of(company)
         # One issuer = one risk: GOOG + GOOGL share a single position cap.
         room_issuer = max(0.0, profile.max_position_pct - issuer_used[issuer])
         remaining = max(0.0, investable_pct - allocated_pct)

@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from global_markets.agents import PortfolioCandidate, evidence_agent, portfolio_agent
-from global_markets.issuer import collapse_issuers, issuer_key_of
+from global_markets.issuer import collapse_issuers, issuer_key_of, resolve_issuer_keys
 from global_markets.models import InvestorProfile
 from global_markets.scan_service import build_coverage_funnel
 from tests.test_global_agents import _company, _signals
@@ -94,3 +94,34 @@ def test_funnel_never_mixes_eligible_and_excluded_market_populations():
     assert f["scopes"]["allConnectedMarkets"]["qualifiedBuy"] == 3
     assert f["scopes"]["rankingEligibleMarkets"]["qualifiedIssuers"] == 2
     assert f["stagesScope"] == "rankingEligibleMarkets"
+
+
+def test_asml_dual_listing_collapses_to_one_issuer():
+    # Regression: Euronext "ASML Holding N.V." and NASDAQ "New York Registry Shares" were two issuers.
+    rows = [
+        {"ticker": "ASML", "country": "NL", "exchange": "EURONEXT_AMSTERDAM", "score": 0.7, "confidence": 0.8,
+         "company": {"name": "ASML Holding N.V.", "country": "NL", "ticker": "ASML", "exchange": "EURONEXT_AMSTERDAM"}},
+        {"ticker": "ASML", "country": "US", "exchange": "NASDAQ", "score": 0.6, "confidence": 0.8,
+         "company": {"name": "ASML Holding N.V. - New York Registry Shares", "country": "US", "ticker": "ASML", "exchange": "NASDAQ"}},
+        {"ticker": "TSLA", "country": "US", "exchange": "NASDAQ", "score": 0.4, "confidence": 0.8,
+         "company": {"name": "Tesla, Inc.", "country": "US", "ticker": "TSLA", "exchange": "NASDAQ"}},
+    ]
+    out = collapse_issuers(rows, lambda r: r["score"] * r["confidence"])
+    assert [r["ticker"] for r in out] == ["ASML", "TSLA"]
+    assert out[0]["country"] == "NL"
+    assert out[0]["otherSecurities"][0]["exchange"] == "NASDAQ"  # still reachable
+
+
+def test_depositary_without_unique_home_listing_is_not_merged_by_guess():
+    assert issuer_key_of({"name": "Foo Holdings N.V. ADR", "country": "US"}) == "NAME:*:foo"
+    keys = resolve_issuer_keys(["NAME:*:foo", "NAME:NL:bar"])
+    assert keys[0] == "NAME:*:foo"
+    assert issuer_key_of({"name": "ASML Holding N.V.", "country": "NL"}) == issuer_key_of({"name": "ASML Holding NV", "country": "NL"})
+
+
+def test_portfolio_caps_asml_dual_listing_once():
+    nl, us = _cand("ASML", "ASML Holding N.V."), _cand("ASML", "ASML Holding N.V. - New York Registry Shares")
+    nl.company.country, us.company.country = "NL", "US"
+    us.company.exchange = "NASDAQ"
+    result = portfolio_agent(_profile(), [nl, us])
+    assert sum(a.weight_pct for a in result.allocations) <= 10.0 + 1e-6

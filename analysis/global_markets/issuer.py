@@ -14,6 +14,12 @@ _CLASS_SUFFIX = re.compile(
     r"\b(class|series)\s+[a-z0-9]\b|\b(common|ordinary|preferred|preference|voting|non[- ]voting|"
     r"restricted|capital|depositary|ads|adr|shares?|stock|units?|ord|cl)\b|\b[a-z]\s+shares?\b",
 )
+# Depositary/registry/foreign-listing markers: the security is a listing of a
+# foreign issuer, so its name key must not be pinned to the listing country.
+_DEPOSITARY = re.compile(
+    r"\b(new york registry|ny registry|registry shares?|american depositary|depositary (shares?|receipts?)|"
+    r"adrs?|ads|sponsored|unsponsored)\b"
+)
 _LEGAL = re.compile(r"\b(inc|incorporated|corp|corporation|co|company|plc|ltd|limited|ag|se|sa|nv|ab|asa|spa|holdings?)\b")
 
 
@@ -23,10 +29,23 @@ def _get(obj: Any, name: str) -> Any:
     return getattr(obj, name, None)
 
 
+def _clean(name: str) -> str:
+    text = str(name or "").lower().replace("&", " and ")
+    # Collapse dotted legal suffixes first: "N.V." / "S.p.A." / "plc." -> nv / spa.
+    text = re.sub(r"\b([a-z])\.(?=[a-z]\b)", r"\1", text)
+    text = re.sub(r"\b([a-z])\.(?=\s|$)", r"\1", text)
+    return re.sub(r"[^a-z0-9 ]+", " ", text)
+
+
+def is_depositary_name(name: str) -> bool:
+    return bool(_DEPOSITARY.search(_clean(name)))
+
+
 def normalized_issuer_name(name: str) -> str:
-    text = re.sub(r"[^a-z0-9 ]+", " ", str(name or "").lower())
+    text = _DEPOSITARY.sub(" ", _clean(name))
     text = _CLASS_SUFFIX.sub(" ", text)
     text = _LEGAL.sub(" ", text)
+    text = re.sub(r"\bnew york\b", " ", text) if text.strip().endswith("new york") else text
     return " ".join(text.split())
 
 
@@ -42,12 +61,38 @@ def issuer_key_of(obj: Any) -> str:
             return f"CIK:{int(cik)}"
         except (TypeError, ValueError):
             pass
-    name = normalized_issuer_name(_get(obj, "name") or _get(obj, "issuerName") or "")
+    raw_name = _get(obj, "name") or _get(obj, "issuerName") or ""
+    name = normalized_issuer_name(raw_name)
     country = str(_get(obj, "country") or "").upper()
     if name:
+        if is_depositary_name(raw_name):
+            return f"NAME:*:{name}"  # foreign issuer listed locally; matched to its home listing
         return f"NAME:{country}:{name}"
     # Unknown issuer: fall back to the security so nothing is merged by guess.
     return f"SECURITY:{country}:{str(_get(obj, 'exchange') or '').upper()}:{str(_get(obj, 'ticker') or '').upper()}"
+
+
+def resolve_issuer_keys(keys: list[str]) -> list[str]:
+    """Merge depositary/registry listings (``NAME:*:x``) into the home-country
+    key for the same normalized legal name when exactly one such home key exists.
+
+    Without a unique home match the wildcard key is kept as is, so nothing is
+    merged by guess.
+    """
+    homes: dict[str, set[str]] = {}
+    for k in keys:
+        if k.startswith("NAME:") and not k.startswith("NAME:*:"):
+            _, _, rest = k.partition(":")
+            _, _, name = rest.partition(":")
+            homes.setdefault(name, set()).add(k)
+    out = []
+    for k in keys:
+        if k.startswith("NAME:*:"):
+            cands = homes.get(k[len("NAME:*:"):], set())
+            if len(cands) == 1:
+                k = next(iter(cands))
+        out.append(k)
+    return out
 
 
 def _row_identity(row: dict) -> dict:
@@ -71,8 +116,8 @@ def collapse_issuers(rows: list[dict], rank) -> list[dict]:
     """
     groups: dict[str, list[dict]] = {}
     order: list[str] = []
-    for row in rows:
-        key = issuer_key_of(_row_identity(row))
+    keys = resolve_issuer_keys([issuer_key_of(_row_identity(row)) for row in rows])
+    for row, key in zip(rows, keys):
         if key not in groups:
             groups[key] = []
             order.append(key)
