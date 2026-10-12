@@ -17,7 +17,7 @@ from math import floor
 from typing import Iterable, Mapping, Optional
 
 from .decision_support import preference_adjustment
-from .issuer import issuer_key_of, resolve_issuer_keys
+from .issuer import resolve_issuer_identities
 from .evidence_contract import freshness_tier, official_fundamental_sources, official_fundamental_status
 from .models import (
     AgentSignal,
@@ -513,7 +513,7 @@ def portfolio_agent(
     allocations: list[PortfolioAllocation] = []
     allocated_pct = 0.0
 
-    resolved_issuers = resolve_issuer_keys([issuer_key_of(c.company) for c, _, _ in scored])
+    resolved_issuers = resolve_issuer_identities([c.company for c, _, _ in scored])
     for ((candidate, score, confidence), desirability), issuer in zip(zip(scored, desirabilities), resolved_issuers):
         company = candidate.company
         proposed = investable_pct * desirability / desirability_total

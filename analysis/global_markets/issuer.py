@@ -72,26 +72,39 @@ def issuer_key_of(obj: Any) -> str:
     return f"SECURITY:{country}:{str(_get(obj, 'exchange') or '').upper()}:{str(_get(obj, 'ticker') or '').upper()}"
 
 
-def resolve_issuer_keys(keys: list[str]) -> list[str]:
-    """Merge depositary/registry listings (``NAME:*:x``) into the home-country
-    key for the same normalized legal name when exactly one such home key exists.
+# Independently verified cross-listing bridges (SEC CIK -> legal-entity LEI).
+# ASML: SEC CIK 937966 (20-F filer, NASDAQ NY registry shares); LEI 724500Y6DUVHQD6OXN27
+# is the Euronext Amsterdam listing's FIRDS/GLEIF LEI.
+VERIFIED_CIK_TO_LEI = {937966: "724500Y6DUVHQD6OXN27"}
 
-    Without a unique home match the wildcard key is kept as is, so nothing is
-    merged by guess.
+
+def resolve_issuer_identities(identities: list[Any]) -> list[str]:
+    """Issuer key per identity, merging cross-listings of one legal entity.
+
+    1. ``VERIFIED_CIK_TO_LEI`` maps a SEC CIK to its verified LEI.
+    2. A foreign-registrant listing (SEC CIK or depositary/registry name, i.e. a
+       key that cannot match a home listing by itself) adopts the key of the
+       other-country listing with the same normalized legal name, but only when
+       that match is unique. Ambiguity keeps the keys apart; nothing is merged
+       by guess and the other security stays visible in the response.
     """
-    homes: dict[str, set[str]] = {}
-    for k in keys:
-        if k.startswith("NAME:") and not k.startswith("NAME:*:"):
-            _, _, rest = k.partition(":")
-            _, _, name = rest.partition(":")
-            homes.setdefault(name, set()).add(k)
-    out = []
-    for k in keys:
-        if k.startswith("NAME:*:"):
-            cands = homes.get(k[len("NAME:*:"):], set())
-            if len(cands) == 1:
-                k = next(iter(cands))
-        out.append(k)
+    keys = [issuer_key_of(i) for i in identities]
+    for n, k in enumerate(keys):
+        if k.startswith("CIK:") and int(k[4:]) in VERIFIED_CIK_TO_LEI:
+            keys[n] = f"LEI:{VERIFIED_CIK_TO_LEI[int(k[4:])]}"
+    names = [normalized_issuer_name(_get(i, "name") or _get(i, "issuerName") or "") for i in identities]
+    countries = [str(_get(i, "country") or "").upper() for i in identities]
+    out = list(keys)
+    for n, k in enumerate(keys):
+        if not names[n] or not (k.startswith("CIK:") or k.startswith("NAME:*:")):
+            continue
+        homes = {
+            keys[m] for m in range(len(keys))
+            if m != n and names[m] == names[n] and countries[m] != countries[n]
+            and not keys[m].startswith("CIK:") and not keys[m].startswith("NAME:*:")
+        }
+        if len(homes) == 1:
+            out[n] = next(iter(homes))
     return out
 
 
@@ -116,7 +129,7 @@ def collapse_issuers(rows: list[dict], rank) -> list[dict]:
     """
     groups: dict[str, list[dict]] = {}
     order: list[str] = []
-    keys = resolve_issuer_keys([issuer_key_of(_row_identity(row)) for row in rows])
+    keys = resolve_issuer_identities([_row_identity(row) for row in rows])
     for row, key in zip(rows, keys):
         if key not in groups:
             groups[key] = []

@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from global_markets.agents import PortfolioCandidate, evidence_agent, portfolio_agent
-from global_markets.issuer import collapse_issuers, issuer_key_of, resolve_issuer_keys
+from global_markets.issuer import collapse_issuers, issuer_key_of, resolve_issuer_identities
 from global_markets.models import InvestorProfile
 from global_markets.scan_service import build_coverage_funnel
 from tests.test_global_agents import _company, _signals
@@ -114,7 +114,7 @@ def test_asml_dual_listing_collapses_to_one_issuer():
 
 def test_depositary_without_unique_home_listing_is_not_merged_by_guess():
     assert issuer_key_of({"name": "Foo Holdings N.V. ADR", "country": "US"}) == "NAME:*:foo"
-    keys = resolve_issuer_keys(["NAME:*:foo", "NAME:NL:bar"])
+    keys = resolve_issuer_identities([{"name": "Foo Holdings N.V. ADR", "country": "US"}, {"name": "Bar NV", "country": "NL"}])
     assert keys[0] == "NAME:*:foo"
     assert issuer_key_of({"name": "ASML Holding N.V.", "country": "NL"}) == issuer_key_of({"name": "ASML Holding NV", "country": "NL"})
 
@@ -125,3 +125,26 @@ def test_portfolio_caps_asml_dual_listing_once():
     us.company.exchange = "NASDAQ"
     result = portfolio_agent(_profile(), [nl, us])
     assert sum(a.weight_pct for a in result.allocations) <= 10.0 + 1e-6
+
+
+def test_real_asml_rows_lei_home_vs_cik_us_collapse():
+    # Real cached shapes: NL row has LEI, US row has only SEC CIK 937966 and no LEI/ISIN.
+    rows = [
+        {"ticker": "ASML", "country": "NL", "exchange": "EURONEXT_AMSTERDAM", "score": 0.32, "confidence": 0.52,
+         "company": {"name": "ASML Holding N.V.", "country": "NL", "ticker": "ASML", "lei": "724500Y6DUVHQD6OXN27"}},
+        {"ticker": "ASML", "country": "US", "exchange": "NASDAQ", "score": 0.43, "confidence": 0.63,
+         "company": {"name": "ASML HOLDING NV", "country": "US", "ticker": "ASML", "raw_provider_fields": {"sec_cik": 937966}}},
+    ]
+    out = collapse_issuers(rows, lambda r: r["score"] * r["confidence"])
+    assert len(out) == 1 and out[0]["country"] == "US" and out[0]["issuerKey"] == "LEI:724500Y6DUVHQD6OXN27"
+    assert out[0]["otherSecurities"][0]["exchange"] == "EURONEXT_AMSTERDAM"
+
+
+def test_name_bridge_for_unlisted_pair_requires_unique_home_and_never_merges_two_homes():
+    cik = {"name": "Shell plc", "country": "US", "raw_provider_fields": {"sec_cik": 1306965}}
+    home = {"name": "Shell plc", "country": "GB", "lei": "21380068P1DRHMJ8KU70"}
+    assert resolve_issuer_identities([cik, home]) == ["LEI:21380068P1DRHMJ8KU70"] * 2
+    other_home = {"name": "Shell plc", "country": "NL", "lei": "5493001KJTIIGC8Y1R12"}
+    keys = resolve_issuer_identities([cik, home, other_home])
+    assert keys[0] == "CIK:1306965"  # ambiguous: two distinct home entities, not merged by guess
+    assert resolve_issuer_identities([{"name": "Tesla, Inc.", "country": "US", "raw_provider_fields": {"sec_cik": 1318605}}]) == ["CIK:1318605"]
