@@ -539,6 +539,9 @@ class AnalysisLedger:
             "deepAnalyzed": analyzed,
             "evidencePass": one("SELECT COUNT(*) FROM ledger WHERE in_universe=1 AND evidence_status='PASS'"),
             "evidenceWarn": one("SELECT COUNT(*) FROM ledger WHERE in_universe=1 AND evidence_status='WARN'"),
+            # PASS+WARN+BLOCK must equal deepAnalyzed; BLOCK was previously not reported,
+            # which left the evidence breakdown short of the analyzed total.
+            "evidenceBlock": one("SELECT COUNT(*) FROM ledger WHERE in_universe=1 AND evidence_status='BLOCK'"),
             "fundamentalSourceMissing": one(
                 "SELECT COUNT(*) FROM ledger WHERE in_universe=1 AND status=? AND analyzed_at IS NOT NULL AND reason LIKE '%fundamental_source%'",
                 INSUFFICIENT_DATA,

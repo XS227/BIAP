@@ -311,3 +311,17 @@ def test_requeue_recovers_old_masked_local_faults_once(ledger):
     rows = {r["ticker"]: r["status"] for r in conn.execute("SELECT ticker, status FROM ledger")}
     assert rows == {"T000": al.PENDING, "T001": al.INSUFFICIENT_DATA}
     assert ledger.requeue_transient() == 0  # one-time scan, not repeated
+
+
+def test_evidence_counts_sum_to_deep_analyzed(ledger):
+    universe = _register(ledger, 6)
+
+    def analyze(c):
+        if c.ticker in {"T004", "T005"}:
+            return _result(c.ticker, evidence="BLOCK", missing=("fundamental_source",))
+        return _result(c.ticker)
+
+    _drain(ledger, universe, analyze)
+    counts = ledger.counts()
+    assert counts["evidenceBlock"] == 2
+    assert counts["evidencePass"] + counts["evidenceWarn"] + counts["evidenceBlock"] == counts["deepAnalyzed"] == 6
