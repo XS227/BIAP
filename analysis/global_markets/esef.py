@@ -69,13 +69,18 @@ _CONCEPTS = {
         "ifrs-full:InterestBearingLoansAndBorrowings",
         "ifrs-full:LoansAndBorrowings",
     ),
+    # IFRS taxonomy element names differ by preparer; Shell plc FY2025 tags
+    # its balance-sheet "Debt" lines with LongtermBorrowings and
+    # CurrentBorrowingsAndCurrentPortionOfNoncurrentBorrowings.
     "current_borrowings": (
         "ifrs-full:CurrentBorrowings",
         "ifrs-full:CurrentInterestBearingLoansAndBorrowings",
+        "ifrs-full:CurrentBorrowingsAndCurrentPortionOfNoncurrentBorrowings",
     ),
     "noncurrent_borrowings": (
         "ifrs-full:NoncurrentBorrowings",
         "ifrs-full:NoncurrentInterestBearingLoansAndBorrowings",
+        "ifrs-full:LongtermBorrowings",
     ),
     # Bonds issued and loans received (IFRS "loans received" lines, or issuer
     # "other loans") are separate debt lines on the balance sheet; they are
@@ -401,6 +406,38 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             return costs
         return abs(net) if net < 0 else None
 
+
+    @classmethod
+    def _excluded_candidates(
+        cls, facts: list[dict], period_end: date, *, need_ebitda: bool, need_capex: bool
+    ) -> dict[str, float]:
+        """Tagged lines that look like missing EBITDA/FCF inputs but are *not*
+        accepted by policy (impairment-inclusive D&A, generic investing outflows).
+
+        They are reported, never used: this lets an audit tell a genuinely
+        absent field from a field the filing tags in a non-standard way.
+        """
+        patterns: list[str] = []
+        if need_ebitda:
+            patterns += ["depreciationamortisationandimpairment", "depreciationandamortisationexpenseandimpairment"]
+        if need_capex:
+            patterns += ["purchaseofotherlongtermassets", "capitalexpenditure", "purchaseofintangibleassets"]
+        if not patterns:
+            return {}
+        by_concept: dict[str, list[dict]] = {}
+        for fact in facts:
+            dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+            concept = str(dims.get("concept") or "")
+            if any(key in concept.lower() for key in patterns) and not any(
+                k not in {"concept", "entity", "period", "unit"} for k in dims
+            ):
+                by_concept.setdefault(concept, []).append(fact)
+        found: dict[str, float] = {}
+        for concept, rows in by_concept.items():
+            value = cls._duration_value(rows, period_end)
+            if value is not None:
+                found[concept] = value
+        return found
 
     @staticmethod
     def _duration_value(facts: list[dict], period_end: date, *, previous: bool = False) -> Optional[float]:
@@ -791,6 +828,9 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                 "fiscal_year_transition": self.fiscal_year_transition(facts, period_end),
                 "ffo": ffo,
                 "ffo_method": ffo_method,
+                "excluded_candidates": self._excluded_candidates(
+                    facts, period_end, need_ebitda=ebitda is None, need_capex=fcf is None
+                ),
             },
         }
 

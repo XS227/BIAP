@@ -18,6 +18,8 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import os
+import threading
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -58,6 +60,12 @@ _CACHE_SOURCE_TOKENS = (*_OFFICIAL_FINANCIAL_TOKENS, "fundamental", "financial_m
 # v9: KAP income statement (Flight rows) merged with 1000TL units, SEC equity
 # balance-sheet check + assessed-tax revenue tag, ESEF revenue fallbacks.
 CACHE_SCHEMA_VERSION = 11
+# Targeted re-normalization (instead of a global schema bump, which would force
+# a re-parse of every cached issuer snapshot during live scans): revision 1 maps
+# IFRS LongtermBorrowings/CurrentBorrowingsAndCurrentPortion... debt tags (Shell
+# FY2025 total_debt) and adds the SEC SIC sector supplement for GB. Snapshots
+# written before it are refreshed once, only when the affected field is empty.
+NORMALIZER_REVISION = 1
 
 # Official providers whose records were found defective after the fact.
 # Snapshots built from them are ignored (neither fresh nor stale fallback).
@@ -108,6 +116,33 @@ def _cache_sources(company: GlobalCompany) -> list[SourceEvidence]:
         if any(token in kind for token in _CACHE_SOURCE_TOKENS):
             rows.append(source)
     return rows
+
+
+class _RenormalizationBudget:
+    """Spread the one-time re-normalization of old snapshots over time.
+
+    A live scan deep-analyzes up to 75 issuers; if all of them needed a refresh
+    at once the request would stall on 75 upstream fetches (and the 2 GB host
+    would swap). Only a few are allowed per minute, the rest keep serving their
+    valid snapshot and migrate on later requests.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._stamps: list[float] = []
+
+    def try_take(self) -> bool:
+        limit = max(0, int(os.environ.get("BIAP_GLOBAL_RENORM_PER_MIN", "6")))
+        now = time.monotonic()
+        with self._lock:
+            self._stamps = [t for t in self._stamps if now - t < 60.0]
+            if len(self._stamps) >= limit:
+                return False
+            self._stamps.append(now)
+            return True
+
+
+_renormalization_budget = _RenormalizationBudget()
 
 
 class PersistentFundamentalsProvider(FundamentalsProvider):
@@ -205,6 +240,16 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         age_days = cls._filing_age_days(payload)
         return age_days is not None and age_days > MAX_OFFICIAL_FILING_AGE_DAYS
 
+    @staticmethod
+    def _needs_renormalization(payload: dict) -> bool:
+        if int(payload.get("normalizerRevision") or 0) >= NORMALIZER_REVISION or not payload.get("officialEvidence"):
+            return False
+        fundamentals = payload.get("fundamentals") if isinstance(payload.get("fundamentals"), dict) else {}
+        identity = payload.get("identity") if isinstance(payload.get("identity"), dict) else {}
+        debt_unmapped = fundamentals.get("total_debt") is None
+        gb_sector_missing = str(identity.get("country") or "").upper() == "GB" and not fundamentals.get("sector")
+        return debt_unmapped or gb_sector_missing
+
     def _is_fresh(self, payload: dict) -> bool:
         # Schema v2 adds shareholder-return fields such as dividend/share.
         # A v1 cache can still be used as an outage fallback, but it is never
@@ -221,6 +266,8 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         # current evidence.
         if self._stale_official_filing(payload):
             return False
+        if self._needs_renormalization(payload) and _renormalization_budget.try_take():
+            return False
         age = self._age_seconds(payload)
         return age is not None and age <= self.fresh_seconds
 
@@ -229,6 +276,7 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         official = bool(_official_sources(company))
         payload = {
             "schemaVersion": CACHE_SCHEMA_VERSION,
+            "normalizerRevision": NORMALIZER_REVISION,
             "identity": {
                 "country": company.country,
                 "exchange": company.exchange,

@@ -1,11 +1,11 @@
 {
-  "version": "0.3.18",
-  "versionCode": 21,
-  "releasedAt": "2026-10-11",
+  "version": "0.3.19",
+  "versionCode": 22,
+  "releasedAt": "2026-10-12",
   "changes": [
-    "Price Intelligence card on the stock page: price, Kiasha score, peer P/E and distress summary, with no invented fair value",
-    "Agent 10 credit card layout fix for long rating labels",
-    "Credit inputs from official ESEF and SEC filings (retained earnings, D&A, debt, FFO); SEC 20-F/40-F filings read when companyfacts lags",
-    "Reviewed, hash-pinned annual reports for selected UK trusts and US closed-end funds"
+    "Market scans no longer fail silently: automatic retry with backoff, clear error reasons, and failed markets are shown as Unavailable (never as 0 qualified)",
+    "Portfolio scans run two markets at a time and convert currencies with dated ECB reference rates",
+    "Evidence card states exactly how old the latest official filing is (latest annual filing is not current-quarter data)",
+    "Global Top 10 shows top-N of qualified issuers and keeps price-only screening separate from deep analysis"
   ]
 }

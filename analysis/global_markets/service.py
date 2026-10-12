@@ -24,7 +24,7 @@ from .credit_scoring import score_legal_entity_company
 from .decision_support import build_decision_table, profile_assessment
 from .distress import distress_agent
 from .governance import decision_governance_agent
-from .fx import TwelveDataFXProvider
+from .fx import ECBReferenceFXProvider, TwelveDataFXProvider
 from .issuer import issuer_key_of
 from .models import DistressAssessment, GlobalCompany, InvestorProfile, SourceEvidence
 from .providers import ProviderDiagnostics, ProviderRegistry
@@ -482,6 +482,33 @@ def analyze_company(
     return _analysis_payload(*evaluated)
 
 
+def resolve_fx_rates(currencies, base: str) -> tuple[dict[str, float], dict[str, str], dict[str, dict]]:
+    """Rates (currency -> base) from explicit sources only; failures are reported, never defaulted."""
+    rates: dict[str, float] = {}
+    errors: dict[str, str] = {}
+    sources: dict[str, dict] = {}
+    currencies = list(currencies)
+    if not currencies:
+        return rates, errors, sources
+    providers = []
+    if os.environ.get("BIAP_GLOBAL_MARKET_API_KEY"):
+        providers.append(TwelveDataFXProvider())
+    providers.append(ECBReferenceFXProvider())
+    for currency in currencies:
+        failures: list[str] = []
+        for provider in providers:
+            try:
+                rates[currency] = provider.rate(currency, base)
+            except Exception as exc:
+                failures.append(f"{provider.provider_id}: {str(exc)[:160]}")
+                continue
+            sources[currency] = provider.source_info() if hasattr(provider, "source_info") else {"provider": provider.provider_id}
+            break
+        else:
+            errors[currency] = " | ".join(failures)[:300]
+    return rates, errors, sources
+
+
 def portfolio_from_instruments(
     profile: InvestorProfile,
     instruments: Iterable[GlobalCompany],
@@ -503,13 +530,12 @@ def portfolio_from_instruments(
     missing_fx = sorted(currency for currency in required_currencies if currency not in rates)
     fx_errors: dict[str, str] = {}
 
-    if missing_fx and os.environ.get("BIAP_GLOBAL_MARKET_API_KEY"):
-        fx_provider = TwelveDataFXProvider()
-        for currency in missing_fx:
-            try:
-                rates[currency] = fx_provider.rate(currency, base)
-            except Exception as exc:
-                fx_errors[currency] = str(exc)[:240]
+    fx_sources: dict[str, dict] = {
+        currency.strip().upper(): {"provider": "client-supplied"} for currency in (fx_to_base or {})
+    }
+    resolved, fx_errors, resolved_sources = resolve_fx_rates(missing_fx, base)
+    rates.update(resolved)
+    fx_sources.update(resolved_sources)
 
     candidates: list[PortfolioCandidate] = []
     analyses: list[dict] = []
@@ -570,6 +596,7 @@ def portfolio_from_instruments(
         "proposal": asdict(proposal),
         "profileAssessment": profile_assessment(profile),
         "fxToBase": rates,
+        "fxSources": fx_sources,
         "fxErrors": fx_errors,
         "analyses": analyses,
     }

@@ -24,6 +24,7 @@ from .cached_market import PersistentMarketProvider
 from .cached_sec_edgar import CachedSECEdgarFundamentalsProvider
 from .cached_universe import PersistentUniverseProvider
 from .companies_house import CompaniesHouseCorroborator
+from .sector_supplement import SECSectorSupplementProvider
 from .corroboration import CorroboratingFundamentalsProvider
 from .country_packs import COUNTRY_PACKS
 from .cvm_itr import CVMITRCorroborator
@@ -450,7 +451,7 @@ def build_registry() -> ProviderRegistry:
         if companies_house_key
         else uk_official
     )
-    uk_provider = PersistentFundamentalsProvider(uk_base)
+    uk_provider = PersistentFundamentalsProvider(SECSectorSupplementProvider(uk_base, sec_foreign_ifrs))
     for country in _ESEF_COUNTRIES:
         if country == "GB":
             provider = uk_provider

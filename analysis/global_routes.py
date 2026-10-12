@@ -17,6 +17,7 @@ from global_markets.country_packs import country_catalog, get_exchange
 from global_markets.credit_scoring import score_individual_credit
 from global_markets.models import InvestorProfile
 from global_markets.runtime import build_registry
+from global_markets.scan_gate import GATE as SCAN_GATE, ScanFailure
 from global_markets.scan_service import scan_global_market, scan_global_top10
 from global_markets.service import analyze_company, instrument_seed, portfolio_from_instruments
 from global_markets.source_catalog import SOURCE_PLANS, requirements_payload
@@ -399,19 +400,35 @@ def global_status():
 
 @router.post("/scan")
 def global_scan(req: ScanRequest):
+    country, exchange = req.country.strip().upper(), req.exchange.strip().upper()
     try:
-        get_exchange(req.country, req.exchange)
-        return scan_global_market(
-            country=req.country,
-            exchange=req.exchange,
-            top_n=req.topN,
-            discovery_limit=req.discoveryLimit,
-            deep_limit=req.deepLimit,
+        get_exchange(country, exchange)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    key = (country, exchange, req.topN, req.discoveryLimit, req.deepLimit)
+    try:
+        result, gate = SCAN_GATE.run(
+            key,
+            lambda: scan_global_market(
+                country=country,
+                exchange=exchange,
+                top_n=req.topN,
+                discovery_limit=req.discoveryLimit,
+                deep_limit=req.deepLimit,
+            ),
         )
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+    except ScanFailure as failure:
+        headers = {"Retry-After": str(failure.retry_after_sec)} if failure.retry_after_sec else None
+        raise HTTPException(
+            status_code=failure.http_status,
+            detail=failure.detail(country=country, exchange=exchange),
+            headers=headers,
+        ) from failure
+    if isinstance(result, dict) and gate.get("sharedInFlight"):
+        result = {**result, "scanShared": True}
+    return result
 
 
 @router.post("/scan-global")

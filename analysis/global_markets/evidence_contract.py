@@ -132,6 +132,57 @@ def freshness_tier(status: str, age: Optional[int]) -> str:
     return "LAST_ANNUAL_FILING" if age > LAST_ANNUAL_AFTER_DAYS else "RECENT_ANNUAL_FILING"
 
 
+def freshness_detail(
+    company: GlobalCompany,
+    *,
+    status: str,
+    age: Optional[int],
+    best: Optional[SourceEvidence],
+    now: Optional[datetime] = None,
+) -> dict:
+    """Separate the five time concepts that "current" used to blur together.
+
+    * latestOfficialPeriodEnd: end of the fiscal period the figures describe;
+    * periodAgeDays: today minus that period end;
+    * filingDate: when the issuer lodged/published that report;
+    * priceObservedAt: when the market price was observed (independent of the filing);
+    * thresholds: age limits that define the tier/staleness labels.
+    OFFICIAL_CURRENT only says "the newest official filing we could read passed
+    the staleness gate"; it does not say the figures are recent.
+    """
+    tier = freshness_tier(status, age)
+    filing_date = company.filing_observed_at if best is not None else None
+    price_age = None
+    if company.price_observed_at:
+        price_age = _period_age_days(str(company.price_observed_at)[:10], now)
+    if tier == "NOT_CURRENT":
+        statement = "No current official fundamentals; displayed figures are not filed data."
+    elif age is None:
+        statement = "Latest official filing found, but its period end is unknown."
+    elif tier == "LAST_ANNUAL_FILING":
+        statement = (
+            f"Latest available official annual filing: period ended {str(company.filing_period_end)[:10]} "
+            f"({age} days ago). It is the most recent filing found, not current-quarter data."
+        )
+    else:
+        statement = (
+            f"Recent official annual filing: period ended {str(company.filing_period_end)[:10]} ({age} days ago)."
+        )
+    return {
+        "tier": tier,
+        "latestOfficialPeriodEnd": str(company.filing_period_end)[:10] if company.filing_period_end else None,
+        "periodAgeDays": age,
+        "filingDate": filing_date,
+        "priceObservedAt": company.price_observed_at,
+        "priceAgeDays": price_age,
+        "thresholds": {
+            "lastAnnualAfterDays": LAST_ANNUAL_AFTER_DAYS,
+            "staleAfterDays": MAX_OFFICIAL_PERIOD_AGE_DAYS,
+        },
+        "statement": statement,
+    }
+
+
 def fundamental_limitations(company: GlobalCompany, *, status: str, age: Optional[int]) -> list[str]:
     out: list[str] = []
     if status == STATUS_OFFICIAL_CURRENT and age is not None and age > LAST_ANNUAL_AFTER_DAYS:
@@ -150,6 +201,13 @@ def fundamental_limitations(company: GlobalCompany, *, status: str, age: Optiona
         out.append("operating income missing: EBIT-based ratios unavailable")
     if company.ebitda is None:
         out.append("EBITDA missing: debt/EBITDA and EBITDA/interest unavailable")
+    extraction = (company.raw_provider_fields or {}).get("oam_credit_extraction")
+    excluded = extraction.get("excluded_candidates") if isinstance(extraction, dict) else None
+    if isinstance(excluded, dict) and excluded and (company.ebitda is None or company.free_cash_flow is None):
+        names = ", ".join(sorted(k.split(":")[-1] for k in excluded))
+        out.append(
+            "tagged but not used (non-standard or impairment-inclusive, never guessed): " + names
+        )
     return out
 
 
@@ -195,9 +253,15 @@ def fundamental_evidence_contract(company: GlobalCompany, *, now: Optional[datet
         "provenance": "official_financial_statement" if best else ("non_official_vendor" if shown else "none"),
         "sourceQuality": round(float(shown.quality), 4) if shown else None,
         "fundamentalPeriodAgeDays": age,
+        # "current" was misleading for a 285-day-old annual filing. The label
+        # now states what the data is: a recent annual, the last annual, or stale.
         "freshness": (
-            "unknown" if age is None else "stale" if age > MAX_OFFICIAL_PERIOD_AGE_DAYS else "current"
+            "unknown" if age is None
+            else "stale" if age > MAX_OFFICIAL_PERIOD_AGE_DAYS
+            else "last_annual" if age > LAST_ANNUAL_AFTER_DAYS
+            else "recent_annual"
         ),
+        "freshnessDetail": freshness_detail(company, status=status, age=age, best=best, now=now),
         # Only when a source explicitly states it; never inferred.
         "auditStatus": audit if audit in {"audited", "unaudited"} else None,
         "freshnessTier": freshness_tier(status, age),

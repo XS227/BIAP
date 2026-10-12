@@ -18,7 +18,7 @@ from typing import Iterable, Mapping, Optional
 
 from .decision_support import preference_adjustment
 from .issuer import issuer_key_of
-from .evidence_contract import official_fundamental_sources, official_fundamental_status
+from .evidence_contract import freshness_tier, official_fundamental_sources, official_fundamental_status
 from .models import (
     AgentSignal,
     DistressAssessment,
@@ -343,6 +343,12 @@ def evidence_agent(
     if missing_critical:
         reasons.append("missing=" + ",".join(dict.fromkeys(missing_critical)))
     reasons.append(f"officialFundamentals={official_status} ({official_detail})")
+    # OFFICIAL_CURRENT = newest official filing passed the staleness gate; the
+    # tier says how recent that filing actually is.
+    reasons.append(
+        f"fundamentalFreshnessTier={freshness_tier(official_status, None if fundamental_age_days is None else int(fundamental_age_days))}"
+    )
+    reasons.append("note=evidence status describes data-quality gates only; it is not a buy/sell recommendation")
     if contradictions:
         reasons.extend(contradictions)
 
@@ -547,7 +553,10 @@ def portfolio_agent(
             reject(company.identity(), "invalid_price", "invalid converted share price")
             continue
         raw_quantity = floor(amount_base / per_share_base)
-        lot_size = max(1, int(company.lot_size or 1))
+        # US "Round Lot Size" (100/40/10) is a market-structure term, not a
+        # minimum order: US stocks trade in single shares. Applying it rejected
+        # every high-priced US name as `minimum_lot`.
+        lot_size = 1 if company.country.upper() == "US" else max(1, int(company.lot_size or 1))
         quantity = (raw_quantity // lot_size) * lot_size
         if quantity <= 0:
             reject(company.identity(), "minimum_lot", f"allocation {amount_base:.2f} {profile.base_currency.upper()} cannot buy one minimum lot ({lot_size} x {per_share_base:.2f})", amount=round(amount_base, 2), lot_size=lot_size, per_share_base=round(per_share_base, 4))

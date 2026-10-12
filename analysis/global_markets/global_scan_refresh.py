@@ -51,6 +51,7 @@ def _child(country: str, exchange: str, deep_limit: int) -> int:
             top_n=10,
             discovery_limit=5000,
             deep_limit=deep_limit,
+            origin="scheduled",
         )
         summary = {
             "country": country,

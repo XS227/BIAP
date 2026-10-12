@@ -311,10 +311,13 @@ export type GlobalTop10Response = {
   eligibleEquities?: number;
   screenedEquities?: number;
   deepAnalyzed?: number;
+  deepAnalyzedAllMarkets?: number;
+  qualifiedIssuers?: number;
   globalCoveragePct?: number;
   connectedCoveragePct?: number;
   coverageFunnel?: {
     stages: { discovered: number; lightweightScreened: number; deepAnalyzed: number; evidencePass: number; qualifiedBuy: number };
+    stagesScope?: string;
     pctOfDiscovered: Record<string, number | null>;
     warning?: string | null;
   };
@@ -405,6 +408,7 @@ export type GlobalPortfolioResponse = {
   };
   fxToBase?: Record<string, number>;
   fxErrors?: Record<string, string>;
+  fxSources?: Record<string, { provider?: string; rateDate?: string | null; url?: string }>;
   analyses?: GlobalAnalysis[];
 };
 
@@ -438,22 +442,94 @@ const FALLBACK_COUNTRIES: GlobalCountry[] = [
   ] },
 ];
 
-async function request<T>(path: string, init?: RequestInit, timeoutMs = 20_000): Promise<T> {
+export class GlobalApiError extends Error {
+  code: string;
+  retryable: boolean;
+  status: number | null;
+  retryAfterSec: number | null;
+  constructor(code: string, message: string, opts: { retryable?: boolean; status?: number | null; retryAfterSec?: number | null } = {}) {
+    super(message);
+    this.name = 'GlobalApiError';
+    this.code = code;
+    this.retryable = opts.retryable ?? false;
+    this.status = opts.status ?? null;
+    this.retryAfterSec = opts.retryAfterSec ?? null;
+  }
+}
+
+/** Turn a failed response body into a structured, user-readable error. */
+export function parseGlobalApiError(status: number, body: string): GlobalApiError {
+  try {
+    const parsed = JSON.parse(body) as { detail?: unknown };
+    const detail = parsed?.detail;
+    if (detail && typeof detail === 'object') {
+      const d = detail as { code?: string; message?: string; retryable?: boolean; retryAfterSec?: number | null };
+      return new GlobalApiError(d.code || `HTTP_${status}`, d.message || `Server error ${status}`, {
+        retryable: d.retryable ?? (status === 502 || status === 503 || status === 504),
+        status,
+        retryAfterSec: d.retryAfterSec ?? null,
+      });
+    }
+    if (typeof detail === 'string' && detail) {
+      return new GlobalApiError(`HTTP_${status}`, detail.slice(0, 300), { retryable: status === 502 || status === 503 || status === 504, status });
+    }
+  } catch {}
+  return new GlobalApiError(`HTTP_${status}`, (body || `Server error ${status}`).slice(0, 300), {
+    retryable: status === 502 || status === 503 || status === 504,
+    status,
+  });
+}
+
+/** Network-layer failure (connection abort/reset, DNS, offline) vs. our own timeout. */
+export function toNetworkError(err: unknown, timedOut: boolean): GlobalApiError {
+  if (err instanceof GlobalApiError) return err;
+  if (timedOut) return new GlobalApiError('CLIENT_TIMEOUT', 'The request took too long and was cancelled.', { retryable: true });
+  const text = err instanceof Error ? err.message : String(err);
+  return new GlobalApiError('NETWORK_ERROR', `Connection problem: ${text.slice(0, 160)}`, { retryable: true });
+}
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+async function requestOnce<T>(path: string, init: RequestInit | undefined, timeoutMs: number): Promise<T> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
   try {
     const response = await fetch(`${GLOBAL_API_BASE}${path}`, {
       ...init,
       signal: controller.signal,
-      headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...(init?.headers || {}) },
     });
     if (!response.ok) {
       const body = await response.text().catch(() => '');
-      throw new Error(body || `HTTP ${response.status}`);
+      throw parseGlobalApiError(response.status, body);
     }
     return await response.json() as T;
+  } catch (err) {
+    throw toNetworkError(err, timedOut);
   } finally {
     clearTimeout(timer);
+  }
+}
+
+/**
+ * Retry only failures that are safe and plausibly transient (connection abort,
+ * 502/503/504, SCAN_BUSY). Scans/analysis are read-only server-side, so a retry
+ * is idempotent. A genuine failure is always surfaced; it is never replaced by
+ * an empty success.
+ */
+async function request<T>(path: string, init?: RequestInit, timeoutMs = 20_000, retries = 0): Promise<T> {
+  let attempt = 0;
+  for (;;) {
+    try {
+      return await requestOnce<T>(path, init, timeoutMs);
+    } catch (err) {
+      const failure = err as GlobalApiError;
+      if (attempt >= retries || !failure.retryable || failure.code === 'CLIENT_TIMEOUT') throw failure;
+      attempt += 1;
+      const hinted = failure.retryAfterSec ? failure.retryAfterSec * 1000 : 0;
+      await sleep(Math.min(15_000, Math.max(hinted, 1_500 * 2 ** (attempt - 1))));
+    }
   }
 }
 
@@ -505,14 +581,14 @@ export async function scanGlobalMarket(country: string, exchange: string, topN =
   return request<GlobalScanResponse>('/global/scan', {
     method: 'POST',
     body: JSON.stringify({ country, exchange, topN, discoveryLimit: 5000, deepLimit: 75 }),
-  }, 90_000);
+  }, 125_000, 2);
 }
 
 export async function scanGlobalTop10(topN = 10, maxAgeHours = 30): Promise<GlobalTop10Response> {
   return request<GlobalTop10Response>('/global/scan-global', {
     method: 'POST',
     body: JSON.stringify({ topN, maxAgeHours }),
-  }, 180_000);
+  }, 60_000, 1);
 }
 
 export async function scoreIndividualCredit(input: IndividualCreditScoringInput): Promise<IndividualCreditScoringResponse> {

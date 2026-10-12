@@ -76,8 +76,21 @@ def test_every_exclusion_has_a_structured_constraint():
 
 def test_coverage_funnel_keeps_stages_separate():
     f = build_coverage_funnel([{"eligibleEquities": 3017, "screenedEquities": 2997, "deepAnalyzed": 75,
-                                "evidencePass": 40, "qualifiedBuy": 3}])
-    assert f["stages"] == {"discovered": 3017, "lightweightScreened": 2997, "deepAnalyzed": 75,
+                                "evidencePass": 40, "qualifiedBuy": 3, "rankingEligible": True}])
+    assert f["stages"] == {"markets": 1, "discovered": 3017, "lightweightScreened": 2997, "deepAnalyzed": 75,
                            "evidencePass": 40, "qualifiedBuy": 3}
     assert f["pctOfDiscovered"]["deepAnalyzed"] == 2.49
     assert "must not be read as analysis coverage" in f["warning"]
+
+
+def test_funnel_never_mixes_eligible_and_excluded_market_populations():
+    rows = [
+        {"eligibleEquities": 100, "screenedEquities": 98, "deepAnalyzed": 25, "evidencePass": 20, "qualifiedBuy": 2, "rankingEligible": True},
+        {"eligibleEquities": 16, "screenedEquities": 16, "deepAnalyzed": 16, "evidencePass": 11, "qualifiedBuy": 1, "rankingEligible": False},
+    ]
+    f = build_coverage_funnel(rows, qualified_issuers=2)
+    assert f["stages"]["discovered"] == 100 and f["stages"]["deepAnalyzed"] == 25 and f["stages"]["qualifiedBuy"] == 2
+    assert f["scopes"]["allConnectedMarkets"]["discovered"] == 116
+    assert f["scopes"]["allConnectedMarkets"]["qualifiedBuy"] == 3
+    assert f["scopes"]["rankingEligibleMarkets"]["qualifiedIssuers"] == 2
+    assert f["stagesScope"] == "rankingEligibleMarkets"
