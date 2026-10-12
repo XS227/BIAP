@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -32,9 +33,21 @@ def read_json(path: Path, default: Any = None) -> Any:
 
 def write_json_atomic(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    temp = path.with_suffix(path.suffix + ".tmp")
-    temp.write_text(json.dumps(payload, ensure_ascii=False, sort_keys=True), encoding="utf-8")
-    temp.replace(path)
+    # A unique temp name per write: concurrent workers share cache keys, and a
+    # fixed "<name>.tmp" let two writers clobber each other. The temp file is
+    # removed if the write fails, so no zero-byte orphans accumulate.
+    fd, name = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+        os.chmod(name, 0o664)
+        os.replace(name, path)
+    except BaseException:
+        try:
+            os.unlink(name)
+        except OSError:
+            pass
+        raise
 
 
 def sha256_bytes(body: bytes) -> str:
