@@ -1,0 +1,4 @@
+{"updated":"2026-10-13T08:40Z","branch":"feat/biap-global-overnight-20261013","worktree":"/home/ubuntu/biap-global/wt-overnight","base":"cc6e7d5",
+ "completed":["US D1 evidence summary ledger totals","US D2 ranking basis","US D3 confidence audit (documented)","US D4 ASML currency fix + BUY auditor","US D8 profile isolation test","GB 849/826 preference-line reconciliation","GB Shell reviewed capex FCF","GB GBX/GBP verified","GB ranking block verified genuine","regression NO/SE/DE old-vs-new identical","backend pytest 1028 pass","app node tests 14 pass"],
+ "pending_owner_decision":["merge to feat/biap-global + deploy (outward-facing)","APK rebuild","controlled US/NASDAQ and GB ledger refresh after deploy","peer-cohort minimum policy","classify investment trusts from structured source","FX-converted valuation for USD reporters"],
+ "pending_unattended_safe":[]}

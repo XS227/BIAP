@@ -1,5 +1,9 @@
 # BIAP — Project Status
 
+## 2026-10-13 overnight repair (BIAP Global US/GB)
+
+Branch `feat/biap-global-overnight-20261013`, **not merged, not deployed** (prod `f15134a`), APK rebuild required. See `docs/overnight-progress.md`, `docs/market-audit/US_NASDAQ.md`, `docs/market-audit/GB_LSE.md`. GB ranking remains BLOCKED (62.8 % < 70 % verified fundamentals — genuine). US BUY list needs a ledger refresh on the fixed code.
+
 _Last updated: 2026-09-02 (broad-market regression tests, item 5, verified against real live TSE/IFB/IFB_BASE data on production `biap-fin` -- no code change, no bug found)_
 
 ## Production status
