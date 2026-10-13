@@ -1,5 +1,46 @@
 # BIAP — Project Status
 
+## 2026-10-13 audit checkpoint 1 (BIAP Global reconciliation, ranking standard, root causes)
+
+**Fixed in code (committed on feat/biap-global, NOT pushed/deployed; live 8091 still runs 631e5e0):**
+- Deploy workflow was failing on the last two pushes: it still ran a DK universe sync that the
+  six-market background allowlist rejects (`ok=0` -> exit 1) before restarting the API (4495f76).
+- Market Top 10/20 admitted any evidence-PASS company, including Siemens at 30.8% coverage and
+  companies without core statements. New ranking-evidence standard: Qualified BUY, or complete
+  core statements and >=60% coverage (`BIAP_GLOBAL_RANK_MIN_COVERAGE_PCT`). Thin-but-PASS
+  companies count as Insufficient Evidence; new `ranking_evidence_standard` funnel gate; note
+  states the real slot count (8824425). Germany Frankfurt now ranks 12, not a padded 20.
+- German share classes (ST/VZ/VZO/NA/INH/O.N.) collapse to one issuer (Fuchs, VW no longer take two slots).
+- A bounded scan (`discoveryLimit=250`, run by the final-live-check CI job on every push) flagged
+  2,763 of 3,013 NASDAQ ledger rows `in_universe=0` and blocked NASDAQ ranking (8% market
+  coverage). `sync_universe(demote_missing=False)` for partial slices; queue resolves from the
+  full universe (0ba978e). **The production NASDAQ ledger itself is not repaired yet.**
+- Tests: 765 global tests pass.
+
+**Reconciliation (ledger-based, `counts_before.json` in the audit scratch):** Germany Frankfurt
+498 = 491 deep analysed (434 PASS + 22 WARN + 35 BLOCK) + 7 no fundamental source. The old
+101/14/35 = 150 figure was a capped payload sample, not the ledger; the live ledger API already
+reports 491. Financially complete is 0-1 company per market everywhere: EBITDA, total debt,
+interest expense and operating cash flow are absent from the sources used.
+
+**Root causes found, not yet fixed:**
+- Italy FBK (FinecoBank): bank, but no sector and the filing tags equity only as issuer extensions
+  (`finecobank:TotalEquityAttributableToOwnersOfParent`, owners column; components cross-foot to
+  EUR 2,553.3m). The `^totalequity$` extension pattern misses it, so total_equity is None; even with
+  it, assets/equity = 14.6x is under the 15x leverage test that marks financials. Result: Agent 9
+  runs corporate models on a bank (insufficient data) and Agent 10 grid has zero coverage. Needs a
+  taxonomy-based financial-institution flag and a cross-footed extension-equity rule; touches the
+  ESEF extractor (~8,700 cached snapshots), so it needs a bounded re-extraction plan.
+- Germany: insurers/banks (ALV, HNR1, CBK) have no sector, so they are scored as industrials;
+  EBITDA/debt/interest are `absent_from_source` for the Frankfurt key-data and issuer-financial sources.
+- UK ranking block: 803 analysed, 300 without a fundamental source = 62.6% vs the 70% gate. 168
+  of the 300 are trusts/funds/VCTs, and more have no name marker (Witan, Asia Focus, Aquila).
+  There is no authoritative asset-class source: BIAP_COMPANIES_HOUSE_API_KEY is blank, and the
+  LSE universe rows carry no sector. Name matching would be guessing, so the 70% gate is untouched.
+- Confidence clustering (0.46/0.57/0.63): `mean(agent confidence) x (0.45 coverage + 0.30
+  freshness + 0.25 source quality)`; discrete inputs give discrete outputs. It is deterministic,
+  not noise. True calibration needs outcome history; none exists, so nothing was altered.
+
 ## 2026-10-13 overnight repair (BIAP Global US/GB)
 
 Branch `feat/biap-global-overnight-20261013`, **not merged, not deployed** (prod `f15134a`), APK rebuild required. See `docs/overnight-progress.md`, `docs/market-audit/US_NASDAQ.md`, `docs/market-audit/GB_LSE.md`. GB ranking remains BLOCKED (62.8 % < 70 % verified fundamentals — genuine). US BUY list needs a ledger refresh on the fixed code.
