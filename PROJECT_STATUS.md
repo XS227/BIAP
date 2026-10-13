@@ -1,5 +1,15 @@
 # BIAP — Project Status
 
+## 2026-10-13 session 18 (normalizer revision 3 re-parse, backups, NASDAQ regression, coverage)
+
+**Code:** `NORMALIZER_REVISION` 2 -> 3 (cached_fundamentals.py). Revision-2 snapshots are re-queued **only** when `total_equity` is empty (never again for debt/EBITDA/shares), so the bump
+does not re-fetch thousands of issuers. `CACHE_SCHEMA_VERSION` stays 11. Test added for the rev-2 rule; 787 global tests pass.
+**Re-parse (sandbox copy of prod data, no prod data touched):** 8,759 snapshots, 57 lack equity. Re-run through `/global/analyze` with no refetch of cached packages: 1 gained equity (US PC, an empty
+snapshot that was fully populated), 0 lost any field, all others stay genuinely empty (e.g. SAP, SIE, AZT, AV: sources do not publish a usable equity; nothing estimated). 1 ticker returned HTTP 400 (GB NTEA) and one (US GCGR); untouched.
+**Backups:** `/var/lib/biap-global/backup-s18-prereparse-20261013T205539Z` (ledgers + fundamentals, SHA256SUMS: 0 mismatches).
+**NASDAQ/NYSE regression:** live ledgers vs that backup are identical in all 34 markets (NASDAQ 3,013 rows / 3,010 in_universe; NYSE 1,799 / 1,798; GB 830 / 527). Market table from session 15 remains the latest verified coverage.
+**Still open:** DE sector source, UK asset-class source (gate untouched), EBITDA/debt gaps for Agents 9/10, APK 0.3.22 device test, `Sync main` CI, timers off.
+
 ## 2026-10-13 session 16 (BIAP Global reconciliation + FBK re-extraction)
 
 **Reconciliation:** the brief replayed at session start ("push four pending commits") was already satisfied: `feat/biap-global` = origin (e5398e3), nothing unpushed, prod 8091 = 4da8ab3 healthy.
