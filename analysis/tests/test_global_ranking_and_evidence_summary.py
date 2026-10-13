@@ -65,22 +65,24 @@ def test_cached_gb_snapshot_drops_legacy_preference_rows_and_adjusts_discovered_
     def company(ticker, name, isin, desc):
         return GlobalCompany(
             country="GB", exchange="LSE", currency="GBP", ticker=ticker, name=name, mic_code="XLON", isin=isin,
-            raw_provider_fields={"official_universe": True, "trusted_official_equity": True, "lse_description": desc},
+            raw_provider_fields={"official_universe": True, "lse_description": desc},
             sources=[SourceEvidence(provider="fake", source_type="instrument_reference", quality=0.9)],
         )
 
     class Upstream(InstrumentUniverseProvider):
-        provider_id = "fake-lse"
+        provider_id = "official-lse-main-market-price-explorer"
 
         def list_instruments(self, *, country=None, exchange=None):
             return [
                 company("III", "3I GROUP PLC", "GB00B1YW4409", "3I GROUP PLC ORD 73 19/22P"),
                 company("SAN", "SANTANDER UK PLC", "GB0000000002", "SANTANDER UK PLC 10 3/8% NON-CUM STLG PRF SHS #1"),
                 company("BPA", "BP PLC", "GB0000000003", "BP PLC 8% CUM 1ST PRF #1"),
+                company("LWDB", "LAW DEBENTURE CORPORATION PLC", "GB0031429219", "LAW DEBENTURE CORPORATION PLC ORD 5P"),
+                company("3IN", "3I INFRASTRUCTURE PLC", "JE00BF5FX167", "3I INFRASTRUCTURE PLC ORD NPV"),
             ]
 
     provider = PersistentUniverseProvider(Upstream(), data_dir=str(tmp_path), fresh_hours=12)
     rows = list(provider.list_instruments(country="GB", exchange="LSE"))
-    assert [r.ticker for r in rows] == ["III"]
+    assert sorted(r.ticker for r in rows) == ["3IN", "III", "LWDB"]  # genuine ordinaries kept, preference lines dropped
     info = provider.snapshot_info(country="GB", exchange="LSE")
-    assert info["officialCount"] == 1 and info["resolvedCount"] == 1
+    assert info["officialCount"] == 3 and info["resolvedCount"] == 3

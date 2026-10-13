@@ -180,6 +180,15 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
                 "cfi_code": cached_raw.get("cfi"),
                 "trusted_official_equity": (
                     cached_raw.get("trusted_official_equity") is True
+                    # The LSE adapter already screened every row on its official
+                    # description (preference/ADR/warrant/...); the generic
+                    # name/ticker heuristics wrongly dropped 3IN, 1SN and LWDB
+                    # ("DEBENTURE" in Law Debenture, digit-led tickers).
+                    or (
+                        str(payload.get("provider") or "") == "official-lse-main-market-price-explorer"
+                        and cached_raw.get("official_universe") is True
+                        and bool(str(cached_raw.get("lse_description") or "").strip())
+                    )
                     or (
                         str(payload.get("provider") or "") == "official-b3-regular-equity-universe"
                         and cached_raw.get("official_universe") is True
