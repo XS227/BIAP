@@ -233,3 +233,19 @@ class PortfolioProposal:
     reasoning: str = ""
     # Structured, per-candidate, per-constraint reasons behind `excluded`.
     rejections: tuple[dict, ...] = ()
+
+
+def taxonomy_financial_institution(company: "GlobalCompany") -> bool:
+    """True when the filing's own taxonomy shows a bank (Circular 262 structure).
+
+    The ESEF extractor only reports revenue as the item-120 banking-income
+    subtotal for a filing that tags both fee/commission and effective-interest
+    revenue as a bank does. That is stronger evidence than a leverage ratio,
+    which a bank at 14.6x assets/equity (FinecoBank) can fall just under.
+    """
+    fields = company.raw_provider_fields or {}
+    for key in ("oam_credit_extraction", "esef_credit_extraction"):
+        meta = fields.get(key)
+        if isinstance(meta, dict) and meta.get("revenue_method") == "bank_net_interest_and_other_banking_income":
+            return True
+    return False

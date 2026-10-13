@@ -7,7 +7,7 @@ triggering guessed values.
 
 from __future__ import annotations
 
-from .models import AgentSignal, GlobalCompany
+from .models import AgentSignal, GlobalCompany, taxonomy_financial_institution
 
 
 def _bounded(value: float) -> float:
@@ -15,6 +15,8 @@ def _bounded(value: float) -> float:
 
 
 def _is_financial(company: GlobalCompany) -> bool:
+    if taxonomy_financial_institution(company):
+        return True
     text = " ".join(filter(None, (company.sector, company.industry))).lower()
     tokens = (
         "bank", "banking", "insurance", "financial", "capital markets",

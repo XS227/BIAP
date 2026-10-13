@@ -230,6 +230,14 @@ _NCI_DIMENSION = ("ifrs-full:ComponentsOfEquityAxis", "ifrs-full:NoncontrollingI
 # The retained-earnings column of the same statement: a total-equity concept on
 # exactly this column is the closing retained earnings balance.
 _RETAINED_EARNINGS_DIMENSION = ("ifrs-full:ComponentsOfEquityAxis", "ifrs-full:RetainedEarningsMember")
+_COMPONENTS_AXIS = "ifrs-full:ComponentsOfEquityAxis"
+_RESTATEMENT_AXIS = "ifrs-full:RetrospectiveApplicationAndRetrospectiveRestatementAxis"
+_PREVIOUSLY_STATED = "ifrs-full:PreviouslyStatedMember"
+_EQUITY_TOTAL_MEMBERS = {
+    "ifrs-full:equityattributabletoownersofparentmember",
+    "ifrs-full:noncontrollinginterestsmember",
+    "ifrs-full:equitymember",
+}
 
 
 def _concept_local_name(concept: object) -> str:
@@ -562,7 +570,60 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             minority = self._instant_value(self._column_facts(facts, "equity", _NCI_DIMENSION, plain=False), period_end)
         if owners is not None and minority is not None and plausible(owners + minority):
             return owners + minority, "owners_equity_plus_noncontrolling_interests"
+        cross_footed = self._cross_footed_equity(facts, concept_facts, period_end)
+        if plausible(cross_footed):
+            return cross_footed, "extension_components_cross_footed"
         return None, None
+
+    def _cross_footed_equity(self, facts: list[dict], concept_facts: dict, period_end: date) -> Optional[float]:
+        """Total equity from a statement-of-changes-in-equity column set that proves itself.
+
+        Some issuers (FinecoBank) tag the closing owners' total only with a
+        ``PreviouslyStated`` restatement member and no plain total. That total is
+        accepted only when nothing contradicts it and the columns reconcile:
+        no restated column exists at that date, the component columns sum to the
+        owners' total, one component equals the income statement's profit, and
+        non-controlling interests are tagged explicitly.
+        """
+        nearest: Optional[int] = None
+        columns: list[tuple[str, Optional[str], float]] = []
+        for fact in facts:
+            dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+            concept = str(dims.get("concept") or "")
+            member = dims.get(_COMPONENTS_AXIS)
+            value = _num(fact.get("value"))
+            if member is None or value is None or not (
+                self._is_concept(concept, "owners_equity") or self._is_concept(concept, "equity")
+            ):
+                continue
+            if set(dims) - _ALLOWED_DIMENSIONS - {_COMPONENTS_AXIS, _RESTATEMENT_AXIS}:
+                continue
+            start, end = _period_parts(dims.get("period"))
+            if end is None or start != end or abs((period_end - end).days) > 7:
+                continue
+            distance = abs((period_end - end).days)
+            if nearest is None or distance < nearest:
+                nearest, columns = distance, []
+            if distance == nearest:
+                columns.append((str(member), dims.get(_RESTATEMENT_AXIS), value))
+        if not columns or any(axis not in (None, _PREVIOUSLY_STATED) for _, axis, _ in columns):
+            return None
+        by_member: dict[str, float] = {}
+        for member, _, value in columns:
+            if by_member.setdefault(member, value) != value:
+                return None
+        owners = by_member.get("ifrs-full:EquityAttributableToOwnersOfParentMember")
+        minority = by_member.get("ifrs-full:NoncontrollingInterestsMember")
+        components = [v for m, v in by_member.items() if m.lower() not in _EQUITY_TOTAL_MEMBERS]
+        if owners is None or minority is None or len(components) < 3:
+            return None
+        tolerance = max(1e-4 * abs(owners), 1000.0 * len(components))
+        if abs(sum(components) - owners) > tolerance:
+            return None
+        profit = self._duration_value(concept_facts["net_income"], period_end)
+        if profit is None or not any(abs(v - profit) <= max(1e-4 * abs(profit), 1000.0) for v in components):
+            return None
+        return owners + minority
 
     def _revenue_from_operating_total(
         self, concept_facts: dict, period_end: date
