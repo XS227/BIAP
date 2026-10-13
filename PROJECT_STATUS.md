@@ -1,5 +1,45 @@
 # BIAP — Project Status
 
+## 2026-10-13 deploy + NASDAQ re-sync + FBK fix (session 14)
+
+**Deployed (verified):** `feat/biap-global` pushed 5761485..03e740e; CI `Setup BIAP Global server` green (validate 1m6s, deploy 56s);
+`/health` on 8091 reports commit `03e740e`; `biap-global.service` active; the three Global timers stay disabled (no NEXT).
+Rollback target if needed: `631e5e0` (previous prod) plus the ledger backup below.
+
+**Ledger backup (restorable):** `/var/lib/biap-global/backup-pre-resync-20261013T095658Z/` - 34 SQLite ledgers via the online
+backup API, `PRAGMA integrity_check` = ok on all 34, `SHA256SUMS` alongside (105 MB). Disk 12 GB free before / 11 GB after; RAM 0.9 GB available.
+No original financial evidence (cache/, fundamentals/, filings/) was touched or deleted.
+
+**NASDAQ re-sync:** discovered 3,018 (the brief's number); resolved/registered 3,013 ledger rows, 3,010 `in_universe` (the other 8 discovered
+rows did not resolve to an ordinary-equity identity, 3 ledger rows are out of universe). It was already 3,010 from an 08:09Z out-of-band sync;
+the push-triggered `final-live-check` then raced the restart, ran on the OLD code and shrank it to 250 again. The full-universe scan on the deployed
+code restored 3,010, and a following `discoveryLimit=250` scan left it at 3,010, which confirms commit 0ba978e on production.
+Status mix NASDAQ before = after: COMPLETE 2,804 / BLOCKED 15 / INSUFFICIENT_DATA 191.
+**Operational note:** after any future deploy, re-run the full-universe scan once, because CI's final-live-check can run before the restart.
+
+**Regression check (34 ledgers, before vs after):** no market lost rows, and no COMPLETE count fell, except NYSE `OBK` (Origin Bancorp)
+leaving the official Nasdaq screener source (in_universe 1,799 -> 1,798, COMPLETE 1,600 -> 1,599). That follows the source, not code. Not rolled back.
+
+**Priority 2 (extraction), committed locally as 2215398, NOT pushed/deployed (needs approval):**
+- ESEF: FinecoBank-style equity (only a `PreviouslyStatedMember` column, no plain total) is now accepted only when all hold: no restated column at
+  that date, component columns foot to the owners total, a component equals the income-statement profit, NCI tagged explicitly. FBK: EUR 2,553.324m, method `extension_components_cross_footed`. BFF-style owners-only tags stay rejected.
+- Taxonomy bank flag (`taxonomy_financial_institution`): a filing with Circular-262 structure is financial in distress/core/advanced agents even at 14.6x leverage.
+- 770 Global tests pass (+5 new). Cached FBK snapshot verified by hand (components sum 2,553.324m).
+**Not fixed:** UK 62.6% vs 70% gate (no asset-class source; gate unchanged); DE insurers without sector; EBITDA/debt/interest absent from sources.
+
+**Priority 3/6 (agents + portfolio), live read-only on prod 03e740e:** NL, FI, ES all `READY`/rankingEligible.
+| Market | Verified fundamentals cov. | Top list | Qualified BUY |
+|---|---|---|---|
+| NL Euronext Amsterdam | 86.7% (98 deep of 102) | 20 | 3 (ASML, NEDAP, FFARM) |
+| FI Nasdaq Helsinki | 84.9% (146 of 148) | 20 | 3 (PUUILO, ORNBV, SCANFL) |
+| ES BME Madrid | 91.5% (106 of 111) | 20 | 1 (ITX) |
+The 20-name lists are evidence-standard shortlists and are not BUY lists; the BUY count was not padded. Portfolio call (18 names from the three lists, EUR 100k):
+7 positions, max 10.0% each (cap 10%), NL 20.5% / FI 23.6% / ES 9.5% (cap 40%), cash 46.4% (min 10%). Observations: EU instruments carry no sector, so the 30%
+sector cap cannot be verified; the proposal is under-invested (53.6%) and lists names as cut by `max_positions=10` although only 7 were allocated - to investigate.
+
+**Remaining blockers:** approval to push 2215398 (a push redeploys 8091 and requires another full NASDAQ re-sync); no APK rebuilt/device-tested for 03e740e;
+UK gate; DE insurer sectors; sector data for EU portfolio caps; portfolio under-investment/cut-message quirk; `Sync main from BIAP Global` CI job fails on each push (not investigated).
+
 ## 2026-10-13 audit checkpoint 1 (BIAP Global reconciliation, ranking standard, root causes)
 
 **Fixed in code (committed on feat/biap-global, NOT pushed/deployed; live 8091 still runs 631e5e0):**
