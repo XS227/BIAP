@@ -23,6 +23,7 @@ import {
   scanGlobalMarket,
 } from '@/lib/global-api';
 import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-market-selection';
+import { evidenceCounts, rankCriterionLabel, topRanked } from '@/lib/scan-summary';
 
 type Risk = 'low' | 'medium' | 'high';
 type Objective = 'growth' | 'income' | 'value' | 'capital_preservation';
@@ -48,6 +49,8 @@ type MarketStat = {
   pass: number;
   warn: number;
   block: number;
+  evidenceBasis?: 'ledger' | 'payload_sample';
+  rankCriterion?: string;
   avgScore: number | null;
   avgConfidence: number | null;
   top: string;
@@ -144,7 +147,8 @@ function stat(scope: Scope, r: ScanWithMode): MarketStat {
   const deep = r.deepResults || [];
   const scored = deep.filter((x) => x.score != null && Number.isFinite(Number(x.score)));
   const confident = deep.filter((x) => x.confidence != null && Number.isFinite(Number(x.confidence)));
-  const top = [...(r.recommendations || [])].sort((a, b) => Number(b.score || 0) - Number(a.score || 0))[0];
+  const top = topRanked(r);
+  const evidence = evidenceCounts(r);
   return {
     key: scopeKey(scope),
     country: scope.country,
@@ -154,9 +158,11 @@ function stat(scope: Scope, r: ScanWithMode): MarketStat {
     qualified: Number(r.recommendationCount || r.recommendations?.length || 0),
     deep: Number(r.deepAnalyzed || deep.length || 0),
     coverage: Number(r.screeningCoveragePct || 0),
-    pass: deep.filter((x) => x.evidence?.status === 'PASS').length,
-    warn: deep.filter((x) => x.evidence?.status === 'WARN').length,
-    block: deep.filter((x) => x.evidence?.status === 'BLOCK').length,
+    pass: evidence.pass,
+    warn: evidence.warn,
+    block: evidence.block,
+    evidenceBasis: evidence.basis,
+    rankCriterion: rankCriterionLabel(r),
     avgScore: scored.length ? scored.reduce((sum, x) => sum + Number(x.score), 0) / scored.length : null,
     avgConfidence: confident.length ? confident.reduce((sum, x) => sum + Number(x.confidence), 0) / confident.length : null,
     top: top?.ticker || '—',
@@ -549,7 +555,7 @@ export default function GlobalPortfolioScreen() {
                     <Text style={[s.marketLine, { color: colors.textSecondary }]}>{market.rankingBlocked ? 'Ranking blocked (coverage/evidence gates not met)' : `Analyzed: ${market.qualified} qualified BUY${market.qualified === 1 ? '' : 's'}`} • Deep analyses {market.deep}</Text>
                     <Text style={[s.marketLine, { color: colors.textSecondary }]}>Average score {n(market.avgScore, 3)} • confidence {pc(market.avgConfidence)}</Text>
                     <Text style={[s.marketLine, { color: colors.textSecondary }]}>Evidence {market.pass} pass • {market.warn} review • {market.block} blocked</Text>
-                    <Text style={[s.marketTop, { color: colors.text }]}>Highest-ranked in this scan: {market.top}</Text>
+                    <Text style={[s.marketTop, { color: colors.text }]}>Highest-ranked in this scan ({market.rankCriterion || 'server order'}): {market.top}</Text>
                   </>}
                 </View>
               ))}

@@ -298,6 +298,10 @@ export type GlobalScanResponse = {
   screeningCoveragePct?: number;
   fundamentalCoveragePct?: number;
   rankingEligible?: boolean;
+  /** Evidence gate totals over every deep-analyzed company (ledger), not the capped deepResults sample. */
+  evidenceSummary?: { basis?: string; denominator?: number; pass?: number; warn?: number; block?: number; note?: string } | null;
+  analysisLedger?: { evidenceSummary?: GlobalScanResponse['evidenceSummary']; payloadRowsShown?: number; deepAnalyzed?: number } & Record<string, unknown>;
+  rankingBasis?: { criterion?: string; formula?: string; scope?: string; note?: string };
   dataReadiness?: {
     status?: string;
     rankingEligible?: boolean;

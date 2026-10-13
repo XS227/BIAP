@@ -354,6 +354,49 @@ class GlobalMarketScanner:
             "reasons": reasons,
         }
 
+    RANKING_BASIS = {
+        "criterion": "score_x_confidence",
+        "formula": "score * confidence (Kiasha score after evidence multiplier, times overall calibrated confidence)",
+        "scope": "BUY_CANDIDATE with evidence PASS, one security per issuer",
+        "note": "Market, Kiasha and Portfolio must all use this order; rawScoreRank is shown only for comparison.",
+    }
+
+    @classmethod
+    def annotate_ranking(cls, recommendations: list[dict], all_buys: list[dict]) -> list[dict]:
+        """Attach explicit rank/criterion to each pick (copies; stored results untouched)."""
+        by_raw = sorted(
+            all_buys,
+            key=lambda r: float(r.get("score") or 0.0),
+            reverse=True,
+        )
+        raw_rank = {str(r.get("ticker") or "").upper(): i + 1 for i, r in enumerate(by_raw)}
+        out: list[dict] = []
+        for index, row in enumerate(recommendations, start=1):
+            score = float(row.get("score") or 0.0)
+            confidence = float(row.get("confidence") or 0.0)
+            out.append({
+                **row,
+                "rank": index,
+                "rankScore": round(score * confidence, 6),
+                "rankCriterion": cls.RANKING_BASIS["criterion"],
+                "rawScoreRank": raw_rank.get(str(row.get("ticker") or "").upper()),
+            })
+        return out
+
+    @staticmethod
+    def evidence_summary(counts: dict) -> dict:
+        """Evidence gate totals over EVERY deep-analyzed company (ledger), not the capped payload rows."""
+        analyzed = int(counts.get("deepAnalyzed") or 0)
+        return {
+            "basis": "ledger_all_deep_analyzed",
+            "denominator": analyzed,
+            "pass": int(counts.get("evidencePass") or 0),
+            "warn": int(counts.get("evidenceWarn") or 0),
+            "block": int(counts.get("evidenceBlock") or 0),
+            "note": "Evidence gates measure data quality only; they are not financial completeness or a recommendation. "
+                    "deepResults rows are a ranked sample capped by BIAP_GLOBAL_PAYLOAD_DEEP_ROWS and must not be counted.",
+        }
+
     @staticmethod
     def _recommendations(deep_results: list[dict], top_n: int) -> list[dict]:
         buys = [
@@ -507,9 +550,10 @@ class GlobalMarketScanner:
             "buyQualified": "BUY_CANDIDATE with evidence PASS",
         }
         buys = list(ledger.full_results(buys_only=True))
-        recommendations = self._recommendations(buys, top_n)
+        recommendations = self.annotate_ranking(self._recommendations(buys, top_n), buys)
         cap = max(25, int(os.environ.get("BIAP_GLOBAL_PAYLOAD_DEEP_ROWS", "150")))
         rows = ledger.summaries(limit=cap)
+        counts["evidenceSummary"] = self.evidence_summary(counts)
         counts["payloadRowsShown"] = len(rows)
         counts["payloadRowsNote"] = f"deepResults shows the top {cap} rows; GET /global/analysis-ledger lists every company with status, reason and source"
         return rows, counts, recommendations
@@ -652,6 +696,8 @@ class GlobalMarketScanner:
             "quotesUsable": len(quotes),
             "deepAnalyzed": analysis["deepAnalyzed"],
             "analysisLedger": analysis,
+            "evidenceSummary": analysis.get("evidenceSummary"),
+            "rankingBasis": self.RANKING_BASIS,
             "screeningCoveragePct": readiness["marketCoveragePct"],
             "fundamentalCoveragePct": readiness["fundamentalCoveragePct"],
             "screeningErrors": screening_errors,

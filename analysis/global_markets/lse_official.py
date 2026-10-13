@@ -25,9 +25,18 @@ _SOURCE_PAGE = "https://www.londonstockexchange.com/live-markets/market-data-das
 _USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131 Safari/537.36"
 _PROVIDER_ID = "official-lse-main-market-price-explorer"
 _REJECT = re.compile(
-    r"\b(GDR|ADR|DEPOSITARY|DEPOSITORY|PREF(?:ERENCE|ERRED)?|WARRANT|RIGHTS?|ETF|ETC|ETN|NOTE|BOND|CERTIFICATE)\b",
+    r"\b(GDR|ADR|DEPOSITARY|DEPOSITORY|PREF(?:ERENCE|ERRED)?|PFD|PRF|CUM|WARRANT|RIGHTS?|ETF|ETC|ETN|NOTE|BOND|CERTIFICATE)\b",
     re.I,
 )
+
+
+def non_ordinary_description(*texts: object) -> bool:
+    """True when an LSE instrument description marks a preference/depositary/debt line.
+
+    Shared by live discovery and the cached-snapshot decoder so a cached
+    universe cannot re-admit e.g. ``BP PLC 8% CUM 1ST PRF`` as an ordinary share.
+    """
+    return bool(_REJECT.search(" ".join(str(t or "") for t in texts).upper()))
 
 
 def _valid_isin(value: object) -> Optional[str]:

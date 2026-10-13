@@ -18,6 +18,7 @@ from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
+from .lse_official import non_ordinary_description
 
 # Version 24 persists Deutsche Boerse's authoritative Reporting Market field.
 # Older German snapshots only carried Primary Market MIC, which is not a safe
@@ -171,6 +172,8 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
             except Exception:
                 continue
             cached_raw = dict(row.get("raw_provider_fields") or {})
+            if row_country == "GB" and non_ordinary_description(cached_raw.get("lse_description")):
+                continue
             normalized_row = {
                 "name": str(row.get("name") or ticker),
                 "type": str(row.get("instrument_type") or "Common Stock"),
@@ -260,6 +263,20 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
             resolved_count = int(metadata.get("resolvedCount") or count)
         except (TypeError, ValueError):
             resolved_count = count
+        # Rows the decoder drops at read time (e.g. LSE preference lines in an
+        # older snapshot) must leave the discovered denominator too, otherwise
+        # "discovered" and the analysed ordinary universe disagree.
+        if country.upper() == "GB":
+            dropped = sum(
+                1 for row in payload.get("instruments") or []
+                if isinstance(row, dict)
+                and non_ordinary_description((row.get("raw_provider_fields") or {}).get("lse_description"))
+            )
+            if dropped:
+                count -= dropped
+                official_count -= dropped
+                resolved_count -= dropped
+                metadata = {**metadata, "excludedNonOrdinaryAtRead": dropped}
         coverage = round(100.0 * resolved_count / official_count, 2) if official_count else 0.0
         return {
             "available": True,
