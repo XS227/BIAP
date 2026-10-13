@@ -1,5 +1,41 @@
 # BIAP — Project Status
 
+## 2026-10-13 session 15 verification (BIAP Global, live prod 8091 @ 4da8ab3)
+
+**Reconciliation:** the "four pending commits" were already pushed. `origin/feat/biap-global` = f3fb006 (0.3.22, versionCode 25), which contains FBK fix 2215398; prod
+runs 4da8ab3 (f3fb006 is a version bump only, not path-triggering). Deploy workflow green on 4da8ab3; APK workflow green on f3fb006; `Sync main from BIAP Global`
+still fails (repo setting: Actions may not create PRs). All Global timers remain inactive. "PR #9" in XS227/BIAP is an unrelated PR, so reporting is on a dedicated issue.
+**Backups:** `/var/lib/biap-global/backup-pre-s15-20261013T141455Z` (34 ledgers, integrity ok, SHA256SUMS). **Tests:** 787 global tests pass.
+
+**NASDAQ ledger:** discovered 3,018, ledger 3,013 rows (identical key set to the pre-resync backup, 0 lost, 0 evidence statuses lost), 3,010 in_universe. A full scan (discoveryLimit 5000) left it unchanged.
+
+| Market | Universe | Deep | Fund. cov | Evidence PASS | Qualified BUY | Top list |
+|---|---|---|---|---|---|---|
+| NO Oslo | 146 | 146 | 93.2% | 136 | 1 (NORBT) | 20 |
+| DE Frankfurt | 498 | 491 | 98.6% | 434 | 1 | 12 |
+| DE Xetra | 406 | 404 | 99.0% | 372 | 0 | 11 |
+| IT Milan | 193 | 193 | 93.3% | 169 | 0 | 20 |
+| GB LSE | 527 | 521 | 85.0% (gate 70%, now released) | 420 | 7 | 20 |
+| NL | 98 | 98 | 86.7% | 82 | 3 | 20 |
+| FI | 148 | 146 | 84.9% | 123 | 3 | 20 |
+| ES | 109 | 106 | 91.5% | 95 | 1 | 20 |
+| SE | 402 | 402 | 93.0% | 373 | 0 | 20 |
+| FR | 294 | 293 | 91.1% | 259 | 1 | 20 |
+| US NASDAQ | 3,010 | 3,000 | 94.1% | 2,804 | 38 | 20 |
+| US NYSE | 1,798 | 1,787 | 90.1% | 1,599 | 44 | 20 |
+(ledger `buyQualified` shows FI 4 / NYSE 45 vs scan 3 / 44; a one-name difference between ledger count and the scan's one-security-per-issuer ranking, not investigated further.)
+
+**Zero-BUY audit (nothing forced):** a name needs score >= 0.25, confidence >= 0.45 and evidence PASS to be proposed BUY, then calibrated confidence >= 0.55 to be accepted.
+Among evidence-PASS names, only IT 2 (PHIL 0.31/0.52, PIRC), SE 3 (ASMDEE.B, VIMIAN, AZN), NO 5, GB 5 reach score 0.25 without being BUY, all at confidence 0.50-0.52, i.e. just under
+the 0.55 accept threshold. Xetra and Frankfurt have no PASS name at score >= 0.25. Thresholds and the evidence gate were not changed; confidence is deterministic (coverage/freshness/source quality), not outcome-calibrated (no outcome history exists).
+Research watchlists (clearly separated from BUY): `docs/market-audit/WATCHLISTS_20261013.md`.
+
+**Portfolio (prod, NL/FI/ES, EUR 100k, max 10 positions):** 10 positions, 90.0% invested / 10.0% cash (was 7 positions / 53.6%); the "max_positions" message now appears only for names truly beyond slot 10.
+**Sector coverage (ledger):** NO/SE/NL/IT 100%, FR 99.7%, FI 98.6%, ES 94.5%, GB 89.2%, NYSE 81.5%, **DE Frankfurt 27.3% / Xetra 29.6% (still open: no official sector source)**.
+**FBK (IT):** sector Financials/Banks, distress NOT_APPLICABLE for a bank. total_equity is still None on live `/global/analyze`; the cached snapshot needs the bounded ESEF re-extraction for 2215398's cross-footed equity to apply (not done).
+**Agents 9/10:** EBITDA, total debt, interest expense, FFO, FCF remain absent from the sources; scores report factors_missing rather than estimating. No values fabricated.
+**Remaining blockers:** DE sector source; FBK re-extraction; UK has no asset-class source (gate untouched); APK 0.3.22 not device-tested; `Sync main` CI job; CI final-live-check races the restart (re-run full scan after any deploy).
+
 ## 2026-10-13 deploy + NASDAQ re-sync + FBK fix (session 14)
 
 **Deployed (verified):** `feat/biap-global` pushed 5761485..03e740e; CI `Setup BIAP Global server` green (validate 1m6s, deploy 56s);
