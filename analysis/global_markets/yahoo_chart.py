@@ -27,6 +27,7 @@ import httpx
 
 from .country_packs import get_exchange
 from .history_store import persist_daily_history
+from .http_governor import YAHOO_GOVERNOR
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, MarketDataProvider, append_source
 
@@ -90,7 +91,7 @@ class YahooChartMarketProvider(MarketDataProvider):
         }
         try:
             with httpx.Client(timeout=self.timeout, headers=headers, follow_redirects=True) as client:
-                response = client.get(url, params=params)
+                response = YAHOO_GOVERNOR.get(client, url, params=params)
             response.raise_for_status()
             payload = response.json()
         except (httpx.HTTPError, ValueError) as exc:
@@ -105,6 +106,18 @@ class YahooChartMarketProvider(MarketDataProvider):
             description = error.get("description") if isinstance(error, dict) else str(error)
             raise GlobalProviderError(f"Yahoo chart rejected request: {str(description)[:240]}")
         return payload
+
+    @staticmethod
+    def _latest_bar_is_partial(meta: dict, bar_timestamp: Any) -> bool:
+        """True when the newest daily bar belongs to a regular session still open."""
+        try:
+            regular = meta["currentTradingPeriod"]["regular"]
+            start, end = int(regular["start"]), int(regular["end"])
+            now = int(meta.get("regularMarketTime") or 0)
+            bar = int(bar_timestamp)
+        except (KeyError, TypeError, ValueError):
+            return False
+        return start <= bar < end and start <= now < end
 
     @staticmethod
     def _float(value: Any) -> Optional[float]:
@@ -236,13 +249,19 @@ class YahooChartMarketProvider(MarketDataProvider):
             raise GlobalProviderError(f"Yahoo returned no verified close prices for {company.identity()}")
 
         latest = bars[-1]
+        partial_session = self._latest_bar_is_partial(meta, latest.get("timestamp"))
         observed_at = self._observed_at(latest["timestamp"])
         if not observed_at:
             raise GlobalProviderError(f"Yahoo returned no valid price timestamp for {company.identity()}")
         adjusted_closes = [bar["adjusted"] for bar in bars if isinstance(bar.get("adjusted"), (int, float)) and bar["adjusted"] > 0]
         valid_highs = [bar["high"] for bar in bars if isinstance(bar.get("high"), (int, float)) and bar["high"] > 0]
         valid_lows = [bar["low"] for bar in bars if isinstance(bar.get("low"), (int, float)) and bar["low"] > 0]
-        recent_volumes = [bar["volume"] for bar in bars[-30:] if isinstance(bar.get("volume"), (int, float)) and bar["volume"] >= 0]
+        # A bar still forming during the regular session carries partial volume;
+        # comparing it with full-day averages fakes a "dry" 0.1x ratio. Volume
+        # statistics use completed sessions only; price keeps the live close.
+        volume_bars = bars[:-1] if partial_session and len(bars) > 1 else bars
+        recent_volumes = [bar["volume"] for bar in volume_bars[-30:] if isinstance(bar.get("volume"), (int, float)) and bar["volume"] >= 0]
+        volume_today = volume_bars[-1].get("volume") if volume_bars else latest.get("volume")
 
         persist_daily_history(
             replace(company, currency=currency),
@@ -270,7 +289,7 @@ class YahooChartMarketProvider(MarketDataProvider):
             currency=currency,
             price=float(latest["close"]),
             price_observed_at=observed_at,
-            volume_today=latest.get("volume"),
+            volume_today=volume_today,
             avg_volume_30d=(sum(recent_volumes) / len(recent_volumes) if recent_volumes else None),
             price_52w_high=max(valid_highs) if valid_highs else None,
             price_52w_low=min(valid_lows) if valid_lows else None,
@@ -285,6 +304,7 @@ class YahooChartMarketProvider(MarketDataProvider):
                 "public_market_vendor_symbol": vendor_symbol,
                 "public_market_exchange": meta.get("exchangeName") or meta.get("fullExchangeName"),
                 "public_market_price_scale": price_scale,
+                "latest_bar_partial_session": partial_session,
             },
         )
         return append_source(enriched, SourceEvidence(

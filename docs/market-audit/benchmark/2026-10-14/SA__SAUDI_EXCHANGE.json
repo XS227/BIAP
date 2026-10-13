@@ -1,0 +1,2585 @@
+{
+ "market": "SA__SAUDI_EXCHANGE",
+ "generatedAt": "2026-10-13T23:57:55.346439+00:00",
+ "universeInLedger": 376,
+ "excluded": {
+  "fewer than 20 traded sessions in last 30": 1
+ },
+ "companies": [
+  {
+   "ticker": "1060",
+   "name": "SAB",
+   "category": "TRADING_VALUE",
+   "categoryRank": 1,
+   "market": {
+    "lastSession": "2026-10-11",
+    "lastClose": 34.0,
+    "historyFileObservedAt": "2026-10-12T13:22:57.337947+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "1060.SR",
+    "currency": "SAR",
+    "avgTradedValue30d": 44891639.26757825,
+    "return30dPct": -0.9324000514850717,
+    "volumeRatio": 0.8974757393963769,
+    "exchange": "SAUDI_EXCHANGE",
+    "country": "SA",
+    "source": "yahoo-public-chart-global"
+   },
+   "ledgerStatus": "INSUFFICIENT_DATA",
+   "pipeline": {
+    "call": "NO_RECOMMENDATION",
+    "draftCall": "NO_RECOMMENDATION",
+    "score": 0.00905,
+    "confidence": 0.112333,
+    "agents": {
+     "fundamental": {
+      "vote": -0.05,
+      "confidence": 0.71,
+      "reasoning": "revenue +5.0% YoY; margin declining (-0.1pp); positive operating cash flow; positive free cash flow"
+     },
+     "risk": {
+      "vote": -0.09999999999999996,
+      "confidence": 0.68,
+      "reasoning": "max drawdown -13.9%; annualized volatility 17.6%; liabilities/equity 4.73x; debt/operating cash flow 1.06x"
+     },
+     "forecast": {
+      "vote": 0.0,
+      "confidence": 0.69,
+      "reasoning": "volume 1.6x 30d average; returns 1m=-1.1%, 3m=+7.4%, 6m=-4.3%; 52w range position 41%"
+     },
+     "comparison": {
+      "vote": 0.0,
+      "confidence": 0.25,
+      "reasoning": "P/E 8.77; sector peer P/E unavailable: no sector classification from an authoritative source; abstaining (exchange-wide median shown as context only, not used)"
+     },
+     "quality": {
+      "vote": 0.4,
+      "confidence": 0.64,
+      "reasoning": "net margin 56.9%; operating cash/net income 0.91x; free cash/net income 0.82x; ROA 1.9%"
+     },
+     "liquidity": {
+      "vote": 0.0,
+      "confidence": 0.4,
+      "reasoning": "today volume 1.62x 30d average"
+     }
+    },
+    "evidence": {
+     "status": "BLOCK",
+     "missingCritical": [
+      "fundamental_source"
+     ],
+     "coverage": 0.9375,
+     "contradictions": []
+    },
+    "agent8": {
+     "action": "ABSTAIN",
+     "accepted": false,
+     "hardBlocks": [
+      "task/evidence gate is out of scope or blocked"
+     ],
+     "reviewReasons": [],
+     "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+    },
+    "agent9": {
+     "status": "INSUFFICIENT_DATA",
+     "models": [],
+     "missingInputs": [
+      "zmijewski:current_assets",
+      "zmijewski:current_liabilities",
+      "altman:retained_earnings",
+      "altman:operating_income",
+      "altman:current_assets",
+      "altman:current_liabilities",
+      "interest_coverage:operating_income",
+      "interest_coverage:interest_expense"
+     ],
+     "reasoning": "insufficient verified inputs for distress models"
+    },
+    "agent10": {
+     "weightCoverage": 0.1,
+     "missing": [
+      "debt_ebitda",
+      "ebitda_interest",
+      "ffo_debt",
+      "governance",
+      "industry_risk",
+      "liquidity"
+     ]
+    },
+    "metrics": {
+     "pe": 8.766404599968217,
+     "pb": null,
+     "evEbitda": null,
+     "peVsSectorPct": null,
+     "revenueYoyPct": 4.990528530493976,
+     "netMarginPct": 56.94864827970774,
+     "roePct": 10.653200962019227,
+     "debtToEquity": 0.10278110868666235,
+     "currentRatio": null,
+     "freeCashFlow": 6891142000.0,
+     "return1mPct": -1.1249179015686117,
+     "return3mPct": 7.42095172381132,
+     "return6mPct": -4.342200974669219,
+     "volatilityAnnualizedPct": 17.552019814895512,
+     "maxDrawdownPct": -13.880262381401002,
+     "volumeVs30d": 1.61799075705517,
+     "marketCap": null,
+     "dividendYieldPct": null
+    },
+    "outlook": {
+     "shortTermOutlook": "DATA_BLOCKED",
+     "longTermOutlook": "DATA_BLOCKED",
+     "momentum": "MIXED",
+     "riskLevel": "LOW",
+     "drawdownRisk": "LOW",
+     "valuationView": "INSUFFICIENT_DATA"
+    },
+    "opportunity": {
+     "state": "INSUFFICIENT_DATA",
+     "primaryCause": "MISSING_DATA",
+     "explanation": "Reliable assessment cannot be completed: missing fundamental_source Distress models could not run (missing debt/EBITDA/interest inputs); this is a data gap, not a distress finding, and did not affect the state.",
+     "underlying": {
+      "draftCall": "NO_RECOMMENDATION",
+      "score": 0.0091,
+      "confidence": 0.1123
+     },
+     "agent8Abstention": [
+      {
+       "code": "HARD_BLOCK",
+       "kind": "GOVERNANCE_RESTRICTION",
+       "detail": "task/evidence gate is out of scope or blocked"
+      }
+     ],
+     "limitingFactors": [
+      {
+       "agent": "risk",
+       "vote": -0.1,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      }
+     ],
+     "distressAxis": {
+      "status": "INSUFFICIENT_DATA",
+      "dataGap": true,
+      "missingInputs": [
+       "zmijewski:current_assets",
+       "zmijewski:current_liabilities",
+       "altman:retained_earnings",
+       "altman:operating_income",
+       "altman:current_assets",
+       "altman:current_liabilities",
+       "interest_coverage:operating_income",
+       "interest_coverage:interest_expense"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "ticker": "1010",
+   "name": "RIBL",
+   "category": "TRADING_VALUE",
+   "categoryRank": 2,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 19.530000686645508,
+    "historyFileObservedAt": "2026-10-13T21:55:46.215358+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "1010.SR",
+    "currency": "SAR",
+    "avgTradedValue30d": 43619998.44232012,
+    "return30dPct": -6.5550189324888875,
+    "volumeRatio": 0.4671775469673358,
+    "exchange": "SAUDI_EXCHANGE",
+    "country": "SA",
+    "source": "yahoo-public-chart-global"
+   },
+   "ledgerStatus": "INSUFFICIENT_DATA",
+   "pipeline": {
+    "call": "NO_RECOMMENDATION",
+    "draftCall": "NO_RECOMMENDATION",
+    "score": -0.037864,
+    "confidence": 0.112333,
+    "agents": {
+     "fundamental": {
+      "vote": -0.19999999999999998,
+      "confidence": 0.71,
+      "reasoning": "revenue +6.4% YoY; margin improving (+2.7pp); negative operating cash flow; negative free cash flow"
+     },
+     "risk": {
+      "vote": -0.14999999999999997,
+      "confidence": 0.68,
+      "reasoning": "max drawdown -11.0%; annualized volatility 17.2%; liabilities/equity 5.88x; debt/operating cash flow 2.02x"
+     },
+     "forecast": {
+      "vote": -0.19999999999999998,
+      "confidence": 0.69,
+      "reasoning": "volume 0.9x 30d average; returns 1m=-6.6%, 3m=-2.9%, 6m=-7.4%; 52w range position 9%"
+     },
+     "comparison": {
+      "vote": 0.0,
+      "confidence": 0.25,
+      "reasoning": "P/E 7.81; sector peer P/E unavailable: no sector classification from an authoritative source; abstaining (exchange-wide median shown as context only, not used)"
+     },
+     "quality": {
+      "vote": -0.39999999999999997,
+      "confidence": 0.64,
+      "reasoning": "net margin 56.7%; operating cash/net income -2.29x; free cash/net income -2.48x; ROA 2.0%"
+     },
+     "liquidity": {
+      "vote": 0.0,
+      "confidence": 0.4,
+      "reasoning": "today volume 0.88x 30d average"
+     }
+    },
+    "evidence": {
+     "status": "BLOCK",
+     "missingCritical": [
+      "fundamental_source"
+     ],
+     "coverage": 0.9375,
+     "contradictions": []
+    },
+    "agent8": {
+     "action": "ABSTAIN",
+     "accepted": false,
+     "hardBlocks": [
+      "task/evidence gate is out of scope or blocked"
+     ],
+     "reviewReasons": [],
+     "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+    },
+    "agent9": {
+     "status": "INSUFFICIENT_DATA",
+     "models": [],
+     "missingInputs": [
+      "zmijewski:current_assets",
+      "zmijewski:current_liabilities",
+      "altman:retained_earnings",
+      "altman:operating_income",
+      "altman:current_assets",
+      "altman:current_liabilities",
+      "interest_coverage:operating_income",
+      "interest_coverage:interest_expense"
+     ],
+     "reasoning": "insufficient verified inputs for distress models"
+    },
+    "agent10": {
+     "weightCoverage": 0.1,
+     "missing": [
+      "debt_ebitda",
+      "ebitda_interest",
+      "ffo_debt",
+      "governance",
+      "industry_risk",
+      "liquidity"
+     ]
+    },
+    "metrics": {
+     "pe": 7.813576772703347,
+     "pb": null,
+     "evEbitda": null,
+     "peVsSectorPct": null,
+     "revenueYoyPct": 6.385311903474178,
+     "netMarginPct": 56.722670601549176,
+     "roePct": 13.792726603038414,
+     "debtToEquity": 0.6407826229427447,
+     "currentRatio": null,
+     "freeCashFlow": -25865856000.0,
+     "return1mPct": -6.634377516672673,
+     "return3mPct": -2.8722628912017156,
+     "return6mPct": -7.437127075465821,
+     "volatilityAnnualizedPct": 17.15885265583341,
+     "maxDrawdownPct": -10.998831517008952,
+     "volumeVs30d": 0.8769618170620377,
+     "marketCap": null,
+     "dividendYieldPct": null
+    },
+    "outlook": {
+     "shortTermOutlook": "DATA_BLOCKED",
+     "longTermOutlook": "DATA_BLOCKED",
+     "momentum": "NEGATIVE",
+     "riskLevel": "LOW",
+     "drawdownRisk": "LOW",
+     "valuationView": "INSUFFICIENT_DATA"
+    },
+    "opportunity": {
+     "state": "INSUFFICIENT_DATA",
+     "primaryCause": "MISSING_DATA",
+     "explanation": "Reliable assessment cannot be completed: missing fundamental_source Distress models could not run (missing debt/EBITDA/interest inputs); this is a data gap, not a distress finding, and did not affect the state.",
+     "underlying": {
+      "draftCall": "NO_RECOMMENDATION",
+      "score": -0.0379,
+      "confidence": 0.1123
+     },
+     "agent8Abstention": [
+      {
+       "code": "HARD_BLOCK",
+       "kind": "GOVERNANCE_RESTRICTION",
+       "detail": "task/evidence gate is out of scope or blocked"
+      }
+     ],
+     "limitingFactors": [
+      {
+       "agent": "quality",
+       "vote": -0.4,
+       "kind": "WEAK_FUNDAMENTALS"
+      },
+      {
+       "agent": "fundamental",
+       "vote": -0.2,
+       "kind": "WEAK_FUNDAMENTALS"
+      },
+      {
+       "agent": "forecast",
+       "vote": -0.2,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      },
+      {
+       "agent": "risk",
+       "vote": -0.15,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      }
+     ],
+     "distressAxis": {
+      "status": "INSUFFICIENT_DATA",
+      "dataGap": true,
+      "missingInputs": [
+       "zmijewski:current_assets",
+       "zmijewski:current_liabilities",
+       "altman:retained_earnings",
+       "altman:operating_income",
+       "altman:current_assets",
+       "altman:current_liabilities",
+       "interest_coverage:operating_income",
+       "interest_coverage:interest_expense"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "ticker": "1050",
+   "name": "BSF",
+   "category": "TRADING_VALUE",
+   "categoryRank": 3,
+   "market": {
+    "lastSession": "2026-10-11",
+    "lastClose": 19.780000686645508,
+    "historyFileObservedAt": "2026-10-12T13:22:57.791801+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "1050.SR",
+    "currency": "SAR",
+    "avgTradedValue30d": 32841202.841883343,
+    "return30dPct": -9.307651668982563,
+    "volumeRatio": 0.385905522786257,
+    "exchange": "SAUDI_EXCHANGE",
+    "country": "SA",
+    "source": "yahoo-public-chart-global"
+   },
+   "ledgerStatus": "INSUFFICIENT_DATA",
+   "pipeline": {
+    "call": "NO_RECOMMENDATION",
+    "draftCall": "NO_RECOMMENDATION",
+    "score": -0.029674,
+    "confidence": 0.112333,
+    "agents": {
+     "fundamental": {
+      "vote": -0.19999999999999998,
+      "confidence": 0.71,
+      "reasoning": "revenue +9.0% YoY; margin improving (+3.8pp); negative operating cash flow; negative free cash flow"
+     },
+     "risk": {
+      "vote": -0.14999999999999997,
+      "confidence": 0.68,
+      "reasoning": "max drawdown -14.1%; annualized volatility 21.8%; liabilities/equity 5.10x; debt/operating cash flow 3.26x"
+     },
+     "forecast": {
+      "vote": 0.0,
+      "confidence": 0.69,
+      "reasoning": "volume 0.8x 30d average; returns 1m=-9.9%, 3m=+3.1%, 6m=+4.1%; 52w range position 61%"
+     },
+     "comparison": {
+      "vote": 0.0,
+      "confidence": 0.25,
+      "reasoning": "P/E 10.05; sector peer P/E unavailable: no sector classification from an authoritative source; abstaining (exchange-wide median shown as context only, not used)"
+     },
+     "quality": {
+      "vote": -0.39999999999999997,
+      "confidence": 0.64,
+      "reasoning": "net margin 51.1%; operating cash/net income -2.27x; free cash/net income -2.38x; ROA 1.7%"
+     },
+     "liquidity": {
+      "vote": 0.0,
+      "confidence": 0.4,
+      "reasoning": "today volume 0.81x 30d average"
+     }
+    },
+    "evidence": {
+     "status": "BLOCK",
+     "missingCritical": [
+      "fundamental_source"
+     ],
+     "coverage": 0.9375,
+     "contradictions": []
+    },
+    "agent8": {
+     "action": "ABSTAIN",
+     "accepted": false,
+     "hardBlocks": [
+      "task/evidence gate is out of scope or blocked"
+     ],
+     "reviewReasons": [],
+     "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+    },
+    "agent9": {
+     "status": "INSUFFICIENT_DATA",
+     "models": [],
+     "missingInputs": [
+      "zmijewski:current_assets",
+      "zmijewski:current_liabilities",
+      "altman:retained_earnings",
+      "altman:operating_income",
+      "altman:current_assets",
+      "altman:current_liabilities",
+      "interest_coverage:operating_income",
+      "interest_coverage:interest_expense"
+     ],
+     "reasoning": "insufficient verified inputs for distress models"
+    },
+    "agent10": {
+     "weightCoverage": 0.1,
+     "missing": [
+      "debt_ebitda",
+      "ebitda_interest",
+      "ffo_debt",
+      "governance",
+      "industry_risk",
+      "liquidity"
+     ]
+    },
+    "metrics": {
+     "pe": 10.050761034040887,
+     "pb": null,
+     "evEbitda": null,
+     "peVsSectorPct": null,
+     "revenueYoyPct": 8.981904924829553,
+     "netMarginPct": 51.05326184592352,
+     "roePct": 10.567466224161429,
+     "debtToEquity": 0.7812211813324893,
+     "currentRatio": null,
+     "freeCashFlow": -12730907000.0,
+     "return1mPct": -9.877105799338414,
+     "return3mPct": 3.068217188954381,
+     "return6mPct": 4.086253736828049,
+     "volatilityAnnualizedPct": 21.75167541428561,
+     "maxDrawdownPct": -14.050031319181066,
+     "volumeVs30d": 0.810922786622888,
+     "marketCap": null,
+     "dividendYieldPct": null
+    },
+    "outlook": {
+     "shortTermOutlook": "DATA_BLOCKED",
+     "longTermOutlook": "DATA_BLOCKED",
+     "momentum": "MIXED",
+     "riskLevel": "LOW",
+     "drawdownRisk": "LOW",
+     "valuationView": "INSUFFICIENT_DATA"
+    },
+    "opportunity": {
+     "state": "INSUFFICIENT_DATA",
+     "primaryCause": "MISSING_DATA",
+     "explanation": "Reliable assessment cannot be completed: missing fundamental_source Distress models could not run (missing debt/EBITDA/interest inputs); this is a data gap, not a distress finding, and did not affect the state.",
+     "underlying": {
+      "draftCall": "NO_RECOMMENDATION",
+      "score": -0.0297,
+      "confidence": 0.1123
+     },
+     "agent8Abstention": [
+      {
+       "code": "HARD_BLOCK",
+       "kind": "GOVERNANCE_RESTRICTION",
+       "detail": "task/evidence gate is out of scope or blocked"
+      }
+     ],
+     "limitingFactors": [
+      {
+       "agent": "quality",
+       "vote": -0.4,
+       "kind": "WEAK_FUNDAMENTALS"
+      },
+      {
+       "agent": "fundamental",
+       "vote": -0.2,
+       "kind": "WEAK_FUNDAMENTALS"
+      },
+      {
+       "agent": "risk",
+       "vote": -0.15,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      }
+     ],
+     "distressAxis": {
+      "status": "INSUFFICIENT_DATA",
+      "dataGap": true,
+      "missingInputs": [
+       "zmijewski:current_assets",
+       "zmijewski:current_liabilities",
+       "altman:retained_earnings",
+       "altman:operating_income",
+       "altman:current_assets",
+       "altman:current_liabilities",
+       "interest_coverage:operating_income",
+       "interest_coverage:interest_expense"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "ticker": "1080",
+   "name": "ANB",
+   "category": "TRADING_VALUE",
+   "categoryRank": 4,
+   "market": {
+    "lastSession": "2026-10-11",
+    "lastClose": 21.299999237060547,
+    "historyFileObservedAt": "2026-10-12T13:22:58.151734+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "1080.SR",
+    "currency": "SAR",
+    "avgTradedValue30d": 29677309.10949033,
+    "return30dPct": -4.910716072333132,
+    "volumeRatio": 1.798205773708184,
+    "exchange": "SAUDI_EXCHANGE",
+    "country": "SA",
+    "source": "yahoo-public-chart-global"
+   },
+   "ledgerStatus": "INSUFFICIENT_DATA",
+   "pipeline": {
+    "call": "NO_RECOMMENDATION",
+    "draftCall": "NO_RECOMMENDATION",
+    "score": -0.005846,
+    "confidence": 0.112333,
+    "agents": {
+     "fundamental": {
+      "vote": -0.05,
+      "confidence": 0.71,
+      "reasoning": "revenue +5.1% YoY; margin declining (-1.1pp); positive operating cash flow; positive free cash flow"
+     },
+     "risk": {
+      "vote": -0.09999999999999996,
+      "confidence": 0.68,
+      "reasoning": "max drawdown -20.8%; annualized volatility 19.4%; liabilities/equity 4.69x; debt/operating cash flow 0.87x"
+     },
+     "forecast": {
+      "vote": 0.1,
+      "confidence": 0.69,
+      "reasoning": "volume 1.0x 30d average; returns 1m=-6.2%, 3m=+4.1%, 6m=+0.9%; 52w range position 28%"
+     },
+     "comparison": {
+      "vote": 0.0,
+      "confidence": 0.25,
+      "reasoning": "P/E 8.59; sector peer P/E unavailable: no sector classification from an authoritative source; abstaining (exchange-wide median shown as context only, not used)"
+     },
+     "quality": {
+      "vote": -0.09999999999999998,
+      "confidence": 0.64,
+      "reasoning": "net margin 51.8%; operating cash/net income 0.34x; free cash/net income 0.21x; ROA 1.8%"
+     },
+     "liquidity": {
+      "vote": 0.0,
+      "confidence": 0.4,
+      "reasoning": "today volume 0.95x 30d average"
+     }
+    },
+    "evidence": {
+     "status": "BLOCK",
+     "missingCritical": [
+      "fundamental_source"
+     ],
+     "coverage": 0.9375,
+     "contradictions": []
+    },
+    "agent8": {
+     "action": "ABSTAIN",
+     "accepted": false,
+     "hardBlocks": [
+      "task/evidence gate is out of scope or blocked"
+     ],
+     "reviewReasons": [],
+     "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+    },
+    "agent9": {
+     "status": "INSUFFICIENT_DATA",
+     "models": [],
+     "missingInputs": [
+      "zmijewski:current_assets",
+      "zmijewski:current_liabilities",
+      "altman:retained_earnings",
+      "altman:operating_income",
+      "altman:current_assets",
+      "altman:current_liabilities",
+      "interest_coverage:operating_income",
+      "interest_coverage:interest_expense"
+     ],
+     "reasoning": "insufficient verified inputs for distress models"
+    },
+    "agent10": {
+     "weightCoverage": 0.1,
+     "missing": [
+      "debt_ebitda",
+      "ebitda_interest",
+      "ffo_debt",
+      "governance",
+      "industry_risk",
+      "liquidity"
+     ]
+    },
+    "metrics": {
+     "pe": 8.590361200662022,
+     "pb": null,
+     "evEbitda": null,
+     "peVsSectorPct": null,
+     "revenueYoyPct": 5.119742654344273,
+     "netMarginPct": 51.79795646521514,
+     "roePct": 10.33948762906328,
+     "debtToEquity": 0.030420667827885044,
+     "currentRatio": null,
+     "freeCashFlow": 1093462000.0,
+     "return1mPct": -6.184210064008278,
+     "return3mPct": 4.089398753342666,
+     "return6mPct": 0.9438360101472032,
+     "volatilityAnnualizedPct": 19.419144732208277,
+     "maxDrawdownPct": -20.780293315945965,
+     "volumeVs30d": 0.9538557948238628,
+     "marketCap": null,
+     "dividendYieldPct": null
+    },
+    "outlook": {
+     "shortTermOutlook": "DATA_BLOCKED",
+     "longTermOutlook": "DATA_BLOCKED",
+     "momentum": "MIXED",
+     "riskLevel": "LOW",
+     "drawdownRisk": "ELEVATED",
+     "valuationView": "INSUFFICIENT_DATA"
+    },
+    "opportunity": {
+     "state": "INSUFFICIENT_DATA",
+     "primaryCause": "MISSING_DATA",
+     "explanation": "Reliable assessment cannot be completed: missing fundamental_source Distress models could not run (missing debt/EBITDA/interest inputs); this is a data gap, not a distress finding, and did not affect the state.",
+     "underlying": {
+      "draftCall": "NO_RECOMMENDATION",
+      "score": -0.0058,
+      "confidence": 0.1123
+     },
+     "agent8Abstention": [
+      {
+       "code": "HARD_BLOCK",
+       "kind": "GOVERNANCE_RESTRICTION",
+       "detail": "task/evidence gate is out of scope or blocked"
+      }
+     ],
+     "limitingFactors": [
+      {
+       "agent": "risk",
+       "vote": -0.1,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      },
+      {
+       "agent": "quality",
+       "vote": -0.1,
+       "kind": "WEAK_FUNDAMENTALS"
+      }
+     ],
+     "distressAxis": {
+      "status": "INSUFFICIENT_DATA",
+      "dataGap": true,
+      "missingInputs": [
+       "zmijewski:current_assets",
+       "zmijewski:current_liabilities",
+       "altman:retained_earnings",
+       "altman:operating_income",
+       "altman:current_assets",
+       "altman:current_liabilities",
+       "interest_coverage:operating_income",
+       "interest_coverage:interest_expense"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "ticker": "1020",
+   "name": "BJAZ",
+   "category": "TRADING_VALUE",
+   "categoryRank": 5,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 11.279999732971191,
+    "historyFileObservedAt": "2026-10-13T21:51:30.136169+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "1020.SR",
+    "currency": "SAR",
+    "avgTradedValue30d": 29203586.660444703,
+    "return30dPct": -6.000002225240076,
+    "volumeRatio": 0.4296243241102557,
+    "exchange": "SAUDI_EXCHANGE",
+    "country": "SA",
+    "source": "yahoo-public-chart-global"
+   },
+   "ledgerStatus": "INSUFFICIENT_DATA",
+   "pipeline": {
+    "call": "NO_RECOMMENDATION",
+    "draftCall": "NO_RECOMMENDATION",
+    "score": -0.024807,
+    "confidence": 0.112333,
+    "agents": {
+     "fundamental": {
+      "vote": 0.2000000000000001,
+      "confidence": 0.71,
+      "reasoning": "revenue +18.1% YoY; margin improving (+1.2pp); negative operating cash flow; negative free cash flow"
+     },
+     "risk": {
+      "vote": -0.14999999999999997,
+      "confidence": 0.68,
+      "reasoning": "max drawdown -16.8%; annualized volatility 17.7%; liabilities/equity 6.62x; debt/operating cash flow 2.90x"
+     },
+     "forecast": {
+      "vote": -0.19999999999999998,
+      "confidence": 0.69,
+      "reasoning": "volume 0.6x 30d average; returns 1m=-6.2%, 3m=-2.8%, 6m=-3.8%; 52w range position 24%"
+     },
+     "comparison": {
+      "vote": 0.0,
+      "confidence": 0.25,
+      "reasoning": "P/E 11.35; sector peer P/E unavailable: no sector classification from an authoritative source; abstaining (exchange-wide median shown as context only, not used)"
+     },
+     "quality": {
+      "vote": -0.5,
+      "confidence": 0.64,
+      "reasoning": "net margin 33.7%; operating cash/net income -0.51x; free cash/net income -0.73x; ROA 0.9%"
+     },
+     "liquidity": {
+      "vote": 0.0,
+      "confidence": 0.4,
+      "reasoning": "today volume 0.63x 30d average"
+     }
+    },
+    "evidence": {
+     "status": "BLOCK",
+     "missingCritical": [
+      "fundamental_source"
+     ],
+     "coverage": 0.9375,
+     "contradictions": []
+    },
+    "agent8": {
+     "action": "ABSTAIN",
+     "accepted": false,
+     "hardBlocks": [
+      "task/evidence gate is out of scope or blocked"
+     ],
+     "reviewReasons": [],
+     "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+    },
+    "agent9": {
+     "status": "INSUFFICIENT_DATA",
+     "models": [],
+     "missingInputs": [
+      "zmijewski:current_assets",
+      "zmijewski:current_liabilities",
+      "altman:retained_earnings",
+      "altman:operating_income",
+      "altman:current_assets",
+      "altman:current_liabilities",
+      "interest_coverage:operating_income",
+      "interest_coverage:interest_expense"
+     ],
+     "reasoning": "insufficient verified inputs for distress models"
+    },
+    "agent10": {
+     "weightCoverage": 0.1,
+     "missing": [
+      "debt_ebitda",
+      "ebitda_interest",
+      "ffo_debt",
+      "governance",
+      "industry_risk",
+      "liquidity"
+     ]
+    },
+    "metrics": {
+     "pe": 11.350000381469727,
+     "pb": null,
+     "evEbitda": null,
+     "peVsSectorPct": null,
+     "revenueYoyPct": 18.08331293619554,
+     "netMarginPct": 33.7375597084694,
+     "roePct": 6.914148441762734,
+     "debtToEquity": 0.10154045296980288,
+     "currentRatio": null,
+     "freeCashFlow": -1103839000.0,
+     "return1mPct": -6.1983469120263095,
+     "return3mPct": -2.8253417387311353,
+     "return6mPct": -3.813557643994514,
+     "volatilityAnnualizedPct": 17.670942982708677,
+     "maxDrawdownPct": -16.833211576100993,
+     "volumeVs30d": 0.6305248009924823,
+     "marketCap": null,
+     "dividendYieldPct": null
+    },
+    "outlook": {
+     "shortTermOutlook": "DATA_BLOCKED",
+     "longTermOutlook": "DATA_BLOCKED",
+     "momentum": "NEGATIVE",
+     "riskLevel": "LOW",
+     "drawdownRisk": "LOW",
+     "valuationView": "INSUFFICIENT_DATA"
+    },
+    "opportunity": {
+     "state": "INSUFFICIENT_DATA",
+     "primaryCause": "MISSING_DATA",
+     "explanation": "Reliable assessment cannot be completed: missing fundamental_source Distress models could not run (missing debt/EBITDA/interest inputs); this is a data gap, not a distress finding, and did not affect the state.",
+     "underlying": {
+      "draftCall": "NO_RECOMMENDATION",
+      "score": -0.0248,
+      "confidence": 0.1123
+     },
+     "agent8Abstention": [
+      {
+       "code": "HARD_BLOCK",
+       "kind": "GOVERNANCE_RESTRICTION",
+       "detail": "task/evidence gate is out of scope or blocked"
+      }
+     ],
+     "limitingFactors": [
+      {
+       "agent": "quality",
+       "vote": -0.5,
+       "kind": "WEAK_FUNDAMENTALS"
+      },
+      {
+       "agent": "forecast",
+       "vote": -0.2,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      },
+      {
+       "agent": "risk",
+       "vote": -0.15,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      }
+     ],
+     "distressAxis": {
+      "status": "INSUFFICIENT_DATA",
+      "dataGap": true,
+      "missingInputs": [
+       "zmijewski:current_assets",
+       "zmijewski:current_liabilities",
+       "altman:retained_earnings",
+       "altman:operating_income",
+       "altman:current_assets",
+       "altman:current_liabilities",
+       "interest_coverage:operating_income",
+       "interest_coverage:interest_expense"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "ticker": "4321",
+   "name": "CENOMI CENTERS",
+   "category": "TRADING_VALUE",
+   "categoryRank": 6,
+   "market": {
+    "lastSession": "2026-10-11",
+    "lastClose": 13.90999984741211,
+    "historyFileObservedAt": "2026-10-12T13:22:58.512518+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "4321.SR",
+    "currency": "SAR",
+    "avgTradedValue30d": 10637428.807676094,
+    "return30dPct": -7.890175691864476,
+    "volumeRatio": 0.435026709243407,
+    "exchange": "SAUDI_EXCHANGE",
+    "country": "SA",
+    "source": "yahoo-public-chart-global"
+   },
+   "ledgerStatus": "INSUFFICIENT_DATA",
+   "pipeline": {
+    "call": "NO_RECOMMENDATION",
+    "draftCall": "NO_RECOMMENDATION",
+    "score": 0.001765,
+    "confidence": 0.119,
+    "agents": {
+     "fundamental": {
+      "vote": 0.05000000000000003,
+      "confidence": 0.71,
+      "reasoning": "revenue -2.4% YoY; margin improving (+3.4pp); positive operating cash flow; positive free cash flow"
+     },
+     "risk": {
+      "vote": -0.35,
+      "confidence": 0.78,
+      "reasoning": "max drawdown -32.9%; annualized volatility 20.9%; liabilities/equity 1.37x; debt/operating cash flow 11.09x; current ratio 1.16x"
+     },
+     "forecast": {
+      "vote": -0.19999999999999998,
+      "confidence": 0.69,
+      "reasoning": "volume 1.0x 30d average; returns 1m=-6.3%, 3m=-11.2%, 6m=-14.2%; 52w range position 2%"
+     },
+     "comparison": {
+      "vote": 0.0,
+      "confidence": 0.25,
+      "reasoning": "P/E 5.19; sector peer P/E unavailable: no sector classification from an authoritative source; abstaining (exchange-wide median shown as context only, not used)"
+     },
+     "quality": {
+      "vote": 0.5499999999999999,
+      "confidence": 0.74,
+      "reasoning": "net margin 55.4%; operating cash/net income 1.41x; free cash/net income 1.39x; ROA 3.4%; debt exceeds cash by >4x"
+     },
+     "liquidity": {
+      "vote": 0.0,
+      "confidence": 0.4,
+      "reasoning": "today volume 0.96x 30d average"
+     }
+    },
+    "evidence": {
+     "status": "BLOCK",
+     "missingCritical": [
+      "fundamental_source"
+     ],
+     "coverage": 0.9375,
+     "contradictions": [
+      "high-confidence disagreement: positive=quality negative=risk"
+     ]
+    },
+    "agent8": {
+     "action": "ABSTAIN",
+     "accepted": false,
+     "hardBlocks": [
+      "task/evidence gate is out of scope or blocked"
+     ],
+     "reviewReasons": [],
+     "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+    },
+    "agent9": {
+     "status": "INSUFFICIENT_DATA",
+     "models": [
+      "zmijewski"
+     ],
+     "missingInputs": [
+      "altman:retained_earnings",
+      "interest_coverage:interest_expense"
+     ],
+     "reasoning": "Zmijewski P(distress)=0.238 (distress-unlikely); only one distress model available; low-risk classification withheld"
+    },
+    "agent10": {
+     "weightCoverage": 0.4,
+     "missing": [
+      "ebitda_interest",
+      "ffo_debt",
+      "governance",
+      "industry_risk"
+     ]
+    },
+    "metrics": {
+     "pe": 5.191011107369755,
+     "pb": null,
+     "evEbitda": null,
+     "peVsSectorPct": null,
+     "revenueYoyPct": -2.378038641924718,
+     "netMarginPct": 55.36404097380342,
+     "roePct": 8.16646111579509,
+     "debtToEquity": 1.2750362288468486,
+     "currentRatio": 1.1642554627142563,
+     "freeCashFlow": 1762741144.0,
+     "return1mPct": -6.331877560390775,
+     "return3mPct": -11.1538505272046,
+     "return6mPct": -14.248999924121797,
+     "volatilityAnnualizedPct": 20.94622203897506,
+     "maxDrawdownPct": -32.93881323089165,
+     "volumeVs30d": 0.9615798876225935,
+     "marketCap": null,
+     "dividendYieldPct": null
+    },
+    "outlook": {
+     "shortTermOutlook": "DATA_BLOCKED",
+     "longTermOutlook": "DATA_BLOCKED",
+     "momentum": "NEGATIVE",
+     "riskLevel": "LOW",
+     "drawdownRisk": "ELEVATED",
+     "valuationView": "INSUFFICIENT_DATA"
+    },
+    "opportunity": {
+     "state": "INSUFFICIENT_DATA",
+     "primaryCause": "MISSING_DATA",
+     "explanation": "Reliable assessment cannot be completed: missing fundamental_source Distress models could not run (missing debt/EBITDA/interest inputs); this is a data gap, not a distress finding, and did not affect the state.",
+     "underlying": {
+      "draftCall": "NO_RECOMMENDATION",
+      "score": 0.0018,
+      "confidence": 0.119
+     },
+     "agent8Abstention": [
+      {
+       "code": "HARD_BLOCK",
+       "kind": "GOVERNANCE_RESTRICTION",
+       "detail": "task/evidence gate is out of scope or blocked"
+      },
+      {
+       "code": "AGENT_DISAGREEMENT",
+       "kind": "GOVERNANCE_RESTRICTION",
+       "detail": "high-confidence disagreement: positive=quality negative=risk"
+      }
+     ],
+     "limitingFactors": [
+      {
+       "agent": "risk",
+       "vote": -0.35,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      },
+      {
+       "agent": "forecast",
+       "vote": -0.2,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      }
+     ],
+     "distressAxis": {
+      "status": "INSUFFICIENT_DATA",
+      "dataGap": true,
+      "missingInputs": [
+       "altman:retained_earnings",
+       "interest_coverage:interest_expense"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "ticker": "1030",
+   "name": "SAIB",
+   "category": "TRADING_VALUE",
+   "categoryRank": 7,
+   "market": {
+    "lastSession": "2026-10-11",
+    "lastClose": 11.779999732971191,
+    "historyFileObservedAt": "2026-10-12T13:22:58.685355+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "1030.SR",
+    "currency": "SAR",
+    "avgTradedValue30d": 6845918.444426091,
+    "return30dPct": -2.845363027041725,
+    "volumeRatio": 0.8792183870484335,
+    "exchange": "SAUDI_EXCHANGE",
+    "country": "SA",
+    "source": "yahoo-public-chart-global"
+   },
+   "ledgerStatus": "INSUFFICIENT_DATA",
+   "pipeline": {
+    "call": "NO_RECOMMENDATION",
+    "draftCall": "NO_RECOMMENDATION",
+    "score": 0.021751,
+    "confidence": 0.112333,
+    "agents": {
+     "fundamental": {
+      "vote": 0.7500000000000001,
+      "confidence": 0.71,
+      "reasoning": "revenue +14.8% YoY; margin improving (+3.9pp); positive operating cash flow; positive free cash flow"
+     },
+     "risk": {
+      "vote": -0.14999999999999997,
+      "confidence": 0.68,
+      "reasoning": "max drawdown -13.4%; annualized volatility 17.1%; liabilities/equity 6.70x; debt/operating cash flow 2.13x"
+     },
+     "forecast": {
+      "vote": 0.0,
+      "confidence": 0.69,
+      "reasoning": "volume 1.1x 30d average; returns 1m=-5.1%, 3m=+6.8%, 6m=+10.1%; 52w range position 66%"
+     },
+     "comparison": {
+      "vote": 0.0,
+      "confidence": 0.25,
+      "reasoning": "P/E 6.97; sector peer P/E unavailable: no sector classification from an authoritative source; abstaining (exchange-wide median shown as context only, not used)"
+     },
+     "quality": {
+      "vote": -0.09999999999999998,
+      "confidence": 0.64,
+      "reasoning": "net margin 50.9%; operating cash/net income 0.57x; free cash/net income 0.42x; ROA 1.4%"
+     },
+     "liquidity": {
+      "vote": 0.0,
+      "confidence": 0.4,
+      "reasoning": "today volume 1.14x 30d average"
+     }
+    },
+    "evidence": {
+     "status": "BLOCK",
+     "missingCritical": [
+      "fundamental_source"
+     ],
+     "coverage": 0.9375,
+     "contradictions": []
+    },
+    "agent8": {
+     "action": "ABSTAIN",
+     "accepted": false,
+     "hardBlocks": [
+      "task/evidence gate is out of scope or blocked"
+     ],
+     "reviewReasons": [],
+     "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+    },
+    "agent9": {
+     "status": "INSUFFICIENT_DATA",
+     "models": [],
+     "missingInputs": [
+      "zmijewski:current_assets",
+      "zmijewski:current_liabilities",
+      "altman:retained_earnings",
+      "altman:operating_income",
+      "altman:current_assets",
+      "altman:current_liabilities",
+      "interest_coverage:operating_income",
+      "interest_coverage:interest_expense"
+     ],
+     "reasoning": "insufficient verified inputs for distress models"
+    },
+    "agent10": {
+     "weightCoverage": 0.1,
+     "missing": [
+      "debt_ebitda",
+      "ebitda_interest",
+      "ffo_debt",
+      "governance",
+      "industry_risk",
+      "liquidity"
+     ]
+    },
+    "metrics": {
+     "pe": 6.970238117944627,
+     "pb": null,
+     "evEbitda": null,
+     "peVsSectorPct": null,
+     "revenueYoyPct": 14.760591766651743,
+     "netMarginPct": 50.88403579127518,
+     "roePct": 10.838647713559453,
+     "debtToEquity": 0.13195483071011033,
+     "currentRatio": null,
+     "freeCashFlow": 1024799000.0,
+     "return1mPct": -5.0540512975241985,
+     "return3mPct": 6.820376875385925,
+     "return6mPct": 10.068404019458876,
+     "volatilityAnnualizedPct": 17.119462540772385,
+     "maxDrawdownPct": -13.430774872517956,
+     "volumeVs30d": 1.1357307584671383,
+     "marketCap": null,
+     "dividendYieldPct": null
+    },
+    "outlook": {
+     "shortTermOutlook": "DATA_BLOCKED",
+     "longTermOutlook": "DATA_BLOCKED",
+     "momentum": "MIXED",
+     "riskLevel": "LOW",
+     "drawdownRisk": "LOW",
+     "valuationView": "INSUFFICIENT_DATA"
+    },
+    "opportunity": {
+     "state": "INSUFFICIENT_DATA",
+     "primaryCause": "MISSING_DATA",
+     "explanation": "Reliable assessment cannot be completed: missing fundamental_source Distress models could not run (missing debt/EBITDA/interest inputs); this is a data gap, not a distress finding, and did not affect the state.",
+     "underlying": {
+      "draftCall": "NO_RECOMMENDATION",
+      "score": 0.0218,
+      "confidence": 0.1123
+     },
+     "agent8Abstention": [
+      {
+       "code": "HARD_BLOCK",
+       "kind": "GOVERNANCE_RESTRICTION",
+       "detail": "task/evidence gate is out of scope or blocked"
+      }
+     ],
+     "limitingFactors": [
+      {
+       "agent": "risk",
+       "vote": -0.15,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      },
+      {
+       "agent": "quality",
+       "vote": -0.1,
+       "kind": "WEAK_FUNDAMENTALS"
+      }
+     ],
+     "distressAxis": {
+      "status": "INSUFFICIENT_DATA",
+      "dataGap": true,
+      "missingInputs": [
+       "zmijewski:current_assets",
+       "zmijewski:current_liabilities",
+       "altman:retained_earnings",
+       "altman:operating_income",
+       "altman:current_assets",
+       "altman:current_liabilities",
+       "interest_coverage:operating_income",
+       "interest_coverage:interest_expense"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "ticker": "4020",
+   "name": "ALAKARIA",
+   "category": "TRADING_VALUE",
+   "categoryRank": 8,
+   "market": {
+    "lastSession": "2026-10-11",
+    "lastClose": 14.800000190734863,
+    "historyFileObservedAt": "2026-10-12T13:22:58.823510+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "4020.SR",
+    "currency": "SAR",
+    "avgTradedValue30d": 6049158.540916506,
+    "return30dPct": -6.388363074479431,
+    "volumeRatio": 1.205467543610735,
+    "exchange": "SAUDI_EXCHANGE",
+    "country": "SA",
+    "source": "yahoo-public-chart-global"
+   },
+   "ledgerStatus": "INSUFFICIENT_DATA",
+   "pipeline": {
+    "call": "NO_RECOMMENDATION",
+    "draftCall": "NO_RECOMMENDATION",
+    "score": 0.035378,
+    "confidence": 0.119,
+    "agents": {
+     "fundamental": {
+      "vote": 0.05000000000000003,
+      "confidence": 0.71,
+      "reasoning": "revenue -5.4% YoY; margin improving (+4.9pp); positive operating cash flow; positive free cash flow"
+     },
+     "risk": {
+      "vote": 0.1,
+      "confidence": 0.78,
+      "reasoning": "max drawdown -20.8%; annualized volatility 30.5%; liabilities/equity 0.72x; debt/operating cash flow 3.16x; current ratio 2.46x"
+     },
+     "forecast": {
+      "vote": 0.0,
+      "confidence": 0.69,
+      "reasoning": "volume 1.3x 30d average; returns 1m=-5.9%, 3m=-9.3%, 6m=+5.4%; 52w range position 32%"
+     },
+     "comparison": {
+      "vote": 0.0,
+      "confidence": 0.25,
+      "reasoning": "P/E 18.08; sector peer P/E unavailable: no sector classification from an authoritative source; abstaining (exchange-wide median shown as context only, not used)"
+     },
+     "quality": {
+      "vote": 0.7,
+      "confidence": 0.74,
+      "reasoning": "net margin 15.7%; operating cash/net income 3.29x; free cash/net income 3.22x; ROA 3.1%; cash/debt balance moderate"
+     },
+     "liquidity": {
+      "vote": 0.0,
+      "confidence": 0.4,
+      "reasoning": "today volume 1.28x 30d average"
+     }
+    },
+    "evidence": {
+     "status": "BLOCK",
+     "missingCritical": [
+      "fundamental_source"
+     ],
+     "coverage": 0.9375,
+     "contradictions": []
+    },
+    "agent8": {
+     "action": "ABSTAIN",
+     "accepted": false,
+     "hardBlocks": [
+      "task/evidence gate is out of scope or blocked"
+     ],
+     "reviewReasons": [],
+     "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+    },
+    "agent9": {
+     "status": "INSUFFICIENT_DATA",
+     "models": [
+      "zmijewski"
+     ],
+     "missingInputs": [
+      "altman:retained_earnings",
+      "interest_coverage:interest_expense"
+     ],
+     "reasoning": "Zmijewski P(distress)=0.105 (distress-unlikely); only one distress model available; low-risk classification withheld"
+    },
+    "agent10": {
+     "weightCoverage": 0.4,
+     "missing": [
+      "ebitda_interest",
+      "ffo_debt",
+      "governance",
+      "industry_risk"
+     ]
+    },
+    "metrics": {
+     "pe": 18.075949029077456,
+     "pb": null,
+     "evEbitda": null,
+     "peVsSectorPct": null,
+     "revenueYoyPct": -5.412523620644894,
+     "netMarginPct": 15.742107404718404,
+     "roePct": 5.586084474982801,
+     "debtToEquity": 0.5813398939839627,
+     "currentRatio": 2.461612695146563,
+     "freeCashFlow": 951544000.0,
+     "return1mPct": -5.928857405211807,
+     "return3mPct": -9.275730999856647,
+     "return6mPct": 5.3874504203732965,
+     "volatilityAnnualizedPct": 30.52016875859212,
+     "maxDrawdownPct": -20.798673382480086,
+     "volumeVs30d": 1.2831041762936604,
+     "marketCap": null,
+     "dividendYieldPct": null
+    },
+    "outlook": {
+     "shortTermOutlook": "DATA_BLOCKED",
+     "longTermOutlook": "DATA_BLOCKED",
+     "momentum": "MIXED",
+     "riskLevel": "MODERATE",
+     "drawdownRisk": "ELEVATED",
+     "valuationView": "INSUFFICIENT_DATA"
+    },
+    "opportunity": {
+     "state": "INSUFFICIENT_DATA",
+     "primaryCause": "MISSING_DATA",
+     "explanation": "Reliable assessment cannot be completed: missing fundamental_source Distress models could not run (missing debt/EBITDA/interest inputs); this is a data gap, not a distress finding, and did not affect the state.",
+     "underlying": {
+      "draftCall": "NO_RECOMMENDATION",
+      "score": 0.0354,
+      "confidence": 0.119
+     },
+     "agent8Abstention": [
+      {
+       "code": "HARD_BLOCK",
+       "kind": "GOVERNANCE_RESTRICTION",
+       "detail": "task/evidence gate is out of scope or blocked"
+      }
+     ],
+     "limitingFactors": [],
+     "distressAxis": {
+      "status": "INSUFFICIENT_DATA",
+      "dataGap": true,
+      "missingInputs": [
+       "altman:retained_earnings",
+       "interest_coverage:interest_expense"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "ticker": "8310",
+   "name": "AMANA INSURANCE",
+   "category": "TRADING_VALUE",
+   "categoryRank": 9,
+   "market": {
+    "lastSession": "2026-10-11",
+    "lastClose": 6.480000019073486,
+    "historyFileObservedAt": "2026-10-12T13:22:58.987610+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "8310.SR",
+    "currency": "SAR",
+    "avgTradedValue30d": 4963756.871517865,
+    "return30dPct": -20.098640032145056,
+    "volumeRatio": 0.4538568931615675,
+    "exchange": "SAUDI_EXCHANGE",
+    "country": "SA",
+    "source": "yahoo-public-chart-global"
+   },
+   "ledgerStatus": "INSUFFICIENT_DATA",
+   "pipeline": {
+    "call": "NO_RECOMMENDATION",
+    "draftCall": "NO_RECOMMENDATION",
+    "score": -0.028333,
+    "confidence": 0.094,
+    "agents": {
+     "fundamental": {
+      "vote": -0.05,
+      "confidence": 0.71,
+      "reasoning": "revenue +25.9% YoY; net margin negative (-4.7%); margin declining (-10.0pp); positive operating cash flow; positive free cash flow"
+     },
+     "risk": {
+      "vote": -0.4,
+      "confidence": 0.5800000000000001,
+      "reasoning": "max drawdown -32.6%; annualized volatility 40.9%; liabilities/equity 0.74x"
+     },
+     "forecast": {
+      "vote": 0.0,
+      "confidence": 0.69,
+      "reasoning": "volume 0.3x 30d average; returns 1m=-17.0%, 3m=-15.8%, 6m=+4.6%; 52w range position 36%"
+     },
+     "comparison": {
+      "vote": 0.0,
+      "confidence": 0.0,
+      "reasoning": "valid positive P/E unavailable"
+     },
+     "quality": {
+      "vote": -0.3,
+      "confidence": 0.44,
+      "reasoning": "net margin -4.7%; ROA -2.5%"
+     },
+     "liquidity": {
+      "vote": 0.0,
+      "confidence": 0.4,
+      "reasoning": "today volume 0.34x 30d average"
+     }
+    },
+    "evidence": {
+     "status": "BLOCK",
+     "missingCritical": [
+      "fundamental_source"
+     ],
+     "coverage": 0.8125,
+     "contradictions": []
+    },
+    "agent8": {
+     "action": "ABSTAIN",
+     "accepted": false,
+     "hardBlocks": [
+      "task/evidence gate is out of scope or blocked"
+     ],
+     "reviewReasons": [],
+     "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+    },
+    "agent9": {
+     "status": "INSUFFICIENT_DATA",
+     "models": [],
+     "missingInputs": [
+      "zmijewski:current_assets",
+      "zmijewski:current_liabilities",
+      "altman:retained_earnings",
+      "altman:operating_income",
+      "altman:current_assets",
+      "altman:current_liabilities",
+      "interest_coverage:operating_income",
+      "interest_coverage:interest_expense"
+     ],
+     "reasoning": "insufficient verified inputs for distress models"
+    },
+    "agent10": {
+     "weightCoverage": 0,
+     "missing": [
+      "debt_ebitda",
+      "ebitda_interest",
+      "fcf_debt",
+      "ffo_debt",
+      "governance",
+      "industry_risk",
+      "liquidity"
+     ]
+    },
+    "metrics": {
+     "pe": null,
+     "pb": null,
+     "evEbitda": null,
+     "peVsSectorPct": null,
+     "revenueYoyPct": 25.853427644995342,
+     "netMarginPct": -4.66743760171246,
+     "roePct": -4.271574200064979,
+     "debtToEquity": null,
+     "currentRatio": null,
+     "freeCashFlow": 22869000.0,
+     "return1mPct": -16.993466333707595,
+     "return3mPct": -15.782494207440356,
+     "return6mPct": 4.612845552763045,
+     "volatilityAnnualizedPct": 40.882917329754065,
+     "maxDrawdownPct": -32.56997327345974,
+     "volumeVs30d": 0.3421223501408052,
+     "marketCap": null,
+     "dividendYieldPct": null
+    },
+    "outlook": {
+     "shortTermOutlook": "DATA_BLOCKED",
+     "longTermOutlook": "DATA_BLOCKED",
+     "momentum": "NEGATIVE",
+     "riskLevel": "MODERATE",
+     "drawdownRisk": "ELEVATED",
+     "valuationView": "INSUFFICIENT_DATA"
+    },
+    "opportunity": {
+     "state": "INSUFFICIENT_DATA",
+     "primaryCause": "MISSING_DATA",
+     "explanation": "Reliable assessment cannot be completed: missing fundamental_source Distress models could not run (missing debt/EBITDA/interest inputs); this is a data gap, not a distress finding, and did not affect the state.",
+     "underlying": {
+      "draftCall": "NO_RECOMMENDATION",
+      "score": -0.0283,
+      "confidence": 0.094
+     },
+     "agent8Abstention": [
+      {
+       "code": "HARD_BLOCK",
+       "kind": "GOVERNANCE_RESTRICTION",
+       "detail": "task/evidence gate is out of scope or blocked"
+      }
+     ],
+     "limitingFactors": [
+      {
+       "agent": "risk",
+       "vote": -0.4,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      },
+      {
+       "agent": "quality",
+       "vote": -0.3,
+       "kind": "WEAK_FUNDAMENTALS"
+      }
+     ],
+     "distressAxis": {
+      "status": "INSUFFICIENT_DATA",
+      "dataGap": true,
+      "missingInputs": [
+       "zmijewski:current_assets",
+       "zmijewski:current_liabilities",
+       "altman:retained_earnings",
+       "altman:operating_income",
+       "altman:current_assets",
+       "altman:current_liabilities",
+       "interest_coverage:operating_income",
+       "interest_coverage:interest_expense"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "ticker": "6060",
+   "name": "SHARQIYAH DEV",
+   "category": "TRADING_VALUE",
+   "categoryRank": 10,
+   "market": {
+    "lastSession": "2026-10-11",
+    "lastClose": 12.739999771118164,
+    "historyFileObservedAt": "2026-10-12T13:22:59.099621+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "6060.SR",
+    "currency": "SAR",
+    "avgTradedValue30d": 4582794.509155655,
+    "return30dPct": -12.439865263845629,
+    "volumeRatio": 0.8206395827645361,
+    "exchange": "SAUDI_EXCHANGE",
+    "country": "SA",
+    "source": "yahoo-public-chart-global"
+   },
+   "ledgerStatus": "INSUFFICIENT_DATA",
+   "pipeline": {
+    "call": "NO_RECOMMENDATION",
+    "draftCall": "NO_RECOMMENDATION",
+    "score": -0.028141,
+    "confidence": 0.104,
+    "agents": {
+     "fundamental": {
+      "vote": -0.19999999999999998,
+      "confidence": 0.71,
+      "reasoning": "revenue +175.0% YoY; net margin negative (-3.5%); margin improving (+1.3pp); negative operating cash flow; negative free cash flow"
+     },
+     "risk": {
+      "vote": -0.10000000000000002,
+      "confidence": 0.78,
+      "reasoning": "max drawdown -29.3%; annualized volatility 32.1%; liabilities/equity 0.20x; debt/operating cash flow 0.38x; current ratio 3.12x"
+     },
+     "forecast": {
+      "vote": -0.19999999999999998,
+      "confidence": 0.69,
+      "reasoning": "volume 0.3x 30d average; returns 1m=-14.1%, 3m=-18.8%, 6m=-2.7%; 52w range position 19%"
+     },
+     "comparison": {
+      "vote": 0.0,
+      "confidence": 0.0,
+      "reasoning": "valid positive P/E unavailable"
+     },
+     "quality": {
+      "vote": -0.15,
+      "confidence": 0.54,
+      "reasoning": "net margin -3.5%; ROA -2.0%; cash covers total debt"
+     },
+     "liquidity": {
+      "vote": 0.0,
+      "confidence": 0.4,
+      "reasoning": "today volume 0.31x 30d average"
+     }
+    },
+    "evidence": {
+     "status": "BLOCK",
+     "missingCritical": [
+      "fundamental_source"
+     ],
+     "coverage": 0.875,
+     "contradictions": []
+    },
+    "agent8": {
+     "action": "ABSTAIN",
+     "accepted": false,
+     "hardBlocks": [
+      "task/evidence gate is out of scope or blocked"
+     ],
+     "reviewReasons": [],
+     "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+    },
+    "agent9": {
+     "status": "INSUFFICIENT_DATA",
+     "models": [
+      "zmijewski"
+     ],
+     "missingInputs": [
+      "altman:retained_earnings",
+      "interest_coverage:interest_expense"
+     ],
+     "reasoning": "Zmijewski P(distress)=0.036 (distress-unlikely); only one distress model available; low-risk classification withheld"
+    },
+    "agent10": {
+     "weightCoverage": 0.4,
+     "missing": [
+      "ebitda_interest",
+      "ffo_debt",
+      "governance",
+      "industry_risk"
+     ]
+    },
+    "metrics": {
+     "pe": null,
+     "pb": null,
+     "evEbitda": null,
+     "peVsSectorPct": null,
+     "revenueYoyPct": 174.95063598691146,
+     "netMarginPct": -3.514655287706442,
+     "roePct": -2.3664422111574863,
+     "debtToEquity": 0.05361455363998684,
+     "currentRatio": 3.1220233932580848,
+     "freeCashFlow": -69089882.0,
+     "return1mPct": -14.139348360347913,
+     "return3mPct": -18.798449182587728,
+     "return6mPct": -2.708981264728616,
+     "volatilityAnnualizedPct": 32.098482439486816,
+     "maxDrawdownPct": -29.272618887827374,
+     "volumeVs30d": 0.3055012113536007,
+     "marketCap": null,
+     "dividendYieldPct": null
+    },
+    "outlook": {
+     "shortTermOutlook": "DATA_BLOCKED",
+     "longTermOutlook": "DATA_BLOCKED",
+     "momentum": "NEGATIVE",
+     "riskLevel": "MODERATE",
+     "drawdownRisk": "ELEVATED",
+     "valuationView": "INSUFFICIENT_DATA"
+    },
+    "opportunity": {
+     "state": "INSUFFICIENT_DATA",
+     "primaryCause": "MISSING_DATA",
+     "explanation": "Reliable assessment cannot be completed: missing fundamental_source Distress models could not run (missing debt/EBITDA/interest inputs); this is a data gap, not a distress finding, and did not affect the state.",
+     "underlying": {
+      "draftCall": "NO_RECOMMENDATION",
+      "score": -0.0281,
+      "confidence": 0.104
+     },
+     "agent8Abstention": [
+      {
+       "code": "HARD_BLOCK",
+       "kind": "GOVERNANCE_RESTRICTION",
+       "detail": "task/evidence gate is out of scope or blocked"
+      }
+     ],
+     "limitingFactors": [
+      {
+       "agent": "fundamental",
+       "vote": -0.2,
+       "kind": "WEAK_FUNDAMENTALS"
+      },
+      {
+       "agent": "forecast",
+       "vote": -0.2,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      },
+      {
+       "agent": "quality",
+       "vote": -0.15,
+       "kind": "WEAK_FUNDAMENTALS"
+      },
+      {
+       "agent": "risk",
+       "vote": -0.1,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      }
+     ],
+     "distressAxis": {
+      "status": "INSUFFICIENT_DATA",
+      "dataGap": true,
+      "missingInputs": [
+       "altman:retained_earnings",
+       "interest_coverage:interest_expense"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "ticker": "2110",
+   "name": "SAUDI CABLE",
+   "category": "PRICE_APPRECIATION_30D",
+   "categoryRank": 1,
+   "market": {
+    "lastSession": "2026-10-11",
+    "lastClose": 179.5,
+    "historyFileObservedAt": "2026-10-12T13:22:59.680885+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "2110.SR",
+    "currency": "SAR",
+    "avgTradedValue30d": 3967733.557855733,
+    "return30dPct": 1.412429378531077,
+    "volumeRatio": 0.5286713929167496,
+    "exchange": "SAUDI_EXCHANGE",
+    "country": "SA",
+    "source": "yahoo-public-chart-global"
+   },
+   "ledgerStatus": "INSUFFICIENT_DATA",
+   "pipeline": {
+    "call": "NO_RECOMMENDATION",
+    "draftCall": "NO_RECOMMENDATION",
+    "score": -0.019888,
+    "confidence": 0.119,
+    "agents": {
+     "fundamental": {
+      "vote": 0.2000000000000001,
+      "confidence": 0.71,
+      "reasoning": "revenue +253.8% YoY; margin improving (+18.9pp); negative operating cash flow; negative free cash flow"
+     },
+     "risk": {
+      "vote": -0.4,
+      "confidence": 0.78,
+      "reasoning": "max drawdown -18.7%; annualized volatility 34.0%; liabilities/equity 5.06x; debt/operating cash flow 1.14x; current ratio 0.25x"
+     },
+     "forecast": {
+      "vote": 0.0,
+      "confidence": 0.69,
+      "reasoning": "volume 0.9x 30d average; returns 1m=-4.3%, 3m=+9.2%, 6m=+12.9%; 52w range position 83%"
+     },
+     "comparison": {
+      "vote": 0.0,
+      "confidence": 0.25,
+      "reasoning": "P/E 5.94; sector peer P/E unavailable: no sector classification from an authoritative source; abstaining (exchange-wide median shown as context only, not used)"
+     },
+     "quality": {
+      "vote": -0.24999999999999997,
+      "confidence": 0.74,
+      "reasoning": "net margin 129.5%; operating cash/net income -0.47x; free cash/net income -0.49x; ROA 23.2%; cash/debt balance moderate"
+     },
+     "liquidity": {
+      "vote": 0.0,
+      "confidence": 0.4,
+      "reasoning": "today volume 0.86x 30d average"
+     }
+    },
+    "evidence": {
+     "status": "BLOCK",
+     "missingCritical": [
+      "fundamental_source"
+     ],
+     "coverage": 0.9375,
+     "contradictions": []
+    },
+    "agent8": {
+     "action": "ABSTAIN",
+     "accepted": false,
+     "hardBlocks": [
+      "task/evidence gate is out of scope or blocked"
+     ],
+     "reviewReasons": [],
+     "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+    },
+    "agent9": {
+     "status": "HIGH_RISK",
+     "models": [
+      "zmijewski"
+     ],
+     "missingInputs": [
+      "altman:retained_earnings",
+      "interest_coverage:interest_expense"
+     ],
+     "reasoning": "negative total equity; Zmijewski P(distress)=0.853 (distress-likely)"
+    },
+    "agent10": {
+     "weightCoverage": 0.4,
+     "missing": [
+      "ebitda_interest",
+      "ffo_debt",
+      "governance",
+      "industry_risk"
+     ]
+    },
+    "metrics": {
+     "pe": 5.93522822549622,
+     "pb": null,
+     "evEbitda": null,
+     "peVsSectorPct": null,
+     "revenueYoyPct": 253.80112978969578,
+     "netMarginPct": 129.47894223863753,
+     "roePct": -94.20296616297567,
+     "debtToEquity": -0.5040191088448386,
+     "currentRatio": 0.24752806616381925,
+     "freeCashFlow": -99231000.0,
+     "return1mPct": -4.315392102515647,
+     "return3mPct": 9.179335017334722,
+     "return6mPct": 12.884977506953721,
+     "volatilityAnnualizedPct": 33.992472192045064,
+     "maxDrawdownPct": -18.684210526315788,
+     "volumeVs30d": 0.8597801634275214,
+     "marketCap": null,
+     "dividendYieldPct": null
+    },
+    "outlook": {
+     "shortTermOutlook": "DATA_BLOCKED",
+     "longTermOutlook": "DATA_BLOCKED",
+     "momentum": "POSITIVE",
+     "riskLevel": "MODERATE",
+     "drawdownRisk": "LOW",
+     "valuationView": "INSUFFICIENT_DATA"
+    },
+    "opportunity": {
+     "state": "INSUFFICIENT_DATA",
+     "primaryCause": "MISSING_DATA",
+     "explanation": "Reliable assessment cannot be completed: missing fundamental_source",
+     "underlying": {
+      "draftCall": "NO_RECOMMENDATION",
+      "score": -0.0199,
+      "confidence": 0.119
+     },
+     "agent8Abstention": [
+      {
+       "code": "HARD_BLOCK",
+       "kind": "GOVERNANCE_RESTRICTION",
+       "detail": "task/evidence gate is out of scope or blocked"
+      }
+     ],
+     "limitingFactors": [
+      {
+       "agent": "risk",
+       "vote": -0.4,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      },
+      {
+       "agent": "quality",
+       "vote": -0.25,
+       "kind": "WEAK_FUNDAMENTALS"
+      },
+      {
+       "agent": "agent9",
+       "vote": null,
+       "kind": "ELEVATED_DISTRESS_RISK",
+       "detail": "negative total equity; Zmijewski P(distress)=0.853 (distress-likely)"
+      }
+     ],
+     "distressAxis": {
+      "status": "HIGH_RISK",
+      "dataGap": false,
+      "missingInputs": [
+       "altman:retained_earnings",
+       "interest_coverage:interest_expense"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "ticker": "4165",
+   "name": "ALMAJED OUD",
+   "category": "PRICE_APPRECIATION_30D",
+   "categoryRank": 2,
+   "market": {
+    "lastSession": "2026-10-11",
+    "lastClose": 116.0,
+    "historyFileObservedAt": "2026-10-12T13:22:59.346542+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "4165.SR",
+    "currency": "SAR",
+    "avgTradedValue30d": 4136116.217203013,
+    "return30dPct": -4.29042663298318,
+    "volumeRatio": 0.5716657470298987,
+    "exchange": "SAUDI_EXCHANGE",
+    "country": "SA",
+    "source": "yahoo-public-chart-global"
+   },
+   "ledgerStatus": "INSUFFICIENT_DATA",
+   "pipeline": {
+    "call": "NO_RECOMMENDATION",
+    "draftCall": "NO_RECOMMENDATION",
+    "score": 0.059188,
+    "confidence": 0.119,
+    "agents": {
+     "fundamental": {
+      "vote": 0.7500000000000001,
+      "confidence": 0.71,
+      "reasoning": "revenue +19.2% YoY; margin improving (+2.8pp); positive operating cash flow; positive free cash flow"
+     },
+     "risk": {
+      "vote": -0.10000000000000002,
+      "confidence": 0.78,
+      "reasoning": "max drawdown -31.6%; annualized volatility 29.3%; liabilities/equity 0.55x; debt/operating cash flow 0.47x; current ratio 3.10x"
+     },
+     "forecast": {
+      "vote": -0.19999999999999998,
+      "confidence": 0.69,
+      "reasoning": "volume 1.7x 30d average; returns 1m=-7.0%, 3m=-9.7%, 6m=-24.8%; 52w range position 7%"
+     },
+     "comparison": {
+      "vote": 0.0,
+      "confidence": 0.25,
+      "reasoning": "P/E 13.28; sector peer P/E unavailable: no sector classification from an authoritative source; abstaining (exchange-wide median shown as context only, not used)"
+     },
+     "quality": {
+      "vote": 1.0,
+      "confidence": 0.74,
+      "reasoning": "net margin 19.7%; operating cash/net income 2.02x; free cash/net income 1.86x; ROA 24.0%; cash covers total debt"
+     },
+     "liquidity": {
+      "vote": 0.0,
+      "confidence": 0.4,
+      "reasoning": "today volume 1.70x 30d average"
+     }
+    },
+    "evidence": {
+     "status": "BLOCK",
+     "missingCritical": [
+      "fundamental_source"
+     ],
+     "coverage": 0.9375,
+     "contradictions": []
+    },
+    "agent8": {
+     "action": "ABSTAIN",
+     "accepted": false,
+     "hardBlocks": [
+      "task/evidence gate is out of scope or blocked"
+     ],
+     "reviewReasons": [],
+     "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+    },
+    "agent9": {
+     "status": "INSUFFICIENT_DATA",
+     "models": [
+      "zmijewski"
+     ],
+     "missingInputs": [
+      "altman:retained_earnings",
+      "interest_coverage:interest_expense"
+     ],
+     "reasoning": "Zmijewski P(distress)=0.033 (distress-unlikely); only one distress model available; low-risk classification withheld"
+    },
+    "agent10": {
+     "weightCoverage": 0.4,
+     "missing": [
+      "ebitda_interest",
+      "ffo_debt",
+      "governance",
+      "industry_risk"
+     ]
+    },
+    "metrics": {
+     "pe": 13.275862068965518,
+     "pb": null,
+     "evEbitda": null,
+     "peVsSectorPct": null,
+     "revenueYoyPct": 19.16844156203359,
+     "netMarginPct": 19.71953608061683,
+     "roePct": 37.24501711164977,
+     "debtToEquity": 0.35371469850930076,
+     "currentRatio": 3.101198064662775,
+     "freeCashFlow": 403940630.0,
+     "return1mPct": -7.004828632860383,
+     "return3mPct": -9.695075354139016,
+     "return6mPct": -24.757697357754836,
+     "volatilityAnnualizedPct": 29.332870857744815,
+     "maxDrawdownPct": -31.6438521727059,
+     "volumeVs30d": 1.6997259687553685,
+     "marketCap": null,
+     "dividendYieldPct": null
+    },
+    "outlook": {
+     "shortTermOutlook": "DATA_BLOCKED",
+     "longTermOutlook": "DATA_BLOCKED",
+     "momentum": "NEGATIVE",
+     "riskLevel": "MODERATE",
+     "drawdownRisk": "ELEVATED",
+     "valuationView": "INSUFFICIENT_DATA"
+    },
+    "opportunity": {
+     "state": "INSUFFICIENT_DATA",
+     "primaryCause": "MISSING_DATA",
+     "explanation": "Reliable assessment cannot be completed: missing fundamental_source Distress models could not run (missing debt/EBITDA/interest inputs); this is a data gap, not a distress finding, and did not affect the state.",
+     "underlying": {
+      "draftCall": "NO_RECOMMENDATION",
+      "score": 0.0592,
+      "confidence": 0.119
+     },
+     "agent8Abstention": [
+      {
+       "code": "HARD_BLOCK",
+       "kind": "GOVERNANCE_RESTRICTION",
+       "detail": "task/evidence gate is out of scope or blocked"
+      }
+     ],
+     "limitingFactors": [
+      {
+       "agent": "forecast",
+       "vote": -0.2,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      },
+      {
+       "agent": "risk",
+       "vote": -0.1,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      },
+      {
+       "agent": "momentum",
+       "vote": null,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY",
+       "detail": "6-month return -24.8%"
+      }
+     ],
+     "distressAxis": {
+      "status": "INSUFFICIENT_DATA",
+      "dataGap": true,
+      "missingInputs": [
+       "altman:retained_earnings",
+       "interest_coverage:interest_expense"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "ticker": "8300",
+   "name": "WATANIYA",
+   "category": "PRICE_APPRECIATION_30D",
+   "categoryRank": 3,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 13.210000038146973,
+    "historyFileObservedAt": "2026-10-13T21:55:46.896378+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "8300.SR",
+    "currency": "SAR",
+    "avgTradedValue30d": 3119102.97138567,
+    "return30dPct": -11.638794604129787,
+    "volumeRatio": 0.44323554267367626,
+    "exchange": "SAUDI_EXCHANGE",
+    "country": "SA",
+    "source": "yahoo-public-chart-global"
+   },
+   "ledgerStatus": "INSUFFICIENT_DATA",
+   "pipeline": {
+    "call": "NO_RECOMMENDATION",
+    "draftCall": "NO_RECOMMENDATION",
+    "score": -0.055504,
+    "confidence": 0.115667,
+    "agents": {
+     "fundamental": {
+      "vote": -0.6,
+      "confidence": 0.71,
+      "reasoning": "revenue +9.1% YoY; margin declining (-5.2pp); negative operating cash flow; negative free cash flow"
+     },
+     "risk": {
+      "vote": -0.3,
+      "confidence": 0.68,
+      "reasoning": "max drawdown -30.4%; annualized volatility 35.3%; liabilities/equity 2.11x; debt/operating cash flow 0.04x"
+     },
+     "forecast": {
+      "vote": 0.0,
+      "confidence": 0.69,
+      "reasoning": "volume 0.4x 30d average; returns 1m=-11.9%, 3m=-1.2%, 6m=+2.5%; 52w range position 39%"
+     },
+     "comparison": {
+      "vote": 0.0,
+      "confidence": 0.25,
+      "reasoning": "P/E 14.11; sector peer P/E unavailable: no sector classification from an authoritative source; abstaining (exchange-wide median shown as context only, not used)"
+     },
+     "quality": {
+      "vote": -0.44999999999999996,
+      "confidence": 0.74,
+      "reasoning": "net margin 2.5%; operating cash/net income -1.78x; free cash/net income -1.83x; ROA 1.8%; cash covers total debt"
+     },
+     "liquidity": {
+      "vote": 0.0,
+      "confidence": 0.4,
+      "reasoning": "today volume 0.43x 30d average"
+     }
+    },
+    "evidence": {
+     "status": "BLOCK",
+     "missingCritical": [
+      "fundamental_source"
+     ],
+     "coverage": 0.9375,
+     "contradictions": []
+    },
+    "agent8": {
+     "action": "ABSTAIN",
+     "accepted": false,
+     "hardBlocks": [
+      "task/evidence gate is out of scope or blocked"
+     ],
+     "reviewReasons": [],
+     "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+    },
+    "agent9": {
+     "status": "INSUFFICIENT_DATA",
+     "models": [],
+     "missingInputs": [
+      "zmijewski:current_assets",
+      "zmijewski:current_liabilities",
+      "altman:retained_earnings",
+      "altman:operating_income",
+      "altman:current_assets",
+      "altman:current_liabilities",
+      "interest_coverage:operating_income",
+      "interest_coverage:interest_expense"
+     ],
+     "reasoning": "insufficient verified inputs for distress models"
+    },
+    "agent10": {
+     "weightCoverage": 0.1,
+     "missing": [
+      "debt_ebitda",
+      "ebitda_interest",
+      "ffo_debt",
+      "governance",
+      "industry_risk",
+      "liquidity"
+     ]
+    },
+    "metrics": {
+     "pe": 14.10752675866568,
+     "pb": null,
+     "evEbitda": null,
+     "peVsSectorPct": null,
+     "revenueYoyPct": 9.057979422189444,
+     "netMarginPct": 2.545797238129165,
+     "roePct": 5.636889482618958,
+     "debtToEquity": 0.004454495301578907,
+     "currentRatio": null,
+     "freeCashFlow": -67794000.0,
+     "return1mPct": -11.946307238541854,
+     "return3mPct": -1.2048181523292234,
+     "return6mPct": 2.4999975785613415,
+     "volatilityAnnualizedPct": 35.299984516165516,
+     "maxDrawdownPct": -30.391549390608635,
+     "volumeVs30d": 0.4294142578195392,
+     "marketCap": null,
+     "dividendYieldPct": null
+    },
+    "outlook": {
+     "shortTermOutlook": "DATA_BLOCKED",
+     "longTermOutlook": "DATA_BLOCKED",
+     "momentum": "MIXED",
+     "riskLevel": "MODERATE",
+     "drawdownRisk": "ELEVATED",
+     "valuationView": "INSUFFICIENT_DATA"
+    },
+    "opportunity": {
+     "state": "INSUFFICIENT_DATA",
+     "primaryCause": "MISSING_DATA",
+     "explanation": "Reliable assessment cannot be completed: missing fundamental_source Distress models could not run (missing debt/EBITDA/interest inputs); this is a data gap, not a distress finding, and did not affect the state.",
+     "underlying": {
+      "draftCall": "NO_RECOMMENDATION",
+      "score": -0.0555,
+      "confidence": 0.1157
+     },
+     "agent8Abstention": [
+      {
+       "code": "HARD_BLOCK",
+       "kind": "GOVERNANCE_RESTRICTION",
+       "detail": "task/evidence gate is out of scope or blocked"
+      }
+     ],
+     "limitingFactors": [
+      {
+       "agent": "fundamental",
+       "vote": -0.6,
+       "kind": "WEAK_FUNDAMENTALS"
+      },
+      {
+       "agent": "quality",
+       "vote": -0.45,
+       "kind": "WEAK_FUNDAMENTALS"
+      },
+      {
+       "agent": "risk",
+       "vote": -0.3,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      }
+     ],
+     "distressAxis": {
+      "status": "INSUFFICIENT_DATA",
+      "dataGap": true,
+      "missingInputs": [
+       "zmijewski:current_assets",
+       "zmijewski:current_liabilities",
+       "altman:retained_earnings",
+       "altman:operating_income",
+       "altman:current_assets",
+       "altman:current_liabilities",
+       "interest_coverage:operating_income",
+       "interest_coverage:interest_expense"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "ticker": "3092",
+   "name": "RIYADH CEMENT",
+   "category": "PRICE_APPRECIATION_30D",
+   "categoryRank": 4,
+   "market": {
+    "lastSession": "2026-10-11",
+    "lastClose": 19.75,
+    "historyFileObservedAt": "2026-10-12T13:23:00.554884+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "3092.SR",
+    "currency": "SAR",
+    "avgTradedValue30d": 3879951.051949692,
+    "return30dPct": -12.30211801636405,
+    "volumeRatio": 2.1879762463161434,
+    "exchange": "SAUDI_EXCHANGE",
+    "country": "SA",
+    "source": "yahoo-public-chart-global"
+   },
+   "ledgerStatus": "INSUFFICIENT_DATA",
+   "pipeline": {
+    "call": "NO_RECOMMENDATION",
+    "draftCall": "NO_RECOMMENDATION",
+    "score": 0.011513,
+    "confidence": 0.119,
+    "agents": {
+     "fundamental": {
+      "vote": -0.35000000000000003,
+      "confidence": 0.71,
+      "reasoning": "revenue -0.2% YoY; margin declining (-12.9pp); positive operating cash flow; positive free cash flow"
+     },
+     "risk": {
+      "vote": 0.0,
+      "confidence": 0.78,
+      "reasoning": "max drawdown -25.3%; annualized volatility 20.2%; liabilities/equity 0.10x; debt/operating cash flow 0.01x; current ratio 4.70x"
+     },
+     "forecast": {
+      "vote": -0.19999999999999998,
+      "confidence": 0.69,
+      "reasoning": "volume 0.7x 30d average; returns 1m=-14.7%, 3m=-10.3%, 6m=-11.5%; 52w range position 1%"
+     },
+     "comparison": {
+      "vote": 0.0,
+      "confidence": 0.25,
+      "reasoning": "P/E 11.29; sector peer P/E unavailable: no sector classification from an authoritative source; abstaining (exchange-wide median shown as context only, not used)"
+     },
+     "quality": {
+      "vote": 0.8,
+      "confidence": 0.74,
+      "reasoning": "net margin 26.4%; operating cash/net income 1.17x; free cash/net income 0.54x; ROA 11.0%; cash covers total debt"
+     },
+     "liquidity": {
+      "vote": 0.0,
+      "confidence": 0.4,
+      "reasoning": "today volume 0.69x 30d average"
+     }
+    },
+    "evidence": {
+     "status": "BLOCK",
+     "missingCritical": [
+      "fundamental_source"
+     ],
+     "coverage": 0.9375,
+     "contradictions": [
+      "high-confidence disagreement: positive=quality negative=fundamental"
+     ]
+    },
+    "agent8": {
+     "action": "ABSTAIN",
+     "accepted": false,
+     "hardBlocks": [
+      "task/evidence gate is out of scope or blocked"
+     ],
+     "reviewReasons": [],
+     "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+    },
+    "agent9": {
+     "status": "INSUFFICIENT_DATA",
+     "models": [
+      "zmijewski"
+     ],
+     "missingInputs": [
+      "altman:retained_earnings",
+      "interest_coverage:interest_expense"
+     ],
+     "reasoning": "Zmijewski P(distress)=0.014 (distress-unlikely); only one distress model available; low-risk classification withheld"
+    },
+    "agent10": {
+     "weightCoverage": 0.4,
+     "missing": [
+      "ebitda_interest",
+      "ffo_debt",
+      "governance",
+      "industry_risk"
+     ]
+    },
+    "metrics": {
+     "pe": 11.28901773794538,
+     "pb": null,
+     "evEbitda": null,
+     "peVsSectorPct": null,
+     "revenueYoyPct": -0.22428251379319475,
+     "netMarginPct": 26.386464659118452,
+     "roePct": 12.095666964036258,
+     "debtToEquity": 0.0009639273446399591,
+     "currentRatio": 4.70446006361186,
+     "freeCashFlow": 111668936.0,
+     "return1mPct": -14.670055748851906,
+     "return3mPct": -10.316488308559746,
+     "return6mPct": -11.484137703530351,
+     "volatilityAnnualizedPct": 20.197165688182103,
+     "maxDrawdownPct": -25.29083170121542,
+     "volumeVs30d": 0.6876974579590382,
+     "marketCap": null,
+     "dividendYieldPct": null
+    },
+    "outlook": {
+     "shortTermOutlook": "DATA_BLOCKED",
+     "longTermOutlook": "DATA_BLOCKED",
+     "momentum": "NEGATIVE",
+     "riskLevel": "LOW",
+     "drawdownRisk": "ELEVATED",
+     "valuationView": "INSUFFICIENT_DATA"
+    },
+    "opportunity": {
+     "state": "INSUFFICIENT_DATA",
+     "primaryCause": "MISSING_DATA",
+     "explanation": "Reliable assessment cannot be completed: missing fundamental_source Distress models could not run (missing debt/EBITDA/interest inputs); this is a data gap, not a distress finding, and did not affect the state.",
+     "underlying": {
+      "draftCall": "NO_RECOMMENDATION",
+      "score": 0.0115,
+      "confidence": 0.119
+     },
+     "agent8Abstention": [
+      {
+       "code": "HARD_BLOCK",
+       "kind": "GOVERNANCE_RESTRICTION",
+       "detail": "task/evidence gate is out of scope or blocked"
+      },
+      {
+       "code": "AGENT_DISAGREEMENT",
+       "kind": "GOVERNANCE_RESTRICTION",
+       "detail": "high-confidence disagreement: positive=quality negative=fundamental"
+      }
+     ],
+     "limitingFactors": [
+      {
+       "agent": "fundamental",
+       "vote": -0.35,
+       "kind": "WEAK_FUNDAMENTALS"
+      },
+      {
+       "agent": "forecast",
+       "vote": -0.2,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      }
+     ],
+     "distressAxis": {
+      "status": "INSUFFICIENT_DATA",
+      "dataGap": true,
+      "missingInputs": [
+       "altman:retained_earnings",
+       "interest_coverage:interest_expense"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "ticker": "4019",
+   "name": "SMC HEALTHCARE",
+   "category": "PRICE_APPRECIATION_30D",
+   "categoryRank": 5,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 14.300000190734863,
+    "historyFileObservedAt": "2026-10-13T21:55:46.625879+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "4019.SR",
+    "currency": "SAR",
+    "avgTradedValue30d": 4141847.8635624885,
+    "return30dPct": -12.538227173732864,
+    "volumeRatio": 0.6990166043407829,
+    "exchange": "SAUDI_EXCHANGE",
+    "country": "SA",
+    "source": "yahoo-public-chart-global"
+   },
+   "ledgerStatus": "INSUFFICIENT_DATA",
+   "pipeline": {
+    "call": "NO_RECOMMENDATION",
+    "draftCall": "NO_RECOMMENDATION",
+    "score": 0.032689,
+    "confidence": 0.119,
+    "agents": {
+     "fundamental": {
+      "vote": 0.35000000000000003,
+      "confidence": 0.71,
+      "reasoning": "revenue +7.0% YoY; margin improving (+4.4pp); positive operating cash flow; positive free cash flow"
+     },
+     "risk": {
+      "vote": -0.2,
+      "confidence": 0.78,
+      "reasoning": "max drawdown -32.6%; annualized volatility 27.1%; liabilities/equity 1.02x; debt/operating cash flow 2.56x; current ratio 1.42x"
+     },
+     "forecast": {
+      "vote": -0.19999999999999998,
+      "confidence": 0.69,
+      "reasoning": "volume 1.4x 30d average; returns 1m=-13.7%, 3m=-13.3%, 6m=-22.4%; 52w range position 0%"
+     },
+     "comparison": {
+      "vote": 0.0,
+      "confidence": 0.25,
+      "reasoning": "P/E 13.22; sector peer P/E unavailable: no sector classification from an authoritative source; abstaining (exchange-wide median shown as context only, not used)"
+     },
+     "quality": {
+      "vote": 0.85,
+      "confidence": 0.74,
+      "reasoning": "net margin 17.3%; operating cash/net income 1.21x; free cash/net income 0.86x; ROA 11.1%; cash/debt balance moderate"
+     },
+     "liquidity": {
+      "vote": 0.0,
+      "confidence": 0.4,
+      "reasoning": "today volume 1.37x 30d average"
+     }
+    },
+    "evidence": {
+     "status": "BLOCK",
+     "missingCritical": [
+      "fundamental_source"
+     ],
+     "coverage": 0.9375,
+     "contradictions": []
+    },
+    "agent8": {
+     "action": "ABSTAIN",
+     "accepted": false,
+     "hardBlocks": [
+      "task/evidence gate is out of scope or blocked"
+     ],
+     "reviewReasons": [],
+     "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+    },
+    "agent9": {
+     "status": "INSUFFICIENT_DATA",
+     "models": [
+      "zmijewski"
+     ],
+     "missingInputs": [
+      "altman:retained_earnings",
+      "interest_coverage:interest_expense"
+     ],
+     "reasoning": "Zmijewski P(distress)=0.127 (distress-unlikely); only one distress model available; low-risk classification withheld"
+    },
+    "agent10": {
+     "weightCoverage": 0.4,
+     "missing": [
+      "ebitda_interest",
+      "ffo_debt",
+      "governance",
+      "industry_risk"
+     ]
+    },
+    "metrics": {
+     "pe": 13.216981348001731,
+     "pb": null,
+     "evEbitda": null,
+     "peVsSectorPct": null,
+     "revenueYoyPct": 6.999121681904663,
+     "netMarginPct": 17.304743640640623,
+     "roePct": 22.412405085953857,
+     "debtToEquity": 0.6954844888279927,
+     "currentRatio": 1.422227925632593,
+     "freeCashFlow": 228280124.0,
+     "return1mPct": -13.73152446838235,
+     "return3mPct": -13.304453210589473,
+     "return6mPct": -22.397953960519622,
+     "volatilityAnnualizedPct": 27.068394350895748,
+     "maxDrawdownPct": -32.64728442092358,
+     "volumeVs30d": 1.3733242950500426,
+     "marketCap": null,
+     "dividendYieldPct": null
+    },
+    "outlook": {
+     "shortTermOutlook": "DATA_BLOCKED",
+     "longTermOutlook": "DATA_BLOCKED",
+     "momentum": "NEGATIVE",
+     "riskLevel": "MODERATE",
+     "drawdownRisk": "ELEVATED",
+     "valuationView": "INSUFFICIENT_DATA"
+    },
+    "opportunity": {
+     "state": "INSUFFICIENT_DATA",
+     "primaryCause": "MISSING_DATA",
+     "explanation": "Reliable assessment cannot be completed: missing fundamental_source Distress models could not run (missing debt/EBITDA/interest inputs); this is a data gap, not a distress finding, and did not affect the state.",
+     "underlying": {
+      "draftCall": "NO_RECOMMENDATION",
+      "score": 0.0327,
+      "confidence": 0.119
+     },
+     "agent8Abstention": [
+      {
+       "code": "HARD_BLOCK",
+       "kind": "GOVERNANCE_RESTRICTION",
+       "detail": "task/evidence gate is out of scope or blocked"
+      }
+     ],
+     "limitingFactors": [
+      {
+       "agent": "risk",
+       "vote": -0.2,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      },
+      {
+       "agent": "forecast",
+       "vote": -0.2,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY"
+      },
+      {
+       "agent": "momentum",
+       "vote": null,
+       "kind": "NEGATIVE_MOMENTUM_OR_VOLATILITY",
+       "detail": "6-month return -22.4%"
+      }
+     ],
+     "distressAxis": {
+      "status": "INSUFFICIENT_DATA",
+      "dataGap": true,
+      "missingInputs": [
+       "altman:retained_earnings",
+       "interest_coverage:interest_expense"
+      ]
+     }
+    }
+   }
+  }
+ ],
+ "eligible": 20,
+ "shortfalls": {
+  "PRICE_APPRECIATION_30D": 5,
+  "UNUSUAL_VOLUME": 10
+ },
+ "stateDistribution": {
+  "INSUFFICIENT_DATA": 15
+ },
+ "agent8Abstentions": {
+  "HARD_BLOCK": 15,
+  "AGENT_DISAGREEMENT": 2
+ }
+}

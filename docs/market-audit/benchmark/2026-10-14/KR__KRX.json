@@ -1,0 +1,9 @@
+{
+ "market": "KR__KRX",
+ "generatedAt": "2026-10-13T23:57:55.346439+00:00",
+ "universeInLedger": 2641,
+ "excluded": {},
+ "companies": [],
+ "eligible": 0,
+ "limitation": "no verified daily history with >=32 sessions for any ledger instrument"
+}

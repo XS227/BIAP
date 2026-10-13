@@ -263,6 +263,8 @@ def compact_row(result: dict, *, status: str, reason: str, source: str, financia
     evidence = result.get("evidence") if isinstance(result.get("evidence"), dict) else {}
     row["evidence"] = {k: evidence.get(k) for k in ("status", "missing_critical", "coverage", "freshness_score", "reasoning") if k in evidence}
     row["company"] = slim_company
+    if isinstance(result.get("opportunity"), dict):
+        row["opportunity"] = result["opportunity"]
     row["ledger"] = {"status": status, "reason": reason, "source": source, "financial": financial}
     return row
 

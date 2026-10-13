@@ -1,0 +1,11 @@
+{
+ "market": "AE__DFM",
+ "generatedAt": "2026-10-13T23:57:55.346439+00:00",
+ "universeInLedger": 65,
+ "excluded": {
+  "fewer than 20 traded sessions in last 30": 18
+ },
+ "companies": [],
+ "eligible": 0,
+ "limitation": "no verified daily history with >=32 sessions for any ledger instrument"
+}

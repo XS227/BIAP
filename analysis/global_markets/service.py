@@ -25,6 +25,7 @@ from .credit_scoring import score_legal_entity_company
 from .decision_support import build_decision_table, profile_assessment
 from .distress import distress_agent
 from .governance import decision_governance_agent
+from .opportunity import classify_opportunity
 from .fx import ECBReferenceFXProvider, TwelveDataFXProvider
 from .issuer import issuer_key_of
 from .sector_reference import apply_sector_reference
@@ -494,6 +495,17 @@ def _analysis_payload(
         "distress": asdict(distress),
         "creditScoring": credit_scoring,
         "governance": asdict(governance),
+        "opportunity": classify_opportunity(
+            preliminary_call=preliminary_call,
+            final_call=call,
+            score=score,
+            confidence=confidence,
+            evidence=asdict(evidence),
+            distress=asdict(distress),
+            governance=asdict(governance),
+            signals=signals,
+            metrics={"return6mPct": enriched.return_6m_pct},
+        ),
         "decisionIntegrity": {
             "preliminaryCall": preliminary_call,
             "finalCall": call,

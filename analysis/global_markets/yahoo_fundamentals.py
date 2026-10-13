@@ -17,6 +17,7 @@ from typing import Any, Optional
 
 import httpx
 
+from .http_governor import YAHOO_GOVERNOR
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
 from .regional_yahoo_chart import RegionalYahooChartMarketProvider
@@ -119,12 +120,14 @@ class YahooFundamentalsProvider(FundamentalsProvider):
                     "User-Agent": "Mozilla/5.0 BIAP-Global/1.0 public fundamentals",
                 },
             ) as client:
-                response = client.get(f"{_BASE}/{symbol}", params=params)
+                response = YAHOO_GOVERNOR.get(client, f"{_BASE}/{symbol}", params=params)
             response.raise_for_status()
             payload = response.json()
-        except (httpx.HTTPError, ValueError) as exc:
+        except (httpx.HTTPError, ValueError, GlobalProviderError) as exc:
             if cached:
                 return cached["payload"]
+            if isinstance(exc, GlobalProviderError):
+                raise
             raise GlobalProviderError(f"Yahoo fundamentals request failed: {type(exc).__name__}") from exc
 
         if not isinstance(payload, dict):

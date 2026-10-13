@@ -473,6 +473,27 @@ def global_analysis_ledger(
         ledger.close()
 
 
+@router.get("/opportunities")
+def global_opportunities(country: str, exchange: str, limit: int = 20):
+    """Ranked investment opportunities (BUY/WATCH/REVIEW), separate from the Qualified BUY gate."""
+    from global_markets.analysis_ledger import AnalysisLedger, ledger_path
+    from global_markets.opportunity import market_opportunities
+
+    country, exchange = country.strip().upper(), exchange.strip().upper()
+    try:
+        get_exchange(country, exchange)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not ledger_path(country, exchange).exists():
+        return {"country": country, "exchange": exchange, "ranked": [], "note": "No scan has registered this market yet."}
+    ledger = AnalysisLedger(country, exchange)
+    try:
+        return {"country": country, "exchange": exchange,
+                **market_opportunities(ledger.full_results(), max(1, min(int(limit), 20)))}
+    finally:
+        ledger.close()
+
+
 @router.post("/scan-global")
 def global_scan_top10(req: GlobalTop10Request):
     try:
