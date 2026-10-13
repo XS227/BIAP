@@ -83,3 +83,19 @@ def test_uk_company_carries_icb_industry_as_sector_and_icb_sector_as_industry():
     company = provider.list_instruments(country="GB", exchange="LSE")[0]
     assert (company.sector, company.industry) == ("Financials", "Banks")
     assert company.raw_provider_fields["lse_icb_code"] == "301010"
+
+
+def test_uk_snapshot_without_complete_icb_is_refreshed_not_trusted(tmp_path):
+    from datetime import datetime, timezone
+    from global_markets.cached_universe import PersistentUniverseProvider
+
+    class _Up:
+        provider_id = "official-lse-main-market-price-explorer"
+
+    provider = PersistentUniverseProvider(_Up(), data_dir=str(tmp_path))
+    now = datetime.now(timezone.utc).isoformat()
+    base = {"country": "GB", "fetchedAt": now}
+    assert not provider._is_fresh({**base, "metadata": {"officialCount": 812}})
+    assert not provider._is_fresh({**base, "metadata": {"icbClassifiedCount": 900, "icbSectorQueryFailures": 2}})
+    assert provider._is_fresh({**base, "metadata": {"icbClassifiedCount": 900, "icbSectorQueryFailures": 0}})
+    assert provider._is_fresh({"country": "FR", "fetchedAt": now, "metadata": {}})

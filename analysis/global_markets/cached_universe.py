@@ -102,7 +102,16 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
 
     def _is_fresh(self, payload: dict) -> bool:
         age = self._age_seconds(payload)
-        return age is not None and age <= self.fresh_seconds
+        if age is None or age > self.fresh_seconds:
+            return False
+        if str(payload.get("country") or "").upper() == "GB":
+            # A UK snapshot without a complete LSE ICB classification would still
+            # contain investment trusts/funds. Refresh it once; on upstream failure
+            # the stale snapshot remains the fallback.
+            meta = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+            if not meta.get("icbClassifiedCount") or meta.get("icbSectorQueryFailures"):
+                return False
+        return True
 
     @staticmethod
     def _row(company: GlobalCompany) -> dict:
