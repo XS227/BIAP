@@ -1,5 +1,36 @@
 # BIAP — Project Status
 
+## 2026-10-13 session 20 (DE sector source, PR-sync CI, agent regression, portfolio audit; prod a1045e5)
+
+**Commits:** `a1045e5` (DE Deutsche Boerse sector reference, ESEF period anchoring, sector on portfolio allocations, tolerant PR-sync step) on top of `83c9da7`. Prod 8091 `/health` commit = `a1045e5`; Deploy, check, live check, Germany canaries all green.
+**Sync main CI:** root cause confirmed from the failed log (run 38471625911): `GraphQL: GitHub Actions is not permitted to create or approve pull requests (createPullRequest)`. Repo setting `can_approve_pull_request_reviews=false` (default token read); the workflow token itself has contents+pull-requests write. Not a branch-protection or workflow-permission defect. The step now emits a warning instead of failing when only PR creation is refused; nothing is merged and no protection is bypassed (main is NOT protected; sync merges only Global-only paths). Run 38477821960 on a1045e5 is green. To get main auto-synced for non-Global paths (docs/, PROJECT_STATUS.md) an admin must enable Settings > Actions > General > "Allow GitHub Actions to create and approve pull requests", or open the PR by hand. Not changed by me.
+**DE sector (traceable):** Deutsche Boerse Listed-companies workbook (sector/subsector -> ICB industry, explicit conservative tables, entries carry source+URL+retrievedAt). Coverage Frankfurt 26.5% -> 82.1%, Xetra 28.8% -> 84.5%. Insurers verified separately on live prod: ALV, MUV2, HNR1, TLX = Financials / Insurance (kind insurance). Unmapped labels stay unmapped. Prior sector-reference backup: `/var/lib/biap-global/backup-s19-sector-20261013T214539Z`.
+**UK:** sector coverage 99.1%; fundamentals coverage 85.0% vs the unchanged 70% gate (gate released on evidence, never weakened); 420 PASS, 7 BUY candidates. No official asset-class source exists for LSE; not invented.
+**Extraction gaps:** equity/debt/EBITDA/FFO/operating income still absent where the official filings do not tag them (SAP, SIE, AZT, AV, DE insurers equity; IT/UK EBITDA); Agents 9/10 report factors_missing/INSUFFICIENT_DATA. Nothing estimated.
+**Regression (live prod, read-only):** `docs/market-audit/data/agent_regression_2026-10-13.json`: 101 representative cases over every ledger market, six scoring agents + Agents 8/9/10, 0 invariant errors. 796 global pytest pass.
+**Portfolio audit (`portfolio_audit.py`, 50 instruments across 10 EU markets, 8 profiles):** 0 cap violations (position, sector, country, cash reserve, max positions, invested+cash=100), 0 UNKNOWN-sector weight. Default profile: 7 positions / 70% invested; the 20% residual over the 10% reserve is explained in the response (every placeable candidate sits at max_position_pct x7; 38 names below decision threshold, 4 evidence-gate, 1 duplicate issuer); DE-only profile correctly invests 0 (no DE name cleared the gates). Caps are not relaxed to hit a target.
+**Before/after (sector coverage is the only metric that changed vs session 15; counts are from ledgers, backups listed above):**
+
+| Market | Discovered | In universe | Deep (COMPLETE) | Core fundamentals verified | PASS | WARN | BLOCK | BUY cand. | Sector cov. before→after | Top blockers |
+|---|---|---|---|---|---|---|---|---|---|---|
+| DE / FRANKFURT | 498 | 498 | 456 | 20 | 434 | 22 | 35 | 1 | 26.5→82.1% | official filing not found 50; no official statement source 7; no usable quote 7 |
+| DE / XETRA | 406 | 406 | 389 | 16 | 372 | 17 | 15 | 0 | 28.8→84.5% | official filing not found 28; no official statement source 4; no usable quote 2 |
+| DK / NASDAQ_COPENHAGEN | 116 | 116 | 99 | 77 | 99 | 0 | 17 | 3 | 100.0% | official filing not found 13; stale official filing 3; core figures not tagged 1 |
+| ES / BME_MADRID | 109 | 109 | 95 | 74 | 95 | 0 | 11 | 1 | 97.2% | stale official filing 7; official filing not found 4; no usable quote 3 |
+| FI / NASDAQ_HELSINKI | 148 | 148 | 123 | 111 | 123 | 0 | 23 | 4 | 100.0% | stale official filing 14; official filing not found 6; no usable quote 2 |
+| FR / EURONEXT_PARIS | 294 | 294 | 259 | 194 | 259 | 0 | 34 | 1 | 100.0% | official filing not found 18; stale official filing 16; no usable quote 1 |
+| GB / LSE | 830 | 527 | 420 | 300 | 420 | 0 | 101 | 7 | 99.1% | official filing not found 47; stale official filing 43; no official statement source 6 |
+| IT / EURONEXT_MILAN | 193 | 193 | 169 | 130 | 169 | 0 | 24 | 0 | 100.0% | stale official filing 11; official filing not found 10; core figures not tagged 3 |
+| NL / EURONEXT_AMSTERDAM | 98 | 98 | 83 | 62 | 82 | 1 | 15 | 3 | 100.0% | official filing not found 8; stale official filing 6; no official statement source 1 |
+| NO / EURONEXT_OSLO | 146 | 146 | 136 | 114 | 136 | 0 | 10 | 1 | 100.0% | official filing not found 7; stale official filing 2; no official statement source 1 |
+| PT / EURONEXT_LISBON | 30 | 30 | 28 | 14 | 28 | 0 | 2 | 0 | 100.0% | official filing not found 1; stale official filing 1 |
+| SE / NASDAQ_STOCKHOLM | 402 | 402 | 373 | 266 | 373 | 0 | 29 | 0 | 100.0% | official filing not found 19; stale official filing 9; no official statement source 1 |
+| US / NASDAQ | 3013 | 3010 | 2804 | 2043 | 2804 | 0 | 196 | 37 | 0.0% | no official statement source 177; stale official filing 15; no usable quote 10 |
+| US / NYSE | 1799 | 1798 | 1599 | 1010 | 1599 | 0 | 188 | 44 | 0.0% | no official statement source 177; no usable quote 11; stale official filing 10 |
+
+(US sector shows 0.0% only because `market_table.py` reads the universe file, which has no sector for US; ledger sector coverage was 81.5% NYSE in session 15.) Qualified BUY counts are what the gates yield: DE 1, GB 7, NL 3, FI 4, ES 1, FR 1, NO 1, IT 0, SE 0; none manufactured.
+**Open:** UK asset-class source; FBK-style ESEF extension equity for other banks; EBITDA/debt/FFO not published; APK 0.3.22 device test; `Sync main` needs the repo setting above; timers still OFF.
+
 ## 2026-10-13 session 18 (normalizer revision 3 re-parse, backups, NASDAQ regression, coverage)
 
 **Code:** `NORMALIZER_REVISION` 2 -> 3 (cached_fundamentals.py). Revision-2 snapshots are re-queued **only** when `total_equity` is empty (never again for debt/EBITDA/shares), so the bump
