@@ -1,9 +1,10 @@
 {
-  "version": "0.3.21",
-  "versionCode": 24,
-  "releasedAt": "2026-10-12",
+  "version": "0.3.22",
+  "versionCode": 25,
+  "releasedAt": "2026-10-13",
   "changes": [
-    "Portfolios hold one company once: a second listing of the same issuer (ASML NASDAQ + Amsterdam, GOOG + GOOGL) is rejected as duplicate_issuer instead of splitting the position",
-    "Market cap, P/B and EV/EBITDA are withheld when a share count is stale or inconsistent with net income / EPS (Nextpower share count was 2.5x too low)"
+    "UK ranking is released: pooled investment trusts/funds are classified by the LSE's own ICB sector and no longer dilute operating-company fundamentals coverage (the 70% gate is unchanged)",
+    "Portfolios fill every position slot with an allocatable qualified name and redistribute weight a capped position cannot take; leftover cash states which limit binds",
+    "Sector now comes from official ICB (LSE, Euronext), BME and a labelled ISIN-matched reference, so insurers are treated as financial institutions and the sector cap has real data"
   ]
 }
