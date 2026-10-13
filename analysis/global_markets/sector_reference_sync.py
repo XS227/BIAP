@@ -19,7 +19,7 @@ from typing import Optional
 import requests
 
 from .sector_reference import (
-    classify_wikidata_industries, icb_entry, load_entries, reference_path, save_entries,
+    bme_entry, classify_wikidata_industries, icb_entry, load_entries, reference_path, save_entries,
 )
 
 _EURONEXT = "https://live.euronext.com/en/ajax/getFactsheetInfoBlock/STOCK/{isin}-{mic}/fs_icb_block"
@@ -71,6 +71,35 @@ def fetch_wikidata(session: requests.Session, isins: list[str]) -> dict[str, lis
     return out
 
 
+_BME = "https://apiweb.bolsasymercados.es/Market/v1/EQ/"
+
+
+def fetch_bme(session: requests.Session) -> dict[str, tuple[str, str, str, str]]:
+    """ISIN -> (sector code, subsector code, sector name, subsector name) for every BME-listed company."""
+    headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json", "Origin": "https://www.bolsasymercados.es"}
+    names: dict[tuple[str, str], tuple[str, str]] = {}
+    response = session.get(_BME + "SubsectorsAll", headers=headers, timeout=60)
+    response.raise_for_status()
+    for sector in response.json().get("data") or []:
+        for sub in sector.get("subsectors") or []:
+            names[(sector["code"], sub["code"])] = (sector["name"], sub["name"])
+    out: dict[str, tuple[str, str, str, str]] = {}
+    page = 0
+    while True:
+        response = session.get(_BME + "ListedCompanies", params={"pageSize": 100, "page": page}, headers=headers, timeout=60)
+        response.raise_for_status()
+        payload = response.json()
+        for row in payload.get("data") or []:
+            key = (str(row.get("sector") or ""), str(row.get("subsector") or ""))
+            sector_name, sub_name = names.get(key, ("", ""))
+            if row.get("isin") and sector_name:
+                out[str(row["isin"]).upper()] = (key[0], key[1], sector_name, sub_name)
+        page += 1
+        if not payload.get("hasMoreResults") or page > 60:
+            return out
+        time.sleep(0.2)
+
+
 def _instruments(data_dir: Optional[str], country: str) -> list[dict]:
     root = Path(data_dir or "/var/lib/biap-global") / "universe" / country
     rows: list[dict] = []
@@ -101,7 +130,19 @@ def sync(countries: list[str], *, data_dir: Optional[str] = None, limit: Optiona
         official = wiki = missing = 0
         leftover: list[str] = []
         mics = _EURONEXT_MICS.get(country)
+        bme: dict = {}
+        if country == "ES":
+            try:
+                bme = fetch_bme(session)
+            except (requests.RequestException, ValueError, KeyError) as exc:
+                print(f"BME listed-companies fetch failed ({type(exc).__name__}); falling back to Wikidata", file=sys.stderr)
         for isin in todo:
+            if bme.get(isin):
+                entry = bme_entry(*bme[isin][:2], *bme[isin][2:], retrieved_at=now)
+                if entry:
+                    entries[isin] = entry
+                    official += 1
+                    continue
             if mics:
                 found = fetch_euronext(session, isin, mics)
                 time.sleep(pause)
@@ -134,7 +175,7 @@ def sync(countries: list[str], *, data_dir: Optional[str] = None, limit: Optiona
                     wiki += 1
                 else:
                     missing += 1
-        report[country] = {"instrumentsWithoutSector": len(isins), "fetched": len(todo), "euronextIcb": official,
+        report[country] = {"instrumentsWithoutSector": len(isins), "fetched": len(todo), "officialIcbOrExchange": official,
                            "wikidata": wiki, "unclassified": missing}
     save_entries(entries, path)
     return {"path": str(path), "totalEntries": len(entries), "markets": report}

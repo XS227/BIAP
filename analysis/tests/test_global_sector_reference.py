@@ -74,3 +74,13 @@ def test_euronext_icb_page_is_parsed_and_mapped_to_icb_industry():
     bank = icb_entry("30101010", "Banks", "Banks", url="u", retrieved_at="t")
     assert bank["sector"] == "Financials" and bank["kind"] == "bank"
     assert parse_euronext_icb("") is None
+
+
+def test_bme_official_sector_maps_to_icb_and_marks_banks_and_insurers():
+    from global_markets.sector_reference import bme_entry
+    bank = bme_entry("05", "01", "Financial Services", "Banks", retrieved_at="t")
+    ins = bme_entry("05", "02", "Financial Services", "Insurance", retrieved_at="t")
+    assert (bank["sector"], bank["kind"], ins["kind"]) == ("Financials", "bank", "insurance")
+    assert bme_entry("01", "02", "Petrol and Power", "Electricity and Gas", retrieved_at="t")["sector"] == "Utilities"
+    assert bme_entry("05", "04", "Financial Services", "SICAV", retrieved_at="t") is None  # pooled vehicle, never an operating sector
+    assert bme_entry("04", "06", "Consumer Services", "Other Services", retrieved_at="t") is None  # ambiguous -> missing, not guessed

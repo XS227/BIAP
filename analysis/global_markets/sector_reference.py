@@ -180,3 +180,38 @@ def icb_entry(code: str, industry_label: str, sector_label: str, *, url: str, re
         "source": "euronext-icb", "classification": "ICB (FTSE Russell) as published by Euronext Live",
         "url": url, "retrievedAt": retrieved_at,
     }
+
+
+# BME (Bolsas y Mercados Espanoles) own sector/subsector -> ICB industry. Pooled
+# vehicles (SICAV, ETF, venture capital, hedge funds) are deliberately unmapped.
+BME_INDUSTRY = {
+    ("01", "01"): "Energy", ("01", "02"): "Utilities", ("01", "03"): "Utilities", ("01", "04"): "Utilities",
+    ("02", "01"): "Basic Materials", ("02", "02"): "Industrials", ("02", "03"): "Industrials",
+    ("02", "04"): "Industrials", ("02", "05"): "Basic Materials", ("02", "06"): "Industrials", ("02", "07"): "Industrials",
+    ("03", "01"): "Consumer Staples", ("03", "02"): "Consumer Discretionary", ("03", "03"): "Basic Materials",
+    ("03", "04"): "Consumer Discretionary", ("03", "05"): "Health Care", ("03", "06"): "Consumer Discretionary",
+    ("04", "01"): "Consumer Discretionary", ("04", "02"): "Consumer Discretionary", ("04", "03"): "Consumer Discretionary",
+    ("04", "04"): "Industrials", ("04", "05"): "Industrials",
+    ("05", "01"): "Financials", ("05", "02"): "Financials", ("05", "03"): "Financials", ("05", "06"): "Financials",
+    ("06", "01"): "Telecommunications", ("06", "02"): "Technology", ("06", "03"): "Technology",
+    ("07", "01"): "Real Estate", ("07", "02"): "Real Estate",
+}
+BME_POOLED_SUBSECTORS = {("05", "04"), ("05", "07"), ("05", "08"), ("05", "09")}
+
+
+def bme_entry(sector_code: str, subsector_code: str, sector_name: str, subsector_name: str, *, retrieved_at: str) -> Optional[dict]:
+    industry = BME_INDUSTRY.get((sector_code, subsector_code))
+    if not industry:
+        return None
+    kind = "operating"
+    if (sector_code, subsector_code) == ("05", "01"):
+        kind = "bank"
+    elif (sector_code, subsector_code) == ("05", "02"):
+        kind = "insurance"
+    elif sector_code == "05":
+        kind = "financial"
+    return {
+        "sector": industry, "industry": f"{sector_name} - {subsector_name}", "kind": kind, "code": f"{sector_code}-{subsector_code}",
+        "source": "bme-sector-subsector", "classification": "BME official sector/subsector mapped to ICB industry",
+        "url": "https://apiweb.bolsasymercados.es/Market/v1/EQ/ListedCompanies", "retrievedAt": retrieved_at,
+    }
