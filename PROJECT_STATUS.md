@@ -1,5 +1,14 @@
 # BIAP — Project Status
 
+## 2026-10-13 session 21 (PR-sync re-run, UK/DE/extraction re-check, APK readiness; prod a1045e5)
+
+**Sync main re-run (workflow_dispatch, run 38479275132):** green, but `gh pr create` still returns `GitHub Actions is not permitted to create or approve pull requests`. `GET /actions/permissions/workflow` still reports `can_approve_pull_request_reviews=false` (default token read), so the repo setting is not in effect (not saved, or toggled elsewhere). No PR was created; no protection bypassed. Open PRs: #9, #44, #45 only. Workflow code needs no further change.
+**UK asset class:** already resolved by the LSE Main Market Price Explorer + official ICB: 931 source rows -> 527 in universe, 285 pooled vehicles and 119 non-ordinary excluded by official classification, all 527 Common Stock, ICB sector 99.1%. Gate (70%) untouched; fundamentals coverage 85.0%.
+**DE sector:** residual unmapped Frankfurt 89 / Xetra 63 (Open Market / small caps absent from the Deutsche Boerse file); left unmapped, none guessed. Market-level BUY is a per-company gate (score, confidence, evidence PASS); portfolio allocation additionally applies position/sector/country caps, currency/FX, duplicate-issuer and max-positions limits, so BUY count != allocations (see session 20 audit).
+**Inputs (snapshot counts with a value / snapshots):** DE equity 890/894, op. income 842, debt 93, EBITDA 63; GB equity 796/799, debt 494, EBITDA 280; IT equity 193/194, debt 67, EBITDA 127; FR debt 196/295. Equity is effectively solved; DE debt/EBITDA is low because large DE issuers (BMW, DTE, EOAN, BAYN, RWE, VNA, VOW) come from reviewed issuer HTML pages with no consistently defined debt line (captive finance, leases). Adding debt there needs per-issuer review; not estimated.
+**APK 0.3.22:** published and downloadable (SHA-256 8f53ab5f...c346d, 105 MB). Device test still NOT done (no device); checklist `docs/audits/apk-0.3.22-device-test-checklist.md`.
+**Open:** repo PR setting effective?, DE small-cap sector, DE large-issuer debt/EBITDA curation, device test.
+
 ## 2026-10-13 session 20 (DE sector source, PR-sync CI, agent regression, portfolio audit; prod a1045e5)
 
 **Commits:** `a1045e5` (DE Deutsche Boerse sector reference, ESEF period anchoring, sector on portfolio allocations, tolerant PR-sync step) on top of `83c9da7`. Prod 8091 `/health` commit = `a1045e5`; Deploy, check, live check, Germany canaries all green.
