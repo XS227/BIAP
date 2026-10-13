@@ -157,12 +157,15 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         if not isinstance(units, dict):
             return []
         rows: list[dict] = []
-        for entries in units.values():
+        for unit_name, entries in units.items():
             if not isinstance(entries, list):
                 continue
             for row in entries:
                 if not isinstance(row, dict) or not isinstance(row.get("val"), (int, float)):
                     continue
+                # Keep the filing unit (USD, EUR, EUR/shares, ...) so the reporting
+                # currency is read from the facts instead of being assumed.
+                row = {**row, "_unit": str(unit_name)}
                 form = str(row.get("form") or "").upper()
                 fp = row.get("fp")
                 if form in {"10-K", "10-K/A", "20-F", "20-F/A"}:
@@ -215,6 +218,25 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
                     best = unique
                     best_key = key
         return best
+
+    @staticmethod
+    def _filing_currency(rows: list[Optional[dict]]) -> tuple[Optional[str], Optional[str]]:
+        """ISO currency of the monetary facts actually selected (ASML files 20-F in EUR).
+
+        Returns (currency, note). The first monetary row decides; disagreement
+        between rows is reported in the note, never silently resolved.
+        """
+        seen: list[str] = []
+        for row in rows:
+            unit = str((row or {}).get("_unit") or "").upper()
+            code = unit.split("/")[0]
+            if len(code) == 3 and code.isalpha() and code not in {"PURE"}:
+                seen.append(code)
+        if not seen:
+            return None, None
+        distinct = sorted(set(seen))
+        note = None if len(distinct) == 1 else f"mixed_monetary_units:{','.join(distinct)}"
+        return seen[0], note
 
     @classmethod
     def _has_annual_facts(cls, gaap: dict) -> bool:
@@ -524,10 +546,11 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             default="",
         ) or None
 
+        unit_currency, unit_currency_note = self._filing_currency([revenue_row, income_row, assets, equity, ocf])
         enriched = replace(
             company,
             name=listed_entity_name,
-            reporting_currency=company.reporting_currency or "USD",
+            reporting_currency=unit_currency or company.reporting_currency or "USD",
             revenue=revenue,
             revenue_prev=revenue_prev,
             revenue_yoy_pct=self._pct_change(revenue, revenue_prev),
@@ -556,6 +579,7 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             raw_provider_fields={
                 **company.raw_provider_fields,
                 "sec_cik": cik,
+                **({"filing_currency_note": unit_currency_note} if unit_currency_note else {}),
                 **({"ebitda_derivation": {
                     "formula": f"OperatingIncomeLoss + {dna_tag}",
                     "operating_income": operating_income_value,
