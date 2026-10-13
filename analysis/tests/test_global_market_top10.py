@@ -65,3 +65,11 @@ def test_blocked_market_reports_the_blocking_reason_at_the_first_gate(ledger):
     first = gates[0]
     assert first["gate"] == "market_ranking_released" and first["passed"] == 0
     assert first["reasons"] == {"official_fundamental_coverage_below_threshold": 5}
+
+
+def test_groups_partition_every_company_and_label_categories(ledger):
+    g = GlobalMarketScanner.ranking_groups(ledger.ranking_gate_counts())
+    assert g == {"QUALIFIED_BUY": 1, "WATCHLIST_HOLD": 1, "AVOID_REVIEW": 0, "NO_SIGNAL": 1, "INSUFFICIENT_EVIDENCE": 2, "NOT_YET_ANALYZED": 0}
+    assert sum(g.values()) == 5
+    top = GlobalMarketScanner.market_top10(ledger.market_pool(limit=50), 10)
+    assert [r["category"] for r in top] == ["QUALIFIED_BUY", "WATCHLIST_HOLD", "NO_SIGNAL"]

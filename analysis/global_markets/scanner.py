@@ -383,6 +383,25 @@ class GlobalMarketScanner:
             })
         return out
 
+    # The engine emits four calls; Watchlist and Hold are one engine state (HOLD_OR_WATCH) and are not split artificially.
+    CALL_CATEGORY = {
+        "BUY_CANDIDATE": "QUALIFIED_BUY",
+        "HOLD_OR_WATCH": "WATCHLIST_HOLD",
+        "AVOID_OR_REVIEW": "AVOID_REVIEW",
+        "NO_RECOMMENDATION": "NO_SIGNAL",
+    }
+
+    @classmethod
+    def ranking_groups(cls, gates: dict) -> dict:
+        """Where every analyzed company sits: evidence-supported groups vs Insufficient Evidence."""
+        calls = gates.get("callsAmongScored") or {}
+        groups = {cat: 0 for cat in dict.fromkeys(cls.CALL_CATEGORY.values())}
+        for call, n in calls.items():
+            groups[cls.CALL_CATEGORY.get(call, "NO_SIGNAL")] += n
+        groups["INSUFFICIENT_EVIDENCE"] = gates["analyzed"] - gates["scoredAndComplete"]
+        groups["NOT_YET_ANALYZED"] = gates["universe"] - gates["analyzed"]
+        return groups
+
     @classmethod
     def market_top10(cls, pool: list[dict], top_n: int) -> list[dict]:
         """Top evidence-supported companies of any call, one row per issuer, ranked by score*confidence.
@@ -400,6 +419,7 @@ class GlobalMarketScanner:
                 "rankScore": round(rank(row), 6),
                 "rankCriterion": cls.RANKING_BASIS["criterion"],
                 "qualifiedBuy": row.get("call") == "BUY_CANDIDATE",
+                "category": cls.CALL_CATEGORY.get(str(row.get("call")), "NO_SIGNAL"),
             }
             for index, row in enumerate(pool, start=1)
         ]
@@ -746,7 +766,8 @@ class GlobalMarketScanner:
             "mic": spec.mic,
             "requestedRecommendations": top_n,
             "recommendationCount": len(recommendations),
-            "qualifiedBuyCount": len(recommendations),
+            "qualifiedBuyCount": buy_after_issuer if readiness["rankingEligible"] else 0,
+            "rankingGroups": self.ranking_groups(gate_counts) if gate_counts and readiness["rankingEligible"] else {},
             "marketTop10": market_top10,
             "marketTop10Note": (
                 "Highest score x confidence among evidence-PASS companies of any call; not a buy list. "

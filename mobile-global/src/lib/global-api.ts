@@ -321,6 +321,7 @@ export type GlobalScanResponse = {
   /** Highest-ranked evidence-supported companies of any call (not a buy list). Empty when ranking is not released. */
   marketTop10?: GlobalAnalysis[];
   qualifiedBuyCount?: number;
+  rankingGroups?: Record<string, number>;
   rankingGates?: Array<{ gate: string; entered: number; passed: number; rejected: number; reasons?: Record<string, number>; byEvidenceStatus?: Record<string, number> }>;
   deepResults?: GlobalAnalysis[];
   screeningErrors?: string[];

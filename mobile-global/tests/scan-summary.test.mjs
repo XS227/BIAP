@@ -60,3 +60,11 @@ test('gate lines list only gates that rejected companies, with reasons', () => {
   assert.match(lines[0], /Evidence PASS: 10 of 146 rejected \(BLOCK 10\)/);
   assert.match(lines[1], /call=NO_RECOMMENDATION 135/);
 });
+import { categoryLabel, groupLine } from '../src/lib/scan-summary.ts';
+test('category labels never upgrade a non-BUY row, and the group line covers every bucket', () => {
+  assert.equal(categoryLabel({ call: 'NO_RECOMMENDATION', category: 'NO_SIGNAL' }), 'RANKED · NO BUY SIGNAL');
+  assert.equal(categoryLabel({ call: 'BUY_CANDIDATE', category: 'QUALIFIED_BUY' }), 'QUALIFIED BUY');
+  assert.equal(categoryLabel({ call: 'HOLD_OR_WATCH' }), 'HOLD_OR_WATCH');
+  assert.match(groupLine({ rankingGroups: { QUALIFIED_BUY: 0, WATCHLIST_HOLD: 45, NO_SIGNAL: 328, INSUFFICIENT_EVIDENCE: 29 } }), /Qualified BUY 0 • Watchlist\/Hold 45 .* Insufficient evidence 29/);
+  assert.equal(groupLine({}), '');
+});
