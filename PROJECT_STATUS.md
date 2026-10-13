@@ -1,5 +1,18 @@
 # BIAP — Project Status
 
+## 2026-10-13 session 22 (German BUY-count decomposition, sync CI, Yahoo throttle; prod a1045e5, no deploy)
+
+**Sync main:** re-run (workflow_dispatch) is green but still only warns: `can_approve_pull_request_reviews` is still `false` via the API, `gh pr create` is refused. No PR exists. Needs the repo setting saved.
+**Unmapped German small caps:** 89 unique ISINs (Frankfurt 89, Xetra 63 overlap), not 152; all absent from the Deutsche Boerse sector file; left unmapped.
+**Why German BUY is so low (read-only, 120 most liquid Xetra evidence-PASS names, `docs/market-audit/data/de_xetra_top120_decomposition_2026-10-13.json`):**
+- Ledger split (Xetra 406 / Frankfurt 498): missing-data exclusions (BLOCKED + INSUFFICIENT_DATA) 17 / 42; evidence WARN 17 / 22; genuine score 0..0.25 (neutral) 63 / 41; genuine negative score 309 / 392; BUY 0 / 1. PASS-name scores: median -0.10, max 0.22 (Xetra) / 0.33 (Frankfurt).
+- In the sample, 115/120 have preliminary call HOLD_OR_WATCH that Agent 8 downgrades to NO_RECOMMENDATION (governance REVIEW): distress INSUFFICIENT_DATA 62 (no debt/EBITDA from the source = missing-data exclusion), ELEVATED_RISK 28 and HIGH_RISK 18 (genuine model output), NOT_APPLICABLE 10 (financials), LOW_RISK 2.
+- Agent mean votes: fundamental -0.09, risk -0.33 (98/120 negative: drawdown/volatility/leverage), forecast -0.02, comparison 0.00 for all 120 (peer P/E benchmark needs a <=24 h scan cache; DE scan-cache dated 2026-10-12, so it abstains), quality +0.02, liquidity +0.17. 45% have negative 6m return. So the low count is mostly genuine negative risk/momentum plus Agent 8 abstentions caused by missing debt data, not a gate bug. Thresholds untouched.
+**Debt/EBITDA for BMW, DTE, EOAN, BAYN, RWE:** NOT added. Issuer sites are unreachable from the VPS (BMW) or 403/404 (E.ON, DTE); a page summary via a fetch tool is not a verifiable transcription for an `audited` registry. Lead only (unverified, not stored): BMW balance sheet financial liabilities non-current 68,159m + current 42,310m (EUR, FY2025), consistent with the stored total_liabilities 168,061m. Mercedes (MBG) already has total_debt in `de_verified_annual_reports.json` and passes Agent 8 (HOLD_OR_WATCH), so adding verified debt does lift the abstention. Needs figures read from the official PDFs.
+**Side effect I caused:** ~240 analyze calls + 2 DE interactive scans exhausted the shared Yahoo quote quota (HTTP 429 on this IP for >10 min). The two DE scans returned INSUFFICIENT_MARKET_COVERAGE (quotesUsable 0); ledgers verified unchanged vs backup (`/var/lib/biap-global/backup-s22-prescan-20261013T225518Z`, integrity ok) and scan-cache not rewritten. Cached quotes keep serving. Full all-market regression and the DE scan refresh are deferred until the 429 clears (re-run `agent_regression.py` then; do not hammer now).
+**APK 0.3.22:** published and downloadable; no device test yet (checklist in docs/audits).
+**Open:** repo PR setting; official-PDF debt/EBITDA for large DE issuers; DE scan refresh + all-market regression after Yahoo recovers; APK device test.
+
 ## 2026-10-13 session 21 (PR-sync re-run, UK/DE/extraction re-check, APK readiness; prod a1045e5)
 
 **Sync main re-run (workflow_dispatch, run 38479275132):** green, but `gh pr create` still returns `GitHub Actions is not permitted to create or approve pull requests`. `GET /actions/permissions/workflow` still reports `can_approve_pull_request_reviews=false` (default token read), so the repo setting is not in effect (not saved, or toggled elsewhere). No PR was created; no protection bypassed. Open PRs: #9, #44, #45 only. Workflow code needs no further change.
