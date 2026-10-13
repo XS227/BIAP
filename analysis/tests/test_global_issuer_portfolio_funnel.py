@@ -174,3 +174,27 @@ def test_conflicting_cik_lei_assertions_are_not_used_to_merge():
     us = {"name": "Gamma ADS", "country": "US", "ticker": "G", "raw_provider_fields": {"sec_cik": 5}}
     keys = resolve_issuer_identities([a, b, us])
     assert keys[0] != keys[1] and keys[2] == "CIK:5"
+
+
+def _sector_cand(ticker, sector, country="US"):
+    c = _company(ticker=ticker, country=country, sector=sector)
+    ev = evidence_agent(c, _signals(), now=NOW)
+    return PortfolioCandidate(c, _signals(), ev)
+
+
+def test_allocations_expose_sector_and_sector_cap_binds():
+    cands = [_sector_cand(f"T{i}", "Technology") for i in range(5)] + [_sector_cand(f"H{i}", "Health Care") for i in range(5)]
+    result = portfolio_agent(_profile(max_sector_pct=20, max_position_pct=10, max_positions=10), cands)
+    by_sector = {}
+    for a in result.allocations:
+        assert a.sector in {"Technology", "Health Care"}
+        by_sector[a.sector] = by_sector.get(a.sector, 0.0) + a.weight_pct
+    assert all(v <= 20.0 + 1e-6 for v in by_sector.values())
+    assert result.invested_pct <= 40.0 + 1e-6
+
+
+def test_unclassified_sector_is_one_capped_bucket_not_exempt():
+    cands = [_sector_cand(f"U{i}", None) for i in range(6)]
+    result = portfolio_agent(_profile(max_sector_pct=25, max_position_pct=10, max_positions=6), cands)
+    assert all(a.sector is None for a in result.allocations)
+    assert sum(a.weight_pct for a in result.allocations) <= 25.0 + 1e-6

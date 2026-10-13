@@ -215,3 +215,81 @@ def bme_entry(sector_code: str, subsector_code: str, sector_name: str, subsector
         "source": "bme-sector-subsector", "classification": "BME official sector/subsector mapped to ICB industry",
         "url": "https://apiweb.bolsasymercados.es/Market/v1/EQ/ListedCompanies", "retrievedAt": retrieved_at,
     }
+
+
+# Deutsche Boerse "Listed Companies" statistics file: the exchange's own sector/subsector
+# per ISIN (Prime/General Standard, Scale, Basic Board). Its scheme is not ICB, so each
+# label is translated to the shared 11-industry vocabulary by the explicit tables below.
+# A label that is ambiguous, contradicts its sector (e.g. sector "Industrial" with
+# subsector "Internet") or denotes a pooled/holding vehicle (private equity, venture
+# capital) is left unmapped: a missing sector is reported as missing, never guessed.
+_DB_SECTOR_INDUSTRY = {
+    "automobile": "Consumer Discretionary",
+    "banks": "Financials",
+    "basic resources": "Basic Materials",
+    "chemicals": "Basic Materials",
+    "construction": "Industrials",
+    "food & beverages": "Consumer Staples",
+    "insurance": "Financials",
+    "pharma & healthcare": "Health Care",
+    "software": "Technology",
+    "technology": "Technology",
+    "telecommunication": "Telecommunications",
+    "transportation & logistics": "Industrials",
+    "utilities": "Utilities",
+}
+# Sectors whose subsectors are only trusted when listed (the file mixes in contradictions).
+_DB_SECTOR_SUBSECTORS = {
+    "consumer": {
+        "clothing & footwear": "Consumer Discretionary", "consumer electronics": "Consumer Discretionary",
+        "consumer goods": "Consumer Discretionary", "home construction & furnishings": "Consumer Discretionary",
+        "household appliances & housewares": "Consumer Discretionary", "leisure": "Consumer Discretionary",
+        "leisure goods & services": "Consumer Discretionary", "leisure, goods & services": "Consumer Discretionary",
+        "personal products": "Consumer Staples",
+    },
+    "financial services": {
+        "diversified financial": "Financials", "securities brokers": "Financials", "real estate": "Real Estate",
+    },
+    "industrial": {
+        "advanced industrial equipment": "Industrials", "containers & packaging": "Industrials",
+        "heavy machinery": "Industrials", "heavy machiners": "Industrials", "industrial machinery": "Industrials",
+        "industrial, machinery": "Industrials", "industrial products & services": "Industrials",
+        "industrial, diversified": "Industrials", "industrials": "Industrials", "renewable energies": "Industrials",
+    },
+    "media": {
+        "advertising": "Consumer Discretionary", "broadcasting": "Consumer Discretionary",
+        "movies & entertainment": "Consumer Discretionary", "publishing & printing": "Consumer Discretionary",
+    },
+    "retail": {
+        "retail, internet": "Consumer Discretionary", "retail,internet": "Consumer Discretionary",
+        "retail, specialty": "Consumer Discretionary", "retail, food & drug": "Consumer Staples",
+    },
+}
+
+
+def _db_norm(value: object) -> str:
+    return re.sub(r"\s+", " ", str(value or "").strip().lower())
+
+
+def deutsche_boerse_entry(sector: str, subsector: str, segment: str, *, url: str, retrieved_at: str) -> Optional[dict]:
+    """ICB-vocabulary entry for a Deutsche Boerse sector/subsector pair, else None."""
+    sec, sub = _db_norm(sector), _db_norm(subsector)
+    industry = None
+    if sec in _DB_SECTOR_SUBSECTORS:
+        industry = _DB_SECTOR_SUBSECTORS[sec].get(sub)
+    else:
+        industry = _DB_SECTOR_INDUSTRY.get(sec)
+        if sec == "basic resources" and sub == "real estate":
+            industry = None
+    if not industry:
+        return None
+    kind = "operating"
+    if industry == "Financials":
+        kind = "bank" if sec == "banks" else "insurance" if sec == "insurance" else "financial"
+    return {
+        "sector": industry, "industry": f"{sector.strip()} - {subsector.strip()}", "kind": kind,
+        "code": f"DB:{sector.strip()}|{subsector.strip()}", "segment": segment,
+        "source": "deutsche-boerse-listed-companies",
+        "classification": "Deutsche Boerse own sector/subsector (Listed Companies file) translated to ICB industry",
+        "url": url, "retrievedAt": retrieved_at,
+    }

@@ -1051,6 +1051,40 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             },
         }
 
+    def anchor_period(self, facts: list[dict], indexed: date) -> tuple[date, bool]:
+        """The balance-sheet date the filing's own facts report, when the index is wrong.
+
+        filings.xbrl.org sometimes indexes a report under its filing/signing date
+        (Aviva FY2025 is listed as 2026-03-02, Mobico as 2026-03-31) although the
+        facts end 2025-12-31; every anchored lookup then misses and the issuer
+        shows no core figures. The index date is kept whenever any annual flow
+        ends within a week of it. Otherwise the latest annual-flow end up to 200
+        days before the index date is used, but only if a balance-sheet instant
+        sits on that same date, so the figures are the filing's own and cross-foot
+        on one date. Staleness is then measured from the true period end.
+        """
+        flow_keys = ("net_income", "revenue", "operating_income")
+        ends: set[date] = set()
+        any_flow_ends: set[date] = set()
+        for key in flow_keys:
+            for fact in self._concept_facts(facts, _CONCEPTS[key], extension_key=key):
+                dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+                start, end = _period_parts(dims.get("period"))
+                if start is None or end is None or end <= start:
+                    continue
+                any_flow_ends.add(end)
+                if 300 <= (end - start).days <= 400:
+                    ends.add(end)
+        # A flow of ANY length ending at the index date means the index is right
+        # (transition-period and 15-month filers keep their own handling).
+        if any(abs((end - indexed).days) <= 7 for end in any_flow_ends):
+            return indexed, False
+        assets = self._concept_facts(facts, _CONCEPTS["assets"], extension_key="assets")
+        for end in sorted((e for e in ends if 0 < (indexed - e).days <= 200), reverse=True):
+            if self._instant_value(assets, end) is not None:
+                return end, True
+        return indexed, False
+
     def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
         lei, legal_name = self._resolve_lei(company)
         filing = self._latest_filing(lei, company.country)
@@ -1068,6 +1102,8 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         if not facts:
             raise GlobalProviderError(f"ESEF xBRL-JSON contains no facts for LEI {lei}")
 
+        indexed_period = period_end
+        period_end, period_corrected = self.anchor_period(facts, period_end)
         normalized = self.normalized_fields(facts, period_end)
         reporting_currency = normalized.pop("reporting_currency")
         normalization_meta = normalized.pop("__normalization_meta__", {})
@@ -1104,6 +1140,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                 "esef_validation_inconsistencies": inconsistencies,
                 "esef_json_url": json_url,
                 "esef_credit_extraction": normalization_meta,
+                **({"esef_index_period_end": indexed_period.isoformat(), "esef_period_end_source": "filing_facts"} if period_corrected else {}),
                 **({"fiscal_year_transition": transition} if transition else {}),
                 **_agent10_fields(normalization_meta),
             },
@@ -1116,5 +1153,8 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             observed_at=processed,
             period_end=period_end.isoformat(),
             quality=quality,
-            notes=f"ESEF/UKSEF xBRL-JSON indexed by filings.xbrl.org; LEI={lei}; validationErrors={errors}; inconsistencies={inconsistencies}",
+            notes=(
+                f"ESEF/UKSEF xBRL-JSON indexed by filings.xbrl.org; LEI={lei}; validationErrors={errors}; inconsistencies={inconsistencies}"
+                + (f"; index period {indexed_period.isoformat()} does not match the filing's facts, period taken from the facts" if period_corrected else "")
+            ),
         ))

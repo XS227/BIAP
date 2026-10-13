@@ -638,6 +638,7 @@ def portfolio_agent(
             estimated_price=company.price,
             score=round(score, 4),
             confidence=round(confidence, 4),
+            sector=company.sector or None,
             reasoning=(
                 f"evidence={candidate.evidence.status}; "
                 f"evidenceCoverage={candidate.evidence.coverage:.0%}; "

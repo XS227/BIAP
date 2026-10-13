@@ -1,0 +1,815 @@
+{
+ "summary": {
+  "ok": 101
+ },
+ "results": {
+  "AE__ADX:FAB": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "ABSTAIN",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "AE__ADX:ADCB": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "ABSTAIN",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "AE__ADX:ADNOCGAS": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "AE__DFM:DSI": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "AU__ASX:BHP": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "LOW_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "AU__ASX:CBA": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "BE__EURONEXT_BRUSSELS:ABI": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "ELEVATED_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "BE__EURONEXT_BRUSSELS:ARGX": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "LOW_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "BE__EURONEXT_BRUSSELS:KBCA": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "BE__EURONEXT_BRUSSELS:MOUR": {
+   "call": "BUY_CANDIDATE",
+   "evidence": "PASS",
+   "agent8": "ACCEPT",
+   "agent9": "LOW_RISK",
+   "agent10": "insufficient data (only 55% of the grid ",
+   "errors": []
+  },
+  "BR__B3:PETR4": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "BR__B3:VALE3": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "BR__B3:ITUB4": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "CA__TSX:CNQ": {
+   "call": "BUY_CANDIDATE",
+   "evidence": "PASS",
+   "agent8": "ACCEPT",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "CA__TSX:TD": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "CA__TSX:ATD": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "CA__TSXV:BIG": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "HIGH_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "CH__SIX:NOVN": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "LOW_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "CH__SIX:NESN": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "ELEVATED_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "CH__SIX:UBSG": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "DE__FRANKFURT:ALV": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "DE__FRANKFURT:DTE": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "HIGH_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "DE__FRANKFURT:AB9": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "DE__FRANKFURT:IXX": {
+   "call": "BUY_CANDIDATE",
+   "evidence": "PASS",
+   "agent8": "ACCEPT",
+   "agent9": "LOW_RISK",
+   "agent10": "",
+   "errors": []
+  },
+  "DE__XETRA:SAP": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "DE__XETRA:DTE": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "HIGH_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "DE__XETRA:CBK0": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "DK__NASDAQ_COPENHAGEN:NOVO.B": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "LOW_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "DK__NASDAQ_COPENHAGEN:VWS": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "HIGH_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "DK__NASDAQ_COPENHAGEN:RILBA": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "DK__NASDAQ_COPENHAGEN:AMBU.B": {
+   "call": "BUY_CANDIDATE",
+   "evidence": "PASS",
+   "agent8": "ACCEPT",
+   "agent9": "LOW_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "ES__BME_MADRID:SAN": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "ABSTAIN",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "ES__BME_MADRID:IBE": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "ELEVATED_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "ES__BME_MADRID:ACS": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "HIGH_RISK",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "ES__BME_MADRID:ITX": {
+   "call": "BUY_CANDIDATE",
+   "evidence": "PASS",
+   "agent8": "ACCEPT",
+   "agent9": "LOW_RISK",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "FI__NASDAQ_HELSINKI:NOKIA": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (only 50% of the grid ",
+   "errors": []
+  },
+  "FI__NASDAQ_HELSINKI:SAMPO": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "ABSTAIN",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "FI__NASDAQ_HELSINKI:WRT1V": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "FI__NASDAQ_HELSINKI:ORNAV": {
+   "call": "BUY_CANDIDATE",
+   "evidence": "PASS",
+   "agent8": "ACCEPT",
+   "agent9": "LOW_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "FR__EURONEXT_PARIS:MC": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "FR__EURONEXT_PARIS:SU": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "FR__EURONEXT_PARIS:ERF": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "FR__EURONEXT_PARIS:ABEO": {
+   "call": "BUY_CANDIDATE",
+   "evidence": "PASS",
+   "agent8": "ACCEPT",
+   "agent9": "ELEVATED_RISK",
+   "agent10": "insufficient data (only 55% of the grid ",
+   "errors": []
+  },
+  "GB__LSE:HSBA": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "GB__LSE:SHEL": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "GB__LSE:AV.": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "GB__LSE:AO.": {
+   "call": "HOLD_OR_WATCH",
+   "evidence": "PASS",
+   "agent8": "ACCEPT",
+   "agent9": "ELEVATED_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "GR__ATHENS:ETE": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "GR__ATHENS:MOH": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "LOW_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "GR__ATHENS:CREDIA": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "HK__HKEX:0388": {
+   "call": "HOLD_OR_WATCH",
+   "evidence": "PASS",
+   "agent8": "ACCEPT",
+   "agent9": "HIGH_RISK",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "HK__HKEX:0700": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "IE__EURONEXT_DUBLIN:A5G": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "IE__EURONEXT_DUBLIN:RYA": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "LOW_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "IE__EURONEXT_DUBLIN:KRX": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "IN__NSE:GROWW": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "IN__NSE:MARUTI": {
+   "call": "HOLD_OR_WATCH",
+   "evidence": "PASS",
+   "agent8": "ACCEPT",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "IN__NSE:LALITHAA": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "ELEVATED_RISK",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "IN__NSE:PHOENIXLTD": {
+   "call": "BUY_CANDIDATE",
+   "evidence": "PASS",
+   "agent8": "ACCEPT",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "IS__NASDAQ_ICELAND:ARION": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "ABSTAIN",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "IS__NASDAQ_ICELAND:SKAGI": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "IS__NASDAQ_ICELAND:AMRQ": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "IT__EURONEXT_MILAN:UCG": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "IT__EURONEXT_MILAN:STMMI": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "LOW_RISK",
+   "agent10": "",
+   "errors": []
+  },
+  "IT__EURONEXT_MILAN:A2A": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "ELEVATED_RISK",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "JP__TSE_JP:9984": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "KR__KRX:002200": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "NL__EURONEXT_AMSTERDAM:ASML": {
+   "call": "BUY_CANDIDATE",
+   "evidence": "PASS",
+   "agent8": "ACCEPT",
+   "agent9": "LOW_RISK",
+   "agent10": "",
+   "errors": []
+  },
+  "NL__EURONEXT_AMSTERDAM:SHELL": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "NL__EURONEXT_AMSTERDAM:PRX": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "NL__EURONEXT_AMSTERDAM:NEDAP": {
+   "call": "BUY_CANDIDATE",
+   "evidence": "PASS",
+   "agent8": "ACCEPT",
+   "agent9": "LOW_RISK",
+   "agent10": "",
+   "errors": []
+  },
+  "NO__EURONEXT_OSLO:EQNR": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "NO__EURONEXT_OSLO:DNB": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "NO__EURONEXT_OSLO:GJF": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "NO__EURONEXT_OSLO:NORBT": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "LOW_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "NZ__NZX:SUM": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "NZ__NZX:NZX": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "NZ__NZX:AIA": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "PT__EURONEXT_LISBON:BCP": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "ABSTAIN",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "PT__EURONEXT_LISBON:EDP": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "ELEVATED_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "PT__EURONEXT_LISBON:GLINT": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "SA__SAUDI_EXCHANGE:1020": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "SE__NASDAQ_STOCKHOLM:AZN": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "ELEVATED_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "SE__NASDAQ_STOCKHOLM:ATCO.A": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "LOW_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "SE__NASDAQ_STOCKHOLM:SKF.B": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "SG__SGX:S68": {
+   "call": "BUY_CANDIDATE",
+   "evidence": "PASS",
+   "agent8": "ACCEPT",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (only 40% of the grid ",
+   "errors": []
+  },
+  "SG__SGX:D05": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "TR__BIST:TUPRS": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "TR__BIST:ASELS": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "TR__BIST:ISCTR": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "US__NASDAQ:MU": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "LOW_RISK",
+   "agent10": "insufficient data (only 55% of the grid ",
+   "errors": []
+  },
+  "US__NASDAQ:META": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "LOW_RISK",
+   "agent10": "insufficient data (only 55% of the grid ",
+   "errors": []
+  },
+  "US__NASDAQ:SPCX": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "US__NASDAQ:ACIC": {
+   "call": "BUY_CANDIDATE",
+   "evidence": "PASS",
+   "agent8": "ACCEPT",
+   "agent9": "NOT_APPLICABLE",
+   "agent10": "insufficient data (only 45% of the grid ",
+   "errors": []
+  },
+  "US__NYSE:TSM": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "LOW_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "US__NYSE:BE": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "HIGH_RISK",
+   "agent10": "insufficient data (only 55% of the grid ",
+   "errors": []
+  },
+  "US__NYSE:VYLR": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "US__NYSE:ACA": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "LOW_RISK",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "ZA__JSE:GFI": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "ZA__JSE:HAR": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "PASS",
+   "agent8": "REVIEW",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  },
+  "ZA__JSE:ABG": {
+   "call": "NO_RECOMMENDATION",
+   "evidence": "BLOCK",
+   "agent8": "ABSTAIN",
+   "agent9": "INSUFFICIENT_DATA",
+   "agent10": "insufficient data (leverage (debt/EBITDA",
+   "errors": []
+  }
+ }
+}

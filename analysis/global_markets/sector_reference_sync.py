@@ -8,6 +8,10 @@ resumable: ISINs that already have an entry are skipped unless ``--refresh``.
 from __future__ import annotations
 
 import argparse
+import io
+import zipfile
+from urllib.parse import urljoin
+from xml.etree import ElementTree as ET
 from datetime import datetime, timezone
 import json
 import re
@@ -19,7 +23,7 @@ from typing import Optional
 import requests
 
 from .sector_reference import (
-    bme_entry, classify_wikidata_industries, icb_entry, load_entries, reference_path, save_entries,
+    bme_entry, classify_wikidata_industries, deutsche_boerse_entry, icb_entry, load_entries, reference_path, save_entries,
 )
 
 _EURONEXT = "https://live.euronext.com/en/ajax/getFactsheetInfoBlock/STOCK/{isin}-{mic}/fs_icb_block"
@@ -100,6 +104,59 @@ def fetch_bme(session: requests.Session) -> dict[str, tuple[str, str, str, str]]
         time.sleep(0.2)
 
 
+_DB_LANDING = "https://www.cashmarket.deutsche-boerse.com/cash-en/Data-Tech/statistics/listed-companies"
+_DB_SEGMENT_SHEETS = ("Prime Standard", "General Standard", "Scale", "Basic Board")
+_XML_NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+_ISIN_RE = re.compile(r"^[A-Z]{2}[A-Z0-9]{9}[0-9]$")
+
+
+def parse_deutsche_boerse_xlsx(content: bytes) -> dict[str, tuple[str, str, str]]:
+    """ISIN -> (sector, subsector, segment) from the Listed Companies workbook (stdlib only)."""
+    archive = zipfile.ZipFile(io.BytesIO(content))
+    shared = [
+        "".join(t.text or "" for t in si.iter(_XML_NS + "t"))
+        for si in ET.fromstring(archive.read("xl/sharedStrings.xml")).findall(_XML_NS + "si")
+    ]
+    workbook = ET.fromstring(archive.read("xl/workbook.xml"))
+    rels = {
+        r.get("Id"): r.get("Target")
+        for r in ET.fromstring(archive.read("xl/_rels/workbook.xml.rels"))
+    }
+    out: dict[str, tuple[str, str, str]] = {}
+    for sheet in workbook.find(_XML_NS + "sheets"):
+        name = sheet.get("name")
+        if name not in _DB_SEGMENT_SHEETS:
+            continue
+        target = rels[sheet.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id")]
+        path = target.lstrip("/") if target.startswith("/") else "xl/" + target
+        for row in ET.fromstring(archive.read(path)).iter(_XML_NS + "row"):
+            cells: dict[str, str] = {}
+            for cell in row.findall(_XML_NS + "c"):
+                value = cell.find(_XML_NS + "v")
+                if value is None:
+                    continue
+                column = re.match(r"[A-Z]+", cell.get("r")).group()
+                cells[column] = shared[int(value.text)] if cell.get("t") == "s" else value.text
+            isin = (cells.get("A") or "").strip().upper()
+            if _ISIN_RE.match(isin):
+                out[isin] = ((cells.get("D") or "").strip(), (cells.get("E") or "").strip(), name)
+    return out
+
+
+def fetch_deutsche_boerse(session: requests.Session) -> tuple[dict[str, tuple[str, str, str]], str]:
+    """Download the current Listed Companies workbook (the blob URL changes on republish)."""
+    headers = {"User-Agent": "Mozilla/5.0 BIAP-Global/1.0 sector-reference"}
+    page = session.get(_DB_LANDING, headers=headers, timeout=60)
+    page.raise_for_status()
+    match = re.search(r'href="([^"]*Listed-companies\.xlsx)"', page.text)
+    if not match:
+        raise ValueError("Listed-companies.xlsx link not found on the Deutsche Boerse page")
+    url = urljoin(_DB_LANDING, match.group(1))
+    response = session.get(url, headers=headers, timeout=120)
+    response.raise_for_status()
+    return parse_deutsche_boerse_xlsx(response.content), url
+
+
 def _instruments(data_dir: Optional[str], country: str) -> list[dict]:
     root = Path(data_dir or "/var/lib/biap-global") / "universe" / country
     rows: list[dict] = []
@@ -124,7 +181,17 @@ def sync(countries: list[str], *, data_dir: Optional[str] = None, limit: Optiona
         country = country.upper()
         rows = _instruments(data_dir, country)
         isins = list(dict.fromkeys(str(r["isin"]).upper() for r in rows))
-        todo = [i for i in isins if refresh or i not in entries]
+        db: dict = {}
+        db_url = ""
+        if country == "DE":
+            try:
+                db, db_url = fetch_deutsche_boerse(session)
+            except (requests.RequestException, ValueError, KeyError, zipfile.BadZipFile, ET.ParseError) as exc:
+                print(f"Deutsche Boerse listed-companies fetch failed ({type(exc).__name__}); falling back to Wikidata", file=sys.stderr)
+        todo = [
+            i for i in isins
+            if refresh or i not in entries or (db.get(i) and entries[i].get("source") == "wikidata-industry")
+        ]
         if limit:
             todo = todo[:limit]
         official = wiki = missing = 0
@@ -137,6 +204,12 @@ def sync(countries: list[str], *, data_dir: Optional[str] = None, limit: Optiona
             except (requests.RequestException, ValueError, KeyError) as exc:
                 print(f"BME listed-companies fetch failed ({type(exc).__name__}); falling back to Wikidata", file=sys.stderr)
         for isin in todo:
+            if db.get(isin):
+                entry = deutsche_boerse_entry(*db[isin][:3], url=db_url, retrieved_at=now)
+                if entry:
+                    entries[isin] = entry
+                    official += 1
+                    continue
             if bme.get(isin):
                 entry = bme_entry(*bme[isin][:2], *bme[isin][2:], retrieved_at=now)
                 if entry:

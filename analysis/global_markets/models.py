@@ -220,6 +220,9 @@ class PortfolioAllocation:
     score: float
     confidence: float
     reasoning: str
+    # Exposed so clients can audit the sector cap; None means the sector is unclassified
+    # (such names share one UNKNOWN bucket that is capped like any other sector).
+    sector: Optional[str] = None
 
 
 @dataclass(frozen=True)
