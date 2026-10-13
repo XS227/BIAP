@@ -70,7 +70,13 @@ CACHE_SCHEMA_VERSION = 11
 # plain/issued share counts mapped by the current extractor. Official snapshots
 # written earlier are re-normalized from the cached filing package (no refetch)
 # once, when shares, debt or EBITDA is empty.
-NORMALIZER_REVISION = 2
+#
+# revision 3: cross-footed ESEF extension equity (FinecoBank) and the taxonomy
+# bank flag. Only official snapshots whose total_equity is still empty are
+# re-normalized; snapshots that merely lack debt/EBITDA were already retried
+# at revision 2 and are not re-queued (that would re-fetch thousands of issuers
+# for fields the sources do not publish).
+NORMALIZER_REVISION = 3
 
 # Official providers whose records were found defective after the fact.
 # Snapshots built from them are ignored (neither fresh nor stale fallback).
@@ -251,9 +257,12 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
             return False
         fundamentals = payload.get("fundamentals") if isinstance(payload.get("fundamentals"), dict) else {}
         identity = payload.get("identity") if isinstance(payload.get("identity"), dict) else {}
+        equity_missing = fundamentals.get("total_equity") is None
+        if int(payload.get("normalizerRevision") or 0) >= 2:
+            return equity_missing
         gb_sector_missing = str(identity.get("country") or "").upper() == "GB" and not fundamentals.get("sector")
         inputs_missing = any(fundamentals.get(key) is None for key in ("shares_outstanding", "total_debt", "ebitda"))
-        return gb_sector_missing or inputs_missing
+        return gb_sector_missing or inputs_missing or equity_missing
 
     def _is_fresh(self, payload: dict) -> bool:
         # Schema v2 adds shareholder-return fields such as dividend/share.

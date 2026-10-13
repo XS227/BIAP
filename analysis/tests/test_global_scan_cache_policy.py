@@ -56,8 +56,13 @@ def test_renormalization_is_targeted_and_rate_limited(monkeypatch):
     assert cf.PersistentFundamentalsProvider._needs_renormalization(base) is True
     assert cf.PersistentFundamentalsProvider._needs_renormalization({**base, "normalizerRevision": cf.NORMALIZER_REVISION}) is False
     assert cf.PersistentFundamentalsProvider._needs_renormalization({**base, "officialEvidence": False}) is False
-    ok = {**base, "fundamentals": {"total_debt": 5.0, "sector": "Energy", "shares_outstanding": 1.0, "ebitda": 2.0}}
+    ok = {**base, "fundamentals": {"total_debt": 5.0, "sector": "Energy", "shares_outstanding": 1.0, "ebitda": 2.0, "total_equity": 3.0}}
     assert cf.PersistentFundamentalsProvider._needs_renormalization(ok) is False
+    # revision 2 snapshots are re-queued only for a missing total_equity, never for debt/EBITDA again
+    rev2 = {**base, "normalizerRevision": 2, "fundamentals": {"total_debt": None, "ebitda": None, "shares_outstanding": None, "total_equity": 7.0}}
+    assert cf.PersistentFundamentalsProvider._needs_renormalization(rev2) is False
+    rev2["fundamentals"]["total_equity"] = None
+    assert cf.PersistentFundamentalsProvider._needs_renormalization(rev2) is True
     assert cf.CACHE_SCHEMA_VERSION == 11  # no global invalidation of every cached issuer
 
     monkeypatch.setenv("BIAP_GLOBAL_RENORM_PER_MIN", "2")
