@@ -14,6 +14,10 @@ _CLASS_SUFFIX = re.compile(
     r"\b(class|series)\s+[a-z0-9]\b|\b(common|ordinary|preferred|preference|voting|non[- ]voting|"
     r"restricted|capital|depositary|ads|adr|shares?|stock|units?|ord|cl)\b|\b[a-z]\s+shares?\b",
 )
+# German share-class markers in Deutsche Boerse instrument names: Stamm (ST), Vorzug (VZ/VZO),
+# Namens (NA), Inhaber (INH), "ohne Nennwert" (O.N. -> "on"). Removed only from the issuer-name key;
+# issuers still merge only when the remaining legal name is identical within the same country.
+_DE_CLASS_SUFFIX = re.compile(r"\b(na|on|inh|st|vz|vzo|vorzugsaktien|stammaktien|namensaktien|inhaberaktien)\b")
 # Depositary/registry/foreign-listing markers: the security is a listing of a
 # foreign issuer, so its name key must not be pinned to the listing country.
 _DEPOSITARY = re.compile(
@@ -41,9 +45,11 @@ def is_depositary_name(name: str) -> bool:
     return bool(_DEPOSITARY.search(_clean(name)))
 
 
-def normalized_issuer_name(name: str) -> str:
+def normalized_issuer_name(name: str, country: str = "") -> str:
     text = _DEPOSITARY.sub(" ", _clean(name))
     text = _CLASS_SUFFIX.sub(" ", text)
+    if country == "DE":
+        text = _DE_CLASS_SUFFIX.sub(" ", text)
     text = _LEGAL.sub(" ", text)
     text = re.sub(r"\bnew york\b", " ", text) if text.strip().endswith("new york") else text
     return " ".join(text.split())
@@ -62,8 +68,8 @@ def issuer_key_of(obj: Any) -> str:
         except (TypeError, ValueError):
             pass
     raw_name = _get(obj, "name") or _get(obj, "issuerName") or ""
-    name = normalized_issuer_name(raw_name)
     country = str(_get(obj, "country") or "").upper()
+    name = normalized_issuer_name(raw_name, country)
     if name:
         if is_depositary_name(raw_name):
             return f"NAME:*:{name}"  # foreign issuer listed locally; matched to its home listing
@@ -108,8 +114,8 @@ def resolve_issuer_identities(identities: list[Any]) -> list[str]:
     for n, k in enumerate(keys):
         if k.startswith("CIK:") and int(k[4:]) in cik_to_lei:
             keys[n] = f"LEI:{cik_to_lei[int(k[4:])]}"
-    names = [normalized_issuer_name(_get(i, "name") or _get(i, "issuerName") or "") for i in identities]
     countries = [str(_get(i, "country") or "").upper() for i in identities]
+    names = [normalized_issuer_name(_get(i, "name") or _get(i, "issuerName") or "", c) for i, c in zip(identities, countries)]
     out = list(keys)
     for n, k in enumerate(keys):
         if not names[n] or not (k.startswith("CIK:") or k.startswith("NAME:*:")):

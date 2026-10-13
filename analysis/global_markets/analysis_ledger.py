@@ -20,6 +20,7 @@ from __future__ import annotations
 import contextlib
 import fcntl
 import json
+import os
 import re
 import sqlite3
 import threading
@@ -62,6 +63,23 @@ _FINANCIAL_CORE_EXEMPT = {"ebitda", "ev_ebitda", "total_debt", "interest_expense
 # strict `complete` flag still means every tier is present.
 _TIER_CORE = ("revenue", "operating_income", "net_income", "total_assets", "total_equity", "operating_cash_flow")
 _TIER_VALUATION = ("market_cap", "pe")
+
+# Ranking-evidence standard. Evidence PASS only certifies data-quality gates; it
+# does not mean the statements are complete enough to rank a company. A company
+# enters a market Top list if it is a Qualified BUY (already past the stricter
+# BUY gates) or has all core statements and enough overall coverage.
+RANKING_ELIGIBLE_SQL = (
+    "(call='BUY_CANDIDATE' OR (json_extract(financial,'$.coreComplete')=1 "
+    "AND COALESCE(json_extract(financial,'$.coveragePct'),0) >= ?))"
+)
+
+
+def rank_min_coverage_pct() -> float:
+    try:
+        return max(0.0, min(100.0, float(os.environ.get("BIAP_GLOBAL_RANK_MIN_COVERAGE_PCT", "60"))))
+    except ValueError:
+        return 60.0
+
 
 MAX_ATTEMPTS = 3
 
@@ -595,7 +613,11 @@ class AnalysisLedger:
     def market_pool(self, *, limit: int) -> list[dict]:
         """Best-ranked evidence-supported companies of ANY call (Market Top 10 pool).
 
-        Eligible = evidence PASS, analysis COMPLETE, numeric score and confidence.
+        Eligible = evidence PASS, analysis COMPLETE, numeric score and confidence, and
+        the ranking-evidence standard (``RANKING_ELIGIBLE_SQL``): a Qualified BUY, or
+        complete core statements with at least ``rank_min_coverage_pct()`` coverage.
+        A merely evidence-PASS company without core statements is never ranked; it is
+        counted as Insufficient Evidence instead.
         Ordered by the same ``score * confidence`` basis as the BUY ranking; the
         caller collapses issuers. Nothing is promoted to BUY here: each row keeps
         its actual ``call``.
@@ -603,10 +625,10 @@ class AnalysisLedger:
         rows = []
         sql = (
             "SELECT summary FROM ledger WHERE in_universe=1 AND status=? AND evidence_status='PASS' "
-            "AND score IS NOT NULL AND confidence IS NOT NULL AND summary IS NOT NULL "
+            f"AND score IS NOT NULL AND confidence IS NOT NULL AND summary IS NOT NULL AND {RANKING_ELIGIBLE_SQL} "
             "ORDER BY score*confidence DESC, ticker LIMIT ?"
         )
-        for r in self._conn().execute(sql, (COMPLETE, max(1, int(limit)))):
+        for r in self._conn().execute(sql, (COMPLETE, rank_min_coverage_pct(), max(1, int(limit)))):
             try:
                 rows.append(json.loads(r["summary"]))
             except json.JSONDecodeError:
@@ -624,6 +646,10 @@ class AnalysisLedger:
         scored = one(
             f"SELECT COUNT(*) {base} AND evidence_status='PASS' AND status=? AND score IS NOT NULL AND confidence IS NOT NULL",
             COMPLETE,
+        )
+        eligible = one(
+            f"SELECT COUNT(*) {base} AND evidence_status='PASS' AND status=? AND score IS NOT NULL AND confidence IS NOT NULL AND {RANKING_ELIGIBLE_SQL}",
+            COMPLETE, rank_min_coverage_pct(),
         )
         buy = one(
             f"SELECT COUNT(*) {base} AND evidence_status='PASS' AND status=? AND call='BUY_CANDIDATE' AND score IS NOT NULL AND confidence IS NOT NULL",
@@ -645,12 +671,13 @@ class AnalysisLedger:
         calls = {
             str(r["call"]): int(r["n"])
             for r in conn.execute(
-                f"SELECT call, COUNT(*) n {base} AND evidence_status='PASS' AND status=? AND score IS NOT NULL AND confidence IS NOT NULL GROUP BY 1",
-                (COMPLETE,),
+                f"SELECT call, COUNT(*) n {base} AND evidence_status='PASS' AND status=? AND score IS NOT NULL AND confidence IS NOT NULL AND {RANKING_ELIGIBLE_SQL} GROUP BY 1",
+                (COMPLETE, rank_min_coverage_pct()),
             )
         }
         return {
             "universe": universe, "analyzed": analyzed, "evidencePass": passed, "scoredAndComplete": scored,
+            "rankingEligible": eligible, "rankMinCoveragePct": rank_min_coverage_pct(),
             "buyCandidates": buy, "evidenceNotPass": not_pass, "evidenceNotPassReasons": reasons, "callsAmongScored": calls,
         }
 

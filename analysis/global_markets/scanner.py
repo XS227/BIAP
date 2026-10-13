@@ -398,7 +398,7 @@ class GlobalMarketScanner:
         groups = {cat: 0 for cat in dict.fromkeys(cls.CALL_CATEGORY.values())}
         for call, n in calls.items():
             groups[cls.CALL_CATEGORY.get(call, "NO_SIGNAL")] += n
-        groups["INSUFFICIENT_EVIDENCE"] = gates["analyzed"] - gates["scoredAndComplete"]
+        groups["INSUFFICIENT_EVIDENCE"] = gates["analyzed"] - gates["rankingEligible"]
         groups["NOT_YET_ANALYZED"] = gates["universe"] - gates["analyzed"]
         return groups
 
@@ -425,10 +425,30 @@ class GlobalMarketScanner:
         ]
 
     @staticmethod
+    def market_top_note(top: list[dict], requested: int, gates: dict | None, released: bool) -> str:
+        if not released:
+            return "Ranking not released for this market; no Market Top list is shown."
+        base = (
+            "Highest score x confidence among evidence-PASS companies that also meet the ranking-evidence standard "
+            "(complete core statements and enough coverage, or a Qualified BUY); not a buy list. "
+            "Qualified BUY is the subset that also cleared the BUY threshold."
+        )
+        if len(top) >= requested:
+            return base
+        eligible = (gates or {}).get("rankingEligible")
+        analyzed = (gates or {}).get("analyzed")
+        return (
+            f"{base} Only {len(top)} of the {requested} requested slots are filled: "
+            f"{eligible if eligible is not None else 'few'} of {analyzed if analyzed is not None else 'the'} analysed companies meet the "
+            "ranking-evidence standard (one security per issuer); no slot is filled with an unsupported company."
+        )
+
+    @staticmethod
     def ranking_gates(gates: dict, *, buy_after_issuer: int, ranking_eligible: bool, readiness_reasons: list[str]) -> list[dict]:
         """Ordered gate funnel: how many companies entered, passed and were rejected, and why."""
         universe, analyzed = gates["universe"], gates["analyzed"]
         passed, scored, buy = gates["evidencePass"], gates["scoredAndComplete"], gates["buyCandidates"]
+        eligible, min_cov = gates["rankingEligible"], gates["rankMinCoveragePct"]
         calls = gates.get("callsAmongScored") or {}
         return [
             {"gate": "market_ranking_released", "entered": universe, "passed": universe if ranking_eligible else 0,
@@ -440,7 +460,9 @@ class GlobalMarketScanner:
              "reasons": gates.get("evidenceNotPassReasons") or {}, "byEvidenceStatus": gates.get("evidenceNotPass") or {}},
             {"gate": "score_and_confidence_available", "entered": passed, "passed": scored, "rejected": passed - scored,
              "reasons": {"no_numeric_score_or_confidence_or_incomplete_analysis": passed - scored} if passed > scored else {}},
-            {"gate": "buy_threshold", "entered": scored, "passed": buy, "rejected": scored - buy,
+            {"gate": "ranking_evidence_standard", "entered": scored, "passed": eligible, "rejected": scored - eligible,
+             "reasons": {f"core_statements_incomplete_or_coverage_below_{min_cov:g}pct": scored - eligible} if scored > eligible else {}},
+            {"gate": "buy_threshold", "entered": eligible, "passed": buy, "rejected": eligible - buy,
              "reasons": {f"call={k}": v for k, v in calls.items() if k != "BUY_CANDIDATE"}},
             {"gate": "one_security_per_issuer", "entered": buy, "passed": buy_after_issuer, "rejected": buy - buy_after_issuer,
              "reasons": {"duplicate_share_class_of_same_issuer": buy - buy_after_issuer} if buy > buy_after_issuer else {}},
@@ -769,11 +791,8 @@ class GlobalMarketScanner:
             "qualifiedBuyCount": buy_after_issuer if readiness["rankingEligible"] else 0,
             "rankingGroups": self.ranking_groups(gate_counts) if gate_counts and readiness["rankingEligible"] else {},
             "marketTop10": market_top10,
-            "marketTop10Note": (
-                "Highest score x confidence among evidence-PASS companies of any call; not a buy list. "
-                "Qualified BUY (recommendations) is the subset that also cleared the BUY threshold."
-                if readiness["rankingEligible"] else "Ranking not released for this market; no Market Top 10 is shown."
-            ),
+            "marketTopCount": len(market_top10),
+            "marketTop10Note": self.market_top_note(market_top10, top_n, gate_counts, bool(readiness["rankingEligible"])),
             "rankingGates": gates,
             "universeDiscovered": discovered_count,
             "universeResolved": resolved_count,

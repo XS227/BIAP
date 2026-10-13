@@ -7,13 +7,23 @@ from global_markets import analysis_ledger as al
 from global_markets.scanner import GlobalMarketScanner
 
 
-def _result(ticker, *, call, score, confidence, evidence="PASS"):
+_CORE = {
+    "revenue": 1.0, "operating_income": 1.0, "net_income": 1.0, "total_assets": 1.0, "total_equity": 1.0,
+    "operating_cash_flow": 1.0, "ebitda": 1.0, "total_debt": 1.0, "interest_expense": 1.0, "free_cash_flow": 1.0,
+    "market_cap": 1.0, "pe": 1.0, "ev_ebitda": 1.0,
+}
+
+
+def _result(ticker, *, call, score, confidence, evidence="PASS", core=True):
     return {
         "ticker": ticker, "name": f"Co {ticker}", "country": "NO", "exchange": "EURONEXT_OSLO",
         "call": call, "score": score, "confidence": confidence,
         "evidence": {"status": evidence, "missing_critical": []},
         "fundamentalEvidence": {"fundamental_source": "official" if evidence == "PASS" else None},
-        "company": {"ticker": ticker, "name": f"Co {ticker}", "country": "NO", "exchange": "EURONEXT_OSLO"},
+        "company": {
+            "ticker": ticker, "name": f"Co {ticker}", "country": "NO", "exchange": "EURONEXT_OSLO",
+            **(_CORE if core else {}),
+        },
     }
 
 
@@ -42,6 +52,26 @@ def test_market_top10_ranks_any_call_but_never_blocked_evidence(ledger):
     assert "DDD" not in {r["ticker"] for r in top}
     assert [r["call"] for r in top] == ["BUY_CANDIDATE", "HOLD_OR_WATCH", "NO_RECOMMENDATION"]
     assert [r["qualifiedBuy"] for r in top] == [True, False, False]  # no BUY manufactured to fill the list
+
+
+def test_thin_evidence_pass_is_never_ranked_but_a_buy_always_is(tmp_path, monkeypatch):
+    monkeypatch.setenv("BIAP_GLOBAL_DATA_DIR", str(tmp_path))
+    led = al.AnalysisLedger("NO", "EURONEXT_OSLO")
+    rows = [("FULL", "HOLD_OR_WATCH", 0.2, 0.6, True), ("THIN", "NO_RECOMMENDATION", 0.9, 0.9, False), ("BUYT", "BUY_CANDIDATE", 0.1, 0.6, False)]
+    led.sync_universe([SimpleNamespace(ticker=r[0], name=r[0]) for r in rows], {}, screening_source="t")
+    for t, call, sc, c, core in rows:
+        led.record_result(t, _result(t, call=call, score=sc, confidence=c, core=core))
+    top = GlobalMarketScanner.market_top10(led.market_pool(limit=50), 10)
+    assert [r["ticker"] for r in top] == ["FULL", "BUYT"]  # THIN has the best raw numbers but no core statements
+    gates = led.ranking_gate_counts()
+    assert gates["rankingEligible"] == 2
+    g = GlobalMarketScanner.ranking_groups(gates)
+    assert g["INSUFFICIENT_EVIDENCE"] == 1 and sum(g.values()) == 3
+    funnel = {x["gate"]: x for x in GlobalMarketScanner.ranking_gates(gates, buy_after_issuer=1, ranking_eligible=True, readiness_reasons=[])}
+    assert funnel["ranking_evidence_standard"]["rejected"] == 1
+    note = GlobalMarketScanner.market_top_note(top, 10, gates, True)
+    assert "Only 2 of the 10" in note and "no slot is filled with an unsupported company" in note
+    led.close()
 
 
 def test_gate_funnel_counts_every_company_and_reason(ledger):
@@ -73,3 +103,12 @@ def test_groups_partition_every_company_and_label_categories(ledger):
     assert sum(g.values()) == 5
     top = GlobalMarketScanner.market_top10(ledger.market_pool(limit=50), 10)
     assert [r["category"] for r in top] == ["QUALIFIED_BUY", "WATCHLIST_HOLD", "NO_SIGNAL"]
+
+
+def test_german_share_classes_collapse_to_one_issuer():
+    from global_markets.issuer import issuer_key_of
+
+    key = lambda name: issuer_key_of({"name": name, "country": "DE"})
+    assert key("FUCHS SE  NA ST O.N.") == key("FUCHS SE  VZO NA O.N.")
+    assert key("VOLKSWAGEN AG ST O.N.") == key("VOLKSWAGEN AG VZO O.N.")
+    assert key("SIEMENS AG  NA O.N.") != key("SIEMENS ENERGY AG NA O.N.")  # different legal entities stay apart
