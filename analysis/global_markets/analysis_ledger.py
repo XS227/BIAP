@@ -163,7 +163,10 @@ def missing_reasons(result: dict, missing: list[str]) -> dict:
     reasons: dict[str, str] = {}
     for key in missing:
         if key == "market_cap":
-            if "shares_withheld" in notes:
+            nordic = raw.get("nordic_series") if isinstance(raw.get("nordic_series"), dict) else {}
+            if "market_cap_withheld:" in notes and nordic.get("reason"):
+                reasons[key] = "official_series_unverified:" + str(nordic["reason"])
+            elif "shares_withheld" in notes:
                 reasons[key] = "share_count_withheld:inconsistent_with_net_income_over_eps"
             elif not present("price"):
                 reasons[key] = "no_verified_price"
@@ -177,7 +180,10 @@ def missing_reasons(result: dict, missing: list[str]) -> dict:
             elif not present("eps"):
                 reasons[key] = f"no_eps:absent_from_source:{source}"
             elif cross_currency:
-                reasons[key] = "cross_currency_listing:per_share_ratio_not_derived"
+                reasons[key] = (
+                    "cross_currency_listing:no_fx_rate(" + notes.split("fx_unavailable:", 1)[1].split(";", 1)[0].split(" ", 1)[0] + ")"
+                    if "fx_unavailable" in notes else "cross_currency_listing:per_share_ratio_not_derived"
+                )
             elif float(company.get("eps") or 0) <= 0:
                 reasons[key] = "loss_per_share:pe_undefined"
             else:

@@ -279,6 +279,11 @@ class NasdaqUSFullScreenerClient:
                 "provider": self.provider_id,
                 "sourceUrl": _SCREENER,
                 "marketCap": _float(row.get("marketCap")),
+                "marketCapCurrency": "USD",
+                # Nasdaq's screener multiplies every class line's price by the
+                # issuer's total share count (GOOG and GOOGL both ~12.23bn
+                # shares), so it is a company-level figure, class premium aside.
+                "marketCapBasis": "exchange_reported_company_level",
                 "sector": str(row.get("sector") or "").strip() or None,
                 "industry": str(row.get("industry") or "").strip() or None,
                 "screenerSymbol": str(row.get("symbol") or "").strip().upper() or None,

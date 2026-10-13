@@ -242,6 +242,9 @@ class LSEOfficialClient:
                 "sourceUrl": _SOURCE_PAGE,
                 "isin": isin,
                 "marketCap": market_cap or None,
+                # Price Explorer reports GBP for the GBP/GBX lines accepted above.
+                "marketCapCurrency": "GBP",
+                "marketCapBasis": "exchange_reported_line",
                 "directoryTicker": str(row.get("tidm") or "").strip().upper() or None,
                 "rankMetric": "market_cap",
             })

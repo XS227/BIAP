@@ -168,6 +168,12 @@ class DistressAssessment:
     available_models: tuple[str, ...] = ()
     missing_inputs: tuple[str, ...] = ()
     reasoning: str = ""
+    # Which independent checks fired. The status itself is unchanged and stays
+    # conservative (any severe trigger blocks a new positive call); these fields only
+    # make it visible whether HIGH_RISK rests on one model or on several.
+    severe_triggers: tuple[str, ...] = ()
+    elevated_triggers: tuple[str, ...] = ()
+    corroboration: str = ""
 
 
 @dataclass(frozen=True)

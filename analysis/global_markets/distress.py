@@ -187,22 +187,46 @@ def distress_agent(company: GlobalCompany) -> DistressAssessment:
 
     # Canonical Agent 9 calls p>=0.5 distress-likely and Altman <1.1 distress.
     # BIAP uses those same published/canonical boundaries for the safety gate.
-    severe = bool(hard_reasons)
-    elevated = False
+    severe_triggers: list[str] = [f"hard_fact:{reason}" for reason in hard_reasons]
+    elevated_triggers: list[str] = []
+    models_not_flagging: list[str] = []
     if distress_probability is not None:
         if distress_probability >= 0.5:
-            severe = True
+            severe_triggers.append("zmijewski_p>=0.5")
         elif distress_probability >= 0.35:
-            elevated = True
+            elevated_triggers.append("zmijewski_p>=0.35")
+        else:
+            models_not_flagging.append("zmijewski")
     if altman_zone == "DISTRESS":
-        severe = True
+        severe_triggers.append("altman_z''<1.1")
     elif altman_zone == "GREY":
-        elevated = True
+        elevated_triggers.append("altman_grey_zone")
+    elif altman_zone is not None:
+        models_not_flagging.append("altman_z_double_prime")
     if interest_coverage is not None:
         if interest_coverage < 1.0:
-            severe = True
+            severe_triggers.append("ebit_interest_coverage<1.0")
         elif interest_coverage < 1.5:
-            elevated = True
+            elevated_triggers.append("ebit_interest_coverage<1.5")
+        else:
+            models_not_flagging.append("interest_coverage")
+    severe = bool(severe_triggers)
+    elevated = bool(elevated_triggers)
+    model_severe = [t for t in severe_triggers if not t.startswith("hard_fact:")]
+    if not severe:
+        corroboration = ""
+    elif any(t.startswith("hard_fact:") for t in severe_triggers):
+        corroboration = "HARD_FACT"
+    elif len(model_severe) >= 2:
+        corroboration = "MULTI_MODEL"
+    else:
+        corroboration = "SINGLE_MODEL_UNCORROBORATED" if available_models and len(available_models) >= 2 else "SINGLE_MODEL"
+        if corroboration == "SINGLE_MODEL_UNCORROBORATED":
+            reasons.append(
+                f"HIGH_RISK rests on one trigger ({model_severe[0]}); "
+                f"not flagged by: {', '.join(models_not_flagging) or 'no other model at severe level'}. "
+                "The new-positive-call block still applies"
+            )
 
     if severe:
         status = "HIGH_RISK"
@@ -231,4 +255,7 @@ def distress_agent(company: GlobalCompany) -> DistressAssessment:
         available_models=tuple(available_models),
         missing_inputs=tuple(dict.fromkeys(missing)),
         reasoning="; ".join(reasons) or "insufficient verified inputs for distress models",
+        severe_triggers=tuple(severe_triggers),
+        elevated_triggers=tuple(elevated_triggers),
+        corroboration=corroboration,
     )

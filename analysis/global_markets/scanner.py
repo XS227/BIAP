@@ -27,6 +27,7 @@ from .country_packs import ExchangeSpec, get_country_pack, get_exchange
 from .eodhd_bulk import EODHDBulkEODProvider
 from .euronext_live import EuronextLiveRegulatedClient
 from .lse_official import LSEOfficialClient
+from .market_cap_seed import market_cap_from_quote
 from .models import GlobalCompany, SourceEvidence
 from .nasdaq_nordic import NasdaqNordicOfficialClient
 from .providers import GlobalProviderError
@@ -237,16 +238,20 @@ class GlobalMarketScanner:
             quality=1.0 if official else 0.90,
             notes="Stage-one full-market screening quote carried into deep analysis.",
         )
+        market_cap, cap_fields = market_cap_from_quote(company, quote)
+        market_cap = market_cap if market_cap is not None else company.market_cap
         return replace(
             company,
             price=price,
             price_observed_at=observed_at or company.price_observed_at,
             volume_today=max(0.0, volume) if volume else company.volume_today,
+            market_cap=market_cap,
             raw_provider_fields={
                 **company.raw_provider_fields,
                 "stage_one_market_provider": provider,
                 "stage_one_quote_date": quote_date or None,
                 "stage_one_liquidity_value": quote.get("liquidityValue"),
+                **cap_fields,
             },
             sources=[*company.sources, source],
         )

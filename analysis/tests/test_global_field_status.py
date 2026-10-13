@@ -42,7 +42,14 @@ def test_ebitda_status_distinguishes_missing_da_from_impairment_inclusive_da():
     op = fact("ifrs-full:ProfitLossFromOperatingActivities", 50, YEAR)
     assert status([op])["ebitda"] == "not_tagged_depreciation_amortisation"
     impaired = fact("ifrs-full:DepreciationAmortisationAndImpairmentLossReversalOfImpairmentLossRecognisedInProfitOrLoss", 9, YEAR)
-    assert status([op, impaired])["ebitda"] == "tagged_da_impairment_inclusive_only_not_used"
+    # A combined D&A-and-impairment line is accepted as a *labelled* add-back (rating-agency
+    # EBITDA convention), not silently treated as pure D&A.
+    r_incl = ESEFFundamentalsProvider().normalized_fields([op, impaired, fact("ifrs-full:Revenue", 1000, YEAR)], END)
+    assert r_incl["ebitda"] == 59
+    assert r_incl["__normalization_meta__"]["field_status"]["ebitda"] == "extracted_impairment_inclusive_addback"
+    assert r_incl["__normalization_meta__"]["ebitda_includes_impairment_addback"] is True
+    # ... but without operating income there is nothing to add it to
+    assert status([impaired])["ebitda"] == "operating_income_not_tagged"
     pure = fact("ifrs-full:DepreciationAndAmortisationExpense", 9, YEAR)
     r = ESEFFundamentalsProvider().normalized_fields([op, pure], END)
     assert r["ebitda"] == 59 and r["__normalization_meta__"]["field_status"]["ebitda"] == "extracted"

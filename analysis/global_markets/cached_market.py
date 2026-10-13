@@ -142,7 +142,13 @@ class PersistentMarketProvider(MarketDataProvider):
 
     def _decode(self, seed: GlobalCompany, payload: dict, *, fallback: bool) -> GlobalCompany:
         market = payload.get("market") if isinstance(payload.get("market"), dict) else {}
-        updates = {field: market.get(field) for field in _MARKET_FIELDS if field in market}
+        # A snapshot gap must never erase a value the seed already carries (e.g. the
+        # exchange screener's market cap seeded before enrichment).
+        updates = {
+            field: market.get(field)
+            for field in _MARKET_FIELDS
+            if field in market and not (market.get(field) is None and getattr(seed, field, None) is not None)
+        }
         stored_sources: list[SourceEvidence] = []
         for raw in payload.get("sources") or []:
             if not isinstance(raw, dict):

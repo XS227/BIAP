@@ -16,6 +16,15 @@ from performance_store import PerformanceStore
 
 
 @pytest.fixture(autouse=True)
+def _global_live_sources_disabled_by_default(monkeypatch):
+    """Global valuation enrichment calls two live official sources (Nasdaq Nordic share
+    series, ECB reference rates). Tests must never reach them; the tests that exercise
+    those paths patch the call and switch the gate on explicitly."""
+    monkeypatch.setenv("BIAP_GLOBAL_NORDIC_SERIES", "0")
+    monkeypatch.setenv("BIAP_GLOBAL_FX_CONVERSION", "0")
+
+
+@pytest.fixture(autouse=True)
 def _external_tsetmc_enrichment_disabled_by_default(monkeypatch):
     """Prevent any test from making a real, slow TSETMC network call.
 

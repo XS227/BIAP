@@ -41,6 +41,10 @@ _CONCEPTS = {
         "ifrs-full:DepreciationExpense",
     ),
     "net_income": ("ifrs-full:ProfitLoss",),
+    # Profit attributable to the parent's owners. ProfitLoss is the consolidated
+    # total including non-controlling interests, so it can carry the opposite
+    # sign of EPS (Volvo Car FY2025: ProfitLoss -2,968m, owners +174m, EPS +0.06).
+    "net_income_owners": ("ifrs-full:ProfitLossAttributableToOwnersOfParent",),
     "assets": ("ifrs-full:Assets",),
     "liabilities": ("ifrs-full:Liabilities",),
     "equity": ("ifrs-full:Equity",),
@@ -119,6 +123,9 @@ _CONCEPTS = {
     # include treasury shares, so it is used solely when the filing tags no
     # outstanding count and no per-class facts exist at all.
     "shares_issued": ("ifrs-full:NumberOfSharesIssued",),
+    # IAS 33 basic weighted-average share count: a period average, so it is a
+    # labelled last-resort basis that must reconcile with EPS and owners' profit.
+    "weighted_average_shares": ("ifrs-full:WeightedAverageShares",),
     # Continuing-operations EPS equals EPS only when no discontinued
     # operation result is tagged for the year (e.g. Komplett ASA FY2025).
     "eps_continuing": (
@@ -685,6 +692,106 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             return None, None
         return plain[0], "issued_single_class_fallback"
 
+    _EXCLUDED_DEBT_LIKE = re.compile(r"(?<!non)interestbearing|leaseliabilit", re.I)
+
+    @classmethod
+    def _debt_like_not_in_total(cls, facts: list[dict], period_end: date, debt_method: Optional[str]) -> dict[str, float]:
+        """Interest-bearing / lease liabilities tagged at the balance-sheet date but not part of total_debt.
+
+        total_debt is bonds + loans (or the borrowings line). Issuer extensions such as
+        VOL:OtherNonCurrentLiabilitiesInterestBearing and IFRS 16 lease liabilities are
+        not added (that would silently change the credit-grid definition), but they are
+        recorded so the ratio can be read with its scope: EBITDA already adds back
+        right-of-use depreciation, so excluding leases from debt flatters leverage.
+        """
+        if not debt_method or debt_method.startswith("withheld"):
+            return {}
+        found: dict[str, float] = {}
+        for fact in facts:
+            dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+            concept = str(dims.get("concept") or "")
+            local = concept.split(":")[-1]
+            if not cls._EXCLUDED_DEBT_LIKE.search(local) or not cls._plain_fact(fact):
+                continue
+            start, end = _period_parts(dims.get("period"))
+            value = _num(fact.get("value"))
+            if end is None or start != end or abs((period_end - end).days) > 7 or value is None or value <= 0:
+                continue
+            found.setdefault(concept, value)
+        return found
+
+    _IMPAIRMENT_INCLUSIVE_DA_NAME = re.compile(
+        r"^(?:adjustmentsfor)?depreciation(?:and)?amorti[sz]ation(?:expense)?(?:and)?impairment", re.I
+    )
+
+    @classmethod
+    def _impairment_inclusive_da(
+        cls, facts: list[dict], period_end: date, revenue: Optional[float]
+    ) -> tuple[Optional[float], Optional[str]]:
+        """D&A tagged only together with impairment, accepted as a labelled EBITDA add-back.
+
+        Rating-agency EBITDA adds back impairment charges with D&A, so EBIT + (D&A and
+        impairment) is a recognised basis, but it is not the same figure as EBIT + pure D&A
+        and is therefore recorded as such (``ebitda_includes_impairment_addback``). Accepted
+        only for plain annual facts anchored to the balance-sheet date; distinct concepts
+        must agree within 5% (otherwise the filing is ambiguous) and the add-back must stay
+        below 60% of revenue (a larger figure points to a mis-scaled or non-D&A line).
+        """
+        by_concept: dict[str, list[dict]] = {}
+        for fact in facts:
+            dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+            concept = str(dims.get("concept") or "")
+            local = concept.split(":")[-1]
+            if cls._IMPAIRMENT_INCLUSIVE_DA_NAME.search(local) and cls._plain_fact(fact):
+                by_concept.setdefault(concept, []).append(fact)
+        values = {}
+        for concept, rows in by_concept.items():
+            value = cls._duration_value(rows, period_end)
+            if value is not None and value != 0:
+                values[concept] = abs(value)
+        if not values:
+            return None, None
+        low, high = min(values.values()), max(values.values())
+        if high > low * 1.05:
+            return None, None
+        if revenue not in (None, 0) and high > 0.6 * abs(float(revenue)):
+            return None, None
+        return high, "impairment_inclusive_addback:" + ",".join(sorted(values))
+
+    @classmethod
+    def _weighted_average_shares(
+        cls, facts: list[dict], candidates: list[dict], period_end: date, *,
+        eps: Optional[float], net_income_owners: Optional[float],
+    ) -> tuple[Optional[float], Optional[str]]:
+        """Basic weighted-average share count, only when it reconciles with EPS.
+
+        Accepted only when one plain annual ``WeightedAverageShares`` fact ends at
+        the balance-sheet date, in a share unit, no per-class dimensions exist for
+        it, and ``owners' profit / EPS`` agrees within 25% (EPS is rounded to a few
+        decimals by many filers). Without EPS and owners' profit there is nothing to
+        reconcile against, so the count is withheld.
+        """
+        values: list[float] = []
+        for fact in candidates:
+            dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+            start, end = _period_parts(dims.get("period"))
+            if start is None or end is None or not 300 <= (end - start).days <= 400 or abs((period_end - end).days) > 7:
+                continue
+            if not cls._plain_fact(fact):
+                return None, None
+            value = _num(fact.get("value"))
+            if value is None or value <= 0 or "shares" not in str(dims.get("unit") or "").lower():
+                return None, None
+            values.append(value)
+        if not values or len(set(values)) != 1:
+            return None, None
+        if eps in (None, 0) or net_income_owners in (None, 0) or (eps > 0) != (net_income_owners > 0):
+            return None, None
+        implied = float(net_income_owners) / float(eps)
+        if not 0.8 <= values[0] / implied <= 1.25:
+            return None, None
+        return values[0], "weighted_average_basic_reconciled_to_eps"
+
     _IMPAIRMENT_INCLUSIVE_DA = re.compile(r"(depreciation|amortisation|amortization).*impairment|adjustmentsfordepreciationandamortisation", re.I)
     _BORROWING_NAME = re.compile(r"(borrowing|bondsissued|loansreceived)", re.I)
 
@@ -692,6 +799,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
     def _field_status(
         cls, facts: list[dict], period_end: date, *, shares: Optional[float], shares_basis: Optional[str],
         operating_income: Optional[float], ebitda: Optional[float], debt: Optional[float], debt_method: Optional[str],
+        ebitda_includes_impairment: bool = False,
     ) -> dict[str, str]:
         """Why each valuation/credit input is present or absent.
 
@@ -711,7 +819,11 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             return concept.split(":")[-1]
 
         if shares is not None:
-            shares_status = "extracted_issued_single_class_fallback" if shares_basis else "extracted_plain_outstanding"
+            shares_status = (
+                "extracted_weighted_average_basic_reconciled_to_eps" if shares_basis == "weighted_average_basic_reconciled_to_eps"
+                else "extracted_issued_single_class_fallback" if shares_basis
+                else "extracted_plain_outstanding"
+            )
         elif any(local(c).lower() in {"numberofsharesoutstanding", "numberofsharesissued"} for c, _ in near_period):
             shares_status = "tagged_per_class_or_ambiguous_not_summed"
         elif any(re.search(r"numberof.*shares|shares.*(outstanding|issued)", local(c), re.I) for c, _ in near_period):
@@ -720,7 +832,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             shares_status = "not_tagged_in_filing"
 
         if ebitda is not None:
-            ebitda_status = "extracted"
+            ebitda_status = "extracted_impairment_inclusive_addback" if ebitda_includes_impairment else "extracted"
         elif operating_income is None:
             ebitda_status = "operating_income_not_tagged"
         elif any(cls._IMPAIRMENT_INCLUSIVE_DA.search(local(c)) for c, _ in near_period):
@@ -827,11 +939,19 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             if component_values:
                 depreciation_amortisation = sum(abs(value) for value in component_values.values())
                 da_method = "sum_of_tagged_da_components:" + ",".join(sorted(component_values))
+        ebitda_includes_impairment = False
+        if depreciation_amortisation is None and direct_ebitda is None and operating_income is not None:
+            depreciation_amortisation, da_method = self._impairment_inclusive_da(facts, period_end, revenue)
+            ebitda_includes_impairment = depreciation_amortisation is not None
         ebitda = direct_ebitda
         ebitda_method = "direct_explicit_tag" if direct_ebitda is not None else None
         if ebitda is None and operating_income is not None and depreciation_amortisation is not None:
             ebitda = operating_income + abs(depreciation_amortisation)
-            ebitda_method = "derived_operating_income_plus_abs_depreciation_amortisation"
+            ebitda_method = (
+                "derived_operating_income_plus_abs_da_and_impairment_addback"
+                if ebitda_includes_impairment
+                else "derived_operating_income_plus_abs_depreciation_amortisation"
+            )
         ocf = self._duration_value(concept_facts["ocf"], period_end)
         capex = self._duration_value(concept_facts["capex"], period_end)
         fcf = None if ocf is None or capex is None else ocf - abs(capex)
@@ -892,6 +1012,11 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         shares_basis = None
         if shares_outstanding is None:
             shares_outstanding, shares_basis = self._single_class_shares_issued(facts, period_end)
+        net_income_owners = self._duration_value(concept_facts["net_income_owners"], period_end)
+        if shares_outstanding is None:
+            shares_outstanding, shares_basis = self._weighted_average_shares(
+                facts, concept_facts["weighted_average_shares"], period_end, eps=eps, net_income_owners=net_income_owners
+            )
 
         reporting_currency = None
         for key in ("revenue", "net_income", "assets"):
@@ -935,8 +1060,11 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                     facts, period_end,
                     shares=shares_outstanding, shares_basis=shares_basis,
                     operating_income=operating_income, ebitda=ebitda,
-                    debt=debt, debt_method=debt_method,
+                    debt=debt, debt_method=debt_method, ebitda_includes_impairment=ebitda_includes_impairment,
                 ),
+                "ebitda_includes_impairment_addback": ebitda_includes_impairment,
+                "net_income_owners": net_income_owners,
+                "net_income_basis": "consolidated_profit_loss_incl_noncontrolling_interests",
                 "revenue_method": revenue_method,
                 "equity_method": equity_method,
                 "liabilities_method": liabilities_method,
@@ -945,6 +1073,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                 "depreciation_amortisation": depreciation_amortisation,
                 "depreciation_amortisation_method": da_method,
                 "debt_method": debt_method,
+                "debt_excluded_interest_bearing_liabilities": self._debt_like_not_in_total(facts, period_end, debt_method),
                 "capex": capex,
                 "fcf_method": "operating_cash_flow_minus_abs_capex" if fcf is not None else None,
                 "fiscal_year_transition": self.fiscal_year_transition(facts, period_end),

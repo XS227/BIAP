@@ -70,7 +70,13 @@ CACHE_SCHEMA_VERSION = 11
 # plain/issued share counts mapped by the current extractor. Official snapshots
 # written earlier are re-normalized from the cached filing package (no refetch)
 # once, when shares, debt or EBITDA is empty.
-NORMALIZER_REVISION = 2
+NORMALIZER_REVISION = 3
+#
+# revision 3: ESEF extraction records profit attributable to owners of the parent
+# (net_income_owners) beside consolidated ProfitLoss, and adds a weighted-average
+# basic share count that must reconcile with EPS. Official ESEF snapshots written
+# earlier are re-normalized once (budgeted, from the cached package) so EPS, P/E and
+# market cap can be validated against the right earnings measure.
 
 # Official providers whose records were found defective after the fact.
 # Snapshots built from them are ignored (neither fresh nor stale fallback).
@@ -253,7 +259,13 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         identity = payload.get("identity") if isinstance(payload.get("identity"), dict) else {}
         gb_sector_missing = str(identity.get("country") or "").upper() == "GB" and not fundamentals.get("sector")
         inputs_missing = any(fundamentals.get(key) is None for key in ("shares_outstanding", "total_debt", "ebitda"))
-        return gb_sector_missing or inputs_missing
+        raw = payload.get("raw_provider_fields") if isinstance(payload.get("raw_provider_fields"), dict) else {}
+        extraction = next(
+            (raw[key] for key in ("oam_credit_extraction", "esef_credit_extraction") if isinstance(raw.get(key), dict)),
+            None,
+        )
+        owners_missing = extraction is not None and not {"net_income_owners", "debt_excluded_interest_bearing_liabilities", "ebitda_includes_impairment_addback"} <= extraction.keys()
+        return gb_sector_missing or inputs_missing or owners_missing
 
     def _is_fresh(self, payload: dict) -> bool:
         # Schema v2 adds shareholder-return fields such as dividend/share.

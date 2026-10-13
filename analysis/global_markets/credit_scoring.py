@@ -241,6 +241,9 @@ def reconcile_agent9_agent10(company: GlobalCompany, distress: DistressAssessmen
         out["implied_da"] = round(float(ebitda) - float(ebit), 2)
     if ebit is not None and ebitda is not None and ebit > 0 and ebitda > 0 and ebitda > 3 * ebit:
         flags.append("EBITDA > 3x EBIT: D&A-heavy or EBITDA not on the same basis; ratios not comparable")
+    meta = (company.raw_provider_fields or {}).get("oam_credit_extraction") or (company.raw_provider_fields or {}).get("esef_credit_extraction") or {}
+    if isinstance(meta, dict) and meta.get("ebitda_includes_impairment_addback"):
+        flags.append("EBITDA adds back impairment together with D&A (filing tags only the combined line): not comparable with EBIT-based coverage")
     icr = distress.interest_coverage
     if icr is not None and out["agent10_ebitda_interest"] is not None:
         if icr < 1.0 <= out["agent10_ebitda_interest"]:
@@ -249,6 +252,52 @@ def reconcile_agent9_agent10(company: GlobalCompany, distress: DistressAssessmen
                 "driven by depreciation/amortisation (capital intensity), not by cash coverage"
             )
     out["status"] = "REVIEW" if flags else "CONSISTENT"
+    return out
+
+
+def rating_consistency(company: GlobalCompany, distress: DistressAssessment, notch: int, coverage: float) -> dict:
+    """Cross-check the Agent 10 grid rating against Agent 9 without altering either.
+
+    The two agents answer different questions (Agent 9: can EBIT service interest and
+    is the balance sheet distressed; Agent 10: a leverage/cash-flow/liquidity factor
+    grid with no profitability or EBIT-coverage factor). When they point in opposite
+    directions the grid rating is labelled as conflicted and not reliable for decisions.
+    """
+    adverse = distress.status in {"HIGH_RISK", "ELEVATED_RISK"}
+    investment_grade = notch <= 10
+    out: dict = {
+        "agent9_status": distress.status,
+        "agent9_corroboration": distress.corroboration or None,
+        "agent10_indicated_rating_sp": _SP_NOTCHES[notch - 1],
+        "agent10_investment_grade": investment_grade,
+        "weight_coverage": round(coverage, 2),
+    }
+    if distress.status in {"NOT_APPLICABLE", "INSUFFICIENT_DATA"}:
+        out.update(status="NOT_COMPARABLE", rating_reliable=None, reasons=[f"Agent 9 status {distress.status}"])
+        return out
+    if adverse and investment_grade:
+        reasons = [
+            f"Agent 9 {distress.status} ({distress.corroboration or 'no corroboration recorded'}; triggers: "
+            f"{', '.join(distress.severe_triggers or distress.elevated_triggers) or 'n/a'}) "
+            f"versus Agent 10 grid {_SP_NOTCHES[notch - 1]} (investment grade)",
+            "Agent 10's factor grid has no profitability or EBIT-interest-coverage factor, so it cannot see an "
+            "EBIT shortfall that Agent 9 treats as severe",
+        ]
+        recon = reconcile_agent9_agent10(company, distress)
+        reasons.extend(flag for flag in recon.get("flags", []) if "EBIT" in flag)
+        if coverage < 1.0:
+            reasons.append(f"grid weights re-normalised over the {coverage:.0%} of factors that had data")
+        excluded = (company.raw_provider_fields or {}).get("oam_credit_extraction", {}).get("debt_excluded_interest_bearing_liabilities")
+        if excluded:
+            reasons.append("total_debt excludes issuer-tagged interest-bearing liabilities: " + ", ".join(sorted(excluded)))
+        out.update(status="CONFLICT", rating_reliable=False, reasons=reasons)
+    elif not adverse and distress.status == "LOW_RISK" and not investment_grade:
+        out.update(
+            status="CONFLICT", rating_reliable=False,
+            reasons=[f"Agent 9 LOW_RISK versus Agent 10 grid {_SP_NOTCHES[notch - 1]} (sub-investment grade)"],
+        )
+    else:
+        out.update(status="CONSISTENT", rating_reliable=True, reasons=[])
     return out
 
 
@@ -414,6 +463,11 @@ def score_legal_entity_company(company: GlobalCompany, distress: Optional[Distre
         "investment_grade": notch <= 10,
         "pd_1y": round(pd_, 5),
     })
+    if distress is not None:
+        consistency = rating_consistency(company, distress, notch, coverage)
+        base["rating_consistency"] = consistency
+        if consistency["status"] == "CONFLICT":
+            base["headline_rating_status"] = "CONFLICTED_WITH_AGENT9_NOT_FOR_DECISION"
     if missing:
         base["caveat"] = (
             f"{len(missing)} factor(s) without data; weights re-normalised over the "

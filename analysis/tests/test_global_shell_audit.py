@@ -116,8 +116,19 @@ def test_sector_supplement_leaves_sector_empty_when_identity_unverified():
     assert sec.calls == 1  # negative result cached, no repeated SEC lookups
 
 
-def test_cross_currency_listing_does_not_derive_pe():
-    from global_markets.service import _derive_metrics
+def test_cross_currency_listing_does_not_derive_pe_without_an_fx_rate(monkeypatch):
+    """Without a usable reference rate a USD EPS is never divided into a GBP price.
+    (With a rate the figure is converted and labelled: see test_global_s13_engine.)"""
+    from global_markets import service
+
+    class NoRate:
+        def __init__(self, *a, **k):
+            pass
+
+        def rate(self, base, quote):
+            raise RuntimeError("no rate")
+
+    monkeypatch.setattr(service, "ECBReferenceFXProvider", NoRate)
     c = GlobalCompany(country="GB", exchange="LSE", currency="GBP", reporting_currency="USD", ticker="SHEL",
                       name="SHELL PLC", price=37.9, eps=3.03)
-    assert _derive_metrics(c).pe is None
+    assert service._derive_metrics(c).pe is None
