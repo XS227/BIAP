@@ -394,8 +394,15 @@ class AnalysisLedger:
             )
         return len(due)
 
-    def sync_universe(self, universe: Iterable[Any], quotes: dict[str, dict], *, screening_source: str) -> dict:
-        """Register every discovered equity. Idempotent; keeps finished results."""
+    def sync_universe(
+        self, universe: Iterable[Any], quotes: dict[str, dict], *, screening_source: str, demote_missing: bool = True
+    ) -> dict:
+        """Register every discovered equity. Idempotent; keeps finished results.
+
+        ``demote_missing`` flags rows absent from ``universe`` as out of the universe. It must be
+        False when ``universe`` is only a bounded slice of the market (a limited discovery scan),
+        otherwise a small probe silently shrinks the whole ledger to that slice.
+        """
         conn = self._conn()
         now = _now()
         seen: set[str] = set()
@@ -436,7 +443,7 @@ class AnalysisLedger:
                         )
                 else:
                     conn.execute("UPDATE ledger SET in_universe=1 WHERE ticker=?", (ticker,))
-            if seen:
+            if seen and demote_missing:
                 gone = [t for t in existing if t not in seen]
                 for ticker in gone:
                     conn.execute("UPDATE ledger SET in_universe=0 WHERE ticker=?", (ticker,))

@@ -598,8 +598,14 @@ class GlobalMarketScanner:
         reuse: bool,
         errors: list[str],
         market_source: str,
+        full_universe: Optional[list[GlobalCompany]] = None,
+        partial_slice: bool = False,
     ) -> tuple[list[dict], dict, list[dict]]:
         """Register the whole universe, analyze one bounded batch, report the ledger.
+
+        ``partial_slice`` means ``selected_universe`` is only the first N of ``full_universe`` (a
+        limited discovery scan). Such a scan registers its slice but never demotes the rest of the
+        ledger, and the queue can still resolve every in-universe ticker from ``full_universe``.
 
         Returns (compact deepResults rows, ledger summary, ranked BUY rows). The
         queue, not a liquidity cut-off, decides what is analyzed: PENDING
@@ -607,11 +613,11 @@ class GlobalMarketScanner:
         is refreshed once it ages past ``BIAP_GLOBAL_ANALYSIS_REFRESH_HOURS``.
         """
         refresh_hours = float(os.environ.get("BIAP_GLOBAL_ANALYSIS_REFRESH_HOURS", "24"))
-        ledger.sync_universe(selected_universe, quote_by_ticker, screening_source=screening_source)
+        ledger.sync_universe(selected_universe, quote_by_ticker, screening_source=screening_source, demote_missing=not partial_slice)
         if not reuse:
             ledger.set_meta("stage1", {"errors": errors, "marketSource": market_source})
             ledger.set_meta("stage1_synced_at", datetime.now(timezone.utc).isoformat())
-        by_ticker = {item.ticker.upper(): item for item in selected_universe}
+        by_ticker = {item.ticker.upper(): item for item in (full_universe if partial_slice and full_universe else selected_universe)}
 
         def analyze(company: GlobalCompany) -> dict:
             result = analyze_company(company, registry=registry)
@@ -719,6 +725,7 @@ class GlobalMarketScanner:
                 ledger, selected_universe, {row["ticker"]: row for row in cached_quotes}, registry,
                 screening_source="stored market records only (diagnostic)", batch_limit=batch_limit,
                 budget=budget, top_n=top_n, reuse=False, errors=[], market_source="stored market records only",
+                full_universe=universe, partial_slice=partial,
             )
             readiness = self._readiness(
                 country=country.upper(), exchange=spec.code, universe_count=discovered_count,
@@ -758,6 +765,7 @@ class GlobalMarketScanner:
             ledger, selected_universe, quote_by_ticker, registry,
             screening_source=market_source, batch_limit=batch_limit, budget=budget, top_n=top_n,
             reuse=stage1_reused, errors=screening_errors, market_source=market_source,
+            full_universe=universe, partial_slice=partial,
         )
         readiness = self._readiness(
             country=country.upper(), exchange=spec.code, universe_count=discovered_count,

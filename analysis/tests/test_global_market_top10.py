@@ -112,3 +112,19 @@ def test_german_share_classes_collapse_to_one_issuer():
     assert key("FUCHS SE  NA ST O.N.") == key("FUCHS SE  VZO NA O.N.")
     assert key("VOLKSWAGEN AG ST O.N.") == key("VOLKSWAGEN AG VZO O.N.")
     assert key("SIEMENS AG  NA O.N.") != key("SIEMENS ENERGY AG NA O.N.")  # different legal entities stay apart
+
+
+def test_partial_discovery_slice_never_shrinks_the_ledger_universe(tmp_path, monkeypatch):
+    """A bounded probe (discoveryLimit=250) once flagged 2,763 of 3,013 NASDAQ rows out of the universe."""
+    monkeypatch.setenv("BIAP_GLOBAL_DATA_DIR", str(tmp_path))
+    led = al.AnalysisLedger("US", "NASDAQ")
+    full = [SimpleNamespace(ticker=t, name=t) for t in ("AAA", "BBB", "CCC", "DDD")]
+    led.sync_universe(full, {}, screening_source="full")
+    assert led.counts()["total"] == 4
+
+    led.sync_universe(full[:2], {}, screening_source="probe", demote_missing=False)
+    assert led._conn().execute("SELECT COUNT(*) FROM ledger WHERE in_universe=1").fetchone()[0] == 4
+
+    led.sync_universe(full[:2], {}, screening_source="full-but-shrunk")  # an authoritative full sync still demotes
+    assert led._conn().execute("SELECT COUNT(*) FROM ledger WHERE in_universe=1").fetchone()[0] == 2
+    led.close()
