@@ -1,5 +1,15 @@
 # BIAP — Project Status
 
+## 2026-10-13 session 16 (BIAP Global reconciliation + FBK re-extraction)
+
+**Reconciliation:** the brief replayed at session start ("push four pending commits") was already satisfied: `feat/biap-global` = origin (e5398e3), nothing unpushed, prod 8091 = 4da8ab3 healthy.
+No code changed this session, so no deploy, no NASDAQ re-sync and no regression re-run were needed; the session-15 market table below stays the latest verified data.
+**FBK (IT) fixed on prod data:** the cached snapshot was at the current normalizer revision (2) so 2215398 never re-ran for it. Backed up the FBK snapshot dir
+(`/var/lib/biap-global/backup-pre-fbk-reextract-20261013T143410Z`), moved only FBK `latest.json` aside (history kept) and re-ran the provider for that one ticker: total_equity EUR 2,553.324m
+(FY2025-12-31). Live `/global/analyze` FBK: equity set, evidence PASS, sector Financials, distress NOT_APPLICABLE. Agent 9 stays INSUFFICIENT_DATA (debt/EBITDA absent from sources; nothing estimated).
+**Other banks:** the same stale-snapshot condition may hide equity for other ESEF extension filers; a revision bump would re-parse every market, so it was not done without approval.
+**Still open:** DE sector source (Frankfurt 27.3% / Xetra 29.6%); UK asset-class source (gate untouched); APK 0.3.22 not device-tested; `Sync main` CI job (repo setting); timers remain inactive.
+
 ## 2026-10-13 session 15 verification (BIAP Global, live prod 8091 @ 4da8ab3)
 
 **Reconciliation:** the "four pending commits" were already pushed. `origin/feat/biap-global` = f3fb006 (0.3.22, versionCode 25), which contains FBK fix 2215398; prod
