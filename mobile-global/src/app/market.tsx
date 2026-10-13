@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, SafeAreaView, S
 import { router, useFocusEffect } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { fetchGlobalInstruments, GlobalAnalysis, GlobalInstrument, scanGlobalMarket, scanGlobalTop10 } from '@/lib/global-api';
+import { gateLines, marketListRows } from '@/lib/scan-summary';
 import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-market-selection';
 import { setSelectedGlobalCompany } from '@/lib/global-company-selection';
 import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
@@ -71,6 +72,7 @@ export default function MarketScreen() {
   const [totalMatched, setTotalMatched] = useState(0);
   const [error, setError] = useState('');
   const [scan, setScan] = useState<GlobalAnalysis[]>([]);
+  const [gateInfo, setGateInfo] = useState<string[]>([]);
   const [scanning, setScanning] = useState(false);
   const [scanStatus, setScanStatus] = useState('');
   const [scanMode, setScanMode] = useState<ScanMode>('');
@@ -153,12 +155,13 @@ export default function MarketScreen() {
 
   const runScan = async () => {
     if (!selection) return;
-    setScanning(true); setScan([]); setScanStatus(''); setScanMode('');
+    setScanning(true); setScan([]); setGateInfo([]); setScanStatus(''); setScanMode('');
     try {
       const result = await scanGlobalMarket(selection.country, selection.exchange, 10);
       const extended = result as typeof result & { catalogOnly?: boolean; cachedMarketData?: boolean };
       const rankingEligible = result.rankingEligible === true;
-      setScan(rankingEligible ? (result.recommendations || []) : []);
+      setScan(marketListRows(result));
+      setGateInfo(gateLines(result));
       const marketCoverage = result.screeningCoveragePct == null ? '—' : `${Number(result.screeningCoveragePct).toFixed(1)}%`;
       const fundamentalCoverage = result.fundamentalCoveragePct == null ? '—' : `${Number(result.fundamentalCoveragePct).toFixed(1)}%`;
       if (extended.catalogOnly || result.status === 'MARKET_DATA_REQUIRED') {
@@ -172,7 +175,7 @@ export default function MarketScreen() {
         setScanStatus(`Ranking blocked • ${result.universeScreened ?? 0}/${result.universeDiscovered ?? 0} equities screened • market coverage ${marketCoverage} • verified fundamentals ${fundamentalCoverage}`);
       } else {
         setScanMode('live');
-        setScanStatus(`This market • ${result.recommendationCount ?? 0} qualified • ${result.universeScreened ?? 0}/${result.universeDiscovered ?? 0} equities screened • ${marketCoverage} coverage`);
+        setScanStatus(`This market • Market Top ${Math.min(10, (result.marketTop10 || result.recommendations || []).length)} shown • ${result.qualifiedBuyCount ?? result.recommendationCount ?? 0} qualified BUY • ${result.universeScreened ?? 0}/${result.universeDiscovered ?? 0} equities screened • ${marketCoverage} coverage`);
       }
     } catch (err) {
       setScanMode('');
@@ -242,7 +245,7 @@ export default function MarketScreen() {
     <View style={styles.searchRow}><TextInput value={query} onChangeText={setQuery} onSubmitEditing={() => { void searchRemote(); }} autoCapitalize="characters" placeholder="Search ticker, company or ISIN" placeholderTextColor={colors.textSecondary} style={[styles.search, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected, color: colors.text }]} /><Pressable disabled={loadingSearch} onPress={() => { void searchRemote(); }} style={[styles.searchButton, { backgroundColor: Brand.primary, opacity: loadingSearch ? .6 : 1 }]}>{loadingSearch ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.searchButtonText}>Search</Text>}</Pressable></View>
 
     <View style={styles.scanRow}><View style={{ flex: 1 }}><Text style={[styles.scanTitle, { color: colors.text }]}>Kiasha stock selection</Text><Text style={[styles.scanText, { color: colors.textSecondary }]}>Evidence-gated ranking: objective stock score first, investor fit later.</Text></View><View style={styles.scanActions}><Pressable disabled={scanning || !selection} onPress={() => { void runScan(); }} style={[styles.scanButton, { borderColor: Brand.primary }]}>{scanning ? <ActivityIndicator color={Brand.primary} size="small" /> : <Text style={styles.scanButtonText}>This market</Text>}</Pressable><Pressable disabled={scanning} onPress={() => { void runGlobalTop10(); }} style={[styles.scanButton, { borderColor: Brand.primary, backgroundColor: Brand.primary }]}><Text style={[styles.scanButtonText, { color: '#fff' }]}>Global Top 10</Text></Pressable></View></View>
-    {scanStatus ? <View style={[styles.statusBox, { backgroundColor: colors.backgroundElement, borderColor: modeColor }]}><Text style={[styles.status, { color: modeColor }]}>{scanStatus}</Text>{scanMode === 'catalog' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>The instrument list is real. BIAP will not create BUY candidates until verified market prices are available.</Text> : scanMode === 'cached' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>Stored market records are available, but BIAP will not rank this exchange until fresh ordinary-equity coverage and verified fundamental coverage meet the required thresholds.</Text> : scanMode === 'global' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>Global Top 10 is one cross-market shortlist, so it stays the same when you change the selected exchange. Use “This market” for a ranking limited to the exchange shown above.</Text> : null}</View> : null}
+    {scanStatus ? <View style={[styles.statusBox, { backgroundColor: colors.backgroundElement, borderColor: modeColor }]}><Text style={[styles.status, { color: modeColor }]}>{scanStatus}</Text>{scanMode === 'catalog' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>The instrument list is real. BIAP will not create BUY candidates until verified market prices are available.</Text> : scanMode === 'cached' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>Stored market records are available, but BIAP will not rank this exchange until fresh ordinary-equity coverage and verified fundamental coverage meet the required thresholds.</Text> : scanMode === 'global' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>Global Top 10 is one cross-market shortlist, so it stays the same when you change the selected exchange. Use “This market” for a ranking limited to the exchange shown above.</Text> : null}{gateInfo.length ? <View style={{ marginTop: 6 }}><Text style={[styles.statusHint, { color: colors.textSecondary }]}>Companies rejected at each gate:</Text>{gateInfo.map((line) => <Text key={line} style={[styles.statusHint, { color: colors.textSecondary }]}>• {line}</Text>)}</View> : null}</View> : null}
     {scan.length ? <View style={styles.picks}>{scan.slice(0, 10).map((item, index) => <Pressable key={`${item.ticker}-${index}`} onPress={() => { void openStock(item); }} style={[styles.pick, { backgroundColor: colors.backgroundElement }]}><View><Text style={[styles.pickTicker, { color: colors.text }]}>#{index + 1} {item.ticker}</Text><Text numberOfLines={1} style={[styles.pickName, { color: colors.textSecondary }]}>{item.name}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.pickCall, { color: callColor(item.call, colors.textSecondary) }]}>{item.call}</Text><Text style={[styles.pickConfidence, { color: colors.textSecondary }]}>{item.confidence == null ? '—' : `${Math.round(item.confidence * 100)}% conf.`}</Text></View></Pressable>)}</View> : null}
     {error ? <View style={[styles.errorBox, { borderColor: Brand.warning }]}><Text style={[styles.errorText, { color: colors.textSecondary }]}>{error}</Text></View> : null}
 

@@ -36,3 +36,31 @@ export function topRanked(result: Pick<GlobalScanResponse, 'recommendations'>): 
 export function rankCriterionLabel(result: Pick<GlobalScanResponse, 'rankingBasis'>): string {
   return result.rankingBasis?.criterion === 'score_x_confidence' ? 'score × confidence' : 'server order';
 }
+
+/** Rows for the Market list: the server's Market Top 10 when present, else the BUY list (older cached scans). */
+export function marketListRows(result: Pick<GlobalScanResponse, 'marketTop10' | 'recommendations' | 'rankingEligible'>): GlobalAnalysis[] {
+  if (result.rankingEligible !== true) return [];
+  return result.marketTop10 && result.marketTop10.length ? result.marketTop10 : result.recommendations || [];
+}
+
+const GATE_LABELS: Record<string, string> = {
+  market_ranking_released: 'Market ranking released',
+  deep_analysis_complete: 'Deep analysis complete',
+  evidence_pass: 'Evidence PASS',
+  score_and_confidence_available: 'Score & confidence available',
+  buy_threshold: 'BUY threshold',
+  one_security_per_issuer: 'One security per issuer',
+};
+
+/** One line per gate that rejected companies: "Evidence PASS: 195 of 2999 rejected (BLOCK 195)". */
+export function gateLines(result: Pick<GlobalScanResponse, 'rankingGates'>): string[] {
+  return (result.rankingGates || [])
+    .filter((g) => g.rejected > 0)
+    .map((g) => {
+      const detail = Object.entries(g.byEvidenceStatus ?? g.reasons ?? {})
+        .slice(0, 3)
+        .map(([k, v]) => `${k} ${v}`)
+        .join(', ');
+      return `${GATE_LABELS[g.gate] ?? g.gate}: ${g.rejected} of ${g.entered} rejected${detail ? ` (${detail})` : ''}`;
+    });
+}

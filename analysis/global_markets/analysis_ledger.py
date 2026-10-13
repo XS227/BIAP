@@ -592,6 +592,68 @@ class AnalysisLedger:
             rows.append(item)
         return rows
 
+    def market_pool(self, *, limit: int) -> list[dict]:
+        """Best-ranked evidence-supported companies of ANY call (Market Top 10 pool).
+
+        Eligible = evidence PASS, analysis COMPLETE, numeric score and confidence.
+        Ordered by the same ``score * confidence`` basis as the BUY ranking; the
+        caller collapses issuers. Nothing is promoted to BUY here: each row keeps
+        its actual ``call``.
+        """
+        rows = []
+        sql = (
+            "SELECT summary FROM ledger WHERE in_universe=1 AND status=? AND evidence_status='PASS' "
+            "AND score IS NOT NULL AND confidence IS NOT NULL AND summary IS NOT NULL "
+            "ORDER BY score*confidence DESC, ticker LIMIT ?"
+        )
+        for r in self._conn().execute(sql, (COMPLETE, max(1, int(limit)))):
+            try:
+                rows.append(json.loads(r["summary"]))
+            except json.JSONDecodeError:
+                continue
+        return rows
+
+    def ranking_gate_counts(self) -> dict:
+        """Companies surviving / rejected at each ranking gate (single SQL pass each)."""
+        conn = self._conn()
+        one = lambda sql, *a: int(conn.execute(sql, a).fetchone()[0] or 0)
+        base = "FROM ledger WHERE in_universe=1"
+        universe = one(f"SELECT COUNT(*) {base}")
+        analyzed = one(f"SELECT COUNT(*) {base} AND analyzed_at IS NOT NULL")
+        passed = one(f"SELECT COUNT(*) {base} AND analyzed_at IS NOT NULL AND evidence_status='PASS'")
+        scored = one(
+            f"SELECT COUNT(*) {base} AND evidence_status='PASS' AND status=? AND score IS NOT NULL AND confidence IS NOT NULL",
+            COMPLETE,
+        )
+        buy = one(
+            f"SELECT COUNT(*) {base} AND evidence_status='PASS' AND status=? AND call='BUY_CANDIDATE' AND score IS NOT NULL AND confidence IS NOT NULL",
+            COMPLETE,
+        )
+        not_pass = {
+            str(r["evidence_status"] or "NONE"): int(r["n"])
+            for r in conn.execute(
+                f"SELECT evidence_status, COUNT(*) n {base} AND analyzed_at IS NOT NULL AND COALESCE(evidence_status,'')!='PASS' GROUP BY 1"
+            )
+        }
+        reasons = {
+            str(r["status"]) + ": " + str(r["reason"]).split(";")[0].split(" (")[0][:90]: int(r["n"])
+            for r in conn.execute(
+                f"SELECT status, reason, COUNT(*) n {base} AND analyzed_at IS NOT NULL AND COALESCE(evidence_status,'')!='PASS' "
+                "GROUP BY 1,2 ORDER BY 3 DESC LIMIT 8"
+            )
+        }
+        calls = {
+            str(r["call"]): int(r["n"])
+            for r in conn.execute(
+                f"SELECT call, COUNT(*) n {base} AND evidence_status='PASS' AND status=? AND score IS NOT NULL AND confidence IS NOT NULL GROUP BY 1",
+                (COMPLETE,),
+            )
+        }
+        return {
+            "universe": universe, "analyzed": analyzed, "evidencePass": passed, "scoredAndComplete": scored,
+            "buyCandidates": buy, "evidenceNotPass": not_pass, "evidenceNotPassReasons": reasons, "callsAmongScored": calls,
+        }
+
     def full_results(self, *, buys_only: bool = False) -> Iterator[dict]:
         sql = "SELECT result FROM ledger WHERE in_universe=1 AND result IS NOT NULL"
         if buys_only:

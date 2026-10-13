@@ -383,6 +383,49 @@ class GlobalMarketScanner:
             })
         return out
 
+    @classmethod
+    def market_top10(cls, pool: list[dict], top_n: int) -> list[dict]:
+        """Top evidence-supported companies of any call, one row per issuer, ranked by score*confidence.
+
+        Unlike ``recommendations`` this is NOT a buy list: every row carries its
+        actual ``call`` and ``qualifiedBuy`` says whether it also cleared the BUY gate.
+        """
+        rank = lambda r: float(r.get("score") or 0.0) * float(r.get("confidence") or 0.0)
+        pool = sorted(pool, key=rank, reverse=True)
+        pool = sorted(collapse_issuers(pool, rank), key=rank, reverse=True)[: max(1, int(top_n))]
+        return [
+            {
+                **row,
+                "rank": index,
+                "rankScore": round(rank(row), 6),
+                "rankCriterion": cls.RANKING_BASIS["criterion"],
+                "qualifiedBuy": row.get("call") == "BUY_CANDIDATE",
+            }
+            for index, row in enumerate(pool, start=1)
+        ]
+
+    @staticmethod
+    def ranking_gates(gates: dict, *, buy_after_issuer: int, ranking_eligible: bool, readiness_reasons: list[str]) -> list[dict]:
+        """Ordered gate funnel: how many companies entered, passed and were rejected, and why."""
+        universe, analyzed = gates["universe"], gates["analyzed"]
+        passed, scored, buy = gates["evidencePass"], gates["scoredAndComplete"], gates["buyCandidates"]
+        calls = gates.get("callsAmongScored") or {}
+        return [
+            {"gate": "market_ranking_released", "entered": universe, "passed": universe if ranking_eligible else 0,
+             "rejected": 0 if ranking_eligible else universe,
+             "reasons": {} if ranking_eligible else {r: universe for r in readiness_reasons or ["ranking_not_released"]}},
+            {"gate": "deep_analysis_complete", "entered": universe, "passed": analyzed, "rejected": universe - analyzed,
+             "reasons": {"not_yet_analyzed": universe - analyzed} if universe > analyzed else {}},
+            {"gate": "evidence_pass", "entered": analyzed, "passed": passed, "rejected": analyzed - passed,
+             "reasons": gates.get("evidenceNotPassReasons") or {}, "byEvidenceStatus": gates.get("evidenceNotPass") or {}},
+            {"gate": "score_and_confidence_available", "entered": passed, "passed": scored, "rejected": passed - scored,
+             "reasons": {"no_numeric_score_or_confidence_or_incomplete_analysis": passed - scored} if passed > scored else {}},
+            {"gate": "buy_threshold", "entered": scored, "passed": buy, "rejected": scored - buy,
+             "reasons": {f"call={k}": v for k, v in calls.items() if k != "BUY_CANDIDATE"}},
+            {"gate": "one_security_per_issuer", "entered": buy, "passed": buy_after_issuer, "rejected": buy - buy_after_issuer,
+             "reasons": {"duplicate_share_class_of_same_issuer": buy - buy_after_issuer} if buy > buy_after_issuer else {}},
+        ]
+
     @staticmethod
     def evidence_summary(counts: dict) -> dict:
         """Evidence gate totals over EVERY deep-analyzed company (ledger), not the capped payload rows."""
@@ -554,6 +597,9 @@ class GlobalMarketScanner:
         cap = max(25, int(os.environ.get("BIAP_GLOBAL_PAYLOAD_DEEP_ROWS", "150")))
         rows = ledger.summaries(limit=cap)
         counts["evidenceSummary"] = self.evidence_summary(counts)
+        counts["_marketPool"] = ledger.market_pool(limit=max(50, top_n * 8))
+        counts["_gateCounts"] = ledger.ranking_gate_counts()
+        counts["_buyAfterIssuer"] = len(self._recommendations(buys, max(1, len(buys))))
         counts["payloadRowsShown"] = len(rows)
         counts["payloadRowsNote"] = f"deepResults shows the top {cap} rows; GET /global/analysis-ledger lists every company with status, reason and source"
         return rows, counts, recommendations
@@ -677,7 +723,17 @@ class GlobalMarketScanner:
             market_source=market_source, partial_universe=partial, screening_errors=screening_errors,
             universe_authoritative=universe_authoritative, universe_source=universe_source, analysis=analysis,
         )
+        market_pool = analysis.pop("_marketPool", [])
+        gate_counts = analysis.pop("_gateCounts", None)
+        buy_after_issuer = analysis.pop("_buyAfterIssuer", len(ranked_buys))
         recommendations = ranked_buys if readiness["rankingEligible"] else []
+        market_top10 = self.market_top10(market_pool, top_n) if readiness["rankingEligible"] else []
+        gates = (
+            self.ranking_gates(
+                gate_counts, buy_after_issuer=buy_after_issuer,
+                ranking_eligible=bool(readiness["rankingEligible"]), readiness_reasons=list(readiness.get("reasons") or []),
+            ) if gate_counts else []
+        )
         if readiness["rankingEligible"]:
             status = "COMPLETE_SCAN" if recommendations else "NO_RECOMMENDATION"
         else:
@@ -690,6 +746,14 @@ class GlobalMarketScanner:
             "mic": spec.mic,
             "requestedRecommendations": top_n,
             "recommendationCount": len(recommendations),
+            "qualifiedBuyCount": len(recommendations),
+            "marketTop10": market_top10,
+            "marketTop10Note": (
+                "Highest score x confidence among evidence-PASS companies of any call; not a buy list. "
+                "Qualified BUY (recommendations) is the subset that also cleared the BUY threshold."
+                if readiness["rankingEligible"] else "Ranking not released for this market; no Market Top 10 is shown."
+            ),
+            "rankingGates": gates,
             "universeDiscovered": discovered_count,
             "universeResolved": resolved_count,
             "universeScreened": len(quotes),
