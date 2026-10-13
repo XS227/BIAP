@@ -18,7 +18,7 @@ from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
-from .lse_official import non_ordinary_description
+from .lse_official import non_ordinary_description, pooled_investment_icb
 
 # Version 24 persists Deutsche Boerse's authoritative Reporting Market field.
 # Older German snapshots only carried Primary Market MIC, which is not a safe
@@ -174,6 +174,8 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
             cached_raw = dict(row.get("raw_provider_fields") or {})
             if row_country == "GB" and non_ordinary_description(cached_raw.get("lse_description")):
                 continue
+            if row_country == "GB" and pooled_investment_icb(cached_raw.get("lse_icb_code")):
+                continue
             normalized_row = {
                 "name": str(row.get("name") or ticker),
                 "type": str(row.get("instrument_type") or "Common Stock"),
@@ -279,7 +281,10 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
             dropped = sum(
                 1 for row in payload.get("instruments") or []
                 if isinstance(row, dict)
-                and non_ordinary_description((row.get("raw_provider_fields") or {}).get("lse_description"))
+                and (
+                    non_ordinary_description((row.get("raw_provider_fields") or {}).get("lse_description"))
+                    or pooled_investment_icb((row.get("raw_provider_fields") or {}).get("lse_icb_code"))
+                )
             )
             if dropped:
                 count -= dropped
