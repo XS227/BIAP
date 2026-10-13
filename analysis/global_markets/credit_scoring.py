@@ -265,6 +265,9 @@ def rating_consistency(company: GlobalCompany, distress: DistressAssessment, not
     """
     adverse = distress.status in {"HIGH_RISK", "ELEVATED_RISK"}
     investment_grade = notch <= 10
+    # HIGH_RISK contradicts any investment-grade grid rating; ELEVATED_RISK only contradicts
+    # a clearly strong one (A- or better). ELEVATED against BBB is ordinary agreement.
+    contradicted = (distress.status == "HIGH_RISK" and investment_grade) or (distress.status == "ELEVATED_RISK" and notch <= 7)
     out: dict = {
         "agent9_status": distress.status,
         "agent9_corroboration": distress.corroboration or None,
@@ -275,11 +278,11 @@ def rating_consistency(company: GlobalCompany, distress: DistressAssessment, not
     if distress.status in {"NOT_APPLICABLE", "INSUFFICIENT_DATA"}:
         out.update(status="NOT_COMPARABLE", rating_reliable=None, reasons=[f"Agent 9 status {distress.status}"])
         return out
-    if adverse and investment_grade:
+    if adverse and contradicted:
         reasons = [
             f"Agent 9 {distress.status} ({distress.corroboration or 'no corroboration recorded'}; triggers: "
             f"{', '.join(distress.severe_triggers or distress.elevated_triggers) or 'n/a'}) "
-            f"versus Agent 10 grid {_SP_NOTCHES[notch - 1]} (investment grade)",
+            f"versus Agent 10 grid {_SP_NOTCHES[notch - 1]}",
             "Agent 10's factor grid has no profitability or EBIT-interest-coverage factor, so it cannot see an "
             "EBIT shortfall that Agent 9 treats as severe",
         ]

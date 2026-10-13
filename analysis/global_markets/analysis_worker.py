@@ -39,6 +39,9 @@ def _child(country: str, exchange: str, budget: float) -> int:
         print(MARKER + json.dumps({"country": country, "exchange": exchange, "status": "SKIPPED_OUTSIDE_BACKGROUND_ALLOWLIST"}))
         return 0
     from .scan_service import scan_global_market
+    from .nasdaq_nordic_series import warm_before_scan
+
+    warm_before_scan(country, exchange)
 
     try:
         result = scan_global_market(

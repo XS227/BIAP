@@ -343,6 +343,7 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
         derived.append("shares_withheld:issued_count_not_verified_single_class(class_suffixed_ticker)")
         shares = None
     cap_company_level = company.raw_provider_fields.get("market_cap_basis") == "exchange_reported_company_level"
+    per_share_unsafe = False
     if market_cap is None and company.country == "SE" and os.environ.get("BIAP_GLOBAL_NORDIC_SERIES", "1") != "0":
         series = _nordic_series_value(company, eps=eps, owners_ni=owners_ni, filing_shares=company.shares_outstanding)
         if series is not None:
@@ -368,7 +369,33 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
         )
         cap_company_level = True
 
-    if convertible and shares not in (None, 0) and company.total_equity is not None and book_value_per_share is None:
+    if (
+        cap_company_level
+        and market_cap not in (None, 0)
+        and price not in (None, 0)
+        and eps not in (None, 0)
+        and float(eps) > 0
+        and earnings_for_eps not in (None, 0)
+        and float(earnings_for_eps) > 0
+    ):
+        # Whole-company market cap / price is the share count the quote refers to; profit /
+        # EPS is the count the filing's EPS refers to. They differ when the quote is per ADR
+        # (one ADR = n ordinary shares) or the EPS belongs to another share class; then
+        # price/EPS and equity/shares would be off by that ratio, so the per-share figures
+        # are withheld and P/E falls back to the class-agnostic cap / profit.
+        quote_basis = float(market_cap) / float(price)
+        eps_basis = float(earnings_for_eps) / float(eps)
+        basis_ratio = quote_basis / eps_basis
+        if not 0.7 <= basis_ratio <= 1.43:
+            derived.append(
+                f"per_share_basis_mismatch(cap/price={quote_basis:.6g},profit/eps={eps_basis:.6g},ratio={basis_ratio:.3g}):"
+                "eps_pe_bvps_per_share_withheld(adr_ratio_or_share_class)"
+            )
+            eps = None
+            pe = None
+            book_value_per_share = None
+            per_share_unsafe = True
+    if convertible and shares not in (None, 0) and company.total_equity is not None and book_value_per_share is None and not per_share_unsafe:
         book_value_per_share = float(company.total_equity) * fx / float(shares)
         derived.append("book_value_per_share=equity/shares_outstanding" + ("" if same_currency else "(fx-converted)"))
 
@@ -384,12 +411,13 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
         and pe is None
         and cap_company_level
         and market_cap not in (None, 0)
-        and owners_ni not in (None, 0)
-        and float(owners_ni) > 0
+        and earnings_for_eps not in (None, 0)
+        and float(earnings_for_eps) > 0
     ):
-        # Class-agnostic: whole-company equity value over profit attributable to owners.
-        pe = float(market_cap) / (float(owners_ni) * fx)
-        derived.append("pe=company_market_cap/owners_profit")
+        # Class-agnostic: whole-company equity value over profit attributable to owners
+        # (consolidated profit when the filing does not split out owners' profit).
+        pe = float(market_cap) / (float(earnings_for_eps) * fx)
+        derived.append("pe=company_market_cap/" + ("owners_profit" if owners_ni is not None else "net_income"))
 
     if (
         same_currency

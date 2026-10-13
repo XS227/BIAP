@@ -336,3 +336,99 @@ def test_ambiguous_or_implausible_impairment_inclusive_da_is_withheld(extra):
     base = [fact("ifrs-full:ProfitLossFromOperatingActivities", 100, DUR), fact("ifrs-full:Revenue", 1000 if extra else 100, DUR), fact(_INCL, 30 if extra else 90, DUR)]
     result = ESEFFundamentalsProvider().normalized_fields(base + extra, date(2025, 12, 31))
     assert result["ebitda"] is None
+
+
+# --- Nasdaq Nordic series fetch / cache / warm ------------------------------------------------
+
+class _Resp:
+    def __init__(self, payload, status=200):
+        self._payload, self.status_code = payload, status
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise nns.requests.HTTPError("boom")
+
+    def json(self):
+        return self._payload
+
+
+_SUMMARY = {"data": {"summaryData": {"shares": {"value": "2,979,524,179"}, "marketCap": {"value": "44,543,886,476"}, "isin": {"value": "SE0021628898"}}}}
+
+
+def test_series_summary_parses_caches_and_serves_fresh_copy_without_a_second_request(tmp_path, monkeypatch):
+    monkeypatch.setenv("BIAP_GLOBAL_DATA_DIR", str(tmp_path))
+    calls = []
+    getter = lambda *a, **k: calls.append(1) or _Resp(_SUMMARY)
+    first = nns.fetch_series_summary("TX4016914", getter=getter)
+    again = nns.fetch_series_summary("TX4016914", getter=getter)
+    assert first["shares"] == 2_979_524_179 and first["market_cap"] == 44_543_886_476 and first["cache"] == "live"
+    assert again["cache"] == "fresh" and len(calls) == 1
+
+
+def test_series_summary_falls_back_to_a_stale_copy_when_the_source_fails(tmp_path, monkeypatch):
+    monkeypatch.setenv("BIAP_GLOBAL_DATA_DIR", str(tmp_path))
+    nns.fetch_series_summary("TX1", getter=lambda *a, **k: _Resp(_SUMMARY))
+    path = tmp_path / "series-summary" / "SE" / "TX1.json"
+    import json as _json
+    old = _json.loads(path.read_text())
+    old["fetchedAt"] = "2026-10-01T00:00:00+00:00"  # older than the 12h freshness window
+    path.write_text(_json.dumps(old))
+    got = nns.fetch_series_summary("TX1", getter=lambda *a, **k: _Resp({}, 503))
+    assert got["cache"] == "stale" and got["shares"] == 2_979_524_179
+
+
+def test_series_summary_with_garbage_payload_is_none(tmp_path, monkeypatch):
+    monkeypatch.setenv("BIAP_GLOBAL_DATA_DIR", str(tmp_path))
+    assert nns.fetch_series_summary("TX9", getter=lambda *a, **k: _Resp({"data": None})) is None
+
+
+def test_warm_series_cache_stops_requesting_after_its_deadline():
+    universe = [{"name": f"Co{i}", "raw_provider_fields": {"nasdaq_orderbook_id": f"T{i}"}} for i in range(5)]
+    seen = []
+    result = nns.warm_series_cache(universe=universe, workers=1, max_seconds=-1, fetch=lambda ob, **k: seen.append(ob) or {"shares": 1})
+    assert seen == [] and result["skipped"] == 5
+
+
+# --- ADR / share-class basis mismatch -----------------------------------------------------------
+
+class _JpyUsd(_FakeECB):
+    def rate(self, base, quote):
+        assert (base, quote) == ("JPY", "USD")
+        return 0.0067
+
+
+def test_adr_quote_with_ordinary_share_eps_withholds_per_share_ratios_and_uses_cap_based_pe(monkeypatch):
+    monkeypatch.setenv("BIAP_GLOBAL_FX_CONVERSION", "1")
+    monkeypatch.setattr(service, "ECBReferenceFXProvider", _JpyUsd)
+    # one ADR = 10 ordinary shares: the quote is per ADR, EPS per ordinary share (JPY)
+    adr = GlobalCompany(
+        country="US", exchange="NYSE", currency="USD", ticker="TM", name="Toyota", price=200.0, reporting_currency="JPY",
+        eps=300.0, net_income=4.5e12, market_cap=270e9, total_equity=40e12,
+        raw_provider_fields={"market_cap_basis": "exchange_reported_company_level"},
+    )
+    out = service._derive_metrics(adr)
+    assert out.eps is None and out.book_value_per_share is None
+    assert out.pe == pytest.approx(270e9 / (4.5e12 * 0.0067))  # class/ADR-agnostic
+    assert any(n.startswith("per_share_basis_mismatch") for n in out.raw_provider_fields["derived_metrics"])
+
+
+def test_matching_share_basis_keeps_per_share_pe(monkeypatch):
+    co = GlobalCompany(
+        country="US", exchange="NASDAQ", currency="USD", ticker="GOOGL", name="Alphabet", price=350.0, reporting_currency="USD",
+        eps=10.8, net_income=130e9, market_cap=4.3e12,
+        raw_provider_fields={"market_cap_basis": "exchange_reported_company_level"},
+    )
+    out = service._derive_metrics(co)
+    assert out.pe == pytest.approx(350.0 / 10.8) and not any(n.startswith("per_share_basis_mismatch") for n in out.raw_provider_fields["derived_metrics"])
+
+
+def test_elevated_risk_against_a_bbb_grid_rating_is_not_a_conflict():
+    from global_markets.models import DistressAssessment
+
+    co = volvo_car()
+    elevated = DistressAssessment(status="ELEVATED_RISK", positive_block=False, elevated_triggers=("altman_grey_zone",))
+    assert rating_consistency(co, elevated, notch=9, coverage=1.0)["status"] == "CONSISTENT"      # BBB
+    assert rating_consistency(co, elevated, notch=5, coverage=1.0)["status"] == "CONFLICT"        # A+
+    high = DistressAssessment(status="HIGH_RISK", positive_block=True, severe_triggers=("ebit_interest_coverage<1.0",))
+    assert rating_consistency(co, high, notch=10, coverage=1.0)["status"] == "CONFLICT"           # BBB- is still investment grade
+    assert rating_consistency(co, high, notch=12, coverage=1.0)["status"] == "CONSISTENT"         # BB+

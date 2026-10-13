@@ -237,6 +237,7 @@ def warm_series_cache(
     workers: int = 4,
     universe: Optional[list[dict]] = None,
     fetch: Callable[..., Optional[dict]] = fetch_series_summary,
+    max_seconds: Optional[float] = None,
 ) -> dict:
     """Fill the series-summary cache for the whole exchange with a few polite workers.
 
@@ -247,7 +248,28 @@ def warm_series_cache(
 
     rows = universe if universe is not None else _load_universe(country, exchange)
     ids = sorted({(row.get("raw_provider_fields") or {}).get("nasdaq_orderbook_id") for row in rows} - {None})
+    import time
+
+    deadline = None if max_seconds is None else time.monotonic() + max_seconds
+
+    def one(orderbook: str):
+        # After the deadline nothing new is requested; the next run continues from the cache.
+        if deadline is not None and time.monotonic() > deadline:
+            return "skipped"
+        return fetch(orderbook, country=country)
+
     with ThreadPoolExecutor(max_workers=max(1, min(int(workers), 6))) as pool:
-        results = list(pool.map(lambda ob: fetch(ob, country=country), ids))
-    ok = sum(1 for item in results if item is not None)
-    return {"series": len(ids), "ok": ok, "failed": len(ids) - ok}
+        results = list(pool.map(one, ids))
+    ok = sum(1 for item in results if isinstance(item, dict))
+    skipped = sum(1 for item in results if item == "skipped")
+    return {"series": len(ids), "ok": ok, "failed": len(ids) - ok - skipped, "skipped": skipped}
+
+
+def warm_before_scan(country: str, exchange: str, *, max_seconds: float = 90.0) -> Optional[dict]:
+    """Best-effort pre-scan warm for exchanges whose valuation needs the official series data."""
+    if country.upper() != "SE" or os.environ.get("BIAP_GLOBAL_NORDIC_SERIES", "1") == "0":
+        return None
+    try:
+        return warm_series_cache(country, exchange, max_seconds=max_seconds)
+    except Exception:
+        return None

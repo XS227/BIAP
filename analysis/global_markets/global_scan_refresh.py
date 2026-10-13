@@ -44,6 +44,9 @@ def _scan_one(country: str, exchange: str, deep_limit: int) -> dict:
 
 def _child(country: str, exchange: str, deep_limit: int) -> int:
     from .scan_service import scan_global_market
+    from .nasdaq_nordic_series import warm_before_scan
+
+    warm_before_scan(country, exchange)
 
     try:
         result = scan_global_market(
