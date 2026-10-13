@@ -72,3 +72,14 @@ def test_icb_outage_never_hides_a_company():
     _, kept, meta = client.eligible_rows()
     assert [r["tidm"] for r in kept] == ["WTAN"]
     assert meta["excludedPooledInvestmentVehicles"] == 0 and meta["icbClassifiedCount"] == 0
+
+
+def test_uk_company_carries_icb_industry_as_sector_and_icb_sector_as_industry():
+    from global_markets.lse_official import LSEOfficialUniverseProvider
+    rows = [_row("BARC", "GB0031348658", "BARCLAYS PLC ORD 25P")]
+    icb = {("GB0031348658", "BARC"): ("301010", "Banks")}
+    provider = LSEOfficialUniverseProvider()
+    provider.client = _client_with(rows, icb)
+    company = provider.list_instruments(country="GB", exchange="LSE")[0]
+    assert (company.sector, company.industry) == ("Financials", "Banks")
+    assert company.raw_provider_fields["lse_icb_code"] == "301010"

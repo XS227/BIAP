@@ -27,6 +27,7 @@ from .distress import distress_agent
 from .governance import decision_governance_agent
 from .fx import ECBReferenceFXProvider, TwelveDataFXProvider
 from .issuer import issuer_key_of
+from .sector_reference import apply_sector_reference
 from .models import DistressAssessment, GlobalCompany, InvestorProfile, SourceEvidence
 from .providers import ProviderDiagnostics, ProviderRegistry
 from .runtime import build_registry
@@ -355,6 +356,7 @@ def _evaluate(company: GlobalCompany, registry: ProviderRegistry):
             "leveraged/inverse products, units, warrants, SPAC shells and structured securities are excluded"
         )
     enriched, diagnostics = registry.enrich_best_effort(company)
+    enriched = apply_sector_reference(enriched)
     enriched = _derive_metrics(enriched)
     signals = run_core_agents(enriched) + run_advanced_agents(enriched)
     evidence = evidence_agent(enriched, signals)

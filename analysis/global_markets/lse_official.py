@@ -14,6 +14,7 @@ from typing import Iterable, Optional
 import requests
 
 from .country_packs import ExchangeSpec, get_exchange
+from .icb import icb_industry_for_code
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
 
@@ -360,7 +361,8 @@ class LSEOfficialUniverseProvider(InstrumentUniverseProvider):
                 mic_code=spec.mic,
                 isin=isin,
                 instrument_type="Common Stock",
-                sector=str(row.get("icbSector") or "").strip() or None,
+                sector=icb_industry_for_code(row.get("icbSectorCode")),
+                industry=str(row.get("icbSector") or "").strip() or None,
                 raw_provider_fields={
                     "official_universe": True,
                     "lse_description": row.get("description"),
