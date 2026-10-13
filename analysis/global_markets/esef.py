@@ -24,11 +24,25 @@ from typing import Any, Optional
 
 import httpx
 
+import json
+from pathlib import Path
+
 from .gleif import GLEIFResolver
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
 
 FILINGS_API = "https://filings.xbrl.org/api/filings"
+
+_REVIEWED_CAPEX_PATH = Path(__file__).with_name("data") / "reviewed_capex_lines.json"
+
+
+def _reviewed_capex_lines() -> dict[str, dict]:
+    """LEI -> reviewed capex-line mapping (empty when the file is absent/unreadable)."""
+    try:
+        payload = json.loads(_REVIEWED_CAPEX_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {str(row["lei"]).upper(): row for row in payload.get("issuers", []) if isinstance(row, dict) and row.get("lei") and row.get("concept")}
 
 _CONCEPTS = {
     "revenue": ("ifrs-full:Revenue", "ifrs-full:RevenueFromContractsWithCustomers"),
@@ -834,6 +848,25 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             ebitda_method = "derived_operating_income_plus_abs_depreciation_amortisation"
         ocf = self._duration_value(concept_facts["ocf"], period_end)
         capex = self._duration_value(concept_facts["capex"], period_end)
+        capex_method = "standard_ppe_capex_concept" if capex is not None else None
+        if capex is None:
+            # Reviewed issuer mapping (never guessed): the issuer's own statement line
+            # "Capital expenditure" carries a generic IFRS concept the policy does not
+            # accept for other issuers.
+            entities = {
+                str((fact.get("dimensions") or {}).get("entity") or "").split(":")[-1].upper()
+                for fact in facts
+            }
+            for lei in entities:
+                reviewed = _reviewed_capex_lines().get(lei)
+                if not reviewed:
+                    continue
+                capex = self._duration_value(
+                    self._concept_facts(facts, (str(reviewed["concept"]),)), period_end
+                )
+                if capex is not None:
+                    capex_method = f"reviewed_statement_line:{reviewed['concept']}"
+                    break
         fcf = None if ocf is None or capex is None else ocf - abs(capex)
         debt = self._instant_value(concept_facts["borrowings"], period_end)
         debt_method = "direct_borrowings" if debt is not None else None
@@ -947,6 +980,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                 "debt_method": debt_method,
                 "capex": capex,
                 "fcf_method": "operating_cash_flow_minus_abs_capex" if fcf is not None else None,
+                "capex_method": capex_method,
                 "fiscal_year_transition": self.fiscal_year_transition(facts, period_end),
                 "ffo": ffo,
                 "ffo_method": ffo_method,

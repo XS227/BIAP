@@ -1,0 +1,1761 @@
+{
+ "market": "US:NASDAQ:XNAS:USD",
+ "buyCount": 55,
+ "summary": {
+  "PASS": 9,
+  "WARN": 46,
+  "FAIL": 0
+ },
+ "results": [
+  {
+   "ticker": "GOOGL",
+   "name": "Alphabet Inc.",
+   "score": 0.417646,
+   "confidence": 0.696134,
+   "rankScore": 0.290738,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "PASS",
+   "findings": [
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {
+    "revenue": {
+     "status": "MATCH",
+     "ledger": 402836000000.0,
+     "independent": 402836000000.0,
+     "tag": "Revenues",
+     "relDiff": 0.0
+    },
+    "net_income": {
+     "status": "MATCH",
+     "ledger": 132170000000.0,
+     "independent": 132170000000.0,
+     "tag": "NetIncomeLoss",
+     "relDiff": 0.0
+    },
+    "total_assets": {
+     "status": "MATCH",
+     "ledger": 595281000000.0,
+     "independent": 595281000000.0,
+     "tag": "Assets",
+     "relDiff": 0.0
+    },
+    "total_equity": {
+     "status": "MATCH",
+     "ledger": 415265000000.0,
+     "independent": 415265000000.0,
+     "tag": "StockholdersEquity",
+     "relDiff": 0.0
+    },
+    "operating_cash_flow": {
+     "status": "MATCH",
+     "ledger": 164713000000.0,
+     "independent": 164713000000.0,
+     "tag": "NetCashProvidedByUsedInOperatingActivities",
+     "relDiff": 0.0
+    }
+   }
+  },
+  {
+   "ticker": "UTMD",
+   "name": "UTAH MEDICAL PRODUCTS INC",
+   "score": 0.416763,
+   "confidence": 0.696823,
+   "rankScore": 0.29041,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000706698.json"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "CSCO",
+   "name": "CISCO SYSTEMS, INC.",
+   "score": 0.405274,
+   "confidence": 0.696134,
+   "rankScore": 0.282125,
+   "reportPeriod": "2026-07-25",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "PASS",
+   "findings": [
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {
+    "revenue": {
+     "status": "MATCH",
+     "ledger": 63325000000.0,
+     "independent": 63325000000.0,
+     "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+     "relDiff": 0.0
+    },
+    "net_income": {
+     "status": "MATCH",
+     "ledger": 13267000000.0,
+     "independent": 13267000000.0,
+     "tag": "NetIncomeLoss",
+     "relDiff": 0.0
+    },
+    "total_assets": {
+     "status": "MATCH",
+     "ledger": 129637000000.0,
+     "independent": 129637000000.0,
+     "tag": "Assets",
+     "relDiff": 0.0
+    },
+    "total_equity": {
+     "status": "MATCH",
+     "ledger": 50285000000.0,
+     "independent": 50285000000.0,
+     "tag": "StockholdersEquity",
+     "relDiff": 0.0
+    },
+    "operating_cash_flow": {
+     "status": "MATCH",
+     "ledger": 14177000000.0,
+     "independent": 14177000000.0,
+     "tag": "NetCashProvidedByUsedInOperatingActivities",
+     "relDiff": 0.0
+    }
+   }
+  },
+  {
+   "ticker": "MSFT",
+   "name": "MICROSOFT CORPORATION",
+   "score": 0.395447,
+   "confidence": 0.696134,
+   "rankScore": 0.275284,
+   "reportPeriod": "2026-06-30",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "PASS",
+   "findings": [
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {
+    "revenue": {
+     "status": "MATCH",
+     "ledger": 331839000000.0,
+     "independent": 331839000000.0,
+     "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+     "relDiff": 0.0
+    },
+    "net_income": {
+     "status": "MATCH",
+     "ledger": 133749000000.0,
+     "independent": 133749000000.0,
+     "tag": "NetIncomeLoss",
+     "relDiff": 0.0
+    },
+    "total_assets": {
+     "status": "MATCH",
+     "ledger": 758376000000.0,
+     "independent": 758376000000.0,
+     "tag": "Assets",
+     "relDiff": 0.0
+    },
+    "total_equity": {
+     "status": "MATCH",
+     "ledger": 442387000000.0,
+     "independent": 442387000000.0,
+     "tag": "StockholdersEquity",
+     "relDiff": 0.0
+    },
+    "operating_cash_flow": {
+     "status": "MATCH",
+     "ledger": 182935000000.0,
+     "independent": 182935000000.0,
+     "tag": "NetCashProvidedByUsedInOperatingActivities",
+     "relDiff": 0.0
+    }
+   }
+  },
+  {
+   "ticker": "INVA",
+   "name": "INNOVIVA, INC.",
+   "score": 0.392366,
+   "confidence": 0.696823,
+   "rankScore": 0.27341,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001080014.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "ev_ebitda"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "ASML",
+   "name": "ASML HOLDING NV",
+   "score": 0.430661,
+   "confidence": 0.630616,
+   "rankScore": 0.271582,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "unverified_revenue",
+     "detail": "ledger=32667300000.0 but none of ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'SalesRevenueNet', 'RevenueFromContractWithCustomerIncludingAssessedTax'] has an annual USD fact for 2025-12-31"
+    },
+    {
+     "level": "WARN",
+     "code": "unverified_net_income",
+     "detail": "ledger=9609400000.0 but none of ['NetIncomeLoss', 'ProfitLoss'] has an annual USD fact for 2025-12-31"
+    },
+    {
+     "level": "WARN",
+     "code": "unverified_total_assets",
+     "detail": "ledger=50566600000.0 but none of ['Assets'] has an annual USD fact for 2025-12-31"
+    },
+    {
+     "level": "WARN",
+     "code": "unverified_total_equity",
+     "detail": "ledger=19612200000.0 but none of ['StockholdersEquity', 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'] has an annual USD fact for 2025-12-31"
+    },
+    {
+     "level": "WARN",
+     "code": "unverified_operating_cash_flow",
+     "detail": "ledger=12658500000.0 but none of ['NetCashProvidedByUsedInOperatingActivities'] has an annual USD fact for 2025-12-31"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {
+    "revenue": {
+     "status": "NOT_INDEPENDENTLY_FOUND",
+     "ledger": 32667300000.0
+    },
+    "net_income": {
+     "status": "NOT_INDEPENDENTLY_FOUND",
+     "ledger": 9609400000.0
+    },
+    "total_assets": {
+     "status": "NOT_INDEPENDENTLY_FOUND",
+     "ledger": 50566600000.0
+    },
+    "total_equity": {
+     "status": "NOT_INDEPENDENTLY_FOUND",
+     "ledger": 19612200000.0
+    },
+    "operating_cash_flow": {
+     "status": "NOT_INDEPENDENTLY_FOUND",
+     "ledger": 12658500000.0
+    }
+   }
+  },
+  {
+   "ticker": "GOOG",
+   "name": "Alphabet Inc.",
+   "score": 0.389342,
+   "confidence": 0.696134,
+   "rankScore": 0.271034,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "PASS",
+   "findings": [
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {
+    "revenue": {
+     "status": "MATCH",
+     "ledger": 402836000000.0,
+     "independent": 402836000000.0,
+     "tag": "Revenues",
+     "relDiff": 0.0
+    },
+    "net_income": {
+     "status": "MATCH",
+     "ledger": 132170000000.0,
+     "independent": 132170000000.0,
+     "tag": "NetIncomeLoss",
+     "relDiff": 0.0
+    },
+    "total_assets": {
+     "status": "MATCH",
+     "ledger": 595281000000.0,
+     "independent": 595281000000.0,
+     "tag": "Assets",
+     "relDiff": 0.0
+    },
+    "total_equity": {
+     "status": "MATCH",
+     "ledger": 415265000000.0,
+     "independent": 415265000000.0,
+     "tag": "StockholdersEquity",
+     "relDiff": 0.0
+    },
+    "operating_cash_flow": {
+     "status": "MATCH",
+     "ledger": 164713000000.0,
+     "independent": 164713000000.0,
+     "tag": "NetCashProvidedByUsedInOperatingActivities",
+     "relDiff": 0.0
+    }
+   }
+  },
+  {
+   "ticker": "FAST",
+   "name": "FASTENAL CO",
+   "score": 0.408346,
+   "confidence": 0.63124,
+   "rankScore": 0.257764,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000815556.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "ANIP",
+   "name": "ANI PHARMACEUTICALS, INC",
+   "score": 0.363201,
+   "confidence": 0.696823,
+   "rankScore": 0.253087,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001023024.json"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "COST",
+   "name": "COSTCO WHOLESALE CORP /NEW",
+   "score": 0.399774,
+   "confidence": 0.630616,
+   "rankScore": 0.252104,
+   "reportPeriod": "2026-08-30",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "PASS",
+   "findings": [
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {
+    "revenue": {
+     "status": "MATCH",
+     "ledger": 303154000000.0,
+     "independent": 303154000000.0,
+     "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+     "relDiff": 0.0
+    },
+    "net_income": {
+     "status": "MATCH",
+     "ledger": 9226000000.0,
+     "independent": 9226000000.0,
+     "tag": "NetIncomeLoss",
+     "relDiff": 0.0
+    },
+    "total_assets": {
+     "status": "MATCH",
+     "ledger": 89045000000.0,
+     "independent": 89045000000.0,
+     "tag": "Assets",
+     "relDiff": 0.0
+    },
+    "total_equity": {
+     "status": "MATCH",
+     "ledger": 35803000000.0,
+     "independent": 35803000000.0,
+     "tag": "StockholdersEquity",
+     "relDiff": 0.0
+    },
+    "operating_cash_flow": {
+     "status": "MATCH",
+     "ledger": 15817000000.0,
+     "independent": 15817000000.0,
+     "tag": "NetCashProvidedByUsedInOperatingActivities",
+     "relDiff": 0.0
+    }
+   }
+  },
+  {
+   "ticker": "BOSC",
+   "name": "BOS BETTER ONLINE SOLUTIONS LTD",
+   "score": 0.35959,
+   "confidence": 0.696823,
+   "rankScore": 0.250571,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-12T13:30:00+00:00",
+   "verdict": "PASS",
+   "findings": [
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {
+    "revenue": {
+     "status": "MATCH",
+     "ledger": 50569000.0,
+     "independent": 50569000.0,
+     "tag": "Revenues",
+     "relDiff": 0.0
+    },
+    "net_income": {
+     "status": "MATCH",
+     "ledger": 3611000.0,
+     "independent": 3611000.0,
+     "tag": "NetIncomeLoss",
+     "relDiff": 0.0
+    },
+    "total_assets": {
+     "status": "MATCH",
+     "ledger": 44644000.0,
+     "independent": 44644000.0,
+     "tag": "Assets",
+     "relDiff": 0.0
+    },
+    "total_equity": {
+     "status": "MATCH",
+     "ledger": 28704000.0,
+     "independent": 28704000.0,
+     "tag": "StockholdersEquity",
+     "relDiff": 0.0
+    },
+    "operating_cash_flow": {
+     "status": "MATCH",
+     "ledger": 5046000.0,
+     "independent": 5046000.0,
+     "tag": "NetCashProvidedByUsedInOperatingActivities",
+     "relDiff": 0.0
+    }
+   }
+  },
+  {
+   "ticker": "TILE",
+   "name": "INTERFACE INC",
+   "score": 0.355099,
+   "confidence": 0.696823,
+   "rankScore": 0.247441,
+   "reportPeriod": "2025-12-28",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000715787.json"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "GILD",
+   "name": "GILEAD SCIENCES, INC.",
+   "score": 0.370018,
+   "confidence": 0.63124,
+   "rankScore": 0.23357,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000882095.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "IBEX",
+   "name": "IBEX LIMITED",
+   "score": 0.361509,
+   "confidence": 0.645047,
+   "rankScore": 0.23319,
+   "reportPeriod": "2026-06-30",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001720420.json"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "HRMY",
+   "name": "HARMONY BIOSCIENCES HOLDINGS,\u00a0INC.",
+   "score": 0.331026,
+   "confidence": 0.696823,
+   "rankScore": 0.230667,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001802665.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "ev_ebitda"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "CARG",
+   "name": "CarGurus, Inc.",
+   "score": 0.351396,
+   "confidence": 0.654603,
+   "rankScore": 0.230025,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001494259.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "pb,ev_ebitda"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "CTAS",
+   "name": "Cintas Corporation",
+   "score": 0.361586,
+   "confidence": 0.63124,
+   "rankScore": 0.228248,
+   "reportPeriod": "2026-05-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000723254.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "IDXX",
+   "name": "IDEXX LABORATORIES INC /DE",
+   "score": 0.357497,
+   "confidence": 0.63124,
+   "rankScore": 0.225666,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000874716.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "KRT",
+   "name": "Karat Packaging Inc.",
+   "score": 0.319684,
+   "confidence": 0.696823,
+   "rankScore": 0.222763,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001758021.json"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "DXCM",
+   "name": "DEXCOM, INC.",
+   "score": 0.374422,
+   "confidence": 0.581339,
+   "rankScore": 0.217666,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001093557.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "SLDE",
+   "name": "Slide Insurance Holdings, Inc.",
+   "score": 0.387326,
+   "confidence": 0.559098,
+   "rankScore": 0.216553,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001886428.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "ev_ebitda"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "TWIN",
+   "name": "Twin Disc, Incorporated",
+   "score": 0.306859,
+   "confidence": 0.680427,
+   "rankScore": 0.208795,
+   "reportPeriod": "2026-06-30",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000100378.json"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "AMZN",
+   "name": "AMAZON COM INC",
+   "score": 0.359665,
+   "confidence": 0.577565,
+   "rankScore": 0.20773,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "PASS",
+   "findings": [
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {
+    "revenue": {
+     "status": "MATCH",
+     "ledger": 716924000000.0,
+     "independent": 716924000000.0,
+     "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+     "relDiff": 0.0
+    },
+    "net_income": {
+     "status": "MATCH",
+     "ledger": 77670000000.0,
+     "independent": 77670000000.0,
+     "tag": "NetIncomeLoss",
+     "relDiff": 0.0
+    },
+    "total_assets": {
+     "status": "MATCH",
+     "ledger": 818042000000.0,
+     "independent": 818042000000.0,
+     "tag": "Assets",
+     "relDiff": 0.0
+    },
+    "total_equity": {
+     "status": "MATCH",
+     "ledger": 411065000000.0,
+     "independent": 411065000000.0,
+     "tag": "StockholdersEquity",
+     "relDiff": 0.0
+    },
+    "operating_cash_flow": {
+     "status": "MATCH",
+     "ledger": 139514000000.0,
+     "independent": 139514000000.0,
+     "tag": "NetCashProvidedByUsedInOperatingActivities",
+     "relDiff": 0.0
+    }
+   }
+  },
+  {
+   "ticker": "ADUS",
+   "name": "Addus HomeCare Corp",
+   "score": 0.305223,
+   "confidence": 0.680427,
+   "rankScore": 0.207682,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001468328.json"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "RELY",
+   "name": "Remitly Global, Inc.",
+   "score": 0.325046,
+   "confidence": 0.63124,
+   "rankScore": 0.205182,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001782170.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "AUPH",
+   "name": "Aurinia Pharmaceuticals Inc.",
+   "score": 0.336758,
+   "confidence": 0.592054,
+   "rankScore": 0.199379,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001600620.json"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "UTHR",
+   "name": "United Therapeutics Corporation",
+   "score": 0.340909,
+   "confidence": 0.581339,
+   "rankScore": 0.198184,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001082554.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "EXEL",
+   "name": "Exelixis Inc",
+   "score": 0.336197,
+   "confidence": 0.581339,
+   "rankScore": 0.195444,
+   "reportPeriod": "2026-01-02",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000939767.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "STRA",
+   "name": "Strategic Education, Inc.",
+   "score": 0.301576,
+   "confidence": 0.645047,
+   "rankScore": 0.194531,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001013934.json"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "NBIX",
+   "name": "NEUROCRINE BIOSCIENCES INC",
+   "score": 0.329913,
+   "confidence": 0.581339,
+   "rankScore": 0.191791,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000914475.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "ACIW",
+   "name": "ACI WORLDWIDE, INC.",
+   "score": 0.274894,
+   "confidence": 0.696823,
+   "rankScore": 0.191552,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000935036.json"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "MDXG",
+   "name": "MiMedx Group, Inc.",
+   "score": 0.296078,
+   "confidence": 0.641861,
+   "rankScore": 0.190041,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001376339.json"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "KRYS",
+   "name": "Krystal Biotech, Inc.",
+   "score": 0.324153,
+   "confidence": 0.581339,
+   "rankScore": 0.188443,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001711279.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "JKHY",
+   "name": "JACK HENRY & ASSOCIATES, INC.",
+   "score": 0.282572,
+   "confidence": 0.654603,
+   "rankScore": 0.184972,
+   "reportPeriod": "2026-06-30",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000779152.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "pb,ev_ebitda"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "USLM",
+   "name": "UNITED STATES LIME & MINERALS INC",
+   "score": 0.304023,
+   "confidence": 0.590895,
+   "rankScore": 0.179646,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000082020.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe,pb,ev_ebitda"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "GASS",
+   "name": "STEALTHGAS INC.",
+   "score": 0.282886,
+   "confidence": 0.63124,
+   "rankScore": 0.178569,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001328919.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "META",
+   "name": "Meta Platforms, Inc.",
+   "score": 0.268813,
+   "confidence": 0.653937,
+   "rankScore": 0.175787,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "PASS",
+   "findings": [
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "pb,ev_ebitda"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {
+    "revenue": {
+     "status": "MATCH",
+     "ledger": 200966000000.0,
+     "independent": 200966000000.0,
+     "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+     "relDiff": 0.0
+    },
+    "net_income": {
+     "status": "MATCH",
+     "ledger": 60458000000.0,
+     "independent": 60458000000.0,
+     "tag": "NetIncomeLoss",
+     "relDiff": 0.0
+    },
+    "total_assets": {
+     "status": "MATCH",
+     "ledger": 366021000000.0,
+     "independent": 366021000000.0,
+     "tag": "Assets",
+     "relDiff": 0.0
+    },
+    "total_equity": {
+     "status": "MATCH",
+     "ledger": 217243000000.0,
+     "independent": 217243000000.0,
+     "tag": "StockholdersEquity",
+     "relDiff": 0.0
+    },
+    "operating_cash_flow": {
+     "status": "MATCH",
+     "ledger": 115800000000.0,
+     "independent": 115800000000.0,
+     "tag": "NetCashProvidedByUsedInOperatingActivities",
+     "relDiff": 0.0
+    }
+   }
+  },
+  {
+   "ticker": "ACIC",
+   "name": "American Coastal Insurance Corporation",
+   "score": 0.312896,
+   "confidence": 0.559098,
+   "rankScore": 0.17494,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001401521.json"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "CRUS",
+   "name": "CIRRUS LOGIC, INC.",
+   "score": 0.265711,
+   "confidence": 0.645047,
+   "rankScore": 0.171396,
+   "reportPeriod": "2026-03-28",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000772406.json"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "NDSN",
+   "name": "NORDSON CORPORATION",
+   "score": 0.271387,
+   "confidence": 0.63124,
+   "rankScore": 0.17131,
+   "reportPeriod": "2025-10-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000072331.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "MGRC",
+   "name": "McGRATH RENTCORP",
+   "score": 0.27026,
+   "confidence": 0.62912,
+   "rankScore": 0.170026,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000752714.json"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "KINS",
+   "name": "KINGSTONE COMPANIES, INC.",
+   "score": 0.303768,
+   "confidence": 0.558545,
+   "rankScore": 0.169668,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-12T13:30:00+00:00",
+   "verdict": "PASS",
+   "findings": [
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "ev_ebitda"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {
+    "revenue": {
+     "status": "MATCH",
+     "ledger": 214867301.0,
+     "independent": 214867301.0,
+     "tag": "Revenues",
+     "relDiff": 0.0
+    },
+    "net_income": {
+     "status": "MATCH",
+     "ledger": 40767128.0,
+     "independent": 40767128.0,
+     "tag": "NetIncomeLoss",
+     "relDiff": 0.0
+    },
+    "total_assets": {
+     "status": "MATCH",
+     "ledger": 453425151.0,
+     "independent": 453425151.0,
+     "tag": "Assets",
+     "relDiff": 0.0
+    },
+    "total_equity": {
+     "status": "MATCH",
+     "ledger": 122731249.0,
+     "independent": 122731249.0,
+     "tag": "StockholdersEquity",
+     "relDiff": 0.0
+    },
+    "operating_cash_flow": {
+     "status": "MATCH",
+     "ledger": 75859517.0,
+     "independent": 75859517.0,
+     "tag": "NetCashProvidedByUsedInOperatingActivities",
+     "relDiff": 0.0
+    }
+   }
+  },
+  {
+   "ticker": "FFIV",
+   "name": "F5, INC.",
+   "score": 0.262879,
+   "confidence": 0.645047,
+   "rankScore": 0.169569,
+   "reportPeriod": "2025-09-30",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001048695.json"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "MCRI",
+   "name": "MONARCH CASINO\u00a0& RESORT,\u00a0INC.",
+   "score": 0.291165,
+   "confidence": 0.581339,
+   "rankScore": 0.169266,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000907242.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe,ev_ebitda"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "LFST",
+   "name": "LifeStance Health Group, Inc.",
+   "score": 0.285387,
+   "confidence": 0.573375,
+   "rankScore": 0.163634,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001845257.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "LECO",
+   "name": "LINCOLN ELECTRIC HOLDINGS INC",
+   "score": 0.282897,
+   "confidence": 0.578153,
+   "rankScore": 0.163558,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000059527.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "ALRM",
+   "name": "ALARM.COM HOLDINGS, INC.",
+   "score": 0.253087,
+   "confidence": 0.645047,
+   "rankScore": 0.163253,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001459200.json"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "PRDO",
+   "name": "PERDOCEO EDUCATION CORP",
+   "score": 0.266771,
+   "confidence": 0.592054,
+   "rankScore": 0.157943,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001046568.json"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "FIVE",
+   "name": "Five Below, Inc.",
+   "score": 0.271267,
+   "confidence": 0.581339,
+   "rankScore": 0.157698,
+   "reportPeriod": "2026-01-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001177609.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "FCFS",
+   "name": "FIRSTCASH HOLDINGS, INC.",
+   "score": 0.263416,
+   "confidence": 0.578153,
+   "rankScore": 0.152295,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000840489.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe,ev_ebitda"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "SPOK",
+   "name": "SPOK HOLDINGS, INC.",
+   "score": 0.26027,
+   "confidence": 0.581339,
+   "rankScore": 0.151305,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001289945.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "BMRN",
+   "name": "BIOMARIN PHARMACEUTICAL INC",
+   "score": 0.259485,
+   "confidence": 0.581339,
+   "rankScore": 0.150849,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001048477.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "CATY",
+   "name": "Cathay General Bancorp",
+   "score": 0.26818,
+   "confidence": 0.559098,
+   "rankScore": 0.149939,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000861842.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "ev_ebitda"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "FMNB",
+   "name": "FARMERS NATIONAL BANC CORP /OH/",
+   "score": 0.26818,
+   "confidence": 0.559098,
+   "rankScore": 0.149939,
+   "reportPeriod": "2025-12-31",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000709337.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "ev_ebitda"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  },
+  {
+   "ticker": "SCSC",
+   "name": "ScanSource, Inc.",
+   "score": 0.257624,
+   "confidence": 0.578153,
+   "rankScore": 0.148946,
+   "reportPeriod": "2026-06-30",
+   "priceObservedAt": "2026-10-09T13:30:00+00:00",
+   "verdict": "WARN",
+   "findings": [
+    {
+     "level": "WARN",
+     "code": "raw_source_not_cached",
+     "detail": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000918965.json"
+    },
+    {
+     "level": "INFO",
+     "code": "valuation_gaps",
+     "detail": "sector_pe"
+    },
+    {
+     "level": "INFO",
+     "code": "no_fair_value_estimate",
+     "detail": "no fair-value output exists in the schema; none is fabricated"
+    }
+   ],
+   "verification": {}
+  }
+ ]
+}

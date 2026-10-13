@@ -1,0 +1,37 @@
+{
+ "III": {
+  "currency": "GBX",
+  "lastprice": 2414,
+  "midPrice": 2415,
+  "marketcapitalization": 24517947848,
+  "isin": "GB00B1YW4409"
+ },
+ "AZN": {
+  "currency": "GBX",
+  "lastprice": 12274,
+  "midPrice": 12274,
+  "marketcapitalization": 186529668535,
+  "isin": "GB0009895292"
+ },
+ "HSBA": {
+  "currency": "GBX",
+  "lastprice": 1447.2,
+  "midPrice": 1447.3,
+  "marketcapitalization": 244756675545,
+  "isin": "GB0005405286"
+ },
+ "SHEL": {
+  "currency": "GBX",
+  "lastprice": 3834,
+  "midPrice": 3834,
+  "marketcapitalization": 219372557999,
+  "isin": "GB00BP6MXD84"
+ },
+ "ULVR": {
+  "currency": "GBX",
+  "lastprice": 4787.5,
+  "midPrice": 4787.5,
+  "marketcapitalization": 102072058413,
+  "isin": "GB00BVZK7T90"
+ }
+}
