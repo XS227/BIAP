@@ -249,7 +249,10 @@ def parse_voting_rights_notice(plain: str, layout: Optional[str] = None) -> Voti
         raise VotingRightsParseError("not_a_voting_rights_notice")
 
     results: list[tuple[int, str, Optional[str]]] = []
-    labelled = _labelled(plain or layout)
+    # Plain extraction can detach a number from its label (ABC arbitrage);
+    # the layout extraction keeps label and value on one row, so it is the
+    # second reading of the same label rule.
+    labelled = _labelled(plain or layout) or (_labelled(layout) if layout and layout is not plain else None)
     if labelled:
         results.append((labelled[0], "labelled", None))
     row = _dated_row(layout)
@@ -303,7 +306,11 @@ def fetch_latest_notice(session, isin: str, *, today: Optional[date] = None, pdf
     """
     today = today or date.today()
     params = {
-        "where": f'identificationsociete_iso_cd_isi="{isin}" and informationdeposee_inf_stp_pri="006000"',
+        # Issuers file these under several subtypes (006000, 001006, ...), so
+        # the title is the selector rather than the subtype.
+        "where": (f'identificationsociete_iso_cd_isi="{isin}" and '
+                  '(search(informationdeposee_inf_tit_inf,"droits de vote") or '
+                  'search(informationdeposee_inf_tit_inf,"voting rights"))'),
         "order_by": "informationdeposee_inf_dat_emt desc",
         "select": "informationdeposee_inf_dat_emt,informationdeposee_inf_tit_inf,fichierdecontenu_inf_fic_nom,uin_idt_uin",
         "limit": 40,

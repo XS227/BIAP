@@ -127,3 +127,46 @@ def test_refresh_records_reasons_and_lookup_applies_with_validation(tmp_path, mo
 
     wrong_isin = xs.apply_to_company(company(isin="FR0000000000"))
     assert wrong_isin.shares_outstanding is None
+
+
+ABCA_LAYOUT = """
+Information relative au nombre total de droits de vote et d'actions
+composant le capital social à la date du 30 septembre 2026
+
+   Nombre d'actions                                                       Total
+   Nombre total d'actions composant le capital                       59 789 162
+   Total théorique des droits de vote                                59 789 162
+   Total réel des droits de vote*                                    59 668 599
+"""
+ABCA_PLAIN = """
+Information relative au nombre total de droits de vote et d'actions
+composant le capital social à la date du 30 septembre 2026
+Nombre d'actions
+Nombre total d'actions composant le capital
+Total théorique des droits de vote
+Total réel des droits de vote*
+
+Total
+
+59 789 162
+59 789 162
+59 668 599
+"""
+
+
+def test_label_detached_from_value_in_plain_text_is_read_from_layout():
+    notice = parse_voting_rights_notice(ABCA_PLAIN, ABCA_LAYOUT)
+    assert notice.shares == 59_789_162
+
+
+def test_feed_query_selects_by_title_not_subtype():
+    seen = {}
+
+    class S(_Session):
+        def get(self, url, params=None, **kw):
+            if params is not None:
+                seen.update(params)
+            return super().get(url, params=params, **kw)
+
+    fetch_latest_notice(S([], {}), "FR0000120321", today=date(2026, 10, 14))
+    assert "006000" not in seen["where"] and "voting rights" in seen["where"]

@@ -44,6 +44,19 @@ def _reviewed_capex_lines() -> dict[str, dict]:
         return {}
     return {str(row["lei"]).upper(): row for row in payload.get("issuers", []) if isinstance(row, dict) and row.get("lei") and row.get("concept")}
 
+_REVIEWED_DA_PATH = Path(__file__).with_name("data") / "reviewed_da_lines.json"
+
+
+def _reviewed_da_lines() -> dict[str, dict]:
+    """LEI -> reviewed D&A cash-flow lines tagged with extension concepts."""
+    try:
+        payload = json.loads(_REVIEWED_DA_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {str(row["lei"]).upper(): row for row in payload.get("issuers", [])
+            if isinstance(row, dict) and row.get("lei") and row.get("concepts")}
+
+
 _CONCEPTS = {
     "revenue": ("ifrs-full:Revenue", "ifrs-full:RevenueFromContractsWithCustomers"),
     "gross_profit": ("ifrs-full:GrossProfit",),
@@ -917,6 +930,23 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             if component_values:
                 depreciation_amortisation = sum(abs(value) for value in component_values.values())
                 da_method = "sum_of_tagged_da_components:" + ",".join(sorted(component_values))
+        if depreciation_amortisation is None:
+            # Reviewed issuer mapping (never guessed): extension-tagged PP&E and
+            # intangible depreciation lines of one named issuer, summed.
+            for lei in {
+                str((fact.get("dimensions") or {}).get("entity") or "").split(":")[-1].upper() for fact in facts
+            }:
+                reviewed_da = _reviewed_da_lines().get(lei)
+                if not reviewed_da:
+                    continue
+                parts_da = [
+                    self._duration_value(self._concept_facts(facts, (str(concept),)), period_end)
+                    for concept in reviewed_da["concepts"]
+                ]
+                if parts_da and all(value is not None for value in parts_da):
+                    depreciation_amortisation = sum(abs(value) for value in parts_da)
+                    da_method = "reviewed_issuer_da_lines:" + ",".join(c.split(":")[-1] for c in reviewed_da["concepts"])
+                    break
         ebitda = direct_ebitda
         ebitda_method = "direct_explicit_tag" if direct_ebitda is not None else None
         if ebitda is None and operating_income is not None and depreciation_amortisation is not None:

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "description": "Issuer-reviewed mapping of depreciation/amortisation cash-flow lines that the issuer tagged with extension concepts. Each entry was checked against the pinned filing's consolidated cash-flow statement (label, amount, tag). The listed concepts are summed; impairment lines are never included. Never applied to issuers not listed here.",
+  "issuers": [
+    {
+      "lei": "969500A1YF1XUYYXS284",
+      "ticker": "SU",
+      "legalName": "Schneider Electric SE",
+      "concepts": [
+        "schneiderelectric:AdjustmentsForDepreciationOfPropertyPlantAndEquipment",
+        "schneiderelectric:AdjustmentsForDepreciationOfIntangibleAssetsOtherThanGoodwill"
+      ],
+      "statementLabels": ["Amortissements des immobilisations corporelles", "Amortissements des immobilisations incorporelles"],
+      "periodEnd": "2025-12-31",
+      "amounts": [871000000, 781000000],
+      "currency": "EUR",
+      "sourceUrl": "https://fr.ftp.opendatasoft.com/datadila/INFOFI/298/8888/01/FC298621272_20260327.zip",
+      "reviewedAt": "2026-10-14",
+      "note": "Cash-flow statement lines 871 and 781 (EUR m, FY2025; FY2024 822 and 716). 'Depreciations des actifs non courants' (53) is an impairment line and is excluded. Operating result 6,699 on the income statement; derived EBITDA = 8,351 EUR m."
+    }
+  ]
+}

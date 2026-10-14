@@ -209,8 +209,8 @@
    },
    "finalCall": "HOLD_OR_WATCH",
    "draftCall": "HOLD_OR_WATCH",
-   "score": 0.114079,
-   "confidence": 0.597078,
+   "score": 0.11371,
+   "confidence": 0.595146,
    "agents": {
     "fundamental": {
      "vote": -0.05,
@@ -244,11 +244,11 @@
     },
     "G2_score_ge_0.25": {
      "result": "FAIL",
-     "value": 0.114079
+     "value": 0.11371
     },
     "G3_confidence_ge_0.45": {
      "result": "PASS",
-     "value": 0.597078
+     "value": 0.595146
     },
     "G4_no_distress_block": {
      "result": "PASS",
@@ -264,12 +264,13 @@
     }
    },
    "verdict": "JUSTIFIED",
-   "reason": "score 0.11<0.25, no negative agent; 3 of 17 core fields missing; abstaining agents: ['comparison']",
+   "reason": "score 0.11<0.25, no negative agent; 1 of 17 core fields missing; abstaining agents: ['comparison']",
    "dataCompleteness": {
     "present": [
      "revenue",
      "revenue_yoy_pct",
      "operating_income",
+     "ebitda",
      "net_income",
      "total_assets",
      "total_liabilities",
@@ -280,12 +281,11 @@
      "operating_cash_flow",
      "free_cash_flow",
      "pe",
-     "pb"
+     "pb",
+     "ev_ebitda"
     ],
     "missing": [
-     "ebitda",
-     "interest_expense",
-     "ev_ebitda"
+     "interest_expense"
     ],
     "fundamentalSources": [
      {
@@ -293,12 +293,6 @@
       "type": "official_regulatory_xbrl",
       "period": "2025-12-31",
       "url": "https://fr.ftp.opendatasoft.com/datadila/INFOFI/298/8888/01/FC298621272_20260327.zip"
-     },
-     {
-      "provider": "cached:verified-filing-drop+fallback:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
-      "type": "cache_snapshot",
-      "period": "2025-12-31",
-      "url": null
      },
      {
       "provider": "biap-derived-metrics",
@@ -332,9 +326,8 @@
     ]
    },
    "agent10": {
-    "weightCoverage": 0.2,
+    "weightCoverage": 0.4,
     "missing": [
-     "debt_ebitda",
      "ebitda_interest",
      "ffo_debt",
      "governance",
@@ -344,7 +337,7 @@
    "evidenceDetail": {
     "pe": 35.775979231243674,
     "pb": 6.256197539254928,
-    "evEbitda": null,
+    "evEbitda": 19.56440076906709,
     "peVsSectorPct": null,
     "revenueYoyPct": 5.239430713181137,
     "netMarginPct": 10.83632197648934,
