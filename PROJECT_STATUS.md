@@ -1,5 +1,11 @@
 # BIAP — Project Status
 
+## 2026-10-14 session 26: re-verification of session 25 deliverables (no code change)
+
+- **Production:** `/health` on 8091 now reports commit `7a49767` (code commit of the tested change; `8d3291e` is docs-only on top). Restart evidently done by the owner after session 25; code-equivalent to the tested commit. Ledgers not touched.
+- **Rheinmetall balance sheet retried:** official host returns 403 for the annual-report PDF from the VPS; the 2026-03-11 press release/news page carries no balance sheet (only operating free cash flow EUR 1,218m, a management KPI, not a statement figure; not ingested). Stays INSUFFICIENT_DATA with documented reason.
+- **Still open (unchanged):** DE EBITDA/debt/cash-flow beyond DAX, official share-count source, FX conversion, APK 0.3.22 device test (no device). Decision remains **NO-GO**. PR #51 open, not merged.
+
 ## 2026-10-14 session 25 (cont.): regression, freeze package, GO/NO-GO
 
 - **Regression on tested commit 7a49767** (temporary uvicorn on :8092, isolated data dir, production ledgers untouched): 101 cases, 34 markets, 6 agents + Agents 8/9/10, 0 invariant errors; full suite 1,088 passed. Output `docs/market-audit/data/agent_regression_2026-10-14_7a49767.json`.
