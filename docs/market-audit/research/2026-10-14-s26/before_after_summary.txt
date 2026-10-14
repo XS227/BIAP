@@ -1,5 +1,21 @@
-Traceback (most recent call last):
-  File "/home/ubuntu/biap-global/BIAP/../s26/cmp.py", line 8, in <module>
-    b=json.load(open(f's26/out/{m}.audit.json'))['companies']
-                ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: 's26/out/SE__NASDAQ_STOCKHOLM.audit.json'
+SE__NASDAQ_STOCKHOLM 
+  before n,pe,pb,ev,calls (30, 10, 4, 0, {'NO_RECOMMENDATION': 25, 'HOLD_OR_WATCH': 5}) 
+  after  n,pe,pb,ev,calls (30, 16, 24, 10, {'BUY_CANDIDATE': 3, 'HOLD_OR_WATCH': 3, 'NO_RECOMMENDATION': 24})
+DE__XETRA 
+  before n,pe,pb,ev,calls (30, 21, 18, 0, {'NO_RECOMMENDATION': 30}) 
+  after  n,pe,pb,ev,calls (30, 21, 18, 0, {'NO_RECOMMENDATION': 30})
+NO__EURONEXT_OSLO 
+  before n,pe,pb,ev,calls (30, 13, 1, 0, {'NO_RECOMMENDATION': 29, 'HOLD_OR_WATCH': 1}) 
+  after  n,pe,pb,ev,calls (30, 25, 2, 1, {'NO_RECOMMENDATION': 24, 'HOLD_OR_WATCH': 6})
+GB__LSE 
+  before n,pe,pb,ev,calls (30, 13, 0, 0, {'NO_RECOMMENDATION': 27, 'HOLD_OR_WATCH': 2, 'BUY_CANDIDATE': 1}) 
+  after  n,pe,pb,ev,calls (30, 21, 28, 9, {'HOLD_OR_WATCH': 7, 'NO_RECOMMENDATION': 22, 'BUY_CANDIDATE': 1})
+IT__EURONEXT_MILAN 
+  before n,pe,pb,ev,calls (30, 17, 0, 0, {'NO_RECOMMENDATION': 28, 'HOLD_OR_WATCH': 2}) 
+  after  n,pe,pb,ev,calls (30, 18, 28, 14, {'NO_RECOMMENDATION': 27, 'HOLD_OR_WATCH': 3})
+US__NASDAQ 
+  before n,pe,pb,ev,calls (30, 8, 18, 8, {'NO_RECOMMENDATION': 26, 'BUY_CANDIDATE': 3, 'HOLD_OR_WATCH': 1}) 
+  after  n,pe,pb,ev,calls (30, 8, 19, 8, {'NO_RECOMMENDATION': 26, 'BUY_CANDIDATE': 2, 'HOLD_OR_WATCH': 2})
+US__NYSE 
+  before n,pe,pb,ev,calls (30, 14, 12, 4, {'NO_RECOMMENDATION': 29, 'HOLD_OR_WATCH': 1}) 
+  after  n,pe,pb,ev,calls (30, 15, 12, 4, {'NO_RECOMMENDATION': 29, 'HOLD_OR_WATCH': 1})
