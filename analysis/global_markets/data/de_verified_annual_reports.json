@@ -735,6 +735,210 @@
         "total_debt": 165301628,
         "interest_expense": 5521744
       }
+    },
+    {
+      "ticker": "HMU",
+      "isin": "DE0006061104",
+      "sourceId": "hms-bergbau-annual-report-2025-ifrs",
+      "sourceUrl": "https://hms-ag.com/wp-content/uploads/2026/06/2026-06-30-HMS-Bergbau-Annual-Report-2025-IFRS_FINAL_.pdf",
+      "periodEnd": "2025-12-31",
+      "observedAt": "2026-06-30T00:00:00+00:00",
+      "currency": "EUR",
+      "reportScope": "consolidated",
+      "audited": true,
+      "quality": 0.96,
+      "rawProviderFields": {
+        "de_reviewed_definitions": "HMS Bergbau AG Annual Report 2025 (first IFRS year; PDF pages 44 income statement, 45 balance sheet, 47 cash flow, 70 D&A note, 78-79 notes 27-31). EUR thousand x1000. ebitda = operating result 59,514 + depreciation 547 (issuer reports EBITDA EUR 60.1m); IFRS transition/consolidation effects (other operating income 45,471 incl. 39,523 consolidation result) inflate 2025 earnings. net_income = face-line 54,792 (the equity statement shows 52,249 after minority interests -2,543; unreconciled in the source). total_debt = convertible bonds 78,387 + loans/trade finance 13,012 + lease liabilities 824 + 500; current_liabilities = balance-sheet 'Short-term debt' 124,769 incl. trade payables. total_liabilities = long-term 100,226 + short-term 124,769."
+      },
+      "fundamentals": {
+        "revenue": 1224451000,
+        "revenue_prev": 1363715000,
+        "operating_income": 59514000,
+        "ebitda": 60061000,
+        "net_income": 54792000,
+        "total_assets": 357635000,
+        "total_liabilities": 224995000,
+        "total_equity": 132640000,
+        "current_assets": 215904000,
+        "current_liabilities": 124769000,
+        "cash_and_equivalents": 37098000,
+        "operating_cash_flow": -32479000,
+        "total_debt": 92723000
+      }
+    },
+    {
+      "ticker": "FYB",
+      "isin": "DE000A1EWVY8",
+      "sourceId": "formycon-annual-report-2025",
+      "sourceUrl": "https://www.formycon.com/wp-content/uploads/2026/04/FormyconAG_FY2025_EN_sec2.pdf",
+      "periodEnd": "2025-12-31",
+      "observedAt": "2026-04-22T00:00:00+00:00",
+      "currency": "EUR",
+      "reportScope": "consolidated",
+      "audited": true,
+      "quality": 0.97,
+      "rawProviderFields": {
+        "de_reviewed_definitions": "Formycon AG Annual Report 2025 (PDF pages 149 financial position, 150 comprehensive income, 152 cash flows, 171 fixed-asset roll-forward, 199 notes 22-23). EUR thousand x1000. operating_income = EBIT -30,500 (before equity-method result and before the 59,597 goodwill/intangible impairment, which is shown below EBIT). ebitda = EBIT -30,500 + clean D&A 26,890 (note roll-forward total; cash-flow line 86,487 = 26,890 D&A + 59,597 impairment); issuer reports EBITDA -3.6m. total_debt = Nordic bond 70,051 (other non-current liabilities 202,551 less contingent purchase price 132,251 less share-based 249; derived) + lease obligations 8,082 + 1,478; contingent purchase-price obligations (132,251 + 12,083) excluded."
+      },
+      "fundamentals": {
+        "revenue": 44476000,
+        "revenue_prev": 69674000,
+        "operating_income": -30500000,
+        "ebitda": -3610000,
+        "net_income": -64696000,
+        "total_assets": 739527000,
+        "total_liabilities": 340391000,
+        "total_equity": 399136000,
+        "current_assets": 125031000,
+        "current_liabilities": 53560000,
+        "cash_and_equivalents": 68845000,
+        "operating_cash_flow": 10783000,
+        "total_debt": 79611000
+      }
+    },
+    {
+      "ticker": "SNG",
+      "isin": "DE000A1681X5",
+      "sourceId": "singulus-technologies-annual-report-2025",
+      "sourceUrl": "https://www.singulus.com/wp-content/uploads/2026/06/Singulus-Technologies_Anual-Report-25.pdf",
+      "periodEnd": "2025-12-31",
+      "observedAt": "2026-05-12T00:00:00+00:00",
+      "currency": "EUR",
+      "reportScope": "consolidated",
+      "audited": true,
+      "quality": 0.95,
+      "rawProviderFields": {
+        "de_reviewed_definitions": "SINGULUS TECHNOLOGIES AG Annual Report 2025 (PDF pages 92-93 balance sheet, 94 income statement, 98 cash flow, 124-125 fixed-asset roll-forwards, management report p.45 KPI table). EUR million, one decimal, x1,000,000. revenue = gross 48.3 (net 48.2, prior 75.9/75.8). ebitda = EBIT -11.7 + scheduled D&A 2.5 (intangibles 1.0 + PP&E 1.5; unscheduled impairment 0.0); issuer reports EBITDA -9.2. total_equity negative (-64.7). total_debt = loan/other financing 24.0 + bonds 0.2 + 12.1 + leasing 0.4 + 0.3 + non-current borrowings 0.0."
+      },
+      "fundamentals": {
+        "revenue": 48300000.0,
+        "revenue_prev": 75900000.0,
+        "operating_income": -11700000.0,
+        "ebitda": -9200000.0,
+        "net_income": -14200000.0,
+        "total_assets": 45200000.0,
+        "total_liabilities": 109900000.0,
+        "total_equity": -64700000.0,
+        "current_assets": 27600000.0,
+        "current_liabilities": 81100000.0,
+        "cash_and_equivalents": 6200000.0,
+        "operating_cash_flow": -3800000.0,
+        "total_debt": 37000000.0
+      }
+    },
+    {
+      "ticker": "SWA",
+      "isin": "DE0007229007",
+      "sourceId": "schloss-wachenheim-annual-report-2024-25",
+      "sourceUrl": "https://www.hauptversammlung.de/fileadmin/public/user_upload/SchlossWa_GB24_25.pdf",
+      "periodEnd": "2025-06-30",
+      "observedAt": "2025-09-26T00:00:00+00:00",
+      "currency": "EUR",
+      "reportScope": "consolidated",
+      "audited": true,
+      "quality": 0.96,
+      "rawProviderFields": {
+        "de_reviewed_definitions": "Schloss Wachenheim AG Geschaeftsbericht 2024/25, fiscal year 1 Jul 2024 - 30 Jun 2025 (PDF pages 110 balance sheet, 111 income statement, 113 cash flow, summary KPI p.9). EUR thousand x1000. This is the latest audited report; the FY2025/26 report (to 30 Jun 2026) was not published at the official host at review time, so exchange key data (revenue 448.9m, EBIT 27.6m) remain unaudited preliminary. ebitda = EBIT 27,153 + D&A and impairment 18,403 (issuer reports EBITDA 45.6m; impairment not separately disclosed, so impairment-inclusive by the issuer's definition). total_equity includes non-controlling interests 58,453. total_debt = Finanzverbindlichkeiten 48,033 + 50,013 as reported (IFRS 16 lease content not separated)."
+      },
+      "fundamentals": {
+        "revenue": 447369000,
+        "revenue_prev": 441505000,
+        "operating_income": 27153000,
+        "ebitda": 45556000,
+        "net_income": 16222000,
+        "total_assets": 477526000,
+        "total_liabilities": 217817000,
+        "total_equity": 259709000,
+        "current_assets": 238431000,
+        "current_liabilities": 149501000,
+        "cash_and_equivalents": 7911000,
+        "operating_cash_flow": 34983000,
+        "total_debt": 98046000
+      }
+    },
+    {
+      "ticker": "VME",
+      "isin": "DE000A40ZVN7",
+      "sourceId": "viromed-medical-konzernabschluss-2025",
+      "sourceUrl": "https://www.viromed-medical-ag.de/wp-content/uploads/2026/05/Geschaeftsbericht-2025-Viromed-Medical-AG_k.pdf",
+      "periodEnd": "2025-12-31",
+      "observedAt": "2026-05-22T00:00:00+00:00",
+      "currency": "EUR",
+      "reportScope": "consolidated",
+      "audited": true,
+      "quality": 0.9,
+      "rawProviderFields": {
+        "de_reviewed_definitions": "Viromed Medical AG Geschaeftsbericht 2025, voluntary consolidated statements under HGB (not IFRS; PDF pages 30-32 balance sheet, 33-34 income statement). EUR, rounded to whole euro. operating_income = revenue + other operating income - materials - personnel - D&A - other operating expenses (derived before interest/tax/other taxes): -866,768. ebitda = operating_income + D&A on fixed assets 524,424 (HGB, includes goodwill amortisation). Positive net income 604,514 is driven by other operating income 2.27m and deferred tax income 1.30m. total_liabilities = provisions 402,888 + liabilities 3,037,256. total_debt = bank 8,655 + shareholder liabilities 284,450 (other liabilities 1,546,861 not itemised as debt). No cash-flow statement extracted. ISIN DE000A40ZVN7 as in the listing; some issuer releases show DE000A3MQR65."
+      },
+      "fundamentals": {
+        "revenue": 5087076,
+        "revenue_prev": 1124791,
+        "operating_income": -866768,
+        "ebitda": -342344,
+        "net_income": 604514,
+        "total_assets": 13914237,
+        "total_liabilities": 3440144,
+        "total_equity": 10474092,
+        "current_assets": 5579519,
+        "cash_and_equivalents": 359557,
+        "total_debt": 293105
+      }
+    },
+    {
+      "ticker": "FXT",
+      "isin": "DE000A40ET88",
+      "sourceId": "finexity-ag-annual-report-2025",
+      "sourceUrl": "https://content.finexity.com/hubfs/documents/finexity-ag/annual-report/FINEXITY_Annual-Report-2025_EN.pdf",
+      "periodEnd": "2025-12-31",
+      "observedAt": "2026-06-30T00:00:00+00:00",
+      "currency": "EUR",
+      "reportScope": "parent-only-hgb",
+      "audited": true,
+      "quality": 0.9,
+      "rawProviderFields": {
+        "de_reviewed_definitions": "FINEXITY AG Annual Report 2025, audited HGB single-entity statements (MSW GmbH, unqualified; PDF pages 27-28 balance sheet, 29 income statement, 30 fixed-asset schedule). Group figures in the report are pro-forma and unaudited and are NOT used. EUR, whole euro. operating_income = output 1,734,700 + other income 4,444 - materials 911,386 - personnel 602,715 - D&A 18,766 - other operating expenses 1,418,563 = -1,212,285 (reconciles to net loss -1,198,183 via financial result +117,547 and taxes -103,444). ebitda = operating_income + D&A 18,766. Debt not itemised (other liabilities 1,243,272 incl. 1,005,141 over one year) so total_debt left empty."
+      },
+      "fundamentals": {
+        "revenue": 1411497,
+        "revenue_prev": 1668986,
+        "operating_income": -1212285,
+        "ebitda": -1193520,
+        "net_income": -1198183,
+        "total_assets": 14255914,
+        "total_liabilities": 3549737,
+        "total_equity": 10706178,
+        "current_assets": 6884396,
+        "cash_and_equivalents": 1296964
+      }
+    },
+    {
+      "ticker": "VRL",
+      "isin": "DE000A2BPK34",
+      "sourceId": "net-digital-konzernabschluss-2025",
+      "sourceUrl": "https://net-digital.com/wp-content/uploads/2026/07/Jahresabschluss-zum-31.12.2025-net-digital-AG.pdf",
+      "periodEnd": "2025-12-31",
+      "observedAt": "2026-07-01T00:00:00+00:00",
+      "currency": "EUR",
+      "reportScope": "consolidated",
+      "audited": true,
+      "quality": 0.93,
+      "rawProviderFields": {
+        "de_reviewed_definitions": "net digital AG Jahresbericht 2025, HGB consolidated statements with auditor's opinion (PDF pages 9 management report, 23-24 balance sheet, 25 income statement, 27-28 cash flow). EUR, whole euro. operating_income = EBIT after other taxes as reported (3,591k): gross operating result 3,592,963 less sonstige Steuern 2,434. ebitda = operating_income + D&A 599,219 (includes current-asset write-downs 20,594). total_liabilities = total assets less equity (provisions 1,197,664 + liabilities 5,546,726 + deferred items 1,965 + deferred taxes 947,106). current_assets = receivables 8,758,630 + cash 2,711,065. total_debt = bank liabilities 963 only."
+      },
+      "fundamentals": {
+        "revenue": 37763179,
+        "revenue_prev": 10958484,
+        "operating_income": 3590529,
+        "ebitda": 4189748,
+        "net_income": 2878010,
+        "total_assets": 12547321,
+        "total_liabilities": 7693460,
+        "total_equity": 4853861,
+        "current_assets": 11469695,
+        "cash_and_equivalents": 2711065,
+        "operating_cash_flow": 967694,
+        "total_debt": 963
+      }
     }
   ]
 }
