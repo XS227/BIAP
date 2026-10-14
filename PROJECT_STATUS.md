@@ -1,5 +1,13 @@
 # BIAP — Project Status
 
+## 2026-10-14 session 25 (cont.): regression, freeze package, GO/NO-GO
+
+- **Regression on tested commit 7a49767** (temporary uvicorn on :8092, isolated data dir, production ledgers untouched): 101 cases, 34 markets, 6 agents + Agents 8/9/10, 0 invariant errors; full suite 1,088 passed. Output `docs/market-audit/data/agent_regression_2026-10-14_7a49767.json`.
+- **Freeze package** `docs/market-audit/freeze/2026-10-14/` (FREEZE_REPORT.md, FREEZE_MANIFEST.json with code/registry/ledger SHA-256 + scoring configuration, COVERAGE.json per-market field completeness and agent activity). Generator: `scripts/research_freeze.py`.
+- **Decision: NO-GO** for an all-market paper dataset. Gaps: DE EBITDA/debt/cash-flow <10% of rows, P/B & EV/EBITDA need an official share-count source, no FX conversion for cross-currency reporters, comparison agent needs fresh peer cache, APK device test pending, Rheinmetall balance sheet unavailable.
+- **Production:** still serves 46fc92e (prod runs from this working tree; restart needs sudo, which the auto-mode classifier blocks). Pre-deploy ledger backup `/var/lib/biap-global/backup-s25-predeploy-20261014T071722Z` (34 DBs + SHA256SUMS). Owner step: `sudo deploy/restart-global-prod.sh <final-commit-prefix>`.
+- **Not done:** device test; production comparison after restart; all-market scan refresh (Yahoo budget respected, no scans run); PR #51 untouched (open, not merged).
+
 ## 2026-10-14 session 25 (German official statements, liabilities-tag guard, integrity scan)
 
 **Phase 1 — Germany (data, no gate change).** Four DAX large caps were running without balance-sheet/debt/cash-flow inputs. Sourced from the issuers' own statements and added to `data/de_verified_annual_reports.json` (reviewed registry, precedes the issuer HTML parsers in `runtime.py`):
