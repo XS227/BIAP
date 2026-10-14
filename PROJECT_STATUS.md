@@ -1,5 +1,14 @@
 # BIAP — Project Status
 
+## 2026-10-14 disk cleanup and prod health check (no deploy, no scans, no APK build)
+
+- **Disk:** root was 44G used / 3.6G free (93%). Now 43G used / 4.8G free (90%). Freed ~1.2G; no heavy scans or APK builds were started.
+- **Deleted (all regenerable, none open per lsof):** `biap-global/pytest-tmp` (167M) and `pytest-tmp13` (4.4M), `/tmp/pytest-of-ubuntu` (32M), `~/.npm/_cacache` + `_npx`, `/root/.npm/_cacache` (212M), apt package cache (`apt-get clean`, ~105M), archived journals vacuumed to 100M (217M freed).
+- **Not touched:** `/var/lib/biap-global` (cache 8.9G, history, ledgers, all backup-* dirs), git repos and `wt-*` worktrees (several have unpushed commits/dirty trees), APK releases, `~/.claude`, `~/.cache/puppeteer` (668M, may be needed for PDF/browser work).
+- **Largest remaining reclaim candidates (need owner decision):** sandbox dirs `biap-global/{sandbox-s13,sandbox-s18,sandbox-s19,sandbox-s19b,s20,scratch,staging-1012,takeover-test}` ~5.5G total, per-session test data copies; `/var/lib/biap-global/cache/sec-edgar` 4.4G and `esef` 3.1G (re-downloadable but slow/rate-limited).
+- **Prod health:** `biap-global.service` active, `/health` 200 at commit 46fc92e (= `origin/feat/biap-global`), no failed systemd units. All 34 analysis ledgers pass `PRAGMA integrity_check`, 26,287 rows, none smaller than the s23 pre-deploy backup.
+- **PR #51** (feat/biap-global -> main, "Sync main with BIAP Global (needs review)"): OPEN, not draft, MERGEABLE, all checks SUCCESS (android-installable-apk skipped). Not merged.
+
 ## 2026-10-13 session 23 (opportunity ranking, 30-company benchmark, Yahoo governor, partial-bar volume fix)
 
 - **Opportunity layer** (`analysis/global_markets/opportunity.py`, `GET /global/opportunities?country&exchange&limit<=20`): states BUY / WATCH / REVIEW / HIGH_RISK / INSUFFICIENT_DATA, separate from the Qualified BUY gate (no gate changed). Each row exposes the underlying draft call, score, confidence, structured Agent 8 abstention reasons, limiting factors and a separate distress axis. Missing debt/EBITDA stays a distress *data gap*; it never drives HIGH_RISK/INSUFFICIENT_DATA. A HIGH_RISK from a single Agent 9 model (e.g. Zmijewski only: Deutsche Telekom, Siemens Energy) routes to REVIEW; corroborated (>=2 models) stays HIGH_RISK. Accepted HOLD_OR_WATCH -> WATCH. Ranking never pads.
