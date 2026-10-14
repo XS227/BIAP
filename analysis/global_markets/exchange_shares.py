@@ -34,6 +34,7 @@ from .models import GlobalCompany, SourceEvidence
 NASDAQ_NORDIC_PROVIDER = "official-nasdaq-nordic-instrument-summary"
 BORSA_ITALIANA_PROVIDER = "official-borsa-italiana-instrument-page"
 LSE_PROVIDER = "official-lse-price-explorer-market-cap"
+AMF_PROVIDER = "official-amf-voting-rights-notice"
 _SUMMARY_URL = "https://api.nasdaq.com/api/nordic/instruments/{orderbook}/summary"
 _BI_URL = "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin={isin}&mic={mic}&lang=en"
 _UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36"
@@ -157,6 +158,39 @@ def refresh_borsa_italiana(instruments: Iterable[dict], country: str, exchange: 
     return {"stored": len(entries), "failed": failed, "path": str(_write_store(BORSA_ITALIANA_PROVIDER, country, exchange, entries, {}))}
 
 
+def refresh_amf_voting_rights(instruments: Iterable[dict], country: str, exchange: str, *, delay: float = 0.4, session=None,
+                              sleep: Callable[[float], None] = time.sleep, pdf_text=None) -> dict:
+    """French share counts from AMF "total voting rights and shares" notices (regulated information)."""
+    import requests
+    from .amf_voting_rights import fetch_latest_notice
+    http = session or requests.Session()
+    http.headers.setdefault("User-Agent", _UA)
+    entries: dict = {}
+    failed: dict[str, str] = {}
+    for row in instruments:
+        isin = str(row.get("isin") or "").upper()
+        ticker = str(row.get("ticker"))
+        if len(isin) != 12:
+            failed[ticker] = "no_isin"
+            continue
+        try:
+            found, status = fetch_latest_notice(http, isin, pdf_text=pdf_text)
+        except Exception as exc:  # noqa: BLE001
+            found, status = None, f"feed:{type(exc).__name__}"
+        if not found:
+            failed[ticker] = status
+        else:
+            entries[f"{country}:{exchange}:{ticker}"] = {
+                "isin": isin, "ticker": ticker, "country": country, "exchange": exchange,
+                "currency": row.get("currency") or "EUR", "shares": found["shares"], "market_cap": None,
+                "as_of": found["as_of"], "parse_rule": found["rule"], "notice_id": found["notice_id"],
+                "source_url": found["source_url"], "observed_at": datetime.now(timezone.utc).isoformat(),
+            }
+        sleep(delay)
+    return {"stored": len(entries), "failed": failed,
+            "path": str(_write_store(AMF_PROVIDER, country, exchange, entries, {}))}
+
+
 def refresh_lse(country: str = "GB", exchange: str = "LSE") -> dict:
     """One request for the whole Main Market (LSE Price Explorer, official)."""
     from .lse_official import LSEOfficialClient, _valid_isin
@@ -212,7 +246,7 @@ def _has_class_suffix(ticker: str) -> bool:
 
 def lookup(company: GlobalCompany) -> Optional[dict]:
     """Return the cached exchange entry (with issuer aggregation) for a company."""
-    for provider in (NASDAQ_NORDIC_PROVIDER, BORSA_ITALIANA_PROVIDER, LSE_PROVIDER):
+    for provider in (NASDAQ_NORDIC_PROVIDER, BORSA_ITALIANA_PROVIDER, LSE_PROVIDER, AMF_PROVIDER):
         payload = _load(provider, company.country, company.exchange)
         if not payload:
             continue
@@ -311,13 +345,17 @@ def apply_to_company(company: GlobalCompany, *, now: Optional[datetime] = None) 
 def main(argv: Optional[list[str]] = None) -> int:
     import sys
     args = list(argv if argv is not None else sys.argv[1:])
-    if len(args) != 3 or args[0] != "refresh":
-        print("usage: python -m global_markets.exchange_shares refresh <COUNTRY> <EXCHANGE>")
+    if len(args) not in (3, 4) or args[0] != "refresh":
+        print("usage: python -m global_markets.exchange_shares refresh <COUNTRY> <EXCHANGE> [instruments.json]")
         return 2
     country, exchange = args[1].upper(), args[2].upper()
     base = Path(os.environ.get("BIAP_GLOBAL_DATA_DIR") or "/var/lib/biap-global")
     if (country, exchange) == ("GB", "LSE"):
         rows = []
+    elif len(args) == 4:  # explicit list: {"companies": [{"ticker", "isin", ...}]} (audit / benchmark JSON)
+        listed = json.loads(Path(args[3]).read_text(encoding="utf-8"))["companies"]
+        rows = [{"ticker": c["ticker"], "isin": c.get("isin"), "country": country, "exchange": exchange,
+                 "currency": (c.get("market") or {}).get("currency")} for c in listed]
     else:
         universe = json.loads((base / "universe" / country / f"{exchange}.json").read_text(encoding="utf-8"))
         rows = universe["instruments"]
@@ -327,10 +365,12 @@ def main(argv: Optional[list[str]] = None) -> int:
         result = refresh_borsa_italiana(rows, country, exchange)
     elif (country, exchange) == ("GB", "LSE"):
         result = refresh_lse(country, exchange)
+    elif country == "FR":
+        result = refresh_amf_voting_rights(rows, country, exchange)
     else:
         print(f"no official share-count source configured for {country}/{exchange}")
         return 1
-    print(json.dumps({k: (v if k != "failed" else v[:20]) for k, v in result.items()}, indent=2))
+    print(json.dumps({k: (v if k != "failed" or isinstance(v, dict) else v[:20]) for k, v in result.items()}, indent=2))
     return 0
 
 
