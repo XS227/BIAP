@@ -91,6 +91,15 @@
    "landing_url": "https://www.united-internet.de/",
    "period_end": "2025-12-31",
    "verified_at": "2026-10-05T11:00:01+00:00"
+  },
+  {
+   "isin": "DE000ENER6Y0",
+   "lei": "5299005CHJZ14D4FDJ62",
+   "ticker": "ENR",
+   "package_url": "https://assets.siemens-energy.com/dam/5f9cc98a-cd16-4ab3-aecf-b3b0008d5c8f/SiemensEnergyAGKA-2025-09-30-v01-de-zip_Original%20file.zip",
+   "landing_url": "https://www.siemens-energy.com/",
+   "period_end": "2025-09-30",
+   "verified_at": "2026-10-14T08:52:15+00:00"
   }
  ]
 }

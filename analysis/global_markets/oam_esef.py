@@ -1626,7 +1626,32 @@ def _report_member(archive: zipfile.ZipFile) -> Optional[str]:
     names = [n for n in archive.namelist() if n.lower().endswith((".xhtml", ".html", ".htm")) and not n.endswith("/")]
     in_reports = [n for n in names if "/reports/" in n.lower() or n.lower().startswith("reports/")]
     pool = in_reports or names
-    return max(pool, key=lambda n: archive.getinfo(n).file_size) if pool else None
+    if not pool:
+        return None
+    ranked = sorted(pool, key=lambda n: archive.getinfo(n).file_size, reverse=True)
+    # A package may also carry an untagged management report that is larger
+    # than the tagged consolidated statements; prefer the largest member that
+    # actually holds inline XBRL numeric facts.
+    for name in ranked:
+        if _has_inline_facts(archive, name):
+            return name
+    return ranked[0]
+
+
+def _has_inline_facts(archive: zipfile.ZipFile, name: str) -> bool:
+    needle = b"ix:nonfraction"
+    tail = b""
+    try:
+        with archive.open(name) as handle:
+            while True:
+                chunk = handle.read(1 << 20)
+                if not chunk:
+                    return False
+                if needle in (tail + chunk).lower():
+                    return True
+                tail = chunk[-len(needle):]
+    except (OSError, zipfile.BadZipFile, RuntimeError):
+        return False
 
 
 class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):

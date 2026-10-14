@@ -62,3 +62,25 @@ def test_contradicting_count_is_withheld_and_outage_is_recorded():
     down = BoerseFrankfurtShareCountSupplement(_Inner(), _Source(error=True)).enrich_fundamentals(_co())
     assert down.shares_outstanding is None
     assert down.raw_provider_fields["de_share_count_supplement"]["status"].startswith("unavailable")
+
+
+def test_owners_share_of_net_income_is_used_when_recorded():
+    # Total net income includes a large non-controlling share (Cenit-like):
+    # -2,452k / -0.14 implies 17.5M shares, owners' -1,210k implies 8.6M.
+    src = _Source({"isin": "DE0007164600", "data": [{"year": 2025, "outstandingShares": 8_370_000}]})
+    withheld = BoerseFrankfurtShareCountSupplement(
+        _Inner(net_income=-2_452_000.0, eps=-0.14), src).enrich_fundamentals(_co())
+    assert withheld.shares_outstanding is None
+    applied = BoerseFrankfurtShareCountSupplement(
+        _Inner(net_income=-2_452_000.0, eps=-0.14,
+               raw_provider_fields={"net_income_attributable_to_owners": -1_210_000}), src).enrich_fundamentals(_co())
+    assert applied.shares_outstanding == 8_370_000
+    assert applied.raw_provider_fields["de_share_count_supplement"]["earnings_basis"] == "net_income_attributable_to_owners"
+
+
+def test_owners_share_does_not_bypass_contradiction_check():
+    src = _Source({"isin": "DE0007164600", "data": [{"year": 2025, "outstandingShares": 50_000_000}]})
+    out = BoerseFrankfurtShareCountSupplement(
+        _Inner(net_income=-2_452_000.0, eps=-0.14,
+               raw_provider_fields={"net_income_attributable_to_owners": -1_210_000}), src).enrich_fundamentals(_co())
+    assert out.shares_outstanding is None

@@ -299,11 +299,19 @@ class BoerseFrankfurtShareCountSupplement(FundamentalsProvider):
             note["status"] = f"unavailable:{type(exc).__name__}"
             return replace(enriched, raw_provider_fields={**enriched.raw_provider_fields, "de_share_count_supplement": note})
         note.update({"fiscal_year": year, "source_url": url, "value": shares})
+        # EPS is per share of the parent's owners, so prefer the owners' share
+        # of net income when the reviewed row records it (non-controlling
+        # interests otherwise distort the implied share count).
+        attributable = _number(enriched.raw_provider_fields.get("net_income_attributable_to_owners"))
+        earnings = attributable if attributable is not None else enriched.net_income
+        implied = (float(earnings) / float(enriched.eps)) if earnings and enriched.eps else None
+        if attributable is not None:
+            note["earnings_basis"] = "net_income_attributable_to_owners"
         if shares is None or shares <= 0:
             note["status"] = "absent_in_key_data"
         elif (
-            enriched.net_income and enriched.eps and float(enriched.net_income) / float(enriched.eps) > 0
-            and not 0.5 <= shares / (float(enriched.net_income) / float(enriched.eps)) <= 2.0
+            implied is not None and implied > 0
+            and not 0.5 <= shares / implied <= 2.0
         ):
             note["status"] = "withheld:contradicts_net_income_over_eps"
         else:
