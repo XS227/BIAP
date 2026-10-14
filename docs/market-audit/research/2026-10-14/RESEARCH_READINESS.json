@@ -1,0 +1,1304 @@
+{
+ "generatedAt": "2026-10-14T07:02:29.367675+00:00",
+ "markets": [
+  {
+   "market": "DE__FRANKFURT",
+   "universe": 498,
+   "analysed": 456,
+   "PASS": 434,
+   "WARN": 22,
+   "BLOCK": 0,
+   "storedBuyCandidates": 1,
+   "ledgerAnalysedRange": [
+    "2026-10-13T11:23:33.705902+00:00",
+    "2026-10-13T11:24:04.673361+00:00"
+   ],
+   "benchmarkCompanies": 30,
+   "runErrors": 0,
+   "benchmarkEvidence": {
+    "PASS": 27,
+    "WARN": 3
+   },
+   "finalCalls": {
+    "NO_RECOMMENDATION": 30
+   },
+   "opportunityStates": {
+    "REVIEW": 24,
+    "HIGH_RISK": 2,
+    "INSUFFICIENT_DATA": 3,
+    "WATCH": 1
+   },
+   "verdicts": {
+    "JUSTIFIED": 25,
+    "DATA_LIMITED": 3,
+    "REVIEW_DISAGREEMENT": 2
+   },
+   "gateFailures": {
+    "G2_score_ge_0.25": 30,
+    "G3_confidence_ge_0.45": 12,
+    "G6_agent8_conf_ge_0.55": 30,
+    "G4_no_distress_block": 3,
+    "G1_evidence_PASS": 3,
+    "G5_no_contradiction": 2
+   },
+   "scan": {
+    "deepAnalyzed": 50,
+    "eligibleEquities": 498,
+    "recommendationCount": 0,
+    "status": "NO_RECOMMENDATION"
+   }
+  },
+  {
+   "market": "DE__XETRA",
+   "universe": 406,
+   "analysed": 389,
+   "PASS": 372,
+   "WARN": 17,
+   "BLOCK": 0,
+   "storedBuyCandidates": 0,
+   "ledgerAnalysedRange": [
+    "2026-10-13T11:24:05.409522+00:00",
+    "2026-10-13T11:24:24.740879+00:00"
+   ],
+   "benchmarkCompanies": 30,
+   "runErrors": 0,
+   "benchmarkEvidence": {
+    "PASS": 25,
+    "WARN": 3,
+    "BLOCK": 2
+   },
+   "finalCalls": {
+    "NO_RECOMMENDATION": 30
+   },
+   "opportunityStates": {
+    "REVIEW": 25,
+    "INSUFFICIENT_DATA": 5
+   },
+   "verdicts": {
+    "JUSTIFIED": 20,
+    "DATA_LIMITED": 7,
+    "REVIEW_DISAGREEMENT": 3
+   },
+   "gateFailures": {
+    "G2_score_ge_0.25": 30,
+    "G3_confidence_ge_0.45": 19,
+    "G6_agent8_conf_ge_0.55": 30,
+    "G4_no_distress_block": 3,
+    "G1_evidence_PASS": 5,
+    "G5_no_contradiction": 3
+   },
+   "scan": {
+    "deepAnalyzed": null,
+    "eligibleEquities": null,
+    "recommendationCount": null,
+    "status": null
+   }
+  },
+  {
+   "market": "FR__EURONEXT_PARIS",
+   "universe": 294,
+   "analysed": 259,
+   "PASS": 259,
+   "WARN": 0,
+   "BLOCK": 0,
+   "storedBuyCandidates": 1,
+   "ledgerAnalysedRange": [
+    "2026-10-13T11:27:22.440602+00:00",
+    "2026-10-13T11:28:34.799268+00:00"
+   ],
+   "benchmarkCompanies": 30,
+   "runErrors": 0,
+   "benchmarkEvidence": {
+    "PASS": 29,
+    "BLOCK": 1
+   },
+   "finalCalls": {
+    "NO_RECOMMENDATION": 24,
+    "HOLD_OR_WATCH": 6
+   },
+   "opportunityStates": {
+    "REVIEW": 15,
+    "INSUFFICIENT_DATA": 4,
+    "WATCH": 7,
+    "HIGH_RISK": 4
+   },
+   "verdicts": {
+    "JUSTIFIED": 21,
+    "REVIEW_DISAGREEMENT": 7,
+    "DATA_LIMITED": 2
+   },
+   "gateFailures": {
+    "G2_score_ge_0.25": 30,
+    "G6_agent8_conf_ge_0.55": 24,
+    "G5_no_contradiction": 7,
+    "G3_confidence_ge_0.45": 9,
+    "G4_no_distress_block": 5,
+    "G1_evidence_PASS": 1
+   },
+   "scan": {
+    "deepAnalyzed": 78,
+    "eligibleEquities": 295,
+    "recommendationCount": 0,
+    "status": "NO_RECOMMENDATION"
+   }
+  },
+  {
+   "market": "GB__LSE",
+   "universe": 527,
+   "analysed": 420,
+   "PASS": 420,
+   "WARN": 0,
+   "BLOCK": 0,
+   "storedBuyCandidates": 7,
+   "ledgerAnalysedRange": [
+    "2026-10-13T11:07:42.801744+00:00",
+    "2026-10-13T11:51:00.153879+00:00"
+   ],
+   "benchmarkCompanies": 30,
+   "runErrors": 0,
+   "benchmarkEvidence": {
+    "PASS": 29,
+    "BLOCK": 1
+   },
+   "finalCalls": {
+    "NO_RECOMMENDATION": 27,
+    "HOLD_OR_WATCH": 2,
+    "BUY_CANDIDATE": 1
+   },
+   "opportunityStates": {
+    "WATCH": 4,
+    "REVIEW": 17,
+    "INSUFFICIENT_DATA": 3,
+    "HIGH_RISK": 5,
+    "BUY": 1
+   },
+   "verdicts": {
+    "DATA_LIMITED": 2,
+    "JUSTIFIED": 23,
+    "REVIEW_DISAGREEMENT": 4,
+    "BUY": 1
+   },
+   "gateFailures": {
+    "G2_score_ge_0.25": 29,
+    "G6_agent8_conf_ge_0.55": 27,
+    "G3_confidence_ge_0.45": 11,
+    "G4_no_distress_block": 9,
+    "G1_evidence_PASS": 1,
+    "G5_no_contradiction": 4
+   },
+   "scan": {
+    "deepAnalyzed": 50,
+    "eligibleEquities": 527,
+    "recommendationCount": 1,
+    "status": "COMPLETE_SCAN"
+   }
+  },
+  {
+   "market": "IT__EURONEXT_MILAN",
+   "universe": 193,
+   "analysed": 169,
+   "PASS": 169,
+   "WARN": 0,
+   "BLOCK": 0,
+   "storedBuyCandidates": 0,
+   "ledgerAnalysedRange": [
+    "2026-10-13T11:24:59.132592+00:00",
+    "2026-10-13T11:26:21.558034+00:00"
+   ],
+   "benchmarkCompanies": 30,
+   "runErrors": 0,
+   "benchmarkEvidence": {
+    "PASS": 27,
+    "BLOCK": 3
+   },
+   "finalCalls": {
+    "NO_RECOMMENDATION": 28,
+    "HOLD_OR_WATCH": 2
+   },
+   "opportunityStates": {
+    "REVIEW": 21,
+    "WATCH": 2,
+    "HIGH_RISK": 2,
+    "INSUFFICIENT_DATA": 5
+   },
+   "verdicts": {
+    "DATA_LIMITED": 5,
+    "JUSTIFIED": 13,
+    "REVIEW_DISAGREEMENT": 12
+   },
+   "gateFailures": {
+    "G2_score_ge_0.25": 30,
+    "G6_agent8_conf_ge_0.55": 28,
+    "G5_no_contradiction": 12,
+    "G3_confidence_ge_0.45": 11,
+    "G4_no_distress_block": 6,
+    "G1_evidence_PASS": 3
+   },
+   "scan": {
+    "deepAnalyzed": 50,
+    "eligibleEquities": 193,
+    "recommendationCount": 0,
+    "status": "NO_RECOMMENDATION"
+   }
+  },
+  {
+   "market": "NO__EURONEXT_OSLO",
+   "universe": 146,
+   "analysed": 136,
+   "PASS": 136,
+   "WARN": 0,
+   "BLOCK": 0,
+   "storedBuyCandidates": 1,
+   "ledgerAnalysedRange": [
+    "2026-10-13T11:24:25.986728+00:00",
+    "2026-10-13T11:24:58.550169+00:00"
+   ],
+   "benchmarkCompanies": 30,
+   "runErrors": 0,
+   "benchmarkEvidence": {
+    "PASS": 28,
+    "BLOCK": 2
+   },
+   "finalCalls": {
+    "NO_RECOMMENDATION": 29,
+    "HOLD_OR_WATCH": 1
+   },
+   "opportunityStates": {
+    "REVIEW": 10,
+    "HIGH_RISK": 9,
+    "WATCH": 9,
+    "INSUFFICIENT_DATA": 2
+   },
+   "verdicts": {
+    "JUSTIFIED": 16,
+    "REVIEW_DISAGREEMENT": 7,
+    "DATA_LIMITED": 7
+   },
+   "gateFailures": {
+    "G2_score_ge_0.25": 27,
+    "G6_agent8_conf_ge_0.55": 29,
+    "G5_no_contradiction": 7,
+    "G4_no_distress_block": 11,
+    "G3_confidence_ge_0.45": 5,
+    "G1_evidence_PASS": 2
+   },
+   "scan": {
+    "deepAnalyzed": 50,
+    "eligibleEquities": 147,
+    "recommendationCount": 1,
+    "status": "COMPLETE_SCAN"
+   }
+  },
+  {
+   "market": "SE__NASDAQ_STOCKHOLM",
+   "universe": 402,
+   "analysed": 373,
+   "PASS": 373,
+   "WARN": 0,
+   "BLOCK": 0,
+   "storedBuyCandidates": 0,
+   "ledgerAnalysedRange": [
+    "2026-10-13T22:30:15.424513+00:00",
+    "2026-10-13T23:26:41.561217+00:00"
+   ],
+   "benchmarkCompanies": 30,
+   "runErrors": 0,
+   "benchmarkEvidence": {
+    "PASS": 29,
+    "BLOCK": 1
+   },
+   "finalCalls": {
+    "NO_RECOMMENDATION": 25,
+    "HOLD_OR_WATCH": 5
+   },
+   "opportunityStates": {
+    "REVIEW": 9,
+    "WATCH": 5,
+    "INSUFFICIENT_DATA": 1,
+    "HIGH_RISK": 15
+   },
+   "verdicts": {
+    "JUSTIFIED": 22,
+    "REVIEW_DISAGREEMENT": 7,
+    "DATA_LIMITED": 1
+   },
+   "gateFailures": {
+    "G2_score_ge_0.25": 30,
+    "G6_agent8_conf_ge_0.55": 25,
+    "G5_no_contradiction": 7,
+    "G3_confidence_ge_0.45": 7,
+    "G1_evidence_PASS": 1,
+    "G4_no_distress_block": 15
+   },
+   "scan": {
+    "deepAnalyzed": 50,
+    "eligibleEquities": 403,
+    "recommendationCount": 0,
+    "status": "NO_RECOMMENDATION"
+   }
+  },
+  {
+   "market": "US__NASDAQ",
+   "universe": 3010,
+   "analysed": 2807,
+   "PASS": 2807,
+   "WARN": 0,
+   "BLOCK": 0,
+   "storedBuyCandidates": 25,
+   "ledgerAnalysedRange": [
+    "2026-10-13T08:09:40.807079+00:00",
+    "2026-10-14T00:40:05.924377+00:00"
+   ],
+   "benchmarkCompanies": 30,
+   "runErrors": 0,
+   "benchmarkEvidence": {
+    "PASS": 27,
+    "BLOCK": 3
+   },
+   "finalCalls": {
+    "NO_RECOMMENDATION": 26,
+    "BUY_CANDIDATE": 3,
+    "HOLD_OR_WATCH": 1
+   },
+   "opportunityStates": {
+    "REVIEW": 4,
+    "BUY": 3,
+    "INSUFFICIENT_DATA": 5,
+    "WATCH": 1,
+    "HIGH_RISK": 17
+   },
+   "verdicts": {
+    "REVIEW_DISAGREEMENT": 18,
+    "BUY": 3,
+    "DATA_LIMITED": 4,
+    "JUSTIFIED": 5
+   },
+   "gateFailures": {
+    "G5_no_contradiction": 19,
+    "G6_agent8_conf_ge_0.55": 26,
+    "G1_evidence_PASS": 3,
+    "G2_score_ge_0.25": 25,
+    "G3_confidence_ge_0.45": 10,
+    "G4_no_distress_block": 17
+   },
+   "scan": {
+    "deepAnalyzed": 50,
+    "eligibleEquities": 3018,
+    "recommendationCount": 0,
+    "status": "NO_RECOMMENDATION"
+   }
+  },
+  {
+   "market": "US__NYSE",
+   "universe": 1798,
+   "analysed": 1602,
+   "PASS": 1602,
+   "WARN": 0,
+   "BLOCK": 0,
+   "storedBuyCandidates": 22,
+   "ledgerAnalysedRange": [
+    "2026-10-13T10:00:50.321834+00:00",
+    "2026-10-14T00:10:23.234951+00:00"
+   ],
+   "benchmarkCompanies": 30,
+   "runErrors": 0,
+   "benchmarkEvidence": {
+    "PASS": 27,
+    "BLOCK": 3
+   },
+   "finalCalls": {
+    "NO_RECOMMENDATION": 29,
+    "HOLD_OR_WATCH": 1
+   },
+   "opportunityStates": {
+    "HIGH_RISK": 11,
+    "REVIEW": 12,
+    "WATCH": 3,
+    "INSUFFICIENT_DATA": 4
+   },
+   "verdicts": {
+    "REVIEW_DISAGREEMENT": 13,
+    "DATA_LIMITED": 6,
+    "JUSTIFIED": 11
+   },
+   "gateFailures": {
+    "G2_score_ge_0.25": 28,
+    "G4_no_distress_block": 12,
+    "G5_no_contradiction": 13,
+    "G6_agent8_conf_ge_0.55": 29,
+    "G3_confidence_ge_0.45": 7,
+    "G1_evidence_PASS": 3
+   },
+   "scan": {
+    "deepAnalyzed": 50,
+    "eligibleEquities": 1809,
+    "recommendationCount": 0,
+    "status": "NO_RECOMMENDATION"
+   }
+  }
+ ],
+ "topByEvidence": [
+  {
+   "market": "US__NASDAQ",
+   "ticker": "MSFT",
+   "name": "Microsoft Corporation - Common Stock",
+   "category": "TRADING_VALUE",
+   "finalCall": "BUY_CANDIDATE",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.392317,
+   "confidence": 0.690625,
+   "opportunityState": "BUY",
+   "reason": "all gates passed"
+  },
+  {
+   "market": "US__NASDAQ",
+   "ticker": "MU",
+   "name": "Micron Technology, Inc. - Common Stock",
+   "category": "TRADING_VALUE",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.379929,
+   "confidence": 0.690625,
+   "opportunityState": "REVIEW",
+   "reason": "agents disagree: high-confidence disagreement: positive=comparison,fundamental,liquidity,quality negative=risk"
+  },
+  {
+   "market": "US__NASDAQ",
+   "ticker": "SNDK",
+   "name": "Sandisk Corporation - Common Stock When-Issued",
+   "category": "TRADING_VALUE",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.341003,
+   "confidence": 0.693576,
+   "opportunityState": "REVIEW",
+   "reason": "agents disagree: high-confidence disagreement: positive=comparison,fundamental,liquidity,quality negative=risk"
+  },
+  {
+   "market": "NO__EURONEXT_OSLO",
+   "ticker": "SOFF",
+   "name": "SOLSTAD OFFSHORE",
+   "category": "UNUSUAL_VOLUME",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.386202,
+   "confidence": 0.488031,
+   "opportunityState": "WATCH",
+   "reason": "score ok but confidence 0.49<0.55; missing ['current_assets', 'pe', 'pb', 'ev_ebitda']"
+  },
+  {
+   "market": "US__NASDAQ",
+   "ticker": "META",
+   "name": "Meta Platforms, Inc. - Class A Common Stock",
+   "category": "TRADING_VALUE",
+   "finalCall": "BUY_CANDIDATE",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.266622,
+   "confidence": 0.648609,
+   "opportunityState": "BUY",
+   "reason": "all gates passed"
+  },
+  {
+   "market": "US__NASDAQ",
+   "ticker": "NVDA",
+   "name": "NVIDIA Corporation - Common Stock",
+   "category": "TRADING_VALUE",
+   "finalCall": "BUY_CANDIDATE",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.260003,
+   "confidence": 0.635984,
+   "opportunityState": "BUY",
+   "reason": "all gates passed"
+  },
+  {
+   "market": "US__NASDAQ",
+   "ticker": "AAPL",
+   "name": "Apple Inc. - Common Stock",
+   "category": "TRADING_VALUE",
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.229664,
+   "confidence": 0.690625,
+   "opportunityState": "WATCH",
+   "reason": "score 0.23<0.25 with negative evidence-backed votes: risk -0.10"
+  },
+  {
+   "market": "GB__LSE",
+   "ticker": "SMIN",
+   "name": "SMITHS GROUP PLC",
+   "category": "UNUSUAL_VOLUME",
+   "finalCall": "BUY_CANDIDATE",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.253031,
+   "confidence": 0.620312,
+   "opportunityState": "BUY",
+   "reason": "all gates passed"
+  },
+  {
+   "market": "NO__EURONEXT_OSLO",
+   "ticker": "MEDI",
+   "name": "MEDISTIM",
+   "category": "PRICE_APPRECIATION_30D",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.300202,
+   "confidence": 0.510766,
+   "opportunityState": "WATCH",
+   "reason": "score ok but confidence 0.51<0.55; missing ['total_debt', 'pb', 'ev_ebitda']"
+  },
+  {
+   "market": "SE__NASDAQ_STOCKHOLM",
+   "ticker": "AQ",
+   "name": "AQ Group",
+   "category": "UNUSUAL_VOLUME",
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.242279,
+   "confidence": 0.624861,
+   "opportunityState": "WATCH",
+   "reason": "score 0.24<0.25, no negative agent; 3 of 17 core fields missing; abstaining agents: []"
+  },
+  {
+   "market": "SE__NASDAQ_STOCKHOLM",
+   "ticker": "BRAV",
+   "name": "Bravida Holding",
+   "category": "UNUSUAL_VOLUME",
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.228363,
+   "confidence": 0.624861,
+   "opportunityState": "WATCH",
+   "reason": "score 0.23<0.25, no negative agent; 3 of 17 core fields missing; abstaining agents: []"
+  },
+  {
+   "market": "US__NYSE",
+   "ticker": "CRM",
+   "name": "Salesforce, Inc. Common Stock",
+   "category": "TRADING_VALUE",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.205576,
+   "confidence": 0.690625,
+   "opportunityState": "REVIEW",
+   "reason": "agents disagree: high-confidence disagreement: positive=comparison,fundamental,liquidity,quality negative=risk"
+  },
+  {
+   "market": "NO__EURONEXT_OSLO",
+   "ticker": "KIT",
+   "name": "KITRON",
+   "category": "PRICE_APPRECIATION_30D",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.272253,
+   "confidence": 0.506992,
+   "opportunityState": "WATCH",
+   "reason": "score ok but confidence 0.51<0.55; missing ['ebitda', 'pe', 'pb', 'ev_ebitda']"
+  },
+  {
+   "market": "US__NYSE",
+   "ticker": "TSM",
+   "name": "Taiwan Semiconductor Manufacturing Company Ltd.",
+   "category": "TRADING_VALUE",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.313167,
+   "confidence": 0.437,
+   "opportunityState": "REVIEW",
+   "reason": "score ok but confidence 0.44<0.55; missing ['ebitda', 'total_debt', 'free_cash_flow', 'pe', 'pb', 'ev_ebitda']"
+  },
+  {
+   "market": "US__NASDAQ",
+   "ticker": "AMD",
+   "name": "Advanced Micro Devices, Inc. - Common Stock",
+   "category": "TRADING_VALUE",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.190435,
+   "confidence": 0.690625,
+   "opportunityState": "REVIEW",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,liquidity,quality negative=comparison,risk"
+  },
+  {
+   "market": "US__NYSE",
+   "ticker": "V",
+   "name": "Visa Inc.",
+   "category": "TRADING_VALUE",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.261635,
+   "confidence": 0.480938,
+   "opportunityState": "WATCH",
+   "reason": "score ok but confidence 0.48<0.55; missing ['free_cash_flow', 'pe', 'pb', 'ev_ebitda']"
+  },
+  {
+   "market": "FR__EURONEXT_PARIS",
+   "ticker": "SAN",
+   "name": "SANOFI",
+   "category": "TRADING_VALUE",
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.219463,
+   "confidence": 0.568359,
+   "opportunityState": "WATCH",
+   "reason": "score 0.22<0.25 with negative evidence-backed votes: forecast -0.20"
+  },
+  {
+   "market": "SE__NASDAQ_STOCKHOLM",
+   "ticker": "HANZA",
+   "name": "HANZA",
+   "category": "PRICE_APPRECIATION_30D",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.198985,
+   "confidence": 0.624861,
+   "opportunityState": "REVIEW",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=risk"
+  },
+  {
+   "market": "FR__EURONEXT_PARIS",
+   "ticker": "VETO",
+   "name": "VETOQUINOL",
+   "category": "PRICE_APPRECIATION_30D",
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.195647,
+   "confidence": 0.620312,
+   "opportunityState": "WATCH",
+   "reason": "score 0.20<0.25 with negative evidence-backed votes: risk -0.10"
+  },
+  {
+   "market": "US__NYSE",
+   "ticker": "XOM",
+   "name": "ExxonMobil Holdings Corporation Common Stock",
+   "category": "TRADING_VALUE",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.185908,
+   "confidence": 0.625625,
+   "opportunityState": "REVIEW",
+   "reason": "agents disagree: high-confidence disagreement: positive=liquidity,quality negative=fundamental"
+  },
+  {
+   "market": "NO__EURONEXT_OSLO",
+   "ticker": "SMOP",
+   "name": "SMARTOPTICS GROUP ASA",
+   "category": "PRICE_APPRECIATION_30D",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.224509,
+   "confidence": 0.506992,
+   "opportunityState": "WATCH",
+   "reason": "score 0.22<0.25 with negative evidence-backed votes: risk -0.30"
+  },
+  {
+   "market": "NO__EURONEXT_OSLO",
+   "ticker": "NOD",
+   "name": "NORDIC SEMICONDUCTOR",
+   "category": "UNUSUAL_VOLUME",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.215126,
+   "confidence": 0.506992,
+   "opportunityState": "WATCH",
+   "reason": "score 0.22<0.25 with negative evidence-backed votes: risk -0.30"
+  },
+  {
+   "market": "US__NYSE",
+   "ticker": "JNJ",
+   "name": "Johnson & Johnson Common Stock",
+   "category": "UNUSUAL_VOLUME",
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.167788,
+   "confidence": 0.648609,
+   "opportunityState": "WATCH",
+   "reason": "score 0.17<0.25, no negative agent; 4 of 17 core fields missing; abstaining agents: []"
+  },
+  {
+   "market": "US__NYSE",
+   "ticker": "BAC",
+   "name": "Bank of America Corporation Common Stock",
+   "category": "TRADING_VALUE",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.200787,
+   "confidence": 0.538141,
+   "opportunityState": "WATCH",
+   "reason": "score 0.20<0.25, no negative agent; 7 of 17 core fields missing; abstaining agents: []"
+  },
+  {
+   "market": "SE__NASDAQ_STOCKHOLM",
+   "ticker": "ALFA",
+   "name": "Alfa Laval",
+   "category": "TRADING_VALUE",
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.185449,
+   "confidence": 0.572656,
+   "opportunityState": "WATCH",
+   "reason": "score 0.19<0.25, no negative agent; 3 of 17 core fields missing; abstaining agents: []"
+  }
+ ],
+ "rejectedBuyCandidates": [
+  {
+   "market": "NO__EURONEXT_OSLO",
+   "ticker": "SOFF",
+   "name": "SOLSTAD OFFSHORE",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.386202,
+   "confidence": 0.488031,
+   "verdict": "DATA_LIMITED",
+   "reason": "score ok but confidence 0.49<0.55; missing ['current_assets', 'pe', 'pb', 'ev_ebitda']",
+   "failedGates": [
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "US__NASDAQ",
+   "ticker": "MU",
+   "name": "Micron Technology, Inc. - Common Stock",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.379929,
+   "confidence": 0.690625,
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=comparison,fundamental,liquidity,quality negative=risk",
+   "failedGates": [
+    "G5_no_contradiction",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "US__NASDAQ",
+   "ticker": "SNDK",
+   "name": "Sandisk Corporation - Common Stock When-Issued",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.341003,
+   "confidence": 0.693576,
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=comparison,fundamental,liquidity,quality negative=risk",
+   "failedGates": [
+    "G5_no_contradiction",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "US__NYSE",
+   "ticker": "TSM",
+   "name": "Taiwan Semiconductor Manufacturing Company Ltd.",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.313167,
+   "confidence": 0.437,
+   "verdict": "DATA_LIMITED",
+   "reason": "score ok but confidence 0.44<0.55; missing ['ebitda', 'total_debt', 'free_cash_flow', 'pe', 'pb', 'ev_ebitda']",
+   "failedGates": [
+    "G3_confidence_ge_0.45",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "NO__EURONEXT_OSLO",
+   "ticker": "MEDI",
+   "name": "MEDISTIM",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.300202,
+   "confidence": 0.510766,
+   "verdict": "DATA_LIMITED",
+   "reason": "score ok but confidence 0.51<0.55; missing ['total_debt', 'pb', 'ev_ebitda']",
+   "failedGates": [
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "NO__EURONEXT_OSLO",
+   "ticker": "KIT",
+   "name": "KITRON",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.272253,
+   "confidence": 0.506992,
+   "verdict": "DATA_LIMITED",
+   "reason": "score ok but confidence 0.51<0.55; missing ['ebitda', 'pe', 'pb', 'ev_ebitda']",
+   "failedGates": [
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "US__NYSE",
+   "ticker": "V",
+   "name": "Visa Inc.",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.261635,
+   "confidence": 0.480938,
+   "verdict": "DATA_LIMITED",
+   "reason": "score ok but confidence 0.48<0.55; missing ['free_cash_flow', 'pe', 'pb', 'ev_ebitda']",
+   "failedGates": [
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "SE__NASDAQ_STOCKHOLM",
+   "ticker": "AQ",
+   "name": "AQ Group",
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.242279,
+   "confidence": 0.624861,
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.24<0.25, no negative agent; 3 of 17 core fields missing; abstaining agents: []",
+   "failedGates": [
+    "G2_score_ge_0.25"
+   ]
+  },
+  {
+   "market": "US__NASDAQ",
+   "ticker": "AAPL",
+   "name": "Apple Inc. - Common Stock",
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.229664,
+   "confidence": 0.690625,
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.23<0.25 with negative evidence-backed votes: risk -0.10",
+   "failedGates": [
+    "G2_score_ge_0.25"
+   ]
+  },
+  {
+   "market": "SE__NASDAQ_STOCKHOLM",
+   "ticker": "BRAV",
+   "name": "Bravida Holding",
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.228363,
+   "confidence": 0.624861,
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.23<0.25, no negative agent; 3 of 17 core fields missing; abstaining agents: []",
+   "failedGates": [
+    "G2_score_ge_0.25"
+   ]
+  },
+  {
+   "market": "NO__EURONEXT_OSLO",
+   "ticker": "SMOP",
+   "name": "SMARTOPTICS GROUP ASA",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.224509,
+   "confidence": 0.506992,
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.22<0.25 with negative evidence-backed votes: risk -0.30",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "FR__EURONEXT_PARIS",
+   "ticker": "SAN",
+   "name": "SANOFI",
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.219463,
+   "confidence": 0.568359,
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.22<0.25 with negative evidence-backed votes: forecast -0.20",
+   "failedGates": [
+    "G2_score_ge_0.25"
+   ]
+  },
+  {
+   "market": "NO__EURONEXT_OSLO",
+   "ticker": "NOD",
+   "name": "NORDIC SEMICONDUCTOR",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.215126,
+   "confidence": 0.506992,
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.22<0.25 with negative evidence-backed votes: risk -0.30",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "GB__LSE",
+   "ticker": "CNE",
+   "name": "CAPRICORN ENERGY PLC",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.20639,
+   "confidence": 0.503188,
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.21<0.25 with negative evidence-backed votes: risk -0.05",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G4_no_distress_block",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "US__NYSE",
+   "ticker": "CRM",
+   "name": "Salesforce, Inc. Common Stock",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.205576,
+   "confidence": 0.690625,
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=comparison,fundamental,liquidity,quality negative=risk",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G5_no_contradiction",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "US__NYSE",
+   "ticker": "BAC",
+   "name": "Bank of America Corporation Common Stock",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.200787,
+   "confidence": 0.538141,
+   "verdict": "DATA_LIMITED",
+   "reason": "score 0.20<0.25, no negative agent; 7 of 17 core fields missing; abstaining agents: []",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "SE__NASDAQ_STOCKHOLM",
+   "ticker": "HANZA",
+   "name": "HANZA",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.198985,
+   "confidence": 0.624861,
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=risk",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G5_no_contradiction",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "FR__EURONEXT_PARIS",
+   "ticker": "VETO",
+   "name": "VETOQUINOL",
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.195647,
+   "confidence": 0.620312,
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.20<0.25 with negative evidence-backed votes: risk -0.10",
+   "failedGates": [
+    "G2_score_ge_0.25"
+   ]
+  },
+  {
+   "market": "NO__EURONEXT_OSLO",
+   "ticker": "YAR",
+   "name": "YARA INTERNATIONAL",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.193542,
+   "confidence": 0.540625,
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.19<0.25 with negative evidence-backed votes: forecast -0.20, risk -0.10",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "SE__NASDAQ_STOCKHOLM",
+   "ticker": "AZN",
+   "name": "AstraZeneca",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.193516,
+   "confidence": 0.503188,
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.19<0.25 with negative evidence-backed votes: forecast -0.20",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "GB__LSE",
+   "ticker": "OCDO",
+   "name": "OCADO GROUP PLC",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.191869,
+   "confidence": 0.620312,
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=comparison,fundamental,quality negative=risk",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G4_no_distress_block",
+    "G5_no_contradiction",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "GB__LSE",
+   "ticker": "SHEL",
+   "name": "SHELL PLC",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.191599,
+   "confidence": 0.503188,
+   "verdict": "DATA_LIMITED",
+   "reason": "score 0.19<0.25, no negative agent; 5 of 17 core fields missing; abstaining agents: ['comparison']",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "US__NASDAQ",
+   "ticker": "AMD",
+   "name": "Advanced Micro Devices, Inc. - Common Stock",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.190435,
+   "confidence": 0.690625,
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,liquidity,quality negative=comparison,risk",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G5_no_contradiction",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "IT__EURONEXT_MILAN",
+   "ticker": "LUVE",
+   "name": "LUVE",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.189275,
+   "confidence": 0.456625,
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.19<0.25, no negative agent; 4 of 17 core fields missing; abstaining agents: ['comparison']",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "US__NYSE",
+   "ticker": "XOM",
+   "name": "ExxonMobil Holdings Corporation Common Stock",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.185908,
+   "confidence": 0.625625,
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=liquidity,quality negative=fundamental",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G5_no_contradiction",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "SE__NASDAQ_STOCKHOLM",
+   "ticker": "ALFA",
+   "name": "Alfa Laval",
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.185449,
+   "confidence": 0.572656,
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.19<0.25, no negative agent; 3 of 17 core fields missing; abstaining agents: []",
+   "failedGates": [
+    "G2_score_ge_0.25"
+   ]
+  },
+  {
+   "market": "IT__EURONEXT_MILAN",
+   "ticker": "NWL",
+   "name": "NEWPRINCES",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.184745,
+   "confidence": 0.514627,
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=risk",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G5_no_contradiction",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "GB__LSE",
+   "ticker": "AZN",
+   "name": "ASTRAZENECA PLC",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.177903,
+   "confidence": 0.503188,
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.18<0.25 with negative evidence-backed votes: risk -0.15",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "US__NYSE",
+   "ticker": "JNJ",
+   "name": "Johnson & Johnson Common Stock",
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.167788,
+   "confidence": 0.648609,
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.17<0.25, no negative agent; 4 of 17 core fields missing; abstaining agents: []",
+   "failedGates": [
+    "G2_score_ge_0.25"
+   ]
+  },
+  {
+   "market": "IT__EURONEXT_MILAN",
+   "ticker": "ENI",
+   "name": "ENI",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.165211,
+   "confidence": 0.542188,
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.17<0.25, no negative agent; 4 of 17 core fields missing; abstaining agents: ['comparison']",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "NO__EURONEXT_OSLO",
+   "ticker": "ENDUR",
+   "name": "END\u00daR",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.160293,
+   "confidence": 0.568359,
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=comparison",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G4_no_distress_block",
+    "G5_no_contradiction",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "US__NYSE",
+   "ticker": "ORCL",
+   "name": "Oracle Corporation Common Stock",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.160174,
+   "confidence": 0.639141,
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=comparison,fundamental,liquidity negative=risk",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G4_no_distress_block",
+    "G5_no_contradiction",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "IT__EURONEXT_MILAN",
+   "ticker": "ARIS",
+   "name": "ARISTON HOLDING",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.157915,
+   "confidence": 0.554323,
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=comparison,fundamental,quality negative=risk",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G5_no_contradiction",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "SE__NASDAQ_STOCKHOLM",
+   "ticker": "HACK",
+   "name": "Hacksaw",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.157841,
+   "confidence": 0.461825,
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=risk",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G5_no_contradiction",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "GB__LSE",
+   "ticker": "TBTG",
+   "name": "THE BEAUTY TECH GROUP PLC",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.156211,
+   "confidence": 0.620312,
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=comparison",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G5_no_contradiction",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  },
+  {
+   "market": "IT__EURONEXT_MILAN",
+   "ticker": "CEM",
+   "name": "CEMENTIR HOLDING",
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.154687,
+   "confidence": 0.569427,
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.15<0.25 with negative evidence-backed votes: risk -0.15",
+   "failedGates": [
+    "G2_score_ge_0.25"
+   ]
+  },
+  {
+   "market": "US__NYSE",
+   "ticker": "DELL",
+   "name": "Dell Technologies Inc. Class C Common Stock",
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.152773,
+   "confidence": 0.693576,
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,liquidity,quality negative=risk",
+   "failedGates": [
+    "G2_score_ge_0.25",
+    "G4_no_distress_block",
+    "G5_no_contradiction",
+    "G6_agent8_conf_ge_0.55"
+   ]
+  }
+ ]
+}

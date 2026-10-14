@@ -1,5 +1,16 @@
 # BIAP — Project Status
 
+## 2026-10-14 session 24 (resume: interrupted overnight DE/SE scans recovered, BUY-gate audit; no deploy, no code-gate change)
+
+- **Reconciliation:** branch `feat/biap-global` was clean at 45fb5a2 = origin; prod 8091 `/health` 200 at 46fc92e. The interrupted overnight run (`/home/ubuntu/biap-global/o14`, `driver2.sh`) had in fact finished (`ALLDONE`): fresh scans + fresh full-pipeline audits (Agents 1-10, isolated data dir, production ledgers untouched) for DE Xetra, DE Frankfurt, SE Stockholm and FR/IT/GB/NO/US-NASDAQ/US-NYSE, 30 companies each. A leftover stopped pytest (PID 14237) and two `tail -F` from that session are still present; a kill was refused by the auto-mode classifier, so they were left (harmless, owner may `kill -9`).
+- **Why no BUY in DE/SE (90 companies, thresholds untouched):** G2 score >= 0.25 fails for all 90 (best DE score +0.14 SAP/Frankfurt, best SE +0.24 AQ, BRAV +0.23). Final calls: DE 60/60 NO_RECOMMENDATION; SE 25 NO_RECOMMENDATION + 5 HOLD_OR_WATCH (SAND, BOL, ALFA, AQ, BRAV). G6 (Agent 8 conf >= 0.55) fails 30/30 Xetra, 30/30 Frankfurt, 25/30 SE; G3 conf >= 0.45 fails 19/12/7; G4 distress block 3/3/15; G5 contradiction 3/2/7; G1 evidence 5/3/1. Nothing fails on G6 alone in DE/SE, so no name is held back only by the confidence gate.
+- **Root causes:** (a) genuine weak/negative evidence (risk agent negative, 45% negative 6m return); (b) data gaps: SAP/SIE/BMW/DTE lack balance-sheet or debt lines in the official issuer sources (SAP: `de-official-issuer-financials` exposes income statement only; total_assets/equity/debt missing -> Agent 9 INSUFFICIENT_DATA, confidence 0.39); (c) SE HIGH_RISK is corroborated by 3 canonical models for Telia, Sivers, Elon, etc. (Altman Z'' DISTRESS + Zmijewski + ICR) - the canonical formulas are implemented as published, I did not find a defect and did not soften them.
+- **Verified defects fixed this session:** `docs/market-audit/scripts/research_report.py` overwrote the market key with the per-company market-data dict (report tables printed a dict in the Market column); fixed, report regenerated. Environment note: sourcing `analysis/.env.global` into the test shell sets `BIAP_GLOBAL_RANKING_MARKETS` and makes 2 `test_global_top_markets` tests fail; with a clean env they pass (not a product defect).
+- **Tests (clean env, `env -i`):** `pytest tests -k "global or opportunity or governance or sector or governor or distress or agent"` -> 823 passed, 259 deselected, 0 failed.
+- **Added:** `docs/market-audit/scripts/fresh_audit.py`, `research_report.py`, and `docs/market-audit/research/2026-10-14/` (RESEARCH_READINESS.md/.json, MANIFEST.json, 9 per-market audit JSONs).
+- **Not done / blockers:** DE issuer balance-sheet/debt extraction for SAP/SIE/BMW/DTE (needs official PDFs/ESEF, not estimated); no APK change and no device test; no all-market regression re-run; no deploy (backend code unchanged). PR #51 remains open, not merged.
+- **Research-freeze readiness:** NOT ready. DE debt/EBITDA gap, device test of APK 0.3.22 and the 12 partial benchmark markets are open.
+
 ## 2026-10-14 sandbox cleanup (no deploy, no scans, no APK build)
 
 - **Disk:** 43G used / 4.8G free (90%) -> 40G used / 7.5G free (85%); ~2.8G recovered.
