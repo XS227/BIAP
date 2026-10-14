@@ -1,5 +1,47 @@
 # BIAP — Project Status
 
+## 2026-10-14 session 30 (milestone 4): FR / NO / DE valuation-coverage recovery
+
+**No agent, feature, threshold or BUY-gate change. Not deployed, not merged (PR #51 open; production still 7a49767).** Code at 9577409. Tests (`.venv-global`, `TMPDIR` on disk): **1,133 passed, 0 failed**. Note: with `/tmp` (tmpfs) near its quota the suite shows spurious sqlite "disk I/O error" setup errors; rerun with `TMPDIR` on the disk volume.
+
+Task text said "FR 0%, DE 53%, NO P/B 7%" (the s29 figures). Those were stale at session start: commits c756845, 2fc6600, deede38 and 9577409 moved them.
+
+| Market (30 scanned) | P/E | P/B | EV/EBITDA | s29 P/B, EV/EBITDA |
+|---|--:|--:|--:|---|
+| FR Paris | 24 | 26 | 7 | 9, 0 |
+| NO Oslo | 25 | 29 | 18 | 2, 1 |
+| DE Xetra | 22 | 29 | 16 | 28, 16 |
+| SE Stockholm | 16 | 22 | 10 | 21, 9 |
+| GB LSE / IT Milan | 21 / 18 | 27 / 28 | 9 / 14 | unchanged |
+| US NASDAQ / NYSE | 9 / 15 | 20 / 12 | 8 / 4 | 19, 8 / 12, 4 |
+
+Source: `s30/out/*.audit.json` (fresh audit, isolated data dir). **FR EV/EBITDA is 7/30 (23%), not complete; DE EV/EBITDA is 16/30 (53%), unchanged.**
+
+### What changed this session
+- Share-count cross-check now uses the owners' share of profit (`ProfitLossAttributableToOwnersOfParent`) when tagged, since EPS is group-share (9577409; test added). No validation band loosened.
+- Earlier commits: AMF voting-rights share counts (FR), Brønnøysund/GLEIF share counts (NO), AMF title lookup, reviewed Schneider D&A.
+
+### French EV/EBITDA: 23 gaps classified (from cached AMF ESEF packages; nothing fabricated, no access control touched)
+- **Clean EV/EBITDA (7):** SU, BNP, SOI, ERF, CAP, AI, DG.
+- **D&A only available impairment-inclusive (policy, not parser defect):** the filing tags only "amortissements *et dépréciations*" / "...AndImpairmentLoss..." lines: LR (Legrand, four extension lines, labels verified in the xhtml), BIM, BN, DIM, PUB, RNO, SAN, ENGI, RMS, TTE, OR (mixed with provisions), MC. `esef.py` deliberately refuses these (`tagged_da_impairment_inclusive_only_not_used`). Using them would add roughly 6 names (those that also have debt) but would mix impairment into EBITDA: **owner decision, not taken.**
+- **Banks / insurers (EV/EBITDA not meaningful):** ACA, GLE (EBITDA tag present, no EV), BNP is counted above only via a derived figure and should be treated as non-comparable.
+- **Negative EBITDA / not meaningful:** ARVEN, MEDCL, QDT, RNO.
+- **Debt tags exist but no D&A, so no gain:** SAF (clean interest-bearing tags, but no operating income tagged), BN, PUB, SRP, ABCA.
+- **Identity:** AIR files via the Dutch AFM register (no AMF package), no share count; GLE and BAIN lack a share count.
+- **Legrand was not added** to `reviewed_da_lines.json`: the cash-flow labels include impairment ("dépréciations"), so they fail the stated clean-D&A policy.
+
+### Norway
+P/B 29/30. The only gap is **LIFE: total equity is negative (−28.0m NOK)**, so P/B is genuinely not meaningful. EV/EBITDA 18/30; remaining gaps are banks/financials (DNB, STB, GJF, ODFB: no operating income concept), and issuers whose filings tag no D&A (EQNR, MOWI, KIT, NAS, TGS, SCATC).
+
+### Germany
+EV/EBITDA 16/30, unchanged. Missing: ENR, VRL, SNG, CLIQ, XTP, FYB, FXT, SWA, BWB, VME, HMU plus financials ALV, DBK, MUV2 (not meaningful). Per-issuer cause for the non-financials was not re-derived in this session; earlier finding stands (no lawful machine-readable source; several issuer hosts 403 this VPS, not bypassed).
+
+### Unresolved blockers and next steps
+1. **FR/NO/DE EV/EBITDA below 100%**: needs owner decision on accepting impairment-inclusive D&A (flagged, not applied) or issuer-by-issuer manual review of D&A in the URD text.
+2. DE non-financial gaps need a per-issuer cause table (ticker mapping vs. source failure vs. untagged).
+3. APK device test still pending (no device). Production restart is the owner's step.
+4. `/tmp` tmpfs quota: pytest tmp_path should be moved to the disk volume in CI/harness.
+
 ## 2026-10-14 session 29 (milestone 3): eight-market re-validation after DE EV/EBITDA 16/30
 
 **No agent, feature or BUY-threshold change.** Code at 2d13b08; this session is validation + documentation only. Tests (`.venv-global`): **1,117 passed, 0 failed**.
