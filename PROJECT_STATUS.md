@@ -1,5 +1,34 @@
 # BIAP — Project Status
 
+## 2026-10-14 session 27 (milestone 2): German share-count supplement, full re-validation of 8 markets, GO/NO-GO
+
+**Authorised by owner; no agent, feature or threshold change.**
+
+- **Germany share counts** (`BoerseFrankfurtShareCountSupplement`, commit 01c8278): reviewed/issuer statement rows (SAP, SIE, BMW, DTE...) carried statements but an empty `shares_outstanding`. Börse Frankfurt key-data `outstandingShares` now fills an *empty* count only (never overwrites), with source URL, fiscal year and status in `raw_provider_fields.de_share_count_supplement`; a count contradicting net income / EPS by more than 2x is withheld; ISIN mismatch or outage is recorded. Live check: SAP 1.2285bn, SIE 0.800bn, BMW 0.616bn, DTE 4.905bn (all `applied`). 3 new unit tests.
+- **Re-validation** on isolated data dir (`s27/data`, DE fundamentals cache cleared, SE/IT/GB/NO/US/FR 30-company benchmarks, fresh pipeline; `docs/market-audit/research/2026-10-14-s27/`):
+
+| Market | P/E | P/B | EV/EBITDA | calls | s26 P/B, EV |
+|---|--:|--:|--:|---|---|
+| DE Xetra | 28 | 29 | 7 | 28 NO_REC, 2 WATCH, 0 BUY | 29, 7 |
+| SE Stockholm | 16 | 21 | 9 | 3 BUY_CANDIDATE, 3 WATCH | 24, 10 |
+| GB LSE | 21 | 27 | 9 | 1 BUY, 7 WATCH | 28, 9 |
+| IT Milan | 18 | 28 | 14 | 0 BUY, 3 WATCH | 28, 14 |
+| NO Oslo | 25 | 2 | 1 | 0 BUY, 6 WATCH | 2, 1 |
+| US NASDAQ | 8 | 19 | 8 | 2 BUY | unchanged |
+| US NYSE | 15 | 12 | 4 | 0 BUY, 1 WATCH | unchanged |
+| FR Paris | 24 | 8 | 0 | 0 BUY, 7 WATCH | (no s26 run) |
+
+- **Why SE/GB P/B fell vs s26 (SIVE, CYNCA, VICO, one GB):** the share count is withheld because it fails the +-15% net income/EPS cross-check (loss years; CYNCA implied 367.6m vs 37.6m published = ratio 0.10, consistent with a share-count change). Conservative by design, validation not loosened; these names show INSUFFICIENT_DATA for P/B, i.e. *missing data*, not weakness.
+- **BUY gates unchanged** (score >= 0.25, confidence >= 0.45, evidence PASS, no distress block, no contradiction, Agent 8 >= 0.55). Dominant blocker everywhere is G2 (score) and G6 (calibration), i.e. genuine weak/neutral evidence, not data gaps; data gaps show up as G1/G3 failures (DE 5/17, SE 1/5, GB 1/8, IT 3/9, NO 2/5, US 3/10 and 3/7, FR 1/9 of 30).
+- **FX:** 0 of 240 benchmark rows report `fx_unavailable`.
+- **Still open:** DE EV/EBITDA 7/30 (D&A / debt missing outside DAX; no lawful machine-readable source found: filings.xbrl.org indexes no German filings, Unternehmensregister forbids automated retrieval, several issuer hosts 403 from this VPS); NO share counts (Euronext Live exposes none); FR EV/EBITDA 0/30; APK 0.3.22 device test **pending** (no device; backend validation not blocked by it).
+- **SE BUY_CANDIDATE caution retained:** AZN rests on a 3-peer median P/E of 112x; AQ/BRAV pass the gate by <0.02.
+- **Tests (clean env, `.venv-global`):** `pytest tests` -> 1,111 passed, 0 failed.
+- **Production** still serves 7a49767 until the owner restarts (`sudo deploy/restart-global-prod.sh <commit>`); PR #51 open, not merged.
+
+### Research GO/NO-GO (session 27)
+**Restricted GO** for a paper-research dataset in SE, GB, IT, US-NASDAQ, US-NYSE (P/B coverage 40-93%, valuation provenance and FX recorded, no gate relaxed); **NO-GO** for an all-market dataset: DE EV/EBITDA 23%, NO P/B 7%, FR EV/EBITDA 0%, comparison agent still depends on peer cohort size, and APK device test unperformed. Valuation-multiple-based conclusions for DE/NO/FR must be excluded.
+
 ## 2026-10-14 session 26 (milestone 1): date-aligned FX, official share counts / market caps
 
 **Authorised by owner:** verified official shares-outstanding sources + historical FX. No agent/feature/threshold change.

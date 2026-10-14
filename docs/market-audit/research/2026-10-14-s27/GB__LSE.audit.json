@@ -1,0 +1,5403 @@
+{
+ "market": "GB__LSE",
+ "companies": [
+  {
+   "ticker": "SHEL",
+   "name": "SHELL PLC",
+   "category": "TRADING_VALUE",
+   "rank": 1,
+   "isin": "GB00BP6MXD84",
+   "sector": "Energy",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 38.655,
+    "historyFileObservedAt": "2026-10-13T21:35:27.152161+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SHEL.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 381910382.73700005,
+    "return30dPct": 12.614712308812814,
+    "volumeRatio": 0.6148543261640618,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.200345,
+   "confidence": 0.601329,
+   "agents": {
+    "fundamental": {
+     "vote": 0.05000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.2,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.200345
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.601329
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.20<0.25, no negative agent; 3 of 17 core fields missing; abstaining agents: ['comparison']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.60."
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:operating_income",
+     "interest_coverage:operating_income"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 16.895392540288615,
+    "pb": 1.6975008992139766,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -6.129182025380564,
+    "netMarginPct": 6.789041013766177,
+    "roePct": 10.33487528448143,
+    "debtToEquity": 0.43145922575419665,
+    "currentRatio": 1.3004064794030212,
+    "return1mPct": 8.50083752093802,
+    "return3mPct": 24.19997102357694,
+    "return6mPct": 16.174146674028677,
+    "volatilityAnnualizedPct": 23.175214832406134,
+    "maxDrawdownPct": -19.82255751131266,
+    "volumeVs30d": 0.45715674553503177
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "AZN",
+   "name": "ASTRAZENECA PLC",
+   "category": "TRADING_VALUE",
+   "rank": 2,
+   "isin": "GB0009895292",
+   "sector": "Health Care",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 118.96000000000001,
+    "historyFileObservedAt": "2026-10-13T21:35:25.826123+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "AZN.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 352732807.5073334,
+    "return30dPct": -0.5517471994649692,
+    "volumeRatio": 0.7277741759249038,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.132978,
+   "confidence": 0.601329,
+   "agents": {
+    "fundamental": {
+     "vote": 0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.15000000000000002,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": -0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.7,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.132978
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.601329
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.13<0.25 with negative evidence-backed votes: forecast -0.30, risk -0.15",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.60."
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 23.713619955480674,
+    "pb": 5.099786171715335,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 8.62907550903409,
+    "netMarginPct": 17.421134169802006,
+    "roePct": 21.00412570044541,
+    "debtToEquity": 0.5710092571686611,
+    "currentRatio": 0.9381389424176111,
+    "return1mPct": -2.2379463551094325,
+    "return3mPct": -5.437012998014867,
+    "return6mPct": -19.52603892287946,
+    "volatilityAnnualizedPct": 26.148730731968158,
+    "maxDrawdownPct": -26.25944634637381,
+    "volumeVs30d": 0.5988273238300263
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "HSBA",
+   "name": "HSBC HOLDINGS PLC",
+   "category": "TRADING_VALUE",
+   "rank": 3,
+   "isin": "GB0005405286",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 14.30800048828125,
+    "historyFileObservedAt": "2026-10-13T21:35:30.121244+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "HSBA.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 291015442.60726845,
+    "return30dPct": -6.691011735515184,
+    "volumeRatio": 0.7432454091191427,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.011205,
+   "confidence": 0.514684,
+   "agents": {
+    "fundamental": {
+     "vote": -0.2,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.05,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.1,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.011205
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.514684
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.01<0.25 with negative evidence-backed votes: fundamental -0.20",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.51 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.51 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 15.479840052957194,
+    "pb": 1.6051801925888078,
+    "evEbitda": null,
+    "peVsSectorPct": 4.191231125673434,
+    "revenueYoyPct": 3.6747957603182835,
+    "netMarginPct": 33.879661364501864,
+    "roePct": 11.246876002839555,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -7.4700706130029655,
+    "return3mPct": -3.901298942569975,
+    "return6mPct": 6.177960421196316,
+    "volatilityAnnualizedPct": 27.061080271385872,
+    "maxDrawdownPct": -18.133082581324796,
+    "volumeVs30d": 0.7450467183412607
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "GLEN",
+   "name": "GLENCORE PLC",
+   "category": "TRADING_VALUE",
+   "rank": 4,
+   "isin": "JE00B4T3BW64",
+   "sector": "Basic Materials",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 5.845999755859375,
+    "historyFileObservedAt": "2026-10-13T11:36:28.667945+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "GLEN.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 215579300.41130072,
+    "return30dPct": -1.7974151564660312,
+    "volumeRatio": 0.634664808747964,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.123933,
+   "confidence": 0.561903,
+   "agents": {
+    "fundamental": {
+     "vote": 0.15000000000000005,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.5,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": -0.25,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.123933
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.561903
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.12<0.25 with negative evidence-backed votes: risk -0.50, quality -0.25",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.56."
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:operating_income",
+     "interest_coverage:operating_income"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 257.6885464382957,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 7.183992656228355,
+    "netMarginPct": 0.04847799301108934,
+    "roePct": 0.35707909301910373,
+    "debtToEquity": 1.2344819377492116,
+    "currentRatio": 1.0624504675859883,
+    "return1mPct": -0.6937352937288588,
+    "return3mPct": 13.42251179310936,
+    "return6mPct": 5.732426786569977,
+    "volatilityAnnualizedPct": 31.468589508537654,
+    "maxDrawdownPct": -20.21951336680992,
+    "volumeVs30d": 0.6135291271004162
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "BARC",
+   "name": "BARCLAYS PLC",
+   "category": "TRADING_VALUE",
+   "rank": 5,
+   "isin": "GB0031348658",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 4.2964999389648435,
+    "historyFileObservedAt": "2026-10-13T11:36:36.581167+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "BARC.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 182081602.76934773,
+    "return30dPct": -12.779133460628278,
+    "volumeRatio": 0.6255527099861962,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.066242,
+   "confidence": 0.374344,
+   "agents": {
+    "fundamental": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "risk": {
+     "vote": -0.2,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": -0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.6,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": -0.1,
+     "confidence": 0.33999999999999997
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.066242
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.374344
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.07<0.25 with negative evidence-backed votes: forecast -0.30, risk -0.20, quality -0.10",
+   "dataCompleteness": {
+    "present": [
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "free_cash_flow",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.6875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.37 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.37 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 9.926940360570063,
+    "pb": 0.7441430053811544,
+    "evEbitda": null,
+    "peVsSectorPct": -54.84290703659346,
+    "revenueYoyPct": null,
+    "netMarginPct": null,
+    "roePct": 9.21954087632292,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -9.132708925189393,
+    "return3mPct": -17.092732722122108,
+    "return6mPct": -1.361318628702246,
+    "volatilityAnnualizedPct": 31.174699236098196,
+    "maxDrawdownPct": -25.449944427865027,
+    "volumeVs30d": 0.7131393606556964
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "LLOY",
+   "name": "LLOYDS BANKING GROUP PLC",
+   "category": "TRADING_VALUE",
+   "rank": 6,
+   "isin": "GB0008706128",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 1.015999984741211,
+    "historyFileObservedAt": "2026-10-13T11:36:29.925980+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "LLOY.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 172049183.01095286,
+    "return30dPct": -7.044834732520988,
+    "volumeRatio": 0.6220756166042383,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.105034,
+   "confidence": 0.514957,
+   "agents": {
+    "fundamental": {
+     "vote": -0.2,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.05,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.35,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.1,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.105034
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.514957
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.11<0.25 with negative evidence-backed votes: fundamental -0.20",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "esef-xbrl-cached-v2",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://filings.xbrl.org/549300PPXHEU2JF0AM85/2025-12-31/ESEF/GB/0/549300PPXHEU2JF0AM85-2025-12-31/reports/ixbrlviewer.html"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.51 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.51 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 14.900000435965401,
+    "pb": 1.250920139866714,
+    "evEbitda": null,
+    "peVsSectorPct": -23.785116461758783,
+    "revenueYoyPct": 7.882019663389439,
+    "netMarginPct": 24.492843167541963,
+    "roePct": 9.937953078321183,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -4.618194323576896,
+    "return3mPct": -7.276372611592407,
+    "return6mPct": 1.001242012638226,
+    "volatilityAnnualizedPct": 27.240659322936374,
+    "maxDrawdownPct": -19.680279640932266,
+    "volumeVs30d": 0.5919403835094103
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "RIO",
+   "name": "RIO TINTO PLC",
+   "category": "TRADING_VALUE",
+   "rank": 7,
+   "isin": "GB0007188757",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 69.97,
+    "historyFileObservedAt": "2026-10-13T21:35:17.028877+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "RIO.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 158662745.671,
+    "return30dPct": -7.703469199314084,
+    "volumeRatio": 0.744084464116301,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.136519,
+   "confidence": 0.533854,
+   "agents": {
+    "fundamental": {
+     "vote": -0.1,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": 0.1,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.65,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.136519
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.533854
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.14<0.25 with negative evidence-backed votes: fundamental -0.10",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "total_debt",
+     "operating_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "current_liabilities",
+     "free_cash_flow"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "esef-xbrl-cached-v2",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://filings.xbrl.org/213800YOEO5OQ72G2R82/2025-12-31/ESEF/GB/0/213800YOEO5OQ72G2R82-2025-12-31/reports/ixbrlviewer.html"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.53 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.53 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "zmijewski:current_liabilities",
+     "altman:current_liabilities"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.5,
+    "missing": [
+     "fcf_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 14.895517294249967,
+    "pb": 1.7644585770855539,
+    "evEbitda": 5.937844100962906,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 7.417346900741739,
+    "netMarginPct": 17.781671813733997,
+    "roePct": 15.29153735975173,
+    "debtToEquity": 0.3162747672475531,
+    "currentRatio": null,
+    "return1mPct": -3.7047315110309453,
+    "return3mPct": 1.084100578862146,
+    "return6mPct": -4.163398643451199,
+    "volatilityAnnualizedPct": 28.11060428829684,
+    "maxDrawdownPct": -21.882523333687224,
+    "volumeVs30d": 0.5104122548808437
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "BATS",
+   "name": "BRITISH AMERICAN TOBACCO PLC",
+   "category": "TRADING_VALUE",
+   "rank": 8,
+   "isin": "GB0002875804",
+   "sector": "Consumer Staples",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 42.25,
+    "historyFileObservedAt": "2026-10-13T21:35:16.978876+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "BATS.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 157792290.11933333,
+    "return30dPct": 1.236866280944482,
+    "volumeRatio": 0.6770521199217854,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.041737,
+   "confidence": 0.666505,
+   "agents": {
+    "fundamental": {
+     "vote": 0.05000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.05,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.05000000000000002,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.041737
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.666505
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.04<0.25, no negative agent; 3 of 17 core fields missing; abstaining agents: []",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "esef-xbrl-cached-v2",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://filings.xbrl.org/213800FKA5MF17RJKT63/2025-12-31/ESEF/GB/0/213800FKA5MF17RJKT63-2025-12-31/reports/ixbrlviewer.html"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.67."
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime"
+    ],
+    "missingInputs": [
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 12.091168091168091,
+    "pb": 1.892502952975387,
+    "evEbitda": null,
+    "peVsSectorPct": -0.2605338713630112,
+    "revenueYoyPct": -0.9935438976301891,
+    "netMarginPct": 30.32018742678641,
+    "roePct": 16.128362239069478,
+    "debtToEquity": 0.6585938311351127,
+    "currentRatio": 0.8733131368768934,
+    "return1mPct": -0.12636295204171422,
+    "return3mPct": -3.3113941263619218,
+    "return6mPct": 1.1000755251428407,
+    "volatilityAnnualizedPct": 25.279316847339278,
+    "maxDrawdownPct": -20.171050784688187,
+    "volumeVs30d": 0.6271428728398437
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "AAL",
+   "name": "ANGLO AMERICAN PLC",
+   "category": "TRADING_VALUE",
+   "rank": 9,
+   "isin": "GB00BTK05J60",
+   "sector": "Basic Materials",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 41.7,
+    "historyFileObservedAt": "2026-10-13T11:36:45.468417+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "AAL.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 152335599.7146667,
+    "return30dPct": -1.7204807918925202,
+    "volumeRatio": 0.5225491341965312,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.074304,
+   "confidence": 0.497634,
+   "agents": {
+    "fundamental": {
+     "vote": -0.4500000000000001,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.2,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.074304
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.497634
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.07<0.25 with negative evidence-backed votes: fundamental -0.45, quality -0.30, risk -0.20",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "current_assets",
+     "current_liabilities",
+     "pe"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "esef-xbrl-cached-v2",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://filings.xbrl.org/549300S9XF92D1X8ME43/2025-12-31/ESEF/GB/0/549300S9XF92D1X8ME43-2025-12-31/reports/ixbrlviewer.html"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.50 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.50 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "zmijewski:current_assets",
+     "zmijewski:current_liabilities",
+     "altman:current_assets",
+     "altman:current_liabilities"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.6,
+    "missing": [
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 2.7099446118809545,
+    "evEbitda": 19.64006543880363,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 4.5139475908706705,
+    "netMarginPct": -17.09263453035695,
+    "roePct": -13.1442550897707,
+    "debtToEquity": 0.5973379773603682,
+    "currentRatio": null,
+    "return1mPct": 5.809768637532153,
+    "return3mPct": 16.046637720518,
+    "return6mPct": 14.992989569887815,
+    "volatilityAnnualizedPct": 38.929442096088906,
+    "maxDrawdownPct": -25.121373640279497,
+    "volumeVs30d": 0.5288300104019973
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "NWG",
+   "name": "NATWEST GROUP PLC",
+   "category": "TRADING_VALUE",
+   "rank": 10,
+   "isin": "GB00BM8PJY71",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 6.425999755859375,
+    "historyFileObservedAt": "2026-10-13T11:36:43.503361+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "NWG.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 147160666.5140419,
+    "return30dPct": -5.277129649139633,
+    "volumeRatio": 0.49225823579841876,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.134415,
+   "confidence": 0.387,
+   "agents": {
+    "fundamental": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "risk": {
+     "vote": -0.2,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.6,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": -0.1,
+     "confidence": 0.33999999999999997
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.134415
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.387
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.13<0.25 with negative evidence-backed votes: risk -0.20, quality -0.10",
+   "dataCompleteness": {
+    "present": [
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.75,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.39 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.39 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 9.80000035903033,
+    "pb": 1.241357179616549,
+    "evEbitda": null,
+    "peVsSectorPct": -55.420349958792656,
+    "revenueYoyPct": null,
+    "netMarginPct": null,
+    "roePct": 13.69065778048952,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -2.4018693134304603,
+    "return3mPct": 0.469085251093615,
+    "return6mPct": 7.05299998578286,
+    "volatilityAnnualizedPct": 30.123564510242723,
+    "maxDrawdownPct": -25.121556443263437,
+    "volumeVs30d": 0.39750002140152646
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "FXPO",
+   "name": "FERREXPO PLC",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 1,
+   "isin": "GB00B1XH2C03",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 0.32104000091552737,
+    "historyFileObservedAt": "2026-10-13T08:50:13.267714+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "FXPO.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 673987.4797209562,
+    "return30dPct": 11133.02973130882,
+    "volumeRatio": 0.06180561608377818,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.277313,
+   "confidence": 0.435181,
+   "agents": {
+    "fundamental": {
+     "vote": -0.7999999999999999,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -0.7,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.277313
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.435181
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.28<0.25 with negative evidence-backed votes: fundamental -0.80, risk -0.70, quality -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "pb"
+    ],
+    "missing": [
+     "total_debt",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.44 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.44 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime"
+    ],
+    "missingInputs": [
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 0.6149054497251185,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -15.63749982587973,
+    "netMarginPct": -28.44216612220636,
+    "roePct": -31.83506702321396,
+    "debtToEquity": null,
+    "currentRatio": 1.2374643729641694,
+    "return1mPct": 10.755618139689439,
+    "return3mPct": 10936.808411220312,
+    "return6mPct": -26.197477069645004,
+    "volatilityAnnualizedPct": 926.1225736568664,
+    "maxDrawdownPct": -99.64672434539513,
+    "volumeVs30d": 0.31411642182447375
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "RCGH",
+   "name": "RC365 HOLDING PLC",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 2,
+   "isin": "GB00BMG8BL95",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 0.07199999809265137,
+    "historyFileObservedAt": "2026-10-13T11:32:35.349393+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "RCGH.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 252828.1729869183,
+    "return30dPct": 176.92307974459865,
+    "volumeRatio": 0.08960886875033523,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.119378,
+   "confidence": 0.409933,
+   "agents": {
+    "fundamental": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.8999999999999999,
+     "confidence": 0.5800000000000001
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.33999999999999997
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.119378
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.409933
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.12<0.25 with negative evidence-backed votes: risk -0.90, quality -0.30, fundamental -0.20",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "total_assets",
+     "total_liabilities",
+     "total_debt",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2026-03-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2026-03-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2026-03-31",
+    "evidenceCoverage": 0.75,
+    "freshnessTier": "RECENT_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.41 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.41 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "zmijewski:total_assets",
+     "zmijewski:total_liabilities",
+     "altman:total_assets",
+     "altman:total_liabilities"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 56.934628843772515,
+    "netMarginPct": -58.16758817609243,
+    "roePct": 185.07351239960394,
+    "debtToEquity": null,
+    "currentRatio": 0.5670995142471539,
+    "return1mPct": 83.38461655836839,
+    "return3mPct": 190.73171594042236,
+    "return6mPct": 386.5306058897174,
+    "volatilityAnnualizedPct": 148.1738425273064,
+    "maxDrawdownPct": -55.000001192092896,
+    "volumeVs30d": 0.39546830318506343
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "SWC",
+   "name": "THE SMARTER WEB COMPANY PLC",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 3,
+   "isin": "GB00BPJHZ015",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 0.6481999969482422,
+    "historyFileObservedAt": "2026-10-13T10:36:34.117792+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SWC.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 1302385.500968947,
+    "return30dPct": 99.44615290715141,
+    "volumeRatio": 0.17448018405969873,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.140935,
+   "confidence": 0.376967,
+   "agents": {
+    "fundamental": {
+     "vote": -0.4,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": -0.8999999999999999,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.140935
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.376967
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.14<0.25 with negative evidence-backed votes: risk -0.90, fundamental -0.40",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "operating_income",
+     "ebitda",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "revenue_yoy_pct",
+     "net_income",
+     "total_debt",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-10-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-10-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-10-31",
+    "evidenceCoverage": 0.75,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.38 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.38 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "zmijewski:net_income"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 42.500000615273755,
+    "pb": 1.0114976540093155,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": null,
+    "netMarginPct": null,
+    "roePct": null,
+    "debtToEquity": null,
+    "currentRatio": 0.17331828302183525,
+    "return1mPct": 32.412064756691805,
+    "return3mPct": 73.92739963663435,
+    "return6mPct": 53.554782143215206,
+    "volatilityAnnualizedPct": 90.79680363319002,
+    "maxDrawdownPct": -40.05988115322089,
+    "volumeVs30d": 0.4971642526176059
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "EST",
+   "name": "EAST STAR RESOURCES PLC",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 4,
+   "isin": "GB00BN92HZ16",
+   "sector": "Basic Materials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 0.08770000457763671,
+    "historyFileObservedAt": "2026-10-13T11:31:00.278724+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "EST.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 1038991.9728101237,
+    "return30dPct": 99.31818790179625,
+    "volumeRatio": 0.03644437345916508,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.183141,
+   "confidence": 0.357706,
+   "agents": {
+    "fundamental": {
+     "vote": -0.4,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": -0.5,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.0,
+     "confidence": 0.33999999999999997
+    },
+    "liquidity": {
+     "vote": -0.1,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.183141
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.357706
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.18<0.25 with negative evidence-backed votes: risk -0.50, fundamental -0.40, liquidity -0.10",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow"
+    ],
+    "missing": [
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "total_debt",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.6875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.36 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.36 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:operating_income",
+     "interest_coverage:operating_income",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": null,
+    "netMarginPct": null,
+    "roePct": -94.49691991786447,
+    "debtToEquity": null,
+    "currentRatio": 8.858156028368795,
+    "return1mPct": -13.427088124470377,
+    "return3mPct": 80.6739139696601,
+    "return6mPct": 118.7105256470947,
+    "volatilityAnnualizedPct": 87.2091489877278,
+    "maxDrawdownPct": -26.82926659070612,
+    "volumeVs30d": 0.13958482351224524
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "TTG",
+   "name": "TT ELECTRONICS PLC",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 5,
+   "isin": "GB0008711763",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 1.8041600036621095,
+    "historyFileObservedAt": "2026-10-13T08:57:15.477414+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "TTG.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 1014824.7458516438,
+    "return30dPct": 32.65882379868452,
+    "volumeRatio": 0.015899217690280534,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.195972,
+   "confidence": 0.51311,
+   "agents": {
+    "fundamental": {
+     "vote": -0.7499999999999999,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.45,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.195972
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.51311
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.20<0.25 with negative evidence-backed votes: fundamental -0.75, risk -0.45, quality -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb"
+    ],
+    "missing": [
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.51 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.51 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.7,
+    "missing": [
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 2.215605138983051,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -7.618499328343886,
+    "netMarginPct": -10.511009555463232,
+    "roePct": -34.30508474576271,
+    "debtToEquity": 0.6027118644067797,
+    "currentRatio": 1.7109826589595376,
+    "return1mPct": 8.193627734894848,
+    "return3mPct": 56.64957160623667,
+    "return6mPct": 52.73333231608075,
+    "volatilityAnnualizedPct": 61.961673422354735,
+    "maxDrawdownPct": -33.116883116883116,
+    "volumeVs30d": 0.3882671523324045
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "MNO",
+   "name": "MERIDIAN MINING PLC",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 6,
+   "isin": "GB00BVPND783",
+   "sector": "Basic Materials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 1.2810000610351562,
+    "historyFileObservedAt": "2026-10-13T11:48:39.783837+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "MNO.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 776253.244920133,
+    "return30dPct": 31.25000830556537,
+    "volumeRatio": 0.07558776964829023,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": -0.018838,
+   "confidence": 0.090667,
+   "agents": {
+    "fundamental": {
+     "vote": -0.4,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": -0.5,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.0,
+     "confidence": 0.33999999999999997
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "FAIL",
+     "value": "BLOCK"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.018838
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.090667
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "evidence BLOCK: ('fundamental_source',)",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pb"
+    ],
+    "missing": [
+     "revenue_yoy_pct",
+     "total_debt",
+     "interest_expense",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "yahoo-public-fundamentals-global",
+      "type": "public_vendor_financial_metrics",
+      "period": "2025-12-31",
+      "url": "https://finance.yahoo.com/quote/MNO.L/financials/"
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.75,
+    "freshnessTier": "NOT_CURRENT"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [
+     "task/evidence gate is out of scope or blocked"
+    ],
+    "review_reasons": [],
+    "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 18.260409106652304,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": null,
+    "netMarginPct": null,
+    "roePct": -39.60967243585017,
+    "debtToEquity": null,
+    "currentRatio": 13.14189185171694,
+    "return1mPct": 20.44297882027182,
+    "return3mPct": 46.37994685484832,
+    "return6mPct": 24.500001606188327,
+    "volatilityAnnualizedPct": 63.72946696202641,
+    "maxDrawdownPct": -34.84716290469773,
+    "volumeVs30d": 0.46714794531733805
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "TBTG",
+   "name": "THE BEAUTY TECH GROUP PLC",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 7,
+   "isin": "GB00BTWSXB68",
+   "sector": "Consumer Staples",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 4.39,
+    "historyFileObservedAt": "2026-10-13T11:49:33.614642+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "TBTG.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 2858175.0713333334,
+    "return30dPct": 28.36257309941519,
+    "volumeRatio": 0.013045608558481435,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.194855,
+   "confidence": 0.666162,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7500000000000001,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.30000000000000004,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": -0.5,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.65,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.194855
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.666162
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental,quality negative=comparison"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=comparison",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.7,
+    "missing": [
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 41.18181818181819,
+    "pb": 5.525292866277454,
+    "evEbitda": 20.089241520570877,
+    "peVsSectorPct": 244.65470152165435,
+    "revenueYoyPct": 39.39322020489695,
+    "netMarginPct": 7.0438422247446075,
+    "roePct": 11.041423408395886,
+    "debtToEquity": 0.0,
+    "currentRatio": 1.984922327139811,
+    "return1mPct": 27.60563380281691,
+    "return3mPct": 27.60563380281691,
+    "return6mPct": 43.80952380952383,
+    "volatilityAnnualizedPct": 43.36879452606296,
+    "maxDrawdownPct": -27.52293577981651,
+    "volumeVs30d": 0.6359648247196639
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "OCDO",
+   "name": "OCADO GROUP PLC",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 8,
+   "isin": "GB00B3MBS747",
+   "sector": "Consumer Staples",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 3.0473001098632815,
+    "historyFileObservedAt": "2026-10-13T11:42:13.114617+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "OCDO.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 5832002.496360047,
+    "return30dPct": 27.076733573083402,
+    "volumeRatio": 0.10220838237139036,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.230584,
+   "confidence": 0.666162,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7500000000000001,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.6499999999999999,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.6,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.35,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.230584
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.666162
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=comparison,fundamental,quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=comparison,fundamental,quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-11-30",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-11-30",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-11-30",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 6.000000124307853,
+    "pb": 1.610362061102927,
+    "evEbitda": null,
+    "peVsSectorPct": -49.7854066849772,
+    "revenueYoyPct": 13.757615675942692,
+    "netMarginPct": 28.602446261851345,
+    "roePct": 25.31223980016653,
+    "debtToEquity": 0.9160315122013707,
+    "currentRatio": 1.995311167945439,
+    "return1mPct": 42.456480539694795,
+    "return3mPct": 65.78503723290572,
+    "return6mPct": 53.87830284643967,
+    "volatilityAnnualizedPct": 61.616645543431524,
+    "maxDrawdownPct": -44.856255553575316,
+    "volumeVs30d": 1.0271283420979251
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "BPT",
+   "name": "BRIDGEPOINT GROUP PLC",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 9,
+   "isin": "GB00BND88V85",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 4.093999938964844,
+    "historyFileObservedAt": "2026-10-13T11:41:19.019098+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "BPT.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 7748769.668896312,
+    "return30dPct": 26.927682111285222,
+    "volumeRatio": 0.10755670993531194,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.034464,
+   "confidence": 0.499356,
+   "agents": {
+    "fundamental": {
+     "vote": 0.2,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": -0.4,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": -0.5,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.0,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.034464
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.499356
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.03<0.25 with negative evidence-backed votes: comparison -0.50, risk -0.40",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "operating_income",
+     "total_debt",
+     "free_cash_flow"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.50 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.50 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 80.52000122070312,
+    "pb": 3.082116397306397,
+    "evEbitda": 14.28946963329213,
+    "peVsSectorPct": 441.96154667780957,
+    "revenueYoyPct": 47.13851903760804,
+    "netMarginPct": 9.00142879822194,
+    "roePct": 4.772727272727273,
+    "debtToEquity": null,
+    "currentRatio": 7.218356456776948,
+    "return1mPct": 38.659639298188075,
+    "return3mPct": 29.809017637436774,
+    "return6mPct": 53.247786500382155,
+    "volatilityAnnualizedPct": 40.175602976718,
+    "maxDrawdownPct": -28.378378245644086,
+    "volumeVs30d": 0.5458027271373133
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "CNE",
+   "name": "CAPRICORN ENERGY PLC",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 10,
+   "isin": "GB00BNKT5L33",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 4.273599853515625,
+    "historyFileObservedAt": "2026-10-13T08:58:59.101860+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "CNE.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 838458.2368496502,
+    "return30dPct": 24.594747915907433,
+    "volumeRatio": 0.016870895132097254,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.239979,
+   "confidence": 0.601329,
+   "agents": {
+    "fundamental": {
+     "vote": 0.05000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.05000000000000002,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.4,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.65,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.239979
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.601329
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.24<0.25 with negative evidence-backed votes: risk -0.05",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.60."
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 20.228452831910854,
+    "pb": 1.1049493857216508,
+    "evEbitda": 5.2336061840221415,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -8.72801082543978,
+    "netMarginPct": 14.084507042253522,
+    "roePct": 5.0897401553710155,
+    "debtToEquity": 0.08036431824270024,
+    "currentRatio": 2.4414843006660325,
+    "return1mPct": 12.565445026178,
+    "return3mPct": 23.9193083573487,
+    "return6mPct": 38.709677419354826,
+    "volatilityAnnualizedPct": 47.41709699663792,
+    "maxDrawdownPct": -15.91591591591591,
+    "volumeVs30d": 2.8013518075071238
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "DIA",
+   "name": "DIALIGHT PLC",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 1,
+   "isin": "GB0033057794",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 5.76,
+    "historyFileObservedAt": "2026-10-13T10:36:36.846869+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "DIA.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 574663.568,
+    "return30dPct": 1.7667844522968101,
+    "volumeRatio": 13.028593921384651,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.159244,
+   "confidence": 0.601329,
+   "agents": {
+    "fundamental": {
+     "vote": 0.05000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.05000000000000002,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.4,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.159244
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.601329
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.16<0.25 with negative evidence-backed votes: risk -0.05",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2026-03-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2026-03-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2026-03-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "RECENT_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.60."
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.7,
+    "missing": [
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 771.8933507988799,
+    "pb": 6.520479501030151,
+    "evEbitda": 19.91941788636391,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -9.04632152588556,
+    "netMarginPct": 0.2995805871779509,
+    "roePct": 1.0615711252653928,
+    "debtToEquity": 0.1910828025477707,
+    "currentRatio": 1.7759562841530054,
+    "return1mPct": 3.2258064516129004,
+    "return3mPct": 37.799043062200965,
+    "return6mPct": 94.59459459459458,
+    "volatilityAnnualizedPct": 44.67939313509974,
+    "maxDrawdownPct": -24.17582417582417,
+    "volumeVs30d": 0.02386737177861664
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "SMIN",
+   "name": "SMITHS GROUP PLC",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 2,
+   "isin": "GB00B1WY2338",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 27.3,
+    "historyFileObservedAt": "2026-10-13T11:39:04.549780+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SMIN.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 34474937.633,
+    "return30dPct": 3.960396039603964,
+    "volumeRatio": 5.618373232941392,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "BUY_CANDIDATE",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.291868,
+   "confidence": 0.666162,
+   "agents": {
+    "fundamental": {
+     "vote": 0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.1,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.6,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.2,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "PASS",
+     "value": 0.291868
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.666162
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "BUY",
+   "reason": "all gates passed",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2026-07-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2026-07-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2026-07-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "RECENT_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "BUY_CANDIDATE",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.67."
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 4.327290076335879,
+    "pb": 2.8913599769673706,
+    "evEbitda": null,
+    "peVsSectorPct": -84.18499031862372,
+    "revenueYoyPct": 2.0547945205479534,
+    "netMarginPct": 101.80691791430046,
+    "roePct": 75.70057581573897,
+    "debtToEquity": 0.20614203454894434,
+    "currentRatio": 2.773501110288675,
+    "return1mPct": 8.579409417398232,
+    "return3mPct": 8.233890214797146,
+    "return6mPct": 7.506914263137099,
+    "volatilityAnnualizedPct": 25.393012807132013,
+    "maxDrawdownPct": -22.86962781237296,
+    "volumeVs30d": 1.3393565735695285
+   },
+   "opportunityState": "BUY"
+  },
+  {
+   "ticker": "INF",
+   "name": "INFORMA PLC",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 3,
+   "isin": "GB00BMJ6DW54",
+   "sector": "Consumer Discretionary",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 8.955999755859375,
+    "historyFileObservedAt": "2026-10-13T11:38:12.628864+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "INF.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 39900405.772564776,
+    "return30dPct": 0.49371222157077455,
+    "volumeRatio": 4.393674108006952,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.101535,
+   "confidence": 0.51311,
+   "agents": {
+    "fundamental": {
+     "vote": -0.05,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.30000000000000004,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.44999999999999996,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.101535
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.51311
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.10<0.25 with negative evidence-backed votes: quality -0.45, risk -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.51 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.51 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 1.9237834064441923,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 13.742928710140445,
+    "netMarginPct": -3.5977631513831843,
+    "roePct": -2.3227208102365853,
+    "debtToEquity": 0.43572581031645874,
+    "currentRatio": 0.4378719495147182,
+    "return1mPct": -1.3283152175895707,
+    "return3mPct": -0.5496270346635801,
+    "return6mPct": 9.188958596156095,
+    "volatilityAnnualizedPct": 23.92731510120804,
+    "maxDrawdownPct": -25.528493307947492,
+    "volumeVs30d": 1.3047331509921845
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "IMB",
+   "name": "IMPERIAL BRANDS PLC",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 4,
+   "isin": "GB0004544929",
+   "sector": "Consumer Staples",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 26.62,
+    "historyFileObservedAt": "2026-10-13T11:37:36.370846+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "IMB.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 65856327.373333335,
+    "return30dPct": 5.509314308363056,
+    "volumeRatio": 3.7067307034655217,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.053594,
+   "confidence": 0.666162,
+   "agents": {
+    "fundamental": {
+     "vote": -0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.6000000000000001,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.1,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.35,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.053594
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.666162
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=quality negative=fundamental,risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=quality negative=fundamental,risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-09-30",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-09-30",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-09-30",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 10.880127439267223,
+    "pb": 3.7940389490058912,
+    "evEbitda": null,
+    "peVsSectorPct": -13.15373352151149,
+    "revenueYoyPct": -0.7404893400388746,
+    "netMarginPct": 6.900624786298219,
+    "roePct": 40.86892488954344,
+    "debtToEquity": 1.569219440353461,
+    "currentRatio": 0.743377762780496,
+    "return1mPct": 7.011359185272226,
+    "return3mPct": -0.20266660197982844,
+    "return6mPct": -3.415920639680059,
+    "volatilityAnnualizedPct": 22.473690690475852,
+    "maxDrawdownPct": -27.4154456845701,
+    "volumeVs30d": 0.8751715871103862
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "SDLF",
+   "name": "STANDARD LIFE PLC",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 5,
+   "isin": "GB00BGXQNP29",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 8.485,
+    "historyFileObservedAt": "2026-10-13T11:38:51.746963+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SDLF.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 26730797.764,
+    "return30dPct": -8.686702817171088,
+    "volumeRatio": 3.5123733835172097,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.113219,
+   "confidence": 0.387815,
+   "agents": {
+    "fundamental": {
+     "vote": 0.2,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.2,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.113219
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.387815
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.11<0.25 with negative evidence-backed votes: quality -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "interest_expense",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "free_cash_flow",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.39 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.39 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 6.827135324303406,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 58.84122287968441,
+    "netMarginPct": -1.2231086828299134,
+    "roePct": -30.495356037151705,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -5.02283492685236,
+    "return3mPct": -2.262179315624424,
+    "return6mPct": 19.92658821984472,
+    "volatilityAnnualizedPct": 21.911455309817867,
+    "maxDrawdownPct": -14.788278400754542,
+    "volumeVs30d": 3.9248627906293594
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "HLN",
+   "name": "HALEON PLC",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 6,
+   "isin": "GB00BMX86B70",
+   "sector": "Health Care",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 3.4920001220703125,
+    "historyFileObservedAt": "2026-10-13T11:37:12.462175+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "HLN.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 115130604.20083395,
+    "return30dPct": -5.493907386459751,
+    "volumeRatio": 3.4329537575696487,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.189126,
+   "confidence": 0.601329,
+   "agents": {
+    "fundamental": {
+     "vote": 0.05000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.5499999999999999,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.189126
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.601329
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.19<0.25, no negative agent; neutral votes; abstaining agents: ['comparison']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.60."
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.7,
+    "missing": [
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 19.118279898038473,
+    "pb": 1.8949678082989565,
+    "evEbitda": 13.8966989004329,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -1.8071752871005042,
+    "netMarginPct": 15.231187669990934,
+    "roePct": 10.191701043436058,
+    "debtToEquity": 0.5222640135889347,
+    "currentRatio": 0.9223596188931684,
+    "return1mPct": 3.91583676752687,
+    "return3mPct": -0.9956258903854764,
+    "return6mPct": 0.7147346120339959,
+    "volatilityAnnualizedPct": 22.472082663715508,
+    "maxDrawdownPct": -21.892764538763167,
+    "volumeVs30d": 0.36271246514361305
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "TSCO",
+   "name": "TESCO PLC",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 7,
+   "isin": "GB00BLGZ9862",
+   "sector": "Consumer Staples",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 5.037999877929687,
+    "historyFileObservedAt": "2026-10-13T11:37:09.410089+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "TSCO.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 72208358.87943164,
+    "return30dPct": 10.725272042410715,
+    "volumeRatio": 2.6694815982442384,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.075575,
+   "confidence": 0.546197,
+   "agents": {
+    "fundamental": {
+     "vote": 0.30000000000000004,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": 0.0,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": -0.5,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.3,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.075575
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.546197
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.08<0.25 with negative evidence-backed votes: comparison -0.50",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "total_assets",
+     "total_liabilities",
+     "free_cash_flow"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2026-02-28",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2026-02-28",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2026-02-28",
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.55 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.55 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "zmijewski:total_assets",
+     "zmijewski:total_liabilities",
+     "altman:total_assets",
+     "altman:total_liabilities"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.6,
+    "missing": [
+     "fcf_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 18.85090997869318,
+    "pb": 2.827153357510692,
+    "evEbitda": 7.222888528073771,
+    "peVsSectorPct": 63.304112340020204,
+    "revenueYoyPct": 5.429372389724807,
+    "netMarginPct": 2.4242999782939005,
+    "roePct": 15.597451339792268,
+    "debtToEquity": 0.4688836519158593,
+    "currentRatio": 0.5920161909414474,
+    "return1mPct": 7.797885421818118,
+    "return3mPct": 9.877074571172395,
+    "return6mPct": 9.888489938373702,
+    "volatilityAnnualizedPct": 23.22544990795907,
+    "maxDrawdownPct": -14.147982247124292,
+    "volumeVs30d": 1.3802243201159239
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "AIBG",
+   "name": "AIB GROUP PLC",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 8,
+   "isin": "IE00BF0L3536",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 9.0,
+    "historyFileObservedAt": "2026-10-13T11:37:43.438964+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "AIBG.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 4571520.346333334,
+    "return30dPct": -2.386117136659438,
+    "volumeRatio": 2.4147955307702054,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.030196,
+   "confidence": 0.514957,
+   "agents": {
+    "fundamental": {
+     "vote": -0.5,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.05,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.35,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.2,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.030196
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.514957
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.03<0.25 with negative evidence-backed votes: fundamental -0.50",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "esef-xbrl-cached-v2",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://filings.xbrl.org/635400AKJBGNS5WNQL34/2025-12-31/ESEF/GB/0/635400AKJBGNS5WNQL34-2025-12-31/reports/ixbrlviewer.html"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.51 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.51 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 11.53383450336846,
+    "pb": 1.4951450322826403,
+    "evEbitda": null,
+    "peVsSectorPct": -22.368421611943045,
+    "revenueYoyPct": -8.461850649350644,
+    "netMarginPct": 47.41742407448459,
+    "roePct": 14.559934653869716,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -6.68016194331984,
+    "return3mPct": 3.8506354042369573,
+    "return6mPct": 7.481778104125936,
+    "volatilityAnnualizedPct": 33.20131527874438,
+    "maxDrawdownPct": -13.799920806798493,
+    "volumeVs30d": 1.46379831138894
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "IPC",
+   "name": "INTERNATIONAL PAPER COMPANY",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 9,
+   "isin": "US4601461035",
+   "sector": "Basic Materials",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 24.0,
+    "historyFileObservedAt": "2026-10-13T11:38:06.962705+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "IPC.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 280255.66333333333,
+    "return30dPct": -20.26578073089701,
+    "volumeRatio": 2.4083870905345415,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.240514,
+   "confidence": 0.480812,
+   "agents": {
+    "fundamental": {
+     "vote": 0.30000000000000004,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -0.55,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.44999999999999996,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": -0.35,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.240514
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.480812
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.24<0.25 with negative evidence-backed votes: risk -0.55, quality -0.45, liquidity -0.35",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "interest_expense",
+     "pb"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "free_cash_flow",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-crosslisted-10k-usgaap-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000051434.json"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.48 below accept threshold 0.55",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.48 below accept threshold 0.55; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:operating_income",
+     "interest_coverage:operating_income"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 1.3751625806511252,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 279.8457087753134,
+    "netMarginPct": -14.876872302614878,
+    "roePct": -23.71349564982802,
+    "debtToEquity": 0.6630471437242867,
+    "currentRatio": 1.2794024560070896,
+    "return1mPct": -5.6640625,
+    "return3mPct": -13.116303859298839,
+    "return6mPct": -10.357736595922251,
+    "volatilityAnnualizedPct": 45.19945543144335,
+    "maxDrawdownPct": -40.33611905687031,
+    "volumeVs30d": 1.64924225201579
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "ITRK",
+   "name": "INTERTEK GROUP PLC",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 10,
+   "isin": "GB0031638363",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 58.9,
+    "historyFileObservedAt": "2026-10-13T11:38:39.613913+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ITRK.L",
+    "currency": "GBP",
+    "avgTradedValue30d": 63060628.855000004,
+    "return30dPct": 0.7698887938408783,
+    "volumeRatio": 2.272075675220742,
+    "exchange": "LSE",
+    "country": "GB",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.111802,
+   "confidence": 0.666162,
+   "agents": {
+    "fundamental": {
+     "vote": -0.05,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.35,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.65,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.111802
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.666162
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:gb-reviewed-fca-nsm-annual-report+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-lse-price-explorer-market-cap",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.7,
+    "missing": [
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 27.081148269142595,
+    "pb": 8.06179373481153,
+    "evEbitda": 14.316653348723127,
+    "peVsSectorPct": -1.0261354094549535,
+    "revenueYoyPct": 1.1316751149357485,
+    "netMarginPct": 10.583984147336519,
+    "roePct": 32.212860310421284,
+    "debtToEquity": 1.0309534368070954,
+    "currentRatio": 1.0824723075491018,
+    "return1mPct": 0.8778554654141679,
+    "return3mPct": 1.3104363207547154,
+    "return6mPct": 35.4011488436063,
+    "volatilityAnnualizedPct": 32.45780155638218,
+    "maxDrawdownPct": -30.17544238779405,
+    "volumeVs30d": 0.31470607781806026
+   },
+   "opportunityState": "REVIEW"
+  }
+ ]
+}
