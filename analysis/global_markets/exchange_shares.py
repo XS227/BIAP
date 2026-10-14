@@ -35,6 +35,7 @@ NASDAQ_NORDIC_PROVIDER = "official-nasdaq-nordic-instrument-summary"
 BORSA_ITALIANA_PROVIDER = "official-borsa-italiana-instrument-page"
 LSE_PROVIDER = "official-lse-price-explorer-market-cap"
 AMF_PROVIDER = "official-amf-voting-rights-notice"
+BRREG_PROVIDER = "official-brreg-enhetsregisteret-share-capital"
 _SUMMARY_URL = "https://api.nasdaq.com/api/nordic/instruments/{orderbook}/summary"
 _BI_URL = "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin={isin}&mic={mic}&lang=en"
 _UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36"
@@ -191,6 +192,47 @@ def refresh_amf_voting_rights(instruments: Iterable[dict], country: str, exchang
             "path": str(_write_store(AMF_PROVIDER, country, exchange, entries, {}))}
 
 
+def refresh_brreg_share_capital(instruments: Iterable[dict], country: str, exchange: str, *, delay: float = 0.3, session=None,
+                                sleep: Callable[[float], None] = time.sleep) -> dict:
+    """Norwegian issued share counts (Enhetsregisteret), identity via GLEIF ISIN -> registered id."""
+    import requests
+    from .brreg_share_capital import BRREG_URL, GLEIF_URL, orgnr_from_gleif, share_capital_from_brreg
+    http = session or requests.Session()
+    entries: dict = {}
+    failed: dict[str, str] = {}
+    for row in instruments:
+        isin = str(row.get("isin") or "").upper()
+        ticker = str(row.get("ticker"))
+        if len(isin) != 12:
+            failed[ticker] = "no_isin"
+            continue
+        try:
+            g = http.get(GLEIF_URL, params={"filter[isin]": isin, "page[size]": 20},
+                         headers={"Accept": "application/vnd.api+json", "User-Agent": _UA}, timeout=25)
+            g.raise_for_status()
+            ident, status = orgnr_from_gleif(g.json())
+            found = None
+            if ident:
+                b = http.get(BRREG_URL.format(orgnr=ident["orgnr"]), headers={"Accept": "application/json", "User-Agent": _UA},
+                             timeout=25)
+                b.raise_for_status()
+                found, status = share_capital_from_brreg(b.json(), ident["orgnr"], ident["legal_name"])
+        except Exception as exc:  # noqa: BLE001 - recorded, never fabricated
+            found, status = None, f"fetch:{type(exc).__name__}"
+        if not found:
+            failed[ticker] = status
+        else:
+            entries[f"{country}:{exchange}:{ticker}"] = {
+                "isin": isin, "ticker": ticker, "country": country, "exchange": exchange, "currency": row.get("currency"),
+                "shares": found["shares"], "market_cap": None, "as_of": found["as_of"], "lei": ident["lei"],
+                "orgnr": ident["orgnr"], "source_url": BRREG_URL.format(orgnr=ident["orgnr"]),
+                "observed_at": datetime.now(timezone.utc).isoformat(),
+            }
+        sleep(delay)
+    return {"stored": len(entries), "failed": failed,
+            "path": str(_write_store(BRREG_PROVIDER, country, exchange, entries, {}))}
+
+
 def refresh_lse(country: str = "GB", exchange: str = "LSE") -> dict:
     """One request for the whole Main Market (LSE Price Explorer, official)."""
     from .lse_official import LSEOfficialClient, _valid_isin
@@ -246,7 +288,7 @@ def _has_class_suffix(ticker: str) -> bool:
 
 def lookup(company: GlobalCompany) -> Optional[dict]:
     """Return the cached exchange entry (with issuer aggregation) for a company."""
-    for provider in (NASDAQ_NORDIC_PROVIDER, BORSA_ITALIANA_PROVIDER, LSE_PROVIDER, AMF_PROVIDER):
+    for provider in (NASDAQ_NORDIC_PROVIDER, BORSA_ITALIANA_PROVIDER, LSE_PROVIDER, AMF_PROVIDER, BRREG_PROVIDER):
         payload = _load(provider, company.country, company.exchange)
         if not payload:
             continue
@@ -367,6 +409,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         result = refresh_lse(country, exchange)
     elif country == "FR":
         result = refresh_amf_voting_rights(rows, country, exchange)
+    elif country == "NO":
+        result = refresh_brreg_share_capital(rows, country, exchange)
     else:
         print(f"no official share-count source configured for {country}/{exchange}")
         return 1
