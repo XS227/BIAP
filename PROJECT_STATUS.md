@@ -1,5 +1,12 @@
 # BIAP — Project Status
 
+## 2026-10-14 sandbox cleanup (no deploy, no scans, no APK build)
+
+- **Disk:** 43G used / 4.8G free (90%) -> 40G used / 7.5G free (85%); ~2.8G recovered.
+- **Removed** (all under `/home/ubuntu/biap-global`, owner ubuntu, no open files / process refs / systemd refs; each was a per-session copy of data restorable from `/var/lib/biap-global`): `sandbox-s13` (263M), `sandbox-s18` (796M), `sandbox-s19` (399M), `sandbox-s19b` (399M), `s19-de-sandbox` (29M), `s20/sandbox` (391M), `s20/sandbox2` (391M), `s20/sbgb` (97M). Their `cache` entries were symlinks to the production cache; the links were unlinked first, production cache verified intact (8.9G, all 7 sources present).
+- **Kept:** `s20/wt-base` (registered git worktree) and s20 result JSON/scripts; `staging-1012/data4,data5`, `takeover-test/data-e2e-1011`, `scratch/norway-sandbox*` (hold real, non-symlinked downloaded cache copies; not proven restorable); all `wt-*` worktrees; `scratch/apk-1012`; `/var/lib/biap-global`; `/var/www` APKs.
+- **Verified after:** `/health` 200 at 46fc92e, service active, no failed units; 34/34 ledgers pass `integrity_check`, 26,287 rows, none below the s23 backup. PR #51 open, mergeable, no failing checks, not merged.
+
 ## 2026-10-14 disk cleanup and prod health check (no deploy, no scans, no APK build)
 
 - **Disk:** root was 44G used / 3.6G free (93%). Now 43G used / 4.8G free (90%). Freed ~1.2G; no heavy scans or APK builds were started.
