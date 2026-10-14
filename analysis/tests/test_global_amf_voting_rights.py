@@ -170,3 +170,23 @@ def test_feed_query_selects_by_title_not_subtype():
 
     fetch_latest_notice(S([], {}), "FR0000120321", today=date(2026, 10, 14))
     assert "006000" not in seen["where"] and "voting rights" in seen["where"]
+
+
+def test_validation_uses_owners_share_of_profit_when_tagged(tmp_path, monkeypatch):
+    """Group-share EPS vs consolidated profit with minorities must not reject a correct count."""
+    monkeypatch.setenv("BIAP_GLOBAL_DATA_DIR", str(tmp_path))
+    monkeypatch.delenv("BIAP_GLOBAL_SHARES_DIR", raising=False)
+    xs._store_cache.clear()
+    rows = [{"ticker": "ACA", "isin": "FR0000045072", "country": "FR", "exchange": "EURONEXT_PARIS", "currency": "EUR"}]
+    xs.refresh_amf_voting_rights(rows, "FR", "EURONEXT_PARIS", session=_Session([_row("a.pdf")], {}), sleep=lambda s: None,
+                                 pdf_text=lambda c: (TTE_LAYOUT, TTE_LAYOUT))   # 2.28bn shares
+
+    def company(**kw):
+        return GlobalCompany(**{**dict(ticker="ACA", name="CA", country="FR", exchange="EURONEXT_PARIS", currency="EUR",
+                                       isin="FR0000045072", net_income=8.05e9, eps=3.0), **kw})
+
+    # consolidated 8.05bn / 3.0 = 2.68bn -> ratio 0.85 borderline-fails; owners' 6.9bn / 3.0 = 2.30bn -> ok
+    assert xs.apply_to_company(company(net_income=9.0e9)).shares_outstanding is None
+    ok = xs.apply_to_company(company(net_income=9.0e9, raw_provider_fields={"net_income_attributable_to_owners": 6.9e9}))
+    assert ok.shares_outstanding == 2_281_656_714
+    assert ok.raw_provider_fields["exchange_share_count"]["validation"]["basis"] == "net_income_attributable_to_owners/eps"

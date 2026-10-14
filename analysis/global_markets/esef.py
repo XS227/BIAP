@@ -68,6 +68,9 @@ _CONCEPTS = {
         "ifrs-full:DepreciationExpense",
     ),
     "net_income": ("ifrs-full:ProfitLoss",),
+    # Owners'-share profit: EPS is per share of the parent's owners, so share
+    # counts are cross-checked against this when the issuer tags it.
+    "net_income_owners": ("ifrs-full:ProfitLossAttributableToOwnersOfParent",),
     "assets": ("ifrs-full:Assets",),
     "liabilities": ("ifrs-full:Liabilities",),
     "equity": ("ifrs-full:Equity",),
@@ -1081,6 +1084,9 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                 "liabilities_method": liabilities_method,
                 "retained_earnings_method": retained_earnings_method,
                 "ebitda_method": ebitda_method,
+                "net_income_attributable_to_owners": self._duration_value(
+                    concept_facts["net_income_owners"], period_end
+                ),
                 "depreciation_amortisation": depreciation_amortisation,
                 "depreciation_amortisation_method": da_method,
                 "debt_method": debt_method,

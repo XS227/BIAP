@@ -56,6 +56,14 @@ def _number(value: object) -> Optional[float]:
     return number if number == number and number > 0 else None
 
 
+def _number_signed(value: object) -> Optional[float]:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if number == number else None
+
+
 def _root() -> Path:
     return Path(os.environ.get("BIAP_GLOBAL_DATA_DIR") or "/var/lib/biap-global").expanduser() / "shares"
 
@@ -346,10 +354,15 @@ def apply_to_company(company: GlobalCompany, *, now: Optional[datetime] = None) 
     total_shares = found["issuer_total_shares"]
     total_cap = found["issuer_total_market_cap"]
     status = "applied"
-    if total_shares is not None and company.net_income and company.eps and float(company.net_income) / float(company.eps) > 0:
-        implied = float(company.net_income) / float(company.eps)   # sign-consistent loss years validate too
+    # EPS is per share of the parent's owners: prefer the owners' share of profit
+    # when the filing tags it, else consolidated profit (minorities included).
+    owners = _number_signed(company.raw_provider_fields.get("net_income_attributable_to_owners"))
+    earnings = owners if owners else company.net_income
+    if total_shares is not None and earnings and company.eps and float(earnings) / float(company.eps) > 0:
+        implied = float(earnings) / float(company.eps)   # sign-consistent loss years validate too
         ratio = total_shares / implied
-        note["validation"] = {"basis": "net_income/eps", "implied_shares": implied, "ratio": round(ratio, 4)}
+        note["validation"] = {"basis": "net_income_attributable_to_owners/eps" if owners else "net_income/eps",
+                              "implied_shares": implied, "ratio": round(ratio, 4)}
         if not VALIDATION_BAND[0] <= ratio <= VALIDATION_BAND[1]:
             return replace(company, raw_provider_fields={**company.raw_provider_fields,
                            "exchange_share_count": {**note, "status": "withheld:contradicts_net_income_over_eps"}})

@@ -1886,6 +1886,8 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                     "oam_entity_identity_exception": "ELABS_NEWSWEB_WRONG_EMBEDDED_LEI" if newsweb_elabs_entity_anomaly else None,
                     "oam_report_entity_ids": sorted(entity_ids),
                     "oam_credit_extraction": normalization_meta,
+                    **({"net_income_attributable_to_owners": normalization_meta["net_income_attributable_to_owners"]}
+                       if normalization_meta.get("net_income_attributable_to_owners") is not None else {}),
                     **({"fiscal_year_transition": transition} if transition else {}),
                     **_agent10_fields(normalization_meta),
                 },
