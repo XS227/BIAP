@@ -1,0 +1,5063 @@
+{
+ "market": "US__NYSE",
+ "companies": [
+  {
+   "ticker": "DELL",
+   "name": "Dell Technologies Inc. Class C Common Stock",
+   "category": "TRADING_VALUE",
+   "rank": 1,
+   "isin": null,
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 576.760009765625,
+    "historyFileObservedAt": "2026-10-13T10:00:54.034363+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "DELL",
+    "currency": "USD",
+    "avgTradedValue30d": 4993983042.115886,
+    "return30dPct": 26.415926291191116,
+    "volumeRatio": 0.561833461552761,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.131843,
+   "confidence": 0.620278,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7500000000000001,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.8500000000000001,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.42,
+     "confidence": 0.68
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.131843
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.620278
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental,liquidity,quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,liquidity,quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "pb"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2026-01-30",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001571996.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2026-01-30",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 61.11520512312788,
+    "pb": null,
+    "evEbitda": 32.72928495845634,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 18.80460828528676,
+    "netMarginPct": 5.228205534710845,
+    "roePct": -240.3238866396761,
+    "debtToEquity": -12.75425101214575,
+    "currentRatio": 0.9104300684379396,
+    "return1mPct": -2.397385340243108,
+    "return3mPct": 35.76487144262666,
+    "return6mPct": 200.65470194997494,
+    "volatilityAnnualizedPct": 71.68544008447032,
+    "maxDrawdownPct": -32.34115299090462,
+    "volumeVs30d": 0.5954657510914291
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "ORCL",
+   "name": "Oracle Corporation Common Stock",
+   "category": "TRADING_VALUE",
+   "rank": 2,
+   "isin": null,
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 143.1999969482422,
+    "historyFileObservedAt": "2026-10-13T21:35:16.741869+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ORCL",
+    "currency": "USD",
+    "avgTradedValue30d": 4684923499.743434,
+    "return30dPct": -3.6147913100483486,
+    "volumeRatio": 0.8161888212996768,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.07588,
+   "confidence": 0.570946,
+   "agents": {
+    "fundamental": {
+     "vote": 0.55,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.8500000000000001,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.1,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.2,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.42,
+     "confidence": 0.68
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.07588
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.570946
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental,liquidity negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,liquidity negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "total_debt"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2026-05-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001341439.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2026-05-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "RECENT_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 23.03430416571746,
+    "pb": 8.982608246564068,
+    "evEbitda": 12.592234250737274,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 17.34873429850694,
+    "netMarginPct": 25.36781626260077,
+    "roePct": 39.68552582683017,
+    "debtToEquity": null,
+    "currentRatio": 1.1150033521693323,
+    "return1mPct": -3.963909108219754,
+    "return3mPct": 8.515145869457964,
+    "return6mPct": -20.34886625481256,
+    "volatilityAnnualizedPct": 56.94516657609219,
+    "maxDrawdownPct": -62.907621583231965,
+    "volumeVs30d": 0.8147078210979477
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "TSM",
+   "name": "Taiwan Semiconductor Manufacturing Company Ltd.",
+   "category": "TRADING_VALUE",
+   "rank": 3,
+   "isin": null,
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 445.1199951171875,
+    "historyFileObservedAt": "2026-10-13T21:51:49.679718+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "TSM",
+    "currency": "USD",
+    "avgTradedValue30d": 4313754926.052482,
+    "return30dPct": 7.462708120376682,
+    "volumeRatio": 0.8818533101989242,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.310141,
+   "confidence": 0.432778,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7000000000000001,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": 0.1,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.65,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "PASS",
+     "value": 0.310141
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.432778
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "score ok but confidence 0.43<0.55; missing ['ebitda', 'total_debt', 'free_cash_flow', 'pe', 'pb', 'ev_ebitda']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "ebitda",
+     "total_debt",
+     "free_cash_flow",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-foreign-ifrs-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.sec.gov/Archives/edgar/data/1046179/000162828026025362/tsm-20251231_htm.xml"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.75,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.43 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.43 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 31.60502250676387,
+    "netMarginPct": 44.502513392891245,
+    "roePct": 31.4131957426785,
+    "debtToEquity": null,
+    "currentRatio": 2.5072882934602547,
+    "return1mPct": 6.3655503544506775,
+    "return3mPct": 7.4065245219405496,
+    "return6mPct": 17.60012938938822,
+    "volatilityAnnualizedPct": 38.68788574047486,
+    "maxDrawdownPct": -21.546580108021036,
+    "volumeVs30d": 0.8791661243140667
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "BE",
+   "name": "Bloom Energy Corporation Class A Common Stock",
+   "category": "TRADING_VALUE",
+   "rank": 4,
+   "isin": null,
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 263.45001220703125,
+    "historyFileObservedAt": "2026-10-13T21:51:49.994727+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "BE",
+    "currency": "USD",
+    "avgTradedValue30d": 4244693632.704539,
+    "return30dPct": 27.702379209822546,
+    "volumeRatio": 0.8027912231397372,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "AVOID_OR_REVIEW",
+   "score": -0.254889,
+   "confidence": 0.49466,
+   "agents": {
+    "fundamental": {
+     "vote": -0.05,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -1.0,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.254889
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.49466
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.25<0.25 with negative evidence-backed votes: risk -1.00, quality -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001664703.json"
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.49 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.49 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 38.86654169505355,
+    "netMarginPct": -4.353486736203884,
+    "roePct": -10.989163428810675,
+    "debtToEquity": 3.3013885893793278,
+    "currentRatio": 5.980082778696828,
+    "return1mPct": -0.7268207909247648,
+    "return3mPct": 24.54167351564116,
+    "return6mPct": 20.400767277917332,
+    "volatilityAnnualizedPct": 109.86929627678089,
+    "maxDrawdownPct": -52.65288503392759,
+    "volumeVs30d": 0.8003983273801244
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "CRM",
+   "name": "Salesforce, Inc. Common Stock",
+   "category": "TRADING_VALUE",
+   "rank": 5,
+   "isin": null,
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 238.00999450683594,
+    "historyFileObservedAt": "2026-10-13T21:35:16.711868+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "CRM",
+    "currency": "USD",
+    "avgTradedValue30d": 2708779123.134697,
+    "return30dPct": -7.420702139656354,
+    "volumeRatio": 0.7572152531913564,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.127073,
+   "confidence": 0.620278,
+   "agents": {
+    "fundamental": {
+     "vote": 0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.7,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.7,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.42,
+     "confidence": 0.68
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.127073
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.620278
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental,liquidity,quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,liquidity,quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2026-01-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001108524.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2026-01-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 30.679487570738182,
+    "pb": 3.7589141867891347,
+    "evEbitda": 24.071105113323156,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 9.579100145137875,
+    "netMarginPct": 17.9578567128236,
+    "roePct": 12.608636840147442,
+    "debtToEquity": 0.24414121943796288,
+    "currentRatio": 0.760331914435045,
+    "return1mPct": -6.230780848669893,
+    "return3mPct": 38.82383652409575,
+    "return6mPct": 35.326408339469275,
+    "volatilityAnnualizedPct": 46.43799434408476,
+    "maxDrawdownPct": -43.32574751720139,
+    "volumeVs30d": 0.8108120186240289
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "JPM",
+   "name": "JP Morgan Chase & Co. Common Stock",
+   "category": "TRADING_VALUE",
+   "rank": 6,
+   "isin": null,
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 331.42999267578125,
+    "historyFileObservedAt": "2026-10-13T21:35:23.245051+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "JPM",
+    "currency": "USD",
+    "avgTradedValue30d": 2687165048.0966716,
+    "return30dPct": -6.4424816665462075,
+    "volumeRatio": 1.7977130579195595,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.106346,
+   "confidence": 0.456726,
+   "agents": {
+    "fundamental": {
+     "vote": -0.2,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.2,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.42,
+     "confidence": 0.68
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.106346
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.456726
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.11<0.25 with negative evidence-backed votes: fundamental -0.20",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "free_cash_flow",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000019617.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.46 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.46 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 16.558441558441558,
+    "pb": 2.4660501934123906,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 2.7546238933068956,
+    "netMarginPct": 31.268258727192006,
+    "roePct": 15.74007140531622,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -5.485591558170699,
+    "return3mPct": -2.913057312316558,
+    "return6mPct": 9.389293182473901,
+    "volatilityAnnualizedPct": 22.269044777489277,
+    "maxDrawdownPct": -15.471735654053735,
+    "volumeVs30d": 1.754720062327447
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "LLY",
+   "name": "Eli Lilly and Company Common Stock",
+   "category": "TRADING_VALUE",
+   "rank": 7,
+   "isin": null,
+   "sector": "Health Care",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 1182.6199951171875,
+    "historyFileObservedAt": "2026-10-13T10:00:52.631987+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "LLY",
+    "currency": "USD",
+    "avgTradedValue30d": 2613777755.3348794,
+    "return30dPct": 0.6819293097723556,
+    "volumeRatio": 0.5441199265814752,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.171336,
+   "confidence": 0.529559,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7000000000000001,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -0.2,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.171336
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.529559
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.17<0.25 with negative evidence-backed votes: risk -0.20",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "free_cash_flow",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000059478.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.53 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.53 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:operating_income",
+     "interest_coverage:operating_income"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 52.65401603349673,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 44.70394955930998,
+    "netMarginPct": 31.666641096058544,
+    "roePct": 77.78405879027699,
+    "debtToEquity": 1.5401545129074807,
+    "currentRatio": 1.5791132054047916,
+    "return1mPct": 6.363792550843117,
+    "return3mPct": 3.5042998133861802,
+    "return6mPct": 33.94301156139403,
+    "volatilityAnnualizedPct": 34.32525891559048,
+    "maxDrawdownPct": -23.182264694613526,
+    "volumeVs30d": 0.8300521634705594
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "V",
+   "name": "Visa Inc.",
+   "category": "TRADING_VALUE",
+   "rank": 8,
+   "isin": null,
+   "sector": "Business & Health Services",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 396.05999755859375,
+    "historyFileObservedAt": "2026-10-13T21:35:16.336858+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "V",
+    "currency": "USD",
+    "avgTradedValue30d": 2167977416.2672076,
+    "return30dPct": 4.399399703777496,
+    "volumeRatio": 1.2816585035440387,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.259187,
+   "confidence": 0.476438,
+   "agents": {
+    "fundamental": {
+     "vote": 0.30000000000000004,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": 0.2,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.65,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "PASS",
+     "value": 0.259187
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.476438
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "score ok but confidence 0.48<0.55; missing ['free_cash_flow', 'pe', 'pb', 'ev_ebitda']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "free_cash_flow",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-09-30",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001403161.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-09-30",
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.48 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.48 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.45,
+    "missing": [
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 11.339976618604908,
+    "netMarginPct": 50.144999999999996,
+    "roePct": 52.910918251602524,
+    "debtToEquity": 0.6639848057189586,
+    "currentRatio": 1.0775507874914403,
+    "return1mPct": 4.869285123976352,
+    "return3mPct": 8.079582533997076,
+    "return6mPct": 25.181191888251654,
+    "volatilityAnnualizedPct": 22.158730656562177,
+    "maxDrawdownPct": -17.1804980840313,
+    "volumeVs30d": 1.2799923760045013
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "XOM",
+   "name": "ExxonMobil Holdings Corporation Common Stock",
+   "category": "TRADING_VALUE",
+   "rank": 9,
+   "isin": null,
+   "sector": "Mining & Energy",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 174.0800018310547,
+    "historyFileObservedAt": "2026-10-13T21:35:24.304081+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "XOM",
+    "currency": "USD",
+    "avgTradedValue30d": 2138520052.713067,
+    "return30dPct": 8.15781617382374,
+    "volumeRatio": 0.8612746363682212,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.184319,
+   "confidence": 0.620278,
+   "agents": {
+    "fundamental": {
+     "vote": -0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.1,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.65,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.42,
+     "confidence": 0.68
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.184319
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.620278
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=liquidity,quality negative=fundamental"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=liquidity,quality negative=fundamental",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000034088.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:operating_income",
+     "interest_coverage:operating_income"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 26.086566981984607,
+    "pb": 2.7394388202901507,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -4.962169429466368,
+    "netMarginPct": 8.681728158729586,
+    "roePct": 10.818149767839595,
+    "debtToEquity": 0.023253546165790284,
+    "currentRatio": 1.1527996681874741,
+    "return1mPct": 3.224658173220596,
+    "return3mPct": 20.52875994521144,
+    "return6mPct": 18.854925871200166,
+    "volatilityAnnualizedPct": 25.970825761133735,
+    "maxDrawdownPct": -20.11225721014881,
+    "volumeVs30d": 0.8812110383965429
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "BAC",
+   "name": "Bank of America Corporation Common Stock",
+   "category": "TRADING_VALUE",
+   "rank": 10,
+   "isin": null,
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 53.959999084472656,
+    "historyFileObservedAt": "2026-10-13T21:35:16.419860+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "BAC",
+    "currency": "USD",
+    "avgTradedValue30d": 2122438909.9930775,
+    "return30dPct": -12.43895922790882,
+    "volumeRatio": 1.207022160354009,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.111502,
+   "confidence": 0.470835,
+   "agents": {
+    "fundamental": {
+     "vote": 0.2,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.1,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.42,
+     "confidence": 0.68
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.111502
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.470835
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.11<0.25 with negative evidence-backed votes: forecast -0.20",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "total_debt",
+     "operating_cash_flow",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "free_cash_flow",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000070858.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.47 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.47 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 13.111549037022227,
+    "pb": 1.1881516459106778,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 6.840424727932293,
+    "netMarginPct": 26.975958690327772,
+    "roePct": 10.060908248500377,
+    "debtToEquity": 1.0480571686733082,
+    "currentRatio": null,
+    "return1mPct": -16.070226063752237,
+    "return3mPct": -18.344650517468185,
+    "return6mPct": -7.086238409995527,
+    "volatilityAnnualizedPct": 23.421249067481682,
+    "maxDrawdownPct": -22.5275759599747,
+    "volumeVs30d": 1.2136832492978442
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "SES",
+   "name": "SES AI Corporation Class A Common Stock",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 1,
+   "isin": null,
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 1.0,
+    "historyFileObservedAt": "2026-10-13T23:40:09.320189+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SES",
+    "currency": "USD",
+    "avgTradedValue30d": 16350552.747133382,
+    "return30dPct": 92.30769936149667,
+    "volumeRatio": 1.3547641349522244,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.10282,
+   "confidence": 0.485556,
+   "agents": {
+    "fundamental": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.6499999999999999,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.1,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.42,
+     "confidence": 0.68
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.10282
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.485556
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=liquidity negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=liquidity negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pb"
+    ],
+    "missing": [
+     "total_debt",
+     "interest_expense",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001819142.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime"
+    ],
+    "missingInputs": [
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 1.6412166654084235,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 929.4117647058824,
+    "netMarginPct": -347.8095238095238,
+    "roePct": -34.01084957276897,
+    "debtToEquity": null,
+    "currentRatio": 8.953303527074018,
+    "return1mPct": 56.57467779867274,
+    "return3mPct": 54.32000160217285,
+    "return6mPct": -16.853445020108857,
+    "volatilityAnnualizedPct": 110.31397834455112,
+    "maxDrawdownPct": -85.87570606248615,
+    "volumeVs30d": 1.3144113787225722
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "SECZ",
+   "name": "Securitize Corp. Common Stock",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 2,
+   "isin": null,
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 11.1899995803833,
+    "historyFileObservedAt": "2026-10-13T23:23:58.297704+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SECZ",
+    "currency": "USD",
+    "avgTradedValue30d": 56811083.790128864,
+    "return30dPct": 73.21980672299053,
+    "volumeRatio": 0.667621925177626,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": -0.031719,
+   "confidence": 0.057,
+   "agents": {
+    "fundamental": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "risk": {
+     "vote": -0.7,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "FAIL",
+     "value": "BLOCK"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.031719
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.057
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "evidence BLOCK: ('fundamental_source',)",
+   "dataCompleteness": {
+    "present": [],
+    "missing": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [],
+    "filingPeriodEnd": null,
+    "evidenceCoverage": 0.25,
+    "freshnessTier": "NOT_CURRENT"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [
+     "task/evidence gate is out of scope or blocked"
+    ],
+    "review_reasons": [],
+    "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [],
+    "missingInputs": [
+     "zmijewski:net_income",
+     "zmijewski:total_assets",
+     "zmijewski:total_liabilities",
+     "zmijewski:current_assets",
+     "zmijewski:current_liabilities",
+     "altman:retained_earnings",
+     "altman:operating_income",
+     "altman:total_assets",
+     "altman:total_liabilities",
+     "altman:total_equity",
+     "altman:current_assets",
+     "altman:current_liabilities",
+     "interest_coverage:operating_income",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": null,
+    "netMarginPct": null,
+    "roePct": null,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": 35.63363493334242,
+    "return3mPct": 37.35705942578627,
+    "return6mPct": -12.11381908953567,
+    "volatilityAnnualizedPct": 147.49451778933118,
+    "maxDrawdownPct": -56.17886355363081,
+    "volumeVs30d": 0.658282314467322
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "DNA",
+   "name": "Ginkgo Bioworks Holdings, Inc. Class A Common Stock",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 3,
+   "isin": null,
+   "sector": "Health Care",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 11.760000228881836,
+    "historyFileObservedAt": "2026-10-13T23:39:44.035481+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "DNA",
+    "currency": "USD",
+    "avgTradedValue30d": 31216739.82640559,
+    "return30dPct": 72.68722948156037,
+    "volumeRatio": 0.6664960470604526,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.204958,
+   "confidence": 0.485556,
+   "agents": {
+    "fundamental": {
+     "vote": -0.9,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.6499999999999999,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.42,
+     "confidence": 0.68
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.204958
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.485556
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=liquidity negative=fundamental,risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=liquidity negative=fundamental,risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb"
+    ],
+    "missing": [
+     "total_debt",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001830214.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime"
+    ],
+    "missingInputs": [
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 1.3539242432984047,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -25.0560466519558,
+    "netMarginPct": -183.81064323704857,
+    "roePct": -61.496097052635726,
+    "debtToEquity": null,
+    "currentRatio": 4.9165155777847245,
+    "return1mPct": 69.24177841301493,
+    "return3mPct": 42.70205039978971,
+    "return6mPct": 51.86136048313949,
+    "volatilityAnnualizedPct": 101.12753618530219,
+    "maxDrawdownPct": -65.38218543597736,
+    "volumeVs30d": 0.6611232521365243
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "P",
+   "name": "Everpure, Inc. Class A common stock",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 4,
+   "isin": null,
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 155.30999755859375,
+    "historyFileObservedAt": "2026-10-13T11:07:16.366779+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "P",
+    "currency": "USD",
+    "avgTradedValue30d": 742654820.0573221,
+    "return30dPct": 66.28479124335031,
+    "volumeRatio": 0.6790761268249742,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.159704,
+   "confidence": 0.580332,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7500000000000001,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.7499999999999999,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.65,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.159704
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.580332
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental,quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2026-02-01",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001474432.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2026-02-01",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 273.1636463512074,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 15.614059120676838,
+    "netMarginPct": 5.137566638810345,
+    "roePct": 13.016889078266933,
+    "debtToEquity": 0.0,
+    "currentRatio": 1.60393091063304,
+    "return1mPct": 54.934519544058524,
+    "return3mPct": 119.74550162011641,
+    "return6mPct": 131.53029265882697,
+    "volatilityAnnualizedPct": 70.29367597514255,
+    "maxDrawdownPct": -42.259368347952346,
+    "volumeVs30d": 0.5230117629058828
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "SEI",
+   "name": "Solaris Energy Infrastructure, Inc. Class A Common Stock",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 5,
+   "isin": null,
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 77.83000183105469,
+    "historyFileObservedAt": "2026-10-13T23:17:38.690167+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SEI",
+    "currency": "USD",
+    "avgTradedValue30d": 183497906.53957722,
+    "return30dPct": 53.60082078362913,
+    "volumeRatio": 0.9452163083817399,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.005605,
+   "confidence": 0.525007,
+   "agents": {
+    "fundamental": {
+     "vote": 0.15000000000000005,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.5999999999999999,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.15,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.005605
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.525007
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.01<0.25 with negative evidence-backed votes: risk -0.60",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001697500.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.53 below accept threshold 0.55",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.53 below accept threshold 0.55; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 98.72976227358818,
+    "netMarginPct": 4.848723491453781,
+    "roePct": 3.646897978968898,
+    "debtToEquity": 0.22242342408773152,
+    "currentRatio": 2.957887323943662,
+    "return1mPct": 22.906526976849896,
+    "return3mPct": 23.60972589034631,
+    "return6mPct": 15.089758932358087,
+    "volatilityAnnualizedPct": 75.51223155105522,
+    "maxDrawdownPct": -47.61100322221674,
+    "volumeVs30d": 0.9357204183722113
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "GME",
+   "name": "GameStop Corporation Common Stock",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 6,
+   "isin": null,
+   "sector": "Retail",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 27.229999542236328,
+    "historyFileObservedAt": "2026-10-13T12:25:57.452900+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "GME",
+    "currency": "USD",
+    "avgTradedValue30d": 236873779.650987,
+    "return30dPct": 52.37827791509193,
+    "volumeRatio": 0.8883219278274187,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.157705,
+   "confidence": 0.620278,
+   "agents": {
+    "fundamental": {
+     "vote": 0.05000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.4,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.65,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.42,
+     "confidence": 0.68
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.157705
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.620278
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=liquidity,quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=liquidity,quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "interest_expense"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2026-01-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001326380.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2026-01-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime"
+    ],
+    "missingInputs": [
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.4,
+    "missing": [
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 36.11337736055448,
+    "pb": 2.2896945199594376,
+    "evEbitda": 41.05611468973027,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -5.051007062516344,
+    "netMarginPct": 11.52648833301193,
+    "roePct": 7.684960693556682,
+    "debtToEquity": 0.7648776724707956,
+    "currentRatio": 15.296562261268143,
+    "return1mPct": 29.69822702874856,
+    "return3mPct": 26.8581225859575,
+    "return6mPct": 12.171438243915954,
+    "volatilityAnnualizedPct": 38.57493669729076,
+    "maxDrawdownPct": -32.64229032519898,
+    "volumeVs30d": 1.213009108259321
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "CVI",
+   "name": "CVR Energy Inc. Common Stock",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 7,
+   "isin": null,
+   "sector": "Mining & Energy",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 63.119998931884766,
+    "historyFileObservedAt": "2026-10-13T23:38:52.248626+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "CVI",
+    "currency": "USD",
+    "avgTradedValue30d": 55782108.85951118,
+    "return30dPct": 50.78833734244097,
+    "volumeRatio": 0.7297890105943616,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.11718,
+   "confidence": 0.529559,
+   "agents": {
+    "fundamental": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -1.0,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.11718
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.529559
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.12<0.25 with negative evidence-backed votes: risk -1.00",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "free_cash_flow",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001376139.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.53 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.53 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.45,
+    "missing": [
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 231.25925417299624,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -5.886990801576875,
+    "netMarginPct": 0.3769896676905892,
+    "roePct": 3.0066815144766146,
+    "debtToEquity": 1.8930957683741647,
+    "currentRatio": 1.7946175637393769,
+    "return1mPct": 19.68564465826834,
+    "return3mPct": 87.21187256810452,
+    "return6mPct": 98.5725769964005,
+    "volatilityAnnualizedPct": 53.97843886238222,
+    "maxDrawdownPct": -48.2129503108778,
+    "volumeVs30d": 0.7477993701513173
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "ACVA",
+   "name": "ACV Auctions Inc. Class A Common Stock",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 8,
+   "isin": null,
+   "sector": "Business & Health Services",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 10.470000267028809,
+    "historyFileObservedAt": "2026-10-13T23:39:15.869693+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ACVA",
+    "currency": "USD",
+    "avgTradedValue30d": 118145690.8950078,
+    "return30dPct": 48.93314302353684,
+    "volumeRatio": 0.09140807091363962,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.050948,
+   "confidence": 0.449969,
+   "agents": {
+    "fundamental": {
+     "vote": 0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.6499999999999999,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.01999999999999999,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.050948
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.449969
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "total_debt",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001637873.json"
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 19.218213435956024,
+    "netMarginPct": -8.707277193703051,
+    "roePct": -15.39297575189151,
+    "debtToEquity": null,
+    "currentRatio": 1.6003435911692792,
+    "return1mPct": 0.6231982596495822,
+    "return3mPct": 37.54914453665241,
+    "return6mPct": 113.74745848700245,
+    "volatilityAnnualizedPct": 85.3337640171547,
+    "maxDrawdownPct": -56.99481596456798,
+    "volumeVs30d": 0.09202325856958604
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "ECO",
+   "name": "Okeanis Eco Tankers Corp. Common Stock",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 9,
+   "isin": null,
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 99.26000213623047,
+    "historyFileObservedAt": "2026-10-13T23:24:08.017684+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ECO",
+    "currency": "USD",
+    "avgTradedValue30d": 63850966.65559285,
+    "return30dPct": 48.72640892024174,
+    "volumeRatio": 1.147672836325684,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.055773,
+   "confidence": 0.529559,
+   "agents": {
+    "fundamental": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -0.15000000000000002,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.055773
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.529559
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.06<0.25 with negative evidence-backed votes: risk -0.15",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "ebitda",
+     "free_cash_flow",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-foreign-ifrs-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001964954.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.53 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.53 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 25.28381954769873,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -0.4274884221588948,
+    "netMarginPct": 31.40133159231927,
+    "roePct": 21.454095761275624,
+    "debtToEquity": 1.0558526406924407,
+    "currentRatio": 1.4973392065114277,
+    "return1mPct": 15.218174576364806,
+    "return3mPct": 83.20151901243662,
+    "return6mPct": 112.38167216668936,
+    "volatilityAnnualizedPct": 45.44106537170254,
+    "maxDrawdownPct": -19.99270130389857,
+    "volumeVs30d": 1.1268611186832302
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "SG",
+   "name": "Sweetgreen, Inc. Class A Common Stock",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 10,
+   "isin": null,
+   "sector": "Retail",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 10.029999732971191,
+    "historyFileObservedAt": "2026-10-13T23:37:18.022382+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SG",
+    "currency": "USD",
+    "avgTradedValue30d": 40480095.26153367,
+    "return30dPct": 44.10919077583186,
+    "volumeRatio": 0.6554210294151789,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.301651,
+   "confidence": 0.449969,
+   "agents": {
+    "fundamental": {
+     "vote": -1.0,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.7,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.301651
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.449969
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.30<0.25 with negative evidence-backed votes: fundamental -1.00, risk -0.70, quality -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "total_debt",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-28",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001477815.json"
+     }
+    ],
+    "filingPeriodEnd": "2025-12-28",
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.45 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.45 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 0.3912379252570153,
+    "netMarginPct": -19.73070345590854,
+    "roePct": -37.64548964548965,
+    "debtToEquity": null,
+    "currentRatio": 1.0927502275562149,
+    "return1mPct": 46.559302206408624,
+    "return3mPct": 60.93248499246988,
+    "return6mPct": 51.896813309646326,
+    "volatilityAnnualizedPct": 75.40771043948344,
+    "maxDrawdownPct": -47.20862050590321,
+    "volumeVs30d": 0.6632708334692972
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "MDA",
+   "name": "MDA Space Ltd. Common Shares",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 1,
+   "isin": null,
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 28.579999923706055,
+    "historyFileObservedAt": "2026-10-13T23:38:37.539472+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "MDA",
+    "currency": "USD",
+    "avgTradedValue30d": 50004086.08403867,
+    "return30dPct": -1.0730338265547257,
+    "volumeRatio": 11.81263302019951,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": -0.031719,
+   "confidence": 0.057,
+   "agents": {
+    "fundamental": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "risk": {
+     "vote": -0.7,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "FAIL",
+     "value": "BLOCK"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.031719
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.057
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "evidence BLOCK: ('fundamental_source',)",
+   "dataCompleteness": {
+    "present": [],
+    "missing": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [],
+    "filingPeriodEnd": null,
+    "evidenceCoverage": 0.25,
+    "freshnessTier": "NOT_CURRENT"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [
+     "task/evidence gate is out of scope or blocked"
+    ],
+    "review_reasons": [],
+    "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [],
+    "missingInputs": [
+     "zmijewski:net_income",
+     "zmijewski:total_assets",
+     "zmijewski:total_liabilities",
+     "zmijewski:current_assets",
+     "zmijewski:current_liabilities",
+     "altman:retained_earnings",
+     "altman:operating_income",
+     "altman:total_assets",
+     "altman:total_liabilities",
+     "altman:total_equity",
+     "altman:current_assets",
+     "altman:current_liabilities",
+     "interest_coverage:operating_income",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": null,
+    "netMarginPct": null,
+    "roePct": null,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -2.625216610891268,
+    "return3mPct": -10.280074902588332,
+    "return6mPct": -18.66704945712103,
+    "volatilityAnnualizedPct": 63.042195009408886,
+    "maxDrawdownPct": -43.85784767384182,
+    "volumeVs30d": 8.737784920755956
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "FUN",
+   "name": "Six Flags Entertainment Corporation Common Stock New",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 2,
+   "isin": null,
+   "sector": "Business & Health Services",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 10.199999809265137,
+    "historyFileObservedAt": "2026-10-13T23:39:18.982780+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "FUN",
+    "currency": "USD",
+    "avgTradedValue30d": 35651025.47861894,
+    "return30dPct": -32.225915747532696,
+    "volumeRatio": 5.697621463636328,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.221054,
+   "confidence": 0.497694,
+   "agents": {
+    "fundamental": {
+     "vote": -0.1,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -1.0,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.44999999999999996,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.42,
+     "confidence": 0.68
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.221054
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.497694
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=liquidity negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=liquidity negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "pb"
+    ],
+    "missing": [
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001999001.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime"
+    ],
+    "missingInputs": [
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.3,
+    "missing": [
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 1.801739708132198,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 14.447164669688274,
+    "netMarginPct": -51.5789979579323,
+    "roePct": -290.873604156018,
+    "debtToEquity": 9.397009951669556,
+    "currentRatio": 0.6901993525202957,
+    "return1mPct": -23.487823084343173,
+    "return3mPct": -48.65577162007906,
+    "return6mPct": -50.35678208717789,
+    "volatilityAnnualizedPct": 69.12281218087789,
+    "maxDrawdownPct": -63.57516883138374,
+    "volumeVs30d": 4.912545735370605
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "EMA",
+   "name": "Emera Incorporated Common Shares",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 3,
+   "isin": null,
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 45.68000030517578,
+    "historyFileObservedAt": "2026-10-13T23:23:49.011442+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "EMA",
+    "currency": "USD",
+    "avgTradedValue30d": 28790850.20253067,
+    "return30dPct": -8.804152194006864,
+    "volumeRatio": 3.1902512022461837,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": 0.016,
+   "confidence": 0.057,
+   "agents": {
+    "fundamental": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "risk": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "FAIL",
+     "value": "BLOCK"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.016
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.057
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "evidence BLOCK: ('fundamental_source',)",
+   "dataCompleteness": {
+    "present": [],
+    "missing": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [],
+    "filingPeriodEnd": null,
+    "evidenceCoverage": 0.25,
+    "freshnessTier": "NOT_CURRENT"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [
+     "task/evidence gate is out of scope or blocked"
+    ],
+    "review_reasons": [],
+    "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [],
+    "missingInputs": [
+     "zmijewski:net_income",
+     "zmijewski:total_assets",
+     "zmijewski:total_liabilities",
+     "zmijewski:current_assets",
+     "zmijewski:current_liabilities",
+     "altman:retained_earnings",
+     "altman:operating_income",
+     "altman:total_assets",
+     "altman:total_liabilities",
+     "altman:total_equity",
+     "altman:current_assets",
+     "altman:current_liabilities",
+     "interest_coverage:operating_income",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": null,
+    "netMarginPct": null,
+    "roePct": null,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -5.656477996386123,
+    "return3mPct": -15.54534249449282,
+    "return6mPct": -11.223804033424656,
+    "volatilityAnnualizedPct": 14.944539749792318,
+    "maxDrawdownPct": -16.33889865053913,
+    "volumeVs30d": 2.9305916828553555
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "S",
+   "name": "SentinelOne, Inc. Class A Common Stock",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 4,
+   "isin": null,
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 24.010000228881836,
+    "historyFileObservedAt": "2026-10-13T23:21:30.839614+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "S",
+    "currency": "USD",
+    "avgTradedValue30d": 215887802.19378248,
+    "return30dPct": 8.642533097029247,
+    "volumeRatio": 3.149511887201868,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.008563,
+   "confidence": 0.449969,
+   "agents": {
+    "fundamental": {
+     "vote": -0.05,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.4,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.5,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.008563
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.449969
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=forecast negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=forecast negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow"
+    ],
+    "missing": [
+     "total_debt",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2026-01-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001583708.json"
+     }
+    ],
+    "filingPeriodEnd": "2026-01-31",
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime"
+    ],
+    "missingInputs": [
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 21.889901042167548,
+    "netMarginPct": -45.01596959086287,
+    "roePct": -31.363223613483676,
+    "debtToEquity": null,
+    "currentRatio": 1.3890104514414527,
+    "return1mPct": 1.0860352346111934,
+    "return3mPct": 20.911877865942042,
+    "return6mPct": 78.99698492202094,
+    "volatilityAnnualizedPct": 53.44862365651284,
+    "maxDrawdownPct": -33.10924747778527,
+    "volumeVs30d": 2.9410226637239543
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "TALO",
+   "name": "Talos Energy, Inc. Common Stock",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 5,
+   "isin": null,
+   "sector": "Mining & Energy",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 17.559999465942383,
+    "historyFileObservedAt": "2026-10-13T23:24:58.319473+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "TALO",
+    "currency": "USD",
+    "avgTradedValue30d": 43461712.45376155,
+    "return30dPct": 1.7381183840226466,
+    "volumeRatio": 3.075656998082872,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.143077,
+   "confidence": 0.461733,
+   "agents": {
+    "fundamental": {
+     "vote": -0.7999999999999999,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -0.10000000000000002,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.2,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.143077
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.461733
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.14<0.25 with negative evidence-backed votes: fundamental -0.80, quality -0.30, risk -0.10",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "free_cash_flow",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001724965.json"
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.46 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.46 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.45,
+    "missing": [
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -9.804475954210846,
+    "netMarginPct": -27.768009123236727,
+    "roePct": -22.798060811125566,
+    "debtToEquity": 0.5655532458259979,
+    "currentRatio": 1.3049148391319656,
+    "return1mPct": -5.019094817911684,
+    "return3mPct": 23.30028320480231,
+    "return6mPct": 21.155184314984087,
+    "volatilityAnnualizedPct": 48.45938708278994,
+    "maxDrawdownPct": -22.182039007406125,
+    "volumeVs30d": 2.85211946239562
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "BBVA",
+   "name": "Banco Bilbao Vizcaya Argentaria S.A. Common Stock",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 6,
+   "isin": null,
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 26.43000030517578,
+    "historyFileObservedAt": "2026-10-13T23:37:53.497379+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "BBVA",
+    "currency": "USD",
+    "avgTradedValue30d": 41583109.506508894,
+    "return30dPct": -8.736183906350236,
+    "volumeRatio": 2.5957400802921793,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": 0.066557,
+   "confidence": 0.333576,
+   "agents": {
+    "fundamental": {
+     "vote": 0.1,
+     "confidence": 0.35
+    },
+    "risk": {
+     "vote": -0.25,
+     "confidence": 0.5800000000000001
+    },
+    "forecast": {
+     "vote": 0.2,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.3,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.066557
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.333576
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.07<0.25 with negative evidence-backed votes: risk -0.25",
+   "dataCompleteness": {
+    "present": [
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "revenue",
+     "revenue_yoy_pct",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "free_cash_flow",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-foreign-ifrs-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000842180.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.5625,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.33 below escalation threshold 0.35"
+    ],
+    "reasoning": "Abstained: calibrated confidence 0.33 too low to act on."
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "zmijewski:current_assets",
+     "zmijewski:current_liabilities",
+     "altman:retained_earnings",
+     "altman:current_assets",
+     "altman:current_liabilities"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": null,
+    "netMarginPct": null,
+    "roePct": 18.003818893815335,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -10.718002638796664,
+    "return3mPct": 0.1556381594991718,
+    "return6mPct": 10.424711972757406,
+    "volatilityAnnualizedPct": 33.41715444483859,
+    "maxDrawdownPct": -22.137112745519744,
+    "volumeVs30d": 2.431747931890868
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "JNJ",
+   "name": "Johnson & Johnson Common Stock",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 7,
+   "isin": null,
+   "sector": "Health Care",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 248.61000061035156,
+    "historyFileObservedAt": "2026-10-13T21:35:25.203106+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "JNJ",
+    "currency": "USD",
+    "avgTradedValue30d": 1826136562.340088,
+    "return30dPct": -6.484861800774688,
+    "volumeRatio": 2.511793947650917,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.219153,
+   "confidence": 0.580332,
+   "agents": {
+    "fundamental": {
+     "vote": 0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.2,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.2,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.35,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.219153
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.580332
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.22<0.25, no negative agent; 4 of 17 core fields missing; abstaining agents: ['comparison']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-28",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000200406.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-28",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.58."
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:operating_income",
+     "interest_coverage:operating_income"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 22.720988490639876,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 6.048119251078021,
+    "netMarginPct": 28.45646704107524,
+    "roePct": 32.87059746885117,
+    "debtToEquity": 0.5081673697635632,
+    "currentRatio": 1.027676163027011,
+    "return1mPct": -6.207899849353726,
+    "return3mPct": 0.7514951721100394,
+    "return6mPct": 6.1285067936458715,
+    "volatilityAnnualizedPct": 20.179549914319413,
+    "maxDrawdownPct": -10.959122461615515,
+    "volumeVs30d": 2.4082781164285807
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "FBK",
+   "name": "FB Financial Corporation Common Stock",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 8,
+   "isin": null,
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 50.720001220703125,
+    "historyFileObservedAt": "2026-10-13T23:50:26.105369+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "FBK",
+    "currency": "USD",
+    "avgTradedValue30d": 33371881.806589253,
+    "return30dPct": -10.955052605453009,
+    "volumeRatio": 2.4695399754835194,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.099656,
+   "confidence": 0.358799,
+   "agents": {
+    "fundamental": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "risk": {
+     "vote": 0.05,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": -0.1,
+     "confidence": 0.33999999999999997
+    },
+    "liquidity": {
+     "vote": 0.42,
+     "confidence": 0.68
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.099656
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.358799
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.10<0.25 with negative evidence-backed votes: quality -0.10",
+   "dataCompleteness": {
+    "present": [
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001649749.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.36 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.36 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 20.406122013014187,
+    "pb": 1.328038295091036,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": null,
+    "netMarginPct": null,
+    "roePct": 6.293930270015573,
+    "debtToEquity": 0.1092073021129645,
+    "currentRatio": null,
+    "return1mPct": -8.551306737954366,
+    "return3mPct": -16.96714643581657,
+    "return6mPct": -7.085535840466517,
+    "volatilityAnnualizedPct": 25.695564158245578,
+    "maxDrawdownPct": -19.466821106188437,
+    "volumeVs30d": 2.3208618896503905
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "PMT",
+   "name": "PennyMac Mortgage Investment Trust Common Shares of Beneficial Interest",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 9,
+   "isin": null,
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 7.039999961853027,
+    "historyFileObservedAt": "2026-10-13T23:50:38.040704+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "PMT",
+    "currency": "USD",
+    "avgTradedValue30d": 18452696.81610028,
+    "return30dPct": -20.434902013450017,
+    "volumeRatio": 2.354120692111637,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": 0.028302,
+   "confidence": 0.335924,
+   "agents": {
+    "fundamental": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "risk": {
+     "vote": -0.35,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": -0.1,
+     "confidence": 0.33999999999999997
+    },
+    "liquidity": {
+     "vote": 0.42,
+     "confidence": 0.68
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.028302
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.335924
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.03<0.25 with negative evidence-backed votes: risk -0.35, quality -0.10",
+   "dataCompleteness": {
+    "present": [
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "free_cash_flow",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001464423.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.6875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.34 below escalation threshold 0.35"
+    ],
+    "reasoning": "Abstained: calibrated confidence 0.34 too low to act on."
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 6.949495065091837,
+    "pb": 0.317206809763767,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": null,
+    "netMarginPct": null,
+    "roePct": 6.775282131221286,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -19.299179971188362,
+    "return3mPct": -28.177072086427213,
+    "return6mPct": -37.87825151573576,
+    "volatilityAnnualizedPct": 29.80929543806307,
+    "maxDrawdownPct": -43.553880389390585,
+    "volumeVs30d": 2.2165511669471556
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "BBAI",
+   "name": "BigBear.ai, Inc. Common Stock",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 10,
+   "isin": null,
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 2.390000104904175,
+    "historyFileObservedAt": "2026-10-13T23:37:20.828461+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "BBAI",
+    "currency": "USD",
+    "avgTradedValue30d": 44027410.131284766,
+    "return30dPct": -23.64217196423082,
+    "volumeRatio": 2.3315562792856,
+    "exchange": "NYSE",
+    "country": "US",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "AVOID_OR_REVIEW",
+   "score": -0.301824,
+   "confidence": 0.53184,
+   "agents": {
+    "fundamental": {
+     "vote": -1.0,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.6499999999999999,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.42,
+     "confidence": 0.68
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.301824
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.53184
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=liquidity negative=fundamental,risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=liquidity negative=fundamental,risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb"
+    ],
+    "missing": [
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "sec-edgar-xbrl-cached",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001836981.json"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 1.6645691340817037,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -19.315452867868245,
+    "netMarginPct": -230.2102262046494,
+    "roePct": -48.03536698972004,
+    "debtToEquity": 0.1749456583914884,
+    "currentRatio": 1.7817108667529107,
+    "return1mPct": -17.343971311311513,
+    "return3mPct": -20.174661200675935,
+    "return6mPct": -38.49868133765029,
+    "volatilityAnnualizedPct": 76.79517186360123,
+    "maxDrawdownPct": -74.18630761274014,
+    "volumeVs30d": 2.2451450529884434
+   },
+   "opportunityState": "HIGH_RISK"
+  }
+ ]
+}

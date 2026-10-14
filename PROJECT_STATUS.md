@@ -1,5 +1,30 @@
 # BIAP — Project Status
 
+## 2026-10-14 session 29 (milestone 3): eight-market re-validation after DE EV/EBITDA 16/30
+
+**No agent, feature or BUY-threshold change.** Code at 2d13b08; this session is validation + documentation only. Tests (`.venv-global`): **1,117 passed, 0 failed**.
+
+| Market | scanned | P/E | P/B | EV/EBITDA | calls | G1 evidence not PASS |
+|---|--:|--:|--:|--:|---|--:|
+| DE Xetra | 30 | 21 | 28 | 16 | 1 BUY_CANDIDATE (YSN), 2 WATCH, 27 NO_REC | 6 |
+| SE Stockholm | 30 | 16 | 21 | 9 | 0 BUY, 6 WATCH | 1 |
+| GB LSE | 30 | 21 | 27 | 9 | 1 BUY (TBTG), 8 WATCH | 1 |
+| IT Milan | 30 | 18 | 28 | 14 | 0 BUY, 5 WATCH | 3 |
+| NO Oslo | 30 | 25 | 2 | 1 | 1 BUY (KIT), 5 WATCH | 2 |
+| US NASDAQ | 30 | 9 | 19 | 8 | 3 BUY (NVDA, AAPL, MSFT) | 2 |
+| US NYSE | 30 | 14 | 12 | 4 | 0 BUY, 1 WATCH | 3 |
+| FR Paris | 30 | 23 | 9 | 0 | 0 BUY, 2 WATCH | 1 |
+
+- **Harness defect found and fixed (not a pipeline defect):** the first s29 pass used a fresh data dir with no `fx/` or `shares/` caches, so SE/GB/IT/NO P/B and EV/EBITDA collapsed (GB P/B 0, IT P/B 0, SE 4). After refreshing ECB FX and the official Nasdaq Nordic (403), Borsa Italiana (193) and LSE (519) caches, only SE/GB/IT/NO were rerun; coverage matches s27 exactly. First-pass files kept in `docs/market-audit/research/2026-10-14-s29/first-pass-without-caches/`. Lesson: a fresh audit data dir must run `fx_history refresh` and `exchange_shares refresh` first.
+- **BUY candidates are not endorsements:** AAPL passes G2 by 0.0014 (0.2514); KIT (NO) passes with P/B and EV/EBITDA missing; YSN (DE) rests on a reviewed HGB/IFRS issuer row from s28. SE s27 candidates (AZN/AQ/BRAV) no longer pass on fresh prices; calls moved with market data, not thresholds.
+- **Unresolved root causes:** FR EV/EBITDA 0/30 (AMF ESEF packages give no D&A/operating income for most issuers; no official Euronext Paris share-count source); NO P/B 2/30 (Oslo exposes no share count); DE EV/EBITDA 16/30 (no lawful machine-readable source for the remainder; issuer hosts 403 this VPS, not bypassed); SE EV/EBITDA 9/30 (EBITDA/debt missing).
+- **Dominant non-BUY reasons** are genuine G2 score and G5/G6 disagreement (US NASDAQ 17 REVIEW_DISAGREEMENT), separate from data gaps (DATA_LIMITED: DE 7, NO 10, IT 6, US NYSE 5).
+- **Stray directory:** `/var/lib/biap-global/universe/universe` (a copy created by mistake under the prod data dir; the removal was denied by the auto-mode classifier). Safe to delete by the owner; the real `universe/<CC>` dirs are untouched.
+- APK device test remains **pending** (no device). Production still 7a49767 until owner restart. PR #51 unmerged.
+
+### Research GO/NO-GO (session 29)
+**Restricted GO** (unchanged): paper-research dataset for SE, GB, IT, US-NASDAQ, US-NYSE, and DE for P/E and P/B only. **NO-GO** for an all-market dataset: DE EV/EBITDA 53%, NO P/B 7%, FR EV/EBITDA 0%, device test pending.
+
 ## 2026-10-14 session 27 (milestone 2): German share-count supplement, full re-validation of 8 markets, GO/NO-GO
 
 **Authorised by owner; no agent, feature or threshold change.**
