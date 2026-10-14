@@ -80,3 +80,9 @@ def _codal_issuer_directory_disabled_by_default(monkeypatch):
     override this back via monkeypatch.
     """
     monkeypatch.setattr(listed_company_ingestion, "list_companies", lambda: [])
+
+
+@pytest.fixture(autouse=True)
+def _isolated_fx_history(tmp_path, monkeypatch):
+    """Historical FX reads only from a per-test cache path (never the host's)."""
+    monkeypatch.setenv("BIAP_GLOBAL_FX_HISTORY_PATH", str(tmp_path / "fx-hist-absent.json"))

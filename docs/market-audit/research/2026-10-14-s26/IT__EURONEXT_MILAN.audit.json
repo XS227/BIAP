@@ -1,0 +1,5461 @@
+{
+ "market": "IT__EURONEXT_MILAN",
+ "companies": [
+  {
+   "ticker": "UCG",
+   "name": "UNICREDIT",
+   "category": "TRADING_VALUE",
+   "rank": 1,
+   "isin": "IT0005239360",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 77.0,
+    "historyFileObservedAt": "2026-10-13T21:35:17.366904+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "UCG.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 380133374.51514614,
+    "return30dPct": -7.607387348789862,
+    "volumeRatio": 0.653183722720333,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.103113,
+   "confidence": 0.499356,
+   "agents": {
+    "fundamental": {
+     "vote": 0.2,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.05,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.2,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.103113
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.499356
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "score 0.10<0.25, no negative agent; 8 of 17 core fields missing; abstaining agents: []",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "free_cash_flow",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-emarket-storage",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.emarketstorage.it/it/documenti?categoria=100&azienda=198"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0005239360&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.50 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.50 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 11.02394991346365,
+    "pb": 1.702588304834897,
+    "evEbitda": null,
+    "peVsSectorPct": -7.984750793714124,
+    "revenueYoyPct": 2.2908941079522016,
+    "netMarginPct": 44.223797631515346,
+    "roePct": 16.119749225506176,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -8.997275203375255,
+    "return3mPct": -6.993343826481446,
+    "return6mPct": 9.674528439492946,
+    "volatilityAnnualizedPct": 31.179874761473258,
+    "maxDrawdownPct": -24.173443250987205,
+    "volumeVs30d": 0.5796819517705004
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "ISP",
+   "name": "INTESA SANPAOLO",
+   "category": "TRADING_VALUE",
+   "rank": 2,
+   "isin": "IT0000072618",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 6.195000171661377,
+    "historyFileObservedAt": "2026-10-13T21:35:17.347886+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ISP.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 300304075.2328265,
+    "return30dPct": -7.093581792086701,
+    "volumeRatio": 0.596937052248382,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.064726,
+   "confidence": 0.499356,
+   "agents": {
+    "fundamental": {
+     "vote": -0.09999999999999998,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.1,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.064726
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.499356
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.06<0.25 with negative evidence-backed votes: fundamental -0.10",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "free_cash_flow",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-emarket-storage",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.emarketstorage.it/it/documenti?categoria=100&azienda=142"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0000072618&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.50 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.50 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 11.626415432624096,
+    "pb": 1.6314571809477194,
+    "evEbitda": null,
+    "peVsSectorPct": 0.10583403454158535,
+    "revenueYoyPct": -0.7200338839474796,
+    "netMarginPct": 30.65437122604358,
+    "roePct": 14.28768087124109,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -8.180595875212903,
+    "return3mPct": -3.5982479964932423,
+    "return6mPct": 7.599898750282064,
+    "volatilityAnnualizedPct": 24.11215471846121,
+    "maxDrawdownPct": -18.962136424504187,
+    "volumeVs30d": 0.6153177071714251
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "ENI",
+   "name": "ENI",
+   "category": "TRADING_VALUE",
+   "rank": 3,
+   "isin": "IT0003132476",
+   "sector": "Energy",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 25.670000076293945,
+    "historyFileObservedAt": "2026-10-13T21:35:35.072383+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ENI.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 189257851.60083452,
+    "return30dPct": 9.709226965153107,
+    "volumeRatio": 0.6376628639004626,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.208374,
+   "confidence": 0.585121,
+   "agents": {
+    "fundamental": {
+     "vote": 0.05000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.1,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.208374
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.585121
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.21<0.25, no negative agent; 2 of 17 core fields missing; abstaining agents: ['comparison']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "current_assets",
+     "current_liabilities"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-1info",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.1info.it/PORTALE1INFO#documenti"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0003132476&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.59."
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "zmijewski:current_assets",
+     "zmijewski:current_liabilities",
+     "altman:retained_earnings",
+     "altman:current_assets",
+     "altman:current_liabilities"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.6,
+    "missing": [
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 33.13461450430063,
+    "pb": 1.4831015102013754,
+    "evEbitda": 7.30863981058338,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -7.48448708852777,
+    "netMarginPct": 3.3572324134824894,
+    "roePct": 5.224771250497281,
+    "debtToEquity": 0.3815143880122,
+    "currentRatio": null,
+    "return1mPct": 8.869994653807955,
+    "return3mPct": 23.826075021100344,
+    "return6mPct": 21.522260538721284,
+    "volatilityAnnualizedPct": 27.347231940247507,
+    "maxDrawdownPct": -18.37176234329783,
+    "volumeVs30d": 0.8189176781627918
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "ENEL",
+   "name": "ENEL",
+   "category": "TRADING_VALUE",
+   "rank": 4,
+   "isin": "IT0003128367",
+   "sector": "Utilities",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 9.006999969482422,
+    "historyFileObservedAt": "2026-10-13T21:35:36.497422+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ENEL.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 177483553.12632132,
+    "return30dPct": -2.52164293730871,
+    "volumeRatio": 0.7128891435260438,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.014672,
+   "confidence": 0.649954,
+   "agents": {
+    "fundamental": {
+     "vote": -0.05,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": -0.5,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.35,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.014672
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.649954
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=quality negative=comparison"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=quality negative=comparison",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-emarket-storage",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.emarketstorage.it/it/documenti?categoria=100&azienda=1003"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0003128367&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "zmijewski:current_assets",
+     "zmijewski:current_liabilities",
+     "altman:current_assets",
+     "altman:current_liabilities"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 23.094871716621594,
+    "pb": 1.9153216235658583,
+    "evEbitda": null,
+    "peVsSectorPct": 105.84555389657892,
+    "revenueYoyPct": 5.605162756717275,
+    "netMarginPct": 7.149903275811266,
+    "roePct": 11.923939750026706,
+    "debtToEquity": 1.2174554000640958,
+    "currentRatio": null,
+    "return1mPct": 3.0313469990294273,
+    "return3mPct": -7.603395983573025,
+    "return6mPct": -4.972182461800312,
+    "volatilityAnnualizedPct": 20.561087534406393,
+    "maxDrawdownPct": -13.69971620497238,
+    "volumeVs30d": 0.5763611540479484
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "STLAM",
+   "name": "STELLANTIS",
+   "category": "TRADING_VALUE",
+   "rank": 5,
+   "isin": "NL00150001Q9",
+   "sector": "Consumer Discretionary",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 3.927999973297119,
+    "historyFileObservedAt": "2026-10-13T21:35:17.373905+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "STLAM.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 174837446.61784074,
+    "return30dPct": -15.372186221578932,
+    "volumeRatio": 0.7642800520129268,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "AVOID_OR_REVIEW",
+   "score": -0.428653,
+   "confidence": 0.479504,
+   "agents": {
+    "fundamental": {
+     "vote": -1.0,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -0.9500000000000001,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.428653
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.479504
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.43<0.25 with negative evidence-backed votes: fundamental -1.00, risk -0.95, quality -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "pb"
+    ],
+    "missing": [
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-nl-afm-register",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.afm.nl/en/sector/registers/meldingenregisters/financiele-verslaggeving/details?id=A2510-03674"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=NL00150001Q9&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.48 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.48 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.3,
+    "missing": [
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 0.2130636962463658,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -2.1481660908476696,
+    "netMarginPct": -14.547776011673658,
+    "roePct": -41.35478972611618,
+    "debtToEquity": 0.8508546138034481,
+    "currentRatio": 1.0228476358602472,
+    "return1mPct": -12.918500756742679,
+    "return3mPct": -24.695237477620445,
+    "return6mPct": -46.86869989877543,
+    "volatilityAnnualizedPct": 51.04777597575889,
+    "maxDrawdownPct": -63.04493780603615,
+    "volumeVs30d": 0.965685407862761
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "STMMI",
+   "name": "STMICROELECTRONICS",
+   "category": "TRADING_VALUE",
+   "rank": 6,
+   "isin": "NL0000226223",
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 43.81999969482422,
+    "historyFileObservedAt": "2026-10-13T21:50:21.212236+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "STMMI.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 170970620.93161747,
+    "return30dPct": 3.8330406033681097,
+    "volumeRatio": 1.3123917707191528,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.042072,
+   "confidence": 0.601329,
+   "agents": {
+    "fundamental": {
+     "vote": -0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.30000000000000004,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.65,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.042072
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.601329
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=quality negative=fundamental"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=quality negative=fundamental",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-nl-afm-register",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.afm.nl/en/sector/registers/meldingenregisters/financiele-verslaggeving/details?id=A2510-03675"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=NL0000226223&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.7,
+    "missing": [
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 152.38583939672503,
+    "pb": 2.4932832193499013,
+    "evEbitda": 18.434408608508264,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -11.069077702958307,
+    "netMarginPct": 2.662923260166752,
+    "roePct": 1.623949361834596,
+    "debtToEquity": 0.10428556604752516,
+    "currentRatio": 2.745795759200585,
+    "return1mPct": 6.985740849420408,
+    "return3mPct": -20.25237470724014,
+    "return6mPct": 20.11217524682387,
+    "volatilityAnnualizedPct": 55.786820227011255,
+    "maxDrawdownPct": -39.77649226557672,
+    "volumeVs30d": 0.6022037967864736
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "TIT",
+   "name": "TELECOM ITALIA",
+   "category": "TRADING_VALUE",
+   "rank": 7,
+   "isin": "IT0005712671",
+   "sector": "Telecommunications",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 5.552999973297119,
+    "historyFileObservedAt": "2026-10-13T11:25:01.593653+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "TIT.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 130067802.66606434,
+    "return30dPct": -28.844181908367826,
+    "volumeRatio": 0.4293121010041085,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.085886,
+   "confidence": 0.562201,
+   "agents": {
+    "fundamental": {
+     "vote": 0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.2,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.085886
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.562201
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.09<0.25 with negative evidence-backed votes: risk -0.20, forecast -0.20",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "esef-xbrl-cached-v2",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://filings.xbrl.org/549300W384M3RI3VXU42/2025-12-31/ESEF/IT/0/tim-2025-12-31-it/reports/ixbrlviewer.html"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0005712671&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.56."
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 570.3999996185303,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 0.5932762030323113,
+    "netMarginPct": 3.7789427697684577,
+    "roePct": 3.8573021181716833,
+    "debtToEquity": 0.5939056112969157,
+    "currentRatio": 0.9114429588470221,
+    "return1mPct": -24.878176677180363,
+    "return3mPct": -26.824888513699506,
+    "return6mPct": -14.328627174504206,
+    "volatilityAnnualizedPct": 28.29569393013336,
+    "maxDrawdownPct": -32.59614077681279,
+    "volumeVs30d": 0.32685205985040655
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "RACE",
+   "name": "FERRARI",
+   "category": "TRADING_VALUE",
+   "rank": 8,
+   "isin": "NL0011585146",
+   "sector": "Consumer Discretionary",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 347.8500061035156,
+    "historyFileObservedAt": "2026-10-13T11:24:59.587597+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "RACE.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 129732811.91811219,
+    "return30dPct": -4.081066604731087,
+    "volumeRatio": 0.8797679091619415,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.079667,
+   "confidence": 0.649954,
+   "agents": {
+    "fundamental": {
+     "vote": -0.05,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.15000000000000002,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": -0.5,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.85,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.079667
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.649954
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=quality negative=comparison"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=quality negative=comparison",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "current_liabilities"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-nl-afm-register",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.afm.nl/en/sector/registers/meldingenregisters/financiele-verslaggeving/details?id=A2510-03607"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=NL0011585146&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "zmijewski:current_liabilities",
+     "altman:retained_earnings",
+     "altman:current_liabilities"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.45,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 38.91304211738782,
+    "pb": 15.813504296323998,
+    "evEbitda": 22.84640192549356,
+    "peVsSectorPct": 104.9588518547349,
+    "revenueYoyPct": 7.025959655325087,
+    "netMarginPct": 22.384102030740433,
+    "roePct": 40.858784563580436,
+    "debtToEquity": 0.7367586420765404,
+    "currentRatio": null,
+    "return1mPct": -0.8803084359634727,
+    "return3mPct": 4.490345920711847,
+    "return6mPct": 9.942192653538772,
+    "volatilityAnnualizedPct": 30.761981094253123,
+    "maxDrawdownPct": -25.759221544282536,
+    "volumeVs30d": 0.6179780027988402
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "PST",
+   "name": "POSTE ITALIANE",
+   "category": "TRADING_VALUE",
+   "rank": 9,
+   "isin": "IT0003796171",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 24.110000610351562,
+    "historyFileObservedAt": "2026-10-13T11:25:00.297617+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "PST.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 128719349.75337562,
+    "return30dPct": -13.179689546562045,
+    "volumeRatio": 0.72914694461838,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.001593,
+   "confidence": 0.387,
+   "agents": {
+    "fundamental": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "risk": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": -0.3,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": -0.1,
+     "confidence": 0.33999999999999997
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.001593
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.387
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.00<0.25 with negative evidence-backed votes: comparison -0.30, quality -0.10",
+   "dataCompleteness": {
+    "present": [
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "revenue",
+     "revenue_yoy_pct",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-emarket-storage",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.emarketstorage.it/it/documenti?categoria=100&azienda=2355"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0003796171&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.75,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.39 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.39 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 14.239766304953056,
+    "pb": 2.8090930027148673,
+    "evEbitda": null,
+    "peVsSectorPct": 25.99913019006721,
+    "revenueYoyPct": null,
+    "netMarginPct": null,
+    "roePct": 15.967707365864115,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -6.129530145923933,
+    "return3mPct": -12.125582150905634,
+    "return6mPct": 11.641215316021603,
+    "volatilityAnnualizedPct": 21.119723201501138,
+    "maxDrawdownPct": -18.13507336884258,
+    "volumeVs30d": 0.547343137013455
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "BMPS",
+   "name": "BANCA MONTE PASCHI SIENA",
+   "category": "TRADING_VALUE",
+   "rank": 10,
+   "isin": "IT0005508921",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 11.0,
+    "historyFileObservedAt": "2026-10-13T11:24:59.406853+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "BMPS.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 127190187.05246846,
+    "return30dPct": -3.508768701010212,
+    "volumeRatio": 0.9599734968131219,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.147795,
+   "confidence": 0.387815,
+   "agents": {
+    "fundamental": {
+     "vote": 0.6000000000000001,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": -0.2,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.2,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.147795
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.387815
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.15<0.25 with negative evidence-backed votes: risk -0.20",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "pb"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-emarket-storage",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.emarketstorage.it/it/documenti?categoria=100&azienda=1397"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0005508921&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.39 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.39 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 1.12284890833814,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 13.611098597778714,
+    "netMarginPct": 61.08357315461522,
+    "roePct": 8.975038625870685,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -3.9380926792663695,
+    "return3mPct": -1.8277696046902658,
+    "return6mPct": 34.27444839426905,
+    "volatilityAnnualizedPct": 32.34148245385694,
+    "maxDrawdownPct": -25.486631318722107,
+    "volumeVs30d": 0.6411607245203889
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "FDA",
+   "name": "FIDIA",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 1,
+   "isin": "IT0005654683",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 0.02199999988079071,
+    "historyFileObservedAt": "2026-10-13T11:25:14.819025+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "FDA.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 415139.6889250913,
+    "return30dPct": 189.4736777609241,
+    "volumeRatio": 2.1265499421804277,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": 0.030705,
+   "confidence": 0.312141,
+   "agents": {
+    "fundamental": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "risk": {
+     "vote": -0.85,
+     "confidence": 0.5800000000000001
+    },
+    "forecast": {
+     "vote": 0.6,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.0,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.030705
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.312141
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=forecast negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=forecast negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "total_debt",
+     "interest_expense",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "revenue_yoy_pct",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "it-official-issuer-financials-v1",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-12-31",
+      "url": "https://www.fidia.it/wp-content/uploads/investor_relations/borsa/bilanci/2025/Relazione_finanziaria_annuale_2025.pdf"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0005654683&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.6875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "zmijewski:current_assets",
+     "zmijewski:current_liabilities",
+     "altman:retained_earnings",
+     "altman:current_assets",
+     "altman:current_liabilities"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.35,
+    "missing": [
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 2.8846900446871895,
+    "evEbitda": 44.18657260726073,
+    "peVsSectorPct": null,
+    "revenueYoyPct": null,
+    "netMarginPct": null,
+    "roePct": 12.5,
+    "debtToEquity": 0.7418073485600795,
+    "currentRatio": null,
+    "return1mPct": 115.9090851364303,
+    "return3mPct": 89.99999813735482,
+    "return6mPct": 66.66665849717053,
+    "volatilityAnnualizedPct": 183.61629868879243,
+    "maxDrawdownPct": -98.60369604723894,
+    "volumeVs30d": 2.8088366659519934
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "BFG",
+   "name": "B.F.",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 2,
+   "isin": "IT0005187460",
+   "sector": "Consumer Staples",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 7.980000019073486,
+    "historyFileObservedAt": "2026-10-13T11:25:41.804782+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "BFG.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 903121.5458451748,
+    "return30dPct": 56.6384706419274,
+    "volumeRatio": 0.182868257897947,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.026385,
+   "confidence": 0.494775,
+   "agents": {
+    "fundamental": {
+     "vote": 0.3500000000000001,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -0.2,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.25,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.026385
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.494775
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.03<0.25 with negative evidence-backed votes: quality -0.25, risk -0.20",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "interest_expense",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "free_cash_flow",
+     "pe"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-1info",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.1info.it/PORTALE1INFO#documenti"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0005187460&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.49 below accept threshold 0.55",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.49 below accept threshold 0.55; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.45,
+    "missing": [
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 1.7028505084887289,
+    "evEbitda": 17.68146823919276,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 15.398577142250392,
+    "netMarginPct": 0.9489147810852557,
+    "roePct": 1.2663305393672524,
+    "debtToEquity": 0.1597742560543436,
+    "currentRatio": 1.2990776947121956,
+    "return1mPct": 31.551327445392907,
+    "return3mPct": 62.81925042814351,
+    "return6mPct": 82.56621654704426,
+    "volatilityAnnualizedPct": 28.373466889022243,
+    "maxDrawdownPct": -9.565210820439102,
+    "volumeVs30d": 0.2155566370862397
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "KK",
+   "name": "KRUSO KAPITAL",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 3,
+   "isin": "IT0005707341",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 0.023399999365210533,
+    "historyFileObservedAt": "2026-10-13T11:25:47.237935+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "KK.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 182956.2615892702,
+    "return30dPct": 30.000002069605802,
+    "volumeRatio": 0.5830858581003346,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": 0.07052,
+   "confidence": 0.109,
+   "agents": {
+    "fundamental": {
+     "vote": 0.6000000000000001,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.05,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.6,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.2,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "FAIL",
+     "value": "BLOCK"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.07052
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.109
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "evidence BLOCK: ('fundamental_source',)",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "yahoo-public-fundamentals-global",
+      "type": "public_vendor_financial_metrics",
+      "period": "2025-12-31",
+      "url": "https://finance.yahoo.com/quote/KK.MI/financials/"
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0005707341&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "NOT_CURRENT"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [
+     "task/evidence gate is out of scope or blocked"
+    ],
+    "review_reasons": [],
+    "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 6.540258463413776,
+    "pb": 0.9853300202561197,
+    "evEbitda": null,
+    "peVsSectorPct": -43.94668536454973,
+    "revenueYoyPct": 42.74292272379494,
+    "netMarginPct": 23.519952831452844,
+    "roePct": 15.065059910049094,
+    "debtToEquity": 2.32941943900848,
+    "currentRatio": null,
+    "return1mPct": 29.3478261969899,
+    "return3mPct": 27.956991723947166,
+    "return6mPct": 42.22541011251337,
+    "volatilityAnnualizedPct": 37.970029001097785,
+    "maxDrawdownPct": -20.930230946331996,
+    "volumeVs30d": 0.5887226564379427
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "TPRO",
+   "name": "TECHNOPROBE",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 4,
+   "isin": "IT0005482333",
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 34.18000030517578,
+    "historyFileObservedAt": "2026-10-13T11:25:01.277645+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "TPRO.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 44769833.73749663,
+    "return30dPct": 23.930385785812767,
+    "volumeRatio": 1.0931056928763099,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.121681,
+   "confidence": 0.4042,
+   "agents": {
+    "fundamental": {
+     "vote": 0.6000000000000001,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": -0.5,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.2,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.121681
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.4042
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.12<0.25 with negative evidence-backed votes: risk -0.50",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-emarket-storage",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.emarketstorage.it/it/documenti?categoria=100&azienda=115505"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0005482333&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.75,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.40 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.40 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime"
+    ],
+    "missingInputs": [
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 17.051832824753223,
+    "evEbitda": 101.74595139257855,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 15.691158844745413,
+    "netMarginPct": 15.730131449123142,
+    "roePct": 7.9584064668845915,
+    "debtToEquity": null,
+    "currentRatio": 7.2338616875162405,
+    "return1mPct": 13.126327454742203,
+    "return3mPct": 4.429969304734782,
+    "return6mPct": 73.29730472049198,
+    "volatilityAnnualizedPct": 63.86382235262171,
+    "maxDrawdownPct": -32.23096921549195,
+    "volumeVs30d": 0.6182289857520643
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "PINF",
+   "name": "PININFARINA SPA",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 5,
+   "isin": "IT0003056386",
+   "sector": "Consumer Discretionary",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 1.0049999952316284,
+    "historyFileObservedAt": "2026-10-13T11:25:41.120763+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "PINF.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 136618.04068940083,
+    "return30dPct": 21.08433920960937,
+    "volumeRatio": 0.20822636456309987,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.126718,
+   "confidence": 0.467288,
+   "agents": {
+    "fundamental": {
+     "vote": -0.6,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.09999999999999999,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.126718
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.467288
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.13<0.25 with negative evidence-backed votes: fundamental -0.60, quality -0.30, risk -0.10",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb"
+    ],
+    "missing": [
+     "total_debt",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-emarket-storage",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.emarketstorage.it/it/documenti?categoria=100&azienda=2133"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0003056386&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.47 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.47 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 2.7443717912652086,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 12.639201272697353,
+    "netMarginPct": -6.545560804558516,
+    "roePct": -23.630353752021943,
+    "debtToEquity": null,
+    "currentRatio": 0.9085437020523245,
+    "return1mPct": 20.975608834193473,
+    "return3mPct": 20.68125931413185,
+    "return6mPct": 34.41734640597307,
+    "volatilityAnnualizedPct": 30.646430643938576,
+    "maxDrawdownPct": -19.457012476317438,
+    "volumeVs30d": 0.21189155222596384
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "NWL",
+   "name": "NEWPRINCES",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 6,
+   "isin": "IT0005385213",
+   "sector": "Consumer Staples",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 19.079999923706055,
+    "historyFileObservedAt": "2026-10-13T11:25:11.624935+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "NWL.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 2529594.9578269958,
+    "return30dPct": 20.37854551733973,
+    "volumeRatio": 1.1420825445621348,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.226408,
+   "confidence": 0.552459,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7500000000000001,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.7,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.65,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.226408
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.552459
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental,quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "total_debt",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-emarket-storage",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.emarketstorage.it/it/documenti?categoria=100&azienda=1291"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0005385213&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 2.427095222692128,
+    "pb": 0.9536277297780963,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 80.36169443955276,
+    "netMarginPct": 12.95408137754516,
+    "roePct": 39.480759112302785,
+    "debtToEquity": null,
+    "currentRatio": 1.406221586991136,
+    "return1mPct": 24.426131103221028,
+    "return3mPct": 27.04327022271047,
+    "return6mPct": 15.141605048365214,
+    "volatilityAnnualizedPct": 51.6119186404007,
+    "maxDrawdownPct": -38.847736118386855,
+    "volumeVs30d": 1.5361590483309036
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "LUVE",
+   "name": "LUVE",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 7,
+   "isin": "IT0005107492",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 70.0999984741211,
+    "historyFileObservedAt": "2026-10-13T11:25:11.358965+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "LUVE.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 2022558.4691575367,
+    "return30dPct": 20.240136177496627,
+    "volumeRatio": 0.40928729157999166,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.207224,
+   "confidence": 0.497829,
+   "agents": {
+    "fundamental": {
+     "vote": 0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.04999999999999999,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.207224
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.497829
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.21<0.25, no negative agent; 2 of 17 core fields missing; abstaining agents: ['comparison']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "total_debt",
+     "pe"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-emarket-storage",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.emarketstorage.it/it/documenti?categoria=100&azienda=99"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0005107492&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.50 below accept threshold 0.55",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.50 below accept threshold 0.55; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 5.423647421277676,
+    "evEbitda": 14.150374416519119,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 2.8249078260573324,
+    "netMarginPct": 6.590669318789717,
+    "roePct": 14.027431641210205,
+    "debtToEquity": null,
+    "currentRatio": 2.119336701163694,
+    "return1mPct": 13.486843529335356,
+    "return3mPct": 17.147704944767206,
+    "return6mPct": 49.34255768529445,
+    "volatilityAnnualizedPct": 38.00634730299886,
+    "maxDrawdownPct": -24.12342754761309,
+    "volumeVs30d": 0.9203217926091627
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "PRT",
+   "name": "ESPRINET",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 8,
+   "isin": "IT0003850929",
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 8.170000076293945,
+    "historyFileObservedAt": "2026-10-13T11:25:28.391406+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "PRT.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 2073136.683996598,
+    "return30dPct": 17.0487113749094,
+    "volumeRatio": 0.0924312209748505,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.025156,
+   "confidence": 0.552459,
+   "agents": {
+    "fundamental": {
+     "vote": -0.05,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.7,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.4,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.025156
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.552459
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "total_debt",
+     "interest_expense"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-emarket-storage",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.emarketstorage.it/it/documenti?categoria=100&azienda=1627"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0003850929&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 19.35365839702327,
+    "pb": 1.026549200195137,
+    "evEbitda": 2.426948635587995,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 3.633604905588772,
+    "netMarginPct": 0.47000850409477984,
+    "roePct": 5.179603050299124,
+    "debtToEquity": null,
+    "currentRatio": 1.2173816959838546,
+    "return1mPct": -0.1258682022123203,
+    "return3mPct": 12.873395532883825,
+    "return6mPct": 42.01315274402943,
+    "volatilityAnnualizedPct": 44.935624012016966,
+    "maxDrawdownPct": -30.992373111098242,
+    "volumeVs30d": 0.3762394583365361
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "INW",
+   "name": "INWIT",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 9,
+   "isin": "IT0005090300",
+   "sector": "Telecommunications",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 7.230000019073486,
+    "historyFileObservedAt": "2026-10-13T11:25:02.774687+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "INW.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 13873792.816210492,
+    "return30dPct": 16.895716830424455,
+    "volumeRatio": 0.9786438463299252,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.150455,
+   "confidence": 0.449983,
+   "agents": {
+    "fundamental": {
+     "vote": -0.1,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -0.4,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.6,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.150455
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.449983
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=forecast negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=forecast negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "interest_expense",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "total_debt",
+     "free_cash_flow",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-1info",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.1info.it/PORTALE1INFO#documenti"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0005090300&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 1.872595127611543,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 3.9696497032921663,
+    "netMarginPct": 33.49790143181672,
+    "roePct": 10.37392200360415,
+    "debtToEquity": null,
+    "currentRatio": 0.5896891952668845,
+    "return1mPct": 11.257762394267479,
+    "return3mPct": 14.823721549097257,
+    "return6mPct": 5.332101078367968,
+    "volatilityAnnualizedPct": 35.17944087570199,
+    "maxDrawdownPct": -35.190791241623955,
+    "volumeVs30d": 2.5313412421438666
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "RN",
+   "name": "RISANAMENTO",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 10,
+   "isin": "IT0001402269",
+   "sector": "Real Estate",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 0.03700000047683716,
+    "historyFileObservedAt": "2026-10-13T11:25:19.974169+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "RN.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 1982433.3147972082,
+    "return30dPct": 15.987462938324493,
+    "volumeRatio": 0.5369043155611855,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": -0.08,
+   "confidence": 0.102,
+   "agents": {
+    "fundamental": {
+     "vote": -1.0,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.8,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "FAIL",
+     "value": "BLOCK"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.08
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.102
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "evidence BLOCK: ('fresh_fundamentals',)",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb"
+    ],
+    "missing": [
+     "total_debt",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-emarket-storage",
+      "type": "official_regulatory_xbrl",
+      "period": "2024-12-31",
+      "url": "https://www.emarketstorage.it/it/documenti?categoria=100&azienda=2235"
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0001402269&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2024-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "NOT_CURRENT"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [
+     "task/evidence gate is out of scope or blocked"
+    ],
+    "review_reasons": [],
+    "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 10.94589798683701,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -99.97750179230125,
+    "netMarginPct": -35414.92537313433,
+    "roePct": -918.6217576461479,
+    "debtToEquity": null,
+    "currentRatio": 1.6654413486302972,
+    "return1mPct": -28.863634054572117,
+    "return3mPct": 107.2847679668464,
+    "return6mPct": 78.85714693215427,
+    "volatilityAnnualizedPct": 64.69537318943954,
+    "maxDrawdownPct": -37.727272342428684,
+    "volumeVs30d": 0.7005475242487073
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "AMP",
+   "name": "AMPLIFON",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 1,
+   "isin": "IT0004056880",
+   "sector": "Health Care",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 12.859999656677246,
+    "historyFileObservedAt": "2026-10-13T11:25:01.842660+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "AMP.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 13958141.725527827,
+    "return30dPct": 5.8871895591943835,
+    "volumeRatio": 3.1803470448712723,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.046143,
+   "confidence": 0.552459,
+   "agents": {
+    "fundamental": {
+     "vote": -0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.9000000000000001,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.046143
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.552459
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=quality negative=fundamental,risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=quality negative=fundamental,risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "total_debt",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-emarket-storage",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.emarketstorage.it/it/documenti?categoria=100&azienda=283"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0004056880&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 30.719383314276218,
+    "pb": 3.439217002078065,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -0.5618366946270603,
+    "netMarginPct": 3.821463827975481,
+    "roePct": 9.16862371998698,
+    "debtToEquity": null,
+    "currentRatio": 0.607331551491669,
+    "return1mPct": 10.37198639964454,
+    "return3mPct": 16.221190906254268,
+    "return6mPct": 28.00092584373124,
+    "volatilityAnnualizedPct": 41.19024583025207,
+    "maxDrawdownPct": -48.90585746314532,
+    "volumeVs30d": 0.9052379095525126
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "ARIS",
+   "name": "ARISTON HOLDING",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 2,
+   "isin": "NL0015000N33",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 3.3299999237060547,
+    "historyFileObservedAt": "2026-10-13T11:25:11.161922+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ARIS.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 2128463.201300327,
+    "return30dPct": -14.042337082999822,
+    "volumeRatio": 3.070156188116197,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.159657,
+   "confidence": 0.56044,
+   "agents": {
+    "fundamental": {
+     "vote": 0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.55,
+     "confidence": 0.5800000000000001
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.6,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.159657
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.56044
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=comparison,fundamental,quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=comparison,fundamental,quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-nl-afm-register",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.afm.nl/en/sector/registers/meldingenregisters/financiele-verslaggeving/details?id=A2510-03562"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=NL0015000N33&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "zmijewski:current_assets",
+     "zmijewski:current_liabilities",
+     "altman:retained_earnings",
+     "altman:current_assets",
+     "altman:current_liabilities"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.15,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 9.444444709353977,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": -62.81379770724196,
+    "revenueYoyPct": 2.825996125650465,
+    "netMarginPct": 4.894536588969746,
+    "roePct": 8.745297340109563,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -3.846151512174556,
+    "return3mPct": -7.70900973710792,
+    "return6mPct": -14.883920198329559,
+    "volatilityAnnualizedPct": 44.68232949175007,
+    "maxDrawdownPct": -41.96035477200808,
+    "volumeVs30d": 5.391252944781084
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "GPI",
+   "name": "GPI",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 3,
+   "isin": "IT0005221517",
+   "sector": "Health Care",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 15.140000343322754,
+    "historyFileObservedAt": "2026-10-13T11:25:24.276290+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "GPI.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 340058.4217539469,
+    "return30dPct": 11.323528813655837,
+    "volumeRatio": 2.3231214808685174,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.127404,
+   "confidence": 0.497829,
+   "agents": {
+    "fundamental": {
+     "vote": -0.05,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.04999999999999999,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.2,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.127404
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.497829
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.13<0.25, no negative agent; 2 of 17 core fields missing; abstaining agents: ['comparison']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "total_debt",
+     "pe"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-1info",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.1info.it/PORTALE1INFO#documenti"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0005221517&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.50 below accept threshold 0.55",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.50 below accept threshold 0.55; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 1.4567909459168995,
+    "evEbitda": 3.1961542578702016,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 7.022349718424126,
+    "netMarginPct": 2.7847962210260353,
+    "roePct": 5.029678742084291,
+    "debtToEquity": null,
+    "currentRatio": 1.6391470228337912,
+    "return1mPct": 8.510636714891028,
+    "return3mPct": 12.434283093613852,
+    "return6mPct": -3.8017155602661723,
+    "volatilityAnnualizedPct": 31.889061098291965,
+    "maxDrawdownPct": -24.71179958418378,
+    "volumeVs30d": 3.2072488643193227
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "SGF",
+   "name": "SOGEFI",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 4,
+   "isin": "IT0000076536",
+   "sector": "Consumer Discretionary",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 1.9800000190734863,
+    "historyFileObservedAt": "2026-10-13T11:25:27.939393+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SGF.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 481719.82841796876,
+    "return30dPct": -3.6496372383124087,
+    "volumeRatio": 1.924978439690102,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.066808,
+   "confidence": 0.497829,
+   "agents": {
+    "fundamental": {
+     "vote": -0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.55,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.066808
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.497829
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=quality negative=fundamental,risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=quality negative=fundamental,risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "total_debt",
+     "pe"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-emarket-storage",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.emarketstorage.it/it/documenti?categoria=100&azienda=2117"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0000076536&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 0.8391664454084566,
+    "evEbitda": 1.703090699777979,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -3.6709228516341508,
+    "netMarginPct": 1.3542523483117543,
+    "roePct": 4.646770849666371,
+    "debtToEquity": null,
+    "currentRatio": 0.8688753089810491,
+    "return1mPct": -3.0097047938107413,
+    "return3mPct": -7.285380404869047,
+    "return6mPct": -3.478256512829858,
+    "volatilityAnnualizedPct": 48.307774508843885,
+    "maxDrawdownPct": -49.94350355162867,
+    "volumeVs30d": 2.4299422554347827
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "UNI",
+   "name": "UNIPOL",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 5,
+   "isin": "IT0004810054",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 25.399999618530273,
+    "historyFileObservedAt": "2026-10-13T11:25:01.141641+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "UNI.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 31335911.547586884,
+    "return30dPct": -10.783279834447224,
+    "volumeRatio": 1.9046674960310508,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": 0.034838,
+   "confidence": 0.274785,
+   "agents": {
+    "fundamental": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "risk": {
+     "vote": 0.05,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.0,
+     "confidence": 0.33999999999999997
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.034838
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.274785
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "score 0.03<0.25, no negative agent; 11 of 17 core fields missing; abstaining agents: ['fundamental', 'comparison']",
+   "dataCompleteness": {
+    "present": [
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "pb"
+    ],
+    "missing": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "esef-xbrl-cached-v2",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://filings.xbrl.org/8156005CE5E7340CCA86/2025-12-31/ESEF/IT/1/8156005CE5E7340CCA86-2025-12-31-1-it/reports/ixbrlviewer.html"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0004810054&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.625,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.27 below escalation threshold 0.35"
+    ],
+    "reasoning": "Abstained: calibrated confidence 0.27 too low to act on."
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 1.6887243930937939,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": null,
+    "netMarginPct": null,
+    "roePct": 14.279048063462435,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -9.785713468279155,
+    "return3mPct": -5.001880090537014,
+    "return6mPct": 17.81022412072093,
+    "volatilityAnnualizedPct": 27.062352072011837,
+    "maxDrawdownPct": -15.502738086118196,
+    "volumeVs30d": 1.7285676369056184
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "CEM",
+   "name": "CEMENTIR HOLDING",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 6,
+   "isin": "NL0013995087",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 12.59000015258789,
+    "historyFileObservedAt": "2026-10-13T11:25:29.440435+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "CEM.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 1490768.4833275478,
+    "return30dPct": -12.932226007094261,
+    "volumeRatio": 1.8428150610417657,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.171074,
+   "confidence": 0.615418,
+   "agents": {
+    "fundamental": {
+     "vote": 0.05000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.15000000000000002,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.6,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.171074
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.615418
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.17<0.25 with negative evidence-backed votes: risk -0.15",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "total_debt"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-nl-afm-register",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.afm.nl/en/sector/registers/meldingenregisters/financiele-verslaggeving/details?id=A2510-03579"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=NL0013995087&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.62."
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 9.502637269538242,
+    "pb": 1.0167659249552654,
+    "evEbitda": 3.1755035896404418,
+    "peVsSectorPct": -62.58467250385098,
+    "revenueYoyPct": -2.804066290325158,
+    "netMarginPct": 12.740723573467347,
+    "roePct": 10.577412857433638,
+    "debtToEquity": null,
+    "currentRatio": 2.1108885074039097,
+    "return1mPct": -8.090383299911863,
+    "return3mPct": -15.312294385996761,
+    "return6mPct": -22.069195374794525,
+    "volatilityAnnualizedPct": 35.13901083782901,
+    "maxDrawdownPct": -36.839393843172466,
+    "volumeVs30d": 2.5279570878250723
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "PLC",
+   "name": "PLC",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 7,
+   "isin": "IT0005339160",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 3.109999895095825,
+    "historyFileObservedAt": "2026-10-13T11:25:41.661778+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "PLC.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 210740.9562899351,
+    "return30dPct": 1.302930381851053,
+    "volumeRatio": 1.8343815780042974,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.173814,
+   "confidence": 0.563494,
+   "agents": {
+    "fundamental": {
+     "vote": -0.4,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -0.30000000000000004,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.5,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.6,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.44999999999999996,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.173814
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.563494
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=comparison,forecast negative=fundamental"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=comparison,forecast negative=fundamental",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "total_debt",
+     "free_cash_flow"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-emarket-storage",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.emarketstorage.it/it/documenti?categoria=100&azienda=131"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0005339160&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 9.147058514987721,
+    "pb": 2.7283378648676138,
+    "evEbitda": 3.5097422216157206,
+    "peVsSectorPct": -63.984714952575004,
+    "revenueYoyPct": -0.09034589571502716,
+    "netMarginPct": 10.24063134901528,
+    "roePct": 29.56232837237685,
+    "debtToEquity": null,
+    "currentRatio": 1.3032571671870565,
+    "return1mPct": 1.9672112694288701,
+    "return3mPct": 0.3225803474481648,
+    "return6mPct": 18.815656763240373,
+    "volatilityAnnualizedPct": 40.6271220457478,
+    "maxDrawdownPct": -20.164609261742957,
+    "volumeVs30d": 2.1289104170552173
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "FM",
+   "name": "FIERA MILANO",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 8,
+   "isin": "IT0003365613",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 7.090000152587891,
+    "historyFileObservedAt": "2026-10-13T11:25:42.112791+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "FM.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 344750.8554168701,
+    "return30dPct": -10.705288394294122,
+    "volumeRatio": 1.7290005714643757,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.16626,
+   "confidence": 0.545169,
+   "agents": {
+    "fundamental": {
+     "vote": 0.6000000000000001,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": -0.25,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.6,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.15,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.16626
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.545169
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.17<0.25 with negative evidence-backed votes: risk -0.25",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "operating_income",
+     "operating_cash_flow",
+     "free_cash_flow"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-emarket-storage",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.emarketstorage.it/it/documenti?categoria=100&azienda=4315"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0003365613&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.55 below accept threshold 0.55",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.55 below accept threshold 0.55; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings",
+     "altman:operating_income",
+     "interest_coverage:operating_income"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.6,
+    "missing": [
+     "fcf_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 10.057836245508419,
+    "pb": 2.745910758751426,
+    "evEbitda": 2.6282512773334146,
+    "peVsSectorPct": -60.39865288400915,
+    "revenueYoyPct": 39.075313378631684,
+    "netMarginPct": 13.370028455830285,
+    "roePct": 27.198633401341965,
+    "debtToEquity": 0.07007566629717095,
+    "currentRatio": 1.0168499152565809,
+    "return1mPct": -5.936673005203941,
+    "return3mPct": -13.992760588056985,
+    "return6mPct": -10.672386108695287,
+    "volatilityAnnualizedPct": 32.250072624271034,
+    "maxDrawdownPct": -22.527473679113967,
+    "volumeVs30d": 2.1243779714992033
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "FCT",
+   "name": "FINCANTIERI",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 9,
+   "isin": "IT0005599938",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 12.484999656677246,
+    "historyFileObservedAt": "2026-10-13T11:25:02.201671+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "FCT.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 25263185.206333797,
+    "return30dPct": -0.2795591038874279,
+    "volumeRatio": 1.6676856556296293,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.065809,
+   "confidence": 0.599678,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7500000000000001,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.8500000000000001,
+     "confidence": 0.5800000000000001
+    },
+    "forecast": {
+     "vote": 0.1,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": -0.5,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.065809
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.599678
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental,quality negative=comparison,risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=comparison,risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-it-emarket-storage",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://www.emarketstorage.it/it/documenti?categoria=100&azienda=1099"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:it-enel-issuer-esef-fy2025+fallback:it-official-issuer-financials-v1+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0005599938&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [],
+    "missingInputs": [
+     "zmijewski:current_assets",
+     "zmijewski:current_liabilities",
+     "altman:retained_earnings",
+     "altman:operating_income",
+     "altman:current_assets",
+     "altman:current_liabilities",
+     "interest_coverage:operating_income"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 32.65611908834857,
+    "pb": 4.7803670025176155,
+    "evEbitda": null,
+    "peVsSectorPct": 45.45819813871126,
+    "revenueYoyPct": 12.189168517963944,
+    "netMarginPct": 1.3154468024662722,
+    "roePct": 11.887603908636384,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": 1.0573413065004589,
+    "return3mPct": -1.1928399268821832,
+    "return6mPct": -9.734835591471015,
+    "volatilityAnnualizedPct": 43.66255745751555,
+    "maxDrawdownPct": -60.45967718738671,
+    "volumeVs30d": 0.9656527673982266
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "A2A",
+   "name": "A2A",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 10,
+   "isin": "IT0001233417",
+   "sector": "Utilities",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 2.3559999465942383,
+    "historyFileObservedAt": "2026-10-13T21:50:21.443243+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "A2A.MI",
+    "currency": "EUR",
+    "avgTradedValue30d": 17979181.790290713,
+    "return30dPct": 2.3457819176393224,
+    "volumeRatio": 1.5661504218428801,
+    "exchange": "EURONEXT_MILAN",
+    "country": "IT",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": 0.04601,
+   "confidence": 0.137,
+   "agents": {
+    "fundamental": {
+     "vote": -0.05,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.6,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.3,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "FAIL",
+     "value": "BLOCK"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.04601
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.137
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "evidence BLOCK: ('fundamental_source',)",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "interest_expense"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "yahoo-public-fundamentals-global",
+      "type": "public_vendor_financial_metrics",
+      "period": "2025-12-31",
+      "url": "https://finance.yahoo.com/quote/A2A.MI/financials/"
+     },
+     {
+      "provider": "official-borsa-italiana-instrument-page",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=IT0001233417&mic=MTAA&lang=en"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "NOT_CURRENT"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [
+     "task/evidence gate is out of scope or blocked"
+    ],
+    "review_reasons": [],
+    "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.4,
+    "missing": [
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 9.85766217826667,
+    "pb": 1.2543269563968227,
+    "evEbitda": 5.684542971975089,
+    "peVsSectorPct": -31.47392682196547,
+    "revenueYoyPct": 9.299920445505162,
+    "netMarginPct": 5.458912584613145,
+    "roePct": 12.675342234240325,
+    "debtToEquity": 1.2269731282744634,
+    "currentRatio": 1.0455150385946235,
+    "return1mPct": 1.9413216720115312,
+    "return3mPct": 2.073427977096154,
+    "return6mPct": 3.4313013907561807,
+    "volatilityAnnualizedPct": 24.202521623633245,
+    "maxDrawdownPct": -17.21731775603047,
+    "volumeVs30d": 1.5563645000796646
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  }
+ ]
+}

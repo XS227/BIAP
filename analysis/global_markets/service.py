@@ -26,6 +26,7 @@ from .decision_support import build_decision_table, profile_assessment
 from .distress import distress_agent
 from .governance import decision_governance_agent
 from .opportunity import classify_opportunity
+from .exchange_shares import apply_to_company as apply_exchange_share_counts
 from .fx import ECBReferenceFXProvider, TwelveDataFXProvider
 from .issuer import issuer_key_of
 from .sector_reference import apply_sector_reference
@@ -167,6 +168,37 @@ def _has_share_class_suffix(ticker: str) -> bool:
     return bool(_CLASS_SUFFIX.search((ticker or "").strip().upper()))
 
 
+def _fx_context(company: GlobalCompany) -> dict:
+    """Date-aligned reporting->listing FX for one company (see ``fx_history``).
+
+    Returns ``{"ok": True, "from", "to", "balance", "flow"}`` or
+    ``{"ok": False, "reason"}``. Never raises and never guesses a date.
+    """
+    from datetime import date, timedelta
+    from . import fx_history
+
+    reporting = str(company.reporting_currency or "").upper()
+    listing = str(company.currency or "").upper()
+    out = {"ok": False, "from": reporting, "to": listing}
+    if not company.filing_period_end:
+        return {**out, "reason": "filing_period_end_missing"}
+    try:
+        period_end = date.fromisoformat(str(company.filing_period_end)[:10])
+    except ValueError:
+        return {**out, "reason": "filing_period_end_unparseable"}
+    provider = fx_history.default_provider()
+    if not provider.available():
+        return {**out, "reason": "fx_history_cache_unavailable"}
+    try:
+        balance = provider.rate(reporting, listing, period_end)
+        start = period_end - timedelta(days=364)
+        flow = provider.average(reporting, listing, start, period_end)
+    except Exception as exc:  # GlobalProviderError and malformed-cache errors alike
+        return {**out, "reason": f"{type(exc).__name__}:{str(exc)[:120]}"}
+    return {**out, "ok": True, "balance": balance.as_dict(), "flow": flow.as_dict(),
+            "method": "balance_items@period_end_spot;flows@fiscal_year_mean;price/market_cap in listing currency"}
+
+
 def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
     """Fill mathematically derivable valuation fields without inventing inputs.
 
@@ -190,7 +222,33 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
     price = company.price
 
     derived: list[str] = []
-    eps = company.eps
+    # Cross-currency reporters: each filing quantity is converted into the
+    # listing currency at the ECB reference rate of its own date (balance sheet
+    # instants at the period-end fixing, flows at the fiscal-year mean). Without
+    # a verifiable rate the per-share ratios stay suppressed, as before.
+    fx_info: dict = {}
+    balance_rate = flow_rate = 1.0
+    if not same_currency:
+        fx_info = _fx_context(company)
+        if fx_info.get("ok"):
+            balance_rate = float(fx_info["balance"]["rate"])
+            flow_rate = float(fx_info["flow"]["rate"])
+            same_currency = True
+            derived.append(
+                f"fx_converted:{fx_info['from']}->{fx_info['to']}"
+                f";balance_rate={balance_rate:.6g}@{fx_info['balance']['rate_date']}"
+                f";flow_rate={flow_rate:.6g}(mean of {fx_info['flow']['observations']} fixings {fx_info['flow']['requested']})"
+                f";source={fx_info['balance']['provider']}"
+            )
+        else:
+            derived.append(f"fx_unavailable:{fx_info.get('reason', 'unknown')}")
+    eps_reporting = company.eps
+    eps = None if company.eps is None else float(company.eps) * flow_rate
+    equity = None if company.total_equity is None else float(company.total_equity) * balance_rate
+    debt = None if company.total_debt is None else float(company.total_debt) * balance_rate
+    cash = None if company.cash_and_equivalents is None else float(company.cash_and_equivalents) * balance_rate
+    ebitda = None if company.ebitda is None else float(company.ebitda) * flow_rate
+    dps = None if company.dividend_per_share is None else float(company.dividend_per_share) * flow_rate
     if (
         eps not in (None, 0)
         and company.net_income not in (None, 0)
@@ -204,6 +262,7 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
             f"eps_withheld:sign_contradicts_net_income(eps={float(eps):.6g},net_income={float(company.net_income):.6g});pe_suppressed"
         )
         eps = None
+        eps_reporting = None
         pe = None
     if same_currency and price not in (None, 0) and eps not in (None, 0):
         # A per-share fact mis-scaled by the filer (EPS 0.655 tagged in
@@ -214,11 +273,12 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
         if ratio > 1.0 or ratio < -20.0:
             derived.append(f"eps_withheld:implausible_vs_price(eps={float(eps):.6g},price={float(price):.6g})")
             eps = None
+            eps_reporting = None
     if (
         same_currency
         and shares not in (None, 0)
-        and eps not in (None, 0)
-        and float(eps) > 0
+        and eps_reporting not in (None, 0)
+        and float(eps_reporting) > 0
         and company.net_income not in (None, 0)
         and float(company.net_income) > 0
     ):
@@ -226,12 +286,30 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
         # shares of ~152m (net income / EPS) understated market cap 2.5x. A
         # share count more than 2x away from net income / EPS is not used for
         # market cap, book value per share or EV/EBITDA; it is withheld.
-        implied_shares = float(company.net_income) / float(eps)
+        implied_shares = float(company.net_income) / float(eps_reporting)
         if not 0.5 <= float(shares) / implied_shares <= 2.0:
             derived.append(
                 f"shares_withheld:inconsistent_with_net_income_over_eps(shares={float(shares):.6g},implied={implied_shares:.6g})"
             )
             shares = None
+    exchange_cap = company.raw_provider_fields.get("exchange_market_cap")
+    if (
+        isinstance(exchange_cap, dict)
+        and market_cap is not None
+        and market_cap == exchange_cap.get("value")
+        and price not in (None, 0)
+        and eps_reporting not in (None, 0)
+        and company.net_income not in (None, 0)
+        and float(company.net_income) / float(eps_reporting) > 0
+    ):
+        # Exchange-reported market cap vs price * (net income / EPS): a gap of
+        # more than 2x means another share class / a different issuer scope.
+        implied_cap = float(price) * float(company.net_income) / float(eps_reporting)   # > 0 by the guard above
+        if not 0.5 <= float(market_cap) / implied_cap <= 2.0:
+            derived.append(
+                f"market_cap_withheld:exchange_value_inconsistent_with_net_income_over_eps(cap={float(market_cap):.6g},implied={implied_cap:.6g})"
+            )
+            market_cap = None
     shares_basis = ""
     for meta_key in ("oam_credit_extraction", "esef_credit_extraction"):
         meta = company.raw_provider_fields.get(meta_key)
@@ -255,8 +333,8 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
             else "market_cap=price*shares_outstanding"
         )
 
-    if same_currency and shares not in (None, 0) and company.total_equity is not None and book_value_per_share is None:
-        book_value_per_share = float(company.total_equity) / float(shares)
+    if same_currency and shares not in (None, 0) and equity is not None and book_value_per_share is None:
+        book_value_per_share = float(equity) / float(shares)
         derived.append("book_value_per_share=equity/shares_outstanding")
 
     if same_currency and price not in (None, 0) and eps not in (None, 0) and float(eps) > 0 and pe is None:
@@ -270,10 +348,10 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
         same_currency
         and dividend_yield_pct is None
         and price not in (None, 0)
-        and company.dividend_per_share is not None
-        and float(company.dividend_per_share) >= 0
+        and dps is not None
+        and float(dps) >= 0
     ):
-        dividend_yield_pct = float(company.dividend_per_share) / float(price) * 100.0
+        dividend_yield_pct = float(dps) / float(price) * 100.0
         derived.append("dividend_yield_pct=annual_dividend_per_share/price")
 
     peer_scope = None
@@ -293,21 +371,32 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
     if same_currency and price not in (None, 0) and book_value_per_share not in (None, 0) and float(book_value_per_share) > 0 and pb is None:
         pb = float(price) / float(book_value_per_share)
         derived.append("pb=price/book_value_per_share")
+    elif (
+        same_currency
+        and pb is None
+        and market_cap not in (None, 0)
+        and equity not in (None, 0)
+        and float(equity) > 0
+    ):
+        # No verified share count, but an exchange-reported / derived market cap
+        # exists: P/B = market cap / book equity is the same ratio.
+        pb = float(market_cap) / float(equity)
+        derived.append("pb=market_cap/total_equity")
 
     if (
         same_currency
         and ev_ebitda is None
         and market_cap is not None
-        and company.ebitda not in (None, 0)
-        and float(company.ebitda) > 0
+        and ebitda not in (None, 0)
+        and float(ebitda) > 0
     ):
         enterprise_value = float(market_cap)
-        if company.total_debt is not None:
-            enterprise_value += float(company.total_debt)
-        if company.cash_and_equivalents is not None:
-            enterprise_value -= float(company.cash_and_equivalents)
+        if debt is not None:
+            enterprise_value += float(debt)
+        if cash is not None:
+            enterprise_value -= float(cash)
         if enterprise_value > 0:
-            ev_ebitda = enterprise_value / float(company.ebitda)
+            ev_ebitda = enterprise_value / float(ebitda)
             derived.append("ev_ebitda=(market_cap+debt-cash)/ebitda")
 
     if not derived:
@@ -318,7 +407,7 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
         market_cap=market_cap,
         shares_outstanding=shares,
         book_value_per_share=book_value_per_share,
-        eps=eps,
+        eps=eps_reporting,
         pe=pe,
         sector_pe=sector_pe,
         pb=pb,
@@ -337,6 +426,7 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
                 "peer_pe_benchmark_is_sector_specific": peer_scope == "same_sector_scan_median",
                 **({"exchange_pe_median_informational": exchange_pe_median} if exchange_pe_median is not None else {}),
             } if peer_scope else {}),
+            **({"fx_conversion": fx_info} if fx_info else {}),
         },
         sources=[
             *company.sources,
@@ -358,6 +448,7 @@ def _evaluate(company: GlobalCompany, registry: ProviderRegistry):
         )
     enriched, diagnostics = registry.enrich_best_effort(company)
     enriched = apply_sector_reference(enriched)
+    enriched = apply_exchange_share_counts(enriched)
     enriched = _derive_metrics(enriched)
     signals = run_core_agents(enriched) + run_advanced_agents(enriched)
     evidence = evidence_agent(enriched, signals)

@@ -195,7 +195,8 @@ def missing_reasons(result: dict, missing: list[str]) -> dict:
             elif not present("eps"):
                 reasons[key] = f"no_eps:absent_from_source:{source}"
             elif cross_currency:
-                reasons[key] = "cross_currency_listing:per_share_ratio_not_derived"
+                fx_why = notes.split("fx_unavailable:", 1)[1].split(";", 1)[0].strip() if "fx_unavailable:" in notes else ""
+                reasons[key] = "cross_currency_listing:per_share_ratio_not_derived" + (f":fx_unavailable:{fx_why}" if fx_why else "")
             elif float(company.get("eps") or 0) <= 0:
                 reasons[key] = "loss_per_share:pe_undefined"
             else:

@@ -1,5 +1,27 @@
 # BIAP — Project Status
 
+## 2026-10-14 session 26 (milestone 1): date-aligned FX, official share counts / market caps
+
+**Authorised by owner:** verified official shares-outstanding sources + historical FX. No agent/feature/threshold change.
+
+- **Historical FX** (`global_markets/fx_history.py`): ECB `eurofxref-hist.xml` compacted to `$DATA/fx/ecb-hist.json` (1,536 fixings 2020-10-15..2026-10-13). Balance-sheet items (equity, debt, cash) convert at the period-end fixing (latest fixing not after the date, <=7 days gap, else refuse); flows (EPS, EBITDA, DPS) at the mean of the fiscal-year fixings (>=150 obs). Provenance (provider, rate, rate date, observations) stored in `raw_provider_fields.fx_conversion` + `derived_metrics`. No cache / no period end / no rate => ratios stay suppressed with `fx_unavailable:<reason>` (surfaced in `missingReasons`). Filing values (`eps`, `total_equity`, ...) are never overwritten. Reads never use the network; refresh: `python -m global_markets.fx_history refresh`.
+- **Share counts / market caps** (`global_markets/exchange_shares.py`, `$DATA/shares/<provider>__<CC>__<EXCH>.json`, hooked in `service._evaluate` before `_derive_metrics`): Nasdaq Nordic instrument summary (shares + market cap *per share series*; SE 403/403, DK 116, FI, IS stored, 0 failures), Borsa Italiana instrument page (market cap; IT 193/193), LSE Price Explorer (market cap, 519 sterling lines). Issuer total = sum of all listed series; class-suffixed issuers with a single listed series are withheld unless validated; counts validated against net income / EPS (+-15%, loss years too), stale >120 d withheld, ISIN mismatch refused. P/B also derivable as market cap / equity when no share count exists. Provenance: `raw_provider_fields.exchange_share_count` / `exchange_market_cap`.
+- **Not available (documented, not bypassed):** Oslo/Euronext Live exposes no share count (CSV has price/volume only; detail endpoint is encrypted client-side). NO P/B stays mostly INSUFFICIENT_DATA. Unternehmensregister forbids automated retrieval (robots.txt); filings.xbrl.org indexes no German filings.
+- **Before -> after (30-company benchmark per market, fresh pipeline run on isolated data dir `s26/data`, 7 markets; `docs/market-audit/research/2026-10-14-s26/`):**
+
+| Market | P/E | P/B | EV/EBITDA | calls (before -> after) |
+|---|--:|--:|--:|---|
+| SE Stockholm | 10 -> 16 | 4 -> 24 | 0 -> 10 | BUY 0 -> 3, WATCH 5 -> 3 |
+| GB LSE | 13 -> 21 | 0 -> 28 | 0 -> 9 | BUY 1 -> 1, WATCH 2 -> 7 |
+| IT Milan | 17 -> 18 | 0 -> 28 | 0 -> 14 | BUY 0 -> 0, WATCH 2 -> 3 |
+| NO Oslo | 13 -> 25 | 1 -> 2 | 0 -> 1 | BUY 0 -> 0, WATCH 1 -> 6 |
+| DE Xetra | 21 -> 21 | 18 -> 18 | 0 -> 0 | unchanged (DE shares already from Boerse Frankfurt; gap is EBITDA/debt) |
+| US NASDAQ / NYSE | ~unchanged | | | market-data noise only |
+
+- **Governance caution (SE BUY_CANDIDATE x3, thresholds untouched):** AZN (Swedish secondary listing; BUY driven by the comparison agent against a 3-peer same-sector median P/E of 112x -> thin cohort, treat as unreliable), AQ 0.256 and BRAV 0.265 (liquidity agent now has a market cap and votes +0.12/+0.30; margin over the 0.25 gate is <0.02). These are newly *evidenced*, not endorsed; they were previously blocked only by missing inputs.
+- **Tests (clean env):** `pytest tests` -> 1,108 passed, 0 failed (+20: FX history, date alignment, provider refusals, exchange shares, class handling, validation).
+
+
 ## 2026-10-14 session 26: re-verification of session 25 deliverables (no code change)
 
 - **Production:** `/health` on 8091 now reports commit `7a49767` (code commit of the tested change; `8d3291e` is docs-only on top). Restart evidently done by the owner after session 25; code-equivalent to the tested commit. Ledgers not touched.
