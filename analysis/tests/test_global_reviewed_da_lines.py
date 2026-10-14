@@ -42,3 +42,23 @@ def test_mapping_not_applied_when_a_reviewed_line_is_missing():
 
 def test_mapping_not_applied_to_other_issuers():
     assert _normalise(_facts(lei=OTHER)).get("ebitda") is None
+
+
+def test_mapping_not_applied_to_a_different_fiscal_year():
+    facts = _facts()
+    for f in facts:
+        f["dimensions"]["period"] = "2026-01-01/2026-12-31"
+    provider = ESEFFundamentalsProvider.__new__(ESEFFundamentalsProvider)
+    assert provider.normalized_fields(facts, date(2026, 12, 31)).get("ebitda") is None
+
+
+def test_kitron_reviewed_line_gives_standard_ebitda():
+    kit = "5967007LIEEXZXIG6009"
+    facts = [
+        _fact("ifrs-full:ProfitLossFromOperatingActivities", 64_500_000, kit),
+        _fact("ifrs-full:DepreciationAmortisationAndImpairmentLossReversalOfImpairmentLossRecognisedInProfitOrLoss",
+              18_600_000, kit),
+    ]
+    out = _normalise(facts)
+    assert out["ebitda"] == 83_100_000
+    assert "nonstandard_metrics" not in out["__normalization_meta__"]

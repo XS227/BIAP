@@ -780,6 +780,46 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
     _BORROWING_NAME = re.compile(r"(borrowing|bondsissued|loansreceived)", re.I)
 
     @classmethod
+    def _nonstandard_ebitda_incl_impairment(
+        cls, facts: list[dict], period_end: date, *, operating_income: Optional[float], ebitda: Optional[float]
+    ) -> Optional[dict]:
+        """Flagged EBIT + (D&A and impairment) alternative; never standard EBITDA.
+
+        Only when standard EBITDA is absent, operating income is tagged and the
+        filing tags exactly one distinct plain impairment-inclusive D&A concept
+        for the year. The result is recorded as metadata (formula, concept,
+        period, confidence) and is deliberately NOT written to ``ebitda`` /
+        ``ev_ebitda``, so it cannot enter standard valuation comparisons or
+        upgrade a data-completeness verdict.
+        """
+        if ebitda is not None or operating_income is None:
+            return None
+        found: dict[str, float] = {}
+        for fact in facts:
+            dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+            concept = str(dims.get("concept") or "")
+            if not cls._IMPAIRMENT_INCLUSIVE_DA.search(concept.split(":")[-1]) or not cls._plain_fact(fact):
+                continue
+            start, end = _period_parts(dims.get("period"))
+            if start is None or end is None or abs((period_end - end).days) > 7 or (end - start).days < 300:
+                continue
+            value = _num(fact.get("value"))
+            if value is not None:
+                found.setdefault(concept, abs(value))
+        if len(found) != 1:
+            return None
+        concept, da_value = next(iter(found.items()))
+        return {
+            "ebitda_incl_impairment": operating_income + da_value,
+            "standard": False,
+            "formula": "operating_income + abs(" + concept + ")",
+            "sourceConcept": concept,
+            "fiscalPeriodEnd": period_end.isoformat(),
+            "confidence": 0.6,
+            "label": "NON-STANDARD: EBITDA including impairment; excluded from standard EV/EBITDA comparisons",
+        }
+
+    @classmethod
     def _field_status(
         cls, facts: list[dict], period_end: date, *, shares: Optional[float], shares_basis: Optional[str],
         operating_income: Optional[float], ebitda: Optional[float], debt: Optional[float], debt_method: Optional[str],
@@ -942,6 +982,8 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                 reviewed_da = _reviewed_da_lines().get(lei)
                 if not reviewed_da:
                     continue
+                if reviewed_da.get("periodEnd") and reviewed_da["periodEnd"] != period_end.isoformat():
+                    continue
                 parts_da = [
                     self._duration_value(self._concept_facts(facts, (str(concept),)), period_end)
                     for concept in reviewed_da["concepts"]
@@ -955,6 +997,9 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         if ebitda is None and operating_income is not None and depreciation_amortisation is not None:
             ebitda = operating_income + abs(depreciation_amortisation)
             ebitda_method = "derived_operating_income_plus_abs_depreciation_amortisation"
+        nonstandard_metrics = self._nonstandard_ebitda_incl_impairment(
+            facts, period_end, operating_income=operating_income, ebitda=ebitda
+        )
         ocf = self._duration_value(concept_facts["ocf"], period_end)
         capex = self._duration_value(concept_facts["capex"], period_end)
         capex_method = "standard_ppe_capex_concept" if capex is not None else None
@@ -1084,6 +1129,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                 "liabilities_method": liabilities_method,
                 "retained_earnings_method": retained_earnings_method,
                 "ebitda_method": ebitda_method,
+                **({"nonstandard_metrics": nonstandard_metrics} if nonstandard_metrics else {}),
                 "net_income_attributable_to_owners": self._duration_value(
                     concept_facts["net_income_owners"], period_end
                 ),

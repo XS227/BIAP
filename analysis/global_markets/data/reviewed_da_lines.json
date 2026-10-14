@@ -10,13 +10,38 @@
         "schneiderelectric:AdjustmentsForDepreciationOfPropertyPlantAndEquipment",
         "schneiderelectric:AdjustmentsForDepreciationOfIntangibleAssetsOtherThanGoodwill"
       ],
-      "statementLabels": ["Amortissements des immobilisations corporelles", "Amortissements des immobilisations incorporelles"],
+      "statementLabels": [
+        "Amortissements des immobilisations corporelles",
+        "Amortissements des immobilisations incorporelles"
+      ],
       "periodEnd": "2025-12-31",
-      "amounts": [871000000, 781000000],
+      "amounts": [
+        871000000,
+        781000000
+      ],
       "currency": "EUR",
       "sourceUrl": "https://fr.ftp.opendatasoft.com/datadila/INFOFI/298/8888/01/FC298621272_20260327.zip",
       "reviewedAt": "2026-10-14",
       "note": "Cash-flow statement lines 871 and 781 (EUR m, FY2025; FY2024 822 and 716). 'Depreciations des actifs non courants' (53) is an impairment line and is excluded. Operating result 6,699 on the income statement; derived EBITDA = 8,351 EUR m."
+    },
+    {
+      "lei": "5967007LIEEXZXIG6009",
+      "ticker": "KIT",
+      "legalName": "Kitron ASA",
+      "concepts": [
+        "ifrs-full:DepreciationAmortisationAndImpairmentLossReversalOfImpairmentLossRecognisedInProfitOrLoss"
+      ],
+      "statementLabels": [
+        "Depreciation and impairments"
+      ],
+      "periodEnd": "2025-12-31",
+      "amounts": [
+        18600000
+      ],
+      "currency": "EUR",
+      "sourceUrl": "https://newsweb.oslobors.no/message/669207",
+      "reviewedAt": "2026-10-14",
+      "note": "Income statement 'Depreciation and impairments' 18.6 (EUR m, FY2025; FY2024 18.7). Notes 12-14 show only 'Depreciation' movements: PP&E incl. right-of-use 15.8 + intangibles 2.9 = 18.7 (rounding), goodwill accumulated impairment unchanged at 0.4, no impairment line in any roll-forward; cash flow note 25 repeats 18.6. Line is therefore depreciation/amortisation in FY2025. Operating profit 64.5, derived EBITDA = 83.1 EUR m. Valid for periodEnd only."
     }
   ]
 }

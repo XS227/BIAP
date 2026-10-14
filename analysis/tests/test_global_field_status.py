@@ -83,3 +83,18 @@ def test_missing_reasons_cite_filing_status():
     assert "tagged_per_class_or_ambiguous_not_summed" in r["market_cap"]
     r = missing_reasons(_result(None), ["market_cap"])
     assert "snapshot_predates_field_status" in r["market_cap"]
+
+
+def test_impairment_inclusive_da_gives_flagged_nonstandard_metric_not_standard_ebitda():
+    op = fact("ifrs-full:ProfitLossFromOperatingActivities", 50, YEAR)
+    impaired = fact("ifrs-full:DepreciationAmortisationAndImpairmentLossReversalOfImpairmentLossRecognisedInProfitOrLoss", 9, YEAR)
+    r = ESEFFundamentalsProvider().normalized_fields([op, impaired], END)
+    assert r["ebitda"] is None
+    ns = r["__normalization_meta__"]["nonstandard_metrics"]
+    assert ns["ebitda_incl_impairment"] == 59 and ns["standard"] is False
+    assert "NON-STANDARD" in ns["label"] and ns["sourceConcept"].endswith("RecognisedInProfitOrLoss")
+    assert r["__normalization_meta__"]["field_status"]["ebitda"] == "tagged_da_impairment_inclusive_only_not_used"
+    # clean D&A present: standard EBITDA, no fallback
+    pure = fact("ifrs-full:DepreciationAndAmortisationExpense", 9, YEAR)
+    r2 = ESEFFundamentalsProvider().normalized_fields([op, pure], END)
+    assert "nonstandard_metrics" not in r2["__normalization_meta__"]
