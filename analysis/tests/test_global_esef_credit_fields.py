@@ -105,3 +105,30 @@ def test_shares_outstanding_is_read_only_from_plain_undimensioned_fact():
     assert "shares_outstanding" not in p.normalized_fields([revenue, class_a], end)
     # no fact: key absent, so a provider-supplied share count is not overwritten by None
     assert "shares_outstanding" not in p.normalized_fields([revenue], end)
+
+
+def test_liabilities_tag_equal_to_total_assets_is_rejected_for_balance_identity():
+    """S30/NRG/PAT/GAB-style filings tag 'equity and liabilities' as ifrs-full:Liabilities."""
+    p = ESEFFundamentalsProvider()
+    end = date(2025, 12, 31)
+    instant = "2026-01-01T00:00:00"
+    result = p.normalized_fields([
+        fact("ifrs-full:Assets", 671400, instant),
+        fact("ifrs-full:Liabilities", 671400, instant),
+        fact("ifrs-full:Equity", 46900, instant),
+    ], end)
+    assert result["total_liabilities"] == 624500
+    assert result["__normalization_meta__"]["liabilities_method"].startswith("derived_assets_minus_equity_direct")
+
+
+def test_genuine_liabilities_close_to_assets_with_negligible_equity_are_kept():
+    p = ESEFFundamentalsProvider()
+    end = date(2025, 12, 31)
+    instant = "2026-01-01T00:00:00"
+    result = p.normalized_fields([
+        fact("ifrs-full:Assets", 1000000, instant),
+        fact("ifrs-full:Liabilities", 999500, instant),
+        fact("ifrs-full:Equity", 500, instant),
+    ], end)
+    assert result["total_liabilities"] == 999500
+    assert result["__normalization_meta__"]["liabilities_method"] == "direct_ifrs_liabilities"

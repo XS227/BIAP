@@ -855,6 +855,21 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         total_assets = self._instant_value(concept_facts["assets"], period_end)
         total_liabilities = self._instant_value(concept_facts["liabilities"], period_end)
         liabilities_method = "direct_ifrs_liabilities" if total_liabilities is not None else None
+        if (
+            total_liabilities is not None
+            and total_assets
+            and total_equity is not None
+            and total_assets > 0
+            and 0.001 * total_assets < total_equity <= total_assets
+            and abs(total_liabilities - total_assets) <= 0.0005 * total_assets
+        ):
+            # Some filers (e.g. S30, NRG, PAT, GAB) tag the "total equity and
+            # liabilities" line with ifrs-full:Liabilities. Liabilities equal to
+            # total assets next to positive equity violates the balance sheet
+            # and would inflate Zmijewski TL/TA to 1.0 in Agent 9. Same filing,
+            # same period: use the identity; never estimate.
+            total_liabilities = total_assets - total_equity
+            liabilities_method = "derived_assets_minus_equity_direct_liabilities_tag_equalled_total_assets"
         # The balance-sheet identity is valid only for the same consolidated
         # entity, reporting currency and balance-sheet date. This normalizer
         # has already selected the filing's matching period and unit.

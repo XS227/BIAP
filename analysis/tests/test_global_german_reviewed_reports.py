@@ -137,3 +137,28 @@ def test_mux_umweltbank_beno_reviewed_reports(ticker, isin, expected_sector, exp
         assert enriched.current_assets == 1_722_954_000
         assert enriched.current_liabilities == 841_806_000
         assert enriched.total_debt == 500_566_000
+
+
+@pytest.mark.parametrize(
+    "ticker,isin,period,assets,debt,ebitda",
+    [
+        ("SAP", "DE0007164600", "2025-12-31", 70_361_932_000, 8_070_055_000, 10_928_970_000),
+        ("SIE", "DE0007236101", "2025-09-30", 166_202_000_000, 56_015_000_000, 13_380_000_000),
+        ("BMW", "DE0005190003", "2025-12-31", 265_967_000_000, 110_469_000_000, 18_878_000_000),
+        ("DTE", "DE0005557508", "2025-12-31", 289_769_000_000, 146_723_000_000, 48_831_000_000),
+    ],
+)
+def test_dax_large_caps_have_reviewed_full_statements(ticker, isin, period, assets, debt, ebitda):
+    company = _mbg(ticker=ticker, isin=isin)
+    enriched = GermanReviewedAnnualReportProvider().enrich_fundamentals(company)
+
+    assert enriched.filing_period_end == period
+    assert enriched.total_assets == assets
+    assert enriched.total_debt == debt
+    assert enriched.ebitda == ebitda
+    # The balance sheet must close within rounding of the published millions.
+    gap = abs(enriched.total_assets - enriched.total_liabilities - enriched.total_equity)
+    assert gap <= 1_000_000
+    for field_name in ("current_assets", "current_liabilities", "operating_cash_flow", "total_debt"):
+        assert getattr(enriched, field_name) is not None
+    assert enriched.sources[-1].source_type == "official_issuer_financial_statement"
