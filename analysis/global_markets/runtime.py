@@ -17,7 +17,7 @@ from .adx_official import ADXOfficialUniverseProvider
 from .b3_official import B3OfficialUniverseProvider
 from .bist_official import BISTOfficialUniverseProvider
 from .bse_official import BSEOfficialUniverseProvider
-from .boerse_frankfurt_fundamentals import BoerseFrankfurtFundamentalsProvider
+from .boerse_frankfurt_fundamentals import BoerseFrankfurtFundamentalsProvider, BoerseFrankfurtShareCountSupplement
 from .cached_esef import CachedESEFFundamentalsProvider
 from .cached_fundamentals import PersistentFundamentalsProvider
 from .cached_market import PersistentMarketProvider
@@ -432,7 +432,9 @@ def build_registry() -> ProviderRegistry:
     # IFRS route for cross-listed issuers such as SAP.
     de_official = FallbackFundamentalsProvider(de_issuer_esef, sec_non_us)
     de_with_fallback = FallbackFundamentalsProvider(de_official, public_fundamentals)
-    de_provider = PersistentFundamentalsProvider(de_with_fallback)
+    de_provider = PersistentFundamentalsProvider(
+        BoerseFrankfurtShareCountSupplement(de_with_fallback, de_exchange_fundamentals)
+    )
     companies_house_key = (os.environ.get("BIAP_COMPANIES_HOUSE_API_KEY") or "").strip()
     # UK: the FCA National Storage Mechanism (official OAM) first, then the
     # filings.xbrl.org/SEC chain. Audited NSM annual reports lodged without
