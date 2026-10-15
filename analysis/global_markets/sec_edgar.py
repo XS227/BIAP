@@ -247,6 +247,40 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         rows = cls._annual_series(gaap, tags, count=1)
         return rows[0] if rows else None
 
+    @staticmethod
+    def _cover_page_shares(payload: dict, period_end: Optional[str]) -> Optional[dict]:
+        """Latest cover-page share count (dei:EntityCommonStockSharesOutstanding).
+
+        Used only when the filer tags no us-gaap CommonStockSharesOutstanding for
+        the fiscal period. It is the issuer's own reported count on a 10-K/10-Q
+        cover and is dated at or after the fiscal period end. Withheld, never
+        guessed, when the latest cover date carries more than one distinct value
+        (multiple share classes: one price cannot value several classes), when
+        the filing is a 20-F/40-F (ordinary shares vs ADS/ordinary price ratio
+        is not knowable here), or when the date is before the fiscal period.
+        """
+        facts = payload.get("facts") if isinstance(payload, dict) else None
+        dei = facts.get("dei") if isinstance(facts, dict) else None
+        concept = dei.get("EntityCommonStockSharesOutstanding") if isinstance(dei, dict) else None
+        units = concept.get("units") if isinstance(concept, dict) else None
+        entries = units.get("shares") if isinstance(units, dict) else None
+        if not isinstance(entries, list) or not period_end:
+            return None
+        rows = [
+            row for row in entries
+            if isinstance(row, dict)
+            and isinstance(row.get("val"), (int, float)) and row["val"] > 0
+            and row.get("form") in {"10-K", "10-K/A", "10-Q", "10-Q/A"}
+            and str(row.get("end") or "") >= period_end
+        ]
+        if not rows:
+            return None
+        latest_end = max(str(row["end"]) for row in rows)
+        at_latest = [row for row in rows if str(row["end"]) == latest_end]
+        if len({row["val"] for row in at_latest}) != 1:
+            return None
+        return max(at_latest, key=lambda row: str(row.get("filed") or ""))
+
     @classmethod
     def _consistent_equity(cls, gaap: dict, assets: Optional[dict], liabilities: Optional[dict]) -> Optional[dict]:
         """Total equity, cross-checked against the balance-sheet identity.
@@ -417,6 +451,12 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
                 stale = True
             if stale:
                 shares = None
+        shares_basis: Optional[str] = None
+        if shares is None:
+            cover = self._cover_page_shares(payload, period_end)
+            if cover is not None:
+                shares = {"val": cover["val"], "end": cover["end"], "form": cover.get("form")}
+                shares_basis = f"sec_dei_cover_page:{cover.get('form')}:{cover['end']}"
 
         def current_period_row(row: Optional[dict]) -> Optional[dict]:
             if row is None or period_end is None:
@@ -579,6 +619,7 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             raw_provider_fields={
                 **company.raw_provider_fields,
                 "sec_cik": cik,
+                **({"shares_outstanding_basis": shares_basis} if shares_basis and not company.shares_outstanding else {}),
                 **({"filing_currency_note": unit_currency_note} if unit_currency_note else {}),
                 **({"ebitda_derivation": {
                     "formula": f"OperatingIncomeLoss + {dna_tag}",

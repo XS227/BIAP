@@ -82,6 +82,19 @@ def test_revision4_requeues_only_impairment_inclusive_ebitda_gaps():
     assert cf.PersistentFundamentalsProvider._needs_renormalization({**base, "normalizerRevision": cf.NORMALIZER_REVISION}) is False
 
 
+def test_revision5_requeues_only_sec_snapshots_without_share_count():
+    import global_markets.cached_fundamentals as cf
+
+    needs = cf.PersistentFundamentalsProvider._needs_renormalization
+    base = {"officialEvidence": True, "normalizerRevision": 4,
+            "fundamentals": {"total_equity": 7.0, "ebitda": None, "shares_outstanding": None},
+            "raw_provider_fields": {"sec_cik": 200406}}
+    assert needs(base) is True
+    assert needs({**base, "fundamentals": {**base["fundamentals"], "shares_outstanding": 1.0}}) is False
+    assert needs({**base, "raw_provider_fields": {}}) is False  # non-SEC: not re-queued
+    assert needs({**base, "normalizerRevision": cf.NORMALIZER_REVISION}) is False
+
+
 def test_key_data_snapshot_superseded_by_reviewed_report():
     import global_markets.cached_fundamentals as cf
 

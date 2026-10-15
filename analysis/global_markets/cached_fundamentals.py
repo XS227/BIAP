@@ -82,7 +82,11 @@ CACHE_SCHEMA_VERSION = 11
 # impairment-inclusive D&A line as the sole D&A candidate (field_status
 # ``tagged_da_impairment_inclusive_only_not_used``) are re-normalized, from the
 # cached filing package.
-NORMALIZER_REVISION = 4
+#
+# revision 5: SEC cover-page share count (dei:EntityCommonStockSharesOutstanding)
+# for single-class 10-K/10-Q filers that tag no us-gaap share count. Only SEC
+# snapshots whose shares_outstanding is still empty are re-normalized.
+NORMALIZER_REVISION = 5
 
 # Official providers whose records were found defective after the fact.
 # Snapshots built from them are ignored (neither fresh nor stale fallback).
@@ -264,20 +268,23 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         fundamentals = payload.get("fundamentals") if isinstance(payload.get("fundamentals"), dict) else {}
         identity = payload.get("identity") if isinstance(payload.get("identity"), dict) else {}
         equity_missing = fundamentals.get("total_equity") is None
+        raw = payload.get("raw_provider_fields") if isinstance(payload.get("raw_provider_fields"), dict) else {}
+        sec_shares_missing = raw.get("sec_cik") is not None and fundamentals.get("shares_outstanding") is None
+        if int(payload.get("normalizerRevision") or 0) == 4:
+            return sec_shares_missing
         if int(payload.get("normalizerRevision") or 0) >= 3:
-            raw = payload.get("raw_provider_fields") if isinstance(payload.get("raw_provider_fields"), dict) else {}
             credit = raw.get("oam_credit_extraction") if isinstance(raw.get("oam_credit_extraction"), dict) else {}
             status = credit.get("field_status") if isinstance(credit.get("field_status"), dict) else {}
             impairment_only = (
                 fundamentals.get("ebitda") is None
                 and status.get("ebitda") == "tagged_da_impairment_inclusive_only_not_used"
             )
-            return equity_missing or impairment_only
+            return equity_missing or impairment_only or sec_shares_missing
         if int(payload.get("normalizerRevision") or 0) >= 2:
             return equity_missing
         gb_sector_missing = str(identity.get("country") or "").upper() == "GB" and not fundamentals.get("sector")
         inputs_missing = any(fundamentals.get(key) is None for key in ("shares_outstanding", "total_debt", "ebitda"))
-        return gb_sector_missing or inputs_missing or equity_missing
+        return gb_sector_missing or inputs_missing or equity_missing or sec_shares_missing
 
     @staticmethod
     def _superseded_by_reviewed_report(payload: dict) -> bool:
