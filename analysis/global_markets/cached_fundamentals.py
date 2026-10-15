@@ -76,7 +76,13 @@ CACHE_SCHEMA_VERSION = 11
 # re-normalized; snapshots that merely lack debt/EBITDA were already retried
 # at revision 2 and are not re-queued (that would re-fetch thousands of issuers
 # for fields the sources do not publish).
-NORMALIZER_REVISION = 3
+#
+# revision 4: reviewed issuer D&A lines (Kitron) and the flagged non-standard
+# EBITDA-incl-impairment metadata. Only official snapshots that tagged an
+# impairment-inclusive D&A line as the sole D&A candidate (field_status
+# ``tagged_da_impairment_inclusive_only_not_used``) are re-normalized, from the
+# cached filing package.
+NORMALIZER_REVISION = 4
 
 # Official providers whose records were found defective after the fact.
 # Snapshots built from them are ignored (neither fresh nor stale fallback).
@@ -258,11 +264,39 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         fundamentals = payload.get("fundamentals") if isinstance(payload.get("fundamentals"), dict) else {}
         identity = payload.get("identity") if isinstance(payload.get("identity"), dict) else {}
         equity_missing = fundamentals.get("total_equity") is None
+        if int(payload.get("normalizerRevision") or 0) >= 3:
+            raw = payload.get("raw_provider_fields") if isinstance(payload.get("raw_provider_fields"), dict) else {}
+            credit = raw.get("oam_credit_extraction") if isinstance(raw.get("oam_credit_extraction"), dict) else {}
+            status = credit.get("field_status") if isinstance(credit.get("field_status"), dict) else {}
+            impairment_only = (
+                fundamentals.get("ebitda") is None
+                and status.get("ebitda") == "tagged_da_impairment_inclusive_only_not_used"
+            )
+            return equity_missing or impairment_only
         if int(payload.get("normalizerRevision") or 0) >= 2:
             return equity_missing
         gb_sector_missing = str(identity.get("country") or "").upper() == "GB" and not fundamentals.get("sector")
         inputs_missing = any(fundamentals.get(key) is None for key in ("shares_outstanding", "total_debt", "ebitda"))
         return gb_sector_missing or inputs_missing or equity_missing
+
+    @staticmethod
+    def _superseded_by_reviewed_report(payload: dict) -> bool:
+        """A year-only exchange key-data snapshot is not fresh once a reviewed
+        issuer annual report exists for the same ISIN (reviewed source ranks higher)."""
+        sources = payload.get("sources") if isinstance(payload.get("sources"), list) else []
+        providers = {str(row.get("provider") or "") for row in sources if isinstance(row, dict)}
+        if "official-boerse-frankfurt-historical-key-data" not in providers:
+            return False
+        if "de-reviewed-issuer-annual-report" in providers:
+            return False
+        identity = payload.get("identity") if isinstance(payload.get("identity"), dict) else {}
+        isin = str(identity.get("isin") or "").upper()
+        try:
+            from .german_reviewed_reports import _registry
+
+            return isin in _registry()
+        except Exception:  # registry unreadable: keep prior behaviour
+            return False
 
     def _is_fresh(self, payload: dict) -> bool:
         # Schema v2 adds shareholder-return fields such as dividend/share.
@@ -279,6 +313,8 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         # filing. Never let cache recency turn stale official fundamentals into
         # current evidence.
         if self._stale_official_filing(payload):
+            return False
+        if self._superseded_by_reviewed_report(payload):
             return False
         if self._needs_renormalization(payload) and _renormalization_budget.try_take():
             return False

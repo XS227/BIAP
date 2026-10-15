@@ -68,3 +68,25 @@ def test_renormalization_is_targeted_and_rate_limited(monkeypatch):
     monkeypatch.setenv("BIAP_GLOBAL_RENORM_PER_MIN", "2")
     budget = cf._RenormalizationBudget()
     assert [budget.try_take() for _ in range(4)] == [True, True, False, False]
+
+
+def test_revision4_requeues_only_impairment_inclusive_ebitda_gaps():
+    import global_markets.cached_fundamentals as cf
+
+    base = {"officialEvidence": True, "normalizerRevision": 3,
+            "fundamentals": {"total_equity": 7.0, "ebitda": None},
+            "raw_provider_fields": {"oam_credit_extraction": {"field_status": {"ebitda": "tagged_da_impairment_inclusive_only_not_used"}}}}
+    assert cf.PersistentFundamentalsProvider._needs_renormalization(base) is True
+    other = {**base, "raw_provider_fields": {"oam_credit_extraction": {"field_status": {"ebitda": "not_tagged_depreciation_amortisation"}}}}
+    assert cf.PersistentFundamentalsProvider._needs_renormalization(other) is False
+    assert cf.PersistentFundamentalsProvider._needs_renormalization({**base, "normalizerRevision": cf.NORMALIZER_REVISION}) is False
+
+
+def test_key_data_snapshot_superseded_by_reviewed_report():
+    import global_markets.cached_fundamentals as cf
+
+    payload = {"identity": {"isin": "DE0006061104"}, "sources": [{"provider": "official-boerse-frankfurt-historical-key-data"}]}
+    assert cf.PersistentFundamentalsProvider._superseded_by_reviewed_report(payload) is True
+    assert cf.PersistentFundamentalsProvider._superseded_by_reviewed_report({**payload, "identity": {"isin": "DE0000000000"}}) is False
+    assert cf.PersistentFundamentalsProvider._superseded_by_reviewed_report(
+        {**payload, "sources": [{"provider": "de-reviewed-issuer-annual-report"}, *payload["sources"]]}) is False
