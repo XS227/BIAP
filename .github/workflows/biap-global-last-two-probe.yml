@@ -1,10 +1,6 @@
 name: BIAP Global last two official universe probe
 
 on:
-  push:
-    branches: [feat/biap-global]
-    paths:
-      - '.github/workflows/biap-global-last-two-probe.yml'
   workflow_dispatch:
 
 permissions:

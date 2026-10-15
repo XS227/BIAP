@@ -2,22 +2,6 @@
 name: Setup BIAP Global server
 
 on:
-  push:
-    branches: [feat/biap-global]
-    paths:
-      - 'analysis/global_markets/**'
-      - 'analysis/global_routes.py'
-      - 'analysis/global_api_server.py'
-      - 'analysis/.env.global.example'
-      - 'deploy/setup-global-data.sh'
-      - 'deploy/sync-global-sources.sh'
-      - 'deploy/configure-global-route.sh'
-      - 'deploy/systemd/biap-global*.service'
-      - 'deploy/systemd/biap-global*.timer'
-      - 'tools/warm_de_unternehmensregister.py'
-      - 'tools/requirements-de-worker.txt'
-      - 'web-showcase/global/**'
-      - '.github/workflows/setup-biap-global-server.yml'
   workflow_dispatch:
 
 concurrency:
