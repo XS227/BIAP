@@ -58,7 +58,7 @@ from .esef import _CONCEPTS, _agent10_fields, concept_is_relevant
 from .ixbrl import annual_period_end, extract_facts_and_identifiers
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, append_source
-from .source_cache import data_root, enforce_cache_budget, read_json, write_json_atomic
+from .source_cache import data_root, enforce_cache_budget, read_json, write_bulk_json, write_json_atomic
 
 USER_AGENT = "BIAP-Global/1.0 official-OAM ESEF evidence (+https://setai.no)"
 MAX_PACKAGE_BYTES = 300 * 1024 * 1024
@@ -204,7 +204,7 @@ class OAMHttp:
             if isinstance(cached, dict) and isinstance(cached.get("text"), str):
                 return cached["text"]
             raise GlobalProviderError(f"OAM listing request failed: {type(exc).__name__}") from exc
-        write_json_atomic(path, {"key": key, "fetchedAt": _utc_now().isoformat(), "text": text})
+        write_bulk_json(path, {"key": key, "fetchedAt": _utc_now().isoformat(), "text": text})
         return text
 
 
@@ -1741,7 +1741,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                 # A single-file ESEF report (XHTML lodged without a zip).
                 with target.open("r", encoding="utf-8", errors="replace") as text:
                     payload = self._parse_text(filing, iter(lambda: text.read(1 << 20), ""), "report.xhtml")
-        write_json_atomic(path, payload)
+        write_bulk_json(path, payload)
         enforce_cache_budget(path.parent, env_var="BIAP_OAM_CACHE_MAX_MB", default_mb=1024)
         return payload
 

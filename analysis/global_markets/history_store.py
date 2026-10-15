@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from .models import GlobalCompany
-from .source_cache import data_root, read_json, write_json_atomic
+from .source_cache import data_root, read_json, write_bulk_json, write_json_atomic
 
 
 def _slug(value: str) -> str:
@@ -110,7 +110,7 @@ def persist_daily_history(
         "points": ordered,
     }
     try:
-        write_json_atomic(path, payload)
+        write_bulk_json(path, payload)
     except OSError:
         return False
     return True

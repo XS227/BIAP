@@ -10,7 +10,7 @@ from typing import Optional
 from .esef import FILINGS_API
 from .esef_country import CountryAwareESEFFundamentalsProvider
 from .providers import GlobalProviderError
-from .source_cache import data_root, enforce_cache_budget, read_json, write_json_atomic
+from .source_cache import data_root, enforce_cache_budget, read_json, write_bulk_json, write_json_atomic
 
 
 class CachedESEFFundamentalsProvider(CountryAwareESEFFundamentalsProvider):
@@ -49,7 +49,7 @@ class CachedESEFFundamentalsProvider(CountryAwareESEFFundamentalsProvider):
                 return cached["payload"]
             raise
 
-        write_json_atomic(path, {
+        write_bulk_json(path, {
             "source": "filings.xbrl.org ESEF/UKSEF",
             "url": url,
             "params": params or {},

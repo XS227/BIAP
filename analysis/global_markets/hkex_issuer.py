@@ -25,7 +25,7 @@ import httpx
 from .gleif import _legal_core
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
-from .source_cache import filing_path, sha256_bytes
+from .source_cache import filing_path, online_first, sha256_bytes
 
 
 HKEX_2025_FINANCIAL_STATEMENTS_URL = (
@@ -240,6 +240,8 @@ class HKEXIssuerFundamentalsProvider(FundamentalsProvider):
         body = response.content
         if not body.startswith(b"%PDF-"):
             raise GlobalProviderError("HKEX issuer financial-statement response is not a PDF")
+        if online_first():
+            return body
         cache.parent.mkdir(parents=True, exist_ok=True)
         temp = cache.with_suffix(cache.suffix + ".tmp")
         temp.write_bytes(body)

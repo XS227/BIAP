@@ -14,7 +14,7 @@ from typing import Any, Optional
 
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
-from .source_cache import data_root, read_json, source_index_path, write_json_atomic
+from .source_cache import data_root, read_json, source_index_path, write_bulk_json, write_json_atomic
 
 _ALLOWED_SOURCE_TYPES = {
     "official_regulatory_filing",
@@ -80,7 +80,7 @@ class VerifiedFilingDropProvider(FundamentalsProvider):
             "priority": "interactive",
             "status": "pending",
         }
-        write_json_atomic(path, payload)
+        write_bulk_json(path, payload)
 
     def _path(self, company: GlobalCompany) -> Path:
         safe = "".join(ch for ch in company.ticker if ch.isalnum() or ch in {"-", "_", "."})

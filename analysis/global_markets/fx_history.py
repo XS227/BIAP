@@ -31,6 +31,7 @@ from pathlib import Path
 from typing import Callable, Iterable, Optional
 
 from .providers import GlobalProviderError
+from .source_cache import write_bulk_text
 
 PROVIDER_ID = "ecb-euro-reference-rates-historical"
 ECB_HIST_URL = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.xml"
@@ -127,10 +128,7 @@ class ECBHistoricalFX:
             "fetchedAt": datetime.now(timezone.utc).isoformat(),
             "firstDate": min(table), "lastDate": max(table), "days": len(table), "rates": table,
         }
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        temp = self.path.with_suffix(".json.tmp")
-        temp.write_text(json.dumps(payload, separators=(",", ":")), encoding="utf-8")
-        temp.replace(self.path)
+        write_bulk_text(self.path, json.dumps(payload, separators=(",", ":")))
         self._table, self._days, self.fetched_at = table, sorted(table), payload["fetchedAt"]
         return {k: payload[k] for k in ("firstDate", "lastDate", "days", "fetchedAt")}
 

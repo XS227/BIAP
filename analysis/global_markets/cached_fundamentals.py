@@ -26,6 +26,7 @@ from typing import Optional
 from .evidence_contract import fundamental_evidence_contract, is_official_fundamental_source, official_fundamental_sources
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
+from .source_cache import write_bulk_text
 
 
 _FUNDAMENTAL_FIELDS = (
@@ -351,20 +352,12 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
             "sources": sources,
             "evidenceContract": fundamental_evidence_contract(company),
         }
-        directory = self._directory(company)
-        directory.mkdir(parents=True, exist_ok=True)
-        latest = self._latest_path(company)
-        temp = latest.with_suffix(".json.tmp")
         text = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-        temp.write_text(text, encoding="utf-8")
-        os.replace(temp, latest)
+        write_bulk_text(self._latest_path(company), text)
 
         archive = self._archive_path(company, company.filing_period_end)
-        archive.parent.mkdir(parents=True, exist_ok=True)
         if not archive.exists() or official:
-            archive_tmp = archive.with_suffix(".json.tmp")
-            archive_tmp.write_text(text, encoding="utf-8")
-            os.replace(archive_tmp, archive)
+            write_bulk_text(archive, text)
 
     def _decode(self, seed: GlobalCompany, payload: dict, *, fallback: bool) -> GlobalCompany:
         stored = payload.get("fundamentals") if isinstance(payload.get("fundamentals"), dict) else {}

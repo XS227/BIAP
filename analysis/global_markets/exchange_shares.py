@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Callable, Iterable, Optional
 
 from .models import GlobalCompany, SourceEvidence
+from .source_cache import write_bulk_text
 
 NASDAQ_NORDIC_PROVIDER = "official-nasdaq-nordic-instrument-summary"
 BORSA_ITALIANA_PROVIDER = "official-borsa-italiana-instrument-page"
@@ -95,12 +96,9 @@ def parse_borsa_italiana(html: str) -> Optional[float]:
 
 def _write_store(provider: str, country: str, exchange: str, entries: dict, meta: dict) -> Path:
     path = _store_path(provider, country, exchange)
-    path.parent.mkdir(parents=True, exist_ok=True)
     payload = {"schemaVersion": 1, "provider": provider, "fetchedAt": datetime.now(timezone.utc).isoformat(),
                **meta, "entries": entries}
-    temp = path.with_suffix(".json.tmp")
-    temp.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    temp.replace(path)
+    write_bulk_text(path, json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
     return path
 
 

@@ -21,7 +21,7 @@ from .http_governor import YAHOO_GOVERNOR
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
 from .regional_yahoo_chart import RegionalYahooChartMarketProvider
-from .source_cache import data_root, read_json, write_json_atomic
+from .source_cache import data_root, read_json, write_bulk_json, write_json_atomic
 
 _BASE = "https://query1.finance.yahoo.com/ws/fundamentals-timeseries/v1/finance/timeseries"
 
@@ -139,7 +139,7 @@ class YahooFundamentalsProvider(FundamentalsProvider):
         if error:
             raise GlobalProviderError(f"Yahoo fundamentals provider error: {str(error)[:240]}")
 
-        write_json_atomic(self._cache_path(symbol), {
+        write_bulk_json(self._cache_path(symbol), {
             "source": "Yahoo Finance public fundamentals timeseries",
             "symbol": symbol,
             "fetchedAt": now.isoformat(),

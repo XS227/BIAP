@@ -19,6 +19,7 @@ from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
 from .lse_official import non_ordinary_description, pooled_investment_icb
+from .source_cache import write_bulk_text
 
 # Version 24 persists Deutsche Boerse's authoritative Reporting Market field.
 # Older German snapshots only carried Primary Market MIC, which is not a safe
@@ -157,9 +158,7 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
             "metadata": metadata,
             "instruments": [self._row(row) for row in rows],
         }
-        temporary = path.with_suffix(path.suffix + ".tmp")
-        temporary.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-        os.replace(temporary, path)
+        write_bulk_text(path, json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
 
     def _decode(self, payload: dict, *, fallback: bool) -> list[GlobalCompany]:
         fetched_at = str(payload.get("fetchedAt") or "") or None

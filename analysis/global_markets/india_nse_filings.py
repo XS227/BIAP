@@ -30,7 +30,7 @@ import httpx
 
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
-from .source_cache import data_root, read_json, write_json_atomic
+from .source_cache import data_root, read_json, write_bulk_json, write_json_atomic
 
 LIST_URL = "https://www.nseindia.com/api/integrated-filing-results"
 PAGE_URL = "https://www.nseindia.com/companies-listing/corporate-integrated-filing"
@@ -254,7 +254,7 @@ class NSEIntegratedFilingFundamentalsProvider(FundamentalsProvider):
         rows = payload.get("data") if isinstance(payload, dict) else None
         if not isinstance(rows, list):
             raise GlobalProviderError("NSE integrated filing list has an unexpected shape")
-        write_json_atomic(path, {"symbol": symbol, "fetchedAt": _now().isoformat(), "rows": rows})
+        write_bulk_json(path, {"symbol": symbol, "fetchedAt": _now().isoformat(), "rows": rows})
         return rows
 
     def _parsed(self, url: str) -> dict:
@@ -273,7 +273,7 @@ class NSEIntegratedFilingFundamentalsProvider(FundamentalsProvider):
         if len(response.content) > MAX_XBRL_BYTES:
             raise GlobalProviderError("NSE XBRL instance exceeds size limit")
         parsed = parse_integrated_xbrl(response.content)
-        write_json_atomic(path, parsed)
+        write_bulk_json(path, parsed)
         return parsed
 
     @staticmethod

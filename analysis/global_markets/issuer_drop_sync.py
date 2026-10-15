@@ -306,6 +306,10 @@ def _record(company) -> dict:
 
 
 def main() -> int:
+    from .source_cache import online_first
+    if online_first():
+        print(json.dumps({"skipped": "BIAP_GLOBAL_ONLINE_FIRST: no new persistent issuer drop writes"}))
+        return 0
     root = Path(os.environ.get("BIAP_ISSUER_DROP_OUTPUT", "/tmp/biap-global-issuer-drops"))
     summary = {"output": str(root), "ok": [], "failures": []}
     for seed, provider in _targets():

@@ -25,10 +25,56 @@ def source_index_path(name: str) -> Path:
     return data_root() / "source-index" / f"{safe}.json"
 
 
+def online_first() -> bool:
+    """True when raw company-source data must not be persisted to disk.
+
+    Set BIAP_GLOBAL_ONLINE_FIRST=1 (staging first). Existing files are still
+    read; only NEW bulk writes are redirected to a bounded in-process memo.
+    """
+    return os.environ.get("BIAP_GLOBAL_ONLINE_FIRST", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+# Bounded, short-lived in-process memo used instead of disk when online_first().
+_MEMO_MAX_ENTRIES = 64
+_MEMO_TTL_SECONDS = 900
+_memo: dict[str, tuple[float, Any]] = {}
+
+
+def _memo_put(path: Path, payload: Any) -> None:
+    now = time.time()
+    for key in [k for k, (ts, _) in _memo.items() if now - ts > _MEMO_TTL_SECONDS]:
+        _memo.pop(key, None)
+    while len(_memo) >= _MEMO_MAX_ENTRIES:
+        _memo.pop(min(_memo, key=lambda k: _memo[k][0]), None)
+    _memo[str(path)] = (now, payload)
+
+
+def write_bulk_json(path: Path, payload: Any) -> None:
+    """Persist raw-source JSON, or memoize it in memory when online-first."""
+    if online_first():
+        _memo_put(path, payload)
+    else:
+        write_json_atomic(path, payload)
+
+
+def write_bulk_text(path: Path, text: str) -> None:
+    """Atomic text write for raw-source data; memoized only when online-first."""
+    if online_first():
+        _memo_put(path, text)
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_name(path.name + ".tmp")
+    temp.write_text(text, encoding="utf-8")
+    os.replace(temp, path)
+
+
 def read_json(path: Path, default: Any = None) -> Any:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
+        hit = _memo.get(str(path))
+        if hit is not None and time.time() - hit[0] <= _MEMO_TTL_SECONDS:
+            return hit[1]
         return default
 
 

@@ -21,7 +21,7 @@ import httpx
 
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
-from .source_cache import filing_path, read_json, sha256_bytes, source_index_path, write_json_atomic
+from .source_cache import filing_path, online_first, read_json, sha256_bytes, source_index_path, write_bulk_json, write_json_atomic
 
 DEFAULT_BASE = "https://api.edinet-fsa.go.jp/api/v2"
 INDEX_NAME = "edinet-annual-reports"
@@ -115,7 +115,7 @@ def sync_edinet_index(*, days: int = 1, end_date: Optional[date] = None) -> dict
     payload["syncedDates"] = sorted(synced, reverse=True)[:900]
     payload["updatedAt"] = datetime.now(timezone.utc).isoformat()
     payload["errors"] = errors[-20:]
-    write_json_atomic(path, payload)
+    write_bulk_json(path, payload)
     return {"path": str(path), "added": added, "dates": days, "errors": errors}
 
 
@@ -254,10 +254,11 @@ class EDINETFundamentalsProvider(FundamentalsProvider):
             body = cache.read_bytes()
         else:
             body = self.client.download_csv_zip(doc_id)
-            cache.parent.mkdir(parents=True, exist_ok=True)
-            temp = cache.with_suffix(cache.suffix + ".tmp")
-            temp.write_bytes(body)
-            temp.replace(cache)
+            if not online_first():
+                cache.parent.mkdir(parents=True, exist_ok=True)
+                temp = cache.with_suffix(cache.suffix + ".tmp")
+                temp.write_bytes(body)
+                temp.replace(cache)
         facts = _read_facts(body)
         if not facts:
             raise GlobalProviderError(f"EDINET filing {doc_id} contains no conservative headline facts")

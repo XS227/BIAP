@@ -27,7 +27,7 @@ import xml.etree.ElementTree as ET
 import httpx
 
 from .providers import GlobalProviderError
-from .source_cache import data_root, enforce_cache_budget, write_bytes_atomic
+from .source_cache import data_root, enforce_cache_budget, online_first, write_bytes_atomic
 
 SEC_SUBMISSIONS_BASE = "https://data.sec.gov/submissions"
 SEC_ARCHIVES_BASE = "https://www.sec.gov/Archives/edgar/data"
@@ -282,6 +282,8 @@ class SECFilingInstanceReader:
         except httpx.HTTPError as exc:
             raise GlobalProviderError(f"SEC XBRL instance request failed: {type(exc).__name__}") from exc
         body = response.content
+        if online_first():
+            return body
         path.parent.mkdir(parents=True, exist_ok=True)
         write_bytes_atomic(path, body)
         enforce_cache_budget(path.parent, env_var="BIAP_SEC_INSTANCE_CACHE_MAX_MB", default_mb=1024, suffixes=(".xml",))
