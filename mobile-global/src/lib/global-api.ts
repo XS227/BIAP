@@ -67,6 +67,31 @@ export type GlobalFundamentalEvidence = {
     statement?: string;
   };
   limitations?: string[];
+  interimEvidence?: {
+    label?: string;
+    periodEnd?: string;
+    fiscalPeriod?: string | null;
+    form?: string | null;
+    accession?: string;
+    ttm?: { label?: string; values?: Record<string, number>; withheld?: Record<string, string> } | null;
+    ttmWithheldReason?: string | null;
+  } | null;
+  financialSector?: {
+    applicable?: boolean;
+    classificationBasis?: string;
+    reason?: string;
+    metrics?: Record<string, { value: number; formula?: string }>;
+    pbRelative?: { pb: number; sectorMedianPb: number; peerCount: number; relativePct: number } | null;
+    withheld?: Record<string, string>;
+  } | null;
+};
+
+export type GlobalDecisionReason = { code: string; text: string; blocksDecision?: boolean };
+export type GlobalDecisionReasons = {
+  governance?: GlobalDecisionReason[];
+  dataLimitations?: GlobalDecisionReason[];
+  governanceDriven?: boolean;
+  dataDriven?: boolean;
 };
 
 export type GlobalDistress = {
@@ -237,6 +262,7 @@ export type GlobalDecisionTable = {
 
 export type GlobalAnalysis = {
   fundamentalEvidence?: GlobalFundamentalEvidence;
+  decisionReasons?: GlobalDecisionReasons;
   identity?: string;
   country?: string;
   exchange?: string;

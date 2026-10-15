@@ -19,6 +19,7 @@ import httpx
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
 from .sec_filing_instance import SECFilingInstanceReader, merge_facts
+from .sec_interim import build_interim_evidence
 
 SEC_TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 SEC_FACTS_BASE = "https://data.sec.gov/api/xbrl/companyfacts"
@@ -586,6 +587,19 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             default="",
         ) or None
 
+        # Latest 10-Q / TTM from the same companyfacts payload (no extra request).
+        # Kept in raw_provider_fields as a labelled block; the annual fields above
+        # and the freshness gates never read it.
+        try:
+            interim = build_interim_evidence(
+                gaap,
+                period_end,
+                {"revenue": revenue, "netIncome": income, "operatingCashFlow": ocf_value},
+                source_url=source_url,
+            )
+        except Exception:  # interim evidence is supplementary; never fail the annual result
+            interim = None
+
         unit_currency, unit_currency_note = self._filing_currency([revenue_row, income_row, assets, equity, ocf])
         enriched = replace(
             company,
@@ -629,6 +643,7 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
                     "lower_bound": dna_tag in DNA_TAGS_PARTIAL,
                 }} if ebitda is not None else {}),
                 **({"sec_predecessor_cik": predecessor_cik} if predecessor_cik else {}),
+                **({"sec_interim": interim} if interim else {}),
             },
         )
         if not enriched.sector:

@@ -12,6 +12,9 @@ the business model.
 
 from __future__ import annotations
 
+from typing import Optional
+
+from .financial_signals import financial_fundamental_vote, financial_metrics
 from .models import AgentSignal, GlobalCompany, taxonomy_financial_institution
 
 
@@ -93,6 +96,15 @@ def fundamental_agent(company: GlobalCompany) -> AgentSignal:
         signals += 1
         vote -= 0.25
         reasons.append("financial statements include a restatement flag")
+
+    # Financial-sector evidence (ROE/ROA/equity-to-assets) only for issuers with
+    # an authoritative financial classification and current official figures.
+    # Counts as at most one evidence unit; non-financial issuers are untouched.
+    fin_vote, fin_reasons, fin_signals = financial_fundamental_vote(company)
+    if fin_signals:
+        signals += fin_signals
+        vote += fin_vote
+        reasons.extend(fin_reasons)
 
     confidence = min(0.82, 0.23 + 0.12 * signals) if signals else 0.0
     return AgentSignal(
@@ -249,12 +261,49 @@ def _cohort_note(company: GlobalCompany) -> str:
     )
 
 
+def _financial_pb_signal(company: GlobalCompany) -> Optional[AgentSignal]:
+    """P/B vs a verified same-sector benchmark, financial issuers only.
+
+    Used only when the P/E comparison cannot be made. Confidence is fixed below
+    the 0.55 high-confidence line: it informs the vote but cannot, alone, create
+    an agent disagreement or lift calibrated confidence.
+    """
+    data = financial_metrics(company)
+    block = data.get("pbRelative") if data and data.get("applicable") else None
+    if not block:
+        return None
+    rel = block["relativePct"]
+    vote = 0.0
+    if rel <= -30:
+        vote = 0.4
+    elif rel <= -15:
+        vote = 0.25
+    elif rel >= 30:
+        vote = -0.3
+    elif rel >= 15:
+        vote = -0.15
+    return AgentSignal(
+        agent="comparison",
+        vote=vote,
+        confidence=0.50,
+        reasoning=(
+            f"P/B {block['pb']:.2f} vs same-sector median {block['sectorMedianPb']:.2f} "
+            f"({rel:+.0f}%, {block['peerCount']} peers; derived scan benchmark, not filing evidence)"
+        ),
+    )
+
+
 def comparison_agent(company: GlobalCompany) -> AgentSignal:
     pe = company.pe
     sector_pe = company.sector_pe
+    pb_signal = _financial_pb_signal(company)
     if pe is None or pe <= 0:
+        if pb_signal is not None:
+            return pb_signal
         return AgentSignal("comparison", 0.0, 0.0, "valid positive P/E unavailable")
     if sector_pe is None or sector_pe <= 0:
+        if pb_signal is not None:
+            return pb_signal
         raw = company.raw_provider_fields or {}
         why = (
             "no sector classification from an authoritative source"
