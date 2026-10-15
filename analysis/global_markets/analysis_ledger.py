@@ -208,6 +208,8 @@ def missing_reasons(result: dict, missing: list[str]) -> dict:
                 reasons[key] = "no_market_cap"
             elif not present("total_debt"):
                 reasons[key] = "no_total_debt" + filing_status("total_debt")
+            elif not present("cash_and_equivalents"):
+                reasons[key] = "no_cash_and_equivalents" + filing_status("cash_and_equivalents")
             else:
                 reasons[key] = "not_derivable"
         else:

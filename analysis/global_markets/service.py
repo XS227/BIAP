@@ -199,6 +199,9 @@ def _fx_context(company: GlobalCompany) -> dict:
             "method": "balance_items@period_end_spot;flows@fiscal_year_mean;price/market_cap in listing currency"}
 
 
+EV_EBITDA_ANOMALY_HIGH = 100.0
+
+
 def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
     """Fill mathematically derivable valuation fields without inventing inputs.
 
@@ -390,16 +393,62 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
         and ebitda not in (None, 0)
         and float(ebitda) > 0
     ):
-        enterprise_value = float(market_cap)
-        if debt is not None:
-            enterprise_value += float(debt)
-        if cash is not None:
-            enterprise_value -= float(cash)
-        if enterprise_value > 0:
-            ev_ebitda = enterprise_value / float(ebitda)
-            derived.append("ev_ebitda=(market_cap+debt-cash)/ebitda")
+        if debt is None or cash is None:
+            # A missing balance-sheet input is not zero: omitting debt understates
+            # and omitting cash overstates enterprise value. Withhold, say why.
+            absent = [n for n, v in (("total_debt", debt), ("cash_and_equivalents", cash)) if v is None]
+            derived.append("ev_ebitda_withheld:enterprise_value_input_missing(" + ",".join(absent) + ")")
+        else:
+            enterprise_value = float(market_cap) + float(debt) - float(cash)
+            if enterprise_value > 0:
+                ev_ebitda = enterprise_value / float(ebitda)
+                derived.append("ev_ebitda=(market_cap+debt-cash)/ebitda")
 
-    if not derived:
+    # Impairment-inclusive D&A is not standard D&A. When it is the only D&A the
+    # filing tags, expose the multiple as a separately labelled adjusted metric
+    # with its provenance; it never enters ev_ebitda or standard comparisons.
+    adjusted_metrics: dict = {}
+    nonstd = (company.raw_provider_fields or {}).get("nonstandard_metrics")
+    adj_ebitda = nonstd.get("ebitda_incl_impairment") if isinstance(nonstd, dict) else None
+    if (
+        same_currency
+        and company.ebitda is None
+        and isinstance(adj_ebitda, (int, float))
+        and not isinstance(adj_ebitda, bool)
+        and float(adj_ebitda) > 0
+        and market_cap is not None
+        and debt is not None
+        and cash is not None
+    ):
+        adj_value = float(adj_ebitda) * flow_rate
+        adj_ev = float(market_cap) + float(debt) - float(cash)
+        if adj_ev > 0:
+            adjusted_metrics["ev_ebitda_incl_impairment"] = {
+                "value": adj_ev / adj_value,
+                "standard": False,
+                "label": "ADJUSTED, NON-STANDARD: EV / (EBIT + impairment-inclusive D&A); not comparable with standard EV/EBITDA",
+                "formula": "(market_cap+debt-cash) / " + str(nonstd.get("formula")),
+                "sourceConcept": nonstd.get("sourceConcept"),
+                "fiscalPeriodEnd": nonstd.get("fiscalPeriodEnd"),
+                "ebitdaInclImpairment": adj_value,
+                "enterpriseValue": adj_ev,
+                "confidence": nonstd.get("confidence"),
+                "provenance": "official structured filing (see company.sources); impairment not separable from D&A in the tagged concept",
+            }
+
+    # Flag, never delete: extreme multiples are usually a real, tiny-EBITDA
+    # artefact of valid source data, but must not be read as a clean valuation.
+    ratio_anomalies = []
+    if ev_ebitda is not None and (float(ev_ebitda) > EV_EBITDA_ANOMALY_HIGH or float(ev_ebitda) < 0):
+        ratio_anomalies.append({
+            "metric": "ev_ebitda",
+            "value": round(float(ev_ebitda), 2),
+            "rule": f"outside 0..{EV_EBITDA_ANOMALY_HIGH:g}x",
+            "action": "flagged_value_retained",
+            "note": "source values kept; EBITDA small relative to enterprise value or provider/definition mismatch",
+        })
+
+    if not derived and not ratio_anomalies and not adjusted_metrics:
         return company
 
     return replace(
@@ -416,6 +465,8 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
         raw_provider_fields={
             **company.raw_provider_fields,
             "derived_metrics": derived,
+            **({"ratio_anomalies": ratio_anomalies} if ratio_anomalies else {}),
+            **({"adjusted_metrics": adjusted_metrics} if adjusted_metrics else {}),
             **({
                 "peer_pe_benchmark_scope": peer_scope,
                 "peer_pe_benchmark_count": peer_count,

@@ -190,6 +190,8 @@ def build_decision_table(
             "peVsSectorPct": pe_vs_sector_pct,
             "pb": company.pb,
             "evEbitda": company.ev_ebitda,
+            "adjustedMetrics": dict((company.raw_provider_fields or {}).get("adjusted_metrics") or {}),
+            "ratioAnomalies": list((company.raw_provider_fields or {}).get("ratio_anomalies") or []),
             "dividendYieldPct": company.dividend_yield_pct,
             "eps": company.eps,
             "bookValuePerShare": company.book_value_per_share,
