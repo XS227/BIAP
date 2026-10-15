@@ -1,10 +1,6 @@
 name: BIAP Global LSE production refresh
 
 on:
-  push:
-    branches: [feat/biap-global]
-    paths:
-      - '.github/workflows/biap-global-lse-production-refresh.yml'
   workflow_dispatch:
 
 permissions:

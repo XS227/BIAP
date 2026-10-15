@@ -1,10 +1,6 @@
 name: Publish BIAP Global 0.3.15 now
 
 on:
-  push:
-    branches: [feat/biap-global]
-    paths:
-      - '.github/workflows/publish-biap-global-0315-now.yml'
   workflow_dispatch:
 
 permissions:

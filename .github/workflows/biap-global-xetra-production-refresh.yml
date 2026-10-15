@@ -1,16 +1,6 @@
 name: BIAP Global Xetra production refresh
 
 on:
-  push:
-    branches: [feat/biap-global]
-    paths:
-      - 'analysis/global_markets/german_issuer.py'
-      - 'analysis/global_markets/runtime.py'
-      - 'analysis/global_markets/scanner.py'
-      - 'analysis/global_markets/xetra_delayed.py'
-      - 'analysis/tests/test_global_german_issuer.py'
-      - 'analysis/tests/test_global_xetra_delayed.py'
-      - '.github/workflows/biap-global-xetra-production-refresh.yml'
   workflow_dispatch:
 
 permissions:
