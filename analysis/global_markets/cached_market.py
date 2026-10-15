@@ -23,6 +23,7 @@ from typing import Optional
 
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, MarketDataProvider
+from .source_cache import write_bulk_text
 
 
 _MARKET_FIELDS = (
@@ -136,9 +137,7 @@ class PersistentMarketProvider(MarketDataProvider):
             "raw_provider_fields": company.raw_provider_fields,
             "sources": [asdict(source) for source in company.sources if any(token in source.source_type.lower() for token in ("market", "price", "quote", "history", "valuation", "profile"))],
         }
-        temp = path.with_suffix(".json.tmp")
-        temp.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-        os.replace(temp, path)
+        write_bulk_text(path, json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
 
     def _decode(self, seed: GlobalCompany, payload: dict, *, fallback: bool) -> GlobalCompany:
         market = payload.get("market") if isinstance(payload.get("market"), dict) else {}

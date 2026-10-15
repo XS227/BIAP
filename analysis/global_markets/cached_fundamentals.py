@@ -18,12 +18,15 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import os
+import threading
+import time
 from pathlib import Path
 from typing import Optional
 
 from .evidence_contract import fundamental_evidence_contract, is_official_fundamental_source, official_fundamental_sources
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
+from .source_cache import write_bulk_text
 
 
 _FUNDAMENTAL_FIELDS = (
@@ -57,7 +60,34 @@ _CACHE_SOURCE_TOKENS = (*_OFFICIAL_FINANCIAL_TOKENS, "fundamental", "financial_m
 # v8: ESEF debt includes IFRS loans-received lines next to bonds issued.
 # v9: KAP income statement (Flight rows) merged with 1000TL units, SEC equity
 # balance-sheet check + assessed-tax revenue tag, ESEF revenue fallbacks.
-CACHE_SCHEMA_VERSION = 10
+CACHE_SCHEMA_VERSION = 11
+# Targeted re-normalization (instead of a global schema bump, which would force
+# a re-parse of every cached issuer snapshot during live scans): revision 1 maps
+# IFRS LongtermBorrowings/CurrentBorrowingsAndCurrentPortion... debt tags (Shell
+# FY2025 total_debt) and adds the SEC SIC sector supplement for GB. Snapshots
+# written before it are refreshed once, only when the affected field is empty.
+#
+# revision 2: ESEF field_status provenance, debt-component consistency guard and
+# plain/issued share counts mapped by the current extractor. Official snapshots
+# written earlier are re-normalized from the cached filing package (no refetch)
+# once, when shares, debt or EBITDA is empty.
+#
+# revision 3: cross-footed ESEF extension equity (FinecoBank) and the taxonomy
+# bank flag. Only official snapshots whose total_equity is still empty are
+# re-normalized; snapshots that merely lack debt/EBITDA were already retried
+# at revision 2 and are not re-queued (that would re-fetch thousands of issuers
+# for fields the sources do not publish).
+#
+# revision 4: reviewed issuer D&A lines (Kitron) and the flagged non-standard
+# EBITDA-incl-impairment metadata. Only official snapshots that tagged an
+# impairment-inclusive D&A line as the sole D&A candidate (field_status
+# ``tagged_da_impairment_inclusive_only_not_used``) are re-normalized, from the
+# cached filing package.
+#
+# revision 5: SEC cover-page share count (dei:EntityCommonStockSharesOutstanding)
+# for single-class 10-K/10-Q filers that tag no us-gaap share count. Only SEC
+# snapshots whose shares_outstanding is still empty are re-normalized.
+NORMALIZER_REVISION = 5
 
 # Official providers whose records were found defective after the fact.
 # Snapshots built from them are ignored (neither fresh nor stale fallback).
@@ -110,6 +140,33 @@ def _cache_sources(company: GlobalCompany) -> list[SourceEvidence]:
     return rows
 
 
+class _RenormalizationBudget:
+    """Spread the one-time re-normalization of old snapshots over time.
+
+    A live scan deep-analyzes up to 75 issuers; if all of them needed a refresh
+    at once the request would stall on 75 upstream fetches (and the 2 GB host
+    would swap). Only a few are allowed per minute, the rest keep serving their
+    valid snapshot and migrate on later requests.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._stamps: list[float] = []
+
+    def try_take(self) -> bool:
+        limit = max(0, int(os.environ.get("BIAP_GLOBAL_RENORM_PER_MIN", "6")))
+        now = time.monotonic()
+        with self._lock:
+            self._stamps = [t for t in self._stamps if now - t < 60.0]
+            if len(self._stamps) >= limit:
+                return False
+            self._stamps.append(now)
+            return True
+
+
+_renormalization_budget = _RenormalizationBudget()
+
+
 class PersistentFundamentalsProvider(FundamentalsProvider):
     """Disk-backed wrapper around a fundamentals provider.
 
@@ -159,7 +216,7 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
             payload = json.loads(self._latest_path(company).read_text(encoding="utf-8"))
         except (OSError, ValueError, TypeError):
             return None
-        if not isinstance(payload, dict) or payload.get("schemaVersion") not in {1, 2, 3, 4, 6, 7, 8, 9, CACHE_SCHEMA_VERSION}:
+        if not isinstance(payload, dict) or payload.get("schemaVersion") not in {1, 2, 3, 4, 6, 7, 8, 9, 10, CACHE_SCHEMA_VERSION}:
             return None
         identity = payload.get("identity") if isinstance(payload.get("identity"), dict) else {}
         if str(identity.get("country") or "").upper() != company.country.upper():
@@ -205,6 +262,50 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         age_days = cls._filing_age_days(payload)
         return age_days is not None and age_days > MAX_OFFICIAL_FILING_AGE_DAYS
 
+    @staticmethod
+    def _needs_renormalization(payload: dict) -> bool:
+        if int(payload.get("normalizerRevision") or 0) >= NORMALIZER_REVISION or not payload.get("officialEvidence"):
+            return False
+        fundamentals = payload.get("fundamentals") if isinstance(payload.get("fundamentals"), dict) else {}
+        identity = payload.get("identity") if isinstance(payload.get("identity"), dict) else {}
+        equity_missing = fundamentals.get("total_equity") is None
+        raw = payload.get("raw_provider_fields") if isinstance(payload.get("raw_provider_fields"), dict) else {}
+        sec_shares_missing = raw.get("sec_cik") is not None and fundamentals.get("shares_outstanding") is None
+        if int(payload.get("normalizerRevision") or 0) == 4:
+            return sec_shares_missing
+        if int(payload.get("normalizerRevision") or 0) >= 3:
+            credit = raw.get("oam_credit_extraction") if isinstance(raw.get("oam_credit_extraction"), dict) else {}
+            status = credit.get("field_status") if isinstance(credit.get("field_status"), dict) else {}
+            impairment_only = (
+                fundamentals.get("ebitda") is None
+                and status.get("ebitda") == "tagged_da_impairment_inclusive_only_not_used"
+            )
+            return equity_missing or impairment_only or sec_shares_missing
+        if int(payload.get("normalizerRevision") or 0) >= 2:
+            return equity_missing
+        gb_sector_missing = str(identity.get("country") or "").upper() == "GB" and not fundamentals.get("sector")
+        inputs_missing = any(fundamentals.get(key) is None for key in ("shares_outstanding", "total_debt", "ebitda"))
+        return gb_sector_missing or inputs_missing or equity_missing or sec_shares_missing
+
+    @staticmethod
+    def _superseded_by_reviewed_report(payload: dict) -> bool:
+        """A year-only exchange key-data snapshot is not fresh once a reviewed
+        issuer annual report exists for the same ISIN (reviewed source ranks higher)."""
+        sources = payload.get("sources") if isinstance(payload.get("sources"), list) else []
+        providers = {str(row.get("provider") or "") for row in sources if isinstance(row, dict)}
+        if "official-boerse-frankfurt-historical-key-data" not in providers:
+            return False
+        if "de-reviewed-issuer-annual-report" in providers:
+            return False
+        identity = payload.get("identity") if isinstance(payload.get("identity"), dict) else {}
+        isin = str(identity.get("isin") or "").upper()
+        try:
+            from .german_reviewed_reports import _registry
+
+            return isin in _registry()
+        except Exception:  # registry unreadable: keep prior behaviour
+            return False
+
     def _is_fresh(self, payload: dict) -> bool:
         # Schema v2 adds shareholder-return fields such as dividend/share.
         # A v1 cache can still be used as an outage fallback, but it is never
@@ -221,6 +322,10 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         # current evidence.
         if self._stale_official_filing(payload):
             return False
+        if self._superseded_by_reviewed_report(payload):
+            return False
+        if self._needs_renormalization(payload) and _renormalization_budget.try_take():
+            return False
         age = self._age_seconds(payload)
         return age is not None and age <= self.fresh_seconds
 
@@ -229,6 +334,7 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         official = bool(_official_sources(company))
         payload = {
             "schemaVersion": CACHE_SCHEMA_VERSION,
+            "normalizerRevision": NORMALIZER_REVISION,
             "identity": {
                 "country": company.country,
                 "exchange": company.exchange,
@@ -246,20 +352,12 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
             "sources": sources,
             "evidenceContract": fundamental_evidence_contract(company),
         }
-        directory = self._directory(company)
-        directory.mkdir(parents=True, exist_ok=True)
-        latest = self._latest_path(company)
-        temp = latest.with_suffix(".json.tmp")
         text = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-        temp.write_text(text, encoding="utf-8")
-        os.replace(temp, latest)
+        write_bulk_text(self._latest_path(company), text)
 
         archive = self._archive_path(company, company.filing_period_end)
-        archive.parent.mkdir(parents=True, exist_ok=True)
         if not archive.exists() or official:
-            archive_tmp = archive.with_suffix(".json.tmp")
-            archive_tmp.write_text(text, encoding="utf-8")
-            os.replace(archive_tmp, archive)
+            write_bulk_text(archive, text)
 
     def _decode(self, seed: GlobalCompany, payload: dict, *, fallback: bool) -> GlobalCompany:
         stored = payload.get("fundamentals") if isinstance(payload.get("fundamentals"), dict) else {}
@@ -341,7 +439,7 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
                 return self._decode(company, cached, fallback=True)
             if isinstance(exc, GlobalProviderError):
                 raise
-            raise GlobalProviderError(f"fundamentals unavailable and no cache exists: {type(exc).__name__}") from exc
+            raise GlobalProviderError(f"fundamentals unavailable and no cache exists: {type(exc).__name__}: {str(exc)[:120]}") from exc
         if not _official_sources(enriched) and self._current_official(cached):
             # Never let a weaker (vendor/non-official) refresh overwrite a
             # still-current official snapshot. Serve the official snapshot and

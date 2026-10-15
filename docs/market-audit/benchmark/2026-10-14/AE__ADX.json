@@ -1,0 +1,11 @@
+{
+ "market": "AE__ADX",
+ "generatedAt": "2026-10-13T23:57:55.346439+00:00",
+ "universeInLedger": 102,
+ "excluded": {
+  "history shorter than 32 sessions": 19
+ },
+ "companies": [],
+ "eligible": 0,
+ "limitation": "no verified daily history with >=32 sessions for any ledger instrument"
+}

@@ -18,6 +18,8 @@ from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
 from .universe import _ordinary_equity_row
+from .lse_official import non_ordinary_description, pooled_investment_icb
+from .source_cache import write_bulk_text
 
 # Version 24 persists Deutsche Boerse's authoritative Reporting Market field.
 # Older German snapshots only carried Primary Market MIC, which is not a safe
@@ -101,7 +103,16 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
 
     def _is_fresh(self, payload: dict) -> bool:
         age = self._age_seconds(payload)
-        return age is not None and age <= self.fresh_seconds
+        if age is None or age > self.fresh_seconds:
+            return False
+        if str(payload.get("country") or "").upper() == "GB":
+            # A UK snapshot without a complete LSE ICB classification would still
+            # contain investment trusts/funds. Refresh it once; on upstream failure
+            # the stale snapshot remains the fallback.
+            meta = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+            if not meta.get("icbClassifiedCount") or meta.get("icbSectorQueryFailures"):
+                return False
+        return True
 
     @staticmethod
     def _row(company: GlobalCompany) -> dict:
@@ -147,9 +158,7 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
             "metadata": metadata,
             "instruments": [self._row(row) for row in rows],
         }
-        temporary = path.with_suffix(path.suffix + ".tmp")
-        temporary.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-        os.replace(temporary, path)
+        write_bulk_text(path, json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
 
     def _decode(self, payload: dict, *, fallback: bool) -> list[GlobalCompany]:
         fetched_at = str(payload.get("fetchedAt") or "") or None
@@ -171,12 +180,25 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
             except Exception:
                 continue
             cached_raw = dict(row.get("raw_provider_fields") or {})
+            if row_country == "GB" and non_ordinary_description(cached_raw.get("lse_description")):
+                continue
+            if row_country == "GB" and pooled_investment_icb(cached_raw.get("lse_icb_code")):
+                continue
             normalized_row = {
                 "name": str(row.get("name") or ticker),
                 "type": str(row.get("instrument_type") or "Common Stock"),
                 "cfi_code": cached_raw.get("cfi"),
                 "trusted_official_equity": (
                     cached_raw.get("trusted_official_equity") is True
+                    # The LSE adapter already screened every row on its official
+                    # description (preference/ADR/warrant/...); the generic
+                    # name/ticker heuristics wrongly dropped 3IN, 1SN and LWDB
+                    # ("DEBENTURE" in Law Debenture, digit-led tickers).
+                    or (
+                        str(payload.get("provider") or "") == "official-lse-main-market-price-explorer"
+                        and cached_raw.get("official_universe") is True
+                        and bool(str(cached_raw.get("lse_description") or "").strip())
+                    )
                     or (
                         str(payload.get("provider") or "") == "official-b3-regular-equity-universe"
                         and cached_raw.get("official_universe") is True
@@ -260,6 +282,23 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
             resolved_count = int(metadata.get("resolvedCount") or count)
         except (TypeError, ValueError):
             resolved_count = count
+        # Rows the decoder drops at read time (e.g. LSE preference lines in an
+        # older snapshot) must leave the discovered denominator too, otherwise
+        # "discovered" and the analysed ordinary universe disagree.
+        if country.upper() == "GB":
+            dropped = sum(
+                1 for row in payload.get("instruments") or []
+                if isinstance(row, dict)
+                and (
+                    non_ordinary_description((row.get("raw_provider_fields") or {}).get("lse_description"))
+                    or pooled_investment_icb((row.get("raw_provider_fields") or {}).get("lse_icb_code"))
+                )
+            )
+            if dropped:
+                count -= dropped
+                official_count -= dropped
+                resolved_count -= dropped
+                metadata = {**metadata, "excludedNonOrdinaryAtRead": dropped}
         coverage = round(100.0 * resolved_count / official_count, 2) if official_count else 0.0
         return {
             "available": True,

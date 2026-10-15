@@ -58,3 +58,54 @@ def test_runtime_registers_official_kap_for_turkiye(monkeypatch):
     registry = build_registry()
     provider = registry.fundamentals('TR', 'BIST')
     assert 'kap-official-financial-summary' in provider.provider_id
+
+
+def test_kap_get_retries_dropped_connections_then_succeeds(monkeypatch):
+    import httpx
+    from global_markets import kap
+
+    monkeypatch.setattr(kap, "KAP_RETRY_BACKOFF_SEC", 0.0)
+    calls = {"n": 0}
+
+    class FakeClient:
+        def __init__(self, *a, **k): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def get(self, url):
+            calls["n"] += 1
+            if calls["n"] < 3:
+                raise httpx.RemoteProtocolError("Server disconnected")
+            return httpx.Response(200, text="ok", request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(kap.httpx, "Client", FakeClient)
+    assert kap.KAPFundamentalsProvider()._get("https://www.kap.org.tr/x") == "ok" and calls["n"] == 3
+
+
+def test_kap_get_reports_transport_error_after_last_attempt_and_does_not_retry_404(monkeypatch):
+    import httpx
+    import pytest
+    from global_markets import kap
+    from global_markets.providers import GlobalProviderError
+
+    monkeypatch.setattr(kap, "KAP_RETRY_BACKOFF_SEC", 0.0)
+    calls = {"n": 0}
+    status = {"code": None}
+
+    class FakeClient:
+        def __init__(self, *a, **k): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def get(self, url):
+            calls["n"] += 1
+            if status["code"]:
+                return httpx.Response(status["code"], request=httpx.Request("GET", url))
+            raise httpx.RemoteProtocolError("Server disconnected")
+
+    monkeypatch.setattr(kap.httpx, "Client", FakeClient)
+    with pytest.raises(GlobalProviderError, match="KAP request failed: RemoteProtocolError"):
+        kap.KAPFundamentalsProvider()._get("https://www.kap.org.tr/x")
+    assert calls["n"] == kap.KAP_GET_ATTEMPTS
+    calls["n"], status["code"] = 0, 404
+    with pytest.raises(GlobalProviderError, match="HTTPStatusError"):
+        kap.KAPFundamentalsProvider()._get("https://www.kap.org.tr/x")
+    assert calls["n"] == 1

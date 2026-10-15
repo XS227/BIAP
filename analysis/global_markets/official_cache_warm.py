@@ -14,6 +14,7 @@ import json
 import os
 from typing import Iterable
 
+from .background_scope import background_only
 from .runtime import build_registry
 
 
@@ -58,13 +59,13 @@ def _targets() -> Iterable[tuple[str, str, str]]:
             result.extend((("JP", "TSE_JP", "7203"), ("JP", "TSE_JP", "6758")))
         if (os.environ.get("BIAP_OPENDART_API_KEY") or "").strip():
             result.extend((("KR", "KRX", "005930"), ("KR", "KRX", "000660")))
-        return tuple(result)
+        return background_only(result)
     result: list[tuple[str, str, str]] = []
     for item in raw.split(","):
         parts = [part.strip().upper() for part in item.split(":")]
         if len(parts) == 3 and all(parts):
             result.append((parts[0], parts[1], parts[2]))
-    return tuple(result) or _DEFAULT_TARGETS
+    return background_only(result) or background_only(_DEFAULT_TARGETS)
 
 
 def _exact(provider, country: str, exchange: str, ticker: str):

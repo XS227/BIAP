@@ -298,6 +298,9 @@ class B3OfficialClient:
                         last_error = f"{filename}: no XML"
                         os.unlink(inner_path)
                         inner_path = None
+                        if outer_path:
+                            os.unlink(outer_path)
+                            outer_path = None
                         continue
                     # BVBG.028 snapshots are cumulative. The largest XML is the final
                     # snapshot on the observed public file used by B3.
@@ -315,6 +318,16 @@ class B3OfficialClient:
                             os.unlink(path)
                         except OSError:
                             pass
+            except BaseException:
+                # Unexpected errors (provider errors, interrupts) must not
+                # leave the downloaded archives behind either.
+                for path in (outer_path, inner_path):
+                    if path:
+                        try:
+                            os.unlink(path)
+                        except OSError:
+                            pass
+                raise
         raise GlobalProviderError(f"B3 BVBG.028.02 unavailable: {last_error}")
 
     def instrument_rows(self) -> tuple[date, list[dict]]:

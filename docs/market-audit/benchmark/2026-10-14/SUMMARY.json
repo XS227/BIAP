@@ -1,0 +1,776 @@
+[
+ {
+  "market": "AE__ADX",
+  "universeInLedger": 102,
+  "eligible": 0,
+  "stateDistribution": null,
+  "agent8Abstentions": null,
+  "shortfalls": null,
+  "limitation": "no verified daily history with >=32 sessions for any ledger instrument",
+  "excluded": {
+   "history shorter than 32 sessions": 19
+  },
+  "companies": 0
+ },
+ {
+  "market": "AE__DFM",
+  "universeInLedger": 65,
+  "eligible": 0,
+  "stateDistribution": null,
+  "agent8Abstentions": null,
+  "shortfalls": null,
+  "limitation": "no verified daily history with >=32 sessions for any ledger instrument",
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 18
+  },
+  "companies": 0
+ },
+ {
+  "market": "AU__ASX",
+  "universeInLedger": 1817,
+  "eligible": 22,
+  "stateDistribution": {
+   "REVIEW": 1,
+   "INSUFFICIENT_DATA": 16
+  },
+  "agent8Abstentions": {
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 1,
+   "HARD_BLOCK": 16,
+   "AGENT_DISAGREEMENT": 5
+  },
+  "shortfalls": {
+   "PRICE_APPRECIATION_30D": 3,
+   "UNUSUAL_VOLUME": 10
+  },
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 2
+  },
+  "companies": 17
+ },
+ {
+  "market": "BE__EURONEXT_BRUSSELS",
+  "universeInLedger": 102,
+  "eligible": 93,
+  "stateDistribution": {
+   "REVIEW": 11,
+   "BUY": 1,
+   "INSUFFICIENT_DATA": 6,
+   "HIGH_RISK": 7,
+   "WATCH": 5
+  },
+  "agent8Abstentions": {
+   "ELEVATED_DISTRESS": 2,
+   "LOW_CONFIDENCE": 4,
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 16,
+   "HARD_BLOCK": 5,
+   "AGENT_DISAGREEMENT": 3
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 9
+  },
+  "companies": 30
+ },
+ {
+  "market": "BR__B3",
+  "universeInLedger": 417,
+  "eligible": 320,
+  "stateDistribution": {
+   "REVIEW": 24,
+   "INSUFFICIENT_DATA": 6
+  },
+  "agent8Abstentions": {
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 15,
+   "HARD_BLOCK": 6,
+   "AGENT_DISAGREEMENT": 12,
+   "LOW_CONFIDENCE": 9,
+   "ELEVATED_DISTRESS": 3
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 54,
+   "history shorter than 32 sessions": 6
+  },
+  "companies": 30
+ },
+ {
+  "market": "CA__TSX",
+  "universeInLedger": 579,
+  "eligible": 41,
+  "stateDistribution": {
+   "BUY": 1,
+   "WATCH": 4,
+   "REVIEW": 8,
+   "HIGH_RISK": 2,
+   "INSUFFICIENT_DATA": 15
+  },
+  "agent8Abstentions": {
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 8,
+   "AGENT_DISAGREEMENT": 9,
+   "LOW_CONFIDENCE": 5,
+   "HARD_BLOCK": 15,
+   "ELEVATED_DISTRESS": 3
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 2,
+   "stale": 1
+  },
+  "companies": 30
+ },
+ {
+  "market": "CA__TSXV",
+  "universeInLedger": 1218,
+  "eligible": 19,
+  "stateDistribution": {
+   "INSUFFICIENT_DATA": 15
+  },
+  "agent8Abstentions": {
+   "HARD_BLOCK": 15
+  },
+  "shortfalls": {
+   "PRICE_APPRECIATION_30D": 5,
+   "UNUSUAL_VOLUME": 10
+  },
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 9,
+   "stale": 1
+  },
+  "companies": 15
+ },
+ {
+  "market": "CH__SIX",
+  "universeInLedger": 197,
+  "eligible": 25,
+  "stateDistribution": {
+   "REVIEW": 3,
+   "INSUFFICIENT_DATA": 16
+  },
+  "agent8Abstentions": {
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 2,
+   "HARD_BLOCK": 16,
+   "AGENT_DISAGREEMENT": 6,
+   "ELEVATED_DISTRESS": 1
+  },
+  "shortfalls": {
+   "PRICE_APPRECIATION_30D": 1,
+   "UNUSUAL_VOLUME": 10
+  },
+  "limitation": null,
+  "excluded": {},
+  "companies": 19
+ },
+ {
+  "market": "DE__FRANKFURT",
+  "universeInLedger": 498,
+  "eligible": 112,
+  "stateDistribution": {
+   "REVIEW": 24,
+   "INSUFFICIENT_DATA": 5,
+   "WATCH": 1
+  },
+  "agent8Abstentions": {
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 21,
+   "ELEVATED_DISTRESS": 4,
+   "LOW_CONFIDENCE": 9,
+   "EVIDENCE_WARN": 3
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 380,
+   "history shorter than 32 sessions": 4
+  },
+  "companies": 30
+ },
+ {
+  "market": "DE__XETRA",
+  "universeInLedger": 406,
+  "eligible": 346,
+  "stateDistribution": {
+   "INSUFFICIENT_DATA": 7,
+   "REVIEW": 22,
+   "WATCH": 1
+  },
+  "agent8Abstentions": {
+   "LOW_CONFIDENCE": 9,
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 19,
+   "ELEVATED_DISTRESS": 3,
+   "EVIDENCE_WARN": 3,
+   "HARD_BLOCK": 2,
+   "AGENT_DISAGREEMENT": 2
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 55,
+   "history shorter than 32 sessions": 4
+  },
+  "companies": 30
+ },
+ {
+  "market": "DK__NASDAQ_COPENHAGEN",
+  "universeInLedger": 116,
+  "eligible": 80,
+  "stateDistribution": {
+   "WATCH": 4,
+   "HIGH_RISK": 4,
+   "INSUFFICIENT_DATA": 8,
+   "REVIEW": 14
+  },
+  "agent8Abstentions": {
+   "AGENT_DISAGREEMENT": 11,
+   "LOW_CONFIDENCE": 10,
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 9,
+   "ELEVATED_DISTRESS": 5,
+   "HARD_BLOCK": 4
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 3
+  },
+  "companies": 30
+ },
+ {
+  "market": "ES__BME_MADRID",
+  "universeInLedger": 109,
+  "eligible": 100,
+  "stateDistribution": {
+   "INSUFFICIENT_DATA": 7,
+   "REVIEW": 10,
+   "BUY": 1,
+   "HIGH_RISK": 9,
+   "WATCH": 3
+  },
+  "agent8Abstentions": {
+   "LOW_CONFIDENCE": 9,
+   "ELEVATED_DISTRESS": 3,
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 15,
+   "HARD_BLOCK": 3,
+   "AGENT_DISAGREEMENT": 7
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 5
+  },
+  "companies": 30
+ },
+ {
+  "market": "FI__NASDAQ_HELSINKI",
+  "universeInLedger": 148,
+  "eligible": 143,
+  "stateDistribution": {
+   "REVIEW": 14,
+   "INSUFFICIENT_DATA": 3,
+   "WATCH": 5,
+   "HIGH_RISK": 7,
+   "BUY": 1
+  },
+  "agent8Abstentions": {
+   "AGENT_DISAGREEMENT": 9,
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 11,
+   "LOW_CONFIDENCE": 6,
+   "HARD_BLOCK": 2,
+   "ELEVATED_DISTRESS": 1
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 1,
+   "history shorter than 32 sessions": 2
+  },
+  "companies": 30
+ },
+ {
+  "market": "FR__EURONEXT_PARIS",
+  "universeInLedger": 294,
+  "eligible": 271,
+  "stateDistribution": {
+   "REVIEW": 15,
+   "WATCH": 6,
+   "INSUFFICIENT_DATA": 5,
+   "HIGH_RISK": 4
+  },
+  "agent8Abstentions": {
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 15,
+   "AGENT_DISAGREEMENT": 2,
+   "LOW_CONFIDENCE": 10,
+   "HARD_BLOCK": 1,
+   "ELEVATED_DISTRESS": 2
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 22
+  },
+  "companies": 30
+ },
+ {
+  "market": "GB__LSE",
+  "universeInLedger": 527,
+  "eligible": 458,
+  "stateDistribution": {
+   "WATCH": 6,
+   "REVIEW": 14,
+   "INSUFFICIENT_DATA": 4,
+   "HIGH_RISK": 5,
+   "BUY": 1
+  },
+  "agent8Abstentions": {
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 16,
+   "ELEVATED_DISTRESS": 3,
+   "LOW_CONFIDENCE": 6,
+   "HARD_BLOCK": 1,
+   "AGENT_DISAGREEMENT": 3
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "history shorter than 32 sessions": 4,
+   "fewer than 20 traded sessions in last 30": 39
+  },
+  "companies": 30
+ },
+ {
+  "market": "GR__ATHENS",
+  "universeInLedger": 128,
+  "eligible": 41,
+  "stateDistribution": {
+   "REVIEW": 8,
+   "HIGH_RISK": 1,
+   "WATCH": 7,
+   "INSUFFICIENT_DATA": 14
+  },
+  "agent8Abstentions": {
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 9,
+   "HARD_BLOCK": 14,
+   "ELEVATED_DISTRESS": 2,
+   "LOW_CONFIDENCE": 3,
+   "AGENT_DISAGREEMENT": 1
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 6,
+   "stale": 1
+  },
+  "companies": 30
+ },
+ {
+  "market": "HK__HKEX",
+  "universeInLedger": 2767,
+  "eligible": 30,
+  "stateDistribution": {
+   "INSUFFICIENT_DATA": 22,
+   "REVIEW": 1
+  },
+  "agent8Abstentions": {
+   "HARD_BLOCK": 22,
+   "AGENT_DISAGREEMENT": 5
+  },
+  "shortfalls": {
+   "UNUSUAL_VOLUME": 7
+  },
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 7
+  },
+  "companies": 23
+ },
+ {
+  "market": "IE__EURONEXT_DUBLIN",
+  "universeInLedger": 16,
+  "eligible": 13,
+  "stateDistribution": {
+   "REVIEW": 3,
+   "WATCH": 4,
+   "INSUFFICIENT_DATA": 3
+  },
+  "agent8Abstentions": {
+   "AGENT_DISAGREEMENT": 2,
+   "LOW_CONFIDENCE": 3,
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 3,
+   "HARD_BLOCK": 3,
+   "ELEVATED_DISTRESS": 1
+  },
+  "shortfalls": {
+   "PRICE_APPRECIATION_30D": 10,
+   "UNUSUAL_VOLUME": 10
+  },
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 2
+  },
+  "companies": 10
+ },
+ {
+  "market": "IN__NSE",
+  "universeInLedger": 2351,
+  "eligible": 39,
+  "stateDistribution": {
+   "REVIEW": 9,
+   "WATCH": 10,
+   "INSUFFICIENT_DATA": 5,
+   "BUY": 1,
+   "HIGH_RISK": 5
+  },
+  "agent8Abstentions": {
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 8,
+   "HARD_BLOCK": 4,
+   "AGENT_DISAGREEMENT": 5,
+   "LOW_CONFIDENCE": 6
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {},
+  "companies": 30
+ },
+ {
+  "market": "IS__NASDAQ_ICELAND",
+  "universeInLedger": 27,
+  "eligible": 27,
+  "stateDistribution": {
+   "WATCH": 5,
+   "REVIEW": 8,
+   "HIGH_RISK": 5,
+   "INSUFFICIENT_DATA": 3
+  },
+  "agent8Abstentions": {
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 7,
+   "LOW_CONFIDENCE": 10,
+   "ELEVATED_DISTRESS": 5,
+   "HARD_BLOCK": 3,
+   "AGENT_DISAGREEMENT": 2
+  },
+  "shortfalls": {
+   "UNUSUAL_VOLUME": 9
+  },
+  "limitation": null,
+  "excluded": {},
+  "companies": 21
+ },
+ {
+  "market": "IT__EURONEXT_MILAN",
+  "universeInLedger": 193,
+  "eligible": 187,
+  "stateDistribution": {
+   "REVIEW": 20,
+   "WATCH": 2,
+   "HIGH_RISK": 2,
+   "INSUFFICIENT_DATA": 6
+  },
+  "agent8Abstentions": {
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 11,
+   "AGENT_DISAGREEMENT": 8,
+   "LOW_CONFIDENCE": 14,
+   "ELEVATED_DISTRESS": 7,
+   "HARD_BLOCK": 3
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 6
+  },
+  "companies": 30
+ },
+ {
+  "market": "JP__TSE_JP",
+  "universeInLedger": 3695,
+  "eligible": 24,
+  "stateDistribution": {
+   "INSUFFICIENT_DATA": 18
+  },
+  "agent8Abstentions": {
+   "HARD_BLOCK": 18,
+   "AGENT_DISAGREEMENT": 5
+  },
+  "shortfalls": {
+   "PRICE_APPRECIATION_30D": 2,
+   "UNUSUAL_VOLUME": 10
+  },
+  "limitation": null,
+  "excluded": {},
+  "companies": 18
+ },
+ {
+  "market": "KR__KRX",
+  "universeInLedger": 2641,
+  "eligible": 0,
+  "stateDistribution": null,
+  "agent8Abstentions": null,
+  "shortfalls": null,
+  "limitation": "no verified daily history with >=32 sessions for any ledger instrument",
+  "excluded": {},
+  "companies": 0
+ },
+ {
+  "market": "NL__EURONEXT_AMSTERDAM",
+  "universeInLedger": 98,
+  "eligible": 91,
+  "stateDistribution": {
+   "BUY": 3,
+   "REVIEW": 14,
+   "WATCH": 5,
+   "INSUFFICIENT_DATA": 4,
+   "HIGH_RISK": 4
+  },
+  "agent8Abstentions": {
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 13,
+   "AGENT_DISAGREEMENT": 6,
+   "LOW_CONFIDENCE": 8,
+   "HARD_BLOCK": 3,
+   "ELEVATED_DISTRESS": 3
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 6
+  },
+  "companies": 30
+ },
+ {
+  "market": "NO__EURONEXT_OSLO",
+  "universeInLedger": 146,
+  "eligible": 143,
+  "stateDistribution": {
+   "REVIEW": 10,
+   "HIGH_RISK": 9,
+   "WATCH": 9,
+   "INSUFFICIENT_DATA": 2
+  },
+  "agent8Abstentions": {
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 14,
+   "AGENT_DISAGREEMENT": 6,
+   "ELEVATED_DISTRESS": 2,
+   "LOW_CONFIDENCE": 10,
+   "HARD_BLOCK": 3
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 2,
+   "history shorter than 32 sessions": 1
+  },
+  "companies": 30
+ },
+ {
+  "market": "NZ__NZX",
+  "universeInLedger": 101,
+  "eligible": 18,
+  "stateDistribution": {
+   "INSUFFICIENT_DATA": 12,
+   "REVIEW": 2
+  },
+  "agent8Abstentions": {
+   "HARD_BLOCK": 12,
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 2,
+   "AGENT_DISAGREEMENT": 1
+  },
+  "shortfalls": {
+   "PRICE_APPRECIATION_30D": 6,
+   "UNUSUAL_VOLUME": 10
+  },
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 2
+  },
+  "companies": 14
+ },
+ {
+  "market": "PT__EURONEXT_LISBON",
+  "universeInLedger": 30,
+  "eligible": 26,
+  "stateDistribution": {
+   "INSUFFICIENT_DATA": 2,
+   "REVIEW": 9,
+   "WATCH": 4,
+   "HIGH_RISK": 5
+  },
+  "agent8Abstentions": {
+   "LOW_CONFIDENCE": 4,
+   "ELEVATED_DISTRESS": 1,
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 9,
+   "AGENT_DISAGREEMENT": 4
+  },
+  "shortfalls": {
+   "UNUSUAL_VOLUME": 10
+  },
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 4
+  },
+  "companies": 20
+ },
+ {
+  "market": "SA__SAUDI_EXCHANGE",
+  "universeInLedger": 376,
+  "eligible": 20,
+  "stateDistribution": {
+   "INSUFFICIENT_DATA": 15
+  },
+  "agent8Abstentions": {
+   "HARD_BLOCK": 15,
+   "AGENT_DISAGREEMENT": 2
+  },
+  "shortfalls": {
+   "PRICE_APPRECIATION_30D": 5,
+   "UNUSUAL_VOLUME": 10
+  },
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 1
+  },
+  "companies": 15
+ },
+ {
+  "market": "SE__NASDAQ_STOCKHOLM",
+  "universeInLedger": 402,
+  "eligible": 213,
+  "stateDistribution": {
+   "REVIEW": 12,
+   "WATCH": 2,
+   "INSUFFICIENT_DATA": 1,
+   "HIGH_RISK": 15
+  },
+  "agent8Abstentions": {
+   "ELEVATED_DISTRESS": 3,
+   "LOW_CONFIDENCE": 8,
+   "AGENT_DISAGREEMENT": 10,
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 12,
+   "HARD_BLOCK": 1
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "history shorter than 32 sessions": 1
+  },
+  "companies": 30
+ },
+ {
+  "market": "SG__SGX",
+  "universeInLedger": 565,
+  "eligible": 19,
+  "stateDistribution": {
+   "INSUFFICIENT_DATA": 14,
+   "BUY": 1
+  },
+  "agent8Abstentions": {
+   "HARD_BLOCK": 14,
+   "AGENT_DISAGREEMENT": 4
+  },
+  "shortfalls": {
+   "PRICE_APPRECIATION_30D": 5,
+   "UNUSUAL_VOLUME": 10
+  },
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 16,
+   "stale": 1
+  },
+  "companies": 15
+ },
+ {
+  "market": "TR__BIST",
+  "universeInLedger": 631,
+  "eligible": 623,
+  "stateDistribution": {
+   "REVIEW": 23,
+   "INSUFFICIENT_DATA": 7
+  },
+  "agent8Abstentions": {
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 22,
+   "LOW_CONFIDENCE": 7,
+   "HARD_BLOCK": 1,
+   "AGENT_DISAGREEMENT": 1,
+   "ELEVATED_DISTRESS": 1
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "history shorter than 32 sessions": 4,
+   "fewer than 20 traded sessions in last 30": 4
+  },
+  "companies": 30
+ },
+ {
+  "market": "US__NASDAQ",
+  "universeInLedger": 3010,
+  "eligible": 2930,
+  "stateDistribution": {
+   "REVIEW": 8,
+   "INSUFFICIENT_DATA": 6,
+   "HIGH_RISK": 16
+  },
+  "agent8Abstentions": {
+   "AGENT_DISAGREEMENT": 20,
+   "HARD_BLOCK": 4,
+   "ELEVATED_DISTRESS": 2,
+   "LOW_CONFIDENCE": 15,
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 3
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "history shorter than 32 sessions": 27,
+   "fewer than 20 traded sessions in last 30": 43,
+   "stale": 1
+  },
+  "companies": 30
+ },
+ {
+  "market": "US__NYSE",
+  "universeInLedger": 1798,
+  "eligible": 1761,
+  "stateDistribution": {
+   "HIGH_RISK": 11,
+   "REVIEW": 13,
+   "WATCH": 2,
+   "INSUFFICIENT_DATA": 4
+  },
+  "agent8Abstentions": {
+   "AGENT_DISAGREEMENT": 16,
+   "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD": 4,
+   "LOW_CONFIDENCE": 14,
+   "ELEVATED_DISTRESS": 4,
+   "HARD_BLOCK": 3
+  },
+  "shortfalls": null,
+  "limitation": null,
+  "excluded": {
+   "history shorter than 32 sessions": 4,
+   "fewer than 20 traded sessions in last 30": 10
+  },
+  "companies": 30
+ },
+ {
+  "market": "ZA__JSE",
+  "universeInLedger": 303,
+  "eligible": 14,
+  "stateDistribution": {
+   "REVIEW": 2,
+   "INSUFFICIENT_DATA": 8,
+   "WATCH": 1
+  },
+  "agent8Abstentions": {
+   "AGENT_DISAGREEMENT": 3,
+   "LOW_CONFIDENCE": 4,
+   "HARD_BLOCK": 7
+  },
+  "shortfalls": {
+   "PRICE_APPRECIATION_30D": 9,
+   "UNUSUAL_VOLUME": 10
+  },
+  "limitation": null,
+  "excluded": {
+   "fewer than 20 traded sessions in last 30": 3
+  },
+  "companies": 11
+ }
+]

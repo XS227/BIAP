@@ -25,7 +25,7 @@ import httpx
 
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
-from .source_cache import read_json, source_index_path, write_json_atomic
+from .source_cache import read_json, source_index_path, write_bulk_json, write_json_atomic
 
 CVM_DFP_URL = "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/DFP/DADOS/dfp_cia_aberta_{year}.zip"
 CVM_DATASET_URL = "https://dados.cvm.gov.br/dataset/cia_aberta-doc-dfp"
@@ -263,7 +263,7 @@ def sync_cvm_dfp(*, years: Optional[list[int]] = None, timeout: float = 45.0) ->
         "recordCount": len(unique),
         "companies": companies,
     }
-    write_json_atomic(source_index_path(_INDEX_NAME), payload)
+    write_bulk_json(source_index_path(_INDEX_NAME), payload)
     return {"recordCount": len(unique), "companyKeys": len(companies), "sources": sources, "errors": errors}
 
 

@@ -1,0 +1,106 @@
+{
+ "NO:EQNR": {
+  "call": "NO_RECOMMENDATION",
+  "score": 0.011958,
+  "conf": 0.110667,
+  "ev": "BLOCK",
+  "hash": "6bc75345ed91",
+  "rep": "USD"
+ },
+ "NO:DNB": {
+  "call": "NO_RECOMMENDATION",
+  "score": 0.005964,
+  "conf": 0.112333,
+  "ev": "BLOCK",
+  "hash": "7adec94efffc",
+  "rep": "NOK"
+ },
+ "NO:AKER": {
+  "call": "NO_RECOMMENDATION",
+  "score": 0.003782,
+  "conf": 0.119,
+  "ev": "BLOCK",
+  "hash": "7e21d7be1e5b",
+  "rep": "NOK"
+ },
+ "SE:INVE.B": {
+  "call": "NO_RECOMMENDATION",
+  "score": 0.049672,
+  "conf": 0.101667,
+  "ev": "BLOCK",
+  "hash": "88c937153ea8",
+  "rep": "SEK"
+ },
+ "SE:ERIC.B": {
+  "call": "NO_RECOMMENDATION",
+  "score": 0.014762,
+  "conf": 0.119,
+  "ev": "BLOCK",
+  "hash": "49c84728150f",
+  "rep": "SEK"
+ },
+ "SE:ATCO.A": {
+  "call": "NO_RECOMMENDATION",
+  "score": 0.033361,
+  "conf": 0.119,
+  "ev": "BLOCK",
+  "hash": "a61dbd336e75",
+  "rep": "SEK"
+ },
+ "DE:SAP": {
+  "call": "NO_RECOMMENDATION",
+  "score": 0.019015,
+  "conf": 0.337243,
+  "ev": "PASS",
+  "hash": "6d759b03d1ca",
+  "rep": "EUR"
+ },
+ "DE:DTE": {
+  "call": "NO_RECOMMENDATION",
+  "score": -0.042647,
+  "conf": 0.2975,
+  "ev": "WARN",
+  "hash": "b2ebfd13da5b",
+  "rep": "EUR"
+ },
+ "DE:SIE": {
+  "call": "NO_RECOMMENDATION",
+  "score": 0.115476,
+  "conf": 0.2975,
+  "ev": "WARN",
+  "hash": "0a4367ba519c",
+  "rep": "EUR"
+ },
+ "GB:SHEL": {
+  "call": "NO_RECOMMENDATION",
+  "score": 0.039729,
+  "conf": 0.110667,
+  "ev": "BLOCK",
+  "hash": "b54f2116cb2b",
+  "rep": "USD"
+ },
+ "GB:AZN": {
+  "call": "NO_RECOMMENDATION",
+  "score": 0.039127,
+  "conf": 0.110667,
+  "ev": "BLOCK",
+  "hash": "97b118177a22",
+  "rep": "USD"
+ },
+ "US:MSFT": {
+  "call": "NO_RECOMMENDATION",
+  "score": 0.205417,
+  "conf": 0.663594,
+  "ev": "PASS",
+  "hash": "c6abc02da578",
+  "rep": "USD"
+ },
+ "US:AAPL": {
+  "call": "NO_RECOMMENDATION",
+  "score": 0.130227,
+  "conf": 0.663594,
+  "ev": "PASS",
+  "hash": "0d06ef4b6d01",
+  "rep": "USD"
+ }
+}

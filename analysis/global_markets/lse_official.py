@@ -14,6 +14,7 @@ from typing import Iterable, Optional
 import requests
 
 from .country_packs import ExchangeSpec, get_exchange
+from .icb import icb_industry_for_code
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
 
@@ -25,9 +26,29 @@ _SOURCE_PAGE = "https://www.londonstockexchange.com/live-markets/market-data-das
 _USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131 Safari/537.36"
 _PROVIDER_ID = "official-lse-main-market-price-explorer"
 _REJECT = re.compile(
-    r"\b(GDR|ADR|DEPOSITARY|DEPOSITORY|PREF(?:ERENCE|ERRED)?|WARRANT|RIGHTS?|ETF|ETC|ETN|NOTE|BOND|CERTIFICATE)\b",
+    r"\b(GDR|ADR|DEPOSITARY|DEPOSITORY|PREF(?:ERENCE|ERRED)?|PFD|PRF|CUM|WARRANT|RIGHTS?|ETF|ETC|ETN|NOTE|BOND|CERTIFICATE)\b",
     re.I,
 )
+
+
+# ICB sectors that are pooled investment vehicles (investment trusts, VCTs,
+# open-ended funds). They hold other issuers' securities, report no operating
+# statements, and are not scored as operating companies; the LSE classifies
+# them itself, so no name guessing is involved.
+POOLED_INVESTMENT_ICB_CODES = {"302040", "302050"}
+
+
+def pooled_investment_icb(code: object) -> bool:
+    return str(code or "").strip() in POOLED_INVESTMENT_ICB_CODES
+
+
+def non_ordinary_description(*texts: object) -> bool:
+    """True when an LSE instrument description marks a preference/depositary/debt line.
+
+    Shared by live discovery and the cached-snapshot decoder so a cached
+    universe cannot re-admit e.g. ``BP PLC 8% CUM 1ST PRF`` as an ordinary share.
+    """
+    return bool(_REJECT.search(" ".join(str(t or "") for t in texts).upper()))
 
 
 def _valid_isin(value: object) -> Optional[str]:
@@ -86,6 +107,7 @@ class LSEOfficialClient:
         self.page_size = max(25, min(int(page_size), 250))
         self._cached: Optional[tuple[str, list[dict], dict]] = None
         self.last_metadata: dict = {}
+        self.icb_failures = 0
 
     @staticmethod
     def supported(country: str, exchange: str) -> bool:
@@ -118,10 +140,11 @@ class LSEOfficialClient:
                 return str(component["id"])
         raise GlobalProviderError("LSE Price Explorer component id was not found")
 
-    def _page(self, session: requests.Session, component_id: str, page: int) -> dict:
+    def _page(self, session: requests.Session, component_id: str, page: int, *, sector: Optional[str] = None) -> dict:
+        sector_filter = f"sectors={sector}&" if sector else ""
         filters = (
             "markets=MAINMARKET&categories=EQUITY&subcategories=1&"
-            f"showonlylse=true&page={page}&size={self.page_size}"
+            f"showonlylse=true&{sector_filter}page={page}&size={self.page_size}"
         )
         body = {
             "path": _PATH,
@@ -155,6 +178,43 @@ class LSEOfficialClient:
             raise GlobalProviderError("LSE Price Explorer search component is missing")
         return result
 
+    def _sector_filters(self, session: requests.Session) -> list[tuple[str, str]]:
+        params = {"path": _PATH, "parameters": "markets=MAINMARKET&categories=EQUITY"}
+        try:
+            response = session.get(_PAGES, params=params, headers=self._headers(), timeout=self.timeout)
+            response.raise_for_status()
+            components = response.json().get("components") or []
+            sectors = components[0]["content"][0]["value"]["sectors"]
+            return [(str(s["key"]), str(s["value"]).strip()) for s in sectors if s.get("key")]
+        except (requests.RequestException, ValueError, KeyError, IndexError, TypeError, AttributeError):
+            return []
+
+    def _icb_sector_map(self, session: requests.Session, component_id: str) -> dict[tuple[str, str], tuple[str, str]]:
+        """(ISIN, TIDM) -> (ICB code, ICB sector) from the LSE's own sector filter.
+
+        Best effort: a failed sector query leaves those rows unclassified (and
+        therefore NOT excluded), so a source outage can never hide a company.
+        """
+        mapping: dict[tuple[str, str], tuple[str, str]] = {}
+        failures = 0
+        for code, label in self._sector_filters(session):
+            try:
+                page = 0
+                while True:
+                    result = self._page(session, component_id, page, sector=code)
+                    for row in result.get("content") or []:
+                        isin = _valid_isin(row.get("isin"))
+                        ticker = str(row.get("tidm") or "").strip().upper()
+                        if isin and ticker:
+                            mapping[(isin, ticker)] = (code, label)
+                    page += 1
+                    if page >= int(result.get("totalPages") or 1):
+                        break
+            except GlobalProviderError:
+                failures += 1
+        self.icb_failures = failures
+        return mapping
+
     def eligible_rows(self) -> tuple[str, list[dict], dict]:
         if self._cached is not None:
             return self._cached
@@ -179,6 +239,18 @@ class LSEOfficialClient:
         rows = list(dedup.values())
         if not rows:
             raise GlobalProviderError("LSE Price Explorer returned no eligible ordinary equities")
+        icb = self._icb_sector_map(session, component_id)
+        classified = 0
+        for row in rows:
+            hit = icb.get((_valid_isin(row.get("isin")) or "", str(row.get("tidm") or "").strip().upper()))
+            if hit:
+                row["icbSectorCode"], row["icbSector"] = hit
+                classified += 1
+        listed = len(rows)
+        rows = [row for row in rows if not pooled_investment_icb(row.get("icbSectorCode"))]
+        pooled = listed - len(rows)
+        if not rows:
+            raise GlobalProviderError("LSE Price Explorer returned no operating equities after ICB classification")
         observed = datetime.now(timezone.utc).date().isoformat()
         metadata = {
             "sourceTotal": source_total or len(raw),
@@ -186,7 +258,10 @@ class LSEOfficialClient:
             "officialCount": len(rows),
             "resolvedCount": len(rows),
             "resolutionCoveragePct": 100.0,
-            "excludedNonOrdinary": max(0, len(raw) - len(rows)),
+            "excludedNonOrdinary": max(0, len(raw) - listed),
+            "excludedPooledInvestmentVehicles": pooled,
+            "icbClassifiedCount": classified,
+            "icbSectorQueryFailures": self.icb_failures,
             "identitySource": "London Stock Exchange official Main Market Price Explorer",
         }
         self.last_metadata = metadata
@@ -286,11 +361,14 @@ class LSEOfficialUniverseProvider(InstrumentUniverseProvider):
                 mic_code=spec.mic,
                 isin=isin,
                 instrument_type="Common Stock",
+                sector=icb_industry_for_code(row.get("icbSectorCode")),
+                industry=str(row.get("icbSector") or "").strip() or None,
                 raw_provider_fields={
                     "official_universe": True,
                     "lse_description": row.get("description"),
                     "lse_native_currency": row.get("currency"),
                     "lse_issuer_code": row.get("issuercode"),
+                    "lse_icb_code": row.get("icbSectorCode"),
                     "lse_source_total": metadata.get("sourceTotal"),
                 },
                 sources=[SourceEvidence(

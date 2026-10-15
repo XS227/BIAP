@@ -24,7 +24,7 @@ from .cached_sec_edgar import CachedSECEdgarFundamentalsProvider
 from .gleif import _legal_core
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, append_source
-from .sec_edgar import SEC_FACTS_BASE
+from .sec_edgar import SEC_FACTS_BASE, sector_from_sic
 from .sec_filing_instance import SECFilingInstanceReader, merge_facts
 from .sec_identity import cik_by_name, identity_matches, issuer_names
 
@@ -166,7 +166,8 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
             return ifrs, None, None
         return merge_facts(ifrs, extra), filing, None
 
-    def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
+    def _matched_identity(self, company: GlobalCompany) -> tuple[int, dict, str]:
+        """Resolve the SEC filer for ``company`` and verify its legal-name identity."""
         # A foreign private issuer may trade on a US exchange while still filing
         # annual reports on Form 20-F/40-F using IFRS (e.g. AKAN on NASDAQ).
         # The strict form filter + IFRS namespace + legal-entity identity checks
@@ -211,6 +212,39 @@ class SECForeignIFRSFundamentalsProvider(CachedSECEdgarFundamentalsProvider):
                 f"{company.name!r}; entityName={entity_name!r}; "
                 f"jseIssuer={jse_issuer!r}; secAlias={sec_alias!r}; cik={cik}"
             )
+        return cik, payload, entity_name
+
+    def sic_sector(self, company: GlobalCompany) -> Optional[dict]:
+        """Sector from the SEC SIC code of the identity-verified filer.
+
+        Used only to fill a *missing* sector for an official non-US filing. SIC
+        is an SEC registrant classification, not GICS/ICB; it is labelled as
+        such and never overrides a sector already supplied by a source.
+
+        Identity is decided from the SEC filer *title* index alone (exactly one
+        filer whose legal-name core equals the issuer name), so no companyfacts
+        document is downloaded for the many listings that are not SEC filers.
+        """
+        names = issuer_names(company).local
+        cik = cik_by_name(self, names)
+        if cik is None:
+            return None
+        sic, sic_description = self._sic(cik)
+        sector = sector_from_sic(sic)
+        if not sector:
+            return None
+        return {
+            "sector": sector,
+            "industry": sic_description,
+            "sic": sic,
+            "cik": cik,
+            "entityName": company.name,
+            "source": "sec-sic",
+            "sourceUrl": f"https://data.sec.gov/submissions/CIK{cik:010d}.json",
+        }
+
+    def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
+        cik, payload, entity_name = self._matched_identity(company)
         padded = f"{cik:010d}"
         source_url = f"{SEC_FACTS_BASE}/CIK{padded}.json"
 

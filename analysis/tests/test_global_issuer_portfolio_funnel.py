@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from global_markets.agents import PortfolioCandidate, evidence_agent, portfolio_agent
-from global_markets.issuer import collapse_issuers, issuer_key_of
+from global_markets.issuer import collapse_issuers, issuer_key_of, resolve_issuer_identities
 from global_markets.models import InvestorProfile
 from global_markets.scan_service import build_coverage_funnel
 from tests.test_global_agents import _company, _signals
@@ -54,14 +54,20 @@ def test_ranking_collapses_issuer_but_keeps_both_securities():
     assert out[0]["otherSecurities"][0]["ticker"] == "GOOG"
 
 
-def test_portfolio_caps_issuer_across_share_classes_with_traceable_reason():
+def test_portfolio_holds_one_issuer_once_with_traceable_reason():
     googl, goog = _cand("GOOGL", "Alphabet Inc. Class A"), _cand("GOOG", "Alphabet Inc. Class C")
     result = portfolio_agent(_profile(), [googl, goog])
-    total = sum(a.weight_pct for a in result.allocations)
-    assert total <= 10.0 + 1e-6  # one issuer, one 10% cap
-    rej = [r for r in result.rejections if r["constraint"] == "max_issuer_pct"]
+    assert [a.ticker for a in result.allocations].count("GOOGL") + [a.ticker for a in result.allocations].count("GOOG") == 1
+    assert sum(a.weight_pct for a in result.allocations) <= 10.0 + 1e-6
+    rej = [r for r in result.rejections if r["constraint"] == "duplicate_issuer"]
     assert rej and rej[0]["issuer"].startswith("NAME:US:alphabet")
-    assert any("max_issuer_pct" in e for e in result.excluded)
+    assert any("duplicate_issuer" in e for e in result.excluded)
+
+
+def test_portfolio_does_not_merge_unrelated_issuers():
+    result = portfolio_agent(_profile(), [_cand("TSLA", "Tesla, Inc."), _cand("MSFT", "Microsoft Corporation")])
+    assert {a.ticker for a in result.allocations} == {"TSLA", "MSFT"}
+    assert not [r for r in result.rejections if r["constraint"] == "duplicate_issuer"]
 
 
 def test_every_exclusion_has_a_structured_constraint():
@@ -75,9 +81,120 @@ def test_every_exclusion_has_a_structured_constraint():
 
 
 def test_coverage_funnel_keeps_stages_separate():
-    f = build_coverage_funnel([{"eligibleEquities": 3017, "screenedEquities": 2997, "deepAnalyzed": 75,
-                                "evidencePass": 40, "qualifiedBuy": 3}])
-    assert f["stages"] == {"discovered": 3017, "lightweightScreened": 2997, "deepAnalyzed": 75,
-                           "evidencePass": 40, "qualifiedBuy": 3}
+    f = build_coverage_funnel([{"eligibleEquities": 3017, "screenedEquities": 2997, "queued": 2900, "deepAnalyzed": 75,
+                                "evidencePass": 40, "coreStatementsComplete": 30, "financiallyComplete": 12, "qualifiedBuy": 3, "rankingEligible": True}])
+    assert f["stages"] == {"markets": 1, "discovered": 3017, "lightweightScreened": 2997, "queued": 2900,
+                           "deepAnalyzed": 75, "evidencePass": 40, "coreStatementsComplete": 30, "financiallyComplete": 12, "qualifiedBuy": 3}
+    # evidence PASS (40) is a data-quality gate and must stay distinct from financial completeness (12)
+    assert f["stages"]["financiallyComplete"] < f["stages"]["evidencePass"]
+    assert "NOT financial completeness" in f["definitions"]["evidencePass"]
     assert f["pctOfDiscovered"]["deepAnalyzed"] == 2.49
     assert "must not be read as analysis coverage" in f["warning"]
+
+
+def test_funnel_never_mixes_eligible_and_excluded_market_populations():
+    rows = [
+        {"eligibleEquities": 100, "screenedEquities": 98, "deepAnalyzed": 25, "evidencePass": 20, "qualifiedBuy": 2, "rankingEligible": True},
+        {"eligibleEquities": 16, "screenedEquities": 16, "deepAnalyzed": 16, "evidencePass": 11, "qualifiedBuy": 1, "rankingEligible": False},
+    ]
+    f = build_coverage_funnel(rows, qualified_issuers=2)
+    assert f["stages"]["discovered"] == 100 and f["stages"]["deepAnalyzed"] == 25 and f["stages"]["qualifiedBuy"] == 2
+    assert f["scopes"]["allConnectedMarkets"]["discovered"] == 116
+    assert f["scopes"]["allConnectedMarkets"]["qualifiedBuy"] == 3
+    assert f["scopes"]["rankingEligibleMarkets"]["qualifiedIssuers"] == 2
+    assert f["stagesScope"] == "rankingEligibleMarkets"
+
+
+def test_asml_dual_listing_collapses_to_one_issuer():
+    # Regression: Euronext "ASML Holding N.V." and NASDAQ "New York Registry Shares" were two issuers.
+    rows = [
+        {"ticker": "ASML", "country": "NL", "exchange": "EURONEXT_AMSTERDAM", "score": 0.7, "confidence": 0.8,
+         "company": {"name": "ASML Holding N.V.", "country": "NL", "ticker": "ASML", "exchange": "EURONEXT_AMSTERDAM"}},
+        {"ticker": "ASML", "country": "US", "exchange": "NASDAQ", "score": 0.6, "confidence": 0.8,
+         "company": {"name": "ASML Holding N.V. - New York Registry Shares", "country": "US", "ticker": "ASML", "exchange": "NASDAQ"}},
+        {"ticker": "TSLA", "country": "US", "exchange": "NASDAQ", "score": 0.4, "confidence": 0.8,
+         "company": {"name": "Tesla, Inc.", "country": "US", "ticker": "TSLA", "exchange": "NASDAQ"}},
+    ]
+    out = collapse_issuers(rows, lambda r: r["score"] * r["confidence"])
+    assert [r["ticker"] for r in out] == ["ASML", "TSLA"]
+    assert out[0]["country"] == "NL"
+    assert out[0]["otherSecurities"][0]["exchange"] == "NASDAQ"  # still reachable
+
+
+def test_depositary_without_unique_home_listing_is_not_merged_by_guess():
+    assert issuer_key_of({"name": "Foo Holdings N.V. ADR", "country": "US"}) == "NAME:*:foo"
+    keys = resolve_issuer_identities([{"name": "Foo Holdings N.V. ADR", "country": "US"}, {"name": "Bar NV", "country": "NL"}])
+    assert keys[0] == "NAME:*:foo"
+    assert issuer_key_of({"name": "ASML Holding N.V.", "country": "NL"}) == issuer_key_of({"name": "ASML Holding NV", "country": "NL"})
+
+
+def test_portfolio_caps_asml_dual_listing_once():
+    nl, us = _cand("ASML", "ASML Holding N.V."), _cand("ASML", "ASML Holding N.V. - New York Registry Shares")
+    nl.company.country, us.company.country = "NL", "US"
+    us.company.exchange = "NASDAQ"
+    result = portfolio_agent(_profile(), [nl, us])
+    assert sum(a.weight_pct for a in result.allocations) <= 10.0 + 1e-6
+
+
+def test_real_asml_rows_lei_home_vs_cik_us_collapse():
+    # Real cached shapes: NL row has LEI, US row has only SEC CIK 937966 and no LEI/ISIN.
+    rows = [
+        {"ticker": "ASML", "country": "NL", "exchange": "EURONEXT_AMSTERDAM", "score": 0.32, "confidence": 0.52,
+         "company": {"name": "ASML Holding N.V.", "country": "NL", "ticker": "ASML", "lei": "724500Y6DUVHQD6OXN27"}},
+        {"ticker": "ASML", "country": "US", "exchange": "NASDAQ", "score": 0.43, "confidence": 0.63,
+         "company": {"name": "ASML HOLDING NV", "country": "US", "ticker": "ASML", "raw_provider_fields": {"sec_cik": 937966}}},
+    ]
+    out = collapse_issuers(rows, lambda r: r["score"] * r["confidence"])
+    assert len(out) == 1 and out[0]["country"] == "US" and out[0]["issuerKey"] == "LEI:724500Y6DUVHQD6OXN27"
+    assert out[0]["otherSecurities"][0]["exchange"] == "EURONEXT_AMSTERDAM"
+
+
+def test_name_bridge_for_unlisted_pair_requires_unique_home_and_never_merges_two_homes():
+    cik = {"name": "Shell plc", "country": "US", "raw_provider_fields": {"sec_cik": 1306965}}
+    home = {"name": "Shell plc", "country": "GB", "lei": "21380068P1DRHMJ8KU70"}
+    assert resolve_issuer_identities([cik, home]) == ["LEI:21380068P1DRHMJ8KU70"] * 2
+    other_home = {"name": "Shell plc", "country": "NL", "lei": "5493001KJTIIGC8Y1R12"}
+    keys = resolve_issuer_identities([cik, home, other_home])
+    assert keys[0] == "CIK:1306965"  # ambiguous: two distinct home entities, not merged by guess
+    assert resolve_issuer_identities([{"name": "Tesla, Inc.", "country": "US", "raw_provider_fields": {"sec_cik": 1318605}}]) == ["CIK:1318605"]
+
+
+def test_cik_bridged_to_lei_asserted_by_a_row_carrying_both_identifiers():
+    lei = "213800LH1BZH3DI6G760"
+    us = {"name": "Completely Different ADS Name", "country": "US", "exchange": "NYSE", "ticker": "X",
+          "raw_provider_fields": {"sec_cik": 313807}}
+    home = {"name": "Another Legal Name p.l.c.", "country": "GB", "exchange": "LSE", "ticker": "Y", "lei": lei,
+            "raw_provider_fields": {"sec_cik": 313807}}
+    assert resolve_issuer_identities([us, home]) == [f"LEI:{lei}"] * 2
+
+
+def test_conflicting_cik_lei_assertions_are_not_used_to_merge():
+    a = {"name": "Alpha", "country": "GB", "ticker": "A", "lei": "A" * 20, "raw_provider_fields": {"sec_cik": 5}}
+    b = {"name": "Beta", "country": "FR", "ticker": "B", "lei": "B" * 20, "raw_provider_fields": {"sec_cik": 5}}
+    us = {"name": "Gamma ADS", "country": "US", "ticker": "G", "raw_provider_fields": {"sec_cik": 5}}
+    keys = resolve_issuer_identities([a, b, us])
+    assert keys[0] != keys[1] and keys[2] == "CIK:5"
+
+
+def _sector_cand(ticker, sector, country="US"):
+    c = _company(ticker=ticker, country=country, sector=sector)
+    ev = evidence_agent(c, _signals(), now=NOW)
+    return PortfolioCandidate(c, _signals(), ev)
+
+
+def test_allocations_expose_sector_and_sector_cap_binds():
+    cands = [_sector_cand(f"T{i}", "Technology") for i in range(5)] + [_sector_cand(f"H{i}", "Health Care") for i in range(5)]
+    result = portfolio_agent(_profile(max_sector_pct=20, max_position_pct=10, max_positions=10), cands)
+    by_sector = {}
+    for a in result.allocations:
+        assert a.sector in {"Technology", "Health Care"}
+        by_sector[a.sector] = by_sector.get(a.sector, 0.0) + a.weight_pct
+    assert all(v <= 20.0 + 1e-6 for v in by_sector.values())
+    assert result.invested_pct <= 40.0 + 1e-6
+
+
+def test_unclassified_sector_is_one_capped_bucket_not_exempt():
+    cands = [_sector_cand(f"U{i}", None) for i in range(6)]
+    result = portfolio_agent(_profile(max_sector_pct=25, max_position_pct=10, max_positions=6), cands)
+    assert all(a.sector is None for a in result.allocations)
+    assert sum(a.weight_pct for a in result.allocations) <= 25.0 + 1e-6

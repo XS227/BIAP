@@ -1,5 +1,386 @@
 # BIAP — Project Status
 
+## 2026-10-14 session 30 (milestone 4): FR / NO / DE valuation-coverage recovery
+
+**No agent, feature, threshold or BUY-gate change. Not deployed, not merged (PR #51 open; production still 7a49767).** Code at 9577409. Tests (`.venv-global`, `TMPDIR` on disk): **1,133 passed, 0 failed**. Note: with `/tmp` (tmpfs) near its quota the suite shows spurious sqlite "disk I/O error" setup errors; rerun with `TMPDIR` on the disk volume.
+
+Task text said "FR 0%, DE 53%, NO P/B 7%" (the s29 figures). Those were stale at session start: commits c756845, 2fc6600, deede38 and 9577409 moved them.
+
+| Market (30 scanned) | P/E | P/B | EV/EBITDA | s29 P/B, EV/EBITDA |
+|---|--:|--:|--:|---|
+| FR Paris | 24 | 26 | 7 | 9, 0 |
+| NO Oslo | 25 | 29 | 18 | 2, 1 |
+| DE Xetra | 22 | 29 | 16 | 28, 16 |
+| SE Stockholm | 16 | 22 | 10 | 21, 9 |
+| GB LSE / IT Milan | 21 / 18 | 27 / 28 | 9 / 14 | unchanged |
+| US NASDAQ / NYSE | 9 / 15 | 20 / 12 | 8 / 4 | 19, 8 / 12, 4 |
+
+Source: `s30/out/*.audit.json` (fresh audit, isolated data dir). **FR EV/EBITDA is 7/30 (23%), not complete; DE EV/EBITDA is 16/30 (53%), unchanged.**
+
+### What changed this session
+- Share-count cross-check now uses the owners' share of profit (`ProfitLossAttributableToOwnersOfParent`) when tagged, since EPS is group-share (9577409; test added). No validation band loosened.
+- Earlier commits: AMF voting-rights share counts (FR), Brønnøysund/GLEIF share counts (NO), AMF title lookup, reviewed Schneider D&A.
+
+### French EV/EBITDA: 23 gaps classified (from cached AMF ESEF packages; nothing fabricated, no access control touched)
+- **Clean EV/EBITDA (7):** SU, BNP, SOI, ERF, CAP, AI, DG.
+- **D&A only available impairment-inclusive (policy, not parser defect):** the filing tags only "amortissements *et dépréciations*" / "...AndImpairmentLoss..." lines: LR (Legrand, four extension lines, labels verified in the xhtml), BIM, BN, DIM, PUB, RNO, SAN, ENGI, RMS, TTE, OR (mixed with provisions), MC. `esef.py` deliberately refuses these (`tagged_da_impairment_inclusive_only_not_used`). Using them would add roughly 6 names (those that also have debt) but would mix impairment into EBITDA: **owner decision, not taken.**
+- **Banks / insurers (EV/EBITDA not meaningful):** ACA, GLE (EBITDA tag present, no EV), BNP is counted above only via a derived figure and should be treated as non-comparable.
+- **Negative EBITDA / not meaningful:** ARVEN, MEDCL, QDT, RNO.
+- **Debt tags exist but no D&A, so no gain:** SAF (clean interest-bearing tags, but no operating income tagged), BN, PUB, SRP, ABCA.
+- **Identity:** AIR files via the Dutch AFM register (no AMF package), no share count; GLE and BAIN lack a share count.
+- **Legrand was not added** to `reviewed_da_lines.json`: the cash-flow labels include impairment ("dépréciations"), so they fail the stated clean-D&A policy.
+
+### Norway
+P/B 29/30. The only gap is **LIFE: total equity is negative (−28.0m NOK)**, so P/B is genuinely not meaningful. EV/EBITDA 18/30; remaining gaps are banks/financials (DNB, STB, GJF, ODFB: no operating income concept), and issuers whose filings tag no D&A (EQNR, MOWI, KIT, NAS, TGS, SCATC).
+
+### Germany
+EV/EBITDA 16/30, unchanged. Missing: ENR, VRL, SNG, CLIQ, XTP, FYB, FXT, SWA, BWB, VME, HMU plus financials ALV, DBK, MUV2 (not meaningful). Per-issuer cause for the non-financials was not re-derived in this session; earlier finding stands (no lawful machine-readable source; several issuer hosts 403 this VPS, not bypassed).
+
+### Unresolved blockers and next steps
+1. **FR/NO/DE EV/EBITDA below 100%**: needs owner decision on accepting impairment-inclusive D&A (flagged, not applied) or issuer-by-issuer manual review of D&A in the URD text.
+2. DE non-financial gaps need a per-issuer cause table (ticker mapping vs. source failure vs. untagged).
+3. APK device test still pending (no device). Production restart is the owner's step.
+4. `/tmp` tmpfs quota: pytest tmp_path should be moved to the disk volume in CI/harness.
+
+## 2026-10-14 session 29 (milestone 3): eight-market re-validation after DE EV/EBITDA 16/30
+
+**No agent, feature or BUY-threshold change.** Code at 2d13b08; this session is validation + documentation only. Tests (`.venv-global`): **1,117 passed, 0 failed**.
+
+| Market | scanned | P/E | P/B | EV/EBITDA | calls | G1 evidence not PASS |
+|---|--:|--:|--:|--:|---|--:|
+| DE Xetra | 30 | 21 | 28 | 16 | 1 BUY_CANDIDATE (YSN), 2 WATCH, 27 NO_REC | 6 |
+| SE Stockholm | 30 | 16 | 21 | 9 | 0 BUY, 6 WATCH | 1 |
+| GB LSE | 30 | 21 | 27 | 9 | 1 BUY (TBTG), 8 WATCH | 1 |
+| IT Milan | 30 | 18 | 28 | 14 | 0 BUY, 5 WATCH | 3 |
+| NO Oslo | 30 | 25 | 2 | 1 | 1 BUY (KIT), 5 WATCH | 2 |
+| US NASDAQ | 30 | 9 | 19 | 8 | 3 BUY (NVDA, AAPL, MSFT) | 2 |
+| US NYSE | 30 | 14 | 12 | 4 | 0 BUY, 1 WATCH | 3 |
+| FR Paris | 30 | 23 | 9 | 0 | 0 BUY, 2 WATCH | 1 |
+
+- **Harness defect found and fixed (not a pipeline defect):** the first s29 pass used a fresh data dir with no `fx/` or `shares/` caches, so SE/GB/IT/NO P/B and EV/EBITDA collapsed (GB P/B 0, IT P/B 0, SE 4). After refreshing ECB FX and the official Nasdaq Nordic (403), Borsa Italiana (193) and LSE (519) caches, only SE/GB/IT/NO were rerun; coverage matches s27 exactly. First-pass files kept in `docs/market-audit/research/2026-10-14-s29/first-pass-without-caches/`. Lesson: a fresh audit data dir must run `fx_history refresh` and `exchange_shares refresh` first.
+- **BUY candidates are not endorsements:** AAPL passes G2 by 0.0014 (0.2514); KIT (NO) passes with P/B and EV/EBITDA missing; YSN (DE) rests on a reviewed HGB/IFRS issuer row from s28. SE s27 candidates (AZN/AQ/BRAV) no longer pass on fresh prices; calls moved with market data, not thresholds.
+- **Unresolved root causes:** FR EV/EBITDA 0/30 (AMF ESEF packages give no D&A/operating income for most issuers; no official Euronext Paris share-count source); NO P/B 2/30 (Oslo exposes no share count); DE EV/EBITDA 16/30 (no lawful machine-readable source for the remainder; issuer hosts 403 this VPS, not bypassed); SE EV/EBITDA 9/30 (EBITDA/debt missing).
+- **Dominant non-BUY reasons** are genuine G2 score and G5/G6 disagreement (US NASDAQ 17 REVIEW_DISAGREEMENT), separate from data gaps (DATA_LIMITED: DE 7, NO 8, IT 5, US NYSE 5, FR 4, US NASDAQ 3, GB 1, SE 1; corrected from an earlier miscount).
+- **Stray directory:** `/var/lib/biap-global/universe/universe` (a copy created by mistake under the prod data dir; the removal was denied by the auto-mode classifier). Safe to delete by the owner; the real `universe/<CC>` dirs are untouched.
+- APK device test remains **pending** (no device). Production still 7a49767 until owner restart. PR #51 unmerged.
+
+### Research GO/NO-GO (session 29)
+**Restricted GO** (unchanged): paper-research dataset for SE, GB, IT, US-NASDAQ, US-NYSE, and DE for P/E and P/B only. **NO-GO** for an all-market dataset: DE EV/EBITDA 53%, NO P/B 7%, FR EV/EBITDA 0%, device test pending.
+
+## 2026-10-14 session 27 (milestone 2): German share-count supplement, full re-validation of 8 markets, GO/NO-GO
+
+**Authorised by owner; no agent, feature or threshold change.**
+
+- **Germany share counts** (`BoerseFrankfurtShareCountSupplement`, commit 01c8278): reviewed/issuer statement rows (SAP, SIE, BMW, DTE...) carried statements but an empty `shares_outstanding`. Börse Frankfurt key-data `outstandingShares` now fills an *empty* count only (never overwrites), with source URL, fiscal year and status in `raw_provider_fields.de_share_count_supplement`; a count contradicting net income / EPS by more than 2x is withheld; ISIN mismatch or outage is recorded. Live check: SAP 1.2285bn, SIE 0.800bn, BMW 0.616bn, DTE 4.905bn (all `applied`). 3 new unit tests.
+- **Re-validation** on isolated data dir (`s27/data`, DE fundamentals cache cleared, SE/IT/GB/NO/US/FR 30-company benchmarks, fresh pipeline; `docs/market-audit/research/2026-10-14-s27/`):
+
+| Market | P/E | P/B | EV/EBITDA | calls | s26 P/B, EV |
+|---|--:|--:|--:|---|---|
+| DE Xetra | 28 | 29 | 7 | 28 NO_REC, 2 WATCH, 0 BUY | 29, 7 |
+| SE Stockholm | 16 | 21 | 9 | 3 BUY_CANDIDATE, 3 WATCH | 24, 10 |
+| GB LSE | 21 | 27 | 9 | 1 BUY, 7 WATCH | 28, 9 |
+| IT Milan | 18 | 28 | 14 | 0 BUY, 3 WATCH | 28, 14 |
+| NO Oslo | 25 | 2 | 1 | 0 BUY, 6 WATCH | 2, 1 |
+| US NASDAQ | 8 | 19 | 8 | 2 BUY | unchanged |
+| US NYSE | 15 | 12 | 4 | 0 BUY, 1 WATCH | unchanged |
+| FR Paris | 24 | 8 | 0 | 0 BUY, 7 WATCH | (no s26 run) |
+
+- **Why SE/GB P/B fell vs s26 (SIVE, CYNCA, VICO, one GB):** the share count is withheld because it fails the +-15% net income/EPS cross-check (loss years; CYNCA implied 367.6m vs 37.6m published = ratio 0.10, consistent with a share-count change). Conservative by design, validation not loosened; these names show INSUFFICIENT_DATA for P/B, i.e. *missing data*, not weakness.
+- **BUY gates unchanged** (score >= 0.25, confidence >= 0.45, evidence PASS, no distress block, no contradiction, Agent 8 >= 0.55). Dominant blocker everywhere is G2 (score) and G6 (calibration), i.e. genuine weak/neutral evidence, not data gaps; data gaps show up as G1/G3 failures (DE 5/17, SE 1/5, GB 1/8, IT 3/9, NO 2/5, US 3/10 and 3/7, FR 1/9 of 30).
+- **FX:** 0 of 240 benchmark rows report `fx_unavailable`.
+- **Still open:** DE EV/EBITDA 7/30 (D&A / debt missing outside DAX; no lawful machine-readable source found: filings.xbrl.org indexes no German filings, Unternehmensregister forbids automated retrieval, several issuer hosts 403 from this VPS); NO share counts (Euronext Live exposes none); FR EV/EBITDA 0/30; APK 0.3.22 device test **pending** (no device; backend validation not blocked by it).
+- **SE BUY_CANDIDATE caution retained:** AZN rests on a 3-peer median P/E of 112x; AQ/BRAV pass the gate by <0.02.
+- **Tests (clean env, `.venv-global`):** `pytest tests` -> 1,111 passed, 0 failed.
+- **Production** still serves 7a49767 until the owner restarts (`sudo deploy/restart-global-prod.sh <commit>`); PR #51 open, not merged.
+
+### Research GO/NO-GO (session 27)
+**Restricted GO** for a paper-research dataset in SE, GB, IT, US-NASDAQ, US-NYSE (P/B coverage 40-93%, valuation provenance and FX recorded, no gate relaxed); **NO-GO** for an all-market dataset: DE EV/EBITDA 23%, NO P/B 7%, FR EV/EBITDA 0%, comparison agent still depends on peer cohort size, and APK device test unperformed. Valuation-multiple-based conclusions for DE/NO/FR must be excluded.
+
+## 2026-10-14 session 26 (milestone 1): date-aligned FX, official share counts / market caps
+
+**Authorised by owner:** verified official shares-outstanding sources + historical FX. No agent/feature/threshold change.
+
+- **Historical FX** (`global_markets/fx_history.py`): ECB `eurofxref-hist.xml` compacted to `$DATA/fx/ecb-hist.json` (1,536 fixings 2020-10-15..2026-10-13). Balance-sheet items (equity, debt, cash) convert at the period-end fixing (latest fixing not after the date, <=7 days gap, else refuse); flows (EPS, EBITDA, DPS) at the mean of the fiscal-year fixings (>=150 obs). Provenance (provider, rate, rate date, observations) stored in `raw_provider_fields.fx_conversion` + `derived_metrics`. No cache / no period end / no rate => ratios stay suppressed with `fx_unavailable:<reason>` (surfaced in `missingReasons`). Filing values (`eps`, `total_equity`, ...) are never overwritten. Reads never use the network; refresh: `python -m global_markets.fx_history refresh`.
+- **Share counts / market caps** (`global_markets/exchange_shares.py`, `$DATA/shares/<provider>__<CC>__<EXCH>.json`, hooked in `service._evaluate` before `_derive_metrics`): Nasdaq Nordic instrument summary (shares + market cap *per share series*; SE 403/403, DK 116, FI, IS stored, 0 failures), Borsa Italiana instrument page (market cap; IT 193/193), LSE Price Explorer (market cap, 519 sterling lines). Issuer total = sum of all listed series; class-suffixed issuers with a single listed series are withheld unless validated; counts validated against net income / EPS (+-15%, loss years too), stale >120 d withheld, ISIN mismatch refused. P/B also derivable as market cap / equity when no share count exists. Provenance: `raw_provider_fields.exchange_share_count` / `exchange_market_cap`.
+- **Not available (documented, not bypassed):** Oslo/Euronext Live exposes no share count (CSV has price/volume only; detail endpoint is encrypted client-side). NO P/B stays mostly INSUFFICIENT_DATA. Unternehmensregister forbids automated retrieval (robots.txt); filings.xbrl.org indexes no German filings.
+- **Before -> after (30-company benchmark per market, fresh pipeline run on isolated data dir `s26/data`, 7 markets; `docs/market-audit/research/2026-10-14-s26/`):**
+
+| Market | P/E | P/B | EV/EBITDA | calls (before -> after) |
+|---|--:|--:|--:|---|
+| SE Stockholm | 10 -> 16 | 4 -> 24 | 0 -> 10 | BUY 0 -> 3, WATCH 5 -> 3 |
+| GB LSE | 13 -> 21 | 0 -> 28 | 0 -> 9 | BUY 1 -> 1, WATCH 2 -> 7 |
+| IT Milan | 17 -> 18 | 0 -> 28 | 0 -> 14 | BUY 0 -> 0, WATCH 2 -> 3 |
+| NO Oslo | 13 -> 25 | 1 -> 2 | 0 -> 1 | BUY 0 -> 0, WATCH 1 -> 6 |
+| DE Xetra | 21 -> 21 | 18 -> 18 | 0 -> 0 | unchanged (DE shares already from Boerse Frankfurt; gap is EBITDA/debt) |
+| US NASDAQ / NYSE | ~unchanged | | | market-data noise only |
+
+- **Governance caution (SE BUY_CANDIDATE x3, thresholds untouched):** AZN (Swedish secondary listing; BUY driven by the comparison agent against a 3-peer same-sector median P/E of 112x -> thin cohort, treat as unreliable), AQ 0.256 and BRAV 0.265 (liquidity agent now has a market cap and votes +0.12/+0.30; margin over the 0.25 gate is <0.02). These are newly *evidenced*, not endorsed; they were previously blocked only by missing inputs.
+- **Tests (clean env):** `pytest tests` -> 1,108 passed, 0 failed (+20: FX history, date alignment, provider refusals, exchange shares, class handling, validation).
+
+
+## 2026-10-14 session 26: re-verification of session 25 deliverables (no code change)
+
+- **Production:** `/health` on 8091 now reports commit `7a49767` (code commit of the tested change; `8d3291e` is docs-only on top). Restart evidently done by the owner after session 25; code-equivalent to the tested commit. Ledgers not touched.
+- **Rheinmetall balance sheet retried:** official host returns 403 for the annual-report PDF from the VPS; the 2026-03-11 press release/news page carries no balance sheet (only operating free cash flow EUR 1,218m, a management KPI, not a statement figure; not ingested). Stays INSUFFICIENT_DATA with documented reason.
+- **Still open (unchanged):** DE EBITDA/debt/cash-flow beyond DAX, official share-count source, FX conversion, APK 0.3.22 device test (no device). Decision remains **NO-GO**. PR #51 open, not merged.
+
+## 2026-10-14 session 25 (cont.): regression, freeze package, GO/NO-GO
+
+- **Regression on tested commit 7a49767** (temporary uvicorn on :8092, isolated data dir, production ledgers untouched): 101 cases, 34 markets, 6 agents + Agents 8/9/10, 0 invariant errors; full suite 1,088 passed. Output `docs/market-audit/data/agent_regression_2026-10-14_7a49767.json`.
+- **Freeze package** `docs/market-audit/freeze/2026-10-14/` (FREEZE_REPORT.md, FREEZE_MANIFEST.json with code/registry/ledger SHA-256 + scoring configuration, COVERAGE.json per-market field completeness and agent activity). Generator: `scripts/research_freeze.py`.
+- **Decision: NO-GO** for an all-market paper dataset. Gaps: DE EBITDA/debt/cash-flow <10% of rows, P/B & EV/EBITDA need an official share-count source, no FX conversion for cross-currency reporters, comparison agent needs fresh peer cache, APK device test pending, Rheinmetall balance sheet unavailable.
+- **Production:** still serves 46fc92e (prod runs from this working tree; restart needs sudo, which the auto-mode classifier blocks). Pre-deploy ledger backup `/var/lib/biap-global/backup-s25-predeploy-20261014T071722Z` (34 DBs + SHA256SUMS). Owner step: `sudo deploy/restart-global-prod.sh <final-commit-prefix>`.
+- **Not done:** device test; production comparison after restart; all-market scan refresh (Yahoo budget respected, no scans run); PR #51 untouched (open, not merged).
+
+## 2026-10-14 session 25 (German official statements, liabilities-tag guard, integrity scan)
+
+**Phase 1 — Germany (data, no gate change).** Four DAX large caps were running without balance-sheet/debt/cash-flow inputs. Sourced from the issuers' own statements and added to `data/de_verified_annual_reports.json` (reviewed registry, precedes the issuer HTML parsers in `runtime.py`):
+- **SAP FY2025-12-31:** official data workbook `sap-2025-integrated-report-data.xlsx` (Income Statement / Financial Position / Cash Flows / Five-Year Summary). Assets 70,362m, liabilities 25,288m, equity 45,073m, OCF 9,156m, FCF 8,239m (company-reported), debt = balance-sheet financial liabilities 8,070m, EBITDA 10,929m (operating profit + D&A, derived and labelled).
+- **Siemens FY ended 2025-09-30:** Q4/FY2025 earnings-release PDF with full IFRS statements (unaudited until the annual report). Assets 166,202m, EBIT 9,992m, EBITDA 13,380m (company reconciliation), debt 56,015m, OCF 13,257m, FCF 10,812m.
+- **BMW FY2025-12-31:** issuer CDN blocks the VPS; page text obtained through the fetch tool and accepted only because every subtotal closes (174,319+91,648=265,967; 97,906+86,337+81,724=265,967) and revenue/net profit/assets/equity/cash/OCF equal the previously verified snapshot. EBIT 10,186m, D&A 8,692m -> EBITDA 18,878m (derived), financial liabilities 110,469m. FCF intentionally not set (group investment line includes leased products).
+- **Deutsche Telekom FY2025-12-31:** annual-report pages (balance sheet, income statement, cash flows). Assets 289,769m, liabilities 197,538m, EBITDA 48,831m, EBIT 24,822m, debt incl. leases 146,723m. Net income stored as group 14,926m (9,609m attributable to owners) for consistency with consolidated assets.
+- Each row carries its definitions in `rawProviderFields.de_reviewed_definitions`. Nothing estimated; unavailable fields stay empty (SAP interest expense, BMW FCF, all pb/ev_ebitda).
+- **Before -> after (fresh isolated pipeline run, thresholds untouched):** SAP missing core fields 13 -> 3, conf 0.39 -> 0.62, Agent 9 INSUFFICIENT -> LOW_RISK, score 0.126 -> 0.248 (still < 0.25), now blocked by agent disagreement; SIE 12 -> 2 missing, conf 0.43 -> 0.62, Agent 8 REVIEW -> ACCEPT, call NO_RECOMMENDATION -> HOLD_OR_WATCH; BMW 9 -> 3 missing, conf 0.51 -> 0.57, Agent 9 LOW_RISK, still disagreement; DTE 6 -> 2 missing, Agent 9 HIGH_RISK(1 model) -> ELEVATED_RISK (3 models). No BUY created.
+- **Rheinmetall reconciled:** 1,841m = company "operating result" (management KPI before special items, +33%, margin 18.5%); 1,684m = IFRS EBIT. Both are correct for FY2025 (2025-12-31, continuing operations); BIAP `operating_income` = IFRS EBIT, correct. Net income 696m = attributable to shareholders (earnings after taxes 835m). Rheinmetall's balance-sheet/debt remain INSUFFICIENT_DATA: the FY2025 annual-report PDF could not be retrieved from an official host (press release has no balance sheet); the Börse Frankfurt source supplies the year only.
+
+**Phase 2 — integrity scan** (`docs/market-audit/scripts/data_integrity_scan.py`, output `docs/market-audit/integrity/2026-10-14.json`, read-only over 9 ledgers, 6,000+ rows): found a recurring extraction defect — filers tag `ifrs-full:Liabilities` with the equity-and-liabilities total, so liabilities == assets with positive equity (FR 10: S30, NRG, PAT, AKW, HDF, SABE, EEM, PARP...; IT 2: GAB, JUVE; ES 2; BR 4). It inflates Zmijewski TL/TA to 1.0. **Fixed in `esef.py`** with a balance-identity guard (assets - equity, same filing/period, method labelled; genuine near-zero-equity cases kept). Existing ledger rows keep old values until re-analysed. Other scan results (not defects): US identity gaps are NCI/mezzanine equity excluded from `total_equity`; 114 GB / 41 NO / 33 SE rows report in a currency different from the listing, so per-share valuation ratios are (correctly) suppressed (no FX conversion implemented); DE `filing_period_end` missing for ~88% of rows because the Boerse Frankfurt key-data source supplies only a year.
+
+**Tests (clean env):** full suite `pytest tests` -> 1088 passed, 0 failed (new: 4 DAX reviewed-statement tests, 2 liabilities-guard tests).
+**Not done:** production deploy of this change (see issue comment); device test of APK 0.3.22; share-count source for pb/ev_ebitda; Rheinmetall official balance sheet.
+
+## 2026-10-14 session 24 (resume: interrupted overnight DE/SE scans recovered, BUY-gate audit; no deploy, no code-gate change)
+
+- **Reconciliation:** branch `feat/biap-global` was clean at 45fb5a2 = origin; prod 8091 `/health` 200 at 46fc92e. The interrupted overnight run (`/home/ubuntu/biap-global/o14`, `driver2.sh`) had in fact finished (`ALLDONE`): fresh scans + fresh full-pipeline audits (Agents 1-10, isolated data dir, production ledgers untouched) for DE Xetra, DE Frankfurt, SE Stockholm and FR/IT/GB/NO/US-NASDAQ/US-NYSE, 30 companies each. A leftover stopped pytest (PID 14237) and two `tail -F` from that session are still present; a kill was refused by the auto-mode classifier, so they were left (harmless, owner may `kill -9`).
+- **Why no BUY in DE/SE (90 companies, thresholds untouched):** G2 score >= 0.25 fails for all 90 (best DE score +0.14 SAP/Frankfurt, best SE +0.24 AQ, BRAV +0.23). Final calls: DE 60/60 NO_RECOMMENDATION; SE 25 NO_RECOMMENDATION + 5 HOLD_OR_WATCH (SAND, BOL, ALFA, AQ, BRAV). G6 (Agent 8 conf >= 0.55) fails 30/30 Xetra, 30/30 Frankfurt, 25/30 SE; G3 conf >= 0.45 fails 19/12/7; G4 distress block 3/3/15; G5 contradiction 3/2/7; G1 evidence 5/3/1. Nothing fails on G6 alone in DE/SE, so no name is held back only by the confidence gate.
+- **Root causes:** (a) genuine weak/negative evidence (risk agent negative, 45% negative 6m return); (b) data gaps: SAP/SIE/BMW/DTE lack balance-sheet or debt lines in the official issuer sources (SAP: `de-official-issuer-financials` exposes income statement only; total_assets/equity/debt missing -> Agent 9 INSUFFICIENT_DATA, confidence 0.39); (c) SE HIGH_RISK is corroborated by 3 canonical models for Telia, Sivers, Elon, etc. (Altman Z'' DISTRESS + Zmijewski + ICR) - the canonical formulas are implemented as published, I did not find a defect and did not soften them.
+- **Verified defects fixed this session:** `docs/market-audit/scripts/research_report.py` overwrote the market key with the per-company market-data dict (report tables printed a dict in the Market column); fixed, report regenerated. Environment note: sourcing `analysis/.env.global` into the test shell sets `BIAP_GLOBAL_RANKING_MARKETS` and makes 2 `test_global_top_markets` tests fail; with a clean env they pass (not a product defect).
+- **Tests (clean env, `env -i`):** `pytest tests -k "global or opportunity or governance or sector or governor or distress or agent"` -> 823 passed, 259 deselected, 0 failed.
+- **Added:** `docs/market-audit/scripts/fresh_audit.py`, `research_report.py`, and `docs/market-audit/research/2026-10-14/` (RESEARCH_READINESS.md/.json, MANIFEST.json, 9 per-market audit JSONs).
+- **Not done / blockers:** DE issuer balance-sheet/debt extraction for SAP/SIE/BMW/DTE (needs official PDFs/ESEF, not estimated); no APK change and no device test; no all-market regression re-run; no deploy (backend code unchanged). PR #51 remains open, not merged.
+- **Research-freeze readiness:** NOT ready. DE debt/EBITDA gap, device test of APK 0.3.22 and the 12 partial benchmark markets are open.
+
+## 2026-10-14 sandbox cleanup (no deploy, no scans, no APK build)
+
+- **Disk:** 43G used / 4.8G free (90%) -> 40G used / 7.5G free (85%); ~2.8G recovered.
+- **Removed** (all under `/home/ubuntu/biap-global`, owner ubuntu, no open files / process refs / systemd refs; each was a per-session copy of data restorable from `/var/lib/biap-global`): `sandbox-s13` (263M), `sandbox-s18` (796M), `sandbox-s19` (399M), `sandbox-s19b` (399M), `s19-de-sandbox` (29M), `s20/sandbox` (391M), `s20/sandbox2` (391M), `s20/sbgb` (97M). Their `cache` entries were symlinks to the production cache; the links were unlinked first, production cache verified intact (8.9G, all 7 sources present).
+- **Kept:** `s20/wt-base` (registered git worktree) and s20 result JSON/scripts; `staging-1012/data4,data5`, `takeover-test/data-e2e-1011`, `scratch/norway-sandbox*` (hold real, non-symlinked downloaded cache copies; not proven restorable); all `wt-*` worktrees; `scratch/apk-1012`; `/var/lib/biap-global`; `/var/www` APKs.
+- **Verified after:** `/health` 200 at 46fc92e, service active, no failed units; 34/34 ledgers pass `integrity_check`, 26,287 rows, none below the s23 backup. PR #51 open, mergeable, no failing checks, not merged.
+
+## 2026-10-14 disk cleanup and prod health check (no deploy, no scans, no APK build)
+
+- **Disk:** root was 44G used / 3.6G free (93%). Now 43G used / 4.8G free (90%). Freed ~1.2G; no heavy scans or APK builds were started.
+- **Deleted (all regenerable, none open per lsof):** `biap-global/pytest-tmp` (167M) and `pytest-tmp13` (4.4M), `/tmp/pytest-of-ubuntu` (32M), `~/.npm/_cacache` + `_npx`, `/root/.npm/_cacache` (212M), apt package cache (`apt-get clean`, ~105M), archived journals vacuumed to 100M (217M freed).
+- **Not touched:** `/var/lib/biap-global` (cache 8.9G, history, ledgers, all backup-* dirs), git repos and `wt-*` worktrees (several have unpushed commits/dirty trees), APK releases, `~/.claude`, `~/.cache/puppeteer` (668M, may be needed for PDF/browser work).
+- **Largest remaining reclaim candidates (need owner decision):** sandbox dirs `biap-global/{sandbox-s13,sandbox-s18,sandbox-s19,sandbox-s19b,s20,scratch,staging-1012,takeover-test}` ~5.5G total, per-session test data copies; `/var/lib/biap-global/cache/sec-edgar` 4.4G and `esef` 3.1G (re-downloadable but slow/rate-limited).
+- **Prod health:** `biap-global.service` active, `/health` 200 at commit 46fc92e (= `origin/feat/biap-global`), no failed systemd units. All 34 analysis ledgers pass `PRAGMA integrity_check`, 26,287 rows, none smaller than the s23 pre-deploy backup.
+- **PR #51** (feat/biap-global -> main, "Sync main with BIAP Global (needs review)"): OPEN, not draft, MERGEABLE, all checks SUCCESS (android-installable-apk skipped). Not merged.
+
+## 2026-10-13 session 23 (opportunity ranking, 30-company benchmark, Yahoo governor, partial-bar volume fix)
+
+- **Opportunity layer** (`analysis/global_markets/opportunity.py`, `GET /global/opportunities?country&exchange&limit<=20`): states BUY / WATCH / REVIEW / HIGH_RISK / INSUFFICIENT_DATA, separate from the Qualified BUY gate (no gate changed). Each row exposes the underlying draft call, score, confidence, structured Agent 8 abstention reasons, limiting factors and a separate distress axis. Missing debt/EBITDA stays a distress *data gap*; it never drives HIGH_RISK/INSUFFICIENT_DATA. A HIGH_RISK from a single Agent 9 model (e.g. Zmijewski only: Deutsche Telekom, Siemens Energy) routes to REVIEW; corroborated (>=2 models) stays HIGH_RISK. Accepted HOLD_OR_WATCH -> WATCH. Ranking never pads.
+- **Agent 8 audit** (all 34 ledgers, 9,269 analysed rows): HOLD_OR_WATCH -> NO_RECOMMENDATION is the confidence/agreement/evidence gate, not a bug. Reasons: NON_DIRECTIONAL_BELOW_ACCEPT 3391, AGENT_DISAGREEMENT 2922, LOW_CONFIDENCE 2808, HARD_BLOCK 1133, ELEVATED_DISTRESS 762, EVIDENCE_WARN 40. BUY parity: 77 BUY before = 77 after, 0 mismatches.
+- **Defect fixed (generalizable):** Yahoo daily chart read during an open session made the newest bar partial; `volume_today/avg_volume_30d` was ~0.1x (SAP 0.11x, SIE 0.11x, BMW 0.08x...) and fed the liquidity/forecast agents. Now volume stats use completed sessions only (`latest_bar_partial_session` flag). Existing ledger rows keep old values until re-analysed.
+- **Data-provider governor** (`http_governor.py`): 0.4 s spacing, 2400/h budget, 429/403 exponential backoff honouring Retry-After, process cooldown that fails fast, cached fundamentals preserved on failure. Wired into yahoo_chart and yahoo_fundamentals. Yahoo returned HTTP 200 at start of session (no active 429).
+- **Benchmark** (`docs/market-audit/scripts/opportunity_benchmark.py`, output `docs/market-audit/benchmark/2026-10-14/`, read-only, from stored history + ledgers, no network): 19/34 markets have a full 30; 12 partial (AU, TSXV, SIX, HKEX, Dublin, Iceland, JP, NZ, Lisbon, Saudi, SGX, JSE: too little stored daily history/analysed ledger rows); AE ADX/DFM and KR KRX none (history <32 sessions or no ledger). Selected-company states: BUY 10, WATCH 86, REVIEW 302, HIGH_RISK 111, INSUFFICIENT_DATA 259. Method: traded value = 30-session mean close*volume; return = adjusted close 30 sessions; unusual volume = last completed session / mean of prior 30; return and volume ranks skip the least-liquid quartile; dedupe by taking the next eligible name.
+- **DE/SE audit vs public sources:** BMW revenue 133,453m / NI 7,451m, Rheinmetall sales 9,935m, Deutsche Telekom revenue 119,081m / NI 9,609m match company reports. Rheinmetall operating income BIAP 1,684m vs reported operating result 1,841m (definition difference, not fixed). German total_debt/EBITDA are null for BMW/SAP/RHM/DTE/ENR/SIE: the source statements lack them -> MISSING DATA (Agent 9 INSUFFICIENT_DATA, isolated). SAP: Agent 8 ABSTAIN because confidence 0.342 < 0.35 (partial-bar liquidity penalty + missing inputs). Volvo/Volvo Car/Ericsson/Investor/Atlas Copco have full inputs: Volvo = Agent 9 ELEVATED + agent disagreement; Volvo Car = genuine HIGH_RISK (ICR 0.24x); Investor = confidence 0.48 < 0.55 (WATCH); Ericsson B accepted HOLD_OR_WATCH (WATCH); Atlas Copco = agent disagreement + valuation.
+- **Not done / open:** no APK change (backend only); no device test; DE debt/EBITDA extraction not implemented (needs source with borrowings); disk is 94% full (3.1G free) - investigate before the next large scan; "Sync main" CI still blocked by `can_approve_pull_request_reviews=false` (repo setting, not bypassed).
+- Backup before deploy: /var/lib/biap-global/backup-s23-predeploy-* (35 files, SHA256SUMS).
+
+
+## 2026-10-13 session 22 (German BUY-count decomposition, sync CI, Yahoo throttle; prod a1045e5, no deploy)
+
+**Sync main:** re-run (workflow_dispatch) is green but still only warns: `can_approve_pull_request_reviews` is still `false` via the API, `gh pr create` is refused. No PR exists. Needs the repo setting saved.
+**Unmapped German small caps:** 89 unique ISINs (Frankfurt 89, Xetra 63 overlap), not 152; all absent from the Deutsche Boerse sector file; left unmapped.
+**Why German BUY is so low (read-only, 120 most liquid Xetra evidence-PASS names, `docs/market-audit/data/de_xetra_top120_decomposition_2026-10-13.json`):**
+- Ledger split (Xetra 406 / Frankfurt 498): missing-data exclusions (BLOCKED + INSUFFICIENT_DATA) 17 / 42; evidence WARN 17 / 22; genuine score 0..0.25 (neutral) 63 / 41; genuine negative score 309 / 392; BUY 0 / 1. PASS-name scores: median -0.10, max 0.22 (Xetra) / 0.33 (Frankfurt).
+- In the sample, 115/120 have preliminary call HOLD_OR_WATCH that Agent 8 downgrades to NO_RECOMMENDATION (governance REVIEW): distress INSUFFICIENT_DATA 62 (no debt/EBITDA from the source = missing-data exclusion), ELEVATED_RISK 28 and HIGH_RISK 18 (genuine model output), NOT_APPLICABLE 10 (financials), LOW_RISK 2.
+- Agent mean votes: fundamental -0.09, risk -0.33 (98/120 negative: drawdown/volatility/leverage), forecast -0.02, comparison 0.00 for all 120 (peer P/E benchmark needs a <=24 h scan cache; DE scan-cache dated 2026-10-12, so it abstains), quality +0.02, liquidity +0.17. 45% have negative 6m return. So the low count is mostly genuine negative risk/momentum plus Agent 8 abstentions caused by missing debt data, not a gate bug. Thresholds untouched.
+**Debt/EBITDA for BMW, DTE, EOAN, BAYN, RWE:** NOT added. Issuer sites are unreachable from the VPS (BMW) or 403/404 (E.ON, DTE); a page summary via a fetch tool is not a verifiable transcription for an `audited` registry. Lead only (unverified, not stored): BMW balance sheet financial liabilities non-current 68,159m + current 42,310m (EUR, FY2025), consistent with the stored total_liabilities 168,061m. Mercedes (MBG) already has total_debt in `de_verified_annual_reports.json` and passes Agent 8 (HOLD_OR_WATCH), so adding verified debt does lift the abstention. Needs figures read from the official PDFs.
+**Side effect I caused:** ~240 analyze calls + 2 DE interactive scans exhausted the shared Yahoo quote quota (HTTP 429 on this IP for >10 min). The two DE scans returned INSUFFICIENT_MARKET_COVERAGE (quotesUsable 0); ledgers verified unchanged vs backup (`/var/lib/biap-global/backup-s22-prescan-20261013T225518Z`, integrity ok) and scan-cache not rewritten. Cached quotes keep serving. Full all-market regression and the DE scan refresh are deferred until the 429 clears (re-run `agent_regression.py` then; do not hammer now).
+**APK 0.3.22:** published and downloadable; no device test yet (checklist in docs/audits).
+**Open:** repo PR setting; official-PDF debt/EBITDA for large DE issuers; DE scan refresh + all-market regression after Yahoo recovers; APK device test.
+
+## 2026-10-13 session 21 (PR-sync re-run, UK/DE/extraction re-check, APK readiness; prod a1045e5)
+
+**Sync main re-run (workflow_dispatch, run 38479275132):** green, but `gh pr create` still returns `GitHub Actions is not permitted to create or approve pull requests`. `GET /actions/permissions/workflow` still reports `can_approve_pull_request_reviews=false` (default token read), so the repo setting is not in effect (not saved, or toggled elsewhere). No PR was created; no protection bypassed. Open PRs: #9, #44, #45 only. Workflow code needs no further change.
+**UK asset class:** already resolved by the LSE Main Market Price Explorer + official ICB: 931 source rows -> 527 in universe, 285 pooled vehicles and 119 non-ordinary excluded by official classification, all 527 Common Stock, ICB sector 99.1%. Gate (70%) untouched; fundamentals coverage 85.0%.
+**DE sector:** residual unmapped Frankfurt 89 / Xetra 63 (Open Market / small caps absent from the Deutsche Boerse file); left unmapped, none guessed. Market-level BUY is a per-company gate (score, confidence, evidence PASS); portfolio allocation additionally applies position/sector/country caps, currency/FX, duplicate-issuer and max-positions limits, so BUY count != allocations (see session 20 audit).
+**Inputs (snapshot counts with a value / snapshots):** DE equity 890/894, op. income 842, debt 93, EBITDA 63; GB equity 796/799, debt 494, EBITDA 280; IT equity 193/194, debt 67, EBITDA 127; FR debt 196/295. Equity is effectively solved; DE debt/EBITDA is low because large DE issuers (BMW, DTE, EOAN, BAYN, RWE, VNA, VOW) come from reviewed issuer HTML pages with no consistently defined debt line (captive finance, leases). Adding debt there needs per-issuer review; not estimated.
+**APK 0.3.22:** published and downloadable (SHA-256 8f53ab5f...c346d, 105 MB). Device test still NOT done (no device); checklist `docs/audits/apk-0.3.22-device-test-checklist.md`.
+**Open:** repo PR setting effective?, DE small-cap sector, DE large-issuer debt/EBITDA curation, device test.
+
+## 2026-10-13 session 20 (DE sector source, PR-sync CI, agent regression, portfolio audit; prod a1045e5)
+
+**Commits:** `a1045e5` (DE Deutsche Boerse sector reference, ESEF period anchoring, sector on portfolio allocations, tolerant PR-sync step) on top of `83c9da7`. Prod 8091 `/health` commit = `a1045e5`; Deploy, check, live check, Germany canaries all green.
+**Sync main CI:** root cause confirmed from the failed log (run 38471625911): `GraphQL: GitHub Actions is not permitted to create or approve pull requests (createPullRequest)`. Repo setting `can_approve_pull_request_reviews=false` (default token read); the workflow token itself has contents+pull-requests write. Not a branch-protection or workflow-permission defect. The step now emits a warning instead of failing when only PR creation is refused; nothing is merged and no protection is bypassed (main is NOT protected; sync merges only Global-only paths). Run 38477821960 on a1045e5 is green. To get main auto-synced for non-Global paths (docs/, PROJECT_STATUS.md) an admin must enable Settings > Actions > General > "Allow GitHub Actions to create and approve pull requests", or open the PR by hand. Not changed by me.
+**DE sector (traceable):** Deutsche Boerse Listed-companies workbook (sector/subsector -> ICB industry, explicit conservative tables, entries carry source+URL+retrievedAt). Coverage Frankfurt 26.5% -> 82.1%, Xetra 28.8% -> 84.5%. Insurers verified separately on live prod: ALV, MUV2, HNR1, TLX = Financials / Insurance (kind insurance). Unmapped labels stay unmapped. Prior sector-reference backup: `/var/lib/biap-global/backup-s19-sector-20261013T214539Z`.
+**UK:** sector coverage 99.1%; fundamentals coverage 85.0% vs the unchanged 70% gate (gate released on evidence, never weakened); 420 PASS, 7 BUY candidates. No official asset-class source exists for LSE; not invented.
+**Extraction gaps:** equity/debt/EBITDA/FFO/operating income still absent where the official filings do not tag them (SAP, SIE, AZT, AV, DE insurers equity; IT/UK EBITDA); Agents 9/10 report factors_missing/INSUFFICIENT_DATA. Nothing estimated.
+**Regression (live prod, read-only):** `docs/market-audit/data/agent_regression_2026-10-13.json`: 101 representative cases over every ledger market, six scoring agents + Agents 8/9/10, 0 invariant errors. 796 global pytest pass.
+**Portfolio audit (`portfolio_audit.py`, 50 instruments across 10 EU markets, 8 profiles):** 0 cap violations (position, sector, country, cash reserve, max positions, invested+cash=100), 0 UNKNOWN-sector weight. Default profile: 7 positions / 70% invested; the 20% residual over the 10% reserve is explained in the response (every placeable candidate sits at max_position_pct x7; 38 names below decision threshold, 4 evidence-gate, 1 duplicate issuer); DE-only profile correctly invests 0 (no DE name cleared the gates). Caps are not relaxed to hit a target.
+**Before/after (sector coverage is the only metric that changed vs session 15; counts are from ledgers, backups listed above):**
+
+| Market | Discovered | In universe | Deep (COMPLETE) | Core fundamentals verified | PASS | WARN | BLOCK | BUY cand. | Sector cov. before→after | Top blockers |
+|---|---|---|---|---|---|---|---|---|---|---|
+| DE / FRANKFURT | 498 | 498 | 456 | 20 | 434 | 22 | 35 | 1 | 26.5→82.1% | official filing not found 50; no official statement source 7; no usable quote 7 |
+| DE / XETRA | 406 | 406 | 389 | 16 | 372 | 17 | 15 | 0 | 28.8→84.5% | official filing not found 28; no official statement source 4; no usable quote 2 |
+| DK / NASDAQ_COPENHAGEN | 116 | 116 | 99 | 77 | 99 | 0 | 17 | 3 | 100.0% | official filing not found 13; stale official filing 3; core figures not tagged 1 |
+| ES / BME_MADRID | 109 | 109 | 95 | 74 | 95 | 0 | 11 | 1 | 97.2% | stale official filing 7; official filing not found 4; no usable quote 3 |
+| FI / NASDAQ_HELSINKI | 148 | 148 | 123 | 111 | 123 | 0 | 23 | 4 | 100.0% | stale official filing 14; official filing not found 6; no usable quote 2 |
+| FR / EURONEXT_PARIS | 294 | 294 | 259 | 194 | 259 | 0 | 34 | 1 | 100.0% | official filing not found 18; stale official filing 16; no usable quote 1 |
+| GB / LSE | 830 | 527 | 420 | 300 | 420 | 0 | 101 | 7 | 99.1% | official filing not found 47; stale official filing 43; no official statement source 6 |
+| IT / EURONEXT_MILAN | 193 | 193 | 169 | 130 | 169 | 0 | 24 | 0 | 100.0% | stale official filing 11; official filing not found 10; core figures not tagged 3 |
+| NL / EURONEXT_AMSTERDAM | 98 | 98 | 83 | 62 | 82 | 1 | 15 | 3 | 100.0% | official filing not found 8; stale official filing 6; no official statement source 1 |
+| NO / EURONEXT_OSLO | 146 | 146 | 136 | 114 | 136 | 0 | 10 | 1 | 100.0% | official filing not found 7; stale official filing 2; no official statement source 1 |
+| PT / EURONEXT_LISBON | 30 | 30 | 28 | 14 | 28 | 0 | 2 | 0 | 100.0% | official filing not found 1; stale official filing 1 |
+| SE / NASDAQ_STOCKHOLM | 402 | 402 | 373 | 266 | 373 | 0 | 29 | 0 | 100.0% | official filing not found 19; stale official filing 9; no official statement source 1 |
+| US / NASDAQ | 3013 | 3010 | 2804 | 2043 | 2804 | 0 | 196 | 37 | 0.0% | no official statement source 177; stale official filing 15; no usable quote 10 |
+| US / NYSE | 1799 | 1798 | 1599 | 1010 | 1599 | 0 | 188 | 44 | 0.0% | no official statement source 177; no usable quote 11; stale official filing 10 |
+
+(US sector shows 0.0% only because `market_table.py` reads the universe file, which has no sector for US; ledger sector coverage was 81.5% NYSE in session 15.) Qualified BUY counts are what the gates yield: DE 1, GB 7, NL 3, FI 4, ES 1, FR 1, NO 1, IT 0, SE 0; none manufactured.
+**Open:** UK asset-class source; FBK-style ESEF extension equity for other banks; EBITDA/debt/FFO not published; APK 0.3.22 device test; `Sync main` needs the repo setting above; timers still OFF.
+
+## 2026-10-13 session 18 (normalizer revision 3 re-parse, backups, NASDAQ regression, coverage)
+
+**Code:** `NORMALIZER_REVISION` 2 -> 3 (cached_fundamentals.py). Revision-2 snapshots are re-queued **only** when `total_equity` is empty (never again for debt/EBITDA/shares), so the bump
+does not re-fetch thousands of issuers. `CACHE_SCHEMA_VERSION` stays 11. Test added for the rev-2 rule; 787 global tests pass.
+**Re-parse (sandbox copy of prod data, no prod data touched):** 8,759 snapshots, 57 lack equity. Re-run through `/global/analyze` with no refetch of cached packages: 1 gained equity (US PC, an empty
+snapshot that was fully populated), 0 lost any field, all others stay genuinely empty (e.g. SAP, SIE, AZT, AV: sources do not publish a usable equity; nothing estimated). 1 ticker returned HTTP 400 (GB NTEA) and one (US GCGR); untouched.
+**Backups:** `/var/lib/biap-global/backup-s18-prereparse-20261013T205539Z` (ledgers + fundamentals, SHA256SUMS: 0 mismatches).
+**NASDAQ/NYSE regression:** live ledgers vs that backup are identical in all 34 markets (NASDAQ 3,013 rows / 3,010 in_universe; NYSE 1,799 / 1,798; GB 830 / 527). Market table from session 15 remains the latest verified coverage.
+**Still open:** DE sector source, UK asset-class source (gate untouched), EBITDA/debt gaps for Agents 9/10, APK 0.3.22 device test, `Sync main` CI, timers off.
+
+## 2026-10-13 session 16 (BIAP Global reconciliation + FBK re-extraction)
+
+**Reconciliation:** the brief replayed at session start ("push four pending commits") was already satisfied: `feat/biap-global` = origin (e5398e3), nothing unpushed, prod 8091 = 4da8ab3 healthy.
+No code changed this session, so no deploy, no NASDAQ re-sync and no regression re-run were needed; the session-15 market table below stays the latest verified data.
+**FBK (IT) fixed on prod data:** the cached snapshot was at the current normalizer revision (2) so 2215398 never re-ran for it. Backed up the FBK snapshot dir
+(`/var/lib/biap-global/backup-pre-fbk-reextract-20261013T143410Z`), moved only FBK `latest.json` aside (history kept) and re-ran the provider for that one ticker: total_equity EUR 2,553.324m
+(FY2025-12-31). Live `/global/analyze` FBK: equity set, evidence PASS, sector Financials, distress NOT_APPLICABLE. Agent 9 stays INSUFFICIENT_DATA (debt/EBITDA absent from sources; nothing estimated).
+**Other banks:** the same stale-snapshot condition may hide equity for other ESEF extension filers; a revision bump would re-parse every market, so it was not done without approval.
+**Still open:** DE sector source (Frankfurt 27.3% / Xetra 29.6%); UK asset-class source (gate untouched); APK 0.3.22 not device-tested; `Sync main` CI job (repo setting); timers remain inactive.
+
+## 2026-10-13 session 15 verification (BIAP Global, live prod 8091 @ 4da8ab3)
+
+**Reconciliation:** the "four pending commits" were already pushed. `origin/feat/biap-global` = f3fb006 (0.3.22, versionCode 25), which contains FBK fix 2215398; prod
+runs 4da8ab3 (f3fb006 is a version bump only, not path-triggering). Deploy workflow green on 4da8ab3; APK workflow green on f3fb006; `Sync main from BIAP Global`
+still fails (repo setting: Actions may not create PRs). All Global timers remain inactive. "PR #9" in XS227/BIAP is an unrelated PR, so reporting is on a dedicated issue.
+**Backups:** `/var/lib/biap-global/backup-pre-s15-20261013T141455Z` (34 ledgers, integrity ok, SHA256SUMS). **Tests:** 787 global tests pass.
+
+**NASDAQ ledger:** discovered 3,018, ledger 3,013 rows (identical key set to the pre-resync backup, 0 lost, 0 evidence statuses lost), 3,010 in_universe. A full scan (discoveryLimit 5000) left it unchanged.
+
+| Market | Universe | Deep | Fund. cov | Evidence PASS | Qualified BUY | Top list |
+|---|---|---|---|---|---|---|
+| NO Oslo | 146 | 146 | 93.2% | 136 | 1 (NORBT) | 20 |
+| DE Frankfurt | 498 | 491 | 98.6% | 434 | 1 | 12 |
+| DE Xetra | 406 | 404 | 99.0% | 372 | 0 | 11 |
+| IT Milan | 193 | 193 | 93.3% | 169 | 0 | 20 |
+| GB LSE | 527 | 521 | 85.0% (gate 70%, now released) | 420 | 7 | 20 |
+| NL | 98 | 98 | 86.7% | 82 | 3 | 20 |
+| FI | 148 | 146 | 84.9% | 123 | 3 | 20 |
+| ES | 109 | 106 | 91.5% | 95 | 1 | 20 |
+| SE | 402 | 402 | 93.0% | 373 | 0 | 20 |
+| FR | 294 | 293 | 91.1% | 259 | 1 | 20 |
+| US NASDAQ | 3,010 | 3,000 | 94.1% | 2,804 | 38 | 20 |
+| US NYSE | 1,798 | 1,787 | 90.1% | 1,599 | 44 | 20 |
+(ledger `buyQualified` shows FI 4 / NYSE 45 vs scan 3 / 44; a one-name difference between ledger count and the scan's one-security-per-issuer ranking, not investigated further.)
+
+**Zero-BUY audit (nothing forced):** a name needs score >= 0.25, confidence >= 0.45 and evidence PASS to be proposed BUY, then calibrated confidence >= 0.55 to be accepted.
+Among evidence-PASS names, only IT 2 (PHIL 0.31/0.52, PIRC), SE 3 (ASMDEE.B, VIMIAN, AZN), NO 5, GB 5 reach score 0.25 without being BUY, all at confidence 0.50-0.52, i.e. just under
+the 0.55 accept threshold. Xetra and Frankfurt have no PASS name at score >= 0.25. Thresholds and the evidence gate were not changed; confidence is deterministic (coverage/freshness/source quality), not outcome-calibrated (no outcome history exists).
+Research watchlists (clearly separated from BUY): `docs/market-audit/WATCHLISTS_20261013.md`.
+
+**Portfolio (prod, NL/FI/ES, EUR 100k, max 10 positions):** 10 positions, 90.0% invested / 10.0% cash (was 7 positions / 53.6%); the "max_positions" message now appears only for names truly beyond slot 10.
+**Sector coverage (ledger):** NO/SE/NL/IT 100%, FR 99.7%, FI 98.6%, ES 94.5%, GB 89.2%, NYSE 81.5%, **DE Frankfurt 27.3% / Xetra 29.6% (still open: no official sector source)**.
+**FBK (IT):** sector Financials/Banks, distress NOT_APPLICABLE for a bank. total_equity is still None on live `/global/analyze`; the cached snapshot needs the bounded ESEF re-extraction for 2215398's cross-footed equity to apply (not done).
+**Agents 9/10:** EBITDA, total debt, interest expense, FFO, FCF remain absent from the sources; scores report factors_missing rather than estimating. No values fabricated.
+**Remaining blockers:** DE sector source; FBK re-extraction; UK has no asset-class source (gate untouched); APK 0.3.22 not device-tested; `Sync main` CI job; CI final-live-check races the restart (re-run full scan after any deploy).
+
+## 2026-10-13 deploy + NASDAQ re-sync + FBK fix (session 14)
+
+**Deployed (verified):** `feat/biap-global` pushed 5761485..03e740e; CI `Setup BIAP Global server` green (validate 1m6s, deploy 56s);
+`/health` on 8091 reports commit `03e740e`; `biap-global.service` active; the three Global timers stay disabled (no NEXT).
+Rollback target if needed: `631e5e0` (previous prod) plus the ledger backup below.
+
+**Ledger backup (restorable):** `/var/lib/biap-global/backup-pre-resync-20261013T095658Z/` - 34 SQLite ledgers via the online
+backup API, `PRAGMA integrity_check` = ok on all 34, `SHA256SUMS` alongside (105 MB). Disk 12 GB free before / 11 GB after; RAM 0.9 GB available.
+No original financial evidence (cache/, fundamentals/, filings/) was touched or deleted.
+
+**NASDAQ re-sync:** discovered 3,018 (the brief's number); resolved/registered 3,013 ledger rows, 3,010 `in_universe` (the other 8 discovered
+rows did not resolve to an ordinary-equity identity, 3 ledger rows are out of universe). It was already 3,010 from an 08:09Z out-of-band sync;
+the push-triggered `final-live-check` then raced the restart, ran on the OLD code and shrank it to 250 again. The full-universe scan on the deployed
+code restored 3,010, and a following `discoveryLimit=250` scan left it at 3,010, which confirms commit 0ba978e on production.
+Status mix NASDAQ before = after: COMPLETE 2,804 / BLOCKED 15 / INSUFFICIENT_DATA 191.
+**Operational note:** after any future deploy, re-run the full-universe scan once, because CI's final-live-check can run before the restart.
+
+**Regression check (34 ledgers, before vs after):** no market lost rows, and no COMPLETE count fell, except NYSE `OBK` (Origin Bancorp)
+leaving the official Nasdaq screener source (in_universe 1,799 -> 1,798, COMPLETE 1,600 -> 1,599). That follows the source, not code. Not rolled back.
+
+**Priority 2 (extraction), committed locally as 2215398, NOT pushed/deployed (needs approval):**
+- ESEF: FinecoBank-style equity (only a `PreviouslyStatedMember` column, no plain total) is now accepted only when all hold: no restated column at
+  that date, component columns foot to the owners total, a component equals the income-statement profit, NCI tagged explicitly. FBK: EUR 2,553.324m, method `extension_components_cross_footed`. BFF-style owners-only tags stay rejected.
+- Taxonomy bank flag (`taxonomy_financial_institution`): a filing with Circular-262 structure is financial in distress/core/advanced agents even at 14.6x leverage.
+- 770 Global tests pass (+5 new). Cached FBK snapshot verified by hand (components sum 2,553.324m).
+**Not fixed:** UK 62.6% vs 70% gate (no asset-class source; gate unchanged); DE insurers without sector; EBITDA/debt/interest absent from sources.
+
+**Priority 3/6 (agents + portfolio), live read-only on prod 03e740e:** NL, FI, ES all `READY`/rankingEligible.
+| Market | Verified fundamentals cov. | Top list | Qualified BUY |
+|---|---|---|---|
+| NL Euronext Amsterdam | 86.7% (98 deep of 102) | 20 | 3 (ASML, NEDAP, FFARM) |
+| FI Nasdaq Helsinki | 84.9% (146 of 148) | 20 | 3 (PUUILO, ORNBV, SCANFL) |
+| ES BME Madrid | 91.5% (106 of 111) | 20 | 1 (ITX) |
+The 20-name lists are evidence-standard shortlists and are not BUY lists; the BUY count was not padded. Portfolio call (18 names from the three lists, EUR 100k):
+7 positions, max 10.0% each (cap 10%), NL 20.5% / FI 23.6% / ES 9.5% (cap 40%), cash 46.4% (min 10%). Observations: EU instruments carry no sector, so the 30%
+sector cap cannot be verified; the proposal is under-invested (53.6%) and lists names as cut by `max_positions=10` although only 7 were allocated - to investigate.
+
+**Remaining blockers:** approval to push 2215398 (a push redeploys 8091 and requires another full NASDAQ re-sync); no APK rebuilt/device-tested for 03e740e;
+UK gate; DE insurer sectors; sector data for EU portfolio caps; portfolio under-investment/cut-message quirk; `Sync main from BIAP Global` CI job fails on each push (not investigated).
+
+## 2026-10-13 audit checkpoint 1 (BIAP Global reconciliation, ranking standard, root causes)
+
+**Fixed in code (committed on feat/biap-global, NOT pushed/deployed; live 8091 still runs 631e5e0):**
+- Deploy workflow was failing on the last two pushes: it still ran a DK universe sync that the
+  six-market background allowlist rejects (`ok=0` -> exit 1) before restarting the API (4495f76).
+- Market Top 10/20 admitted any evidence-PASS company, including Siemens at 30.8% coverage and
+  companies without core statements. New ranking-evidence standard: Qualified BUY, or complete
+  core statements and >=60% coverage (`BIAP_GLOBAL_RANK_MIN_COVERAGE_PCT`). Thin-but-PASS
+  companies count as Insufficient Evidence; new `ranking_evidence_standard` funnel gate; note
+  states the real slot count (8824425). Germany Frankfurt now ranks 12, not a padded 20.
+- German share classes (ST/VZ/VZO/NA/INH/O.N.) collapse to one issuer (Fuchs, VW no longer take two slots).
+- A bounded scan (`discoveryLimit=250`, run by the final-live-check CI job on every push) flagged
+  2,763 of 3,013 NASDAQ ledger rows `in_universe=0` and blocked NASDAQ ranking (8% market
+  coverage). `sync_universe(demote_missing=False)` for partial slices; queue resolves from the
+  full universe (0ba978e). **The production NASDAQ ledger itself is not repaired yet.**
+- Tests: 765 global tests pass.
+
+**Reconciliation (ledger-based, `counts_before.json` in the audit scratch):** Germany Frankfurt
+498 = 491 deep analysed (434 PASS + 22 WARN + 35 BLOCK) + 7 no fundamental source. The old
+101/14/35 = 150 figure was a capped payload sample, not the ledger; the live ledger API already
+reports 491. Financially complete is 0-1 company per market everywhere: EBITDA, total debt,
+interest expense and operating cash flow are absent from the sources used.
+
+**Root causes found, not yet fixed:**
+- Italy FBK (FinecoBank): bank, but no sector and the filing tags equity only as issuer extensions
+  (`finecobank:TotalEquityAttributableToOwnersOfParent`, owners column; components cross-foot to
+  EUR 2,553.3m). The `^totalequity$` extension pattern misses it, so total_equity is None; even with
+  it, assets/equity = 14.6x is under the 15x leverage test that marks financials. Result: Agent 9
+  runs corporate models on a bank (insufficient data) and Agent 10 grid has zero coverage. Needs a
+  taxonomy-based financial-institution flag and a cross-footed extension-equity rule; touches the
+  ESEF extractor (~8,700 cached snapshots), so it needs a bounded re-extraction plan.
+- Germany: insurers/banks (ALV, HNR1, CBK) have no sector, so they are scored as industrials;
+  EBITDA/debt/interest are `absent_from_source` for the Frankfurt key-data and issuer-financial sources.
+- UK ranking block: 803 analysed, 300 without a fundamental source = 62.6% vs the 70% gate. 168
+  of the 300 are trusts/funds/VCTs, and more have no name marker (Witan, Asia Focus, Aquila).
+  There is no authoritative asset-class source: BIAP_COMPANIES_HOUSE_API_KEY is blank, and the
+  LSE universe rows carry no sector. Name matching would be guessing, so the 70% gate is untouched.
+- Confidence clustering (0.46/0.57/0.63): `mean(agent confidence) x (0.45 coverage + 0.30
+  freshness + 0.25 source quality)`; discrete inputs give discrete outputs. It is deterministic,
+  not noise. True calibration needs outcome history; none exists, so nothing was altered.
+
+## 2026-10-13 overnight repair (BIAP Global US/GB)
+
+Branch `feat/biap-global-overnight-20261013`, **not merged, not deployed** (prod `f15134a`), APK rebuild required. See `docs/overnight-progress.md`, `docs/market-audit/US_NASDAQ.md`, `docs/market-audit/GB_LSE.md`. GB ranking remains BLOCKED (62.8 % < 70 % verified fundamentals — genuine). US BUY list needs a ledger refresh on the fixed code.
+
 _Last updated: 2026-09-02 (broad-market regression tests, item 5, verified against real live TSE/IFB/IFB_BASE data on production `biap-fin` -- no code change, no bug found)_
 
 ## Production status

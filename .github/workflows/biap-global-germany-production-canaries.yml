@@ -35,7 +35,7 @@ jobs:
 
           base = "https://biap.dadashi.no/global-api/global"
           cases = [
-              ("DE", "XETRA", "BMW", "EUR", {"de-official-issuer-financials"}, "2025-12-31"),
+              ("DE", "XETRA", "BMW", "EUR", {"de-reviewed-issuer-annual-report", "de-official-issuer-financials"}, "2025-12-31"),
               ("DE", "FRANKFURT", "DUE", "EUR", {"de-official-issuer-financials"}, "2025-12-31"),
               ("DE", "FRANKFURT", "JEN", "EUR", {"de-official-issuer-financials"}, "2025-12-31"),
               ("DE", "FRANKFURT", "BMM", "EUR", {"de-official-issuer-financials"}, "2025-12-31"),
@@ -48,7 +48,7 @@ jobs:
               ("DE", "FRANKFURT", "BENH", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-12-31"),
               ("DE", "FRANKFURT", "KGR", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-12-31"),
               ("DE", "FRANKFURT", "INS", "EUR", {"de-reviewed-issuer-annual-report"}, "2025-12-31"),
-              ("DE", "FRANKFURT", "SAP", "EUR", {"sec-edgar-foreign-ifrs-cached", "de-official-issuer-financials"}, "2025-12-31"),
+              ("DE", "FRANKFURT", "SAP", "EUR", {"de-reviewed-issuer-annual-report", "sec-edgar-foreign-ifrs-cached", "de-official-issuer-financials"}, "2025-12-31"),
           ]
 
           failures = []

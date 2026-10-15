@@ -52,37 +52,10 @@ if ! "$PY" -m global_markets.oam_esef_warm; then
   echo "OAM_ESEF_WARM: refresh degraded; existing snapshots preserved" >&2
 fi
 
-# Brazil: CVM DFP is the annual regulator-published fundamentals base. CVM ITR is
-# a second official quarterly filing stream used as corroboration/freshness only.
-# Both datasets are updated weekly; refresh compact indexes at most every 6 days.
-refresh_if_stale() {
-  local label="$1"
-  local index_path="$2"
-  local module="$3"
-  local refresh=0
-  if [[ ! -s "$index_path" ]]; then
-    refresh=1
-  elif find "$index_path" -mtime +6 -print -quit | grep -q .; then
-    refresh=1
-  fi
-  if [[ "$refresh" -eq 1 ]]; then
-    if ! "$PY" -m "$module"; then
-      echo "$label: refresh failed; existing verified index preserved" >&2
-    fi
-  else
-    echo "$label: recent verified index already present"
-  fi
-}
-
-refresh_if_stale "CVM_DFP" "$BIAP_GLOBAL_DATA_DIR/source-index/cvm-dfp.json" "global_markets.cvm_sync"
-refresh_if_stale "CVM_ITR" "$BIAP_GLOBAL_DATA_DIR/source-index/cvm-itr.json" "global_markets.cvm_itr_sync"
-
-# Japan: keep a small rolling EDINET window current after the initial bootstrap.
-if [[ -n "${BIAP_EDINET_API_KEY:-}" ]]; then
-  "$PY" -m global_markets.edinet_sync --days "${BIAP_EDINET_DAILY_SYNC_DAYS:-4}"
-else
-  echo "EDINET: skipped (BIAP_EDINET_API_KEY not configured)"
-fi
+# Brazil (CVM) and Japan (EDINET) syncs are intentionally not run: background
+# processing is limited to the SE/NO/FR/IT/GB/US allowlist
+# (analysis/global_markets/background_scope.py). Their existing indexes and
+# caches are preserved untouched.
 
 # ESEF/GLEIF are queried by verified LEI and cached by the API layer. The warm
 # job above pre-populates a representative baseline and on-demand analysis grows

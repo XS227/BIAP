@@ -1,0 +1,5224 @@
+{
+ "market": "DE__XETRA",
+ "companies": [
+  {
+   "ticker": "SAP",
+   "name": "SAP SE O.N.",
+   "category": "TRADING_VALUE",
+   "rank": 1,
+   "isin": "DE0007164600",
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 197.27999877929688,
+    "historyFileObservedAt": "2026-10-13T21:35:31.469282+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SAP.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 395409735.7647278,
+    "return30dPct": 7.066104776193249,
+    "volumeRatio": 0.9113887017451496,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.190541,
+   "confidence": 0.60017,
+   "agents": {
+    "fundamental": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.5,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 1.0,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.190541
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.60017
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "interest_expense"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "de-reviewed-issuer-annual-report",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-12-31",
+      "url": "https://www.sap.com/docs/download/integrated-reports/2025/sap-2025-integrated-report-data.xlsx"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0007164600&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime"
+    ],
+    "missingInputs": [
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.4,
+    "missing": [
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 32.16612377850163,
+    "pb": 5.382961298897971,
+    "evEbitda": 22.18683782643744,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 7.680200559128969,
+    "netMarginPct": 19.907255939715466,
+    "roePct": 16.253358877109775,
+    "debtToEquity": 0.17904223528736005,
+    "currentRatio": 1.1630957668958521,
+    "return1mPct": 5.569808673807497,
+    "return3mPct": 43.19895781761256,
+    "return6mPct": 33.72304756918139,
+    "volatilityAnnualizedPct": 41.51042179329444,
+    "maxDrawdownPct": -46.07525602708043,
+    "volumeVs30d": 0.9175146114933352
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "SIE",
+   "name": "SIEMENS AG  NA O.N.",
+   "category": "TRADING_VALUE",
+   "rank": 2,
+   "isin": "DE0007236101",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 274.5,
+    "historyFileObservedAt": "2026-10-13T21:35:10.881705+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SIE.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 261487168.39691162,
+    "return30dPct": -1.2056886917135912,
+    "volumeRatio": 0.7141130657558812,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.205711,
+   "confidence": 0.599397,
+   "agents": {
+    "fundamental": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.05,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.205711
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.599397
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.21<0.25, no negative agent; neutral votes; abstaining agents: ['comparison']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [],
+    "fundamentalSources": [
+     {
+      "provider": "de-reviewed-issuer-annual-report",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-09-30",
+      "url": "https://assets.new.siemens.com/siemens/assets/api/uuid:3948cdd4-35e0-4c1d-8412-9aed4097b3d0/HQCOPR202511117277EN.pdf"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0007236101&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-09-30",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.60."
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 22.538776008450256,
+    "pb": 3.2306095403433104,
+    "evEbitda": 19.6113606040966,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 3.929935466877388,
+    "netMarginPct": 13.162429987074537,
+    "roePct": 15.192113615421743,
+    "debtToEquity": 0.8192801041377192,
+    "currentRatio": 1.3692262118871796,
+    "return1mPct": 6.68470599944011,
+    "return3mPct": 4.365911488752627,
+    "return6mPct": 13.832200630646273,
+    "volatilityAnnualizedPct": 32.70222420726199,
+    "maxDrawdownPct": -20.5036628673658,
+    "volumeVs30d": 0.7183542928082578
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "ENR",
+   "name": "SIEMENS ENERGY AG NA O.N.",
+   "category": "TRADING_VALUE",
+   "rank": 3,
+   "isin": "DE000ENER6Y0",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 145.47999572753906,
+    "historyFileObservedAt": "2026-10-13T22:29:56.791026+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ENR.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 236546437.36185658,
+    "return30dPct": 3.118793478436044,
+    "volumeRatio": 0.17293037197108763,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.045462,
+   "confidence": 0.500697,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7000000000000001,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -0.7,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.3,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.045462
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.500697
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "total_debt",
+     "free_cash_flow",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "de-issuer-esef-v1",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-09-30",
+      "url": "https://www.siemens-energy.com/"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE000ENER6Y0&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-09-30",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 86.39264253019556,
+    "pb": 11.359260731324099,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 13.381691571159138,
+    "netMarginPct": 4.31199938582798,
+    "roePct": 15.784543325526931,
+    "debtToEquity": null,
+    "currentRatio": 0.8950923592528124,
+    "return1mPct": 5.8797047550516846,
+    "return3mPct": -4.632260712618297,
+    "return6mPct": -16.59558731427413,
+    "volatilityAnnualizedPct": 50.12595160527978,
+    "maxDrawdownPct": -29.29324852649639,
+    "volumeVs30d": 0.8595176588754998
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "IFX",
+   "name": "INFINEON TECH.AG NA O.N.",
+   "category": "TRADING_VALUE",
+   "rank": 4,
+   "isin": "DE0006231004",
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 56.310001373291016,
+    "historyFileObservedAt": "2026-10-13T22:28:04.853887+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "IFX.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 217580500.87039757,
+    "return30dPct": 1.38638899004484,
+    "volumeRatio": 0.3040359575866255,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.01085,
+   "confidence": 0.599783,
+   "agents": {
+    "fundamental": {
+     "vote": -0.14999999999999997,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.35000000000000003,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.35,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.01085
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.599783
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "interest_expense"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "de-reviewed-issuer-annual-report",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-09-30",
+      "url": "https://www.infineon.com/row/public/documents/corporate/investors/annual-reports/2025/2025-annual-report-v01-00-en.pdf"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0006231004&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-09-30",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime"
+    ],
+    "missingInputs": [
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.4,
+    "missing": [
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 72.84415604232193,
+    "pb": 4.295880182937515,
+    "evEbitda": 23.05042336808496,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -1.9592109662320278,
+    "netMarginPct": 6.92265720911199,
+    "roePct": 5.952730045158642,
+    "debtToEquity": 0.42320098527945577,
+    "currentRatio": 1.6983056708160442,
+    "return1mPct": 3.2394593451443576,
+    "return3mPct": -11.891297067183315,
+    "return6mPct": 16.866343162527574,
+    "volatilityAnnualizedPct": 53.509486562604906,
+    "maxDrawdownPct": -38.59090805053711,
+    "volumeVs30d": 1.1883616743141412
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "ALV",
+   "name": "ALLIANZ SE NA O.N.",
+   "category": "TRADING_VALUE",
+   "rank": 5,
+   "isin": "DE0008404005",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 423.5,
+    "historyFileObservedAt": "2026-10-13T21:35:15.958847+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ALV.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 212248661.27130535,
+    "return30dPct": -6.263831022044386,
+    "volumeRatio": 0.5746407553672732,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": 0.015645,
+   "confidence": 0.239167,
+   "agents": {
+    "fundamental": {
+     "vote": -0.09999999999999998,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.0,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "FAIL",
+     "value": "WARN"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.015645
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.239167
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "evidence WARN: coverage=100%; freshness=1.00; sourceQuality=0.82; provenance=independently_veri",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "yahoo-public-fundamentals-global",
+      "type": "public_vendor_financial_metrics",
+      "period": "2025-12-31",
+      "url": "https://finance.yahoo.com/quote/ALV.DE/financials/"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0008404005&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "NOT_CURRENT"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "evidence gate returned WARN"
+    ],
+    "reasoning": "Escalated to human review: evidence gate returned WARN"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 15.29071845057726,
+    "pb": 2.5679956901581673,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -1.784246893466812,
+    "netMarginPct": 7.839214259730812,
+    "roePct": 17.17898026210899,
+    "debtToEquity": 0.5624023468639393,
+    "currentRatio": null,
+    "return1mPct": -4.768333764281429,
+    "return3mPct": 0.11823126205161572,
+    "return6mPct": 13.764117636640227,
+    "volatilityAnnualizedPct": 18.430388873962865,
+    "maxDrawdownPct": -12.35039804843075,
+    "volumeVs30d": 0.5790215698759522
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "DTE",
+   "name": "DT.TELEKOM AG NA",
+   "category": "TRADING_VALUE",
+   "rank": 6,
+   "isin": "DE0005557508",
+   "sector": "Telecommunications",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 25.110000610351562,
+    "historyFileObservedAt": "2026-10-13T21:49:24.349641+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "DTE.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 176327619.68018588,
+    "return30dPct": -11.52219396445785,
+    "volumeRatio": 1.3298383968364074,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.005049,
+   "confidence": 0.60017,
+   "agents": {
+    "fundamental": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.35,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.35,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.005049
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.60017
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [],
+    "fundamentalSources": [
+     {
+      "provider": "de-reviewed-issuer-annual-report",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-12-31",
+      "url": "https://report.telekom.com/annual-report-2025/financial-statements/statement-of-financial-position.html"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0005557508&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 12.802030108301773,
+    "pb": 1.3412940164573008,
+    "evEbitda": 5.3780157775157855,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 2.860869490105289,
+    "netMarginPct": 12.534325375164803,
+    "roePct": 16.183278940920083,
+    "debtToEquity": 1.590820873675879,
+    "currentRatio": 1.1174826313504125,
+    "return1mPct": -12.733565237890932,
+    "return3mPct": -6.971601823850204,
+    "return6mPct": -14.71085703876801,
+    "volatilityAnnualizedPct": 28.266446155097448,
+    "maxDrawdownPct": -27.769587398998592,
+    "volumeVs30d": 1.3087224193977756
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "RHM",
+   "name": "RHEINMETALL AG",
+   "category": "TRADING_VALUE",
+   "rank": 7,
+   "isin": "DE0007030009",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 961.2000122070312,
+    "historyFileObservedAt": "2026-10-13T22:28:15.135176+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "RHM.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 171624340.7950114,
+    "return30dPct": -10.983518360626753,
+    "volumeRatio": 0.1278038884369457,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.132166,
+   "confidence": 0.599783,
+   "agents": {
+    "fundamental": {
+     "vote": 0.55,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.5,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.65,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.132166
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.599783
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental,quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [],
+    "fundamentalSources": [
+     {
+      "provider": "de-reviewed-issuer-annual-report",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-12-31",
+      "url": "https://www.rheinmetall.com/Rheinmetall%20Group/Investor%20Relations/Ver%C3%B6ffentlichungen/2026/GB/Rheinmetall-Annual-Report-2025.pdf"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0007030009&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 63.862159441289414,
+    "pb": 8.047951649719174,
+    "evEbitda": 21.441244287810257,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 28.775113415424492,
+    "netMarginPct": 8.40463009562154,
+    "roePct": 14.873530459565373,
+    "debtToEquity": 0.2281795511221945,
+    "currentRatio": 1.201741814573917,
+    "return1mPct": -4.510982352733839,
+    "return3mPct": -0.20321072700609788,
+    "return6mPct": -32.78101988244882,
+    "volatilityAnnualizedPct": 48.57971928242004,
+    "maxDrawdownPct": -51.27823014968621,
+    "volumeVs30d": 0.6715683023026803
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "DBK",
+   "name": "DEUTSCHE BANK AG NA O.N.",
+   "category": "TRADING_VALUE",
+   "rank": 8,
+   "isin": "DE0005140008",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 29.84000015258789,
+    "historyFileObservedAt": "2026-10-13T21:35:21.584005+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "DBK.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 169161439.12518007,
+    "return30dPct": -13.53230482781963,
+    "volumeRatio": 0.968909117248801,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": 0.011922,
+   "confidence": 0.328469,
+   "agents": {
+    "fundamental": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "risk": {
+     "vote": -0.2,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": -0.1,
+     "confidence": 0.33999999999999997
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.011922
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.328469
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.01<0.25 with negative evidence-backed votes: risk -0.20, quality -0.10",
+   "dataCompleteness": {
+    "present": [
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "de-issuer-esef-v1",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-12-31",
+      "url": "https://www.db.com"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0005140008&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.75,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.33 below escalation threshold 0.35"
+    ],
+    "reasoning": "Abstained: calibrated confidence 0.33 too low to act on."
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 9.408227703239344,
+    "pb": 0.7082221678167386,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": null,
+    "netMarginPct": null,
+    "roePct": 8.901163298130992,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -10.827836214245934,
+    "return3mPct": -3.583588698054363,
+    "return6mPct": 8.96405903699964,
+    "volatilityAnnualizedPct": 32.23188838050053,
+    "maxDrawdownPct": -26.767224402082185,
+    "volumeVs30d": 0.9711885649161358
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "MUV2",
+   "name": "MUENCH.RUECKVERS. NA O.N.",
+   "category": "TRADING_VALUE",
+   "rank": 9,
+   "isin": "DE0008430026",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 530.7999877929688,
+    "historyFileObservedAt": "2026-10-13T22:28:36.030764+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "MUV2.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 145721628.48719278,
+    "return30dPct": 1.1818552221826373,
+    "volumeRatio": 0.11371138487452503,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": 0.032578,
+   "confidence": 0.239167,
+   "agents": {
+    "fundamental": {
+     "vote": -0.09999999999999998,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.0,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "FAIL",
+     "value": "WARN"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.032578
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.239167
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "evidence WARN: coverage=100%; freshness=1.00; sourceQuality=0.82; provenance=independently_veri",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "yahoo-public-fundamentals-global",
+      "type": "public_vendor_financial_metrics",
+      "period": "2025-12-31",
+      "url": "https://finance.yahoo.com/quote/MUV2.DE/financials/"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0008430026&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "NOT_CURRENT"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "evidence gate returned WARN"
+    ],
+    "reasoning": "Escalated to human review: evidence gate returned WARN"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 11.240721102863203,
+    "pb": 2.082729268806208,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -3.281385818949456,
+    "netMarginPct": 9.818648692023753,
+    "roePct": 18.40166030017746,
+    "debtToEquity": 0.22359912172526844,
+    "currentRatio": null,
+    "return1mPct": 3.354136625677029,
+    "return3mPct": 2.7928675515738854,
+    "return6mPct": -2.0965507195297883,
+    "volatilityAnnualizedPct": 19.645770425044788,
+    "maxDrawdownPct": -19.219710519296374,
+    "volumeVs30d": 0.5928583626442939
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "BMW",
+   "name": "BAY.MOTOREN WERKE AG ST",
+   "category": "TRADING_VALUE",
+   "rank": 10,
+   "isin": "DE0005190003",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 54.41999816894531,
+    "historyFileObservedAt": "2026-10-13T21:35:23.229051+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "BMW.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 103272740.93191262,
+    "return30dPct": -11.078435472994098,
+    "volumeRatio": 0.8621982459923114,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.125763,
+   "confidence": 0.547857,
+   "agents": {
+    "fundamental": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -0.6,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.15,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.125763
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.547857
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.13<0.25 with negative evidence-backed votes: risk -0.60, forecast -0.20, fundamental -0.20",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "free_cash_flow"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "de-reviewed-issuer-annual-report",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-12-31",
+      "url": "https://www.bmwgroup.com/en/report/2025/financial-statements/balance-sheet/index.html"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0005190003&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.55 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.55 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.45,
+    "missing": [
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 4.583683767872161,
+    "pb": 0.34279456825935084,
+    "evEbitda": 6.630821326411696,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -6.26984126984127,
+    "netMarginPct": 5.583239042958945,
+    "roePct": 7.610360958470369,
+    "debtToEquity": 1.128316957081282,
+    "currentRatio": 1.1214331163428124,
+    "return1mPct": -13.299396323860147,
+    "return3mPct": -6.9012655489312795,
+    "return6mPct": -30.96663682131007,
+    "volatilityAnnualizedPct": 27.84390603050783,
+    "maxDrawdownPct": -43.3493425608861,
+    "volumeVs30d": 0.8600016593509853
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "BEZ",
+   "name": "BERENTZEN-GRP.AG",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 1,
+   "isin": "DE0005201602",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 5.920000076293945,
+    "historyFileObservedAt": "2026-10-13T22:27:25.828789+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "BEZ.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 537720.650202624,
+    "return30dPct": 88.53502797811561,
+    "volumeRatio": 0.17338222107325515,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.165651,
+   "confidence": 0.551728,
+   "agents": {
+    "fundamental": {
+     "vote": -0.14999999999999997,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.05,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.165651
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.551728
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.17<0.25 with negative evidence-backed votes: fundamental -0.15",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "total_debt",
+     "interest_expense"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "de-reviewed-issuer-annual-report",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-12-31",
+      "url": "https://www.berentzen-gruppe.de/fileadmin/media/4_0_investoren/4_3-berichte/2025_Geschaeftsbericht_EN_gesch.pdf"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0005201602&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.55."
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 23.253968783787318,
+    "pb": 1.188816831464641,
+    "evEbitda": 2.667017618815104,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -10.739726027397257,
+    "netMarginPct": 1.4518109269490485,
+    "roePct": 4.997781111979882,
+    "debtToEquity": null,
+    "currentRatio": 1.0072654679776196,
+    "return1mPct": 71.3450293213018,
+    "return3mPct": 83.12500144354998,
+    "return6mPct": 73.55040919380116,
+    "volatilityAnnualizedPct": 37.65831597950919,
+    "maxDrawdownPct": -20.15085500356482,
+    "volumeVs30d": 0.3771837456974011
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "AB9",
+   "name": "ABO ENERGY INH O.N.",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 2,
+   "isin": "DE0005760029",
+   "sector": "Utilities",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 5.800000190734863,
+    "historyFileObservedAt": "2026-10-13T22:27:51.490511+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "AB9.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 18956.72017602126,
+    "return30dPct": 73.13433898055628,
+    "volumeRatio": 3.0711827980331927,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": -0.058987,
+   "confidence": 0.123667,
+   "agents": {
+    "fundamental": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -1.0,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.30000000000000004,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": -0.6,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "FAIL",
+     "value": "BLOCK"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.058987
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.123667
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "evidence BLOCK: ('fresh_fundamentals',)",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "interest_expense"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "yahoo-public-fundamentals-global",
+      "type": "public_vendor_financial_metrics",
+      "period": "2024-12-31",
+      "url": "https://finance.yahoo.com/quote/AB9.DE/financials/"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0005760029&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2024-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "NOT_CURRENT"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [
+     "task/evidence gate is out of scope or blocked"
+    ],
+    "review_reasons": [],
+    "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.4,
+    "missing": [
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 1.5694909764444762,
+    "pb": 0.18873550010273912,
+    "evEbitda": 5.057872941826416,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 48.94505897859418,
+    "netMarginPct": 5.732067406567705,
+    "roePct": 12.026435031116627,
+    "debtToEquity": 1.4801455242822494,
+    "currentRatio": 6.17017034626323,
+    "return1mPct": 29.806259145004677,
+    "return3mPct": 21.140472445477588,
+    "return6mPct": -27.17391295680581,
+    "volatilityAnnualizedPct": 146.6033861961407,
+    "maxDrawdownPct": -95.66197193844218,
+    "volumeVs30d": 8.477150103946707
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "VRL",
+   "name": "NET DIGITAL AG INH O.N.",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 3,
+   "isin": "DE000A2BPK34",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 28.399999618530273,
+    "historyFileObservedAt": "2026-10-13T22:29:15.504870+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "VRL.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 99887.08395379384,
+    "return30dPct": 59.550566493283675,
+    "volumeRatio": 0.0869894404484789,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.050548,
+   "confidence": 0.435084,
+   "agents": {
+    "fundamental": {
+     "vote": 0.4,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": -0.4,
+     "confidence": 0.5800000000000001
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.15,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.01999999999999999,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.050548
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.435084
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.05<0.25 with negative evidence-backed votes: risk -0.40",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-boerse-frankfurt-historical-key-data",
+      "type": "official_exchange_fundamental_metrics",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE000A2BPK34&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": null,
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "PERIOD_UNKNOWN"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.44 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.44 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [],
+    "missingInputs": [
+     "zmijewski:current_liabilities",
+     "altman:retained_earnings",
+     "altman:current_liabilities",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 13.06,
+    "pb": 7.74,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 244.52554744525546,
+    "netMarginPct": 7.627118644067797,
+    "roePct": 59.381443298969074,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": 33.01886673625489,
+    "return3mPct": 89.26175493232049,
+    "return6mPct": 91.83674237305443,
+    "volatilityAnnualizedPct": 57.30134750282288,
+    "maxDrawdownPct": -29.166667494508925,
+    "volumeVs30d": 0.10362309880054409
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "YSN",
+   "name": "SECUNET SECURITY AG O.N.",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 4,
+   "isin": "DE0007276503",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 254.0,
+    "historyFileObservedAt": "2026-10-13T22:28:21.756362+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "YSN.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 2041902.4011184692,
+    "return30dPct": 42.21724038059826,
+    "volumeRatio": 0.21608279240844855,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "BUY_CANDIDATE",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.266591,
+   "confidence": 0.599397,
+   "agents": {
+    "fundamental": {
+     "vote": 0.55,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.30000000000000004,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.8,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "PASS",
+     "value": 0.266591
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.599397
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "BUY",
+   "reason": "all gates passed",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [],
+    "fundamentalSources": [
+     {
+      "provider": "de-reviewed-issuer-annual-report",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-12-31",
+      "url": "https://www.hauptversammlung.de/fileadmin/public/user_upload/secunet_GB25.pdf"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0007276503&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "BUY_CANDIDATE",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.60."
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 48.252427184466015,
+    "pb": 9.670254817635337,
+    "evEbitda": 20.672749245513437,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 12.90669004868481,
+    "netMarginPct": 7.2654153008619655,
+    "roePct": 19.957906238394685,
+    "debtToEquity": 0.12086909718650694,
+    "currentRatio": 1.9013859231779944,
+    "return1mPct": 25.125877322720314,
+    "return3mPct": 53.77474666728608,
+    "return6mPct": 30.82898975817876,
+    "volatilityAnnualizedPct": 46.678374419986014,
+    "maxDrawdownPct": -32.7545700994496,
+    "volumeVs30d": 0.7898551526485266
+   },
+   "opportunityState": "BUY"
+  },
+  {
+   "ticker": "SNG",
+   "name": "SINGULUS TECHNOL. EO 1",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 5,
+   "isin": "DE000A1681X5",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 10.600000381469727,
+    "historyFileObservedAt": "2026-10-13T22:29:00.890461+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SNG.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 254872.0609893481,
+    "return30dPct": 35.54987402535736,
+    "volumeRatio": 0.22803651936107625,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.209142,
+   "confidence": 0.41311,
+   "agents": {
+    "fundamental": {
+     "vote": -0.7,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": -0.75,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.209142
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.41311
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.21<0.25 with negative evidence-backed votes: risk -0.75, fundamental -0.70, quality -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "pe"
+    ],
+    "missing": [
+     "ebitda",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-boerse-frankfurt-historical-key-data",
+      "type": "official_exchange_fundamental_metrics",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE000A1681X5&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": null,
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "PERIOD_UNKNOWN"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.41 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.41 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": -0.84,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -36.36363636363637,
+    "netMarginPct": -29.39958592132505,
+    "roePct": 21.947449768160745,
+    "debtToEquity": null,
+    "currentRatio": 0.336996336996337,
+    "return1mPct": 23.27981273861679,
+    "return3mPct": 31.74019854190675,
+    "return6mPct": 151.1682119866383,
+    "volatilityAnnualizedPct": 88.4858304661434,
+    "maxDrawdownPct": -34.81481631923929,
+    "volumeVs30d": 0.5174644079627028
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "SGL",
+   "name": "SGL CARBON SE O.N.",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 6,
+   "isin": "DE0007235301",
+   "sector": "Basic Materials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 5.539999961853027,
+    "historyFileObservedAt": "2026-10-13T22:28:20.167318+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SGL.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 1297174.238269663,
+    "return30dPct": 34.62941117850049,
+    "volumeRatio": 0.03949426121163465,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.151726,
+   "confidence": 0.511413,
+   "agents": {
+    "fundamental": {
+     "vote": -0.5499999999999999,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.35000000000000003,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.151726
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.511413
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.15<0.25 with negative evidence-backed votes: fundamental -0.55, risk -0.35, quality -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "pe"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "de-reviewed-issuer-annual-report",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-12-31",
+      "url": "https://www.sglcarbon.com/company/investor-relations/Hauptversammlung/SGL_Carbon_Annual_Report_2025_EN_s.pdf"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0007235301&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.51 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.51 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 1.5037078629520262,
+    "evEbitda": 19.29008268515269,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -17.1667965705378,
+    "netMarginPct": -9.209597741707833,
+    "roePct": -16.766595289079227,
+    "debtToEquity": 0.49721627408993574,
+    "currentRatio": 2.774654597427346,
+    "return1mPct": 43.4999942779541,
+    "return3mPct": 43.14213076039471,
+    "return6mPct": 41.55363783257924,
+    "volatilityAnnualizedPct": 49.67275716731556,
+    "maxDrawdownPct": -32.74582393703131,
+    "volumeVs30d": 1.1996565762806284
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "CSH",
+   "name": "CENIT AG O.N.",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 7,
+   "isin": "DE0005407100",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 9.300000190734863,
+    "historyFileObservedAt": "2026-10-13T22:27:37.981131+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "CSH.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 119085.81665387153,
+    "return30dPct": 32.47863555560053,
+    "volumeRatio": 0.6095717763077271,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.143411,
+   "confidence": 0.511413,
+   "agents": {
+    "fundamental": {
+     "vote": -0.25000000000000006,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.55,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.143411
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.511413
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.14<0.25 with negative evidence-backed votes: risk -0.55, quality -0.30, fundamental -0.25",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "pe"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "de-reviewed-issuer-annual-report",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-12-31",
+      "url": "https://ir-api.eqs.com//media/document/1a877e68-2168-498a-9dd8-b92ace1b45c2/assets/DE0005407100-JA-2025-EQ-D-00.pdf"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0005407100&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.51 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.51 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 1.7723414148015983,
+    "evEbitda": 8.224784211098342,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 1.0500016881056062,
+    "netMarginPct": -1.170349863968307,
+    "roePct": -5.743464817764452,
+    "debtToEquity": 0.9738358474655673,
+    "currentRatio": 1.2803581321371769,
+    "return1mPct": 19.893899304892848,
+    "return3mPct": 24.86188187346954,
+    "return6mPct": 29.885056211290383,
+    "volatilityAnnualizedPct": 42.88581073677573,
+    "maxDrawdownPct": -31.546391782984625,
+    "volumeVs30d": 0.375652023554501
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "P4O",
+   "name": "PLANOPTIK AG INH O.N.",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 8,
+   "isin": "DE000A0HGQS8",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 8.5,
+    "historyFileObservedAt": "2026-10-13T22:28:40.930902+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "P4O.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 72967.43900154432,
+    "return30dPct": 25.739640713088786,
+    "volumeRatio": 0.013435214147592944,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "AVOID_OR_REVIEW",
+   "score": -0.384753,
+   "confidence": 0.511752,
+   "agents": {
+    "fundamental": {
+     "vote": -0.75,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.8999999999999999,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.384753
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.511752
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.38<0.25 with negative evidence-backed votes: risk -0.90, fundamental -0.75, quality -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "pe"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "de-reviewed-issuer-annual-report",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-12-31",
+      "url": "https://www.planoptik.com/downloads/PLANOPTIK_AG_Geschaeftsbericht_2025.pdf"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE000A0HGQS8&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.51 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.51 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 2.998108908914445,
+    "evEbitda": 24.106673906389357,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -4.9249451846854475,
+    "netMarginPct": -0.5233280113535569,
+    "roePct": -0.46485975417585884,
+    "debtToEquity": 0.34068704695871416,
+    "currentRatio": 3.7701818181818183,
+    "return1mPct": 19.318177046115714,
+    "return3mPct": 4.477607691359675,
+    "return6mPct": -21.495329268541585,
+    "volatilityAnnualizedPct": 121.06712817403479,
+    "maxDrawdownPct": -53.972605379376205,
+    "volumeVs30d": 0.15602660049009104
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "CLIQ",
+   "name": "CLIQ DIGITAL AG  NA O.N.",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 9,
+   "isin": "DE000A35JS40",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 6.039999961853027,
+    "historyFileObservedAt": "2026-10-13T22:29:26.322941+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "CLIQ.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 36207.77991855939,
+    "return30dPct": 24.27983119180146,
+    "volumeRatio": 0.021070419560108782,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.208374,
+   "confidence": 0.511413,
+   "agents": {
+    "fundamental": {
+     "vote": -0.5499999999999999,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.5999999999999999,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.15,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.01999999999999999,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.208374
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.511413
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.21<0.25 with negative evidence-backed votes: risk -0.60, fundamental -0.55, quality -0.15",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pb"
+    ],
+    "missing": [
+     "interest_expense",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "de-reviewed-issuer-annual-report",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-12-31",
+      "url": "https://static.cliqdigital.com/files/March2026/CLIQ_Geschaftsbericht_2025_online.pdf"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE000A35JS40&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.51 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.51 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.4,
+    "missing": [
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 0.5776339351722551,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -45.717377796615054,
+    "netMarginPct": -9.436307953546196,
+    "roePct": -20.45047561155925,
+    "debtToEquity": 0.03109957449604889,
+    "currentRatio": 4.265721492563277,
+    "return1mPct": 10.701105452799986,
+    "return3mPct": 71.49608311410063,
+    "return6mPct": 83.44884193737212,
+    "volatilityAnnualizedPct": 91.29004838283815,
+    "maxDrawdownPct": -51.66374768543016,
+    "volumeVs30d": 0.06023637471704684
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "XTP",
+   "name": "SINO AG",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 10,
+   "isin": "DE0005765507",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 128.0,
+    "historyFileObservedAt": "2026-10-13T22:27:51.506512+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "XTP.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 89093.01666666666,
+    "return30dPct": 22.488038277511958,
+    "volumeRatio": 0.06672004270082733,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": 0.065723,
+   "confidence": 0.057667,
+   "agents": {
+    "fundamental": {
+     "vote": 0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.0,
+     "confidence": 0.38
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.0
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "FAIL",
+     "value": "BLOCK"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.065723
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.057667
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "evidence BLOCK: ('verified_price', 'market_source')",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "free_cash_flow"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "yahoo-public-fundamentals-global",
+      "type": "public_vendor_financial_metrics",
+      "period": "2025-09-30",
+      "url": "https://finance.yahoo.com/quote/XTP.DE/financials/"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0005765507&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-09-30",
+    "evidenceCoverage": 0.5625,
+    "freshnessTier": "NOT_CURRENT"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [
+     "task/evidence gate is out of scope or blocked"
+    ],
+    "review_reasons": [],
+    "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [],
+    "missingInputs": [
+     "zmijewski:current_assets",
+     "zmijewski:current_liabilities",
+     "altman:retained_earnings",
+     "altman:operating_income",
+     "altman:current_assets",
+     "altman:current_liabilities",
+     "interest_coverage:operating_income",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 7.126971736986554,
+    "netMarginPct": 10.614581827753264,
+    "roePct": 7.558860399720768,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": null,
+    "return3mPct": null,
+    "return6mPct": null,
+    "volatilityAnnualizedPct": null,
+    "maxDrawdownPct": null,
+    "volumeVs30d": null
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "S188",
+   "name": "SMT SCHARF AG NA O.N.",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 1,
+   "isin": "DE000A3DRAE2",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 5.800000190734863,
+    "historyFileObservedAt": "2026-10-13T22:29:29.838272+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "S188.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 29418.074053462347,
+    "return30dPct": -2.521002072919387,
+    "volumeRatio": 18.657464699349514,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.051884,
+   "confidence": 0.511413,
+   "agents": {
+    "fundamental": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.10000000000000002,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.15,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.01999999999999999,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.051884
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.511413
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.05<0.25 with negative evidence-backed votes: forecast -0.20, quality -0.15, risk -0.10",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "pe"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "de-reviewed-issuer-annual-report",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-12-31",
+      "url": "https://www.hauptversammlung.de/fileadmin/public/user_upload/SMT_GB25.pdf"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE000A3DRAE2&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.51 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.51 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 0.2847283946499978,
+    "evEbitda": 3.806435403208798,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 11.077231018352407,
+    "netMarginPct": -0.9938443447429248,
+    "roePct": -0.9257519104874129,
+    "debtToEquity": 0.13379031530322508,
+    "currentRatio": 3.7053913072039886,
+    "return1mPct": -1.7241444513996895,
+    "return3mPct": -8.800003051757809,
+    "return6mPct": -35.955055577784144,
+    "volatilityAnnualizedPct": 38.77103321365292,
+    "maxDrawdownPct": -37.569061035471094,
+    "volumeVs30d": 0.0
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "FYB",
+   "name": "FORMYCON AG",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 2,
+   "isin": "DE000A1EWVY8",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 21.399999618530273,
+    "historyFileObservedAt": "2026-10-13T22:29:03.685540+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "FYB.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 88434.01708463034,
+    "return30dPct": 10.99584469077952,
+    "volumeRatio": 3.433634025685995,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.112455,
+   "confidence": 0.398461,
+   "agents": {
+    "fundamental": {
+     "vote": -0.7,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": -0.4,
+     "confidence": 0.5800000000000001
+    },
+    "forecast": {
+     "vote": 0.5,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.112455
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.398461
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=forecast negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=forecast negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-boerse-frankfurt-historical-key-data",
+      "type": "official_exchange_fundamental_metrics",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE000A1EWVY8&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": null,
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "PERIOD_UNKNOWN"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [],
+    "missingInputs": [
+     "zmijewski:current_liabilities",
+     "altman:retained_earnings",
+     "altman:current_liabilities",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": -6.98,
+    "pb": 1.13,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -36.156164776804935,
+    "netMarginPct": -145.45863309352518,
+    "roePct": -16.20985118003708,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": 0.24510365364791564,
+    "return3mPct": 15.536722494148103,
+    "return6mPct": 7.745001349614999,
+    "volatilityAnnualizedPct": 52.39958534319224,
+    "maxDrawdownPct": -35.55555766671195,
+    "volumeVs30d": 5.993303118446864
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "ETG",
+   "name": "ENVITEC BIOGAS O.N.",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 3,
+   "isin": "DE000A0MVLS8",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 17.899999618530273,
+    "historyFileObservedAt": "2026-10-13T22:28:48.334110+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ETG.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 43464.286470476785,
+    "return30dPct": 2.578789890637334,
+    "volumeRatio": 3.3470337135078703,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.242209,
+   "confidence": 0.52535,
+   "agents": {
+    "fundamental": {
+     "vote": -0.35,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.95,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.2,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.15,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.242209
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.52535
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.24<0.25 with negative evidence-backed votes: risk -0.95, fundamental -0.35, quality -0.15",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "current_assets",
+     "current_liabilities",
+     "pe"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "de-reviewed-issuer-annual-report",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-12-31",
+      "url": "https://www.envitec-biogas.de/fileadmin/ns_theme_envitec/PDFs/IR/Hauptversammlung/2026/EnviTec_Biogas_GB25_DE_2605.pdf"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE000A0MVLS8&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.53 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.53 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "zmijewski:current_assets",
+     "zmijewski:current_liabilities",
+     "altman:current_assets",
+     "altman:current_liabilities"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.45,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 1.3550896933213377,
+    "evEbitda": 6.908207286088535,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -7.420600594020121,
+    "netMarginPct": 5.3274180087669345,
+    "roePct": 8.7226529152601,
+    "debtToEquity": 0.8656948111769579,
+    "currentRatio": null,
+    "return1mPct": 9.177213871905,
+    "return3mPct": -6.504068906869076,
+    "return6mPct": -29.591836734693878,
+    "volatilityAnnualizedPct": 61.68867556011076,
+    "maxDrawdownPct": -51.60142278703271,
+    "volumeVs30d": 7.390815085158151
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "FXT",
+   "name": "FINEXITY AG NA O.N.",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 4,
+   "isin": "DE000A40ET88",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 32.599998474121094,
+    "historyFileObservedAt": "2026-10-13T22:29:38.412512+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "FXT.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 17827.90633290609,
+    "return30dPct": -8.426966653329515,
+    "volumeRatio": 3.259306260575296,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.216775,
+   "confidence": 0.385711,
+   "agents": {
+    "fundamental": {
+     "vote": -0.7,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": -0.4,
+     "confidence": 0.5800000000000001
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.216775
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.385711
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.22<0.25 with negative evidence-backed votes: fundamental -0.70, risk -0.40, quality -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-boerse-frankfurt-historical-key-data",
+      "type": "official_exchange_fundamental_metrics",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE000A40ET88&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": null,
+    "evidenceCoverage": 0.75,
+    "freshnessTier": "PERIOD_UNKNOWN"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.39 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.39 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [],
+    "missingInputs": [
+     "zmijewski:current_liabilities",
+     "altman:retained_earnings",
+     "altman:current_liabilities",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 3.967704904945664,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -15.568862275449103,
+    "netMarginPct": -85.1063829787234,
+    "roePct": -11.204481792717088,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -0.5780258874628963,
+    "return3mPct": -7.0270229030299785,
+    "return6mPct": -24.229074075536715,
+    "volatilityAnnualizedPct": 46.445860753755575,
+    "maxDrawdownPct": -37.154149810252726,
+    "volumeVs30d": 2.9417753738466432
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "BRNK",
+   "name": "BRANICKS GROUP AG NA O.N.",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 5,
+   "isin": "DE000A1X3XX4",
+   "sector": "Real Estate",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 0.22599999606609344,
+    "historyFileObservedAt": "2026-10-13T22:29:10.844740+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "BRNK.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 45424.698420125744,
+    "return30dPct": -65.75757771429383,
+    "volumeRatio": 1.9018549827169184,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": -0.091454,
+   "confidence": 0.108667,
+   "agents": {
+    "fundamental": {
+     "vote": -0.7499999999999999,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -1.0,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.44999999999999996,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "FAIL",
+     "value": "BLOCK"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.091454
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.108667
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "evidence BLOCK: ('fresh_fundamentals',)",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "interest_expense",
+     "pe"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "yahoo-public-fundamentals-global",
+      "type": "public_vendor_financial_metrics",
+      "period": "2024-12-31",
+      "url": "https://finance.yahoo.com/quote/BRNK.DE/financials/"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE000A1X3XX4&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2024-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "NOT_CURRENT"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [
+     "task/evidence gate is out of scope or blocked"
+    ],
+    "review_reasons": [],
+    "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.4,
+    "missing": [
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 0.024984851567640087,
+    "evEbitda": 12.974520377066888,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -7.492684146287665,
+    "netMarginPct": -111.71636245136729,
+    "roePct": -37.352940394851885,
+    "debtToEquity": 3.0510440002870105,
+    "currentRatio": 0.7834551531350302,
+    "return1mPct": -58.33333609280752,
+    "return3mPct": -79.63800994065211,
+    "return6mPct": -85.29411776163907,
+    "volatilityAnnualizedPct": 84.09161215124213,
+    "maxDrawdownPct": -89.69555036109527,
+    "volumeVs30d": 4.843564276827128
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "SWA",
+   "name": "SCHLOSS WACHENHEIM AG O.N",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 6,
+   "isin": "DE0007229007",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 15.0,
+    "historyFileObservedAt": "2026-10-13T21:39:09.942406+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SWA.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 24046.041623942056,
+    "return30dPct": -0.6622541651882585,
+    "volumeRatio": 1.7720771552289725,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.038938,
+   "confidence": 0.449734,
+   "agents": {
+    "fundamental": {
+     "vote": 0.0,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.2,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.0,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.038938
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.449734
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "score 0.04<0.25, no negative agent; 6 of 17 core fields missing; abstaining agents: ['comparison']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-boerse-frankfurt-historical-key-data",
+      "type": "official_exchange_fundamental_metrics",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0007229007&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": null,
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "PERIOD_UNKNOWN"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.45 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.45 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 13.25,
+    "pb": 0.54,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 0.348704651630638,
+    "netMarginPct": 1.8265653888134008,
+    "roePct": 4.059004059004058,
+    "debtToEquity": null,
+    "currentRatio": 1.5056755767118273,
+    "return1mPct": -0.3322271767520979,
+    "return3mPct": 10.29411455339222,
+    "return6mPct": 7.14285714285714,
+    "volatilityAnnualizedPct": 18.73442116181138,
+    "maxDrawdownPct": -13.975312711450785,
+    "volumeVs30d": 1.6810157044167375
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "BWB",
+   "name": "BAADER BANK AG",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 7,
+   "isin": "DE0005088108",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 6.599999904632568,
+    "historyFileObservedAt": "2026-10-13T21:39:09.803403+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "BWB.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 19758.185197146733,
+    "return30dPct": -0.6024090761646117,
+    "volumeRatio": 1.7188207038184413,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": 0.044077,
+   "confidence": 0.239167,
+   "agents": {
+    "fundamental": {
+     "vote": 0.6000000000000001,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.2,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": -0.35,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "FAIL",
+     "value": "WARN"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.044077
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.239167
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "evidence WARN: coverage=100%; freshness=1.00; sourceQuality=0.82; provenance=independently_veri",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "yahoo-public-fundamentals-global",
+      "type": "public_vendor_financial_metrics",
+      "period": "2025-12-31",
+      "url": "https://finance.yahoo.com/quote/BWB.DE/financials/"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0005088108&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "NOT_CURRENT"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "evidence gate returned WARN"
+    ],
+    "reasoning": "Escalated to human review: evidence gate returned WARN"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 6.540994646139784,
+    "pb": 1.4203375276523675,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 29.134214033971272,
+    "netMarginPct": 15.770699354692708,
+    "roePct": 21.713200517615864,
+    "debtToEquity": 0.2871219947638575,
+    "currentRatio": null,
+    "return1mPct": 1.5015072636763493,
+    "return3mPct": 0.0,
+    "return6mPct": 2.105784683255063,
+    "volatilityAnnualizedPct": 23.117825210376626,
+    "maxDrawdownPct": -11.111108837038207,
+    "volumeVs30d": 1.6771198913166534
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "VME",
+   "name": "VIROMED MEDICAL NA O.N.",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 8,
+   "isin": "DE000A40ZVN7",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 4.980000019073486,
+    "historyFileObservedAt": "2026-10-13T22:29:40.596573+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "VME.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 86399.38052865663,
+    "return30dPct": -23.38461509117713,
+    "volumeRatio": 1.5938137499346154,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.096487,
+   "confidence": 0.404146,
+   "agents": {
+    "fundamental": {
+     "vote": 0.0,
+     "confidence": 0.35
+    },
+    "risk": {
+     "vote": -0.55,
+     "confidence": 0.5800000000000001
+    },
+    "forecast": {
+     "vote": -0.09999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.0,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.096487
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.404146
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.10<0.25 with negative evidence-backed votes: risk -0.55, forecast -0.10",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "revenue_yoy_pct",
+     "ebitda",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-boerse-frankfurt-historical-key-data",
+      "type": "official_exchange_fundamental_metrics",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE000A40ZVN7&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": null,
+    "evidenceCoverage": 0.75,
+    "freshnessTier": "PERIOD_UNKNOWN"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.40 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.40 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [],
+    "missingInputs": [
+     "zmijewski:current_liabilities",
+     "altman:retained_earnings",
+     "altman:current_liabilities",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 120.67,
+    "pb": 7.39,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": null,
+    "netMarginPct": 11.787819253438114,
+    "roePct": 5.730659025787966,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -8.888889085118167,
+    "return3mPct": -38.11320510272152,
+    "return6mPct": -7.169813221992161,
+    "volatilityAnnualizedPct": 73.36750974546233,
+    "maxDrawdownPct": -39.622637661691286,
+    "volumeVs30d": 2.186710680971316
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "VOS",
+   "name": "VOSSLOH AG O.N.",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 9,
+   "isin": "DE0007667107",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 48.720001220703125,
+    "historyFileObservedAt": "2026-10-13T22:28:27.737530+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "VOS.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 1515123.3558654785,
+    "return30dPct": -19.002493790890675,
+    "volumeRatio": 1.2337765515647456,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.11538,
+   "confidence": 0.599783,
+   "agents": {
+    "fundamental": {
+     "vote": 0.55,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.35,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.35,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.11538
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.599783
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental,quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [],
+    "fundamentalSources": [
+     {
+      "provider": "de-reviewed-issuer-annual-report",
+      "type": "official_issuer_financial_statement",
+      "period": "2025-12-31",
+      "url": "https://azure-eu-assets.contentstack.com/v3/assets/bltac4b5fd7f72a536f/bltd6a0c75297ef7909/69bad4b2fc5d06793448308e/Vossloh_Annual_Report_en_2025.pdf"
+     },
+     {
+      "provider": "official-boerse-frankfurt-share-count-supplement",
+      "type": "official_exchange_share_count",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0007667107&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 15.030864433006004,
+    "pb": 1.1534682049037517,
+    "evEbitda": 8.251292899115969,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 11.044973544973535,
+    "netMarginPct": 5.948481238832638,
+    "roePct": 9.795267868088759,
+    "debtToEquity": 0.8599975481181807,
+    "currentRatio": 1.0956623338688476,
+    "return1mPct": -15.304346499235733,
+    "return3mPct": -19.63696041389089,
+    "return6mPct": -35.22893592996387,
+    "volatilityAnnualizedPct": 38.56528775116597,
+    "maxDrawdownPct": -44.1981606037951,
+    "volumeVs30d": 4.503503881117081
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "HMU",
+   "name": "HMS BERGBAU AG",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 10,
+   "isin": "DE0006061104",
+   "sector": null,
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 34.5,
+    "historyFileObservedAt": "2026-10-13T22:28:00.555809+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "HMU.DE",
+    "currency": "EUR",
+    "avgTradedValue30d": 30017.223097864786,
+    "return30dPct": -14.392057932663116,
+    "volumeRatio": 1.2325798776342625,
+    "exchange": "XETRA",
+    "country": "DE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.056526,
+   "confidence": 0.435084,
+   "agents": {
+    "fundamental": {
+     "vote": -0.3,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": -0.2,
+     "confidence": 0.5800000000000001
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.15,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.056526
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.435084
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.06<0.25 with negative evidence-backed votes: fundamental -0.30, risk -0.20",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-boerse-frankfurt-historical-key-data",
+      "type": "official_exchange_fundamental_metrics",
+      "period": null,
+      "url": "https://api.boerse-frankfurt.de/v1/data/historical_key_data?isin=DE0006061104&limit=12"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": null,
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "PERIOD_UNKNOWN"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.44 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.44 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [],
+    "missingInputs": [
+     "zmijewski:current_liabilities",
+     "altman:retained_earnings",
+     "altman:current_liabilities",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 3.86,
+    "pb": 1.58,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -10.212506966239399,
+    "netMarginPct": 4.474662093184696,
+    "roePct": 41.30729794933655,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -13.970590366486757,
+    "return3mPct": -14.520043432763941,
+    "return6mPct": -18.938103492948,
+    "volatilityAnnualizedPct": 31.579367136122656,
+    "maxDrawdownPct": -34.45939133736404,
+    "volumeVs30d": 2.9779327254616503
+   },
+   "opportunityState": "REVIEW"
+  }
+ ]
+}

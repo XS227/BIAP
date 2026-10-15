@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 
+from .background_scope import is_background_country
 from .country_packs import COUNTRY_PACKS
 
 
@@ -13,7 +14,7 @@ def _markets() -> tuple[tuple[str, str], ...]:
     return tuple(
         (country.upper(), exchange.code.upper())
         for country, pack in COUNTRY_PACKS.items()
-        if pack.enabled and country.upper() != "IR"
+        if pack.enabled and is_background_country(country)
         for exchange in pack.exchanges
     )
 
@@ -51,6 +52,7 @@ def _child(country: str, exchange: str, deep_limit: int) -> int:
             top_n=10,
             discovery_limit=5000,
             deep_limit=deep_limit,
+            origin="scheduled",
         )
         summary = {
             "country": country,

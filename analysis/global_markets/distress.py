@@ -10,7 +10,7 @@ from __future__ import annotations
 from math import exp
 from typing import Optional
 
-from .models import DistressAssessment, GlobalCompany
+from .models import DistressAssessment, GlobalCompany, taxonomy_financial_institution
 
 
 _SYNTHETIC_RATING_TABLE = [
@@ -33,6 +33,8 @@ _SYNTHETIC_RATING_TABLE = [
 
 
 def _is_financial(company: GlobalCompany) -> bool:
+    if taxonomy_financial_institution(company):
+        return True
     text = " ".join(filter(None, (company.sector, company.industry))).lower()
     if not text.strip():
         # Official filings carry no sector. A balance sheet levered >=15x

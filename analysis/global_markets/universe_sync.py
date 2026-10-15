@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 
+from .background_scope import is_background_country
 from .country_packs import COUNTRY_PACKS, get_exchange
 from .runtime import build_registry
 
@@ -62,6 +63,7 @@ def _targets() -> list[tuple[str, str]]:
         return [
             (country, exchange.code)
             for country, pack in COUNTRY_PACKS.items()
+            if is_background_country(country)
             for exchange in pack.exchanges
         ]
     entries = [part.strip() for part in raw.split(",") if part.strip()] if raw else list(_DEFAULT_TARGETS)
@@ -72,6 +74,9 @@ def _targets() -> list[tuple[str, str]]:
             print(f"UNIVERSE_SYNC skip invalid target={entry!r}")
             continue
         country, exchange = (piece.strip().upper() for piece in entry.split(":", 1))
+        if not is_background_country(country):
+            print(f"UNIVERSE_SYNC skip {country}:{exchange} outside background allowlist")
+            continue
         try:
             spec = get_exchange(country, exchange)
         except Exception as exc:

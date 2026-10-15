@@ -138,12 +138,21 @@ def test_portfolio_excludes_cross_currency_candidate_without_fx():
 
 
 def test_portfolio_respects_minimum_lot_size():
-    company = _verified_company(price=900.0, lot_size=100)
+    # Board-lot markets (HK, IN, JP, ...) mandate the lot; US "round lot" does not.
+    company = _verified_company(country="HK", exchange="HKEX", mic_code="XHKG", price=900.0, lot_size=100)
     evidence = evidence_agent(company, _signals(), now=datetime(2026, 9, 16, 1, tzinfo=timezone.utc))
     profile = InvestorProfile(capital=5_000, base_currency="USD", risk_tolerance="medium", horizon="5y", max_position_pct=100, max_country_pct=100, max_sector_pct=100, min_cash_reserve_pct=0)
     result = portfolio_agent(profile, [PortfolioCandidate(company, _signals(), evidence)])
     assert result.status == "NO_RECOMMENDATION"
     assert any("minimum lot" in reason for reason in result.excluded)
+
+
+def test_us_round_lot_is_not_a_minimum_order():
+    company = _verified_company(price=900.0, lot_size=100)
+    evidence = evidence_agent(company, _signals(), now=datetime(2026, 9, 16, 1, tzinfo=timezone.utc))
+    profile = InvestorProfile(capital=5_000, base_currency="USD", risk_tolerance="medium", horizon="5y", max_position_pct=100, max_country_pct=100, max_sector_pct=100, min_cash_reserve_pct=0)
+    result = portfolio_agent(profile, [PortfolioCandidate(company, _signals(), evidence)])
+    assert not any("minimum lot" in reason for reason in result.excluded)
 
 
 def test_global_paper_broker_never_needs_live_switch():

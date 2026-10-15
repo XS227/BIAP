@@ -93,6 +93,15 @@ jobs:
           BODY="Automatic sync of main with feat/biap-global needs review: the changes touch files outside BIAP Global (Iran code, mobile/ or other workflows) or do not merge cleanly. See the 'Sync main from BIAP Global' run log for the file list."
           if [ -n "$EXISTING" ]; then
             gh pr comment "$EXISTING" --body "New commits on feat/biap-global ($(git rev-parse --short HEAD)) still need review before syncing main."
+            exit 0
+          fi
+          if ERR="$(gh pr create --base main --head feat/biap-global --title "Sync main with BIAP Global (needs review)" --body "$BODY" 2>&1)"; then
+            echo "$ERR"
+          elif printf '%s' "$ERR" | grep -q 'not permitted to create or approve pull requests'; then
+            # Repo setting "Allow GitHub Actions to create and approve pull requests" is off.
+            # Not a sync failure: nothing was merged, and a human must open the PR.
+            echo "::warning title=Review PR not created::$ERR. main is NOT synced; open a PR feat/biap-global -> main manually, or enable Settings > Actions > General > 'Allow GitHub Actions to create and approve pull requests'."
           else
-            gh pr create --base main --head feat/biap-global --title "Sync main with BIAP Global (needs review)" --body "$BODY"
+            echo "$ERR" >&2
+            exit 1
           fi

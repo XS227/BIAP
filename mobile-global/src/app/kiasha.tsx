@@ -4,6 +4,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { GlobalAnalysis, GlobalInstrument, scanGlobalMarket } from '@/lib/global-api';
 import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-market-selection';
+import { EvidenceCounts, evidenceCounts } from '@/lib/scan-summary';
 import { setSelectedGlobalCompany } from '@/lib/global-company-selection';
 
 type DataMode = '' | 'live' | 'cached' | 'catalog';
@@ -34,6 +35,7 @@ export default function KiashaGlobalScreen() {
   const [deepResults, setDeepResults] = useState<GlobalAnalysis[]>([]);
   const [status, setStatus] = useState('');
   const [dataMode, setDataMode] = useState<DataMode>('');
+  const [evidence, setEvidence] = useState<EvidenceCounts>({ pass: 0, warn: 0, block: 0, denominator: 0, basis: 'payload_sample' });
   const [meta, setMeta] = useState({ discovered: 0, screened: 0, deep: 0, coverage: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -48,6 +50,7 @@ export default function KiashaGlobalScreen() {
       const extended = result as typeof result & { catalogOnly?: boolean; cachedMarketData?: boolean };
       setPicks(Array.isArray(result.recommendations) ? result.recommendations : []);
       setDeepResults(Array.isArray(result.deepResults) ? result.deepResults : []);
+      setEvidence(evidenceCounts(result));
       setStatus(result.status || '');
       setDataMode(
         extended.catalogOnly || result.status === 'MARKET_DATA_REQUIRED'
@@ -65,6 +68,7 @@ export default function KiashaGlobalScreen() {
     } catch (err) {
       setPicks([]);
       setDeepResults([]);
+      setEvidence({ pass: 0, warn: 0, block: 0, denominator: 0, basis: 'payload_sample' });
       setDataMode('');
       setError(err instanceof Error ? err.message.slice(0, 320) : 'Kiasha market scan is unavailable.');
     } finally {
@@ -102,9 +106,9 @@ export default function KiashaGlobalScreen() {
     }} as never);
   };
 
-  const blocked = deepResults.filter((x) => x.evidence?.status === 'BLOCK').length;
-  const warned = deepResults.filter((x) => x.evidence?.status === 'WARN').length;
-  const passed = deepResults.filter((x) => x.evidence?.status === 'PASS').length;
+  const blocked = evidence.block;
+  const warned = evidence.warn;
+  const passed = evidence.pass;
   const modeTone = dataMode === 'live' ? Brand.positive : dataMode ? Brand.warning : colors.textSecondary;
   const modeLabel = dataMode === 'live' ? 'LIVE MARKET DATA' : dataMode === 'cached' ? 'CACHED MARKET DATA' : dataMode === 'catalog' ? 'CATALOG READY · PRICE/HISTORY PENDING' : '';
 
@@ -125,7 +129,7 @@ export default function KiashaGlobalScreen() {
 
           <View style={styles.metrics}><View style={[styles.metric, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.metricValue, { color: colors.text }]}>{meta.discovered || '—'}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>discovered</Text></View><View style={[styles.metric, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.metricValue, { color: colors.text }]}>{meta.deep || deepResults.length || '—'}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>deep analyzed</Text></View><View style={[styles.metric, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.metricValue, { color: colors.text }]}>{picks.length}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>qualified BUY</Text></View></View>
 
-          {dataMode !== 'catalog' ? <View style={[styles.evidenceStrip, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stripTitle, { color: colors.text }]}>Evidence gate</Text><Text style={[styles.stripText, { color: Brand.positive }]}>PASS {passed}</Text><Text style={[styles.stripText, { color: Brand.warning }]}>WARN {warned}</Text><Text style={[styles.stripText, { color: Brand.negative }]}>BLOCK {blocked}</Text></View> : null}
+          {dataMode !== 'catalog' ? <View style={[styles.evidenceStrip, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stripTitle, { color: colors.text }]}>Evidence gate</Text><Text style={[styles.stripText, { color: Brand.positive }]}>PASS {passed}</Text><Text style={[styles.stripText, { color: Brand.warning }]}>WARN {warned}</Text><Text style={[styles.stripText, { color: Brand.negative }]}>BLOCK {blocked}</Text><Text style={[styles.stripText, { color: colors.textSecondary }]}>of {evidence.denominator}{evidence.basis === 'payload_sample' ? ' shown' : ' analyzed'}</Text></View> : null}
 
           <View style={styles.sectionRow}><Text style={[styles.sectionTitle, { color: colors.text }]}>Kiasha picks</Text><Text style={[styles.sectionMeta, { color: colors.textSecondary }]}>{status || 'scan complete'}</Text></View>
           {dataMode === 'catalog' ? <View style={[styles.empty, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.emptyTitle, { color: colors.text }]}>Ranking pending verified market data</Text><Text style={[styles.emptyText, { color: colors.textSecondary }]}>The exchange universe is available, but Kiasha will not rank stocks or manufacture a Top 10 from reference metadata alone. Once verified price/history is seeded, the same six agents and Evidence gate run automatically.</Text></View> : picks.length ? picks.map((pick, index) => {

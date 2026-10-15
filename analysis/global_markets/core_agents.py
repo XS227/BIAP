@@ -12,7 +12,7 @@ the business model.
 
 from __future__ import annotations
 
-from .models import AgentSignal, GlobalCompany
+from .models import AgentSignal, GlobalCompany, taxonomy_financial_institution
 
 
 def _bounded(value: float) -> float:
@@ -20,6 +20,8 @@ def _bounded(value: float) -> float:
 
 
 def _is_financial(company: GlobalCompany) -> bool:
+    if taxonomy_financial_institution(company):
+        return True
     text = " ".join(filter(None, (company.sector, company.industry))).lower()
     tokens = (
         "bank", "banking", "insurance", "financial", "capital markets",
@@ -236,13 +238,31 @@ def forecast_agent(company: GlobalCompany) -> AgentSignal:
     )
 
 
+def _cohort_note(company: GlobalCompany) -> str:
+    raw = company.raw_provider_fields or {}
+    if raw.get("peer_pe_benchmark_scope") != "same_sector_scan_median":
+        return ""
+    return (
+        f"; cohort: {raw.get('peer_pe_benchmark_count')} same-sector ({company.sector}) "
+        f"deep-analyzed peers, sector source {raw.get('sector_source') or 'scan cache'}, "
+        "median of daily scan sample"
+    )
+
+
 def comparison_agent(company: GlobalCompany) -> AgentSignal:
     pe = company.pe
     sector_pe = company.sector_pe
     if pe is None or pe <= 0:
         return AgentSignal("comparison", 0.0, 0.0, "valid positive P/E unavailable")
     if sector_pe is None or sector_pe <= 0:
-        return AgentSignal("comparison", 0.0, 0.25, f"P/E {pe:.2f}; peer/sector P/E unavailable")
+        raw = company.raw_provider_fields or {}
+        why = (
+            "no sector classification from an authoritative source"
+            if not company.sector
+            else "fewer than 3 same-sector peers with a valid P/E"
+        )
+        note = " (exchange-wide median shown as context only, not used)" if raw.get("exchange_pe_median_informational") else ""
+        return AgentSignal("comparison", 0.0, 0.25, f"P/E {pe:.2f}; sector peer P/E unavailable: {why}; abstaining{note}")
 
     discount_pct = (sector_pe - pe) / sector_pe * 100.0
     vote = 0.0
@@ -260,7 +280,10 @@ def comparison_agent(company: GlobalCompany) -> AgentSignal:
         agent="comparison",
         vote=vote,
         confidence=0.65,
-        reasoning=f"P/E {pe:.2f} vs peer/sector {sector_pe:.2f} ({abs(discount_pct):.0f}% {relationship})",
+        reasoning=(
+            f"P/E {pe:.2f} vs peer/sector {sector_pe:.2f} ({abs(discount_pct):.0f}% {relationship})"
+            + _cohort_note(company)
+        ),
     )
 
 

@@ -17,6 +17,7 @@ from global_markets.country_packs import country_catalog, get_exchange
 from global_markets.credit_scoring import score_individual_credit
 from global_markets.models import InvestorProfile
 from global_markets.runtime import build_registry
+from global_markets.scan_gate import GATE as SCAN_GATE, ScanFailure
 from global_markets.scan_service import scan_global_market, scan_global_top10
 from global_markets.service import analyze_company, instrument_seed, portfolio_from_instruments
 from global_markets.source_catalog import SOURCE_PLANS, requirements_payload
@@ -43,7 +44,12 @@ class ScanRequest(BaseModel):
     exchange: str = Field(min_length=2, max_length=64)
     topN: int = Field(default=10, ge=1, le=50)
     discoveryLimit: int = Field(default=5000, ge=10, le=5000)
-    deepLimit: int = Field(default=75, ge=1, le=200)
+    # One interactive call advances the persistent analysis queue by at most
+    # this many companies; it is NOT a cap on how many companies get analyzed.
+    batchLimit: int = Field(default=10, ge=1, le=100)
+    # Legacy field from app versions <= 0.3.21 that sent deepLimit=75. It used to
+    # be a hidden cap; it is now only a hint for the batch size and is bounded.
+    deepLimit: Optional[int] = Field(default=None, ge=1, le=200)
 
 
 class GlobalTop10Request(BaseModel):
@@ -399,19 +405,93 @@ def global_status():
 
 @router.post("/scan")
 def global_scan(req: ScanRequest):
+    country, exchange = req.country.strip().upper(), req.exchange.strip().upper()
     try:
-        get_exchange(req.country, req.exchange)
-        return scan_global_market(
-            country=req.country,
-            exchange=req.exchange,
-            top_n=req.topN,
-            discovery_limit=req.discoveryLimit,
-            deep_limit=req.deepLimit,
+        get_exchange(country, exchange)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    interactive_max = int(os.environ.get("BIAP_GLOBAL_INTERACTIVE_BATCH_MAX", "10"))
+    batch_limit = max(1, min(req.batchLimit if req.deepLimit is None else min(req.batchLimit, req.deepLimit), interactive_max))
+    budget = float(os.environ.get("BIAP_GLOBAL_INTERACTIVE_BUDGET_SEC", "20"))
+    key = (country, exchange, req.topN, req.discoveryLimit, batch_limit)
+    try:
+        result, gate = SCAN_GATE.run(
+            key,
+            lambda: scan_global_market(
+                country=country,
+                exchange=exchange,
+                top_n=req.topN,
+                discovery_limit=req.discoveryLimit,
+                deep_limit=batch_limit,
+                time_budget_sec=budget,
+            ),
         )
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+    except ScanFailure as failure:
+        headers = {"Retry-After": str(failure.retry_after_sec)} if failure.retry_after_sec else None
+        raise HTTPException(
+            status_code=failure.http_status,
+            detail=failure.detail(country=country, exchange=exchange),
+            headers=headers,
+        ) from failure
+    if isinstance(result, dict) and gate.get("sharedInFlight"):
+        result = {**result, "scanShared": True}
+    return result
+
+
+@router.get("/analysis-ledger")
+def global_analysis_ledger(
+    country: str,
+    exchange: str,
+    status: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+):
+    """Every discovered company with its audited analysis state, reason and source."""
+    from global_markets.analysis_ledger import AnalysisLedger, STATUSES, ledger_path
+
+    country, exchange = country.strip().upper(), exchange.strip().upper()
+    try:
+        get_exchange(country, exchange)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    wanted = status.strip().upper() if status else None
+    if wanted and wanted not in STATUSES:
+        raise HTTPException(status_code=400, detail=f"status must be one of {', '.join(STATUSES)}")
+    if not ledger_path(country, exchange).exists():
+        return {"country": country, "exchange": exchange, "counts": None, "rows": [], "note": "No scan has registered this market yet."}
+    ledger = AnalysisLedger(country, exchange)
+    try:
+        return {
+            "country": country,
+            "exchange": exchange,
+            "counts": ledger.counts(),
+            "rows": ledger.summaries(status=wanted, limit=max(1, min(int(limit), 500)), offset=max(0, int(offset))),
+        }
+    finally:
+        ledger.close()
+
+
+@router.get("/opportunities")
+def global_opportunities(country: str, exchange: str, limit: int = 20):
+    """Ranked investment opportunities (BUY/WATCH/REVIEW), separate from the Qualified BUY gate."""
+    from global_markets.analysis_ledger import AnalysisLedger, ledger_path
+    from global_markets.opportunity import market_opportunities
+
+    country, exchange = country.strip().upper(), exchange.strip().upper()
+    try:
+        get_exchange(country, exchange)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not ledger_path(country, exchange).exists():
+        return {"country": country, "exchange": exchange, "ranked": [], "note": "No scan has registered this market yet."}
+    ledger = AnalysisLedger(country, exchange)
+    try:
+        return {"country": country, "exchange": exchange,
+                **market_opportunities(ledger.full_results(), max(1, min(int(limit), 20)))}
+    finally:
+        ledger.close()
 
 
 @router.post("/scan-global")

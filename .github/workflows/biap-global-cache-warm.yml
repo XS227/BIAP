@@ -1,36 +1,8 @@
 name: BIAP Global cache warm
 
 on:
+  # Manual only: never auto-run on push/schedule/deploy (online-first, no bulk collection).
   workflow_dispatch:
-  push:
-    branches: [feat/biap-global]
-    paths:
-      - 'analysis/global_markets/official_cache_warm.py'
-      - 'analysis/requirements.txt'
-      - 'analysis/global_markets/market_cache_warm.py'
-      - 'analysis/global_markets/cached_fundamentals.py'
-      - 'analysis/global_markets/fallback_fundamentals.py'
-      - 'analysis/global_markets/cached_sec_edgar.py'
-      - 'analysis/global_markets/cached_esef.py'
-      - 'analysis/global_markets/esef_country.py'
-      - 'analysis/global_markets/gleif.py'
-      - 'analysis/global_markets/german_issuer.py'
-      - 'analysis/global_markets/hkex_issuer.py'
-      - 'analysis/global_markets/sgx_issuer.py'
-      - 'analysis/global_markets/cvm.py'
-      - 'analysis/global_markets/cvm_resolver.py'
-      - 'analysis/global_markets/cvm_itr.py'
-      - 'analysis/global_markets/cvm_sync.py'
-      - 'analysis/global_markets/cvm_itr_sync.py'
-      - 'analysis/global_markets/runtime.py'
-      - 'analysis/global_markets/history_store.py'
-      - 'analysis/global_markets/yahoo_chart.py'
-      - 'analysis/global_markets/twelve_data.py'
-      - '.github/workflows/biap-global-cache-warm.yml'
-
-concurrency:
-  group: biap-global-cache-warm
-  cancel-in-progress: true
 
 permissions:
   contents: read

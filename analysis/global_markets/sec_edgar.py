@@ -22,6 +22,38 @@ from .sec_filing_instance import SECFilingInstanceReader, merge_facts
 
 SEC_TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 SEC_FACTS_BASE = "https://data.sec.gov/api/xbrl/companyfacts"
+SEC_SUBMISSIONS_BASE = "https://data.sec.gov/submissions"
+# Standard US-GAAP D&A concepts, most complete first. `Depreciation` alone
+# (Tesla) excludes separately reported amortization/impairment, so an EBITDA
+# built from it is a lower bound and is labelled as such.
+DNA_TAGS_COMPLETE = ("DepreciationDepletionAndAmortization", "DepreciationAndAmortization", "DepreciationAmortizationAndAccretionNet")
+DNA_TAGS_PARTIAL = ("Depreciation",)
+# SIC division ranges -> broad sector; peers are only compared inside one sector.
+_SIC_SECTORS = (
+    (100, 999, "Agriculture"), (1000, 1499, "Mining & Energy"), (1500, 1799, "Construction"),
+    (2000, 2399, "Consumer Staples"), (2400, 2799, "Materials & Paper"), (2800, 2829, "Chemicals"),
+    (2830, 2836, "Health Care"), (2837, 2899, "Chemicals"), (2900, 2999, "Mining & Energy"),
+    (3000, 3499, "Industrials"), (3500, 3569, "Industrials"), (3570, 3579, "Technology"),
+    (3580, 3599, "Industrials"), (3600, 3699, "Technology"), (3700, 3799, "Consumer Discretionary"),
+    (3800, 3829, "Technology"), (3840, 3851, "Health Care"), (3852, 3999, "Industrials"),
+    (4000, 4799, "Transportation"), (4800, 4899, "Communication Services"), (4900, 4999, "Utilities"),
+    (5000, 5199, "Wholesale Trade"), (5200, 5999, "Retail"), (6000, 6799, "Financials"),
+    (7000, 7299, "Consumer Services"), (7370, 7379, "Technology"), (7300, 8099, "Business & Health Services"),
+    (8100, 8999, "Services"),
+)
+
+
+def sector_from_sic(sic: Any) -> Optional[str]:
+    try:
+        code = int(sic)
+    except (TypeError, ValueError):
+        return None
+    # Later, narrower ranges win (7370-7379 inside 7300-8099).
+    hit = None
+    for lo, hi, name in _SIC_SECTORS:
+        if lo <= code <= hi and (hit is None or (hi - lo) < hit[0]):
+            hit = (hi - lo, name)
+    return hit[1] if hit else None
 # Successor registrants under Exchange Act Rule 12g-3(a) take over the listed
 # ticker but have no annual facts until their first 10-K. Until then the
 # predecessor's audited 10-K (same consolidated group) is the latest annual
@@ -60,6 +92,14 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         if not isinstance(payload, dict):
             raise GlobalProviderError("unexpected SEC JSON response")
         return payload
+
+    def _sic(self, cik: int) -> tuple[Optional[int], Optional[str]]:
+        """SIC code/description from SEC submissions; sector is best-effort metadata."""
+        try:
+            data = self._get_json(f"{SEC_SUBMISSIONS_BASE}/CIK{cik:010d}.json")
+            return int(data.get("sic")), str(data.get("sicDescription") or "") or None
+        except (GlobalProviderError, TypeError, ValueError):
+            return None, None
 
     def _ticker_map(self) -> dict[str, int]:
         global _ticker_cache
@@ -117,12 +157,15 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         if not isinstance(units, dict):
             return []
         rows: list[dict] = []
-        for entries in units.values():
+        for unit_name, entries in units.items():
             if not isinstance(entries, list):
                 continue
             for row in entries:
                 if not isinstance(row, dict) or not isinstance(row.get("val"), (int, float)):
                     continue
+                # Keep the filing unit (USD, EUR, EUR/shares, ...) so the reporting
+                # currency is read from the facts instead of being assumed.
+                row = {**row, "_unit": str(unit_name)}
                 form = str(row.get("form") or "").upper()
                 fp = row.get("fp")
                 if form in {"10-K", "10-K/A", "20-F", "20-F/A"}:
@@ -176,6 +219,25 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
                     best_key = key
         return best
 
+    @staticmethod
+    def _filing_currency(rows: list[Optional[dict]]) -> tuple[Optional[str], Optional[str]]:
+        """ISO currency of the monetary facts actually selected (ASML files 20-F in EUR).
+
+        Returns (currency, note). The first monetary row decides; disagreement
+        between rows is reported in the note, never silently resolved.
+        """
+        seen: list[str] = []
+        for row in rows:
+            unit = str((row or {}).get("_unit") or "").upper()
+            code = unit.split("/")[0]
+            if len(code) == 3 and code.isalpha() and code not in {"PURE"}:
+                seen.append(code)
+        if not seen:
+            return None, None
+        distinct = sorted(set(seen))
+        note = None if len(distinct) == 1 else f"mixed_monetary_units:{','.join(distinct)}"
+        return seen[0], note
+
     @classmethod
     def _has_annual_facts(cls, gaap: dict) -> bool:
         return any(cls._latest(gaap, (tag,)) for tag in ("NetIncomeLoss", "ProfitLoss", "Assets", "StockholdersEquity"))
@@ -184,6 +246,40 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
     def _latest(cls, gaap: dict, tags: tuple[str, ...]) -> Optional[dict]:
         rows = cls._annual_series(gaap, tags, count=1)
         return rows[0] if rows else None
+
+    @staticmethod
+    def _cover_page_shares(payload: dict, period_end: Optional[str]) -> Optional[dict]:
+        """Latest cover-page share count (dei:EntityCommonStockSharesOutstanding).
+
+        Used only when the filer tags no us-gaap CommonStockSharesOutstanding for
+        the fiscal period. It is the issuer's own reported count on a 10-K/10-Q
+        cover and is dated at or after the fiscal period end. Withheld, never
+        guessed, when the latest cover date carries more than one distinct value
+        (multiple share classes: one price cannot value several classes), when
+        the filing is a 20-F/40-F (ordinary shares vs ADS/ordinary price ratio
+        is not knowable here), or when the date is before the fiscal period.
+        """
+        facts = payload.get("facts") if isinstance(payload, dict) else None
+        dei = facts.get("dei") if isinstance(facts, dict) else None
+        concept = dei.get("EntityCommonStockSharesOutstanding") if isinstance(dei, dict) else None
+        units = concept.get("units") if isinstance(concept, dict) else None
+        entries = units.get("shares") if isinstance(units, dict) else None
+        if not isinstance(entries, list) or not period_end:
+            return None
+        rows = [
+            row for row in entries
+            if isinstance(row, dict)
+            and isinstance(row.get("val"), (int, float)) and row["val"] > 0
+            and row.get("form") in {"10-K", "10-K/A", "10-Q", "10-Q/A"}
+            and str(row.get("end") or "") >= period_end
+        ]
+        if not rows:
+            return None
+        latest_end = max(str(row["end"]) for row in rows)
+        at_latest = [row for row in rows if str(row["end"]) == latest_end]
+        if len({row["val"] for row in at_latest}) != 1:
+            return None
+        return max(at_latest, key=lambda row: str(row.get("filed") or ""))
 
     @classmethod
     def _consistent_equity(cls, gaap: dict, assets: Optional[dict], liabilities: Optional[dict]) -> Optional[dict]:
@@ -302,6 +398,7 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         debt_current = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligationsCurrent", "LongTermDebtCurrent"))
         debt_noncurrent = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligationsNoncurrent", "LongTermDebtNoncurrent"))
         debt_total = self._latest(gaap, ("LongTermDebtAndFinanceLeaseObligations", "LongTermDebt"))
+        dna_candidates = {tag: self._latest(gaap, (tag,)) for tag in DNA_TAGS_COMPLETE + DNA_TAGS_PARTIAL}
         interest = self._latest(gaap, ("InterestExpenseNonOperating", "InterestExpenseNonoperating", "InterestExpenseDebt", "InterestExpense"))
         eps = self._latest(gaap, ("EarningsPerShareDiluted", "EarningsPerShareBasic"))
         dividend_per_share = self._latest(
@@ -342,6 +439,24 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             raise GlobalProviderError(
                 f"SEC company facts contain no annual 10-K/20-F period for {company.identity()} (CIK {cik})"
             )
+
+        # Nextpower (NXT): CommonStockSharesOutstanding is still reported with a
+        # 2023-07-03 context (62.05m) while diluted shares are ~152m, which put
+        # market cap 2.5x too low. A share count must belong to the latest
+        # fiscal year; an older one is withheld, never carried forward.
+        if shares and shares.get("end") and period_end:
+            try:
+                stale = (date.fromisoformat(period_end) - date.fromisoformat(str(shares["end"]))).days > 400
+            except ValueError:
+                stale = True
+            if stale:
+                shares = None
+        shares_basis: Optional[str] = None
+        if shares is None:
+            cover = self._cover_page_shares(payload, period_end)
+            if cover is not None:
+                shares = {"val": cover["val"], "end": cover["end"], "form": cover.get("form")}
+                shares_basis = f"sec_dei_cover_page:{cover.get('form')}:{cover['end']}"
 
         def current_period_row(row: Optional[dict]) -> Optional[dict]:
             if row is None or period_end is None:
@@ -407,6 +522,17 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
         debt_noncurrent = current_period_row(debt_noncurrent)
         debt_total = current_period_row(debt_total)
         interest = current_period_row(interest)
+        # A stale complete tag (TSLA DepreciationAndAmortization = FY2017) must
+        # not shadow the current-period tag, so choose by period, not by order.
+        dna_tag, dna = next(
+            ((tag, row) for tag, row in dna_candidates.items() if current_period_row(row)),
+            (None, None),
+        )
+        operating_income_value = self._value(operating_income)
+        dna_value = self._value(dna)
+        ebitda = None
+        if operating_income_value is not None and dna_value is not None and dna_value >= 0:
+            ebitda = operating_income_value + dna_value
         eps = current_period_row(eps)
         dividend_per_share = current_period_row(dividend_per_share)
 
@@ -460,10 +586,11 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             default="",
         ) or None
 
+        unit_currency, unit_currency_note = self._filing_currency([revenue_row, income_row, assets, equity, ocf])
         enriched = replace(
             company,
             name=listed_entity_name,
-            reporting_currency=company.reporting_currency or "USD",
+            reporting_currency=unit_currency or company.reporting_currency or "USD",
             revenue=revenue,
             revenue_prev=revenue_prev,
             revenue_yoy_pct=self._pct_change(revenue, revenue_prev),
@@ -483,6 +610,7 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             free_cash_flow=fcf,
             total_debt=total_debt,
             interest_expense=self._value(interest),
+            ebitda=company.ebitda if company.ebitda is not None else ebitda,
             eps=self._value(eps),
             dividend_per_share=self._value(dividend_per_share),
             shares_outstanding=company.shares_outstanding or self._value(shares),
@@ -491,9 +619,28 @@ class SECEdgarFundamentalsProvider(FundamentalsProvider):
             raw_provider_fields={
                 **company.raw_provider_fields,
                 "sec_cik": cik,
+                **({"shares_outstanding_basis": shares_basis} if shares_basis and not company.shares_outstanding else {}),
+                **({"filing_currency_note": unit_currency_note} if unit_currency_note else {}),
+                **({"ebitda_derivation": {
+                    "formula": f"OperatingIncomeLoss + {dna_tag}",
+                    "operating_income": operating_income_value,
+                    "depreciation_amortization": dna_value,
+                    "period_end": period_end,
+                    "lower_bound": dna_tag in DNA_TAGS_PARTIAL,
+                }} if ebitda is not None else {}),
                 **({"sec_predecessor_cik": predecessor_cik} if predecessor_cik else {}),
             },
         )
+        if not enriched.sector:
+            sic, sic_desc = self._sic(int(cik if not predecessor_cik else predecessor_cik))
+            sector = sector_from_sic(sic)
+            if sector:
+                enriched = replace(
+                    enriched,
+                    sector=sector,
+                    industry=enriched.industry or sic_desc,
+                    raw_provider_fields={**enriched.raw_provider_fields, "sec_sic": sic, "sector_source": "sec-sic"},
+                )
         return append_source(
             enriched,
             SourceEvidence(

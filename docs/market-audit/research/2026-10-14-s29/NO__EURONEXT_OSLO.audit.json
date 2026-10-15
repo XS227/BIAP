@@ -1,0 +1,5198 @@
+{
+ "market": "NO__EURONEXT_OSLO",
+ "companies": [
+  {
+   "ticker": "EQNR",
+   "name": "EQUINOR",
+   "category": "TRADING_VALUE",
+   "rank": 1,
+   "isin": "NO0010096985",
+   "sector": "Energy",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 426.20001220703125,
+    "historyFileObservedAt": "2026-10-13T21:35:44.103636+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "EQNR.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 1148122089.891628,
+    "return30dPct": 5.130739670375517,
+    "volumeRatio": 0.9178595513567973,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.042552,
+   "confidence": 0.542188,
+   "agents": {
+    "fundamental": {
+     "vote": -0.05,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.3,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.35,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.042552
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.542188
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.04<0.25 with negative evidence-backed votes: risk -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/668785"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.54 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.54 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "zmijewski:current_assets",
+     "zmijewski:current_liabilities",
+     "altman:current_assets",
+     "altman:current_liabilities"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 21.450564570344866,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 2.590244184477797,
+    "netMarginPct": 4.750990963912006,
+    "roePct": 12.489814060300763,
+    "debtToEquity": 0.586784206237499,
+    "currentRatio": null,
+    "return1mPct": 2.0056631063784636,
+    "return3mPct": 21.844980076854092,
+    "return6mPct": 23.66035040867278,
+    "volatilityAnnualizedPct": 38.69188341040743,
+    "maxDrawdownPct": -25.78475073999977,
+    "volumeVs30d": 0.9145730132711751
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "DNB",
+   "name": "DNB BANK ASA",
+   "category": "TRADING_VALUE",
+   "rank": 2,
+   "isin": "NO0010161896",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 307.29998779296875,
+    "historyFileObservedAt": "2026-10-13T21:35:45.931905+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "DNB.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 423251303.749644,
+    "return30dPct": -3.607277427961564,
+    "volumeRatio": 0.8648714308023064,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.021305,
+   "confidence": 0.400969,
+   "agents": {
+    "fundamental": {
+     "vote": -0.2,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.2,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.021305
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.400969
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.02<0.25 with negative evidence-backed votes: fundamental -0.20",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "pe"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "free_cash_flow",
+     "interest_expense",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/668028"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.40 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.40 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 10.818980238768674,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 5.155484760591511,
+    "netMarginPct": 49.2714303478369,
+    "roePct": 14.732216795389633,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -2.2857181609623023,
+    "return3mPct": 3.846151866138614,
+    "return6mPct": 6.755414381511793,
+    "volatilityAnnualizedPct": 16.41355788300638,
+    "maxDrawdownPct": -6.435648986678586,
+    "volumeVs30d": 0.8712510710110336
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "KOG",
+   "name": "KONGSBERG GRUPPEN",
+   "category": "TRADING_VALUE",
+   "rank": 3,
+   "isin": "NO0013536151",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 295.8999938964844,
+    "historyFileObservedAt": "2026-10-13T21:35:18.060906+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "KOG.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 377382571.6613627,
+    "return30dPct": -5.58391842399979,
+    "volumeRatio": 0.8117400807681822,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.231749,
+   "confidence": 0.557812,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7500000000000001,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.5,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 1.0,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.231749
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.557812
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental,quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/669063"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 33.41814226808801,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 28.050957481337235,
+    "netMarginPct": 25.09980356124453,
+    "roePct": 34.128898845424786,
+    "debtToEquity": 0.043081164914699294,
+    "currentRatio": 1.186610056363097,
+    "return1mPct": -1.7560955760924757,
+    "return3mPct": 8.864867064329962,
+    "return6mPct": -2.1569485801795185,
+    "volatilityAnnualizedPct": 48.56593453240385,
+    "maxDrawdownPct": -34.79396511052116,
+    "volumeVs30d": 0.8239769688759252
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "AKRBP",
+   "name": "AKER BP",
+   "category": "TRADING_VALUE",
+   "rank": 4,
+   "isin": "NO0010345853",
+   "sector": "Energy",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 355.1000061035156,
+    "historyFileObservedAt": "2026-10-13T22:32:39.946593+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "AKRBP.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 333493182.69771117,
+    "return30dPct": -1.552538373716883,
+    "volumeRatio": 0.19208581814358583,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.054753,
+   "confidence": 0.557812,
+   "agents": {
+    "fundamental": {
+     "vote": -0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.04999999999999999,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": -0.1,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.054753
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.557812
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.05<0.25 with negative evidence-backed votes: fundamental -0.35, forecast -0.10",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/669589"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.56."
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.7,
+    "missing": [
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 169.00871160879865,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -12.60914667516152,
+    "netMarginPct": 1.2365641648752221,
+    "roePct": 1.1784931677682564,
+    "debtToEquity": 0.7719263864887496,
+    "currentRatio": 1.3088762815783448,
+    "return1mPct": -0.3782744861919318,
+    "return3mPct": 14.726107365005102,
+    "return6mPct": 11.683567407109408,
+    "volatilityAnnualizedPct": 34.42542199449546,
+    "maxDrawdownPct": -17.651935373916846,
+    "volumeVs30d": 0.6822331361982468
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "TEL",
+   "name": "TELENOR",
+   "category": "TRADING_VALUE",
+   "rank": 5,
+   "isin": "NO0010063308",
+   "sector": "Telecommunications",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 124.5,
+    "historyFileObservedAt": "2026-10-13T21:35:18.053957+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "TEL.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 270964010.51477253,
+    "return30dPct": -8.590306321877772,
+    "volumeRatio": 0.6894863354048344,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.090938,
+   "confidence": 0.507734,
+   "agents": {
+    "fundamental": {
+     "vote": -0.1,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -0.30000000000000004,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.15,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.090938
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.507734
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.09<0.25 with negative evidence-backed votes: risk -0.30, forecast -0.20, fundamental -0.10",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "free_cash_flow",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/669361"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.51 below accept threshold 0.55",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.51 below accept threshold 0.55; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.6,
+    "missing": [
+     "fcf_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 24.396887456396676,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 1.4055400267595664,
+    "netMarginPct": 10.925171134451586,
+    "roePct": 11.057927514577742,
+    "debtToEquity": 0.9809332398947493,
+    "currentRatio": 0.6899427460300314,
+    "return1mPct": -7.861869285662237,
+    "return3mPct": -6.696423198900825,
+    "return6mPct": -20.05816885845987,
+    "volatilityAnnualizedPct": 24.437947054014348,
+    "maxDrawdownPct": -27.66340023932768,
+    "volumeVs30d": 0.7013876677729074
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "VAR",
+   "name": "V\u00c5R ENERGI ASA",
+   "category": "TRADING_VALUE",
+   "rank": 6,
+   "isin": "NO0011202772",
+   "sector": "Energy",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 53.20000076293945,
+    "historyFileObservedAt": "2026-10-13T11:24:26.725675+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "VAR.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 261430228.67282867,
+    "return30dPct": 9.622917991159774,
+    "volumeRatio": 0.5433419177190585,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.087579,
+   "confidence": 0.557812,
+   "agents": {
+    "fundamental": {
+     "vote": 0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.4,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.35,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.087579
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.557812
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental,quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe"
+    ],
+    "missing": [
+     "interest_expense",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/669023"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ebitda_interest",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 17.07254522551264,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 8.046226466279638,
+    "netMarginPct": 10.625690469016773,
+    "roePct": 151.14285714285714,
+    "debtToEquity": 10.432678571428571,
+    "currentRatio": 0.6060460322913088,
+    "return1mPct": 0.9177679959640361,
+    "return3mPct": 27.1695498469396,
+    "return6mPct": 29.919805421508315,
+    "volatilityAnnualizedPct": 37.08906210512153,
+    "maxDrawdownPct": -19.3645700363228,
+    "volumeVs30d": 0.8212150223911252
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "NHY",
+   "name": "NORSK HYDRO",
+   "category": "TRADING_VALUE",
+   "rank": 7,
+   "isin": "NO0005052605",
+   "sector": "Basic Materials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 77.69999694824219,
+    "historyFileObservedAt": "2026-10-13T21:35:18.058906+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "NHY.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 251278570.98205948,
+    "return30dPct": -16.018158487400736,
+    "volumeRatio": 0.665519835452989,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.105699,
+   "confidence": 0.557812,
+   "agents": {
+    "fundamental": {
+     "vote": 0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.10000000000000002,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.105699
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.557812
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.11<0.25 with negative evidence-backed votes: forecast -0.20, risk -0.10",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/665792"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.56."
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 22.744867319235702,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 2.128798444282931,
+    "netMarginPct": 3.9928643897466474,
+    "roePct": 7.7537909912601775,
+    "debtToEquity": 0.26541607529692984,
+    "currentRatio": 1.728395061728395,
+    "return1mPct": -8.213020640717462,
+    "return3mPct": -8.709983057463733,
+    "return6mPct": -26.479017657065906,
+    "volatilityAnnualizedPct": 31.398737737134546,
+    "maxDrawdownPct": -35.06906694003468,
+    "volumeVs30d": 0.6747100828164757
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "MOWI",
+   "name": "MOWI",
+   "category": "TRADING_VALUE",
+   "rank": 8,
+   "isin": "NO0003054108",
+   "sector": "Consumer Staples",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 206.60000610351562,
+    "historyFileObservedAt": "2026-10-13T21:35:17.771898+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "MOWI.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 230554098.64661407,
+    "return30dPct": 1.3738974533021642,
+    "volumeRatio": 0.7616414122973936,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.172646,
+   "confidence": 0.507734,
+   "agents": {
+    "fundamental": {
+     "vote": 0.30000000000000004,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": 0.2,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.15,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.172646
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.507734
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "score 0.17<0.25, no negative agent; 5 of 17 core fields missing; abstaining agents: ['comparison']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "free_cash_flow",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/669225"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.51 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.51 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:operating_income",
+     "interest_coverage:operating_income"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 12.851072225262424,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 2.1971112388617486,
+    "netMarginPct": 12.421115544852075,
+    "roePct": 15.478641840087622,
+    "debtToEquity": 0.6111938663745893,
+    "currentRatio": 2.9299748453327896,
+    "return1mPct": 2.4654831976131275,
+    "return3mPct": 6.767772557922136,
+    "return6mPct": 0.06202084652835449,
+    "volatilityAnnualizedPct": 22.309784578082958,
+    "maxDrawdownPct": -24.619700026245773,
+    "volumeVs30d": 0.7685482560060124
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "YAR",
+   "name": "YARA INTERNATIONAL",
+   "category": "TRADING_VALUE",
+   "rank": 9,
+   "isin": "NO0010208051",
+   "sector": "Basic Materials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 402.0,
+    "historyFileObservedAt": "2026-10-13T21:35:18.017905+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "YAR.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 221063035.75195616,
+    "return30dPct": -9.845255549986787,
+    "volumeRatio": 1.2320155932754866,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.185915,
+   "confidence": 0.597078,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7500000000000001,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.10000000000000002,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.44999999999999996,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.185915
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.597078
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.19<0.25 with negative evidence-backed votes: forecast -0.20, risk -0.10",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "missing": [
+     "interest_expense"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/668937"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.60."
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime"
+    ],
+    "missingInputs": [
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ebitda_interest",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 7.295840942457152,
+    "pb": 1.1764750140742986,
+    "evEbitda": 4.431646607266661,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 12.65503316988752,
+    "netMarginPct": 8.781924086283045,
+    "roePct": 15.692554043234589,
+    "debtToEquity": 0.31499485302527735,
+    "currentRatio": 1.72173058013766,
+    "return1mPct": -9.454949944382651,
+    "return3mPct": -9.816084420833427,
+    "return6mPct": -23.81821077407089,
+    "volatilityAnnualizedPct": 33.723467437248836,
+    "maxDrawdownPct": -30.05169549229979,
+    "volumeVs30d": 1.229055217950317
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "AKER",
+   "name": "AKER",
+   "category": "TRADING_VALUE",
+   "rank": 10,
+   "isin": "NO0010234552",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 1308.0,
+    "historyFileObservedAt": "2026-10-13T21:35:47.521731+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "AKER.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 193449844.86666667,
+    "return30dPct": -16.04621309370988,
+    "volumeRatio": 1.048373122124716,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.039306,
+   "confidence": 0.413766,
+   "agents": {
+    "fundamental": {
+     "vote": 0.2,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.05,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.0,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.039306
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.413766
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "score 0.04<0.25, no negative agent; 5 of 17 core fields missing; abstaining agents: ['comparison']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "total_debt",
+     "operating_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "current_assets",
+     "current_liabilities",
+     "free_cash_flow",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/669600"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.41 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.41 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.5,
+    "missing": [
+     "fcf_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 24.834624834624837,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 42.511252522117026,
+    "netMarginPct": 12.960139403180134,
+    "roePct": 4.663923182441701,
+    "debtToEquity": 0.8145404663923183,
+    "currentRatio": null,
+    "return1mPct": -14.117647058823534,
+    "return3mPct": 8.774834437086088,
+    "return6mPct": 25.381913059684113,
+    "volatilityAnnualizedPct": 31.90339729644031,
+    "maxDrawdownPct": -19.458128078817737,
+    "volumeVs30d": 1.050673247973941
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "TECH",
+   "name": "TECHSTEP",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 1,
+   "isin": "NO0012916131",
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 2.559999942779541,
+    "historyFileObservedAt": "2026-10-13T11:24:43.933158+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "TECH.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 4509583.546975565,
+    "return30dPct": 74.14965258196773,
+    "volumeRatio": 0.054197501962907756,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.4485,
+   "confidence": 0.398125,
+   "agents": {
+    "fundamental": {
+     "vote": -1.0,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -0.8999999999999999,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.4485
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.398125
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.45<0.25 with negative evidence-backed votes: fundamental -1.00, risk -0.90, quality -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "total_debt",
+     "free_cash_flow",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/672030"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.75,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.40 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.40 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -6.832839756062037,
+    "netMarginPct": -10.372720476678165,
+    "roePct": -21.338924209814543,
+    "debtToEquity": null,
+    "currentRatio": 0.34204728868752654,
+    "return1mPct": -46.666666185012964,
+    "return3mPct": -77.94486232761186,
+    "return6mPct": -82.74509781005519,
+    "volatilityAnnualizedPct": 198.09266851887122,
+    "maxDrawdownPct": -89.11111089918349,
+    "volumeVs30d": 0.266903497335271
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "LIFE",
+   "name": "LIFECARE ASA",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 2,
+   "isin": "NO0013355859",
+   "sector": "Health Care",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 0.4099999964237213,
+    "historyFileObservedAt": "2026-10-13T11:24:45.407199+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "LIFE.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 7983110.668050779,
+    "return30dPct": 41.62348847149395,
+    "volumeRatio": 0.06310762234691487,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "AVOID_OR_REVIEW",
+   "score": -0.424666,
+   "confidence": 0.472875,
+   "agents": {
+    "fundamental": {
+     "vote": -1.0,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -1.0,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.4,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.44999999999999996,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.424666
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.472875
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=forecast negative=fundamental,risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=forecast negative=fundamental,risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/669136"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -95.4820492133925,
+    "netMarginPct": -107320.53571428571,
+    "roePct": 428.76150388813585,
+    "debtToEquity": -1.8441178568880645,
+    "currentRatio": 0.2589264404028832,
+    "return1mPct": 50.00001034802906,
+    "return3mPct": 51.57895320230141,
+    "return6mPct": 2.6128283352267134,
+    "volatilityAnnualizedPct": 191.77550394871423,
+    "maxDrawdownPct": -96.55000008642673,
+    "volumeVs30d": 0.5482329200847755
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "GOD",
+   "name": "GOODTECH",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 3,
+   "isin": "NO0004913609",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 17.950000762939453,
+    "historyFileObservedAt": "2026-10-13T11:24:43.308140+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "GOD.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 2524197.806480789,
+    "return30dPct": 29.602890025586003,
+    "volumeRatio": 0.41959928430208465,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.100922,
+   "confidence": 0.445031,
+   "agents": {
+    "fundamental": {
+     "vote": 0.2,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.05,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.15,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.100922
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.445031
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.10<0.25, no negative agent; 4 of 17 core fields missing; abstaining agents: ['comparison']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/669155"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.45 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.45 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.45,
+    "missing": [
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 26.61538344163161,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 0.8953553441522155,
+    "netMarginPct": 2.6206322795341097,
+    "roePct": 6.823104693140794,
+    "debtToEquity": 0.0,
+    "currentRatio": 1.2911122937732837,
+    "return1mPct": 25.362311579354447,
+    "return3mPct": 27.2058731750636,
+    "return6mPct": 64.58772826222163,
+    "volatilityAnnualizedPct": 33.954629055659225,
+    "maxDrawdownPct": -12.761910718408535,
+    "volumeVs30d": 1.3344521547982566
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "ZAP",
+   "name": "ZAPTEC ASA",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 4,
+   "isin": "NO0010713936",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 61.099998474121094,
+    "historyFileObservedAt": "2026-10-13T11:24:37.297971+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ZAP.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 29962283.596102905,
+    "return30dPct": 20.512815689706663,
+    "volumeRatio": 0.08757747471255013,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.221677,
+   "confidence": 0.510766,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7500000000000001,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.35000000000000003,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.221677
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.510766
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental,quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "total_debt",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/669235"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 95.12986765279399,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 20.914247017335597,
+    "netMarginPct": 3.5176299259319213,
+    "roePct": 7.1025827573663145,
+    "debtToEquity": null,
+    "currentRatio": 2.7790114658358456,
+    "return1mPct": 5.395683601315815,
+    "return3mPct": 28.64983415069471,
+    "return6mPct": 76.80370907519767,
+    "volatilityAnnualizedPct": 49.35591379586919,
+    "maxDrawdownPct": -29.682538931120877,
+    "volumeVs30d": 0.6033521236266042
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "VOW",
+   "name": "VOW",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 5,
+   "isin": "NO0010708068",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 2.880000114440918,
+    "historyFileObservedAt": "2026-10-13T11:24:44.217166+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "VOW.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 5592925.38061049,
+    "return30dPct": 15.430871604852392,
+    "volumeRatio": 0.05799378836151894,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "AVOID_OR_REVIEW",
+   "score": -0.307351,
+   "confidence": 0.472875,
+   "agents": {
+    "fundamental": {
+     "vote": -0.4500000000000001,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -1.0,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.307351
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.472875
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.31<0.25 with negative evidence-backed votes: risk -1.00, fundamental -0.45, quality -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/671719"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.47 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.47 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 1.5714005107051676,
+    "netMarginPct": -27.02572036356604,
+    "roePct": -122.91116974494282,
+    "debtToEquity": 0.14819700967458224,
+    "currentRatio": 0.5834800270819228,
+    "return1mPct": 19.999999999999996,
+    "return3mPct": 37.93103750669626,
+    "return6mPct": 18.577076439730188,
+    "volatilityAnnualizedPct": 61.403999111732865,
+    "maxDrawdownPct": -37.724551582110756,
+    "volumeVs30d": 0.35031648205941823
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "SMOP",
+   "name": "SMARTOPTICS GROUP ASA",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 6,
+   "isin": "NO0011012502",
+   "sector": "Telecommunications",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 51.20000076293945,
+    "historyFileObservedAt": "2026-10-13T11:24:39.505033+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SMOP.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 8296224.245063146,
+    "return30dPct": 15.056181489751586,
+    "volumeRatio": 0.04081414933614372,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.213629,
+   "confidence": 0.557812,
+   "agents": {
+    "fundamental": {
+     "vote": 0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.30000000000000004,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.8,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.213629
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.557812
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.21<0.25 with negative evidence-backed votes: risk -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/670334"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.56."
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.7,
+    "missing": [
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 106.28937810364097,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 35.87933711232263,
+    "netMarginPct": 6.2230134583958865,
+    "roePct": 15.477134549299498,
+    "debtToEquity": 0.0,
+    "currentRatio": 2.3537152864648485,
+    "return1mPct": 17.777777777777782,
+    "return3mPct": 19.63882824553458,
+    "return6mPct": 8.544720804786587,
+    "volatilityAnnualizedPct": 58.45289570680152,
+    "maxDrawdownPct": -32.65625238418579,
+    "volumeVs30d": 1.1982181304365331
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "ODFB",
+   "name": "ODFJELL SER. B",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 7,
+   "isin": "NO0003399917",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 128.39999389648438,
+    "historyFileObservedAt": "2026-10-13T21:55:44.229867+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ODFB.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 2490067.758190918,
+    "return30dPct": 14.23486846387776,
+    "volumeRatio": 1.0364387426114992,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.106749,
+   "confidence": 0.557812,
+   "agents": {
+    "fundamental": {
+     "vote": -0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.1,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.106749
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.557812
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=quality negative=fundamental"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=quality negative=fundamental",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/669699"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:operating_income",
+     "interest_coverage:operating_income"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 6.286503071512997,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -10.669498624866447,
+    "netMarginPct": 13.925582713069737,
+    "roePct": 15.646368145572348,
+    "debtToEquity": 0.5688021548962644,
+    "currentRatio": 1.0713245043953705,
+    "return1mPct": 2.564100056083385,
+    "return3mPct": 20.028264979677314,
+    "return6mPct": 16.46721990140019,
+    "volatilityAnnualizedPct": 29.551555225947588,
+    "maxDrawdownPct": -21.98834336858694,
+    "volumeVs30d": 1.0312575186462427
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "WWIB",
+   "name": "WILH. WILHELMSEN HOLDING SER. B",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 8,
+   "isin": "NO0010576010",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 855.0,
+    "historyFileObservedAt": "2026-10-13T11:24:41.499089+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "WWIB.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 4763726.933333334,
+    "return30dPct": 13.545816733067738,
+    "volumeRatio": 0.18685320045994633,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.115368,
+   "confidence": 0.507734,
+   "agents": {
+    "fundamental": {
+     "vote": 0.30000000000000004,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": 0.1,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.05000000000000002,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.115368
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.507734
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.12<0.25, no negative agent; 4 of 17 core fields missing; abstaining agents: ['comparison']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "pe"
+    ],
+    "missing": [
+     "free_cash_flow",
+     "interest_expense",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/668920"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.51 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.51 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime"
+    ],
+    "missingInputs": [
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.3,
+    "missing": [
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 5.365122275412339,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 8.626760563380277,
+    "netMarginPct": 54.37601296596435,
+    "roePct": 20.48854961832061,
+    "debtToEquity": 0.07725190839694657,
+    "currentRatio": 1.3887362637362637,
+    "return1mPct": 8.125000000000004,
+    "return3mPct": 32.061068702290086,
+    "return6mPct": 39.211450493855196,
+    "volatilityAnnualizedPct": 26.05115387248642,
+    "maxDrawdownPct": -14.429143690996598,
+    "volumeVs30d": 0.6845197874491191
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "KIT",
+   "name": "KITRON",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 9,
+   "isin": "NO0003079709",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 104.30000305175781,
+    "historyFileObservedAt": "2026-10-13T11:24:33.473902+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "KIT.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 78152452.16405894,
+    "return30dPct": 13.246476416679599,
+    "volumeRatio": 0.03242482528181858,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "BUY_CANDIDATE",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.25906,
+   "confidence": 0.557812,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7500000000000001,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.30000000000000004,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.65,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "PASS",
+     "value": 0.25906
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.557812
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "BUY",
+   "reason": "all gates passed",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "ebitda",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/669207"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "BUY_CANDIDATE",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.56."
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 39.99529267986942,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 14.07601977750308,
+    "netMarginPct": 5.932547744819179,
+    "roePct": 13.953488372093023,
+    "debtToEquity": 0.3641287034087289,
+    "currentRatio": 1.8029647930821495,
+    "return1mPct": 9.97333170572916,
+    "return3mPct": 25.34954221777641,
+    "return6mPct": 2.845114083413258,
+    "volatilityAnnualizedPct": 42.43873980324749,
+    "maxDrawdownPct": -28.040246890671376,
+    "volumeVs30d": 0.3730869806494318
+   },
+   "opportunityState": "BUY"
+  },
+  {
+   "ticker": "MEDI",
+   "name": "MEDISTIM",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 10,
+   "isin": "NO0010159684",
+   "sector": "Health Care",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 285.0,
+    "historyFileObservedAt": "2026-10-13T21:52:33.346943+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "MEDI.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 4493541.4,
+    "return30dPct": 13.095238095238093,
+    "volumeRatio": 0.6281244758399575,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.300202,
+   "confidence": 0.510766,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7500000000000001,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.15000000000000002,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.85,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "PASS",
+     "value": 0.300202
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.510766
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "score ok but confidence 0.51<0.55; missing ['total_debt', 'pb', 'ev_ebitda']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "total_debt",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/670585"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.51 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.51 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 32.60619977037887,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 24.381131143141022,
+    "netMarginPct": 22.75185883301156,
+    "roePct": 33.98967137553453,
+    "debtToEquity": null,
+    "currentRatio": 3.335830848619849,
+    "return1mPct": 18.333333333333336,
+    "return3mPct": 25.110132158590304,
+    "return6mPct": 25.780885333504887,
+    "volatilityAnnualizedPct": 36.2411455054871,
+    "maxDrawdownPct": -33.80281509762927,
+    "volumeVs30d": 0.6245662734212353
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "ENDUR",
+   "name": "END\u00daR",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 1,
+   "isin": "NO0012555459",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 120.0,
+    "historyFileObservedAt": "2026-10-13T11:24:33.292859+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ENDUR.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 21335171.11603699,
+    "return30dPct": 10.29411455339222,
+    "volumeRatio": 2.219115877967864,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.288828,
+   "confidence": 0.507734,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7000000000000001,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": 0.2,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.44999999999999996,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "PASS",
+     "value": 0.288828
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.507734
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "score ok but confidence 0.51<0.55; missing ['free_cash_flow', 'pb', 'ev_ebitda']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "free_cash_flow",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/671230"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [
+     "Agent 9 distress safety gate: Zmijewski P(distress)=0.306 (distress-unlikely); Altman Z''=1.075 (distress); illustrative ICR band\u2248B+ (not an agency rating) (ICR=1.84x, default spread\u22480.045)"
+    ],
+    "review_reasons": [],
+    "reasoning": "Abstained: Agent 9 distress safety gate: Zmijewski P(distress)=0.306 (distress-unlikely); Altman Z''=1.075 (distress); illustrative ICR band\u2248B+ (not an agency rating) (ICR=1.84x, default spread\u22480.045)"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.6,
+    "missing": [
+     "fcf_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 42.21428462437221,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 131.226282120785,
+    "netMarginPct": 2.1007221232298603,
+    "roePct": 5.7249957403305505,
+    "debtToEquity": 0.38958936786505366,
+    "currentRatio": 1.0141437755698421,
+    "return1mPct": 16.568042573525666,
+    "return3mPct": 4.232800139132165,
+    "return6mPct": 9.540836913881389,
+    "volatilityAnnualizedPct": 24.988758212629637,
+    "maxDrawdownPct": -19.520001220703126,
+    "volumeVs30d": 0.48130010981075677
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "VEND",
+   "name": "VEND MARKETPLACES ASA",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 2,
+   "isin": "NO0010736879",
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 201.1999969482422,
+    "historyFileObservedAt": "2026-10-13T11:24:26.501668+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "VEND.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 159248617.75614318,
+    "return30dPct": -22.496150917649217,
+    "volumeRatio": 1.676842615926138,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.260263,
+   "confidence": 0.440625,
+   "agents": {
+    "fundamental": {
+     "vote": -0.7999999999999999,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -0.25,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.15,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.260263
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.440625
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.26<0.25 with negative evidence-backed votes: fundamental -0.80, risk -0.25, forecast -0.20",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "free_cash_flow",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/670206"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.44 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.44 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.6,
+    "missing": [
+     "fcf_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -1.064996084573222,
+    "netMarginPct": -3.0869083425676744,
+    "roePct": -0.7953340402969247,
+    "debtToEquity": 0.07839138592054817,
+    "currentRatio": 1.780971937029432,
+    "return1mPct": -8.813560615151616,
+    "return3mPct": -9.57983321502429,
+    "return6mPct": -17.36410822990576,
+    "volatilityAnnualizedPct": 35.35323269014497,
+    "maxDrawdownPct": -43.657399383490706,
+    "volumeVs30d": 1.2620078743787146
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "NAS",
+   "name": "NORWEGIAN AIR SHUTTLE",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 3,
+   "isin": "NO0010196140",
+   "sector": "Consumer Discretionary",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 11.0600004196167,
+    "historyFileObservedAt": "2026-10-13T11:24:30.973901+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "NAS.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 60566567.12652057,
+    "return30dPct": -16.21211682250452,
+    "volumeRatio": 1.2970499453624134,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.063157,
+   "confidence": 0.557812,
+   "agents": {
+    "fundamental": {
+     "vote": 0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.45,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.65,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.063157
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.557812
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental,quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "ebitda",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/670345"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 4.23461547264686,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 6.594557861653039,
+    "netMarginPct": 7.193327312330659,
+    "roePct": 35.315597287428275,
+    "debtToEquity": 0.4932185706833594,
+    "currentRatio": 1.0345737097234102,
+    "return1mPct": -7.6729555322266325,
+    "return3mPct": -14.551804165258542,
+    "return6mPct": -16.71888558412341,
+    "volatilityAnnualizedPct": 37.287971840940216,
+    "maxDrawdownPct": -35.34420709886189,
+    "volumeVs30d": 1.2518963216417993
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "SOFF",
+   "name": "SOLSTAD OFFSHORE",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 4,
+   "isin": "NO0003080608",
+   "sector": "Energy",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 72.30000305175781,
+    "historyFileObservedAt": "2026-10-13T21:52:33.008933+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SOFF.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 7242710.698291016,
+    "return30dPct": 3.5816617345220125,
+    "volumeRatio": 1.230408745038986,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "BUY_CANDIDATE",
+   "score": 0.369461,
+   "confidence": 0.542188,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7500000000000001,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.1,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.85,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "PASS",
+     "value": 0.369461
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.542188
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "score ok but confidence 0.54<0.55; missing ['current_assets', 'pb', 'ev_ebitda']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "current_assets",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/669481"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.54 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.54 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "interest_coverage"
+    ],
+    "missingInputs": [
+     "zmijewski:current_assets",
+     "altman:current_assets"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.45,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 4.23780992373104,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 11.317119599633108,
+    "netMarginPct": 48.69694430940979,
+    "roePct": 33.22770665424553,
+    "debtToEquity": 0.23430773356670007,
+    "currentRatio": null,
+    "return1mPct": 6.8965562600444175,
+    "return3mPct": 16.614423848865755,
+    "return6mPct": 14.93954267490263,
+    "volatilityAnnualizedPct": 30.838832655785954,
+    "maxDrawdownPct": -21.753380718184417,
+    "volumeVs30d": 1.2488233079167843
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "TGS",
+   "name": "TGS ASA",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 5,
+   "isin": "NO0003078800",
+   "sector": "Energy",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 135.0,
+    "historyFileObservedAt": "2026-10-13T11:24:31.134798+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "TGS.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 60882343.276013695,
+    "return30dPct": 4.895107382396757,
+    "volumeRatio": 1.2214852617401506,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.075465,
+   "confidence": 0.507734,
+   "agents": {
+    "fundamental": {
+     "vote": 0.30000000000000004,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -0.30000000000000004,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.075465
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.507734
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.08<0.25 with negative evidence-backed votes: risk -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "ebitda",
+     "free_cash_flow",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/668912"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.51 below accept threshold 0.55",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.51 below accept threshold 0.55; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 148.24360708330585,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 15.832195417994232,
+    "netMarginPct": 1.1985067784399763,
+    "roePct": 0.9238691437802908,
+    "debtToEquity": 0.30588651050080773,
+    "currentRatio": 0.6387102234258633,
+    "return1mPct": 0.5805537257189464,
+    "return3mPct": 4.8300613887768185,
+    "return6mPct": 9.807113516052834,
+    "volatilityAnnualizedPct": 40.503532552806256,
+    "maxDrawdownPct": -20.922952180570533,
+    "volumeVs30d": 0.7768944951962626
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "SCATC",
+   "name": "SCATEC ASA",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 6,
+   "isin": "NO0010715139",
+   "sector": "Utilities",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 104.0,
+    "historyFileObservedAt": "2026-10-13T11:24:32.995851+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SCATC.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 46278988.409705095,
+    "return30dPct": 5.156722341188824,
+    "volumeRatio": 1.0946075055864637,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.141799,
+   "confidence": 0.416609,
+   "agents": {
+    "fundamental": {
+     "vote": -0.5,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": -0.5,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.2,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.141799
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.416609
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.14<0.25 with negative evidence-backed votes: fundamental -0.50, risk -0.50",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "ebitda",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/669578"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.75,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.42 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.42 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 17.154471544715445,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -20.32248250684515,
+    "netMarginPct": 18.84306987399771,
+    "roePct": 8.201761675253447,
+    "debtToEquity": null,
+    "currentRatio": 1.0606731620903453,
+    "return1mPct": 8.706848719763261,
+    "return3mPct": 9.269804935629411,
+    "return6mPct": -14.366880995685548,
+    "volatilityAnnualizedPct": 29.802271710378374,
+    "maxDrawdownPct": -33.198228766022716,
+    "volumeVs30d": 1.1075305529221693
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "OKEA",
+   "name": "OKEA",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 7,
+   "isin": "NO0010816895",
+   "sector": "Energy",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 43.599998474121094,
+    "historyFileObservedAt": "2026-10-13T11:24:36.209941+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "OKEA.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 11466005.650844956,
+    "return30dPct": 12.66149254413984,
+    "volumeRatio": 1.0563412499632052,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": -0.068429,
+   "confidence": 0.104,
+   "agents": {
+    "fundamental": {
+     "vote": -0.95,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.6499999999999999,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.4,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "FAIL",
+     "value": "BLOCK"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.068429
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.104
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=forecast negative=fundamental,risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "evidence BLOCK: ('fundamental_source',)",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow"
+    ],
+    "missing": [
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "yahoo-public-fundamentals-global",
+      "type": "public_vendor_financial_metrics",
+      "period": "2025-12-31",
+      "url": "https://finance.yahoo.com/quote/OKEA.OL/financials/"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "NOT_CURRENT"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [
+     "task/evidence gate is out of scope or blocked"
+    ],
+    "review_reasons": [],
+    "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.4,
+    "missing": [
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -23.60808794071001,
+    "netMarginPct": -6.975770846412585,
+    "roePct": -95.57509746673894,
+    "debtToEquity": 5.444710571863144,
+    "currentRatio": 1.4851818964945995,
+    "return1mPct": 18.874998092651364,
+    "return3mPct": 47.90045717038467,
+    "return6mPct": 21.301016101038872,
+    "volatilityAnnualizedPct": 44.61960288888867,
+    "maxDrawdownPct": -32.873561464507006,
+    "volumeVs30d": 2.1999405024036442
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "NOD",
+   "name": "NORDIC SEMICONDUCTOR",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 8,
+   "isin": "NO0003055501",
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-09",
+    "lastClose": 176.1999969482422,
+    "historyFileObservedAt": "2026-10-13T11:24:26.914680+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "NOD.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 125900129.21631266,
+    "return30dPct": 5.068574928253211,
+    "volumeRatio": 1.0351730765087042,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.204701,
+   "confidence": 0.557812,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7500000000000001,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.30000000000000004,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.65,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.204701
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.557812
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.20<0.25 with negative evidence-backed votes: risk -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/669188"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.56."
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.7,
+    "missing": [
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 209.7310067301969,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 30.543492075907054,
+    "netMarginPct": 2.4542441122856,
+    "roePct": 2.411023165540247,
+    "debtToEquity": 0.14475997922267494,
+    "currentRatio": 4.0079768945124465,
+    "return1mPct": 1.9298263460572063,
+    "return3mPct": 9.07384212959219,
+    "return6mPct": -2.3529394668023507,
+    "volatilityAnnualizedPct": 40.355534708492605,
+    "maxDrawdownPct": -26.830448251170836,
+    "volumeVs30d": 0.933497371592806
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "STB",
+   "name": "STOREBRAND",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 9,
+   "isin": "NO0003053605",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 187.3000030517578,
+    "historyFileObservedAt": "2026-10-13T21:35:18.047986+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "STB.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 113496580.12117004,
+    "return30dPct": -7.733988644454282,
+    "volumeRatio": 0.8926861505235619,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.089765,
+   "confidence": 0.448437,
+   "agents": {
+    "fundamental": {
+     "vote": 0.2,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.1,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.089765
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.448437
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "score 0.09<0.25, no negative agent; 6 of 17 core fields missing; abstaining agents: ['comparison']",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "interest_expense",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-no-oslo-newsweb",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://newsweb.oslobors.no/message/668546"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:verified-filing-drop+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.45 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.45 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 16.090676313388848,
+    "pb": 2.4024920393714484,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 14.739657070945423,
+    "netMarginPct": 34.43241020016452,
+    "roePct": 14.954745742527093,
+    "debtToEquity": null,
+    "currentRatio": null,
+    "return1mPct": -5.572284645973491,
+    "return3mPct": -3.9816171699782466,
+    "return6mPct": 7.85551186152158,
+    "volatilityAnnualizedPct": 19.06012650413421,
+    "maxDrawdownPct": -10.831725737289846,
+    "volumeVs30d": 0.8922925707533229
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "GJF",
+   "name": "GJENSIDIGE FORSIKRING",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 10,
+   "isin": "NO0010582521",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 256.20001220703125,
+    "historyFileObservedAt": "2026-10-13T21:50:32.257546+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "GJF.OL",
+    "currency": "NOK",
+    "avgTradedValue30d": 77189597.41540782,
+    "return30dPct": -9.533897894136334,
+    "volumeRatio": 0.8869668876522028,
+    "exchange": "EURONEXT_OSLO",
+    "country": "NO",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": 0.015824,
+   "confidence": 0.091,
+   "agents": {
+    "fundamental": {
+     "vote": 0.6000000000000001,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.0,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "FAIL",
+     "value": "BLOCK"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.015824
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.091
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "evidence BLOCK: ('fundamental_source',)",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "total_debt",
+     "free_cash_flow",
+     "pe"
+    ],
+    "missing": [
+     "operating_income",
+     "ebitda",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "interest_expense",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "yahoo-public-fundamentals-global",
+      "type": "public_vendor_financial_metrics",
+      "period": "2025-12-31",
+      "url": "https://finance.yahoo.com/quote/GJF.OL/financials/"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "NOT_CURRENT"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [
+     "task/evidence gate is out of scope or blocked"
+    ],
+    "review_reasons": [],
+    "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk",
+     "liquidity"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 19.84411583035975,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 10.725541168208764,
+    "netMarginPct": 14.589763732216493,
+    "roePct": 23.160538661541942,
+    "debtToEquity": 0.18653911372371693,
+    "currentRatio": null,
+    "return1mPct": -8.020224952487176,
+    "return3mPct": -8.086640395842737,
+    "return6mPct": -3.851957008936069,
+    "volatilityAnnualizedPct": 19.34232775744555,
+    "maxDrawdownPct": -15.430461363461859,
+    "volumeVs30d": 0.8954179795188176
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  }
+ ]
+}

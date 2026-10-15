@@ -1,0 +1,23 @@
+{
+ "generatedAt": "2026-10-14T07:02:29.367675+00:00",
+ "gitCommit": "45fb5a277db2eb534d0a5cb3f6a4295962a89705",
+ "gitBranch": "feat/biap-global",
+ "python": "3.14.4",
+ "scripts": [
+  "opportunity_benchmark.py",
+  "fresh_audit.py",
+  "research_report.py"
+ ],
+ "method": "benchmark selection from stored history (2026-10-14 benchmark); fresh analyze_company per company in an isolated BIAP_GLOBAL_DATA_DIR copy (fundamentals/history/universe/market/sector-reference copied, source cache read-through); per-market isolated scan refresh (deep limit 50) provides the same-sector P/E cohort.",
+ "sha256": {
+  "DE__FRANKFURT.audit.json": "b567d462ad574025da5010624e4f07cdef308864038efea0096ecd641a558ea6",
+  "DE__XETRA.audit.json": "7e6ef2cc878dd8c221af0497636e47ba3e6400ae43d9569efb1366e905b1d278",
+  "FR__EURONEXT_PARIS.audit.json": "4b1dd40156b3ddcbdb3c27f31166cfad6a86b2bfe19171b9d95dcf9f56603112",
+  "GB__LSE.audit.json": "a187fe1b7cae85ce7e70355e59cf11b7997d0f6d9bf67caacd648ebc262b3c5e",
+  "IT__EURONEXT_MILAN.audit.json": "43df2206ad81600bdf39e619bb9af8576ebb85ca6a325fa6da321b9d29066308",
+  "NO__EURONEXT_OSLO.audit.json": "1431340991e812f147c31cf1bc67129cf17d740f951fa851cab78b3fb82d3fbc",
+  "SE__NASDAQ_STOCKHOLM.audit.json": "3fb6adbd0c48752249dcd8be36c3a2207bf69f8c0632a17d593db94743034b15",
+  "US__NASDAQ.audit.json": "804bbb63f63f79ce4934e17cecb9def27d14e528dc63a36aa127299fdf8426d8",
+  "US__NYSE.audit.json": "659fac72aeeae88462228fc0a4249906dcbdfb89d8177fe2e3c804e46f61a4c4"
+ }
+}

@@ -1,11 +1,10 @@
 {
-  "version": "0.3.18",
-  "versionCode": 21,
-  "releasedAt": "2026-10-11",
+  "version": "0.3.22",
+  "versionCode": 25,
+  "releasedAt": "2026-10-13",
   "changes": [
-    "Price Intelligence card on the stock page: price, Kiasha score, peer P/E and distress summary, with no invented fair value",
-    "Agent 10 credit card layout fix for long rating labels",
-    "Credit inputs from official ESEF and SEC filings (retained earnings, D&A, debt, FFO); SEC 20-F/40-F filings read when companyfacts lags",
-    "Reviewed, hash-pinned annual reports for selected UK trusts and US closed-end funds"
+    "UK ranking is released: pooled investment trusts/funds are classified by the LSE's own ICB sector and no longer dilute operating-company fundamentals coverage (the 70% gate is unchanged)",
+    "Portfolios fill every position slot with an allocatable qualified name and redistribute weight a capped position cannot take; leftover cash states which limit binds",
+    "Sector now comes from official ICB (LSE, Euronext), BME and a labelled ISIN-matched reference, so insurers are treated as financial institutions and the sector cap has real data"
   ]
 }

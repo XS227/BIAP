@@ -13,6 +13,8 @@ class FakeUniverse(InstrumentUniverseProvider):
     def __init__(self) -> None:
         self.fail = False
         self.calls = 0
+        # what the real LSE provider reports once it has classified the universe by ICB
+        self.last_metadata = {"icbClassifiedCount": 1, "icbSectorQueryFailures": 0}
 
     def list_instruments(self, *, country=None, exchange=None):
         self.calls += 1

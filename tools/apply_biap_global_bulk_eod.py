@@ -238,6 +238,7 @@ def main() -> int:
                 top_n=10,
                 discovery_limit=5000,
                 deep_limit=deep_limit,
+                origin="scheduled",
             )
             summaries.append({
                 "country": country,

@@ -34,9 +34,11 @@ from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta, timezone
 from html import unescape as html_unescape
 import base64
+import contextlib
 import hashlib
 import io
 import json
+import os
 import re
 import tempfile
 import threading
@@ -56,10 +58,68 @@ from .esef import _CONCEPTS, _agent10_fields, concept_is_relevant
 from .ixbrl import annual_period_end, extract_facts_and_identifiers
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, append_source
-from .source_cache import data_root, read_json, write_json_atomic
+from .source_cache import data_root, enforce_cache_budget, read_json, write_bulk_json, write_json_atomic
 
 USER_AGENT = "BIAP-Global/1.0 official-OAM ESEF evidence (+https://setai.no)"
 MAX_PACKAGE_BYTES = 300 * 1024 * 1024
+
+SCRATCH_PREFIX = "biap-oam-"
+SCRATCH_STALE_SECONDS = 2 * 3600
+
+
+def _scratch_dir() -> Path:
+    return OAMHttp.cache_dir() / "tmp"
+
+
+def sweep_stale_scratch(max_age_seconds: float = SCRATCH_STALE_SECONDS) -> int:
+    """Remove orphaned download scratch files left by a killed process.
+
+    Only regular (non-symlink) files directly inside the dedicated scratch
+    directory and older than ``max_age_seconds`` are touched; parsed fact
+    caches, listings and every other directory are never read or removed.
+    """
+    directory = _scratch_dir()
+    removed = 0
+    cutoff = time.time() - max_age_seconds
+    try:
+        entries = list(os.scandir(directory))
+    except OSError:
+        return 0
+    for entry in entries:
+        try:
+            if entry.is_symlink() or not entry.is_file(follow_symlinks=False):
+                continue
+            if entry.stat(follow_symlinks=False).st_mtime > cutoff:
+                continue
+            os.unlink(entry.path)
+            removed += 1
+        except OSError:
+            continue
+    return removed
+
+
+@contextlib.contextmanager
+def _scratch_package():
+    """A private (0600) scratch path for one package download.
+
+    The file is always unlinked on exit, whether parsing succeeded, failed or
+    raised; a stale-file sweep covers processes killed before ``finally`` ran.
+    """
+    directory = _scratch_dir()
+    directory.mkdir(parents=True, exist_ok=True)
+    sweep_stale_scratch()
+    fd, name = tempfile.mkstemp(prefix=SCRATCH_PREFIX, suffix=".zip", dir=directory)
+    os.close(fd)
+    try:
+        yield Path(name)
+    finally:
+        try:
+            os.unlink(name)
+        except FileNotFoundError:
+            pass
+        except OSError:
+            pass
+
 LISTING_TTL_SECONDS = 6 * 3600
 # v3: bank equity/operating-income concepts kept (esef._CONCEPTS additions).
 # v4: every parsed fact is kept. A concept whitelist silently dropped balance
@@ -144,7 +204,7 @@ class OAMHttp:
             if isinstance(cached, dict) and isinstance(cached.get("text"), str):
                 return cached["text"]
             raise GlobalProviderError(f"OAM listing request failed: {type(exc).__name__}") from exc
-        write_json_atomic(path, {"key": key, "fetchedAt": _utc_now().isoformat(), "text": text})
+        write_bulk_json(path, {"key": key, "fetchedAt": _utc_now().isoformat(), "text": text})
         return text
 
 
@@ -1566,7 +1626,32 @@ def _report_member(archive: zipfile.ZipFile) -> Optional[str]:
     names = [n for n in archive.namelist() if n.lower().endswith((".xhtml", ".html", ".htm")) and not n.endswith("/")]
     in_reports = [n for n in names if "/reports/" in n.lower() or n.lower().startswith("reports/")]
     pool = in_reports or names
-    return max(pool, key=lambda n: archive.getinfo(n).file_size) if pool else None
+    if not pool:
+        return None
+    ranked = sorted(pool, key=lambda n: archive.getinfo(n).file_size, reverse=True)
+    # A package may also carry an untagged management report that is larger
+    # than the tagged consolidated statements; prefer the largest member that
+    # actually holds inline XBRL numeric facts.
+    for name in ranked:
+        if _has_inline_facts(archive, name):
+            return name
+    return ranked[0]
+
+
+def _has_inline_facts(archive: zipfile.ZipFile, name: str) -> bool:
+    needle = b"ix:nonfraction"
+    tail = b""
+    try:
+        with archive.open(name) as handle:
+            while True:
+                chunk = handle.read(1 << 20)
+                if not chunk:
+                    return False
+                if needle in (tail + chunk).lower():
+                    return True
+                tail = chunk[-len(needle):]
+    except (OSError, zipfile.BadZipFile, RuntimeError):
+        return False
 
 
 class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
@@ -1640,10 +1725,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
         needs_identifiers = filing.oam == DenmarkVirkLocator.oam and "identifiers" not in (cached or {})
         if usable and cached.get("schemaVersion") == PACKAGE_SCHEMA_VERSION and not needs_identifiers:
             return cached
-        tmp_dir = OAMHttp.cache_dir() / "tmp"
-        tmp_dir.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(dir=tmp_dir, suffix=".zip") as handle:
-            target = Path(handle.name)
+        with _scratch_package() as target:
             try:
                 self._download(filing.package_url, target)
             except GlobalProviderError:
@@ -1659,7 +1741,8 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                 # A single-file ESEF report (XHTML lodged without a zip).
                 with target.open("r", encoding="utf-8", errors="replace") as text:
                     payload = self._parse_text(filing, iter(lambda: text.read(1 << 20), ""), "report.xhtml")
-        write_json_atomic(path, payload)
+        write_bulk_json(path, payload)
+        enforce_cache_budget(path.parent, env_var="BIAP_OAM_CACHE_MAX_MB", default_mb=1024)
         return payload
 
     def _parse_archive(self, filing: OAMFiling, archive: zipfile.ZipFile, *, depth: int = 0) -> dict:
@@ -1803,6 +1886,8 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                     "oam_entity_identity_exception": "ELABS_NEWSWEB_WRONG_EMBEDDED_LEI" if newsweb_elabs_entity_anomaly else None,
                     "oam_report_entity_ids": sorted(entity_ids),
                     "oam_credit_extraction": normalization_meta,
+                    **({"net_income_attributable_to_owners": normalization_meta["net_income_attributable_to_owners"]}
+                       if normalization_meta.get("net_income_attributable_to_owners") is not None else {}),
                     **({"fiscal_year_transition": transition} if transition else {}),
                     **_agent10_fields(normalization_meta),
                 },

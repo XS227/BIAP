@@ -1,3 +1,5 @@
+import pytest
+
 from global_markets.country_packs import get_exchange
 from global_markets.models import GlobalCompany
 from global_markets.universe import TwelveDataUniverseProvider, _ordinary_equity_row
@@ -167,3 +169,31 @@ def test_exact_aapl_search_uses_stocks_lookup_before_symbol_search(monkeypatch):
     assert rows and rows[0].ticker == "AAPL"
     assert rows[0].mic_code == "XNGS"
     assert calls[0] == "stocks"
+
+
+def test_open_session_bar_is_excluded_from_volume_statistics(monkeypatch):
+    payload = _payload()
+    payload["chart"]["result"][0]["meta"].update({
+        "regularMarketTime": 1789660800 + 3600,
+        "currentTradingPeriod": {"regular": {"start": 1789660800 - 60, "end": 1789660800 + 30000}},
+    })
+    provider = YahooChartMarketProvider()
+    monkeypatch.setattr(provider, "_get", lambda symbol: payload)
+    company = GlobalCompany(country="US", exchange="NASDAQ", mic_code="XNAS", currency="USD", ticker="AAPL", name="Apple")
+    enriched = provider.enrich_market(company)
+    assert enriched.price == 104.0                      # live price kept
+    assert enriched.volume_today == 1100.0              # last completed session
+    assert enriched.avg_volume_30d == pytest.approx(1100.0)
+    assert enriched.raw_provider_fields["latest_bar_partial_session"] is True
+
+
+def test_closed_session_bar_is_used_in_full(monkeypatch):
+    payload = _payload()
+    payload["chart"]["result"][0]["meta"].update({
+        "regularMarketTime": 1789660800 + 40000,
+        "currentTradingPeriod": {"regular": {"start": 1789660800 - 60, "end": 1789660800 + 30000}},
+    })
+    provider = YahooChartMarketProvider()
+    monkeypatch.setattr(provider, "_get", lambda symbol: payload)
+    company = GlobalCompany(country="US", exchange="NASDAQ", mic_code="XNAS", currency="USD", ticker="AAPL", name="Apple")
+    assert provider.enrich_market(company).volume_today == 1500.0

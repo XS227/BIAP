@@ -25,33 +25,61 @@ from .source_cache import data_root, read_json, write_json_atomic
 _SCAN_CACHE_SCHEMA_VERSION = 3
 
 
-def build_coverage_funnel(market_summary: list[dict]) -> dict:
+def build_coverage_funnel(market_summary: list[dict], *, qualified_issuers: Optional[int] = None) -> dict:
     """Five distinct stages; a later stage is never implied by an earlier one.
 
     discovered -> lightweight-screened (price/market data only) -> deep-analyzed
     (full agent run on official filings) -> evidence-PASS -> qualified BUY.
     "2997/3017 screened" says nothing about how many were deeply analyzed.
-    """
-    def total(key: str) -> int:
-        return sum(int(m.get(key) or 0) for m in market_summary)
 
-    discovered, screened, deep = total("eligibleEquities"), total("screenedEquities"), total("deepAnalyzed")
-    stages = {
-        "discovered": discovered,
-        "lightweightScreened": screened,
-        "deepAnalyzed": deep,
-        "evidencePass": total("evidencePass"),
-        "qualifiedBuy": total("qualifiedBuy"),
+    Two scopes are reported separately so numbers never mix populations:
+    ``allConnectedMarkets`` (every scanned market, including ones excluded from
+    ranking) and ``rankingEligibleMarkets`` (only markets whose coverage and
+    fundamental-readiness gates passed; the only ones that feed Global Top).
+    ``qualifiedBuy`` is a security count; ``qualifiedIssuers`` is after issuer
+    de-duplication (GOOG+GOOGL = 1) and before the Top-N display cap.
+    """
+    def stages_for(rows: list[dict]) -> dict:
+        def total(key: str) -> int:
+            return sum(int(m.get(key) or 0) for m in rows)
+        return {
+            "markets": len(rows),
+            "discovered": total("eligibleEquities"),
+            "lightweightScreened": total("screenedEquities"),
+            "queued": total("queued"),
+            "deepAnalyzed": total("deepAnalyzed"),
+            "evidencePass": total("evidencePass"),
+            "coreStatementsComplete": total("coreStatementsComplete"),
+            "financiallyComplete": total("financiallyComplete"),
+            "qualifiedBuy": total("qualifiedBuy"),
+        }
+
+    eligible_rows = [m for m in market_summary if m.get("rankingEligible")]
+    scopes = {
+        "allConnectedMarkets": stages_for(market_summary),
+        "rankingEligibleMarkets": stages_for(eligible_rows),
     }
+    if qualified_issuers is not None:
+        scopes["rankingEligibleMarkets"]["qualifiedIssuers"] = qualified_issuers
+    primary = scopes["rankingEligibleMarkets"]
+    discovered, screened, deep = primary["discovered"], primary["lightweightScreened"], primary["deepAnalyzed"]
     pct = lambda n: None if discovered <= 0 else round(100.0 * n / discovered, 2)
     return {
-        "stages": stages,
-        "pctOfDiscovered": {k: pct(v) for k, v in stages.items()},
+        "stages": primary,
+        "scopes": scopes,
+        "stagesScope": "rankingEligibleMarkets",
+        "pctOfDiscovered": {
+            k: pct(v) for k, v in primary.items() if k not in {"markets", "qualifiedIssuers"}
+        },
         "definitions": {
             "lightweightScreened": "market-data screen only; no filing was read",
-            "deepAnalyzed": "full agent analysis with fundamentals attempted",
-            "evidencePass": "official-filing evidence gates all cleared",
-            "qualifiedBuy": "BUY_CANDIDATE with evidence PASS; still subject to portfolio constraints",
+            "queued": "persistent queue: PENDING/ANALYZING companies still waiting for deep analysis (not a cap; they are analyzed in batches)",
+            "deepAnalyzed": "full agent analysis completed for the company (any outcome: COMPLETE, BLOCKED or INSUFFICIENT_DATA)",
+            "evidencePass": "official-filing evidence gates all cleared (data-quality gate only, NOT financial completeness)",
+            "coreStatementsComplete": "revenue, operating income, net income, assets, equity and operating cash flow all present from official filings; enough for fundamental analysis even when market cap or credit ratios are unavailable",
+            "financiallyComplete": "core statements and credit ratios (EBITDA, debt, interest, cash flow, valuation) all present from official sources (strict; a single unavailable ratio such as EBITDA or FFO, or a missing share count, keeps a company out)",
+            "qualifiedBuy": "BUY_CANDIDATE securities with evidence PASS; still subject to portfolio constraints",
+            "qualifiedIssuers": "qualified BUY after issuer de-duplication, before the Top-N display cap",
         },
         "warning": (
             "screening coverage must not be read as analysis coverage"
@@ -97,10 +125,33 @@ def _scan_cache_path(country: str, exchange: str) -> Path:
     return data_root() / "scan-cache" / safe_country / f"{safe_exchange}.json"
 
 
-def _write_scan_cache(country: str, exchange: str, payload: dict, *, full_refresh: bool = False) -> None:
+# A phone-triggered scan must not silently change the Global Top-10 inputs: it
+# may only seed a market whose scheduled artifact is missing, ineligible or
+# older than this window. (Interactive scans use a bigger deepLimit, which made
+# "deep-analyzed" totals jump between 391 and 591 depending on who had scanned.)
+_INTERACTIVE_OVERWRITE_AFTER_HOURS = 30.0
+
+
+def _artifact_age_hours(existing: object) -> Optional[float]:
+    try:
+        cached_at = datetime.fromisoformat(str((existing or {}).get("cachedAt") or "").replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return None
+    if cached_at.tzinfo is None:
+        cached_at = cached_at.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - cached_at.astimezone(timezone.utc)).total_seconds() / 3600.0
+
+
+def _write_scan_cache(
+    country: str, exchange: str, payload: dict, *, full_refresh: bool = False, origin: str = "scheduled"
+) -> None:
     path = _scan_cache_path(country, exchange)
     existing = read_json(path, default=None)
     existing_payload = existing.get("payload") if isinstance(existing, dict) else None
+    if origin != "scheduled" and isinstance(existing_payload, dict) and existing_payload.get("rankingEligible") is True:
+        age = _artifact_age_hours(existing)
+        if age is not None and age < _INTERACTIVE_OVERWRITE_AFTER_HOURS:
+            return
     # Interactive/bounded scans must never replace a complete scheduled market
     # artifact.  Doing so made Global Top regress minutes after a successful
     # refresh whenever a live-check requested only a small discovery sample.
@@ -113,6 +164,7 @@ def _write_scan_cache(country: str, exchange: str, payload: dict, *, full_refres
         return
     wrapper = {
         "schemaVersion": _SCAN_CACHE_SCHEMA_VERSION,
+        "scanOrigin": origin,
         "cachedAt": datetime.now(timezone.utc).isoformat(),
         "country": country.upper(),
         "exchange": exchange.upper(),
@@ -152,6 +204,8 @@ def scan_global_market(
     top_n: int = 10,
     discovery_limit: int = 1000,
     deep_limit: int = 25,
+    origin: str = "interactive",
+    time_budget_sec: Optional[float] = None,
 ) -> dict:
     country = country.strip().upper()
     exchange = exchange.strip().upper()
@@ -162,8 +216,10 @@ def scan_global_market(
             top_n=top_n,
             discovery_limit=discovery_limit,
             deep_limit=deep_limit,
+            time_budget_sec=time_budget_sec,
         )
-        _write_scan_cache(country, exchange, result, full_refresh=discovery_limit >= 5000)
+        result = {**result, "scanOrigin": origin, "batchLimit": deep_limit}
+        _write_scan_cache(country, exchange, result, full_refresh=discovery_limit >= 5000, origin=origin)
         return result
 
     # Keep Iran read-only until its Tindex/CODAL integration work is explicitly
@@ -288,9 +344,19 @@ def scan_global_top10(
             1 for r in deep_rows
             if r.get("call") == "BUY_CANDIDATE" and (r.get("evidence") or {}).get("status") == "PASS"
         )
+        ledger_info = result.get("analysisLedger") if isinstance(result.get("analysisLedger"), dict) else {}
+        if ledger_info:
+            # the ledger covers every company; deepResults is only a capped display slice
+            evidence_pass = int(ledger_info.get("evidencePass") or 0)
+            qualified_buy = int(ledger_info.get("buyQualified") or 0)
         market_summary.append({
             "evidencePass": evidence_pass,
             "qualifiedBuy": qualified_buy,
+            "queued": int(ledger_info.get("queued") or 0),
+            "coreStatementsComplete": int(ledger_info.get("coreStatementsComplete") or 0),
+            "financiallyComplete": int(ledger_info.get("financiallyComplete") or 0),
+            "analysisProgressPct": ledger_info.get("progressPct"),
+            "analysisByStatus": ledger_info.get("byStatus"),
             "country": country,
             "exchange": exchange,
             "status": result.get("status") or "UNKNOWN",
@@ -299,6 +365,8 @@ def scan_global_top10(
             "eligibleEquities": result.get("universeDiscovered") or 0,
             "screenedEquities": result.get("universeScreened") or 0,
             "deepAnalyzed": result.get("deepAnalyzed") or len(result.get("deepResults") or []),
+            "scanOrigin": result.get("scanOrigin") or "unknown",
+            "batchLimit": result.get("batchLimit"),
             "screeningCoveragePct": result.get("screeningCoveragePct"),
             "fundamentalCoveragePct": result.get("fundamentalCoveragePct"),
             "dataReadiness": result.get("dataReadiness"),
@@ -348,7 +416,8 @@ def scan_global_top10(
     screened_equities = sum(int(row.get("screenedEquities") or 0) for row in market_summary)
     eligible_equities = sum(int(row.get("eligibleEquities") or 0) for row in market_summary if row.get("rankingEligible"))
     eligible_screened = sum(int(row.get("screenedEquities") or 0) for row in market_summary if row.get("rankingEligible"))
-    deep_total = sum(int(row.get("deepAnalyzed") or 0) for row in market_summary)
+    deep_total = sum(int(row.get("deepAnalyzed") or 0) for row in market_summary if row.get("rankingEligible"))
+    deep_all_markets = sum(int(row.get("deepAnalyzed") or 0) for row in market_summary)
     connected_coverage = 0.0 if total_equities <= 0 else round(100.0 * screened_equities / total_equities, 2)
     eligible_coverage = 0.0 if eligible_equities <= 0 else round(100.0 * eligible_screened / eligible_equities, 2)
     status = _global_scan_status(
@@ -358,7 +427,7 @@ def scan_global_top10(
     )
     if eligible_markets == 0:
         recommendations = []
-    funnel = build_coverage_funnel(market_summary)
+    funnel = build_coverage_funnel(market_summary, qualified_issuers=len(issuer_rows))
     return {
         "coverageFunnel": funnel,
         "status": status,
@@ -373,6 +442,8 @@ def scan_global_top10(
         "eligibleEquities": eligible_equities,
         "screenedEquities": eligible_screened,
         "deepAnalyzed": deep_total,
+        "deepAnalyzedAllMarkets": deep_all_markets,
+        "qualifiedIssuers": len(issuer_rows),
         "globalCoveragePct": eligible_coverage,
         "connectedCoveragePct": connected_coverage,
         "recommendations": recommendations,

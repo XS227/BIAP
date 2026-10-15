@@ -23,6 +23,7 @@ import {
   scanGlobalMarket,
 } from '@/lib/global-api';
 import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-market-selection';
+import { evidenceCounts, rankCriterionLabel, topRanked } from '@/lib/scan-summary';
 
 type Risk = 'low' | 'medium' | 'high';
 type Objective = 'growth' | 'income' | 'value' | 'capital_preservation';
@@ -48,9 +49,15 @@ type MarketStat = {
   pass: number;
   warn: number;
   block: number;
+  evidenceBasis?: 'ledger' | 'payload_sample';
+  rankCriterion?: string;
   avgScore: number | null;
   avgConfidence: number | null;
   top: string;
+  error?: string;
+  errorCode?: string;
+  retryable?: boolean;
+  rankingBlocked?: boolean;
 };
 type ScanWithMode = Awaited<ReturnType<typeof scanGlobalMarket>> & {
   catalogOnly?: boolean;
@@ -76,6 +83,25 @@ const fromSelection = (s: GlobalMarketSelection): Scope => ({
   mic: s.mic,
 });
 const signal = (a: GlobalAnalysis | undefined, name: string) => a?.signals?.find((x) => x.agent === name);
+
+/** Run at most `limit` tasks at once (the server host is a single vCPU; parallel full-market scans starve each other). */
+async function settleWithLimit<T, R>(items: T[], limit: number, task: (item: T) => Promise<R>): Promise<PromiseSettledResult<R>[]> {
+  const results: PromiseSettledResult<R>[] = new Array(items.length);
+  let next = 0;
+  const worker = async () => {
+    for (;;) {
+      const index = next++;
+      if (index >= items.length) return;
+      try {
+        results[index] = { status: 'fulfilled', value: await task(items[index]) };
+      } catch (reason) {
+        results[index] = { status: 'rejected', reason };
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
 
 function scanMode(r: ScanWithMode): MarketMode {
   if (r.catalogOnly || r.status === 'MARKET_DATA_REQUIRED') return 'CATALOG';
@@ -121,7 +147,8 @@ function stat(scope: Scope, r: ScanWithMode): MarketStat {
   const deep = r.deepResults || [];
   const scored = deep.filter((x) => x.score != null && Number.isFinite(Number(x.score)));
   const confident = deep.filter((x) => x.confidence != null && Number.isFinite(Number(x.confidence)));
-  const top = [...(r.recommendations || [])].sort((a, b) => Number(b.score || 0) - Number(a.score || 0))[0];
+  const top = topRanked(r);
+  const evidence = evidenceCounts(r);
   return {
     key: scopeKey(scope),
     country: scope.country,
@@ -131,12 +158,15 @@ function stat(scope: Scope, r: ScanWithMode): MarketStat {
     qualified: Number(r.recommendationCount || r.recommendations?.length || 0),
     deep: Number(r.deepAnalyzed || deep.length || 0),
     coverage: Number(r.screeningCoveragePct || 0),
-    pass: deep.filter((x) => x.evidence?.status === 'PASS').length,
-    warn: deep.filter((x) => x.evidence?.status === 'WARN').length,
-    block: deep.filter((x) => x.evidence?.status === 'BLOCK').length,
+    pass: evidence.pass,
+    warn: evidence.warn,
+    block: evidence.block,
+    evidenceBasis: evidence.basis,
+    rankCriterion: rankCriterionLabel(r),
     avgScore: scored.length ? scored.reduce((sum, x) => sum + Number(x.score), 0) / scored.length : null,
     avgConfidence: confident.length ? confident.reduce((sum, x) => sum + Number(x.confidence), 0) / confident.length : null,
     top: top?.ticker || '—',
+    rankingBlocked: r.rankingEligible === false,
   };
 }
 
@@ -257,21 +287,26 @@ export default function GlobalPortfolioScreen() {
         Math.max(1, Math.floor(MAX_INPUTS / scopes.length)),
         Math.max(5, Math.ceil(positions * 1.5)),
       );
-      const scans = await Promise.allSettled(scopes.map((scope) => scanGlobalMarket(scope.country, scope.exchange, perMarket)));
+      const scans = await settleWithLimit(scopes, 2, (scope) => scanGlobalMarket(scope.country, scope.exchange, perMarket));
       const instruments: GlobalInstrument[] = [];
       const nextStats: MarketStat[] = [];
       const nextNotes: string[] = [];
       let usableMarkets = 0;
       let catalogOnlyMarkets = 0;
       let limitedCoverageMarkets = 0;
+      const failedMarkets: string[] = [];
 
       scans.forEach((scanResult, index) => {
         const scope = scopes[index];
         if (scanResult.status === 'rejected') {
-          nextNotes.push(`${scope.country}/${scope.exchange}: scan request failed`);
+          const failure = scanResult.reason as { code?: string; message?: string; retryable?: boolean } | undefined;
+          const reason = (failure?.message || 'scan request failed').slice(0, 200);
+          failedMarkets.push(`${scope.country}/${scope.exchange}`);
+          nextNotes.push(`${scope.country}/${scope.exchange}: UNAVAILABLE — ${reason}${failure?.retryable ? ' (you can retry)' : ''}. This market was NOT analyzed; it is not "0 qualified".`);
           nextStats.push({
             key: scopeKey(scope), country: scope.country, label: scope.exchangeLabel, mode: 'ERROR', status: 'SCAN_ERROR',
             qualified: 0, deep: 0, coverage: 0, pass: 0, warn: 0, block: 0, avgScore: null, avgConfidence: null, top: '—',
+            error: reason, errorCode: failure?.code, retryable: failure?.retryable,
           });
           return;
         }
@@ -317,8 +352,17 @@ export default function GlobalPortfolioScreen() {
       const unique = [...new Map(instruments.map((item) => [`${item.country}:${item.exchange}:${item.ticker}`, item])).values()].slice(0, MAX_INPUTS);
       setCandidateCount(unique.length);
 
+      if (failedMarkets.length && usableMarkets > 0) {
+        nextNotes.push(`PARTIAL: ${failedMarkets.join(', ')} could not be scanned and are excluded; the portfolio below covers only the markets that were analyzed.`);
+        setNotes([...nextNotes]);
+      }
+
       if (!unique.length) {
-        if (usableMarkets === 0 && catalogOnlyMarkets > 0) {
+        if (failedMarkets.length && usableMarkets === 0 && catalogOnlyMarkets === 0) {
+          setError(`Portfolio not generated: ${failedMarkets.join(', ')} could not be scanned (see market cards for the reason). No market was analyzed, so this is NOT a "no qualified BUY" result — pull down to retry.`);
+        } else if (failedMarkets.length) {
+          setError(`No evidence-qualified BUY candidates were found in the markets that were analyzed. ${failedMarkets.join(', ')} could not be scanned at all and is NOT included in that conclusion.`);
+        } else if (usableMarkets === 0 && catalogOnlyMarkets > 0) {
           setError('Portfolio not generated yet: the selected market catalogs are available, but verified price/history snapshots have not been seeded.');
         } else if (usableMarkets > 0 && catalogOnlyMarkets > 0) {
           setError('No evidence-qualified BUY candidates were found in the currently verified market-data coverage. Catalog-only markets were excluded, and partial cached coverage is not a full-exchange scan.');
@@ -503,12 +547,15 @@ export default function GlobalPortfolioScreen() {
                   <View style={s.between}><Text style={s.eyebrow}>{market.country}</Text><Text style={[s.mode, { color: modeColor(market.mode) }]}>{modeLabel(market.mode)}</Text></View>
                   <Text style={[s.marketName, { color: colors.text }]}>{market.label}</Text>
                   <Text style={[s.marketLine, { color: colors.textSecondary }]}>{statusLabel(market)}</Text>
-                  {market.mode === 'CATALOG' ? <Text style={[s.marketLine, { color: Brand.warning }]}>Price/history pending — excluded from portfolio</Text> : <>
+                  {market.mode === 'ERROR' ? <>
+                    <Text style={[s.marketLine, { color: Brand.negative }]}>Not analyzed — {market.error || 'scan failed'}</Text>
+                    <Text style={[s.marketLine, { color: colors.textSecondary }]}>{market.retryable ? 'Temporary problem: pull down to retry this market.' : 'Excluded from this portfolio. This is not a "no BUY candidates" result.'}</Text>
+                  </> : market.mode === 'CATALOG' ? <Text style={[s.marketLine, { color: Brand.warning }]}>Price/history pending — excluded from portfolio</Text> : <>
                     <Text style={[s.marketLine, { color: market.coverage < 80 ? Brand.warning : colors.textSecondary }]}>Screened coverage {n(market.coverage, 1)}%{market.coverage < 80 ? ' • limited sample' : ''}</Text>
-                    <Text style={[s.marketLine, { color: colors.textSecondary }]}>Qualified ideas {market.qualified} • Deep analyses {market.deep}</Text>
+                    <Text style={[s.marketLine, { color: colors.textSecondary }]}>{market.rankingBlocked ? 'Ranking blocked (coverage/evidence gates not met)' : `Analyzed: ${market.qualified} qualified BUY${market.qualified === 1 ? '' : 's'}`} • Deep analyses {market.deep}</Text>
                     <Text style={[s.marketLine, { color: colors.textSecondary }]}>Average score {n(market.avgScore, 3)} • confidence {pc(market.avgConfidence)}</Text>
                     <Text style={[s.marketLine, { color: colors.textSecondary }]}>Evidence {market.pass} pass • {market.warn} review • {market.block} blocked</Text>
-                    <Text style={[s.marketTop, { color: colors.text }]}>Highest-ranked in this scan: {market.top}</Text>
+                    <Text style={[s.marketTop, { color: colors.text }]}>Highest-ranked in this scan ({market.rankCriterion || 'server order'}): {market.top}</Text>
                   </>}
                 </View>
               ))}
@@ -574,6 +621,7 @@ export default function GlobalPortfolioScreen() {
             </> : null}
 
             {result?.fxErrors && Object.keys(result.fxErrors).length ? <Text style={[s.error, { color: Brand.warning }]}>FX unavailable: {Object.entries(result.fxErrors).map(([key, value]) => `${key}: ${value}`).join(' • ')}</Text> : null}
+            {result?.fxSources && Object.keys(result.fxSources).length ? <Text style={[s.body, { color: colors.textSecondary }]}>FX conversion: {[...new Set(Object.values(result.fxSources).map((src) => `${src.provider === 'ecb-euro-reference-rates' ? 'ECB reference rates' : src.provider || 'source'}${src.rateDate ? ` (${src.rateDate})` : ''}`))].join(' • ')}</Text> : null}
           </> : null}
 
           <View style={[s.card, { backgroundColor: colors.backgroundElement, marginTop: 18 }]}>

@@ -1,0 +1,834 @@
+{
+ "AE__ADX": {
+  "discovered": 102,
+  "inUniverse": 102,
+  "deepAnalyzed": 10,
+  "verifiedCoreFundamentals": 0,
+  "evidencePASS": 10,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 9,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 100.0,
+  "sectorCoveragePctAfter": 100.0,
+  "topBlockers": [
+   [
+    "no usable quote",
+    83
+   ],
+   [
+    "no official statement source",
+    7
+   ],
+   [
+    "gate failed",
+    1
+   ]
+  ]
+ },
+ "AE__DFM": {
+  "discovered": 65,
+  "inUniverse": 65,
+  "deepAnalyzed": 0,
+  "verifiedCoreFundamentals": 0,
+  "evidencePASS": 0,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 3,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 100.0,
+  "sectorCoveragePctAfter": 100.0,
+  "topBlockers": [
+   [
+    "no usable quote",
+    62
+   ],
+   [
+    "no official statement source",
+    3
+   ]
+  ]
+ },
+ "AU__ASX": {
+  "discovered": 1817,
+  "inUniverse": 1817,
+  "deepAnalyzed": 1,
+  "verifiedCoreFundamentals": 1,
+  "evidencePASS": 1,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 21,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 0.0,
+  "sectorCoveragePctAfter": 0.0,
+  "topBlockers": [
+   [
+    "no usable quote",
+    1794
+   ],
+   [
+    "official filing not found",
+    21
+   ],
+   [
+    "queued_for_deep_analysis",
+    1
+   ]
+  ]
+ },
+ "BE__EURONEXT_BRUSSELS": {
+  "discovered": 102,
+  "inUniverse": 102,
+  "deepAnalyzed": 81,
+  "verifiedCoreFundamentals": 56,
+  "evidencePASS": 81,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 21,
+  "buyCandidates": 3,
+  "sectorCoveragePctBefore": 100.0,
+  "sectorCoveragePctAfter": 100.0,
+  "topBlockers": [
+   [
+    "official filing not found",
+    9
+   ],
+   [
+    "stale official filing",
+    8
+   ],
+   [
+    "no official statement source",
+    3
+   ]
+  ]
+ },
+ "BR__B3": {
+  "discovered": 417,
+  "inUniverse": 417,
+  "deepAnalyzed": 339,
+  "verifiedCoreFundamentals": 336,
+  "evidencePASS": 339,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 47,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 0.0,
+  "sectorCoveragePctAfter": 0.0,
+  "topBlockers": [
+   [
+    "no usable quote",
+    31
+   ],
+   [
+    "missing:fundamental_source (CV",
+    31
+   ],
+   [
+    "missing:fundamental_source (no",
+    11
+   ]
+  ]
+ },
+ "CA__TSX": {
+  "discovered": 579,
+  "inUniverse": 579,
+  "deepAnalyzed": 17,
+  "verifiedCoreFundamentals": 7,
+  "evidencePASS": 17,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 27,
+  "buyCandidates": 1,
+  "sectorCoveragePctBefore": 100.0,
+  "sectorCoveragePctAfter": 100.0,
+  "topBlockers": [
+   [
+    "no usable quote",
+    535
+   ],
+   [
+    "official filing not found",
+    26
+   ],
+   [
+    "stale official filing",
+    1
+   ]
+  ]
+ },
+ "CA__TSXV": {
+  "discovered": 1218,
+  "inUniverse": 1218,
+  "deepAnalyzed": 0,
+  "verifiedCoreFundamentals": 0,
+  "evidencePASS": 0,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 28,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 100.0,
+  "sectorCoveragePctAfter": 100.0,
+  "topBlockers": [
+   [
+    "no usable quote",
+    1190
+   ],
+   [
+    "official filing not found",
+    28
+   ]
+  ]
+ },
+ "CH__SIX": {
+  "discovered": 197,
+  "inUniverse": 197,
+  "deepAnalyzed": 4,
+  "verifiedCoreFundamentals": 2,
+  "evidencePASS": 4,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 21,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 25.9,
+  "sectorCoveragePctAfter": 25.9,
+  "topBlockers": [
+   [
+    "no usable quote",
+    172
+   ],
+   [
+    "official filing not found",
+    21
+   ]
+  ]
+ },
+ "DE__FRANKFURT": {
+  "discovered": 498,
+  "inUniverse": 498,
+  "deepAnalyzed": 456,
+  "verifiedCoreFundamentals": 20,
+  "evidencePASS": 434,
+  "evidenceWARN": 22,
+  "evidenceBLOCK": 35,
+  "buyCandidates": 1,
+  "sectorCoveragePctBefore": 26.5,
+  "sectorCoveragePctAfter": 82.1,
+  "topBlockers": [
+   [
+    "official filing not found",
+    50
+   ],
+   [
+    "no official statement source",
+    7
+   ],
+   [
+    "no usable quote",
+    7
+   ]
+  ]
+ },
+ "DE__XETRA": {
+  "discovered": 406,
+  "inUniverse": 406,
+  "deepAnalyzed": 389,
+  "verifiedCoreFundamentals": 16,
+  "evidencePASS": 372,
+  "evidenceWARN": 17,
+  "evidenceBLOCK": 15,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 28.8,
+  "sectorCoveragePctAfter": 84.5,
+  "topBlockers": [
+   [
+    "official filing not found",
+    28
+   ],
+   [
+    "no official statement source",
+    4
+   ],
+   [
+    "no usable quote",
+    2
+   ]
+  ]
+ },
+ "DK__NASDAQ_COPENHAGEN": {
+  "discovered": 116,
+  "inUniverse": 116,
+  "deepAnalyzed": 99,
+  "verifiedCoreFundamentals": 77,
+  "evidencePASS": 99,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 17,
+  "buyCandidates": 3,
+  "sectorCoveragePctBefore": 100.0,
+  "sectorCoveragePctAfter": 100.0,
+  "topBlockers": [
+   [
+    "official filing not found",
+    13
+   ],
+   [
+    "stale official filing",
+    3
+   ],
+   [
+    "core figures not tagged",
+    1
+   ]
+  ]
+ },
+ "ES__BME_MADRID": {
+  "discovered": 109,
+  "inUniverse": 109,
+  "deepAnalyzed": 95,
+  "verifiedCoreFundamentals": 74,
+  "evidencePASS": 95,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 11,
+  "buyCandidates": 1,
+  "sectorCoveragePctBefore": 97.2,
+  "sectorCoveragePctAfter": 97.2,
+  "topBlockers": [
+   [
+    "stale official filing",
+    7
+   ],
+   [
+    "official filing not found",
+    4
+   ],
+   [
+    "no usable quote",
+    3
+   ]
+  ]
+ },
+ "FI__NASDAQ_HELSINKI": {
+  "discovered": 148,
+  "inUniverse": 148,
+  "deepAnalyzed": 123,
+  "verifiedCoreFundamentals": 111,
+  "evidencePASS": 123,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 23,
+  "buyCandidates": 4,
+  "sectorCoveragePctBefore": 100.0,
+  "sectorCoveragePctAfter": 100.0,
+  "topBlockers": [
+   [
+    "stale official filing",
+    14
+   ],
+   [
+    "official filing not found",
+    6
+   ],
+   [
+    "no usable quote",
+    2
+   ]
+  ]
+ },
+ "FR__EURONEXT_PARIS": {
+  "discovered": 294,
+  "inUniverse": 294,
+  "deepAnalyzed": 259,
+  "verifiedCoreFundamentals": 194,
+  "evidencePASS": 259,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 34,
+  "buyCandidates": 1,
+  "sectorCoveragePctBefore": 100.0,
+  "sectorCoveragePctAfter": 100.0,
+  "topBlockers": [
+   [
+    "official filing not found",
+    18
+   ],
+   [
+    "stale official filing",
+    16
+   ],
+   [
+    "no usable quote",
+    1
+   ]
+  ]
+ },
+ "GB__LSE": {
+  "discovered": 830,
+  "inUniverse": 527,
+  "deepAnalyzed": 420,
+  "verifiedCoreFundamentals": 300,
+  "evidencePASS": 420,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 101,
+  "buyCandidates": 7,
+  "sectorCoveragePctBefore": 99.1,
+  "sectorCoveragePctAfter": 99.1,
+  "topBlockers": [
+   [
+    "official filing not found",
+    47
+   ],
+   [
+    "stale official filing",
+    43
+   ],
+   [
+    "no official statement source",
+    6
+   ]
+  ]
+ },
+ "GR__ATHENS": {
+  "discovered": 128,
+  "inUniverse": 128,
+  "deepAnalyzed": 16,
+  "verifiedCoreFundamentals": 13,
+  "evidencePASS": 16,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 30,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 9.4,
+  "sectorCoveragePctAfter": 9.4,
+  "topBlockers": [
+   [
+    "no usable quote",
+    82
+   ],
+   [
+    "official filing not found",
+    16
+   ],
+   [
+    "no official statement source",
+    13
+   ]
+  ]
+ },
+ "HK__HKEX": {
+  "discovered": 2772,
+  "inUniverse": 2767,
+  "deepAnalyzed": 1,
+  "verifiedCoreFundamentals": 1,
+  "evidencePASS": 1,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 33,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 0.0,
+  "sectorCoveragePctAfter": 0.0,
+  "topBlockers": [
+   [
+    "no usable quote",
+    2733
+   ],
+   [
+    "official filing not found",
+    33
+   ]
+  ]
+ },
+ "IE__EURONEXT_DUBLIN": {
+  "discovered": 16,
+  "inUniverse": 16,
+  "deepAnalyzed": 11,
+  "verifiedCoreFundamentals": 10,
+  "evidencePASS": 11,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 5,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 100.0,
+  "sectorCoveragePctAfter": 100.0,
+  "topBlockers": [
+   [
+    "stale official filing",
+    3
+   ],
+   [
+    "no official statement source",
+    1
+   ],
+   [
+    "official filing not found",
+    1
+   ]
+  ]
+ },
+ "IN__NSE": {
+  "discovered": 2351,
+  "inUniverse": 2351,
+  "deepAnalyzed": 33,
+  "verifiedCoreFundamentals": 0,
+  "evidencePASS": 33,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 6,
+  "buyCandidates": 1,
+  "sectorCoveragePctBefore": 0.0,
+  "sectorCoveragePctAfter": 0.0,
+  "topBlockers": [
+   [
+    "no usable quote",
+    2312
+   ],
+   [
+    "missing:fundamental_source (NS",
+    6
+   ]
+  ]
+ },
+ "IS__NASDAQ_ICELAND": {
+  "discovered": 27,
+  "inUniverse": 27,
+  "deepAnalyzed": 23,
+  "verifiedCoreFundamentals": 14,
+  "evidencePASS": 23,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 4,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 100.0,
+  "sectorCoveragePctAfter": 100.0,
+  "topBlockers": [
+   [
+    "stale official filing",
+    3
+   ],
+   [
+    "official filing not found",
+    1
+   ]
+  ]
+ },
+ "IT__EURONEXT_MILAN": {
+  "discovered": 193,
+  "inUniverse": 193,
+  "deepAnalyzed": 169,
+  "verifiedCoreFundamentals": 130,
+  "evidencePASS": 169,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 24,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 100.0,
+  "sectorCoveragePctAfter": 100.0,
+  "topBlockers": [
+   [
+    "stale official filing",
+    11
+   ],
+   [
+    "official filing not found",
+    10
+   ],
+   [
+    "core figures not tagged",
+    3
+   ]
+  ]
+ },
+ "JP__TSE_JP": {
+  "discovered": 3695,
+  "inUniverse": 3695,
+  "deepAnalyzed": 0,
+  "verifiedCoreFundamentals": 0,
+  "evidencePASS": 0,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 24,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 100.0,
+  "sectorCoveragePctAfter": 100.0,
+  "topBlockers": [
+   [
+    "no usable quote",
+    3671
+   ],
+   [
+    "missing:fundamental_source (no",
+    24
+   ]
+  ]
+ },
+ "KR__KRX": {
+  "discovered": 2641,
+  "inUniverse": 2641,
+  "deepAnalyzed": 0,
+  "verifiedCoreFundamentals": 0,
+  "evidencePASS": 0,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 0,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 0.0,
+  "sectorCoveragePctAfter": 0.0,
+  "topBlockers": [
+   [
+    "no usable quote",
+    2641
+   ]
+  ]
+ },
+ "NL__EURONEXT_AMSTERDAM": {
+  "discovered": 98,
+  "inUniverse": 98,
+  "deepAnalyzed": 83,
+  "verifiedCoreFundamentals": 62,
+  "evidencePASS": 82,
+  "evidenceWARN": 1,
+  "evidenceBLOCK": 15,
+  "buyCandidates": 3,
+  "sectorCoveragePctBefore": 100.0,
+  "sectorCoveragePctAfter": 100.0,
+  "topBlockers": [
+   [
+    "official filing not found",
+    8
+   ],
+   [
+    "stale official filing",
+    6
+   ],
+   [
+    "no official statement source",
+    1
+   ]
+  ]
+ },
+ "NO__EURONEXT_OSLO": {
+  "discovered": 146,
+  "inUniverse": 146,
+  "deepAnalyzed": 136,
+  "verifiedCoreFundamentals": 114,
+  "evidencePASS": 136,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 10,
+  "buyCandidates": 1,
+  "sectorCoveragePctBefore": 100.0,
+  "sectorCoveragePctAfter": 100.0,
+  "topBlockers": [
+   [
+    "official filing not found",
+    7
+   ],
+   [
+    "stale official filing",
+    2
+   ],
+   [
+    "no official statement source",
+    1
+   ]
+  ]
+ },
+ "NZ__NZX": {
+  "discovered": 101,
+  "inUniverse": 101,
+  "deepAnalyzed": 2,
+  "verifiedCoreFundamentals": 0,
+  "evidencePASS": 2,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 16,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 0.0,
+  "sectorCoveragePctAfter": 0.0,
+  "topBlockers": [
+   [
+    "no usable quote",
+    83
+   ],
+   [
+    "missing:fundamental_source (NZ",
+    12
+   ],
+   [
+    "gate failed",
+    3
+   ]
+  ]
+ },
+ "PT__EURONEXT_LISBON": {
+  "discovered": 30,
+  "inUniverse": 30,
+  "deepAnalyzed": 28,
+  "verifiedCoreFundamentals": 14,
+  "evidencePASS": 28,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 2,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 100.0,
+  "sectorCoveragePctAfter": 100.0,
+  "topBlockers": [
+   [
+    "official filing not found",
+    1
+   ],
+   [
+    "stale official filing",
+    1
+   ]
+  ]
+ },
+ "SA__SAUDI_EXCHANGE": {
+  "discovered": 376,
+  "inUniverse": 376,
+  "deepAnalyzed": 0,
+  "verifiedCoreFundamentals": 0,
+  "evidencePASS": 0,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 21,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 0.0,
+  "sectorCoveragePctAfter": 0.0,
+  "topBlockers": [
+   [
+    "no usable quote",
+    355
+   ],
+   [
+    "missing:fundamental_source (no",
+    21
+   ]
+  ]
+ },
+ "SE__NASDAQ_STOCKHOLM": {
+  "discovered": 402,
+  "inUniverse": 402,
+  "deepAnalyzed": 373,
+  "verifiedCoreFundamentals": 266,
+  "evidencePASS": 373,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 29,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 100.0,
+  "sectorCoveragePctAfter": 100.0,
+  "topBlockers": [
+   [
+    "official filing not found",
+    19
+   ],
+   [
+    "stale official filing",
+    9
+   ],
+   [
+    "no official statement source",
+    1
+   ]
+  ]
+ },
+ "SG__SGX": {
+  "discovered": 565,
+  "inUniverse": 565,
+  "deepAnalyzed": 1,
+  "verifiedCoreFundamentals": 1,
+  "evidencePASS": 1,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 33,
+  "buyCandidates": 1,
+  "sectorCoveragePctBefore": 0.0,
+  "sectorCoveragePctAfter": 0.0,
+  "topBlockers": [
+   [
+    "no usable quote",
+    531
+   ],
+   [
+    "official filing not found",
+    33
+   ]
+  ]
+ },
+ "TR__BIST": {
+  "discovered": 631,
+  "inUniverse": 631,
+  "deepAnalyzed": 564,
+  "verifiedCoreFundamentals": 0,
+  "evidencePASS": 564,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 67,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 0.0,
+  "sectorCoveragePctAfter": 0.0,
+  "topBlockers": [
+   [
+    "no official statement source",
+    29
+   ],
+   [
+    "missing:fundamental_source (KA",
+    19
+   ],
+   [
+    "core figures not tagged",
+    11
+   ]
+  ]
+ },
+ "US__NASDAQ": {
+  "discovered": 3013,
+  "inUniverse": 3010,
+  "deepAnalyzed": 2804,
+  "verifiedCoreFundamentals": 2043,
+  "evidencePASS": 2804,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 196,
+  "buyCandidates": 37,
+  "sectorCoveragePctBefore": 0.0,
+  "sectorCoveragePctAfter": 0.0,
+  "topBlockers": [
+   [
+    "no official statement source",
+    177
+   ],
+   [
+    "stale official filing",
+    15
+   ],
+   [
+    "no usable quote",
+    10
+   ]
+  ]
+ },
+ "US__NYSE": {
+  "discovered": 1799,
+  "inUniverse": 1798,
+  "deepAnalyzed": 1599,
+  "verifiedCoreFundamentals": 1010,
+  "evidencePASS": 1599,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 188,
+  "buyCandidates": 44,
+  "sectorCoveragePctBefore": 0.0,
+  "sectorCoveragePctAfter": 0.0,
+  "topBlockers": [
+   [
+    "no official statement source",
+    177
+   ],
+   [
+    "no usable quote",
+    11
+   ],
+   [
+    "stale official filing",
+    10
+   ]
+  ]
+ },
+ "ZA__JSE": {
+  "discovered": 303,
+  "inUniverse": 303,
+  "deepAnalyzed": 4,
+  "verifiedCoreFundamentals": 2,
+  "evidencePASS": 4,
+  "evidenceWARN": 0,
+  "evidenceBLOCK": 13,
+  "buyCandidates": 0,
+  "sectorCoveragePctBefore": 1.7,
+  "sectorCoveragePctAfter": 1.7,
+  "topBlockers": [
+   [
+    "no usable quote",
+    286
+   ],
+   [
+    "official filing not found",
+    13
+   ]
+  ]
+ }
+}

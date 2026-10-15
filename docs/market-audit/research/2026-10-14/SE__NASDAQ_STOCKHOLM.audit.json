@@ -1,0 +1,5239 @@
+{
+ "market": "SE__NASDAQ_STOCKHOLM",
+ "companies": [
+  {
+   "ticker": "AZN",
+   "name": "AstraZeneca",
+   "category": "TRADING_VALUE",
+   "rank": 1,
+   "isin": "GB0009895292",
+   "sector": "Health Care",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 1576.0,
+    "historyFileObservedAt": "2026-10-13T21:51:30.991194+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "AZN.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 823318125.7666667,
+    "return30dPct": 1.3179042108646843,
+    "volumeRatio": 1.411041171517519,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.193516,
+   "confidence": 0.503188,
+   "agents": {
+    "fundamental": {
+     "vote": 0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.1,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.7,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.193516
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.503188
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.19<0.25 with negative evidence-backed votes: forecast -0.20",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "ebitda",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-gb-fca-nsm",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.50 below accept threshold 0.55",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.50 below accept threshold 0.55; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 8.62907550903409,
+    "netMarginPct": 17.421134169802006,
+    "roePct": 21.00412570044541,
+    "debtToEquity": 0.5710092571686611,
+    "currentRatio": 0.9381389424176111,
+    "return1mPct": -1.005025125628145,
+    "return3mPct": -3.940841581009169,
+    "return6mPct": -14.605410091193406,
+    "volatilityAnnualizedPct": 25.64152340194454,
+    "maxDrawdownPct": -22.54335100594897,
+    "volumeVs30d": 1.412147960312759
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "SAND",
+   "name": "Sandvik",
+   "category": "TRADING_VALUE",
+   "rank": 2,
+   "isin": "SE0000667891",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 364.6000061035156,
+    "historyFileObservedAt": "2026-10-13T21:35:17.753897+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SAND.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 646420899.1048167,
+    "return30dPct": -2.4872928442848496,
+    "volumeRatio": 1.1316875717439399,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.074504,
+   "confidence": 0.620312,
+   "agents": {
+    "fundamental": {
+     "vote": 0.05000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": -0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.074504
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.620312
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.07<0.25 with negative evidence-backed votes: forecast -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "ebitda",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=61832"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.62."
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 31.221179001154194,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": -8.411131071784805,
+    "revenueYoyPct": -1.7887660931981353,
+    "netMarginPct": 12.173516738481936,
+    "roePct": 15.756620225875995,
+    "debtToEquity": 0.39813593315958257,
+    "currentRatio": 1.9355356796721401,
+    "return1mPct": -5.088267259187241,
+    "return3mPct": -4.816453971889345,
+    "return6mPct": -7.056646115912024,
+    "volatilityAnnualizedPct": 31.87166340538891,
+    "maxDrawdownPct": -18.528409435341786,
+    "volumeVs30d": 0.9026880022678436
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "BOL",
+   "name": "Boliden",
+   "category": "TRADING_VALUE",
+   "rank": 3,
+   "isin": "SE0020050417",
+   "sector": "Basic Materials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 548.4000244140625,
+    "historyFileObservedAt": "2026-10-13T22:30:19.063650+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "BOL.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 527662706.8992442,
+    "return30dPct": -2.8692794673012223,
+    "volumeRatio": 0.9265593733057187,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.119374,
+   "confidence": 0.666162,
+   "agents": {
+    "fundamental": {
+     "vote": -0.05,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.30000000000000004,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.6,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.3,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.119374
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.666162
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.12<0.25 with negative evidence-backed votes: risk -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=61819"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.67."
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 16.42407979676737,
+    "pb": 2.017952865607857,
+    "evEbitda": null,
+    "peVsSectorPct": -38.586465151741244,
+    "revenueYoyPct": 4.822491508513904,
+    "netMarginPct": 10.062133056711119,
+    "roePct": 12.293400577498465,
+    "debtToEquity": 0.2843200020904922,
+    "currentRatio": 1.699208983974753,
+    "return1mPct": -0.2909046519886327,
+    "return3mPct": 5.827867907298656,
+    "return6mPct": 1.8126994684994902,
+    "volatilityAnnualizedPct": 46.49718332941302,
+    "maxDrawdownPct": -35.78743481499876,
+    "volumeVs30d": 0.9289706061317226
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "EVO",
+   "name": "Evolution",
+   "category": "TRADING_VALUE",
+   "rank": 4,
+   "isin": "SE0012673267",
+   "sector": "Consumer Discretionary",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 792.7999877929688,
+    "historyFileObservedAt": "2026-10-13T22:30:20.533691+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "EVO.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 494620547.1890361,
+    "return30dPct": -4.780205255826453,
+    "volumeRatio": 0.9447793838362181,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.055081,
+   "confidence": 0.461825,
+   "agents": {
+    "fundamental": {
+     "vote": -0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.15000000000000002,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.85,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.055081
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.461825
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=quality negative=fundamental"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=quality negative=fundamental",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "total_debt",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=62090"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -4.332872809028143,
+    "netMarginPct": 50.14127514449721,
+    "roePct": 26.054441009810255,
+    "debtToEquity": null,
+    "currentRatio": 1.6586518714329779,
+    "return1mPct": -9.414993517455583,
+    "return3mPct": 12.773824721617167,
+    "return6mPct": 30.052496644367864,
+    "volatilityAnnualizedPct": 27.870191363058034,
+    "maxDrawdownPct": -29.342467425620722,
+    "volumeVs30d": 0.9946328308210565
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "EQT",
+   "name": "EQT",
+   "category": "TRADING_VALUE",
+   "rank": 5,
+   "isin": "SE0012853455",
+   "sector": "Financials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 287.0,
+    "historyFileObservedAt": "2026-10-13T22:30:17.810615+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "EQT.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 468018635.1719208,
+    "return30dPct": -13.91721498078098,
+    "volumeRatio": 0.8155559030674472,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.140763,
+   "confidence": 0.378717,
+   "agents": {
+    "fundamental": {
+     "vote": -0.5,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": -0.2,
+     "confidence": 0.48000000000000004
+    },
+    "forecast": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.2,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.140763
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.378717
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "NOT_APPLICABLE"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.14<0.25 with negative evidence-backed votes: fundamental -0.50, risk -0.20, forecast -0.20",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow"
+    ],
+    "missing": [
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=61907"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.38 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.38 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "NOT_APPLICABLE",
+    "models": [],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ebitda_interest",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -0.7615170021865292,
+    "netMarginPct": 27.6477738945449,
+    "roePct": 9.686048523403294,
+    "debtToEquity": 0.32521060967007814,
+    "currentRatio": 6.834781719660566,
+    "return1mPct": -7.239817174650209,
+    "return3mPct": -0.7263943476928492,
+    "return6mPct": -4.274235059873288,
+    "volatilityAnnualizedPct": 34.36320522912378,
+    "maxDrawdownPct": -29.524714647795165,
+    "volumeVs30d": 0.815231918047575
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "ABB",
+   "name": "ABB Ltd",
+   "category": "TRADING_VALUE",
+   "rank": 6,
+   "isin": "CH0012221716",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-13",
+    "lastClose": 955.0,
+    "historyFileObservedAt": "2026-10-13T21:55:47.056941+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ABB.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 395562571.5489197,
+    "return30dPct": 3.8269202733403507,
+    "volumeRatio": 0.9561197354858038,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "NO_RECOMMENDATION",
+   "score": 0.063464,
+   "confidence": 0.110667,
+   "agents": {
+    "fundamental": {
+     "vote": 0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.65,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "FAIL",
+     "value": "BLOCK"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.063464
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.110667
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "ABSTAIN"
+    }
+   },
+   "verdict": "DATA_LIMITED",
+   "reason": "evidence BLOCK: ('fundamental_source',)",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow"
+    ],
+    "missing": [
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "yahoo-public-fundamentals-global",
+      "type": "public_vendor_financial_metrics",
+      "period": "2025-12-31",
+      "url": "https://finance.yahoo.com/quote/ABB.ST/financials/"
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "NOT_CURRENT"
+   },
+   "agent8": {
+    "action": "ABSTAIN",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": false,
+    "abstained": true,
+    "hard_blocks": [
+     "task/evidence gate is out of scope or blocked"
+    ],
+    "review_reasons": [],
+    "reasoning": "Abstained: task/evidence gate is out of scope or blocked"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:retained_earnings",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.4,
+    "missing": [
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 8.622437301768947,
+    "netMarginPct": 14.250451535219746,
+    "roePct": 29.427488033816125,
+    "debtToEquity": 0.5650525268850625,
+    "currentRatio": 1.5576396078192558,
+    "return1mPct": 5.78201295002696,
+    "return3mPct": 2.0953576089774995,
+    "return6mPct": 12.59136833953507,
+    "volatilityAnnualizedPct": 27.030946308942895,
+    "maxDrawdownPct": -14.618662983701444,
+    "volumeVs30d": 0.9603791095369523
+   },
+   "opportunityState": "INSUFFICIENT_DATA"
+  },
+  {
+   "ticker": "ALFA",
+   "name": "Alfa Laval",
+   "category": "TRADING_VALUE",
+   "rank": 7,
+   "isin": "SE0000695876",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 582.4000244140625,
+    "historyFileObservedAt": "2026-10-13T23:17:45.726363+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ALFA.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 296534575.32202965,
+    "return30dPct": 1.3222054249296677,
+    "volumeRatio": 0.7146415810269646,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.185449,
+   "confidence": 0.572656,
+   "agents": {
+    "fundamental": {
+     "vote": 0.30000000000000004,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": 0.2,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.44999999999999996,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.185449
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.572656
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.19<0.25, no negative agent; 3 of 17 core fields missing; abstaining agents: []",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "free_cash_flow",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=61932"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.57."
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.45,
+    "missing": [
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 29.105448496454894,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": -14.617730889016789,
+    "revenueYoyPct": 4.062490665232854,
+    "netMarginPct": 11.94419726153228,
+    "roePct": 19.02041002902658,
+    "debtToEquity": 0.39348158983383996,
+    "currentRatio": 1.181493194005225,
+    "return1mPct": 6.238601139270927,
+    "return3mPct": 3.962872496123193,
+    "return6mPct": 6.229754286605549,
+    "volatilityAnnualizedPct": 22.056976176794667,
+    "maxDrawdownPct": -9.936569028334464,
+    "volumeVs30d": 0.7249959243905342
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "TELIA",
+   "name": "Telia Company",
+   "category": "TRADING_VALUE",
+   "rank": 8,
+   "isin": "SE0000667925",
+   "sector": "Telecommunications",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 43.209999084472656,
+    "historyFileObservedAt": "2026-10-13T22:30:29.189933+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "TELIA.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 291246192.1961315,
+    "return30dPct": -0.9853352685375572,
+    "volumeRatio": 0.7454103897833309,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.029322,
+   "confidence": 0.466266,
+   "agents": {
+    "fundamental": {
+     "vote": -0.1,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": -0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.3,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.029322
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.466266
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.03<0.25 with negative evidence-backed votes: forecast -0.30, fundamental -0.10",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "total_debt",
+     "free_cash_flow",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=61865"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.47 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.47 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 48.011110093858505,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 0.020996726980793134,
+    "netMarginPct": 5.298708354943074,
+    "roePct": 7.827435242612185,
+    "debtToEquity": null,
+    "currentRatio": 0.9174843889384479,
+    "return1mPct": -4.991205981995606,
+    "return3mPct": -5.046215945792243,
+    "return6mPct": -8.65783020412244,
+    "volatilityAnnualizedPct": 20.77029842387154,
+    "maxDrawdownPct": -16.405818353407778,
+    "volumeVs30d": 0.7602901087966758
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "SIVE",
+   "name": "Sivers Semiconductors",
+   "category": "TRADING_VALUE",
+   "rank": 9,
+   "isin": "SE0003917798",
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 28.139999389648438,
+    "historyFileObservedAt": "2026-10-13T23:17:45.096346+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SIVE.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 175005578.2455951,
+    "return30dPct": 5.78946987253246,
+    "volumeRatio": 0.5245264301683382,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.229356,
+   "confidence": 0.47645,
+   "agents": {
+    "fundamental": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.7,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.1,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.229356
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.47645
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.23<0.25 with negative evidence-backed votes: risk -0.70, quality -0.30, fundamental -0.20",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=62948"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.48 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.48 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.7,
+    "missing": [
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 39.84863622055865,
+    "netMarginPct": -72.60257439049055,
+    "roePct": -23.433569842501527,
+    "debtToEquity": 0.09539928426057633,
+    "currentRatio": 0.9178484068807212,
+    "return1mPct": -7.128712547194294,
+    "return3mPct": -29.046899904401723,
+    "return6mPct": 76.31578522800315,
+    "volatilityAnnualizedPct": 163.92907383559904,
+    "maxDrawdownPct": -78.3120706079115,
+    "volumeVs30d": 0.5491050594598053
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "CAST",
+   "name": "Castellum",
+   "category": "TRADING_VALUE",
+   "rank": 10,
+   "isin": "SE0000379190",
+   "sector": "Real Estate",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 119.1500015258789,
+    "historyFileObservedAt": "2026-10-13T23:25:20.059690+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "CAST.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 158203862.02920303,
+    "return30dPct": -9.219046456473212,
+    "volumeRatio": 0.7970068052797586,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.063485,
+   "confidence": 0.514627,
+   "agents": {
+    "fundamental": {
+     "vote": -0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.04999999999999999,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": -0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.4,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.063485
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.514627
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=quality negative=fundamental"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=quality negative=fundamental",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "ebitda",
+     "total_debt",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=62026"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 62.382199751769065,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -2.5992486546857596,
+    "netMarginPct": 9.777963098092359,
+    "roePct": 1.1977883056020227,
+    "debtToEquity": null,
+    "currentRatio": 0.0971767166260021,
+    "return1mPct": -8.522071765160144,
+    "return3mPct": -8.976312389974106,
+    "return6mPct": -1.974497297920219,
+    "volatilityAnnualizedPct": 23.090813778333917,
+    "maxDrawdownPct": -14.315442662671993,
+    "volumeVs30d": 0.8104647896194405
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "ELON",
+   "name": "Elon",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 1,
+   "isin": "SE0001572520",
+   "sector": "Consumer Discretionary",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 48.400001525878906,
+    "historyFileObservedAt": "2026-10-13T23:25:49.663675+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ELON.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 2024137.4319312414,
+    "return30dPct": 42.77285943167539,
+    "volumeRatio": 1.3111010199109692,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.245361,
+   "confidence": 0.47645,
+   "agents": {
+    "fundamental": {
+     "vote": -0.7499999999999999,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.5499999999999999,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.15,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.245361
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.47645
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.25<0.25 with negative evidence-backed votes: fundamental -0.75, risk -0.55, quality -0.15",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=62101"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.48 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.48 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.7,
+    "missing": [
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -1.2051987056111324,
+    "netMarginPct": -2.1273284312938423,
+    "roePct": -26.996701821876645,
+    "debtToEquity": 0.003795349949196103,
+    "currentRatio": 1.0837866401286127,
+    "return1mPct": 46.66667129054214,
+    "return3mPct": 155.4089687454518,
+    "return6mPct": 156.76392862812864,
+    "volatilityAnnualizedPct": 70.64304312384199,
+    "maxDrawdownPct": -23.399010959832363,
+    "volumeVs30d": 1.3449845388833312
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "CYNCA",
+   "name": "Cynca Nordic",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 2,
+   "isin": "SE0030587176",
+   "sector": "Consumer Discretionary",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 44.099998474121094,
+    "historyFileObservedAt": "2026-10-13T23:25:53.434038+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "CYNCA.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 16925126.444576263,
+    "return30dPct": 41.858292026433965,
+    "volumeRatio": 0.42566432876836874,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.086192,
+   "confidence": 0.47645,
+   "agents": {
+    "fundamental": {
+     "vote": -0.3499999999999999,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.10000000000000002,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.4,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.44999999999999996,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.086192
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.47645
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.09<0.25 with negative evidence-backed votes: quality -0.45, fundamental -0.35, risk -0.10",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=61869"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.48 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.48 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.7,
+    "missing": [
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -11.06924163918983,
+    "netMarginPct": -3.6016949152542375,
+    "roePct": -3.801006148686417,
+    "debtToEquity": 0.4530463946338737,
+    "currentRatio": 1.560625814863103,
+    "return1mPct": 41.34617142188524,
+    "return3mPct": 48.49388952952734,
+    "return6mPct": 137.53015729254804,
+    "volatilityAnnualizedPct": 44.94136982338707,
+    "maxDrawdownPct": -15.15151779499715,
+    "volumeVs30d": 0.4222100074965017
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "YUBICO",
+   "name": "Yubico",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 3,
+   "isin": "SE0015657788",
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 122.9000015258789,
+    "historyFileObservedAt": "2026-10-13T23:25:19.857086+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "YUBICO.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 33906317.3598732,
+    "return30dPct": 39.10583321841028,
+    "volumeRatio": 1.2153650046303697,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.063213,
+   "confidence": 0.514627,
+   "agents": {
+    "fundamental": {
+     "vote": -0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.6499999999999999,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.25
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.063213
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.514627
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=quality negative=fundamental,risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=quality negative=fundamental,risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "ebitda",
+     "total_debt",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=62112"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 82.48322250058987,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -4.651362737511821,
+    "netMarginPct": 5.7754733994589715,
+    "roePct": 7.717332369419845,
+    "debtToEquity": null,
+    "currentRatio": 3.8569783067767327,
+    "return1mPct": 40.61784826112223,
+    "return3mPct": 104.66278615708919,
+    "return6mPct": 224.44561261992052,
+    "volatilityAnnualizedPct": 78.3967035623037,
+    "maxDrawdownPct": -74.60395919004029,
+    "volumeVs30d": 1.2001069237811242
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "ONCO",
+   "name": "Oncopeptides",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 4,
+   "isin": "SE0009414576",
+   "sector": "Health Care",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 2.4260001182556152,
+    "historyFileObservedAt": "2026-10-13T22:30:40.114239+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ONCO.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 12810864.164509237,
+    "return30dPct": 27.015715217365653,
+    "volumeRatio": 5.695000631743569,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.173853,
+   "confidence": 0.47645,
+   "agents": {
+    "fundamental": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.8999999999999999,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.6,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.173853
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.47645
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=forecast negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=forecast negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "ebitda",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=62592"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 124.71562184024268,
+    "netMarginPct": -350.9449084619928,
+    "roePct": 423.8083917746345,
+    "debtToEquity": -2.1511096772002514,
+    "currentRatio": 2.612334117438196,
+    "return1mPct": 47.926837769312144,
+    "return3mPct": 51.62500513158732,
+    "return6mPct": 66.05066223576905,
+    "volatilityAnnualizedPct": 100.72094464922634,
+    "maxDrawdownPct": -78.98839277178156,
+    "volumeVs30d": 4.907015963737865
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "EGTX",
+   "name": "Egetis Therapeutics",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 5,
+   "isin": "SE0003815604",
+   "sector": "Health Care",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 9.949999809265137,
+    "historyFileObservedAt": "2026-10-13T23:25:27.074638+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "EGTX.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 27617866.590564616,
+    "return30dPct": 26.75159146681367,
+    "volumeRatio": 0.6328141415480613,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.056778,
+   "confidence": 0.51311,
+   "agents": {
+    "fundamental": {
+     "vote": -0.19999999999999998,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.35000000000000003,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.15,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.056778
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.51311
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.06<0.25 with negative evidence-backed votes: risk -0.35, fundamental -0.20, quality -0.15",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=61923"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.51 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.51 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 11.608705376524068,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 35.35791757049891,
+    "netMarginPct": -548.8782051282051,
+    "roePct": -101.1219368172424,
+    "debtToEquity": 0.22586359610274578,
+    "currentRatio": 1.0527189705271898,
+    "return1mPct": 26.10899844916115,
+    "return3mPct": 58.43948211538017,
+    "return6mPct": 72.44367144118122,
+    "volatilityAnnualizedPct": 57.52182025407062,
+    "maxDrawdownPct": -34.6212103095374,
+    "volumeVs30d": 0.6263552529710844
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "ELTEL",
+   "name": "Eltel",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 6,
+   "isin": "SE0006509949",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 16.950000762939453,
+    "historyFileObservedAt": "2026-10-13T23:26:15.581666+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ELTEL.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 3095367.9543752987,
+    "return30dPct": 22.82609078744404,
+    "volumeRatio": 1.208053925001838,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.084036,
+   "confidence": 0.506992,
+   "agents": {
+    "fundamental": {
+     "vote": 0.05000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.30000000000000004,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.4,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.084036
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.506992
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.08<0.25 with negative evidence-backed votes: risk -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=61954"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.51 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.51 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -1.3153131410643226,
+    "netMarginPct": 0.3912937148447053,
+    "roePct": 1.8946121965660152,
+    "debtToEquity": 0.7708703374777975,
+    "currentRatio": 0.9481298517995765,
+    "return1mPct": 9.35484363186745,
+    "return3mPct": 41.25000635782878,
+    "return6mPct": 85.44857906184117,
+    "volatilityAnnualizedPct": 47.84722861361672,
+    "maxDrawdownPct": -22.330096128520484,
+    "volumeVs30d": 1.1657216211917205
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "G2M",
+   "name": "Gentoo Media",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 7,
+   "isin": "US36467X2062",
+   "sector": "Consumer Discretionary",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 5.199999809265137,
+    "historyFileObservedAt": "2026-10-13T23:26:26.362970+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "G2M.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 1534216.466968727,
+    "return30dPct": 20.930222758349814,
+    "volumeRatio": 0.3789232174115794,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "AVOID_OR_REVIEW",
+   "score": -0.305564,
+   "confidence": 0.47645,
+   "agents": {
+    "fundamental": {
+     "vote": -0.3499999999999999,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -1.0,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.1,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.15,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.305564
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.47645
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.31<0.25 with negative evidence-backed votes: risk -1.00, fundamental -0.35, quality -0.15",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow"
+    ],
+    "missing": [
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=63242"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.48 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.48 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime"
+    ],
+    "missingInputs": [
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ebitda_interest",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -16.360448273233207,
+    "netMarginPct": -2.6119365195110342,
+    "roePct": 12.978712696894974,
+    "debtToEquity": -0.0,
+    "currentRatio": 0.12896683015354324,
+    "return1mPct": 44.64533429434701,
+    "return3mPct": -25.287359471774053,
+    "return6mPct": -22.962965788664647,
+    "volatilityAnnualizedPct": 63.623852111804794,
+    "maxDrawdownPct": -61.856221210699815,
+    "volumeVs30d": 0.39550042888691045
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "HANZA",
+   "name": "HANZA",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 8,
+   "isin": "SE0005878543",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 168.1999969482422,
+    "historyFileObservedAt": "2026-10-13T23:25:36.762670+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "HANZA.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 19216677.108050536,
+    "return30dPct": 16.481997269902426,
+    "volumeRatio": 0.6141851798156676,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.198985,
+   "confidence": 0.624861,
+   "agents": {
+    "fundamental": {
+     "vote": 0.7500000000000001,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.35000000000000003,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.3,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.5,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.198985
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.624861
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental,quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=61935"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 31.14814758300781,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": -4.613845082784485,
+    "revenueYoyPct": 24.201195629767057,
+    "netMarginPct": 4.08298755186722,
+    "roePct": 13.561190738699008,
+    "debtToEquity": 0.762954796030871,
+    "currentRatio": 1.6876790830945558,
+    "return1mPct": 10.078529835675432,
+    "return3mPct": 29.583969948885414,
+    "return6mPct": 6.8556280852153595,
+    "volatilityAnnualizedPct": 50.54455248347251,
+    "maxDrawdownPct": -31.326643734820948,
+    "volumeVs30d": 0.6229690533678752
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "SF",
+   "name": "Stillfront Group",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 9,
+   "isin": "SE0015346135",
+   "sector": "Consumer Discretionary",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 7.659999847412109,
+    "historyFileObservedAt": "2026-10-13T23:25:43.676762+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SF.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 9248447.915729014,
+    "return30dPct": 15.885018043705257,
+    "volumeRatio": 0.6790249062336264,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.185514,
+   "confidence": 0.401333,
+   "agents": {
+    "fundamental": {
+     "vote": -0.3999999999999999,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -0.55,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.185514
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.401333
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.19<0.25 with negative evidence-backed votes: risk -0.55, fundamental -0.40, quality -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "ebitda",
+     "total_debt",
+     "free_cash_flow",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=62320"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.75,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.40 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.40 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -15.244173964672703,
+    "netMarginPct": -41.996497373029776,
+    "roePct": -60.14547278655631,
+    "debtToEquity": null,
+    "currentRatio": 0.9458509142053446,
+    "return1mPct": 12.647053419925092,
+    "return3mPct": 83.78117660248967,
+    "return6mPct": 71.28800622362041,
+    "volatilityAnnualizedPct": 56.24601723895803,
+    "maxDrawdownPct": -48.66814014843916,
+    "volumeVs30d": 0.6847063874136705
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "SCST",
+   "name": "Scandi Standard",
+   "category": "PRICE_APPRECIATION_30D",
+   "rank": 10,
+   "isin": "SE0005999760",
+   "sector": "Consumer Staples",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 160.8000030517578,
+    "historyFileObservedAt": "2026-10-13T23:26:02.411293+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "SCST.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 8148728.160707601,
+    "return30dPct": 12.91540240043254,
+    "volumeRatio": 0.42049607480296697,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.032724,
+   "confidence": 0.666162,
+   "agents": {
+    "fundamental": {
+     "vote": 0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.05,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": -0.5,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.15,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.12,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.032724
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.666162
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental negative=comparison"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental negative=comparison",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb"
+    ],
+    "missing": [
+     "ebitda",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=61883"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 1.0,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement",
+     "elevated independent distress risk"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement; elevated independent distress risk"
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 28.663102148263423,
+    "pb": 3.968095373030197,
+    "evEbitda": null,
+    "peVsSectorPct": 98.47011333995775,
+    "revenueYoyPct": 8.131142506142508,
+    "netMarginPct": 2.605978839735852,
+    "roePct": 13.709376167351515,
+    "debtToEquity": 0.7549495704146433,
+    "currentRatio": 1.0331849453662485,
+    "return1mPct": 8.543501700120437,
+    "return3mPct": 16.97710517826978,
+    "return6mPct": -0.03888150276296631,
+    "volatilityAnnualizedPct": 30.822152049208718,
+    "maxDrawdownPct": -21.923708591531554,
+    "volumeVs30d": 0.4325461446844385
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "HACK",
+   "name": "Hacksaw",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 1,
+   "isin": "SE0025138357",
+   "sector": "Technology",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 58.0,
+    "historyFileObservedAt": "2026-10-13T22:30:14.497522+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "HACK.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 79014933.52675909,
+    "return30dPct": -26.86002803537807,
+    "volumeRatio": 14.537320902046543,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.157841,
+   "confidence": 0.461825,
+   "agents": {
+    "fundamental": {
+     "vote": 0.35000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.35000000000000003,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.85,
+     "confidence": 0.64
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.157841
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.461825
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "FAIL",
+     "value": [
+      "high-confidence disagreement: positive=fundamental,quality negative=risk"
+     ]
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "REVIEW_DISAGREEMENT",
+   "reason": "agents disagree: high-confidence disagreement: positive=fundamental,quality negative=risk",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "total_debt",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=61974"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.8125,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "high-confidence agent disagreement"
+    ],
+    "reasoning": "Escalated to human review: high-confidence agent disagreement"
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.25,
+    "missing": [
+     "debt_ebitda",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": 44.41915939823215,
+    "netMarginPct": 72.36952104940492,
+    "roePct": 92.97156209928856,
+    "debtToEquity": null,
+    "currentRatio": 7.023370233702337,
+    "return1mPct": -35.8052009080964,
+    "return3mPct": -29.6969696969697,
+    "return6mPct": -9.860971890127313,
+    "volatilityAnnualizedPct": 52.00935759545875,
+    "maxDrawdownPct": -37.73483730551904,
+    "volumeVs30d": 10.588578152125905
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "CIBUS",
+   "name": "Cibus Real Estate",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 2,
+   "isin": "SE0010832204",
+   "sector": "Real Estate",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 124.0,
+    "historyFileObservedAt": "2026-10-13T22:30:22.958759+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "CIBUS.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 62552042.77905934,
+    "return30dPct": -11.686916151916781,
+    "volumeRatio": 4.118248424574067,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.09115,
+   "confidence": 0.369725,
+   "agents": {
+    "fundamental": {
+     "vote": 0.1,
+     "confidence": 0.35
+    },
+    "risk": {
+     "vote": -0.55,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.15,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.09115
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.369725
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "INSUFFICIENT_DATA"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.09<0.25 with negative evidence-backed votes: risk -0.55",
+   "dataCompleteness": {
+    "present": [
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow"
+    ],
+    "missing": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "free_cash_flow",
+     "interest_expense",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=61880"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.625,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.37 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.37 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "INSUFFICIENT_DATA",
+    "models": [
+     "zmijewski"
+    ],
+    "missingInputs": [
+     "altman:operating_income",
+     "interest_coverage:operating_income",
+     "interest_coverage:interest_expense"
+    ]
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": null,
+    "netMarginPct": null,
+    "roePct": 8.950254602428515,
+    "debtToEquity": 1.4666079122600861,
+    "currentRatio": 0.5048107761385503,
+    "return1mPct": -10.669621897730142,
+    "return3mPct": -14.284605271818096,
+    "return6mPct": -18.277994624716687,
+    "volatilityAnnualizedPct": 18.233867407897712,
+    "maxDrawdownPct": -30.312454647398262,
+    "volumeVs30d": 3.696657234783569
+   },
+   "opportunityState": "REVIEW"
+  },
+  {
+   "ticker": "VICO",
+   "name": "Vicore Pharma Holding",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 3,
+   "isin": "SE0007577895",
+   "sector": "Health Care",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 9.149999618530273,
+    "historyFileObservedAt": "2026-10-13T23:25:29.620363+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "VICO.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 10172669.40131537,
+    "return30dPct": -11.337210376864004,
+    "volumeRatio": 4.114266810297297,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.326186,
+   "confidence": 0.401333,
+   "agents": {
+    "fundamental": {
+     "vote": -1.0,
+     "confidence": 0.59
+    },
+    "risk": {
+     "vote": -0.5,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.326186
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.401333
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.33<0.25 with negative evidence-backed votes: fundamental -1.00, risk -0.50, quality -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "ebitda",
+     "total_debt",
+     "free_cash_flow",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=61947"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.75,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.40 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.40 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -96.50924588005049,
+    "netMarginPct": -12509.143306261461,
+    "roePct": -43.58654156876277,
+    "debtToEquity": null,
+    "currentRatio": 10.275123697586842,
+    "return1mPct": -12.857146490187876,
+    "return3mPct": -21.120695537675804,
+    "return6mPct": -11.508709057028243,
+    "volatilityAnnualizedPct": 52.87750851935142,
+    "maxDrawdownPct": -44.51530841875449,
+    "volumeVs30d": 3.714060087533619
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "ORX",
+   "name": "Orexo",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 4,
+   "isin": "SE0000736415",
+   "sector": "Health Care",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 6.190000057220459,
+    "historyFileObservedAt": "2026-10-13T23:26:21.341828+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "ORX.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 979055.4187944253,
+    "return30dPct": -60.57324756419732,
+    "volumeRatio": 2.4036281391856105,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.103984,
+   "confidence": 0.371571,
+   "agents": {
+    "fundamental": {
+     "vote": -0.09999999999999998,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": -0.6499999999999999,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 2.7755575615628914e-17,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.35,
+     "confidence": 0.44
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.103984
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.371571
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.10<0.25 with negative evidence-backed votes: risk -0.65, fundamental -0.10",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "interest_expense"
+    ],
+    "missing": [
+     "ebitda",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=61989"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.6875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.37 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.37 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -12.457912457912457,
+    "netMarginPct": 2458.846153846154,
+    "roePct": 130.30982470444354,
+    "debtToEquity": null,
+    "currentRatio": 3.7013028280902445,
+    "return1mPct": -53.388552848746606,
+    "return3mPct": -71.20930205943972,
+    "return6mPct": -69.50738773467671,
+    "volatilityAnnualizedPct": 85.13528185343904,
+    "maxDrawdownPct": -85.12019162435502,
+    "volumeVs30d": 2.335548214144104
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "AQ",
+   "name": "AQ Group",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 5,
+   "isin": "SE0022062196",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 238.0,
+    "historyFileObservedAt": "2026-10-13T23:25:43.865767+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "AQ.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 24742443.28074646,
+    "return30dPct": 9.778596240693327,
+    "volumeRatio": 2.193101402734384,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.242279,
+   "confidence": 0.624861,
+   "agents": {
+    "fundamental": {
+     "vote": -0.05,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.15000000000000002,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.5,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.8,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.242279
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.624861
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "LOW_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.24<0.25, no negative agent; 3 of 17 core fields missing; abstaining agents: []",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "ebitda",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=61953"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.62."
+   },
+   "agent9": {
+    "status": "LOW_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 32.24932249322493,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": -1.2416753479068343,
+    "revenueYoyPct": 6.043956043956045,
+    "netMarginPct": 7.463344724947635,
+    "roePct": 14.44112627986348,
+    "debtToEquity": 0.03093003412969283,
+    "currentRatio": 2.63342776203966,
+    "return1mPct": 8.576643847397914,
+    "return3mPct": 8.675799086757996,
+    "return6mPct": 10.501559058796484,
+    "volatilityAnnualizedPct": 33.79327711682305,
+    "maxDrawdownPct": -17.685951674280087,
+    "volumeVs30d": 2.1506197149651722
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "FASTAT",
+   "name": "Fastator",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 6,
+   "isin": "SE0015407382",
+   "sector": "Real Estate",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 0.3310000002384186,
+    "historyFileObservedAt": "2026-10-13T23:26:19.967790+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "FASTAT.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 1010052.9338959635,
+    "return30dPct": -36.22350593605995,
+    "volumeRatio": 1.770790701835005,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "AVOID_OR_REVIEW",
+   "score": -0.488667,
+   "confidence": 0.47645,
+   "agents": {
+    "fundamental": {
+     "vote": -1.0,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -1.0,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.1,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.44999999999999996,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.488667
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.47645
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.49<0.25 with negative evidence-backed votes: fundamental -1.00, risk -1.00, quality -0.45",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "ebitda",
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=62984"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.48 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.48 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -31.684330900094114,
+    "netMarginPct": -269.0876452901315,
+    "roePct": 187.93661141897144,
+    "debtToEquity": -7.280960858554199,
+    "currentRatio": 0.049665070524741825,
+    "return1mPct": -33.73373454000818,
+    "return3mPct": 26.335880597789107,
+    "return6mPct": -13.464050607071364,
+    "volatilityAnnualizedPct": 114.58983718587518,
+    "maxDrawdownPct": -76.7573705837572,
+    "volumeVs30d": 1.7515187904223313
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "BRAV",
+   "name": "Bravida Holding",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 7,
+   "isin": "SE0007491303",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 145.5,
+    "historyFileObservedAt": "2026-10-13T23:25:17.732026+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "BRAV.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 68530105.43002675,
+    "return30dPct": 4.151756033256526,
+    "volumeRatio": 1.6904274640595602,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "HOLD_OR_WATCH",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": 0.228363,
+   "confidence": 0.624861,
+   "agents": {
+    "fundamental": {
+     "vote": 0.05000000000000003,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": 0.1,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.19999999999999998,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.35,
+     "confidence": 0.65
+    },
+    "quality": {
+     "vote": 0.65,
+     "confidence": 0.74
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": 0.228363
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.624861
+    },
+    "G4_no_distress_block": {
+     "result": "PASS",
+     "value": "ELEVATED_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "PASS",
+     "value": "ACCEPT"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score 0.23<0.25, no negative agent; 3 of 17 core fields missing; abstaining agents: []",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pe"
+    ],
+    "missing": [
+     "ebitda",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=62080"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.9375,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "ACCEPT",
+    "final_call": "HOLD_OR_WATCH",
+    "accepted": true,
+    "escalated": false,
+    "abstained": false,
+    "hard_blocks": [],
+    "review_reasons": [],
+    "reasoning": "Accepted draft decision at calibrated confidence 0.62."
+   },
+   "agent9": {
+    "status": "ELEVATED_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.2,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": 24.169435215946844,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": -29.097769370576643,
+    "revenueYoyPct": -4.873031396486017,
+    "netMarginPct": 4.374645490640953,
+    "roePct": 13.520324312479456,
+    "debtToEquity": 0.08217377013257368,
+    "currentRatio": 0.8702504685636394,
+    "return1mPct": 0.6224023917676069,
+    "return3mPct": 7.142854735095394,
+    "return6mPct": 44.66514463763917,
+    "volatilityAnnualizedPct": 30.679993738409177,
+    "maxDrawdownPct": -16.825398853121047,
+    "volumeVs30d": 1.7244127036756447
+   },
+   "opportunityState": "WATCH"
+  },
+  {
+   "ticker": "FNM",
+   "name": "Ferronordic",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 8,
+   "isin": "SE0005468717",
+   "sector": "Industrials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 87.0,
+    "historyFileObservedAt": "2026-10-13T23:25:40.240439+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "FNM.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 2292107.15672404,
+    "return30dPct": -2.6845654193687785,
+    "volumeRatio": 1.626375728641853,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "AVOID_OR_REVIEW",
+   "score": -0.285007,
+   "confidence": 0.47645,
+   "agents": {
+    "fundamental": {
+     "vote": -0.7499999999999999,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.25000000000000006,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.44999999999999996,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.285007
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.47645
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.29<0.25 with negative evidence-backed votes: fundamental -0.75, quality -0.45, risk -0.25",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=62096"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.48 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.48 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.7,
+    "missing": [
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -6.434426229508194,
+    "netMarginPct": -4.358300481822164,
+    "roePct": -15.237366003062789,
+    "debtToEquity": 0.7013782542113323,
+    "currentRatio": 1.010135135135135,
+    "return1mPct": -8.421052631578952,
+    "return3mPct": 44.039731460477014,
+    "return6mPct": 108.13397509075648,
+    "volatilityAnnualizedPct": 48.34574872965519,
+    "maxDrawdownPct": -24.299065420560748,
+    "volumeVs30d": 1.5973118038340308
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "VITR",
+   "name": "Vitrolife",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 9,
+   "isin": "SE0011205202",
+   "sector": "Health Care",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 95.19999694824219,
+    "historyFileObservedAt": "2026-10-13T23:25:57.826163+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "VITR.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 14935150.081429292,
+    "return30dPct": 0.3690020872447297,
+    "volumeRatio": 1.6218890863587332,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "AVOID_OR_REVIEW",
+   "score": -0.298222,
+   "confidence": 0.47645,
+   "agents": {
+    "fundamental": {
+     "vote": -0.7499999999999999,
+     "confidence": 0.71
+    },
+    "risk": {
+     "vote": -0.5,
+     "confidence": 0.78
+    },
+    "forecast": {
+     "vote": 0.1,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": -0.3,
+     "confidence": 0.54
+    },
+    "liquidity": {
+     "vote": 0.0,
+     "confidence": 0.4
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.298222
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "PASS",
+     "value": 0.47645
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.30<0.25 with negative evidence-backed votes: fundamental -0.75, risk -0.50, quality -0.30",
+   "dataCompleteness": {
+    "present": [
+     "revenue",
+     "revenue_yoy_pct",
+     "operating_income",
+     "ebitda",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "total_debt",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense"
+    ],
+    "missing": [
+     "pe",
+     "pb",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=61957"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.48 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.48 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.55,
+    "missing": [
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": null,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": -4.682737600443332,
+    "netMarginPct": -145.72674418604652,
+    "roePct": -63.495883470550986,
+    "debtToEquity": 0.18872704243191893,
+    "currentRatio": 3.401626016260163,
+    "return1mPct": 6.428172382529063,
+    "return3mPct": 9.049248133245413,
+    "return6mPct": -7.430601998935438,
+    "volatilityAnnualizedPct": 42.419884127973276,
+    "maxDrawdownPct": -43.28259755952861,
+    "volumeVs30d": 1.5942728789161307
+   },
+   "opportunityState": "HIGH_RISK"
+  },
+  {
+   "ticker": "VISC",
+   "name": "Gruvaktiebolaget Viscaria",
+   "category": "UNUSUAL_VOLUME",
+   "rank": 10,
+   "isin": "SE0021148160",
+   "sector": "Basic Materials",
+   "market": {
+    "lastSession": "2026-10-12",
+    "lastClose": 20.100000381469727,
+    "historyFileObservedAt": "2026-10-13T23:17:46.369381+00:00",
+    "provider": "yahoo-public-chart-global",
+    "vendorSymbol": "VISC.ST",
+    "currency": "SEK",
+    "avgTradedValue30d": 29866439.910520364,
+    "return30dPct": -14.102561072040809,
+    "volumeRatio": 1.5947345267748887,
+    "exchange": "NASDAQ_STOCKHOLM",
+    "country": "SE",
+    "source": "yahoo-public-chart-global"
+   },
+   "finalCall": "NO_RECOMMENDATION",
+   "draftCall": "HOLD_OR_WATCH",
+   "score": -0.143131,
+   "confidence": 0.377117,
+   "agents": {
+    "fundamental": {
+     "vote": -0.4,
+     "confidence": 0.47
+    },
+    "risk": {
+     "vote": -0.6499999999999999,
+     "confidence": 0.68
+    },
+    "forecast": {
+     "vote": 0.0,
+     "confidence": 0.69
+    },
+    "comparison": {
+     "vote": 0.0,
+     "confidence": 0.0
+    },
+    "quality": {
+     "vote": 0.0,
+     "confidence": 0.33999999999999997
+    },
+    "liquidity": {
+     "vote": 0.3,
+     "confidence": 0.54
+    }
+   },
+   "gates": {
+    "G1_evidence_PASS": {
+     "result": "PASS",
+     "value": "PASS"
+    },
+    "G2_score_ge_0.25": {
+     "result": "FAIL",
+     "value": -0.143131
+    },
+    "G3_confidence_ge_0.45": {
+     "result": "FAIL",
+     "value": 0.377117
+    },
+    "G4_no_distress_block": {
+     "result": "FAIL",
+     "value": "HIGH_RISK"
+    },
+    "G5_no_contradiction": {
+     "result": "PASS",
+     "value": []
+    },
+    "G6_agent8_conf_ge_0.55": {
+     "result": "FAIL",
+     "value": "REVIEW"
+    }
+   },
+   "verdict": "JUSTIFIED",
+   "reason": "score -0.14<0.25 with negative evidence-backed votes: risk -0.65, fundamental -0.40",
+   "dataCompleteness": {
+    "present": [
+     "operating_income",
+     "net_income",
+     "total_assets",
+     "total_liabilities",
+     "total_equity",
+     "current_assets",
+     "current_liabilities",
+     "operating_cash_flow",
+     "free_cash_flow",
+     "interest_expense",
+     "pb"
+    ],
+    "missing": [
+     "revenue",
+     "revenue_yoy_pct",
+     "ebitda",
+     "total_debt",
+     "pe",
+     "ev_ebitda"
+    ],
+    "fundamentalSources": [
+     {
+      "provider": "official-oam-se-fi-finanscentralen",
+      "type": "official_regulatory_xbrl",
+      "period": "2025-12-31",
+      "url": "https://finanscentralen.fi.se/search/GetFile.aspx?fid=62171"
+     },
+     {
+      "provider": "cached:official-oam-esef-ixbrl-v3+fallback:esef-xbrl-cached-v2+fallback:sec-edgar-foreign-ifrs-cached+fallback:sec-edgar-crosslisted-10k-usgaap-cached+fallback:yahoo-public-fundamentals-global",
+      "type": "cache_snapshot",
+      "period": "2025-12-31",
+      "url": null
+     },
+     {
+      "provider": "biap-derived-metrics",
+      "type": "derived_valuation_metric",
+      "period": null,
+      "url": null
+     }
+    ],
+    "filingPeriodEnd": "2025-12-31",
+    "evidenceCoverage": 0.6875,
+    "freshnessTier": "LAST_ANNUAL_FILING"
+   },
+   "agent8": {
+    "action": "REVIEW",
+    "final_call": "NO_RECOMMENDATION",
+    "accepted": false,
+    "escalated": true,
+    "abstained": true,
+    "hard_blocks": [],
+    "review_reasons": [
+     "calibrated confidence 0.38 below accept threshold 0.55"
+    ],
+    "reasoning": "Escalated to human review: calibrated confidence 0.38 below accept threshold 0.55"
+   },
+   "agent9": {
+    "status": "HIGH_RISK",
+    "models": [
+     "zmijewski",
+     "altman_z_double_prime",
+     "interest_coverage"
+    ],
+    "missingInputs": []
+   },
+   "agent10": {
+    "weightCoverage": 0.1,
+    "missing": [
+     "debt_ebitda",
+     "ebitda_interest",
+     "fcf_debt",
+     "ffo_debt",
+     "governance",
+     "industry_risk"
+    ]
+   },
+   "evidenceDetail": {
+    "pe": null,
+    "pb": 1.5607883126032456,
+    "evEbitda": null,
+    "peVsSectorPct": null,
+    "revenueYoyPct": null,
+    "netMarginPct": null,
+    "roePct": -3.5251542860835565,
+    "debtToEquity": null,
+    "currentRatio": 1.7475612657625506,
+    "return1mPct": -12.987012772547523,
+    "return3mPct": 27.70013134531215,
+    "return6mPct": 17.40653852894185,
+    "volatilityAnnualizedPct": 67.09639264686443,
+    "maxDrawdownPct": -47.56756782299531,
+    "volumeVs30d": 1.5716850580120203
+   },
+   "opportunityState": "HIGH_RISK"
+  }
+ ]
+}

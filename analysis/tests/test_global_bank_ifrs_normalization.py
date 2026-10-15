@@ -336,3 +336,74 @@ def test_annual_scoring_models_ignore_transition_figures():
     with_transition = GlobalCompany(**base, raw_provider_fields={"fiscal_year_transition": meta["fiscal_year_transition"]})
     assert asdict(distress_agent(plain)) == asdict(distress_agent(with_transition))
     assert score_legal_entity_company(plain) == score_legal_entity_company(with_transition)
+
+
+# --- FinecoBank: extension equity that proves itself (cross-footing) ---------
+
+PREV = {"ifrs-full:RetrospectiveApplicationAndRetrospectiveRestatementAxis": "ifrs-full:PreviouslyStatedMember"}
+FBK_COMPONENTS = {
+    "finecobank:AzioniOrdinarieMember": 201820e3,
+    "finecobank:AltreAzioniMember": 0,
+    "finecobank:SovrapprezziDiEmissioneMember": 1934e3,
+    "finecobank:RiserveDiUtiliMember": 1166080e3,
+    "finecobank:RiserveNonDaUtiliNonDaValutazioneMember": 56642e3,
+    "finecobank:RiserveDaValutazioneMember": -18913e3,
+    "finecobank:StrumentiDiCapitaleMember": 500000e3,
+    "ifrs-full:TreasurySharesMember": -1280e3,
+    "finecobank:UtilePerditaDiEsercizio": 647041e3,
+}
+
+
+def _fbk_equity_facts(owners=2553324e3, extra=None, nci=0):
+    concept = "finecobank:TotalEquityAttributableToOwnersOfParent"
+    facts = _bank_base(37295901e3) + [
+        fact("ifrs-full:ProfitLoss", 647041e3, FY25),
+        fact(concept, owners, "2025-12-31", **{"ifrs-full:ComponentsOfEquityAxis": "ifrs-full:EquityAttributableToOwnersOfParentMember"}, **PREV),
+    ]
+    if nci is not None:
+        facts.append(fact(concept, nci, "2025-12-31", **{"ifrs-full:ComponentsOfEquityAxis": "ifrs-full:NoncontrollingInterestsMember"}, **PREV))
+    for member, value in FBK_COMPONENTS.items():
+        facts.append(fact(concept, value, "2025-12-31", **{"ifrs-full:ComponentsOfEquityAxis": member}, **PREV))
+    return facts + (extra or [])
+
+
+def test_fineco_equity_accepted_only_when_components_foot_and_profit_ties():
+    result, meta = normalize(_fbk_equity_facts())
+    assert result["total_equity"] == 2553324e3
+    assert meta["equity_method"] == "extension_components_cross_footed"
+
+
+def test_fineco_equity_rejected_when_components_do_not_foot():
+    result, meta = normalize(_fbk_equity_facts(owners=2700000e3))
+    assert result["total_equity"] is None and meta["equity_method"] is None
+
+
+def test_fineco_equity_rejected_without_explicit_nci_or_with_restated_column():
+    result, _ = normalize(_fbk_equity_facts(nci=None))
+    assert result["total_equity"] is None
+    restated = fact("finecobank:TotalEquityAttributableToOwnersOfParent", 2600000e3, "2025-12-31", **{
+        "ifrs-full:ComponentsOfEquityAxis": "ifrs-full:EquityAttributableToOwnersOfParentMember",
+        "ifrs-full:RetrospectiveApplicationAndRetrospectiveRestatementAxis": "ifrs-full:RestatedMember",
+    })
+    result, _ = normalize(_fbk_equity_facts(extra=[restated]))
+    assert result["total_equity"] is None
+
+
+def test_fineco_equity_rejected_when_no_component_ties_to_profit():
+    facts = [f for f in _fbk_equity_facts() if f["dimensions"]["concept"] != "ifrs-full:ProfitLoss"]
+    facts += [fact("ifrs-full:ProfitLoss", 123457e3, FY25)]
+    result, _ = normalize(facts)
+    assert result["total_equity"] is None
+
+
+def test_taxonomy_bank_flag_overrides_sub_15x_leverage_and_missing_sector():
+    from global_markets.distress import _is_financial as distress_financial
+    from global_markets.core_agents import _is_financial as core_financial
+    from global_markets.models import GlobalCompany
+    base = dict(ticker="FBK", name="FinecoBank", country="IT", exchange="EURONEXT_MILAN", currency="EUR",
+                total_assets=37295901e3, total_equity=2553324e3)
+    plain = GlobalCompany(**base)
+    assert not distress_financial(plain) and not core_financial(plain)  # 14.6x, no sector: leverage test misses it
+    flagged = GlobalCompany(**base, raw_provider_fields={
+        "esef_credit_extraction": {"revenue_method": "bank_net_interest_and_other_banking_income"}})
+    assert distress_financial(flagged) and core_financial(flagged)

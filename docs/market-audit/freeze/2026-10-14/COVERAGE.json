@@ -1,0 +1,1731 @@
+{
+ "generatedAt": "2026-10-14T07:18:15.239997+00:00",
+ "markets": {
+  "AE__ADX": {
+   "universe": 102,
+   "analysed": 10,
+   "evidence": {
+    "PASS": 10
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 10
+   },
+   "agent8": {
+    "ABSTAIN": 10
+   },
+   "fieldCompletenessPct": {
+    "revenue": 80.0,
+    "operating_income": 0.0,
+    "ebitda": 0.0,
+    "net_income": 100.0,
+    "total_assets": 0.0,
+    "total_liabilities": 0.0,
+    "total_equity": 100.0,
+    "current_assets": 0.0,
+    "current_liabilities": 0.0,
+    "total_debt": 0.0,
+    "operating_cash_flow": 0.0,
+    "free_cash_flow": 0.0,
+    "interest_expense": 0.0,
+    "retained_earnings": 0.0,
+    "pe": 90.0,
+    "pb": 100.0,
+    "ev_ebitda": 0.0,
+    "sector": 100.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 80.0,
+    "risk": 0.0,
+    "forecast": 100.0,
+    "comparison": 40.0,
+    "quality": 80.0,
+    "liquidity": 0.0
+   },
+   "analysedRange": [
+    "2026-10-12T13:23:06.497288+00:00",
+    "2026-10-12T13:23:16.762842+00:00"
+   ],
+   "newestFilingPeriod": "2025-12-31",
+   "sha256": "ac9d6e7464f193d31806c831094b5428ae16e5ea7b63418d1d9fdd23dbbc4124"
+  },
+  "AE__DFM": {
+   "universe": 65,
+   "analysed": 0,
+   "evidence": {},
+   "calls": {},
+   "agent8": {},
+   "fieldCompletenessPct": {
+    "revenue": null,
+    "operating_income": null,
+    "ebitda": null,
+    "net_income": null,
+    "total_assets": null,
+    "total_liabilities": null,
+    "total_equity": null,
+    "current_assets": null,
+    "current_liabilities": null,
+    "total_debt": null,
+    "operating_cash_flow": null,
+    "free_cash_flow": null,
+    "interest_expense": null,
+    "retained_earnings": null,
+    "pe": null,
+    "pb": null,
+    "ev_ebitda": null,
+    "sector": null,
+    "isin": null,
+    "filing_period_end": null
+   },
+   "agentActivePct": {
+    "fundamental": null,
+    "risk": null,
+    "forecast": null,
+    "comparison": null,
+    "quality": null,
+    "liquidity": null
+   },
+   "analysedRange": [
+    null,
+    null
+   ],
+   "newestFilingPeriod": null,
+   "sha256": "134c704d12d70bfb3b540562e3d674d5eb85bbb23b88265208f8e099b793eda6"
+  },
+  "AU__ASX": {
+   "universe": 1817,
+   "analysed": 1,
+   "evidence": {
+    "PASS": 1
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 1
+   },
+   "agent8": {
+    "REVIEW": 1
+   },
+   "fieldCompletenessPct": {
+    "revenue": 100.0,
+    "operating_income": 100.0,
+    "ebitda": 0.0,
+    "net_income": 100.0,
+    "total_assets": 100.0,
+    "total_liabilities": 100.0,
+    "total_equity": 100.0,
+    "current_assets": 100.0,
+    "current_liabilities": 100.0,
+    "total_debt": 100.0,
+    "operating_cash_flow": 100.0,
+    "free_cash_flow": 0.0,
+    "interest_expense": 100.0,
+    "retained_earnings": 0.0,
+    "pe": 0.0,
+    "pb": 0.0,
+    "ev_ebitda": 0.0,
+    "sector": 0.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 100.0,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 100.0,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-12T13:21:04.122834+00:00",
+    "2026-10-12T13:21:04.122834+00:00"
+   ],
+   "newestFilingPeriod": "2025-06-30",
+   "sha256": "96696211de6cc20ea66f52f51730f1061bf41d8b74a23e481932fb18fc8e663f"
+  },
+  "BE__EURONEXT_BRUSSELS": {
+   "universe": 102,
+   "analysed": 81,
+   "evidence": {
+    "PASS": 81
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 68,
+    "BUY_CANDIDATE": 3,
+    "HOLD_OR_WATCH": 9,
+    "AVOID_OR_REVIEW": 1
+   },
+   "agent8": {
+    "REVIEW": 64,
+    "ACCEPT": 13,
+    "ABSTAIN": 4
+   },
+   "fieldCompletenessPct": {
+    "revenue": 76.5,
+    "operating_income": 93.8,
+    "ebitda": 55.6,
+    "net_income": 100.0,
+    "total_assets": 100.0,
+    "total_liabilities": 98.8,
+    "total_equity": 97.5,
+    "current_assets": 93.8,
+    "current_liabilities": 96.3,
+    "total_debt": 59.3,
+    "operating_cash_flow": 98.8,
+    "free_cash_flow": 54.3,
+    "interest_expense": 92.6,
+    "retained_earnings": 71.6,
+    "pe": 69.1,
+    "pb": 11.1,
+    "ev_ebitda": 7.4,
+    "sector": 100.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 97.5,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 100.0,
+    "liquidity": 98.8
+   },
+   "analysedRange": [
+    "2026-10-13T11:26:23.095671+00:00",
+    "2026-10-13T11:27:21.248725+00:00"
+   ],
+   "newestFilingPeriod": "2026-03-31",
+   "sha256": "88cc968497bedf01f182bcc47ea4803c9fd5d1d97d427e1c46a90f22fb626bdc"
+  },
+  "BR__B3": {
+   "universe": 417,
+   "analysed": 339,
+   "evidence": {
+    "PASS": 339
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 339
+   },
+   "agent8": {
+    "REVIEW": 308,
+    "ABSTAIN": 31
+   },
+   "fieldCompletenessPct": {
+    "revenue": 100.0,
+    "operating_income": 100.0,
+    "ebitda": 0.0,
+    "net_income": 99.1,
+    "total_assets": 100.0,
+    "total_liabilities": 100.0,
+    "total_equity": 100.0,
+    "current_assets": 100.0,
+    "current_liabilities": 100.0,
+    "total_debt": 99.1,
+    "operating_cash_flow": 100.0,
+    "free_cash_flow": 0.0,
+    "interest_expense": 0.0,
+    "retained_earnings": 0.0,
+    "pe": 0.0,
+    "pb": 0.0,
+    "ev_ebitda": 0.0,
+    "sector": 0.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 100.0,
+    "risk": 100.0,
+    "forecast": 97.3,
+    "comparison": 0.0,
+    "quality": 99.1,
+    "liquidity": 92.6
+   },
+   "analysedRange": [
+    "2026-10-12T13:24:12.290973+00:00",
+    "2026-10-12T14:06:46.492604+00:00"
+   ],
+   "newestFilingPeriod": "2026-06-30",
+   "sha256": "415aebd88ff85844c350821bcffaf416799eef80bc8002c569d68f3e7b99bbd5"
+  },
+  "CA__TSX": {
+   "universe": 579,
+   "analysed": 17,
+   "evidence": {
+    "PASS": 17
+   },
+   "calls": {
+    "BUY_CANDIDATE": 1,
+    "NO_RECOMMENDATION": 15,
+    "HOLD_OR_WATCH": 1
+   },
+   "agent8": {
+    "ACCEPT": 2,
+    "REVIEW": 15
+   },
+   "fieldCompletenessPct": {
+    "revenue": 100.0,
+    "operating_income": 41.2,
+    "ebitda": 35.3,
+    "net_income": 100.0,
+    "total_assets": 100.0,
+    "total_liabilities": 88.2,
+    "total_equity": 100.0,
+    "current_assets": 70.6,
+    "current_liabilities": 70.6,
+    "total_debt": 41.2,
+    "operating_cash_flow": 94.1,
+    "free_cash_flow": 29.4,
+    "interest_expense": 88.2,
+    "retained_earnings": 35.3,
+    "pe": 52.9,
+    "pb": 0.0,
+    "ev_ebitda": 0.0,
+    "sector": 100.0,
+    "isin": 0.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 100.0,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 47.1,
+    "quality": 100.0,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-12T13:13:52.519031+00:00",
+    "2026-10-12T13:14:05.957297+00:00"
+   ],
+   "newestFilingPeriod": "2026-05-31",
+   "sha256": "87641685c89aace6408b112302e08c91416d2045da82ee3368b394dc28f24020"
+  },
+  "CA__TSXV": {
+   "universe": 1218,
+   "analysed": 0,
+   "evidence": {},
+   "calls": {},
+   "agent8": {},
+   "fieldCompletenessPct": {
+    "revenue": null,
+    "operating_income": null,
+    "ebitda": null,
+    "net_income": null,
+    "total_assets": null,
+    "total_liabilities": null,
+    "total_equity": null,
+    "current_assets": null,
+    "current_liabilities": null,
+    "total_debt": null,
+    "operating_cash_flow": null,
+    "free_cash_flow": null,
+    "interest_expense": null,
+    "retained_earnings": null,
+    "pe": null,
+    "pb": null,
+    "ev_ebitda": null,
+    "sector": null,
+    "isin": null,
+    "filing_period_end": null
+   },
+   "agentActivePct": {
+    "fundamental": null,
+    "risk": null,
+    "forecast": null,
+    "comparison": null,
+    "quality": null,
+    "liquidity": null
+   },
+   "analysedRange": [
+    null,
+    null
+   ],
+   "newestFilingPeriod": null,
+   "sha256": "e6a666d6d51322ea2da15fdcdda911a8bb5af6c596225d6b44d01bcf802d116f"
+  },
+  "CH__SIX": {
+   "universe": 197,
+   "analysed": 4,
+   "evidence": {
+    "PASS": 4
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 4
+   },
+   "agent8": {
+    "REVIEW": 4
+   },
+   "fieldCompletenessPct": {
+    "revenue": 75.0,
+    "operating_income": 75.0,
+    "ebitda": 0.0,
+    "net_income": 100.0,
+    "total_assets": 100.0,
+    "total_liabilities": 75.0,
+    "total_equity": 100.0,
+    "current_assets": 100.0,
+    "current_liabilities": 100.0,
+    "total_debt": 75.0,
+    "operating_cash_flow": 100.0,
+    "free_cash_flow": 25.0,
+    "interest_expense": 75.0,
+    "retained_earnings": 0.0,
+    "pe": 25.0,
+    "pb": 0.0,
+    "ev_ebitda": 0.0,
+    "sector": 0.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 100.0,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 100.0,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-12T13:20:50.620626+00:00",
+    "2026-10-12T13:21:00.676511+00:00"
+   ],
+   "newestFilingPeriod": "2025-12-31",
+   "sha256": "d4de1af71d22e624276e3bac2cc963daf0c91a9d51b5d26551f630d4bb7dc0a6"
+  },
+  "DE__FRANKFURT": {
+   "universe": 498,
+   "analysed": 456,
+   "evidence": {
+    "PASS": 434,
+    "WARN": 22
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 451,
+    "HOLD_OR_WATCH": 3,
+    "AVOID_OR_REVIEW": 1,
+    "BUY_CANDIDATE": 1
+   },
+   "agent8": {
+    "REVIEW": 422,
+    "ABSTAIN": 29,
+    "ACCEPT": 5
+   },
+   "fieldCompletenessPct": {
+    "revenue": 97.8,
+    "operating_income": 94.1,
+    "ebitda": 2.9,
+    "net_income": 100.0,
+    "total_assets": 99.6,
+    "total_liabilities": 99.6,
+    "total_equity": 99.6,
+    "current_assets": 93.9,
+    "current_liabilities": 68.4,
+    "total_debt": 6.8,
+    "operating_cash_flow": 8.6,
+    "free_cash_flow": 6.8,
+    "interest_expense": 3.1,
+    "retained_earnings": 3.1,
+    "pe": 63.2,
+    "pb": 86.4,
+    "ev_ebitda": 0.0,
+    "sector": 29.2,
+    "isin": 100.0,
+    "filing_period_end": 10.5
+   },
+   "agentActivePct": {
+    "fundamental": 96.1,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 100.0,
+    "liquidity": 99.3
+   },
+   "analysedRange": [
+    "2026-10-13T11:23:33.705902+00:00",
+    "2026-10-13T11:24:04.673361+00:00"
+   ],
+   "newestFilingPeriod": "2025-12-31",
+   "sha256": "54434ccb7680d6f5fbccb7ed0cdc8cc5b3b35e8d1759b9ac1084c1efad22fdb5"
+  },
+  "DE__XETRA": {
+   "universe": 406,
+   "analysed": 389,
+   "evidence": {
+    "PASS": 372,
+    "WARN": 17
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 385,
+    "HOLD_OR_WATCH": 3,
+    "AVOID_OR_REVIEW": 1
+   },
+   "agent8": {
+    "ABSTAIN": 12,
+    "REVIEW": 373,
+    "ACCEPT": 4
+   },
+   "fieldCompletenessPct": {
+    "revenue": 98.5,
+    "operating_income": 93.8,
+    "ebitda": 2.3,
+    "net_income": 100.0,
+    "total_assets": 99.5,
+    "total_liabilities": 99.5,
+    "total_equity": 99.5,
+    "current_assets": 94.3,
+    "current_liabilities": 72.5,
+    "total_debt": 6.7,
+    "operating_cash_flow": 8.2,
+    "free_cash_flow": 6.4,
+    "interest_expense": 3.3,
+    "retained_earnings": 3.6,
+    "pe": 63.5,
+    "pb": 87.7,
+    "ev_ebitda": 0.0,
+    "sector": 30.3,
+    "isin": 100.0,
+    "filing_period_end": 10.5
+   },
+   "agentActivePct": {
+    "fundamental": 97.7,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 100.0,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-13T11:24:05.409522+00:00",
+    "2026-10-13T11:24:24.740879+00:00"
+   ],
+   "newestFilingPeriod": "2025-12-31",
+   "sha256": "7f09727ab9581d097e5b58479ba2a167a74fde04c168b6a2cc6dd9fa2746585b"
+  },
+  "DK__NASDAQ_COPENHAGEN": {
+   "universe": 116,
+   "analysed": 99,
+   "evidence": {
+    "PASS": 99
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 87,
+    "HOLD_OR_WATCH": 9,
+    "BUY_CANDIDATE": 3
+   },
+   "agent8": {
+    "REVIEW": 81,
+    "ACCEPT": 12,
+    "ABSTAIN": 6
+   },
+   "fieldCompletenessPct": {
+    "revenue": 89.9,
+    "operating_income": 82.8,
+    "ebitda": 33.3,
+    "net_income": 100.0,
+    "total_assets": 100.0,
+    "total_liabilities": 100.0,
+    "total_equity": 100.0,
+    "current_assets": 92.9,
+    "current_liabilities": 92.9,
+    "total_debt": 52.5,
+    "operating_cash_flow": 97.0,
+    "free_cash_flow": 73.7,
+    "interest_expense": 97.0,
+    "retained_earnings": 96.0,
+    "pe": 59.6,
+    "pb": 0.0,
+    "ev_ebitda": 0.0,
+    "sector": 100.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 93.9,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 16.2,
+    "quality": 100.0,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-12T13:14:15.281919+00:00",
+    "2026-10-12T13:41:09.428388+00:00"
+   ],
+   "newestFilingPeriod": "2026-06-30",
+   "sha256": "36a285687c1c635e3689ecff35c7d0d74c33c50aef64ad3d425028ccb59ccdbb"
+  },
+  "ES__BME_MADRID": {
+   "universe": 109,
+   "analysed": 95,
+   "evidence": {
+    "PASS": 95
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 89,
+    "BUY_CANDIDATE": 1,
+    "HOLD_OR_WATCH": 3,
+    "AVOID_OR_REVIEW": 2
+   },
+   "agent8": {
+    "ABSTAIN": 13,
+    "REVIEW": 76,
+    "ACCEPT": 6
+   },
+   "fieldCompletenessPct": {
+    "revenue": 87.4,
+    "operating_income": 91.6,
+    "ebitda": 80.0,
+    "net_income": 96.8,
+    "total_assets": 100.0,
+    "total_liabilities": 100.0,
+    "total_equity": 100.0,
+    "current_assets": 88.4,
+    "current_liabilities": 86.3,
+    "total_debt": 27.4,
+    "operating_cash_flow": 95.8,
+    "free_cash_flow": 57.9,
+    "interest_expense": 87.4,
+    "retained_earnings": 61.1,
+    "pe": 71.6,
+    "pb": 0.0,
+    "ev_ebitda": 0.0,
+    "sector": 97.9,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 89.5,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 97.9,
+    "liquidity": 97.9
+   },
+   "analysedRange": [
+    "2026-10-13T11:12:48.820448+00:00",
+    "2026-10-13T11:23:14.525698+00:00"
+   ],
+   "newestFilingPeriod": "2026-03-31",
+   "sha256": "0f9e46b99c793aecbef4be158c892d7cb1cdd6604a082d21326d95d39c4597af"
+  },
+  "FI__NASDAQ_HELSINKI": {
+   "universe": 148,
+   "analysed": 123,
+   "evidence": {
+    "PASS": 123
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 99,
+    "HOLD_OR_WATCH": 19,
+    "BUY_CANDIDATE": 4,
+    "AVOID_OR_REVIEW": 1
+   },
+   "agent8": {
+    "REVIEW": 96,
+    "ABSTAIN": 3,
+    "ACCEPT": 24
+   },
+   "fieldCompletenessPct": {
+    "revenue": 95.9,
+    "operating_income": 94.3,
+    "ebitda": 42.3,
+    "net_income": 99.2,
+    "total_assets": 100.0,
+    "total_liabilities": 99.2,
+    "total_equity": 99.2,
+    "current_assets": 75.6,
+    "current_liabilities": 76.4,
+    "total_debt": 57.7,
+    "operating_cash_flow": 96.7,
+    "free_cash_flow": 32.5,
+    "interest_expense": 85.4,
+    "retained_earnings": 99.2,
+    "pe": 65.0,
+    "pb": 0.0,
+    "ev_ebitda": 0.0,
+    "sector": 100.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 98.4,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 33.3,
+    "quality": 99.2,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-12T13:14:18.251003+00:00",
+    "2026-10-13T14:15:18.146070+00:00"
+   ],
+   "newestFilingPeriod": "2026-06-30",
+   "sha256": "20db8cdf648df8372b0677ede593e2e740ffdf7d8ebe9065ecd3d6b557debe7a"
+  },
+  "FR__EURONEXT_PARIS": {
+   "universe": 294,
+   "analysed": 259,
+   "evidence": {
+    "PASS": 259
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 236,
+    "HOLD_OR_WATCH": 22,
+    "BUY_CANDIDATE": 1
+   },
+   "agent8": {
+    "REVIEW": 219,
+    "ACCEPT": 23,
+    "ABSTAIN": 17
+   },
+   "fieldCompletenessPct": {
+    "revenue": 87.6,
+    "operating_income": 88.4,
+    "ebitda": 47.5,
+    "net_income": 100.0,
+    "total_assets": 100.0,
+    "total_liabilities": 100.0,
+    "total_equity": 100.0,
+    "current_assets": 78.4,
+    "current_liabilities": 79.5,
+    "total_debt": 64.1,
+    "operating_cash_flow": 94.6,
+    "free_cash_flow": 23.2,
+    "interest_expense": 39.8,
+    "retained_earnings": 39.0,
+    "pe": 67.6,
+    "pb": 26.3,
+    "ev_ebitda": 6.6,
+    "sector": 100.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 95.0,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 100.0,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-13T11:27:22.440602+00:00",
+    "2026-10-13T11:28:34.799268+00:00"
+   ],
+   "newestFilingPeriod": "2026-04-30",
+   "sha256": "a9a93b2da38abe50ca6a989a688f4b587b69053042f4ba9025ad4adac1817240"
+  },
+  "GB__LSE": {
+   "universe": 527,
+   "analysed": 420,
+   "evidence": {
+    "PASS": 420
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 346,
+    "HOLD_OR_WATCH": 64,
+    "BUY_CANDIDATE": 7,
+    "AVOID_OR_REVIEW": 3
+   },
+   "agent8": {
+    "REVIEW": 301,
+    "ABSTAIN": 45,
+    "ACCEPT": 74
+   },
+   "fieldCompletenessPct": {
+    "revenue": 89.5,
+    "operating_income": 87.1,
+    "ebitda": 44.8,
+    "net_income": 98.3,
+    "total_assets": 91.7,
+    "total_liabilities": 91.7,
+    "total_equity": 99.8,
+    "current_assets": 88.1,
+    "current_liabilities": 88.3,
+    "total_debt": 64.3,
+    "operating_cash_flow": 98.3,
+    "free_cash_flow": 76.7,
+    "interest_expense": 90.2,
+    "retained_earnings": 98.1,
+    "pe": 52.6,
+    "pb": 0.2,
+    "ev_ebitda": 0.0,
+    "sector": 90.5,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 95.2,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 98.8,
+    "liquidity": 98.8
+   },
+   "analysedRange": [
+    "2026-10-13T11:07:42.801744+00:00",
+    "2026-10-13T11:51:00.153879+00:00"
+   ],
+   "newestFilingPeriod": "2026-07-31",
+   "sha256": "ce8e2608112217e5427f173d5420710c30176ba309a351db714a9d171c92f762"
+  },
+  "GR__ATHENS": {
+   "universe": 128,
+   "analysed": 16,
+   "evidence": {
+    "PASS": 16
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 12,
+    "HOLD_OR_WATCH": 4
+   },
+   "agent8": {
+    "REVIEW": 12,
+    "ACCEPT": 4
+   },
+   "fieldCompletenessPct": {
+    "revenue": 100.0,
+    "operating_income": 87.5,
+    "ebitda": 56.2,
+    "net_income": 100.0,
+    "total_assets": 100.0,
+    "total_liabilities": 100.0,
+    "total_equity": 100.0,
+    "current_assets": 75.0,
+    "current_liabilities": 81.2,
+    "total_debt": 87.5,
+    "operating_cash_flow": 93.8,
+    "free_cash_flow": 25.0,
+    "interest_expense": 81.2,
+    "retained_earnings": 100.0,
+    "pe": 100.0,
+    "pb": 0.0,
+    "ev_ebitda": 0.0,
+    "sector": 0.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 100.0,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 100.0,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-12T13:20:27.359874+00:00",
+    "2026-10-12T13:28:52.570661+00:00"
+   ],
+   "newestFilingPeriod": "2025-12-31",
+   "sha256": "da68c7e6b4ed7d92954e0ce5539593d178895078f210e20e4dda2c725af884bd"
+  },
+  "HK__HKEX": {
+   "universe": 2767,
+   "analysed": 1,
+   "evidence": {
+    "PASS": 1
+   },
+   "calls": {
+    "HOLD_OR_WATCH": 1
+   },
+   "agent8": {
+    "ACCEPT": 1
+   },
+   "fieldCompletenessPct": {
+    "revenue": 100.0,
+    "operating_income": 100.0,
+    "ebitda": 100.0,
+    "net_income": 100.0,
+    "total_assets": 100.0,
+    "total_liabilities": 100.0,
+    "total_equity": 100.0,
+    "current_assets": 100.0,
+    "current_liabilities": 100.0,
+    "total_debt": 100.0,
+    "operating_cash_flow": 100.0,
+    "free_cash_flow": 100.0,
+    "interest_expense": 0.0,
+    "retained_earnings": 0.0,
+    "pe": 100.0,
+    "pb": 0.0,
+    "ev_ebitda": 0.0,
+    "sector": 0.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 100.0,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 100.0,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-12T13:22:30.156624+00:00",
+    "2026-10-12T13:22:30.156624+00:00"
+   ],
+   "newestFilingPeriod": "2025-12-31",
+   "sha256": "f68997307d2bcbd9cd9c4b4cd4fcb752b4588bf9e05d35e57d0d5b4ed56d96d1"
+  },
+  "IE__EURONEXT_DUBLIN": {
+   "universe": 16,
+   "analysed": 11,
+   "evidence": {
+    "PASS": 11
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 10,
+    "HOLD_OR_WATCH": 1
+   },
+   "agent8": {
+    "REVIEW": 10,
+    "ACCEPT": 1
+   },
+   "fieldCompletenessPct": {
+    "revenue": 100.0,
+    "operating_income": 90.9,
+    "ebitda": 45.5,
+    "net_income": 100.0,
+    "total_assets": 100.0,
+    "total_liabilities": 100.0,
+    "total_equity": 100.0,
+    "current_assets": 72.7,
+    "current_liabilities": 72.7,
+    "total_debt": 54.5,
+    "operating_cash_flow": 100.0,
+    "free_cash_flow": 81.8,
+    "interest_expense": 100.0,
+    "retained_earnings": 90.9,
+    "pe": 72.7,
+    "pb": 0.0,
+    "ev_ebitda": 0.0,
+    "sector": 0.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 100.0,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 100.0,
+    "liquidity": 90.9
+   },
+   "analysedRange": [
+    "2026-10-12T13:15:24.767042+00:00",
+    "2026-10-12T13:15:34.123007+00:00"
+   ],
+   "newestFilingPeriod": "2026-03-31",
+   "sha256": "651a936dc0c10d920912b85b566eb5e02e87428fc6d9d9023a60691867e98f57"
+  },
+  "IN__NSE": {
+   "universe": 2351,
+   "analysed": 33,
+   "evidence": {
+    "PASS": 33
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 21,
+    "HOLD_OR_WATCH": 8,
+    "BUY_CANDIDATE": 1,
+    "AVOID_OR_REVIEW": 3
+   },
+   "agent8": {
+    "REVIEW": 21,
+    "ACCEPT": 12
+   },
+   "fieldCompletenessPct": {
+    "revenue": 100.0,
+    "operating_income": 0.0,
+    "ebitda": 0.0,
+    "net_income": 100.0,
+    "total_assets": 100.0,
+    "total_liabilities": 100.0,
+    "total_equity": 100.0,
+    "current_assets": 87.9,
+    "current_liabilities": 87.9,
+    "total_debt": 90.9,
+    "operating_cash_flow": 100.0,
+    "free_cash_flow": 97.0,
+    "interest_expense": 100.0,
+    "retained_earnings": 0.0,
+    "pe": 84.8,
+    "pb": 0.0,
+    "ev_ebitda": 0.0,
+    "sector": 0.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 100.0,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 100.0,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-12T13:22:42.604716+00:00",
+    "2026-10-12T13:29:40.440782+00:00"
+   ],
+   "newestFilingPeriod": "2026-03-31",
+   "sha256": "b38ef78065f97df032ae9c7c5605d52fdbcb8cac9db28835f86c818cfe510ac3"
+  },
+  "IS__NASDAQ_ICELAND": {
+   "universe": 27,
+   "analysed": 23,
+   "evidence": {
+    "PASS": 23
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 21,
+    "HOLD_OR_WATCH": 2
+   },
+   "agent8": {
+    "REVIEW": 19,
+    "ACCEPT": 2,
+    "ABSTAIN": 2
+   },
+   "fieldCompletenessPct": {
+    "revenue": 87.0,
+    "operating_income": 87.0,
+    "ebitda": 73.9,
+    "net_income": 95.7,
+    "total_assets": 100.0,
+    "total_liabilities": 100.0,
+    "total_equity": 100.0,
+    "current_assets": 78.3,
+    "current_liabilities": 82.6,
+    "total_debt": 78.3,
+    "operating_cash_flow": 91.3,
+    "free_cash_flow": 65.2,
+    "interest_expense": 95.7,
+    "retained_earnings": 100.0,
+    "pe": 43.5,
+    "pb": 0.0,
+    "ev_ebitda": 0.0,
+    "sector": 100.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 95.7,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 17.4,
+    "quality": 100.0,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-12T13:14:42.470873+00:00",
+    "2026-10-12T13:17:19.803540+00:00"
+   ],
+   "newestFilingPeriod": "2026-02-28",
+   "sha256": "dce8cf12d443371802e1466e3912954474e11758b94c1bde9fbe7cb275c2b411"
+  },
+  "IT__EURONEXT_MILAN": {
+   "universe": 193,
+   "analysed": 169,
+   "evidence": {
+    "PASS": 169
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 160,
+    "HOLD_OR_WATCH": 9
+   },
+   "agent8": {
+    "REVIEW": 151,
+    "ACCEPT": 9,
+    "ABSTAIN": 9
+   },
+   "fieldCompletenessPct": {
+    "revenue": 96.4,
+    "operating_income": 81.1,
+    "ebitda": 63.9,
+    "net_income": 99.4,
+    "total_assets": 99.4,
+    "total_liabilities": 98.2,
+    "total_equity": 98.8,
+    "current_assets": 71.0,
+    "current_liabilities": 72.8,
+    "total_debt": 30.2,
+    "operating_cash_flow": 94.1,
+    "free_cash_flow": 58.0,
+    "interest_expense": 74.0,
+    "retained_earnings": 31.4,
+    "pe": 59.8,
+    "pb": 1.2,
+    "ev_ebitda": 0.0,
+    "sector": 100.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 96.4,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 99.4,
+    "liquidity": 99.4
+   },
+   "analysedRange": [
+    "2026-10-13T11:24:59.132592+00:00",
+    "2026-10-13T11:26:21.558034+00:00"
+   ],
+   "newestFilingPeriod": "2026-06-30",
+   "sha256": "4cd0b4ade555d6fa087b0a2af883ed220e382f315bb21b0e21ae01737cad81ad"
+  },
+  "JP__TSE_JP": {
+   "universe": 3695,
+   "analysed": 0,
+   "evidence": {},
+   "calls": {},
+   "agent8": {},
+   "fieldCompletenessPct": {
+    "revenue": null,
+    "operating_income": null,
+    "ebitda": null,
+    "net_income": null,
+    "total_assets": null,
+    "total_liabilities": null,
+    "total_equity": null,
+    "current_assets": null,
+    "current_liabilities": null,
+    "total_debt": null,
+    "operating_cash_flow": null,
+    "free_cash_flow": null,
+    "interest_expense": null,
+    "retained_earnings": null,
+    "pe": null,
+    "pb": null,
+    "ev_ebitda": null,
+    "sector": null,
+    "isin": null,
+    "filing_period_end": null
+   },
+   "agentActivePct": {
+    "fundamental": null,
+    "risk": null,
+    "forecast": null,
+    "comparison": null,
+    "quality": null,
+    "liquidity": null
+   },
+   "analysedRange": [
+    null,
+    null
+   ],
+   "newestFilingPeriod": null,
+   "sha256": "15f44a8b7c30e38c1ce7da8453dc86569e328f06df93a1ec4b75e104d141ee62"
+  },
+  "KR__KRX": {
+   "universe": 2641,
+   "analysed": 0,
+   "evidence": {},
+   "calls": {},
+   "agent8": {},
+   "fieldCompletenessPct": {
+    "revenue": null,
+    "operating_income": null,
+    "ebitda": null,
+    "net_income": null,
+    "total_assets": null,
+    "total_liabilities": null,
+    "total_equity": null,
+    "current_assets": null,
+    "current_liabilities": null,
+    "total_debt": null,
+    "operating_cash_flow": null,
+    "free_cash_flow": null,
+    "interest_expense": null,
+    "retained_earnings": null,
+    "pe": null,
+    "pb": null,
+    "ev_ebitda": null,
+    "sector": null,
+    "isin": null,
+    "filing_period_end": null
+   },
+   "agentActivePct": {
+    "fundamental": null,
+    "risk": null,
+    "forecast": null,
+    "comparison": null,
+    "quality": null,
+    "liquidity": null
+   },
+   "analysedRange": [
+    null,
+    null
+   ],
+   "newestFilingPeriod": null,
+   "sha256": "969f34aa7a3ab66dd3068a4fcb02ca7812d021ba6eba9c5e6e89879dfb8fc8c1"
+  },
+  "NL__EURONEXT_AMSTERDAM": {
+   "universe": 98,
+   "analysed": 83,
+   "evidence": {
+    "PASS": 82,
+    "WARN": 1
+   },
+   "calls": {
+    "BUY_CANDIDATE": 3,
+    "NO_RECOMMENDATION": 68,
+    "HOLD_OR_WATCH": 12
+   },
+   "agent8": {
+    "ACCEPT": 15,
+    "REVIEW": 62,
+    "ABSTAIN": 6
+   },
+   "fieldCompletenessPct": {
+    "revenue": 88.0,
+    "operating_income": 89.2,
+    "ebitda": 59.0,
+    "net_income": 97.6,
+    "total_assets": 98.8,
+    "total_liabilities": 97.6,
+    "total_equity": 98.8,
+    "current_assets": 88.0,
+    "current_liabilities": 90.4,
+    "total_debt": 68.7,
+    "operating_cash_flow": 95.2,
+    "free_cash_flow": 71.1,
+    "interest_expense": 79.5,
+    "retained_earnings": 72.3,
+    "pe": 63.9,
+    "pb": 8.4,
+    "ev_ebitda": 4.8,
+    "sector": 100.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 92.8,
+    "risk": 100.0,
+    "forecast": 98.8,
+    "comparison": 0.0,
+    "quality": 97.6,
+    "liquidity": 98.8
+   },
+   "analysedRange": [
+    "2026-10-13T11:11:21.132741+00:00",
+    "2026-10-13T11:12:36.474959+00:00"
+   ],
+   "newestFilingPeriod": "2026-03-31",
+   "sha256": "08a6f95d8d743ef59d371f0e9296f3540f8550c2114b22b6fbf54e703f467a38"
+  },
+  "NO__EURONEXT_OSLO": {
+   "universe": 146,
+   "analysed": 136,
+   "evidence": {
+    "PASS": 136
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 124,
+    "HOLD_OR_WATCH": 10,
+    "BUY_CANDIDATE": 1,
+    "AVOID_OR_REVIEW": 1
+   },
+   "agent8": {
+    "REVIEW": 119,
+    "ACCEPT": 12,
+    "ABSTAIN": 5
+   },
+   "fieldCompletenessPct": {
+    "revenue": 97.1,
+    "operating_income": 94.1,
+    "ebitda": 72.1,
+    "net_income": 98.5,
+    "total_assets": 100.0,
+    "total_liabilities": 100.0,
+    "total_equity": 99.3,
+    "current_assets": 91.2,
+    "current_liabilities": 92.6,
+    "total_debt": 64.0,
+    "operating_cash_flow": 94.1,
+    "free_cash_flow": 57.4,
+    "interest_expense": 86.0,
+    "retained_earnings": 81.6,
+    "pe": 43.4,
+    "pb": 2.2,
+    "ev_ebitda": 1.5,
+    "sector": 100.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 98.5,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 99.3,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-13T11:24:25.986728+00:00",
+    "2026-10-13T11:24:58.550169+00:00"
+   ],
+   "newestFilingPeriod": "2025-12-31",
+   "sha256": "6476fddd7b5a5610e87ef2d52adfbe3710cc791018eb9e19ef6ee0aef0645a40"
+  },
+  "NZ__NZX": {
+   "universe": 101,
+   "analysed": 2,
+   "evidence": {
+    "PASS": 2
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 2
+   },
+   "agent8": {
+    "REVIEW": 2
+   },
+   "fieldCompletenessPct": {
+    "revenue": 100.0,
+    "operating_income": 0.0,
+    "ebitda": 0.0,
+    "net_income": 100.0,
+    "total_assets": 100.0,
+    "total_liabilities": 100.0,
+    "total_equity": 100.0,
+    "current_assets": 0.0,
+    "current_liabilities": 0.0,
+    "total_debt": 0.0,
+    "operating_cash_flow": 100.0,
+    "free_cash_flow": 0.0,
+    "interest_expense": 0.0,
+    "retained_earnings": 0.0,
+    "pe": 100.0,
+    "pb": 0.0,
+    "ev_ebitda": 0.0,
+    "sector": 0.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 100.0,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 100.0,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-12T13:21:44.261861+00:00",
+    "2026-10-12T13:22:17.038449+00:00"
+   ],
+   "newestFilingPeriod": "2025-12-31",
+   "sha256": "6f5f41de10d9b48205ee189e8477ef8646855d5d18a43958dddb168738801330"
+  },
+  "PT__EURONEXT_LISBON": {
+   "universe": 30,
+   "analysed": 28,
+   "evidence": {
+    "PASS": 28
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 24,
+    "HOLD_OR_WATCH": 3,
+    "AVOID_OR_REVIEW": 1
+   },
+   "agent8": {
+    "ABSTAIN": 4,
+    "REVIEW": 20,
+    "ACCEPT": 4
+   },
+   "fieldCompletenessPct": {
+    "revenue": 67.9,
+    "operating_income": 75.0,
+    "ebitda": 42.9,
+    "net_income": 100.0,
+    "total_assets": 100.0,
+    "total_liabilities": 100.0,
+    "total_equity": 100.0,
+    "current_assets": 78.6,
+    "current_liabilities": 85.7,
+    "total_debt": 71.4,
+    "operating_cash_flow": 96.4,
+    "free_cash_flow": 64.3,
+    "interest_expense": 85.7,
+    "retained_earnings": 7.1,
+    "pe": 85.7,
+    "pb": 0.0,
+    "ev_ebitda": 0.0,
+    "sector": 100.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 89.3,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 100.0,
+    "liquidity": 96.4
+   },
+   "analysedRange": [
+    "2026-10-13T11:10:42.956908+00:00",
+    "2026-10-13T11:11:13.909878+00:00"
+   ],
+   "newestFilingPeriod": "2026-06-30",
+   "sha256": "a50779bf63add2242581f6d3ec47c9170515ec2aebb00d7cfbd08c936093abe1"
+  },
+  "SA__SAUDI_EXCHANGE": {
+   "universe": 376,
+   "analysed": 0,
+   "evidence": {},
+   "calls": {},
+   "agent8": {},
+   "fieldCompletenessPct": {
+    "revenue": null,
+    "operating_income": null,
+    "ebitda": null,
+    "net_income": null,
+    "total_assets": null,
+    "total_liabilities": null,
+    "total_equity": null,
+    "current_assets": null,
+    "current_liabilities": null,
+    "total_debt": null,
+    "operating_cash_flow": null,
+    "free_cash_flow": null,
+    "interest_expense": null,
+    "retained_earnings": null,
+    "pe": null,
+    "pb": null,
+    "ev_ebitda": null,
+    "sector": null,
+    "isin": null,
+    "filing_period_end": null
+   },
+   "agentActivePct": {
+    "fundamental": null,
+    "risk": null,
+    "forecast": null,
+    "comparison": null,
+    "quality": null,
+    "liquidity": null
+   },
+   "analysedRange": [
+    null,
+    null
+   ],
+   "newestFilingPeriod": null,
+   "sha256": "63526d0097169f2ed3ae382f44a37221e3c261fc189e6a6c9529901ce58cc0b6"
+  },
+  "SE__NASDAQ_STOCKHOLM": {
+   "universe": 402,
+   "analysed": 373,
+   "evidence": {
+    "PASS": 373
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 328,
+    "HOLD_OR_WATCH": 45
+   },
+   "agent8": {
+    "REVIEW": 311,
+    "ACCEPT": 45,
+    "ABSTAIN": 17
+   },
+   "fieldCompletenessPct": {
+    "revenue": 83.6,
+    "operating_income": 89.3,
+    "ebitda": 38.6,
+    "net_income": 99.2,
+    "total_assets": 100.0,
+    "total_liabilities": 97.6,
+    "total_equity": 96.5,
+    "current_assets": 92.0,
+    "current_liabilities": 91.4,
+    "total_debt": 54.7,
+    "operating_cash_flow": 96.5,
+    "free_cash_flow": 68.4,
+    "interest_expense": 90.1,
+    "retained_earnings": 98.7,
+    "pe": 63.0,
+    "pb": 13.1,
+    "ev_ebitda": 4.8,
+    "sector": 100.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 96.0,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 60.1,
+    "quality": 99.2,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-13T22:30:15.424513+00:00",
+    "2026-10-13T23:26:41.561217+00:00"
+   ],
+   "newestFilingPeriod": "2026-06-30",
+   "sha256": "8ac52d32efa6710d5a417e92958126c28ecc4a9e7bf5fc27179591acfd4e9516"
+  },
+  "SG__SGX": {
+   "universe": 565,
+   "analysed": 1,
+   "evidence": {
+    "PASS": 1
+   },
+   "calls": {
+    "BUY_CANDIDATE": 1
+   },
+   "agent8": {
+    "ACCEPT": 1
+   },
+   "fieldCompletenessPct": {
+    "revenue": 100.0,
+    "operating_income": 100.0,
+    "ebitda": 100.0,
+    "net_income": 100.0,
+    "total_assets": 100.0,
+    "total_liabilities": 100.0,
+    "total_equity": 100.0,
+    "current_assets": 100.0,
+    "current_liabilities": 100.0,
+    "total_debt": 100.0,
+    "operating_cash_flow": 100.0,
+    "free_cash_flow": 100.0,
+    "interest_expense": 0.0,
+    "retained_earnings": 0.0,
+    "pe": 100.0,
+    "pb": 0.0,
+    "ev_ebitda": 0.0,
+    "sector": 0.0,
+    "isin": 0.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 100.0,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 100.0,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-12T13:22:35.786202+00:00",
+    "2026-10-12T13:22:35.786202+00:00"
+   ],
+   "newestFilingPeriod": "2026-06-30",
+   "sha256": "5c0726ac962b94297ceefb193d60ff6b6ff2905a06fc78fb4ce2ecf0b12088d4"
+  },
+  "TR__BIST": {
+   "universe": 631,
+   "analysed": 564,
+   "evidence": {
+    "PASS": 564
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 564
+   },
+   "agent8": {
+    "REVIEW": 500,
+    "ABSTAIN": 64
+   },
+   "fieldCompletenessPct": {
+    "revenue": 93.3,
+    "operating_income": 98.9,
+    "ebitda": 0.0,
+    "net_income": 100.0,
+    "total_assets": 98.6,
+    "total_liabilities": 93.3,
+    "total_equity": 100.0,
+    "current_assets": 94.7,
+    "current_liabilities": 95.7,
+    "total_debt": 0.0,
+    "operating_cash_flow": 0.0,
+    "free_cash_flow": 0.0,
+    "interest_expense": 0.0,
+    "retained_earnings": 0.0,
+    "pe": 0.0,
+    "pb": 0.0,
+    "ev_ebitda": 0.0,
+    "sector": 0.0,
+    "isin": 0.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 93.1,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 100.0,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-12T13:23:54.882801+00:00",
+    "2026-10-12T20:28:01.323505+00:00"
+   ],
+   "newestFilingPeriod": "2025-12-31",
+   "sha256": "74c88ea679fe0624d116db41e5573646e18dbef7b0bf91eb4ee09ac4fec5988b"
+  },
+  "US__NASDAQ": {
+   "universe": 3010,
+   "analysed": 2807,
+   "evidence": {
+    "PASS": 2807
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 2646,
+    "BUY_CANDIDATE": 25,
+    "HOLD_OR_WATCH": 125,
+    "AVOID_OR_REVIEW": 11
+   },
+   "agent8": {
+    "REVIEW": 2560,
+    "ACCEPT": 161,
+    "ABSTAIN": 86
+   },
+   "fieldCompletenessPct": {
+    "revenue": 82.7,
+    "operating_income": 84.8,
+    "ebitda": 75.5,
+    "net_income": 99.9,
+    "total_assets": 99.8,
+    "total_liabilities": 99.4,
+    "total_equity": 99.9,
+    "current_assets": 87.3,
+    "current_liabilities": 86.8,
+    "total_debt": 43.7,
+    "operating_cash_flow": 98.0,
+    "free_cash_flow": 69.3,
+    "interest_expense": 55.2,
+    "retained_earnings": 94.1,
+    "pe": 37.3,
+    "pb": 67.3,
+    "ev_ebitda": 24.4,
+    "sector": 94.7,
+    "isin": 0.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 92.4,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 31.5,
+    "quality": 99.9,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-13T08:09:40.807079+00:00",
+    "2026-10-14T00:40:05.924377+00:00"
+   ],
+   "newestFilingPeriod": "2026-09-03",
+   "sha256": "7517688d11d0ad61615665a47d1bdfc3c30726eacb12ac6844343a03a9bc4f4d"
+  },
+  "US__NYSE": {
+   "universe": 1798,
+   "analysed": 1602,
+   "evidence": {
+    "PASS": 1602
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 1439,
+    "HOLD_OR_WATCH": 140,
+    "BUY_CANDIDATE": 22,
+    "AVOID_OR_REVIEW": 1
+   },
+   "agent8": {
+    "REVIEW": 1413,
+    "ACCEPT": 163,
+    "ABSTAIN": 26
+   },
+   "fieldCompletenessPct": {
+    "revenue": 92.3,
+    "operating_income": 74.5,
+    "ebitda": 65.8,
+    "net_income": 99.9,
+    "total_assets": 99.9,
+    "total_liabilities": 98.9,
+    "total_equity": 99.4,
+    "current_assets": 75.0,
+    "current_liabilities": 75.0,
+    "total_debt": 70.0,
+    "operating_cash_flow": 97.5,
+    "free_cash_flow": 56.8,
+    "interest_expense": 68.7,
+    "retained_earnings": 88.3,
+    "pe": 69.7,
+    "pb": 58.1,
+    "ev_ebitda": 36.1,
+    "sector": 91.0,
+    "isin": 0.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 95.0,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 61.5,
+    "quality": 100.0,
+    "liquidity": 99.9
+   },
+   "analysedRange": [
+    "2026-10-13T10:00:50.321834+00:00",
+    "2026-10-14T00:10:23.234951+00:00"
+   ],
+   "newestFilingPeriod": "2026-08-01",
+   "sha256": "a0bd5d7f48504cc2b759c20f20ad00da8b8f516783b857d280516231d629fa4e"
+  },
+  "ZA__JSE": {
+   "universe": 303,
+   "analysed": 4,
+   "evidence": {
+    "PASS": 4
+   },
+   "calls": {
+    "NO_RECOMMENDATION": 4
+   },
+   "agent8": {
+    "REVIEW": 3,
+    "ABSTAIN": 1
+   },
+   "fieldCompletenessPct": {
+    "revenue": 100.0,
+    "operating_income": 50.0,
+    "ebitda": 0.0,
+    "net_income": 100.0,
+    "total_assets": 100.0,
+    "total_liabilities": 75.0,
+    "total_equity": 100.0,
+    "current_assets": 75.0,
+    "current_liabilities": 75.0,
+    "total_debt": 75.0,
+    "operating_cash_flow": 75.0,
+    "free_cash_flow": 0.0,
+    "interest_expense": 75.0,
+    "retained_earnings": 0.0,
+    "pe": 25.0,
+    "pb": 0.0,
+    "ev_ebitda": 0.0,
+    "sector": 0.0,
+    "isin": 100.0,
+    "filing_period_end": 100.0
+   },
+   "agentActivePct": {
+    "fundamental": 100.0,
+    "risk": 100.0,
+    "forecast": 100.0,
+    "comparison": 0.0,
+    "quality": 100.0,
+    "liquidity": 100.0
+   },
+   "analysedRange": [
+    "2026-10-12T13:23:59.825861+00:00",
+    "2026-10-12T13:24:01.243394+00:00"
+   ],
+   "newestFilingPeriod": "2026-06-30",
+   "sha256": "30bbd9ea009119054143c64e5d02827fd1e14394ca68be051dc9190175487332"
+  }
+ },
+ "totals": {
+  "universe": 25873,
+  "analysed": 8146
+ }
+}

@@ -9,6 +9,7 @@ from pathlib import Path
 import subprocess
 
 from fastapi import FastAPI
+from fastapi.middleware.gzip import GZipMiddleware
 
 from global_release_routes import router as global_release_router
 from global_routes import router as global_router
@@ -29,6 +30,9 @@ def _running_commit() -> str | None:
 RUNNING_COMMIT = _running_commit()
 
 app = FastAPI(title="BIAP Global research service")
+# Scan/analysis JSON is >1 MB; nginx does not compress proxied responses, so
+# compress at the application to keep mobile transfers short and abort-resistant.
+app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=5)
 app.include_router(global_router)
 app.include_router(global_source_router)
 app.include_router(global_release_router)

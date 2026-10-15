@@ -24,11 +24,38 @@ from typing import Any, Optional
 
 import httpx
 
+import json
+from pathlib import Path
+
 from .gleif import GLEIFResolver
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
 
 FILINGS_API = "https://filings.xbrl.org/api/filings"
+
+_REVIEWED_CAPEX_PATH = Path(__file__).with_name("data") / "reviewed_capex_lines.json"
+
+
+def _reviewed_capex_lines() -> dict[str, dict]:
+    """LEI -> reviewed capex-line mapping (empty when the file is absent/unreadable)."""
+    try:
+        payload = json.loads(_REVIEWED_CAPEX_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {str(row["lei"]).upper(): row for row in payload.get("issuers", []) if isinstance(row, dict) and row.get("lei") and row.get("concept")}
+
+_REVIEWED_DA_PATH = Path(__file__).with_name("data") / "reviewed_da_lines.json"
+
+
+def _reviewed_da_lines() -> dict[str, dict]:
+    """LEI -> reviewed D&A cash-flow lines tagged with extension concepts."""
+    try:
+        payload = json.loads(_REVIEWED_DA_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {str(row["lei"]).upper(): row for row in payload.get("issuers", [])
+            if isinstance(row, dict) and row.get("lei") and row.get("concepts")}
+
 
 _CONCEPTS = {
     "revenue": ("ifrs-full:Revenue", "ifrs-full:RevenueFromContractsWithCustomers"),
@@ -41,6 +68,9 @@ _CONCEPTS = {
         "ifrs-full:DepreciationExpense",
     ),
     "net_income": ("ifrs-full:ProfitLoss",),
+    # Owners'-share profit: EPS is per share of the parent's owners, so share
+    # counts are cross-checked against this when the issuer tags it.
+    "net_income_owners": ("ifrs-full:ProfitLossAttributableToOwnersOfParent",),
     "assets": ("ifrs-full:Assets",),
     "liabilities": ("ifrs-full:Liabilities",),
     "equity": ("ifrs-full:Equity",),
@@ -69,13 +99,18 @@ _CONCEPTS = {
         "ifrs-full:InterestBearingLoansAndBorrowings",
         "ifrs-full:LoansAndBorrowings",
     ),
+    # IFRS taxonomy element names differ by preparer; Shell plc FY2025 tags
+    # its balance-sheet "Debt" lines with LongtermBorrowings and
+    # CurrentBorrowingsAndCurrentPortionOfNoncurrentBorrowings.
     "current_borrowings": (
         "ifrs-full:CurrentBorrowings",
         "ifrs-full:CurrentInterestBearingLoansAndBorrowings",
+        "ifrs-full:CurrentBorrowingsAndCurrentPortionOfNoncurrentBorrowings",
     ),
     "noncurrent_borrowings": (
         "ifrs-full:NoncurrentBorrowings",
         "ifrs-full:NoncurrentInterestBearingLoansAndBorrowings",
+        "ifrs-full:LongtermBorrowings",
     ),
     # Bonds issued and loans received (IFRS "loans received" lines, or issuer
     # "other loans") are separate debt lines on the balance sheet; they are
@@ -106,6 +141,14 @@ _CONCEPTS = {
         "ifrs-full:IncomeTaxesPaidRefundClassifiedAsOperatingActivities",
     ),
     "eps": ("ifrs-full:BasicEarningsLossPerShare", "ifrs-full:DilutedEarningsLossPerShare"),
+    # Issuer-reported shares outstanding (not "issued": treasury shares would
+    # overstate it). Only the plain, undimensioned fact is read; per-class
+    # facts are dimensioned and therefore never summed or guessed.
+    "shares_outstanding": ("ifrs-full:NumberOfSharesOutstanding",),
+    # Labelled fallback only (see _single_class_shares_issued): shares ISSUED
+    # include treasury shares, so it is used solely when the filing tags no
+    # outstanding count and no per-class facts exist at all.
+    "shares_issued": ("ifrs-full:NumberOfSharesIssued",),
     # Continuing-operations EPS equals EPS only when no discontinued
     # operation result is tagged for the year (e.g. Komplett ASA FY2025).
     "eps_continuing": (
@@ -203,6 +246,14 @@ _NCI_DIMENSION = ("ifrs-full:ComponentsOfEquityAxis", "ifrs-full:NoncontrollingI
 # The retained-earnings column of the same statement: a total-equity concept on
 # exactly this column is the closing retained earnings balance.
 _RETAINED_EARNINGS_DIMENSION = ("ifrs-full:ComponentsOfEquityAxis", "ifrs-full:RetainedEarningsMember")
+_COMPONENTS_AXIS = "ifrs-full:ComponentsOfEquityAxis"
+_RESTATEMENT_AXIS = "ifrs-full:RetrospectiveApplicationAndRetrospectiveRestatementAxis"
+_PREVIOUSLY_STATED = "ifrs-full:PreviouslyStatedMember"
+_EQUITY_TOTAL_MEMBERS = {
+    "ifrs-full:equityattributabletoownersofparentmember",
+    "ifrs-full:noncontrollinginterestsmember",
+    "ifrs-full:equitymember",
+}
 
 
 def _concept_local_name(concept: object) -> str:
@@ -402,6 +453,38 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         return abs(net) if net < 0 else None
 
 
+    @classmethod
+    def _excluded_candidates(
+        cls, facts: list[dict], period_end: date, *, need_ebitda: bool, need_capex: bool
+    ) -> dict[str, float]:
+        """Tagged lines that look like missing EBITDA/FCF inputs but are *not*
+        accepted by policy (impairment-inclusive D&A, generic investing outflows).
+
+        They are reported, never used: this lets an audit tell a genuinely
+        absent field from a field the filing tags in a non-standard way.
+        """
+        patterns: list[str] = []
+        if need_ebitda:
+            patterns += ["depreciationamortisationandimpairment", "depreciationandamortisationexpenseandimpairment"]
+        if need_capex:
+            patterns += ["purchaseofotherlongtermassets", "capitalexpenditure", "purchaseofintangibleassets"]
+        if not patterns:
+            return {}
+        by_concept: dict[str, list[dict]] = {}
+        for fact in facts:
+            dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+            concept = str(dims.get("concept") or "")
+            if any(key in concept.lower() for key in patterns) and not any(
+                k not in {"concept", "entity", "period", "unit"} for k in dims
+            ):
+                by_concept.setdefault(concept, []).append(fact)
+        found: dict[str, float] = {}
+        for concept, rows in by_concept.items():
+            value = cls._duration_value(rows, period_end)
+            if value is not None:
+                found[concept] = value
+        return found
+
     @staticmethod
     def _duration_value(facts: list[dict], period_end: date, *, previous: bool = False) -> Optional[float]:
         candidates: list[tuple[int, date, float]] = []
@@ -503,7 +586,60 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             minority = self._instant_value(self._column_facts(facts, "equity", _NCI_DIMENSION, plain=False), period_end)
         if owners is not None and minority is not None and plausible(owners + minority):
             return owners + minority, "owners_equity_plus_noncontrolling_interests"
+        cross_footed = self._cross_footed_equity(facts, concept_facts, period_end)
+        if plausible(cross_footed):
+            return cross_footed, "extension_components_cross_footed"
         return None, None
+
+    def _cross_footed_equity(self, facts: list[dict], concept_facts: dict, period_end: date) -> Optional[float]:
+        """Total equity from a statement-of-changes-in-equity column set that proves itself.
+
+        Some issuers (FinecoBank) tag the closing owners' total only with a
+        ``PreviouslyStated`` restatement member and no plain total. That total is
+        accepted only when nothing contradicts it and the columns reconcile:
+        no restated column exists at that date, the component columns sum to the
+        owners' total, one component equals the income statement's profit, and
+        non-controlling interests are tagged explicitly.
+        """
+        nearest: Optional[int] = None
+        columns: list[tuple[str, Optional[str], float]] = []
+        for fact in facts:
+            dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+            concept = str(dims.get("concept") or "")
+            member = dims.get(_COMPONENTS_AXIS)
+            value = _num(fact.get("value"))
+            if member is None or value is None or not (
+                self._is_concept(concept, "owners_equity") or self._is_concept(concept, "equity")
+            ):
+                continue
+            if set(dims) - _ALLOWED_DIMENSIONS - {_COMPONENTS_AXIS, _RESTATEMENT_AXIS}:
+                continue
+            start, end = _period_parts(dims.get("period"))
+            if end is None or start != end or abs((period_end - end).days) > 7:
+                continue
+            distance = abs((period_end - end).days)
+            if nearest is None or distance < nearest:
+                nearest, columns = distance, []
+            if distance == nearest:
+                columns.append((str(member), dims.get(_RESTATEMENT_AXIS), value))
+        if not columns or any(axis not in (None, _PREVIOUSLY_STATED) for _, axis, _ in columns):
+            return None
+        by_member: dict[str, float] = {}
+        for member, _, value in columns:
+            if by_member.setdefault(member, value) != value:
+                return None
+        owners = by_member.get("ifrs-full:EquityAttributableToOwnersOfParentMember")
+        minority = by_member.get("ifrs-full:NoncontrollingInterestsMember")
+        components = [v for m, v in by_member.items() if m.lower() not in _EQUITY_TOTAL_MEMBERS]
+        if owners is None or minority is None or len(components) < 3:
+            return None
+        tolerance = max(1e-4 * abs(owners), 1000.0 * len(components))
+        if abs(sum(components) - owners) > tolerance:
+            return None
+        profit = self._duration_value(concept_facts["net_income"], period_end)
+        if profit is None or not any(abs(v - profit) <= max(1e-4 * abs(profit), 1000.0) for v in components):
+            return None
+        return owners + minority
 
     def _revenue_from_operating_total(
         self, concept_facts: dict, period_end: date
@@ -606,6 +742,133 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             "method": "same-filing IFRS facts; short period only; never annualized",
         }
 
+    @classmethod
+    def _single_class_shares_issued(cls, facts: list[dict], period_end: date) -> tuple[Optional[float], Optional[str]]:
+        """Issued share count for a verified single-class issuer, else (None, None).
+
+        Accepted only when every check holds; any doubt withholds the count so
+        market cap stays missing rather than guessed:
+        * one plain (undimensioned) ``NumberOfSharesIssued`` instant fact within
+          7 days of the balance-sheet date, in a share unit, positive, and all
+          such facts agree;
+        * no dimensioned (per-class / per-component) issued or outstanding
+          share fact exists at that date, i.e. the filing tags no share classes.
+        """
+        wanted = {"ifrs-full:numberofsharesissued", "ifrs-full:numberofsharesoutstanding"}
+        plain: list[float] = []
+        for fact in facts:
+            dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+            if str(dims.get("concept") or "").lower() not in wanted:
+                continue
+            start, end = _period_parts(dims.get("period"))
+            if end is None or start != end or abs((period_end - end).days) > 7:
+                continue
+            if not cls._plain_fact(fact):
+                return None, None  # per-class facts present: multi-class or unclear
+            if str(dims.get("concept") or "").lower() != "ifrs-full:numberofsharesissued":
+                continue
+            value = _num(fact.get("value"))
+            unit = str(dims.get("unit") or "").lower()
+            if value is None or value <= 0 or "shares" not in unit:
+                return None, None
+            plain.append(value)
+        if not plain or len(set(plain)) != 1:
+            return None, None
+        return plain[0], "issued_single_class_fallback"
+
+    _IMPAIRMENT_INCLUSIVE_DA = re.compile(r"(depreciation|amortisation|amortization).*impairment|adjustmentsfordepreciationandamortisation", re.I)
+    _BORROWING_NAME = re.compile(r"(borrowing|bondsissued|loansreceived)", re.I)
+
+    @classmethod
+    def _nonstandard_ebitda_incl_impairment(
+        cls, facts: list[dict], period_end: date, *, operating_income: Optional[float], ebitda: Optional[float]
+    ) -> Optional[dict]:
+        """Flagged EBIT + (D&A and impairment) alternative; never standard EBITDA.
+
+        Only when standard EBITDA is absent, operating income is tagged and the
+        filing tags exactly one distinct plain impairment-inclusive D&A concept
+        for the year. The result is recorded as metadata (formula, concept,
+        period, confidence) and is deliberately NOT written to ``ebitda`` /
+        ``ev_ebitda``, so it cannot enter standard valuation comparisons or
+        upgrade a data-completeness verdict.
+        """
+        if ebitda is not None or operating_income is None:
+            return None
+        found: dict[str, float] = {}
+        for fact in facts:
+            dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+            concept = str(dims.get("concept") or "")
+            if not cls._IMPAIRMENT_INCLUSIVE_DA.search(concept.split(":")[-1]) or not cls._plain_fact(fact):
+                continue
+            start, end = _period_parts(dims.get("period"))
+            if start is None or end is None or abs((period_end - end).days) > 7 or (end - start).days < 300:
+                continue
+            value = _num(fact.get("value"))
+            if value is not None:
+                found.setdefault(concept, abs(value))
+        if len(found) != 1:
+            return None
+        concept, da_value = next(iter(found.items()))
+        return {
+            "ebitda_incl_impairment": operating_income + da_value,
+            "standard": False,
+            "formula": "operating_income + abs(" + concept + ")",
+            "sourceConcept": concept,
+            "fiscalPeriodEnd": period_end.isoformat(),
+            "confidence": 0.6,
+            "label": "NON-STANDARD: EBITDA including impairment; excluded from standard EV/EBITDA comparisons",
+        }
+
+    @classmethod
+    def _field_status(
+        cls, facts: list[dict], period_end: date, *, shares: Optional[float], shares_basis: Optional[str],
+        operating_income: Optional[float], ebitda: Optional[float], debt: Optional[float], debt_method: Optional[str],
+    ) -> dict[str, str]:
+        """Why each valuation/credit input is present or absent.
+
+        ``not_tagged_*`` means the official structured filing genuinely does not
+        carry the value; ``tagged_*`` means it carries something we deliberately
+        did not use (the reason is named), i.e. an extraction decision, not a
+        data gap.
+        """
+        near_period = []
+        for fact in facts:
+            dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+            _, end = _period_parts(dims.get("period"))
+            if end is not None and abs((period_end - end).days) <= 7:
+                near_period.append((str(dims.get("concept") or ""), cls._plain_fact(fact)))
+
+        def local(concept: str) -> str:
+            return concept.split(":")[-1]
+
+        if shares is not None:
+            shares_status = "extracted_issued_single_class_fallback" if shares_basis else "extracted_plain_outstanding"
+        elif any(local(c).lower() in {"numberofsharesoutstanding", "numberofsharesissued"} for c, _ in near_period):
+            shares_status = "tagged_per_class_or_ambiguous_not_summed"
+        elif any(re.search(r"numberof.*shares|shares.*(outstanding|issued)", local(c), re.I) for c, _ in near_period):
+            shares_status = "tagged_issuer_extension_concept_not_mapped"
+        else:
+            shares_status = "not_tagged_in_filing"
+
+        if ebitda is not None:
+            ebitda_status = "extracted"
+        elif operating_income is None:
+            ebitda_status = "operating_income_not_tagged"
+        elif any(cls._IMPAIRMENT_INCLUSIVE_DA.search(local(c)) for c, _ in near_period):
+            ebitda_status = "tagged_da_impairment_inclusive_only_not_used"
+        else:
+            ebitda_status = "not_tagged_depreciation_amortisation"
+
+        if debt is not None:
+            debt_status = "extracted"
+        elif str(debt_method or "").startswith("withheld:"):
+            debt_status = "tagged_components_inconsistent_withheld"
+        elif any(cls._BORROWING_NAME.search(local(c)) and c.lower().startswith("ifrs-full:") and not re.search(r"(proceeds|repayment|cashflows)", local(c), re.I) for c, _ in near_period):
+            debt_status = "tagged_borrowing_lines_incomplete_not_used"
+        else:
+            debt_status = "not_tagged_borrowings"
+        return {"shares_outstanding": shares_status, "ebitda": ebitda_status, "total_debt": debt_status}
+
     def normalized_fields(self, facts: list[dict], period_end: date) -> dict:
         """Map plain annual IFRS facts to GlobalCompany fields.
 
@@ -648,6 +911,21 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         total_assets = self._instant_value(concept_facts["assets"], period_end)
         total_liabilities = self._instant_value(concept_facts["liabilities"], period_end)
         liabilities_method = "direct_ifrs_liabilities" if total_liabilities is not None else None
+        if (
+            total_liabilities is not None
+            and total_assets
+            and total_equity is not None
+            and total_assets > 0
+            and 0.001 * total_assets < total_equity <= total_assets
+            and abs(total_liabilities - total_assets) <= 0.0005 * total_assets
+        ):
+            # Some filers (e.g. S30, NRG, PAT, GAB) tag the "total equity and
+            # liabilities" line with ifrs-full:Liabilities. Liabilities equal to
+            # total assets next to positive equity violates the balance sheet
+            # and would inflate Zmijewski TL/TA to 1.0 in Agent 9. Same filing,
+            # same period: use the identity; never estimate.
+            total_liabilities = total_assets - total_equity
+            liabilities_method = "derived_assets_minus_equity_direct_liabilities_tag_equalled_total_assets"
         # The balance-sheet identity is valid only for the same consolidated
         # entity, reporting currency and balance-sheet date. This normalizer
         # has already selected the filing's matching period and unit.
@@ -695,13 +973,54 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             if component_values:
                 depreciation_amortisation = sum(abs(value) for value in component_values.values())
                 da_method = "sum_of_tagged_da_components:" + ",".join(sorted(component_values))
+        if depreciation_amortisation is None:
+            # Reviewed issuer mapping (never guessed): extension-tagged PP&E and
+            # intangible depreciation lines of one named issuer, summed.
+            for lei in {
+                str((fact.get("dimensions") or {}).get("entity") or "").split(":")[-1].upper() for fact in facts
+            }:
+                reviewed_da = _reviewed_da_lines().get(lei)
+                if not reviewed_da:
+                    continue
+                if reviewed_da.get("periodEnd") and reviewed_da["periodEnd"] != period_end.isoformat():
+                    continue
+                parts_da = [
+                    self._duration_value(self._concept_facts(facts, (str(concept),)), period_end)
+                    for concept in reviewed_da["concepts"]
+                ]
+                if parts_da and all(value is not None for value in parts_da):
+                    depreciation_amortisation = sum(abs(value) for value in parts_da)
+                    da_method = "reviewed_issuer_da_lines:" + ",".join(c.split(":")[-1] for c in reviewed_da["concepts"])
+                    break
         ebitda = direct_ebitda
         ebitda_method = "direct_explicit_tag" if direct_ebitda is not None else None
         if ebitda is None and operating_income is not None and depreciation_amortisation is not None:
             ebitda = operating_income + abs(depreciation_amortisation)
             ebitda_method = "derived_operating_income_plus_abs_depreciation_amortisation"
+        nonstandard_metrics = self._nonstandard_ebitda_incl_impairment(
+            facts, period_end, operating_income=operating_income, ebitda=ebitda
+        )
         ocf = self._duration_value(concept_facts["ocf"], period_end)
         capex = self._duration_value(concept_facts["capex"], period_end)
+        capex_method = "standard_ppe_capex_concept" if capex is not None else None
+        if capex is None:
+            # Reviewed issuer mapping (never guessed): the issuer's own statement line
+            # "Capital expenditure" carries a generic IFRS concept the policy does not
+            # accept for other issuers.
+            entities = {
+                str((fact.get("dimensions") or {}).get("entity") or "").split(":")[-1].upper()
+                for fact in facts
+            }
+            for lei in entities:
+                reviewed = _reviewed_capex_lines().get(lei)
+                if not reviewed:
+                    continue
+                capex = self._duration_value(
+                    self._concept_facts(facts, (str(reviewed["concept"]),)), period_end
+                )
+                if capex is not None:
+                    capex_method = f"reviewed_statement_line:{reviewed['concept']}"
+                    break
         fcf = None if ocf is None or capex is None else ocf - abs(capex)
         debt = self._instant_value(concept_facts["borrowings"], period_end)
         debt_method = "direct_borrowings" if debt is not None else None
@@ -714,7 +1033,17 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             debt = sum(present) if present else None
             if debt is not None:
                 debt_method = "current_plus_noncurrent_borrowings"
-        if debt is None:
+                # A single bond/loan balance larger than the claimed total means the
+                # tagged borrowings line is a sub-aggregate (Stillfront FY2025:
+                # LongtermBorrowings 984m next to bonds 2,835m). Withhold, never guess.
+                components = [
+                    self._instant_value(concept_facts[key], period_end)
+                    for key in ("current_bonds", "noncurrent_bonds", "current_other_loans", "noncurrent_other_loans")
+                ]
+                if any(value is not None and abs(value) > debt * 1.0001 for value in components):
+                    debt = None
+                    debt_method = "withheld:component_exceeds_borrowings_total"
+        if debt is None and debt_method is None:
             # No borrowings line at all: bonds issued plus issuer "other loans"
             # are the interest-bearing debt lines of the balance sheet.
             lines = {
@@ -743,6 +1072,13 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         eps = self._duration_value(concept_facts["eps"], period_end)
         if eps is None and not self._duration_value(concept_facts["discontinued_profit"], period_end):
             eps = self._duration_value(concept_facts["eps_continuing"], period_end)
+
+        shares_outstanding = self._instant_value(concept_facts["shares_outstanding"], period_end)
+        if shares_outstanding is not None and shares_outstanding <= 0:
+            shares_outstanding = None
+        shares_basis = None
+        if shares_outstanding is None:
+            shares_outstanding, shares_basis = self._single_class_shares_issued(facts, period_end)
 
         reporting_currency = None
         for key in ("revenue", "net_income", "assets"):
@@ -777,22 +1113,74 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             "total_debt": debt,
             "interest_expense": self._interest_expense(concept_facts, period_end),
             "eps": eps,
+            # absent key (not None) when the filing carries no plain share count,
+            # so an existing provider value is never overwritten with a gap
+            **({"shares_outstanding": shares_outstanding} if shares_outstanding is not None else {}),
             "__normalization_meta__": {
+                **({"shares_outstanding_basis": shares_basis} if shares_basis else {}),
+                "field_status": self._field_status(
+                    facts, period_end,
+                    shares=shares_outstanding, shares_basis=shares_basis,
+                    operating_income=operating_income, ebitda=ebitda,
+                    debt=debt, debt_method=debt_method,
+                ),
                 "revenue_method": revenue_method,
                 "equity_method": equity_method,
                 "liabilities_method": liabilities_method,
                 "retained_earnings_method": retained_earnings_method,
                 "ebitda_method": ebitda_method,
+                **({"nonstandard_metrics": nonstandard_metrics} if nonstandard_metrics else {}),
+                "net_income_attributable_to_owners": self._duration_value(
+                    concept_facts["net_income_owners"], period_end
+                ),
                 "depreciation_amortisation": depreciation_amortisation,
                 "depreciation_amortisation_method": da_method,
                 "debt_method": debt_method,
                 "capex": capex,
                 "fcf_method": "operating_cash_flow_minus_abs_capex" if fcf is not None else None,
+                "capex_method": capex_method,
                 "fiscal_year_transition": self.fiscal_year_transition(facts, period_end),
                 "ffo": ffo,
                 "ffo_method": ffo_method,
+                "excluded_candidates": self._excluded_candidates(
+                    facts, period_end, need_ebitda=ebitda is None, need_capex=fcf is None
+                ),
             },
         }
+
+    def anchor_period(self, facts: list[dict], indexed: date) -> tuple[date, bool]:
+        """The balance-sheet date the filing's own facts report, when the index is wrong.
+
+        filings.xbrl.org sometimes indexes a report under its filing/signing date
+        (Aviva FY2025 is listed as 2026-03-02, Mobico as 2026-03-31) although the
+        facts end 2025-12-31; every anchored lookup then misses and the issuer
+        shows no core figures. The index date is kept whenever any annual flow
+        ends within a week of it. Otherwise the latest annual-flow end up to 200
+        days before the index date is used, but only if a balance-sheet instant
+        sits on that same date, so the figures are the filing's own and cross-foot
+        on one date. Staleness is then measured from the true period end.
+        """
+        flow_keys = ("net_income", "revenue", "operating_income")
+        ends: set[date] = set()
+        any_flow_ends: set[date] = set()
+        for key in flow_keys:
+            for fact in self._concept_facts(facts, _CONCEPTS[key], extension_key=key):
+                dims = fact.get("dimensions") if isinstance(fact.get("dimensions"), dict) else {}
+                start, end = _period_parts(dims.get("period"))
+                if start is None or end is None or end <= start:
+                    continue
+                any_flow_ends.add(end)
+                if 300 <= (end - start).days <= 400:
+                    ends.add(end)
+        # A flow of ANY length ending at the index date means the index is right
+        # (transition-period and 15-month filers keep their own handling).
+        if any(abs((end - indexed).days) <= 7 for end in any_flow_ends):
+            return indexed, False
+        assets = self._concept_facts(facts, _CONCEPTS["assets"], extension_key="assets")
+        for end in sorted((e for e in ends if 0 < (indexed - e).days <= 200), reverse=True):
+            if self._instant_value(assets, end) is not None:
+                return end, True
+        return indexed, False
 
     def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
         lei, legal_name = self._resolve_lei(company)
@@ -811,6 +1199,8 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         if not facts:
             raise GlobalProviderError(f"ESEF xBRL-JSON contains no facts for LEI {lei}")
 
+        indexed_period = period_end
+        period_end, period_corrected = self.anchor_period(facts, period_end)
         normalized = self.normalized_fields(facts, period_end)
         reporting_currency = normalized.pop("reporting_currency")
         normalization_meta = normalized.pop("__normalization_meta__", {})
@@ -847,6 +1237,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                 "esef_validation_inconsistencies": inconsistencies,
                 "esef_json_url": json_url,
                 "esef_credit_extraction": normalization_meta,
+                **({"esef_index_period_end": indexed_period.isoformat(), "esef_period_end_source": "filing_facts"} if period_corrected else {}),
                 **({"fiscal_year_transition": transition} if transition else {}),
                 **_agent10_fields(normalization_meta),
             },
@@ -859,5 +1250,8 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             observed_at=processed,
             period_end=period_end.isoformat(),
             quality=quality,
-            notes=f"ESEF/UKSEF xBRL-JSON indexed by filings.xbrl.org; LEI={lei}; validationErrors={errors}; inconsistencies={inconsistencies}",
+            notes=(
+                f"ESEF/UKSEF xBRL-JSON indexed by filings.xbrl.org; LEI={lei}; validationErrors={errors}; inconsistencies={inconsistencies}"
+                + (f"; index period {indexed_period.isoformat()} does not match the filing's facts, period taken from the facts" if period_corrected else "")
+            ),
         ))

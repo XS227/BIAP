@@ -258,3 +258,73 @@ class BoerseFrankfurtFundamentalsProvider(FundamentalsProvider):
                 audit_status="unknown",
             ),
         )
+
+
+class BoerseFrankfurtShareCountSupplement(FundamentalsProvider):
+    """Add the exchange-published share count to a reviewed/issuer statement row.
+
+    Reviewed annual-report rows carry statements but no share count, so P/B and
+    EV/EBITDA could not be derived for exactly the issuers with the best data.
+    Börse Frankfurt's historical key data publishes ``outstandingShares``; it is
+    used *only* to fill an empty ``shares_outstanding`` (never to overwrite), with
+    the source, fiscal year and validation recorded. A count that contradicts net
+    income / EPS by more than 2x (the downstream consistency band) is withheld.
+    """
+
+    provider_id = "official-boerse-frankfurt-share-count-supplement"
+
+    def __init__(self, inner: FundamentalsProvider, source: Optional[BoerseFrankfurtFundamentalsProvider] = None) -> None:
+        self.inner = inner
+        self.source = source or BoerseFrankfurtFundamentalsProvider()
+
+    def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
+        enriched = self.inner.enrich_fundamentals(company)
+        if (
+            enriched.shares_outstanding is not None
+            or enriched.country.upper() != "DE"
+            or not str(enriched.isin or "").upper().startswith("DE")
+        ):
+            return enriched
+        isin = str(enriched.isin).upper().strip()
+        note: dict[str, Any] = {"isin": isin, "source": "boerse-frankfurt historical key data"}
+        try:
+            url = self.source._url(isin, self.source.limit)
+            payload = self.source._get_json(url)
+            if str(payload.get("isin") or isin).upper() != isin:
+                raise GlobalProviderError("ISIN mismatch")
+            row = self.source._row(payload)
+            shares = _number(row.get("outstandingShares"))
+            year = int(row["year"])
+        except (GlobalProviderError, KeyError, ValueError, TypeError) as exc:
+            note["status"] = f"unavailable:{type(exc).__name__}"
+            return replace(enriched, raw_provider_fields={**enriched.raw_provider_fields, "de_share_count_supplement": note})
+        note.update({"fiscal_year": year, "source_url": url, "value": shares})
+        # EPS is per share of the parent's owners, so prefer the owners' share
+        # of net income when the reviewed row records it (non-controlling
+        # interests otherwise distort the implied share count).
+        attributable = _number(enriched.raw_provider_fields.get("net_income_attributable_to_owners"))
+        earnings = attributable if attributable is not None else enriched.net_income
+        implied = (float(earnings) / float(enriched.eps)) if earnings and enriched.eps else None
+        if attributable is not None:
+            note["earnings_basis"] = "net_income_attributable_to_owners"
+        if shares is None or shares <= 0:
+            note["status"] = "absent_in_key_data"
+        elif (
+            implied is not None and implied > 0
+            and not 0.5 <= shares / implied <= 2.0
+        ):
+            note["status"] = "withheld:contradicts_net_income_over_eps"
+        else:
+            note["status"] = "applied"
+            return append_source(
+                replace(enriched, shares_outstanding=shares,
+                        raw_provider_fields={**enriched.raw_provider_fields, "de_share_count_supplement": note}),
+                SourceEvidence(
+                    provider=self.provider_id, source_type="official_exchange_share_count",
+                    source_id=f"BF-HKD:{isin}:FY{year}:outstandingShares", source_url=url,
+                    observed_at=datetime.now(timezone.utc).isoformat(timespec="seconds"), quality=0.96,
+                    notes=f"Börse Frankfurt outstandingShares FY{year}; fills an empty share count only",
+                    provenance_status="independently_verified", audit_status="unknown",
+                ),
+            )
+        return replace(enriched, raw_provider_fields={**enriched.raw_provider_fields, "de_share_count_supplement": note})

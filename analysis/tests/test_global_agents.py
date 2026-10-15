@@ -215,3 +215,61 @@ def test_evidence_agent_keeps_old_year_only_boerse_frankfurt_data_warned():
 
     assert result.status == "WARN"
     assert result.freshness_score == 0.25
+
+
+def _cands(specs):
+    out = []
+    for ticker, kw, price in specs:
+        company = _company(ticker=ticker, **kw)
+        company.price = price
+        evidence = evidence_agent(company, _signals(), now=datetime(2026, 9, 16, 1, tzinfo=timezone.utc))
+        out.append(PortfolioCandidate(company, _signals(), evidence))
+    return out
+
+
+def _profile(**kw):
+    base = dict(capital=100_000, base_currency="USD", risk_tolerance="medium", horizon="5y",
+                max_position_pct=10, max_country_pct=100, max_sector_pct=100, min_cash_reserve_pct=10, max_positions=10)
+    base.update(kw)
+    return InvestorProfile(**base)
+
+
+def test_slot_freed_by_unsizeable_candidate_goes_to_next_qualified_name():
+    # Two names cost more than their allocation (minimum lot) -> they must not
+    # burn max_positions slots; the next-ranked qualified names take them.
+    specs = [(f"OK{i}", {"sector": f"S{i}"}, 100.0) for i in range(6)]
+    specs[0:0] = [("BIG1", {"sector": "SB1"}, 5_000_000.0), ("BIG2", {"sector": "SB2"}, 5_000_000.0)]
+    result = portfolio_agent(_profile(max_positions=5, max_position_pct=20), _cands(specs))
+    assert len(result.allocations) == 5
+    assert {a.ticker for a in result.allocations}.isdisjoint({"BIG1", "BIG2"})
+    cut = [r for r in result.rejections if r["constraint"] == "max_positions"]
+    assert len(cut) == 1  # 8 qualified - 2 unsizeable - 5 placed
+
+
+def test_max_positions_cut_only_applies_when_all_slots_are_really_filled():
+    specs = [(f"N{i}", {"sector": f"S{i}"}, 100.0) for i in range(12)]
+    result = portfolio_agent(_profile(max_positions=10), _cands(specs))
+    assert len(result.allocations) == 10
+    assert len([r for r in result.rejections if r["constraint"] == "max_positions"]) == 2
+
+
+def test_weight_a_capped_position_cannot_take_is_redistributed_not_left_in_cash():
+    specs = [(f"P{i}", {"sector": f"S{i}"}, 100.0) for i in range(10)]
+    result = portfolio_agent(_profile(max_position_pct=10, min_cash_reserve_pct=10), _cands(specs))
+    assert abs(result.invested_pct - 90.0) < 0.05 and abs(result.cash_pct - 10.0) < 0.05
+    assert all(a.weight_pct <= 10.0 + 1e-6 for a in result.allocations)
+
+
+def test_cash_left_by_binding_caps_is_explained_not_hidden():
+    # Four names in one country capped at 20% total: caps are not relaxed.
+    specs = [(f"C{i}", {"country": "NO", "exchange": "EURONEXT_OSLO", "currency": "USD", "sector": f"S{i}"}, 100.0) for i in range(4)]
+    result = portfolio_agent(_profile(max_country_pct=20), _cands(specs))
+    assert result.invested_pct <= 20.0 + 1e-6
+    assert "max_country_pct" in result.reasoning and "stays in cash" in result.reasoning
+
+
+def test_unclassified_names_share_one_conservative_sector_bucket():
+    specs = [(f"U{i}", {"sector": None}, 100.0) for i in range(6)]
+    result = portfolio_agent(_profile(max_sector_pct=30), _cands(specs))
+    assert result.invested_pct <= 30.0 + 1e-6
+    assert "max_sector_pct" in result.reasoning

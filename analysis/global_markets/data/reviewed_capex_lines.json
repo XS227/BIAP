@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "description": "Issuer-reviewed mapping of a primary-statement 'Capital expenditure' line to the generic IFRS concept the issuer tagged it with. Used only when no standard PP&E capex concept is tagged. Each entry was checked against the pinned filing's Consolidated Statement of Cash Flows (label, amount, tag). Never applied to issuers not listed here.",
+  "issuers": [
+    {
+      "lei": "21380068P1DRHMJ8KU70",
+      "ticker": "SHEL",
+      "legalName": "Shell plc",
+      "concept": "ifrs-full:PurchaseOfOtherLongtermAssetsClassifiedAsInvestingActivities",
+      "statementLabel": "Capital expenditure",
+      "periodEnd": "2025-12-31",
+      "amount": 18947000000,
+      "currency": "USD",
+      "sourceId": "FCA-NSM:NI-000140566",
+      "sourceUrl": "https://data.fca.org.uk/artefacts/NSM/DirectUpload/NI-000140566/NI-000140566_21380068P1DRHMJ8KU70-2025-12-31.zip",
+      "reviewedAt": "2026-10-13",
+      "note": "Statement line 'Capital expenditure 7 (18,947) (19,601)' is tagged ifrs-full:PurchaseOfOtherLongtermAssetsClassifiedAsInvestingActivities. The separate extension fact shel:CashOutflowForTotalCashCapitalExpenditure (20,915) is a segment/cash-capex disclosure and is NOT used."
+    }
+  ]
+}

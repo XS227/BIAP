@@ -17,8 +17,8 @@ from math import floor
 from typing import Iterable, Mapping, Optional
 
 from .decision_support import preference_adjustment
-from .issuer import issuer_key_of
-from .evidence_contract import official_fundamental_sources, official_fundamental_status
+from .issuer import resolve_issuer_identities
+from .evidence_contract import freshness_tier, official_fundamental_sources, official_fundamental_status
 from .models import (
     AgentSignal,
     DistressAssessment,
@@ -343,6 +343,12 @@ def evidence_agent(
     if missing_critical:
         reasons.append("missing=" + ",".join(dict.fromkeys(missing_critical)))
     reasons.append(f"officialFundamentals={official_status} ({official_detail})")
+    # OFFICIAL_CURRENT = newest official filing passed the staleness gate; the
+    # tier says how recent that filing actually is.
+    reasons.append(
+        f"fundamentalFreshnessTier={freshness_tier(official_status, None if fundamental_age_days is None else int(fundamental_age_days))}"
+    )
+    reasons.append("note=evidence status describes data-quality gates only; it is not a buy/sell recommendation")
     if contradictions:
         reasons.extend(contradictions)
 
@@ -481,10 +487,6 @@ def portfolio_agent(
         scored.append((candidate, score, confidence))
 
     scored.sort(key=lambda item: (item[1] * item[2], item[2], item[1]), reverse=True)
-    for cut, _, _ in scored[max(0, profile.max_positions):]:
-        reject(cut.company.identity(), "max_positions", f"qualified but ranked below the max_positions={profile.max_positions} cut",
-               max_positions=profile.max_positions)
-    scored = scored[: max(0, profile.max_positions)]
     if not scored:
         return PortfolioProposal(
             status="NO_RECOMMENDATION",
@@ -493,78 +495,150 @@ def portfolio_agent(
             cash_pct=100.0,
             allocations=(),
             excluded=tuple(excluded),
-        rejections=tuple(rejections),
+            rejections=tuple(rejections),
             reasoning="no candidate cleared evidence, scope, FX, risk and confidence gates",
         )
 
     investable_pct = max(0.0, min(100.0, 100.0 - profile.min_cash_reserve_pct))
-    desirabilities = [max(0.001, score * confidence) for _, score, confidence in scored]
-    desirability_total = sum(desirabilities)
+    max_positions = max(0, profile.max_positions)
 
-    country_used: defaultdict[str, float] = defaultdict(float)
-    issuer_used: defaultdict[str, float] = defaultdict(float)
-    sector_used: defaultdict[str, float] = defaultdict(float)
-    allocations: list[PortfolioAllocation] = []
-    allocated_pct = 0.0
-
-    for (candidate, score, confidence), desirability in zip(scored, desirabilities):
-        company = candidate.company
-        proposed = investable_pct * desirability / desirability_total
-        room_position = max(0.0, profile.max_position_pct)
-        room_country = max(0.0, profile.max_country_pct - country_used[company.country.upper()])
-        sector_key = (company.sector or "UNKNOWN").upper()
-        room_sector = max(0.0, profile.max_sector_pct - sector_used[sector_key])
-        issuer = issuer_key_of(company)
-        # One issuer = one risk: GOOG + GOOGL share a single position cap.
-        room_issuer = max(0.0, profile.max_position_pct - issuer_used[issuer])
-        remaining = max(0.0, investable_pct - allocated_pct)
-        limits = (
-            ("max_position_pct", room_position, profile.max_position_pct),
-            ("max_issuer_pct", room_issuer, profile.max_position_pct),
-            ("max_country_pct", room_country, profile.max_country_pct),
-            ("max_sector_pct", room_sector, profile.max_sector_pct),
-            ("investable_cash", remaining, investable_pct),
-        )
-        weight = min(proposed, *(room for _, room, _ in limits))
-        if weight <= 0.01:
-            binding = min(limits, key=lambda item: item[1])
-            excluded.append(
-                f"{company.identity()}: constraint {binding[0]} exhausted "
-                f"(limit {binding[2]:.2f}%, room {binding[1]:.2f}%, proposed {proposed:.2f}%"
-                + (f", issuer {issuer} already holds {issuer_used[issuer]:.2f}%" if binding[0] == "max_issuer_pct" else "")
-                + ")"
-            )
+    # One issuer = one position: keep the best-ranked listing of each issuer.
+    # ASML (NASDAQ + Euronext Amsterdam) and GOOG/GOOGL are one issuer; `issuer`
+    # is the validated LEI/CIK/ISIN identity (see issuer.py), never a loose name.
+    issuers = resolve_issuer_identities([c.company for c, _, _ in scored])
+    pool: list[tuple[PortfolioCandidate, float, float, str]] = []
+    held_by: dict[str, str] = {}
+    for (candidate, score, confidence), issuer in zip(scored, issuers):
+        if issuer in held_by:
+            identity = candidate.company.identity()
+            excluded.append(f"{identity}: duplicate_issuer (issuer {issuer} is already held through {held_by[issuer]}, a better-ranked listing)")
             rejections.append({
-                "identity": company.identity(), "constraint": binding[0], "limit": binding[2],
-                "room": round(binding[1], 4), "proposed": round(proposed, 4), "issuer": issuer,
+                "identity": identity, "constraint": "duplicate_issuer", "limit": profile.max_position_pct,
+                "room": 0.0, "issuer": issuer, "heldThrough": held_by[issuer],
             })
             continue
+        held_by[issuer] = candidate.company.identity()
+        pool.append((candidate, score, confidence, issuer))
 
-        amount_base = profile.capital * weight / 100.0
+    def fill(active: list[tuple[PortfolioCandidate, float, float, str]]) -> tuple[list[float], list[str]]:
+        """Proportional-to-desirability weights in rank order, redistributing any
+        weight a capped candidate cannot take to the candidates that still have room."""
+        n = len(active)
+        desirability = [max(0.001, sc * cf) for _, sc, cf, _ in active]
+        weights = [0.0] * n
+        binding = ["investable_cash"] * n
+        country_used: defaultdict[str, float] = defaultdict(float)
+        sector_used: defaultdict[str, float] = defaultdict(float)
+        open_idx = list(range(n))
+        remaining = investable_pct
+        for _ in range(64):
+            if remaining <= 1e-9 or not open_idx:
+                break
+            total = sum(desirability[i] for i in open_idx)
+            budget = remaining
+            moved = 0.0
+            still_open: list[int] = []
+            for i in open_idx:
+                company = active[i][0].company
+                country_key = company.country.upper()
+                sector_key = (company.sector or "UNKNOWN").upper()
+                rooms = (
+                    ("max_position_pct", max(0.0, profile.max_position_pct) - weights[i]),
+                    ("max_country_pct", max(0.0, profile.max_country_pct) - country_used[country_key]),
+                    ("max_sector_pct", max(0.0, profile.max_sector_pct) - sector_used[sector_key]),
+                    ("investable_cash", remaining),
+                )
+                name, room = min(rooms, key=lambda item: item[1])
+                give = max(0.0, min(budget * desirability[i] / total, room))
+                weights[i] += give
+                country_used[country_key] += give
+                sector_used[sector_key] += give
+                remaining -= give
+                moved += give
+                binding[i] = name
+                if room - give > 1e-9:
+                    still_open.append(i)
+            open_idx = still_open
+            if moved <= 1e-9:
+                break
+        return weights, binding
+
+    active = pool[:max_positions]
+    waiting = pool[max_positions:]
+    placed: list[tuple[tuple[PortfolioCandidate, float, float, str], float, int, str]] = []
+    for _ in range(len(pool) + 2):
+        if not active:
+            placed = []
+            break
+        weights, binding = fill(active)
+        failed: list[int] = []
+        placed = []
+        for i, entry in enumerate(active):
+            candidate, score, confidence, issuer = entry
+            company = candidate.company
+            if weights[i] <= 0.01:
+                excluded.append(
+                    f"{company.identity()}: constraint {binding[i]} exhausted "
+                    f"(no room left once better-ranked positions were sized; proposed {weights[i]:.2f}%)"
+                )
+                rejections.append({
+                    "identity": company.identity(), "constraint": binding[i],
+                    "limit": getattr(profile, binding[i], None) if binding[i] != "investable_cash" else investable_pct,
+                    "room": round(weights[i], 4), "issuer": issuer,
+                })
+                failed.append(i)
+                continue
+            amount_base = profile.capital * weights[i] / 100.0
+            per_share_base = company.price * normalized_fx[company.currency.upper()]
+            if per_share_base <= 0:
+                reject(company.identity(), "invalid_price", "invalid converted share price")
+                failed.append(i)
+                continue
+            # US "Round Lot Size" (100/40/10) is a market-structure term, not a
+            # minimum order: US stocks trade in single shares.
+            lot_size = 1 if company.country.upper() == "US" else max(1, int(company.lot_size or 1))
+            quantity = (floor(amount_base / per_share_base) // lot_size) * lot_size
+            if quantity <= 0:
+                reject(company.identity(), "minimum_lot", f"allocation {amount_base:.2f} {profile.base_currency.upper()} cannot buy one minimum lot ({lot_size} x {per_share_base:.2f})", amount=round(amount_base, 2), lot_size=lot_size, per_share_base=round(per_share_base, 4))
+                failed.append(i)
+                continue
+            placed.append((entry, weights[i], quantity, binding[i]))
+        if not failed:
+            break
+        # A slot freed by a candidate that cannot be sized is filled by the next
+        # qualified, better-than-nothing candidate - never left empty while a
+        # qualified name is reported as "cut".
+        survivors = [entry for i, entry in enumerate(active) if i not in failed]
+        while waiting and len(survivors) < max_positions:
+            survivors.append(waiting.pop(0))
+        if len(survivors) == len(active) and all(a is b for a, b in zip(survivors, active)):
+            break
+        active = survivors
+    for entry in waiting:
+        company = entry[0].company
+        reject(company.identity(), "max_positions", f"qualified but ranked below the {max_positions} positions that could be allocated",
+               max_positions=max_positions)
+
+    allocations: list[PortfolioAllocation] = []
+    allocated_pct = 0.0
+    binding_counts: defaultdict[str, int] = defaultdict(int)
+    for (candidate, score, confidence, issuer), weight, quantity, bound in placed:
+        company = candidate.company
         fx_rate = normalized_fx[company.currency.upper()]
-        per_share_base = company.price * fx_rate
-        if per_share_base <= 0:
-            reject(company.identity(), "invalid_price", "invalid converted share price")
-            continue
-        raw_quantity = floor(amount_base / per_share_base)
-        lot_size = max(1, int(company.lot_size or 1))
-        quantity = (raw_quantity // lot_size) * lot_size
-        if quantity <= 0:
-            reject(company.identity(), "minimum_lot", f"allocation {amount_base:.2f} {profile.base_currency.upper()} cannot buy one minimum lot ({lot_size} x {per_share_base:.2f})", amount=round(amount_base, 2), lot_size=lot_size, per_share_base=round(per_share_base, 4))
-            continue
-
-        allocation = PortfolioAllocation(
+        lot_size = 1 if company.country.upper() == "US" else max(1, int(company.lot_size or 1))
+        allocations.append(PortfolioAllocation(
             identity=company.identity(),
             ticker=company.ticker,
             country=company.country,
             exchange=company.exchange,
             currency=company.currency,
             weight_pct=round(weight, 4),
-            amount_base_currency=round(amount_base, 2),
+            amount_base_currency=round(profile.capital * weight / 100.0, 2),
             quantity=quantity,
             estimated_price=company.price,
             score=round(score, 4),
             confidence=round(confidence, 4),
+            sector=company.sector or None,
             reasoning=(
                 f"evidence={candidate.evidence.status}; "
                 f"evidenceCoverage={candidate.evidence.coverage:.0%}; "
@@ -572,12 +646,9 @@ def portfolio_agent(
                 f"profileFitAdjustment={preference_adjustment(company, profile):+.3f}; "
                 f"fx={fx_rate:.8g}; lot={lot_size}"
             ),
-        )
-        allocations.append(allocation)
+        ))
         allocated_pct += weight
-        country_used[company.country.upper()] += weight
-        issuer_used[issuer] += weight
-        sector_used[sector_key] += weight
+        binding_counts[bound] += 1
 
     if not allocations:
         return PortfolioProposal(
@@ -587,8 +658,21 @@ def portfolio_agent(
             cash_pct=100.0,
             allocations=(),
             excluded=tuple(excluded),
-        rejections=tuple(rejections),
+            rejections=tuple(rejections),
             reasoning="eligible candidates could not be allocated within portfolio/lot constraints",
+        )
+
+    reasoning = "paper proposal only; no broker order was submitted"
+    idle = investable_pct - allocated_pct
+    if idle > 0.5:
+        for rejection in rejections:
+            if rejection["constraint"] in {"max_position_pct", "max_country_pct", "max_sector_pct"}:
+                binding_counts[rejection["constraint"]] += 1
+        binding_counts.pop("investable_cash", None)
+        limits = ", ".join(f"{name} x{count}" for name, count in sorted(binding_counts.items(), key=lambda kv: -kv[1]))
+        reasoning += (
+            f"; {idle:.1f}% of the investable budget ({investable_pct:.1f}%) stays in cash because every "
+            f"qualified candidate that could be placed is at a limit ({limits or "lot size"}) - the caps are not relaxed"
         )
 
     allocated_pct = min(100.0, allocated_pct)
@@ -600,5 +684,5 @@ def portfolio_agent(
         allocations=tuple(allocations),
         excluded=tuple(excluded),
         rejections=tuple(rejections),
-        reasoning="paper proposal only; no broker order was submitted",
+        reasoning=reasoning,
     )

@@ -5,6 +5,7 @@ import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing 
 import { analyzeGlobalInstrument, GlobalAnalysis, GlobalAgentSignal, GlobalInstrument } from '@/lib/global-api';
 import { getGlobalMarketSelection } from '@/lib/global-market-selection';
 import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
+import { fundamentalFreshnessLines } from '@/lib/freshness-labels';
 
 function n(value: number | null | undefined, digits = 2) {
   if (value == null || !Number.isFinite(Number(value))) return '—';
@@ -268,8 +269,9 @@ export default function GlobalStockDetailScreen() {
 
         <View style={[styles.agentCard, { backgroundColor: colors.backgroundElement, borderColor: analysis.evidence?.status === 'PASS' ? Brand.positive : analysis.evidence?.status === 'WARN' ? Brand.warning : Brand.negative }]}>
           <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>Evidence / Verification Agent</Text><Text style={[styles.agentVote, { color: analysis.evidence?.status === 'PASS' ? Brand.positive : analysis.evidence?.status === 'WARN' ? Brand.warning : Brand.negative }]}>{analysis.evidence?.status || '—'}</Text></View>
-          <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Coverage {analysis.evidence?.coverage == null ? '—' : `${Math.round(analysis.evidence.coverage * 100)}%`} • Freshness {analysis.evidence?.freshness_score == null ? '—' : n(analysis.evidence.freshness_score, 2)}</Text>
+          <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Coverage {analysis.evidence?.coverage == null ? '—' : `${Math.round(analysis.evidence.coverage * 100)}%`} • Evidence recency score {analysis.evidence?.freshness_score == null ? '—' : n(analysis.evidence.freshness_score, 2)}</Text>
           <Text style={[styles.agentReason, { color: colors.textSecondary }]}>{analysis.evidence?.reasoning || 'Evidence assessment unavailable.'}</Text>
+          {fundamentalFreshnessLines(analysis.fundamentalEvidence).map((line) => <Text key={line} style={[styles.agentReason, { color: colors.textSecondary }]}>{line}</Text>)}
           {analysis.evidence?.missing_critical?.length ? <Text style={[styles.warning, { color: Brand.warning }]}>Missing critical: {analysis.evidence.missing_critical.join(', ')}</Text> : null}
         </View>
 

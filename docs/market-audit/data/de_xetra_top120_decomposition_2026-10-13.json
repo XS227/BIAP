@@ -1,0 +1,2402 @@
+{
+"SAP": {
+"call": "NO_RECOMMENDATION",
+"score": 0.030966,
+"conf": 0.339982,
+"prelim": "NO_RECOMMENDATION",
+"gov": "ABSTAIN",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.2,
+"risk": -0.55,
+"forecast": 0.3,
+"comparison": 0.0,
+"quality": 0.2,
+"liquidity": 0.0
+},
+"r6m": 28.41031017550746,
+"mcap": null,
+"pe": 32.13029296079754,
+"sector": "Technology"
+},
+"DTE": {
+"call": "NO_RECOMMENDATION",
+"score": -0.119535,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.5,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": -15.140248459392168,
+"mcap": 123169323893.89038,
+"pe": 12.811224801199778,
+"sector": "Telecommunications"
+},
+"ENR": {
+"call": "NO_RECOMMENDATION",
+"score": -0.06457,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.7,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": -12.076197057194404,
+"mcap": 126392256948.85254,
+"pe": 89.49999925566883,
+"sector": "Industrials"
+},
+"IFX": {
+"call": "NO_RECOMMENDATION",
+"score": -0.062776,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.35000000000000003,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": 24.377784789055656,
+"mcap": 74724743994.14062,
+"pe": 73.35897592397836,
+"sector": "Technology"
+},
+"SIE": {
+"call": "NO_RECOMMENDATION",
+"score": 0.09813,
+"conf": 0.381188,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.05,
+"risk": 0.05,
+"forecast": 0.3,
+"comparison": 0.0,
+"quality": 0.2,
+"liquidity": 0.0
+},
+"r6m": 10.841916723300503,
+"mcap": null,
+"pe": 22.408163265306122,
+"sector": "Industrials"
+},
+"RHM": {
+"call": "NO_RECOMMENDATION",
+"score": -0.13076,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.7000000000000001,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": -35.090979026288416,
+"mcap": 44261200561.52344,
+"pe": 63.59550642478726,
+"sector": "Industrials"
+},
+"ALV": {
+"call": "NO_RECOMMENDATION",
+"score": 0.052293,
+"conf": 0.3913,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "NOT_APPLICABLE",
+"votes": {
+"fundamental": 0.2,
+"risk": 0.15000000000000002,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.0
+},
+"r6m": 13.586743664502986,
+"mcap": null,
+"pe": 15.294330083062476,
+"sector": "Financials"
+},
+"BAS": {
+"call": "NO_RECOMMENDATION",
+"score": 0.0173,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.3,
+"risk": 0.2,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": 0.10804717578343226,
+"mcap": 45759500808.56323,
+"pe": 28.325967103736833,
+"sector": "Basic Materials"
+},
+"ADS": {
+"call": "NO_RECOMMENDATION",
+"score": -0.002025,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.35,
+"forecast": 0.1,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": 7.442722137504121,
+"mcap": 26778401092.529297,
+"pe": 19.97329854519568,
+"sector": "Consumer Discretionary"
+},
+"DBK": {
+"call": "NO_RECOMMENDATION",
+"score": -0.050041,
+"conf": 0.299325,
+"prelim": "NO_RECOMMENDATION",
+"gov": "ABSTAIN",
+"distress": "NOT_APPLICABLE",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.2,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": -0.1,
+"liquidity": 0.0
+},
+"r6m": 6.983920293024992,
+"mcap": null,
+"pe": 9.443038022970851,
+"sector": "Financials"
+},
+"DHL": {
+"call": "NO_RECOMMENDATION",
+"score": -0.041716,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.09999999999999999,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": 21.649376358930674,
+"mcap": 65251001930.23682,
+"pe": 18.66447423633776,
+"sector": "Industrials"
+},
+"MBG": {
+"call": "HOLD_OR_WATCH",
+"score": -0.037464,
+"conf": 0.562399,
+"prelim": "HOLD_OR_WATCH",
+"gov": "ACCEPT",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": -0.14999999999999997,
+"risk": -0.2,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.35,
+"liquidity": 0.0
+},
+"r6m": -21.2336999166965,
+"mcap": null,
+"pe": 7.352996140383603,
+"sector": "Consumer Discretionary"
+},
+"BMW": {
+"call": "NO_RECOMMENDATION",
+"score": -0.086524,
+"conf": 0.451675,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.19999999999999998,
+"risk": -0.35,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.3,
+"liquidity": 0.0
+},
+"r6m": -31.657278922358234,
+"mcap": null,
+"pe": 4.576955270727107,
+"sector": "Consumer Discretionary"
+},
+"BAYN": {
+"call": "NO_RECOMMENDATION",
+"score": -0.236348,
+"conf": 0.4042,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": -0.7,
+"risk": -0.7,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.3
+},
+"r6m": 8.025535148342499,
+"mcap": 43059470398.864746,
+"pe": null,
+"sector": "Health Care"
+},
+"VOW3": {
+"call": "NO_RECOMMENDATION",
+"score": -0.142042,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.55,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": -18.421882343413685,
+"mcap": 34288920764.923096,
+"pe": 5.138993352808332,
+"sector": "Consumer Discretionary"
+},
+"DB1": {
+"call": "NO_RECOMMENDATION",
+"score": 0.098653,
+"conf": 0.42482,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "NOT_APPLICABLE",
+"votes": {
+"fundamental": 0.0,
+"risk": 0.15000000000000002,
+"forecast": 0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.1,
+"liquidity": 0.12
+},
+"r6m": 16.9551371175896,
+"mcap": 56169887701.416016,
+"pe": 28.168081944567398,
+"sector": "Financials"
+},
+"RWE": {
+"call": "NO_RECOMMENDATION",
+"score": 0.023072,
+"conf": 0.454168,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.3,
+"risk": 0.1,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.2,
+"liquidity": 0.12
+},
+"r6m": 4.0103079296123445,
+"mcap": 44079957151.48926,
+"pe": 10.75,
+"sector": "Utilities"
+},
+"HEI": {
+"call": "NO_RECOMMENDATION",
+"score": -0.061874,
+"conf": 0.454168,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.35,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": -23.547232396773875,
+"mcap": 25497645910.949707,
+"pe": 20.5,
+"sector": "Industrials"
+},
+"SY1": {
+"call": "NO_RECOMMENDATION",
+"score": 0.065669,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.3,
+"risk": 0.1,
+"forecast": 0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": 25.89169345673501,
+"mcap": 13034950498.580933,
+"pe": 52.393259627095766,
+"sector": "Basic Materials"
+},
+"EOAN": {
+"call": "NO_RECOMMENDATION",
+"score": -0.150779,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.35,
+"forecast": -0.3,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": -7.0260100176474545,
+"mcap": 45787279781.79932,
+"pe": 26.26515012798887,
+"sector": "Utilities"
+},
+"FRE": {
+"call": "NO_RECOMMENDATION",
+"score": 0.027193,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.1,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": 0.015074762035705014,
+"mcap": 24219320000.0,
+"pe": 19.19642857142857,
+"sector": "Health Care"
+},
+"LEG": {
+"call": "NO_RECOMMENDATION",
+"score": 0.004951,
+"conf": 0.42482,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "NOT_APPLICABLE",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.2,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.2,
+"liquidity": 0.3
+},
+"r6m": -22.254297039155404,
+"mcap": 3394604261.6271973,
+"pe": 2.3274610450230733,
+"sector": "Real Estate"
+},
+"NDX1": {
+"call": "NO_RECOMMENDATION",
+"score": -0.150721,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.7,
+"forecast": -0.3,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": -20.242740086995603,
+"mcap": 8701359819.602966,
+"pe": 31.72413727332806,
+"sector": "Industrials"
+},
+"FME": {
+"call": "NO_RECOMMENDATION",
+"score": 0.027467,
+"conf": 0.454168,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.2,
+"forecast": 0.1,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": 1.1932755631664405,
+"mcap": 11120239447.70813,
+"pe": 12.24,
+"sector": "Health Care"
+},
+"VNA": {
+"call": "NO_RECOMMENDATION",
+"score": -0.060962,
+"conf": 0.42482,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "NOT_APPLICABLE",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.35,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.2,
+"liquidity": 0.3
+},
+"r6m": -25.262310474568604,
+"mcap": 13906567288.284302,
+"pe": 3.734624250060062,
+"sector": "Real Estate"
+},
+"DTG": {
+"call": "NO_RECOMMENDATION",
+"score": -0.03188,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.04999999999999999,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": 0.861582195275501,
+"mcap": 31389600000.0,
+"pe": 15.95330739299611,
+"sector": "Industrials"
+},
+"LHA": {
+"call": "NO_RECOMMENDATION",
+"score": -0.091416,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.5,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": -0.1583131134124116,
+"mcap": 8692381613.845825,
+"pe": 6.4714287008558,
+"sector": "Industrials"
+},
+"HAG": {
+"call": "NO_RECOMMENDATION",
+"score": -0.059073,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.7,
+"forecast": 0.3,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": 0.44715209956784907,
+"mcap": 9313919929.504395,
+"pe": 104.72727193460835,
+"sector": "Industrials"
+},
+"SHL": {
+"call": "NO_RECOMMENDATION",
+"score": 0.15389,
+"conf": 0.515095,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": 0.15000000000000002,
+"risk": -0.1,
+"forecast": 0.3,
+"comparison": 0.0,
+"quality": 0.5,
+"liquidity": 0.0
+},
+"r6m": 3.3376861666836843,
+"mcap": null,
+"pe": 20.748691658699077,
+"sector": "Health Care"
+},
+"MTX": {
+"call": "NO_RECOMMENDATION",
+"score": 0.121792,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.2,
+"forecast": 0.3,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": 7.753142910723287,
+"mcap": 18874674656.98242,
+"pe": 18.57521251096564,
+"sector": "Industrials"
+},
+"HOT": {
+"call": "NO_RECOMMENDATION",
+"score": -0.124383,
+"conf": 0.454168,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.7,
+"forecast": -0.3,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": -11.75457887913688,
+"mcap": 30648823525.6958,
+"pe": 29.03,
+"sector": "Industrials"
+},
+"MRK": {
+"call": "NO_RECOMMENDATION",
+"score": -0.012208,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.3,
+"risk": 0.05,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": 22.82290165155829,
+"mcap": 60282244346.31348,
+"pe": 23.10833231608073,
+"sector": "Health Care"
+},
+"ZAL": {
+"call": "NO_RECOMMENDATION",
+"score": -0.006943,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.55,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": 3.8279543640793,
+"mcap": 6377305038.757324,
+"pe": 29.80246838228202,
+"sector": "Consumer Discretionary"
+},
+"TKA": {
+"call": "NO_RECOMMENDATION",
+"score": -0.092284,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.5,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": 59.57691638870352,
+"mcap": 8640716471.242905,
+"pe": 18.50666681925456,
+"sector": "Industrials"
+},
+"CON": {
+"call": "NO_RECOMMENDATION",
+"score": -0.147623,
+"conf": 0.417184,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": -0.7,
+"risk": -0.25,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.3
+},
+"r6m": 11.476790481635547,
+"mcap": 13720685694.80896,
+"pe": -82.88,
+"sector": "Consumer Discretionary"
+},
+"SDF": {
+"call": "NO_RECOMMENDATION",
+"score": -0.287519,
+"conf": 0.476233,
+"prelim": "AVOID_OR_REVIEW",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.7499999999999999,
+"risk": -0.10000000000000002,
+"forecast": -0.3,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.0
+},
+"r6m": -8.069791036193063,
+"mcap": null,
+"pe": null,
+"sector": "Basic Materials"
+},
+"BEI": {
+"call": "NO_RECOMMENDATION",
+"score": 0.040581,
+"conf": 0.466047,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "LOW_RISK",
+"votes": {
+"fundamental": 0.30000000000000004,
+"risk": -0.15000000000000002,
+"forecast": 0.1,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.0
+},
+"r6m": 2.865145863770535,
+"mcap": null,
+"pe": 18.752940458409928,
+"sector": "Consumer Staples"
+},
+"R3NK": {
+"call": "NO_RECOMMENDATION",
+"score": -0.066537,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.65,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": -33.69585088659034,
+"mcap": 3468500137.3291016,
+"pe": 34.685001373291016,
+"sector": "Industrials"
+},
+"HEN3": {
+"call": "NO_RECOMMENDATION",
+"score": 0.067309,
+"conf": 0.454168,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.3,
+"risk": 0.15000000000000002,
+"forecast": 0.3,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": 19.637160080701378,
+"mcap": 32987147066.345215,
+"pe": 14.96,
+"sector": "Basic Materials"
+},
+"SRT3": {
+"call": "NO_RECOMMENDATION",
+"score": 0.058958,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.09999999999999999,
+"forecast": 0.3,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": 10.964912280701755,
+"mcap": 18944640000.0,
+"pe": 122.22222222222223,
+"sector": "Health Care"
+},
+"NDA": {
+"call": "NO_RECOMMENDATION",
+"score": -0.042526,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.15000000000000002,
+"forecast": -0.3,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": -13.684769185631618,
+"mcap": 7288016274.4140625,
+"pe": 13.519600175439168,
+"sector": "Basic Materials"
+},
+"NEM": {
+"call": "NO_RECOMMENDATION",
+"score": 0.030028,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.75,
+"forecast": 0.3,
+"comparison": 0.0,
+"quality": 0.35,
+"liquidity": 0.12
+},
+"r6m": 12.452924476508187,
+"mcap": 8102325176.239014,
+"pe": 37.31383059887176,
+"sector": "Technology"
+},
+"G1A": {
+"call": "NO_RECOMMENDATION",
+"score": 0.116295,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": 0.15000000000000002,
+"forecast": 0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": 14.298557797560951,
+"mcap": 11192500000.0,
+"pe": 27.066929133858267,
+"sector": "Industrials"
+},
+"EVD": {
+"call": "NO_RECOMMENDATION",
+"score": -0.030954,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.7000000000000001,
+"forecast": 0.3,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": 6.194849160251836,
+"mcap": 5774400146.484375,
+"pe": 20.813149316913115,
+"sector": "Consumer Discretionary"
+},
+"G24": {
+"call": "NO_RECOMMENDATION",
+"score": 0.087077,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.4,
+"forecast": 0.1,
+"comparison": 0.0,
+"quality": 0.35,
+"liquidity": 0.3
+},
+"r6m": 7.311048791037078,
+"mcap": 5501249885.559082,
+"pe": 22.921874523162842,
+"sector": "Consumer Discretionary"
+},
+"AIXA": {
+"call": "NO_RECOMMENDATION",
+"score": -0.137124,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.6499999999999999,
+"forecast": -0.3,
+"comparison": 0.0,
+"quality": 0.35,
+"liquidity": 0.3
+},
+"r6m": -12.848384347642138,
+"mcap": 4033502913.4368896,
+"pe": 47.3999989827474,
+"sector": "Technology"
+},
+"SHA0": {
+"call": "NO_RECOMMENDATION",
+"score": -0.196763,
+"conf": 0.4042,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.8500000000000001,
+"forecast": 2.7755575615628914e-17,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.12
+},
+"r6m": -23.657402728156185,
+"mcap": 5622035819.778442,
+"pe": null,
+"sector": "Consumer Discretionary"
+},
+"P911": {
+"call": "NO_RECOMMENDATION",
+"score": -0.074116,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.2,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": -0.1,
+"liquidity": 0.12
+},
+"r6m": 2.4655319127652175,
+"mcap": 38444200695.03784,
+"pe": 89.78723566582863,
+"sector": "Consumer Discretionary"
+},
+"EVK": {
+"call": "NO_RECOMMENDATION",
+"score": 0.055833,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.3,
+"risk": 0.05,
+"forecast": 0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": 30.443539614768333,
+"mcap": 9832600177.764893,
+"pe": 37.01754452889426,
+"sector": "Basic Materials"
+},
+"TUI1": {
+"call": "NO_RECOMMENDATION",
+"score": -0.13076,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.7,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": -6.95919697319024,
+"mcap": 3378468936.1286163,
+"pe": 5.3263999938964846,
+"sector": "Consumer Discretionary"
+},
+"KGX": {
+"call": "NO_RECOMMENDATION",
+"score": -0.17155,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.7000000000000001,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": -27.409147868136486,
+"mcap": 4441119799.8046875,
+"pe": 19.34285627092634,
+"sector": "Industrials"
+},
+"DHER": {
+"call": "NO_RECOMMENDATION",
+"score": -0.196763,
+"conf": 0.4042,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.8500000000000001,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.12
+},
+"r6m": 82.9692134601616,
+"mcap": 10990512044.906616,
+"pe": null,
+"sector": "Consumer Discretionary"
+},
+"FTK": {
+"call": "NO_RECOMMENDATION",
+"score": 0.033421,
+"conf": 0.42482,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "NOT_APPLICABLE",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.4,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.2,
+"liquidity": 0.3
+},
+"r6m": -30.83129822615596,
+"mcap": 2814922741.1842346,
+"pe": 17.506848949275604,
+"sector": "Financials"
+},
+"EVT": {
+"call": "NO_RECOMMENDATION",
+"score": -0.194872,
+"conf": 0.4042,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.7,
+"risk": -0.5,
+"forecast": 2.7755575615628914e-17,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.3
+},
+"r6m": -55.83483011970496,
+"mcap": 437338806.7817688,
+"pe": null,
+"sector": "Health Care"
+},
+"PUM": {
+"call": "NO_RECOMMENDATION",
+"score": -0.205241,
+"conf": 0.4042,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": -0.7,
+"risk": -0.55,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.3
+},
+"r6m": -7.94281165909636,
+"mcap": 3430871845.1690674,
+"pe": null,
+"sector": "Consumer Discretionary"
+},
+"PAH3": {
+"call": "NO_RECOMMENDATION",
+"score": -0.160215,
+"conf": 0.417115,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.1,
+"risk": -0.3,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": -0.44999999999999996,
+"liquidity": 0.0
+},
+"r6m": -19.294978855212285,
+"mcap": null,
+"pe": 2.909826598415485,
+"sector": "Consumer Discretionary"
+},
+"WAF": {
+"call": "NO_RECOMMENDATION",
+"score": -0.194872,
+"conf": 0.4042,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.7,
+"risk": -0.5,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.3
+},
+"r6m": 12.406569855088257,
+"mcap": 2255999908.4472656,
+"pe": null,
+"sector": "Technology"
+},
+"FNTN": {
+"call": "NO_RECOMMENDATION",
+"score": -0.112534,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.4,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": -13.383558201533042,
+"mcap": 2599154072.570801,
+"pe": 9.587719565943669,
+"sector": "Telecommunications"
+},
+"TKMS": {
+"call": "NO_RECOMMENDATION",
+"score": -0.17884,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.7,
+"forecast": -0.3,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": -8.48057061040457,
+"mcap": 4935503806.152344,
+"pe": 47.090907241358906,
+"sector": "Industrials"
+},
+"KBX": {
+"call": "HOLD_OR_WATCH",
+"score": 0.035611,
+"conf": 0.562399,
+"prelim": "HOLD_OR_WATCH",
+"gov": "ACCEPT",
+"distress": "LOW_RISK",
+"votes": {
+"fundamental": -0.14999999999999997,
+"risk": 0.1,
+"forecast": -0.3,
+"comparison": 0.0,
+"quality": 0.5,
+"liquidity": 0.0
+},
+"r6m": -0.4956093628757485,
+"mcap": null,
+"pe": 30.045316298562593,
+"sector": "Industrials"
+},
+"BNR": {
+"call": "NO_RECOMMENDATION",
+"score": 0.057511,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.3,
+"risk": 0.1,
+"forecast": 0.3,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": 5.8718194178148275,
+"mcap": 8929077622.032166,
+"pe": 33.79234981015732,
+"sector": "Industrials"
+},
+"LXS": {
+"call": "NO_RECOMMENDATION",
+"score": -0.236957,
+"conf": 0.4042,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.7,
+"risk": -0.5,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.3
+},
+"r6m": -32.001454177733656,
+"mcap": 1054333503.2939911,
+"pe": null,
+"sector": "Basic Materials"
+},
+"RAA": {
+"call": "NO_RECOMMENDATION",
+"score": 0.05375,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.15000000000000002,
+"forecast": 0.1,
+"comparison": 0.0,
+"quality": 0.35,
+"liquidity": 0.12
+},
+"r6m": -10.419758268279688,
+"mcap": 6753780000.0,
+"pe": 26.60098522167488,
+"sector": "Industrials"
+},
+"FRA": {
+"call": "NO_RECOMMENDATION",
+"score": -0.080192,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.3,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": -20.12039241346395,
+"mcap": 5321648429.450989,
+"pe": 12.323340307721745,
+"sector": "Industrials"
+},
+"AG1": {
+"call": "NO_RECOMMENDATION",
+"score": -0.096045,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.8,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": -14.723318062921587,
+"mcap": 3811525850.543976,
+"pe": 49.31428636823382,
+"sector": "Consumer Discretionary"
+},
+"SZG": {
+"call": "NO_RECOMMENDATION",
+"score": -0.194872,
+"conf": 0.4042,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.7,
+"risk": -0.5,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.3
+},
+"r6m": 2.528966800143473,
+"mcap": 2935284009.170532,
+"pe": null,
+"sector": "Basic Materials"
+},
+"8TRA": {
+"call": "NO_RECOMMENDATION",
+"score": -0.060462,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.09999999999999999,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.0
+},
+"r6m": 7.4026792709911415,
+"mcap": 16829999923.706055,
+"pe": 10.893203834113951,
+"sector": "Industrials"
+},
+"BC8": {
+"call": "NO_RECOMMENDATION",
+"score": -0.079613,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.5,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": 16.145252128406227,
+"mcap": 4389840019.226074,
+"pe": 19.14285722669664,
+"sector": "Technology"
+},
+"TMV": {
+"call": "NO_RECOMMENDATION",
+"score": -0.010125,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": 0.4,
+"risk": -1.0,
+"forecast": 0.3,
+"comparison": 0.0,
+"quality": 0.2,
+"liquidity": 0.3
+},
+"r6m": 43.239890158423535,
+"mcap": 1136324968.8148499,
+"pe": 9.652777512868246,
+"sector": "Technology"
+},
+"FPE3": {
+"call": "NO_RECOMMENDATION",
+"score": 0.117105,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": 0.2,
+"forecast": 0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.15,
+"liquidity": 0.12
+},
+"r6m": 18.86428198250243,
+"mcap": 5740419960.021973,
+"pe": 18.726495596078728,
+"sector": "Basic Materials"
+},
+"GBF": {
+"call": "NO_RECOMMENDATION",
+"score": -0.101252,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.55,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": -46.64574306402633,
+"mcap": 2088891942.6727295,
+"pe": 11.88034155429938,
+"sector": "Industrials"
+},
+"TEG": {
+"call": "NO_RECOMMENDATION",
+"score": -0.065913,
+"conf": 0.42482,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "NOT_APPLICABLE",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.2,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": -30.36065253101966,
+"mcap": 1935667156.7344666,
+"pe": 20.897958716567683,
+"sector": "Real Estate"
+},
+"BOSS": {
+"call": "NO_RECOMMENDATION",
+"score": 0.045419,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.3,
+"risk": 0.2,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": 2.7636074482081163,
+"mcap": 2673088085.9375,
+"pe": 10.725989045396362,
+"sector": "Consumer Discretionary"
+},
+"AFX": {
+"call": "NO_RECOMMENDATION",
+"score": -0.01973,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.5,
+"forecast": 0.3,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": 17.15933766458704,
+"mcap": 2906800000.0,
+"pe": 20.569620253164555,
+"sector": "Health Care"
+},
+"AMV0": {
+"call": "NO_RECOMMENDATION",
+"score": -0.21622,
+"conf": 0.4042,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.7,
+"risk": -0.4,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.3
+},
+"r6m": -7.513661515435455,
+"mcap": 3386692347.3358154,
+"pe": null,
+"sector": "Consumer Discretionary"
+},
+"WCH": {
+"call": "NO_RECOMMENDATION",
+"score": -0.204692,
+"conf": 0.4042,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.7,
+"risk": -0.10000000000000002,
+"forecast": -0.3,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.12
+},
+"r6m": -5.729733028927364,
+"mcap": 4547479840.85083,
+"pe": null,
+"sector": "Basic Materials"
+},
+"JEN": {
+"call": "NO_RECOMMENDATION",
+"score": -0.083496,
+"conf": 0.562151,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.14999999999999997,
+"risk": -0.6000000000000001,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.35,
+"liquidity": 0.0
+},
+"r6m": 21.736941359756344,
+"mcap": null,
+"pe": 30.825396946498326,
+"sector": "Industrials"
+},
+"DEZ": {
+"call": "NO_RECOMMENDATION",
+"score": 0.022565,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.4,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": 8.981344945054715,
+"mcap": 1650780029.1538239,
+"pe": 30.857143402099613,
+"sector": "Industrials"
+},
+"VBK": {
+"call": "NO_RECOMMENDATION",
+"score": -0.114617,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.6499999999999999,
+"forecast": -0.3,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": -33.518709999800386,
+"mcap": 1683462951.1642456,
+"pe": 26.299999237060547,
+"sector": "Industrials"
+},
+"SMHN": {
+"call": "NO_RECOMMENDATION",
+"score": -0.007522,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.6499999999999999,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.15,
+"liquidity": 0.3
+},
+"r6m": 0.11907075755748231,
+"mcap": 1223680000.0,
+"pe": 26.55601659751037,
+"sector": "Technology"
+},
+"KRN": {
+"call": "NO_RECOMMENDATION",
+"score": -0.06052,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.2,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": -14.958101792777356,
+"mcap": 3316950000.0,
+"pe": 11.111111111111112,
+"sector": "Industrials"
+},
+"FIE": {
+"call": "NO_RECOMMENDATION",
+"score": 0.027425,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": 0.15000000000000002,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.15,
+"liquidity": 0.12
+},
+"r6m": -17.60738191581893,
+"mcap": 3141600128.173828,
+"pe": 15.390947129991318,
+"sector": "Consumer Discretionary"
+},
+"VOW": {
+"call": "NO_RECOMMENDATION",
+"score": -0.188907,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.55,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.0
+},
+"r6m": -20.59542254371265,
+"mcap": 34339050000.0,
+"pe": 5.146506386175807,
+"sector": "Consumer Discretionary"
+},
+"GXI": {
+"call": "NO_RECOMMENDATION",
+"score": -0.135099,
+"conf": 0.4042,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -1.0,
+"forecast": 0.3,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.3
+},
+"r6m": 37.653742770300354,
+"mcap": 1005114013.1759644,
+"pe": null,
+"sector": "Health Care"
+},
+"S92": {
+"call": "NO_RECOMMENDATION",
+"score": -0.303019,
+"conf": 0.398274,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": -0.8999999999999999,
+"risk": -0.7000000000000001,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": -0.15,
+"liquidity": 0.0
+},
+"r6m": 17.832510811941972,
+"mcap": null,
+"pe": null,
+"sector": "Industrials"
+},
+"UTDI": {
+"call": "NO_RECOMMENDATION",
+"score": 0.027899,
+"conf": 0.466047,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": 0.30000000000000004,
+"risk": -0.15000000000000002,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.3,
+"liquidity": 0.0
+},
+"r6m": -16.22912844730695,
+"mcap": null,
+"pe": 14.145454637932056,
+"sector": "Telecommunications"
+},
+"HEN": {
+"call": "NO_RECOMMENDATION",
+"score": -0.011282,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.3,
+"risk": 0.15000000000000002,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.0
+},
+"r6m": 16.597974807759886,
+"mcap": 30197340663.45215,
+"pe": 14.827956332955308,
+"sector": "Basic Materials"
+},
+"ACT0": {
+"call": "NO_RECOMMENDATION",
+"score": -0.041716,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.10000000000000002,
+"forecast": -0.3,
+"comparison": 0.0,
+"quality": 0.15,
+"liquidity": 0.12
+},
+"r6m": -12.142749158013588,
+"mcap": 1650178062.133789,
+"pe": 25.977565080691605,
+"sector": null
+},
+"HFG": {
+"call": "NO_RECOMMENDATION",
+"score": -0.319908,
+"conf": 0.4042,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": -0.7,
+"risk": -0.9000000000000001,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.3
+},
+"r6m": -39.333028076212486,
+"mcap": 422303983.9267731,
+"pe": null,
+"sector": "Consumer Discretionary"
+},
+"HYQ": {
+"call": "NO_RECOMMENDATION",
+"score": -0.074268,
+"conf": 0.42482,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "NOT_APPLICABLE",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.55,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": -26.702699403505072,
+"mcap": 465786020.9655762,
+"pe": 17.984085690121436,
+"sector": "Financials"
+},
+"VH2": {
+"call": "NO_RECOMMENDATION",
+"score": 0.013828,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.5,
+"forecast": 0.1,
+"comparison": 0.0,
+"quality": 0.15,
+"liquidity": 0.12
+},
+"r6m": -15.833298443185374,
+"mcap": 1318999938.9648438,
+"pe": 15.266202997278283,
+"sector": "Industrials"
+},
+"LPK": {
+"call": "NO_RECOMMENDATION",
+"score": -0.225979,
+"conf": 0.4042,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.7,
+"risk": -0.6499999999999999,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.3
+},
+"r6m": 22.56637298843294,
+"mcap": 339325009.3460083,
+"pe": null,
+"sector": "Industrials"
+},
+"CHG": {
+"call": "NO_RECOMMENDATION",
+"score": -0.050968,
+"conf": 0.389867,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.4,
+"forecast": 0.2,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.12
+},
+"r6m": 43.93443123238985,
+"mcap": 1046576036.3769531,
+"pe": null,
+"sector": "Technology"
+},
+"SPG": {
+"call": "NO_RECOMMENDATION",
+"score": 0.08592,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.2,
+"forecast": 0.5,
+"comparison": 0.0,
+"quality": 0.2,
+"liquidity": 0.0
+},
+"r6m": 12.21744061940171,
+"mcap": 4146856575.870514,
+"pe": 11.648044905849009,
+"sector": "Consumer Discretionary"
+},
+"ELG": {
+"call": "NO_RECOMMENDATION",
+"score": -0.065438,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.35000000000000003,
+"forecast": -0.3,
+"comparison": 0.0,
+"quality": 0.35,
+"liquidity": 0.12
+},
+"r6m": -17.840115143330536,
+"mcap": 2478000000.0,
+"pe": 24.518388791593697,
+"sector": "Technology"
+},
+"DUE": {
+"call": "NO_RECOMMENDATION",
+"score": -0.037513,
+"conf": 0.447233,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.14999999999999997,
+"risk": -0.35,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.5,
+"liquidity": 0.0
+},
+"r6m": -22.863743834833084,
+"mcap": null,
+"pe": null,
+"sector": "Industrials"
+},
+"V1NC": {
+"call": "NO_RECOMMENDATION",
+"score": -0.005554,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.4,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": 12.499997056560886,
+"mcap": 911250019.0734863,
+"pe": 46.730770208896736,
+"sector": "Industrials"
+},
+"OHB": {
+"call": "NO_RECOMMENDATION",
+"score": -0.105881,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.85,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": -47.012365075125906,
+"mcap": 3054390000.0,
+"pe": 61.627906976744185,
+"sector": "Technology"
+},
+"IOS": {
+"call": "NO_RECOMMENDATION",
+"score": -0.15454,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.8999999999999999,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.35,
+"liquidity": 0.12
+},
+"r6m": 25.318345050073265,
+"mcap": 4684399871.826172,
+"pe": 20.402438466141867,
+"sector": "Technology"
+},
+"TPE": {
+"call": "NO_RECOMMENDATION",
+"score": -0.062776,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.35000000000000003,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": -9.936815378510655,
+"mcap": 682080013.2751465,
+"pe": 89.60000174386161,
+"sector": "Industrials"
+},
+"SGL": {
+"call": "NO_RECOMMENDATION",
+"score": -0.121681,
+"conf": 0.4042,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": -0.7,
+"risk": -0.35000000000000003,
+"forecast": 0.19999999999999998,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.3
+},
+"r6m": 37.08689969003834,
+"mcap": 685103988.3327484,
+"pe": null,
+"sector": "Basic Materials"
+},
+"PFS0": {
+"call": "NO_RECOMMENDATION",
+"score": 0.126011,
+"conf": 0.357367,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.4,
+"risk": 0.1,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.15,
+"liquidity": 0.3
+},
+"r6m": null,
+"mcap": 1167631038.6657715,
+"pe": 22.795053758385325,
+"sector": null
+},
+"GFT": {
+"call": "NO_RECOMMENDATION",
+"score": 0.0081,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.4,
+"forecast": 0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": 43.97316906273163,
+"mcap": 710910000.0,
+"pe": 21.6,
+"sector": "Technology"
+},
+"YSN": {
+"call": "NO_RECOMMENDATION",
+"score": 0.063297,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.35000000000000003,
+"forecast": 0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.15,
+"liquidity": 0.12
+},
+"r6m": 40.00811329086682,
+"mcap": 1716000000.0,
+"pe": 51.461988304093566,
+"sector": "Technology"
+},
+"DWNI": {
+"call": "NO_RECOMMENDATION",
+"score": -0.073959,
+"conf": 0.42482,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "NOT_APPLICABLE",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.1,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.2,
+"liquidity": 0.0
+},
+"r6m": -26.467629301665674,
+"mcap": 6036523969.459534,
+"pe": 5.272727246051068,
+"sector": "Real Estate"
+},
+"SAX": {
+"call": "NO_RECOMMENDATION",
+"score": -0.118957,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.7,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": 4.582823543528081,
+"mcap": 2057514008.5220337,
+"pe": 16.373333401150173,
+"sector": "Consumer Discretionary"
+},
+"VOS": {
+"call": "NO_RECOMMENDATION",
+"score": -0.035641,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.35,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": -31.225708592131074,
+"mcap": 987251970.5200195,
+"pe": 15.723076453575722,
+"sector": "Industrials"
+},
+"1SXP": {
+"call": "NO_RECOMMENDATION",
+"score": 0.049469,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.15000000000000002,
+"forecast": 0.3,
+"comparison": 0.0,
+"quality": 0.15,
+"liquidity": 0.0
+},
+"r6m": 61.528151864835976,
+"mcap": 3629701057.4531555,
+"pe": 24.845361218010027,
+"sector": "Health Care"
+},
+"JUN3": {
+"call": "NO_RECOMMENDATION",
+"score": -0.119535,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.5,
+"forecast": -0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": -25.74582817850167,
+"mcap": 2176680015.563965,
+"pe": 20.92156877704695,
+"sector": "Industrials"
+},
+"OBCK": {
+"call": "NO_RECOMMENDATION",
+"score": -0.109063,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "HIGH_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.25,
+"forecast": -0.3,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.0
+},
+"r6m": -6.510076786266938,
+"mcap": 3436263048.8204956,
+"pe": 38.08510692407054,
+"sector": "Health Care"
+},
+"SZU": {
+"call": "NO_RECOMMENDATION",
+"score": -0.100089,
+"conf": 0.4042,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": -0.7,
+"risk": 0.1,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": -0.3,
+"liquidity": 0.12
+},
+"r6m": 2.1702857998048053,
+"mcap": 2499163153.2669067,
+"pe": null,
+"sector": "Consumer Staples"
+},
+"COK": {
+"call": "NO_RECOMMENDATION",
+"score": -0.013307,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.2,
+"forecast": 0.1,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": -10.50935221148065,
+"mcap": 709200000.0,
+"pe": 24.725274725274723,
+"sector": "Technology"
+},
+"GIL": {
+"call": "NO_RECOMMENDATION",
+"score": -0.056123,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": -0.3,
+"risk": 0.2,
+"forecast": 2.7755575615628914e-17,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": -0.35
+},
+"r6m": -0.9040382875351805,
+"mcap": 3673011879.7302246,
+"pe": 20.0862062388453,
+"sector": "Industrials"
+},
+"2GB": {
+"call": "NO_RECOMMENDATION",
+"score": -0.020932,
+"conf": 0.439622,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.4,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.3
+},
+"r6m": 20.793669202437393,
+"mcap": 1010021986.3128662,
+"pe": 60.53763358823714,
+"sector": "Industrials"
+},
+"AOF": {
+"call": "NO_RECOMMENDATION",
+"score": 0.019325,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.4,
+"risk": -0.5,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.35,
+"liquidity": 0.12
+},
+"r6m": 14.360914436691408,
+"mcap": 1388943048.5534668,
+"pe": 28.717106267025596,
+"sector": "Technology"
+},
+"SFQ": {
+"call": "NO_RECOMMENDATION",
+"score": -0.03188,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": -0.3,
+"risk": -0.04999999999999999,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": 19.585055343616297,
+"mcap": 955459465.3701782,
+"pe": 18.794642175946915,
+"sector": "Consumer Discretionary"
+},
+"HBH": {
+"call": "NO_RECOMMENDATION",
+"score": 0.048254,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": 0.15000000000000002,
+"forecast": 0.0,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": 1.8860840763788245,
+"mcap": 1307199951.171875,
+"pe": 9.44508635239794,
+"sector": "Consumer Discretionary"
+},
+"MLP": {
+"call": "NO_RECOMMENDATION",
+"score": 0.070184,
+"conf": 0.42482,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "NOT_APPLICABLE",
+"votes": {
+"fundamental": 0.0,
+"risk": 0.05,
+"forecast": 0.19999999999999998,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": 40.24419118984643,
+"mcap": 1152267791.6908264,
+"pe": 20.745097889619714,
+"sector": "Financials"
+},
+"SRT": {
+"call": "NO_RECOMMENDATION",
+"score": -0.014465,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "ELEVATED_RISK",
+"votes": {
+"fundamental": 0.0,
+"risk": -0.09999999999999999,
+"forecast": 0.3,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": -0.35
+},
+"r6m": 14.173226386788329,
+"mcap": 15200640000.0,
+"pe": 98.06763285024155,
+"sector": "Health Care"
+},
+"DRW3": {
+"call": "NO_RECOMMENDATION",
+"score": 0.098301,
+"conf": 0.454424,
+"prelim": "HOLD_OR_WATCH",
+"gov": "REVIEW",
+"distress": "INSUFFICIENT_DATA",
+"votes": {
+"fundamental": 0.0,
+"risk": 0.1,
+"forecast": 0.3,
+"comparison": 0.0,
+"quality": 0.0,
+"liquidity": 0.12
+},
+"r6m": 21.974486846716566,
+"mcap": 2172408057.2509766,
+"pe": 15.56451653921476,
+"sector": "Health Care"
+}
+}

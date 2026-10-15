@@ -16,7 +16,7 @@ import httpx
 from .cvm import CVM_DATASET_URL, CVMFundamentalsProvider, parse_cvm_dfp_archive
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, append_source
-from .source_cache import read_json, source_index_path, write_json_atomic
+from .source_cache import read_json, source_index_path, write_bulk_json, write_json_atomic
 
 CVM_ITR_URL = "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/ITR/DADOS/itr_cia_aberta_{year}.zip"
 CVM_ITR_DATASET_URL = "https://dados.cvm.gov.br/dataset/cia_aberta-doc-itr"
@@ -78,7 +78,7 @@ def sync_cvm_itr(*, years: Optional[list[int]] = None, timeout: float = 60.0) ->
         "companies": companies,
         "errors": errors,
     }
-    write_json_atomic(source_index_path(_INDEX_NAME), payload)
+    write_bulk_json(source_index_path(_INDEX_NAME), payload)
     return {"recordCount": len(latest), "companyKeys": len(companies), "sources": sources, "errors": errors}
 
 

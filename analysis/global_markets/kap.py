@@ -28,6 +28,8 @@ from .providers import FundamentalsProvider, GlobalProviderError, append_source
 
 KAP_BASE = "https://www.kap.org.tr"
 KAP_BIST_COMPANIES = f"{KAP_BASE}/tr/bist-sirketler"
+KAP_GET_ATTEMPTS = 3
+KAP_RETRY_BACKOFF_SEC = 2.0
 
 
 def _plain(value: object) -> str:
@@ -278,18 +280,35 @@ class KAPFundamentalsProvider(FundamentalsProvider):
         self.timeout = max(5.0, float(timeout))
         self.directory_ttl_seconds = max(300.0, float(directory_ttl_seconds))
 
+    _TRANSIENT_STATUS = {429, 500, 502, 503, 504}
+
     def _get(self, url: str) -> str:
-        try:
-            with httpx.Client(
-                timeout=self.timeout,
-                follow_redirects=True,
-                headers={"User-Agent": "BIAP-Global/1.0 (+https://setai.no)", "Accept": "text/html,application/xhtml+xml"},
-            ) as client:
-                response = client.get(url)
-            response.raise_for_status()
-            return response.text
-        except httpx.HTTPError as exc:
-            raise GlobalProviderError(f"KAP request failed: {type(exc).__name__}") from exc
+        """GET with a few paced retries; KAP drops connections in bursts.
+
+        Only transport errors and 429/5xx are retried. After the last attempt
+        the original error is raised unchanged so the analysis ledger can tell
+        "KAP was unreachable" (retried later) from "KAP has no such data".
+        """
+        last: Optional[Exception] = None
+        for attempt in range(KAP_GET_ATTEMPTS):
+            if attempt:
+                time.sleep(KAP_RETRY_BACKOFF_SEC * attempt)
+            try:
+                with httpx.Client(
+                    timeout=self.timeout,
+                    follow_redirects=True,
+                    headers={"User-Agent": "BIAP-Global/1.0 (+https://setai.no)", "Accept": "text/html,application/xhtml+xml"},
+                ) as client:
+                    response = client.get(url)
+                response.raise_for_status()
+                return response.text
+            except httpx.HTTPStatusError as exc:
+                last = exc
+                if exc.response.status_code not in self._TRANSIENT_STATUS:
+                    break
+            except httpx.HTTPError as exc:
+                last = exc
+        raise GlobalProviderError(f"KAP request failed: {type(last).__name__}") from last
 
     def _load_directory(self) -> dict[str, str]:
         now = time.monotonic()

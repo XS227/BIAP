@@ -17,7 +17,7 @@ import httpx
 
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, append_source
-from .source_cache import read_json, source_index_path, write_json_atomic
+from .source_cache import read_json, source_index_path, write_bulk_json, write_json_atomic
 
 DEFAULT_BASE = "https://api.company-information.service.gov.uk"
 
@@ -85,7 +85,7 @@ def cache_company(legal_name: str) -> dict:
     }
     index["companies"] = companies
     index["updatedAt"] = datetime.now(timezone.utc).isoformat()
-    write_json_atomic(path, index)
+    write_bulk_json(path, index)
     return {"companyNumber": number, "path": str(path)}
 
 
