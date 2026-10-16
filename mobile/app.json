@@ -8,7 +8,6 @@
     "scheme": "biapmobile",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/brand/biap-logo.png",
       "bundleIdentifier": "com.biap.mobile"
     },
     "android": {
