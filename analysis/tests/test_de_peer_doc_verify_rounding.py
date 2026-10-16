@@ -44,3 +44,20 @@ def test_esef_zip_package_text_is_extracted(tmp_path):
         f.writestr("META-INF/x.xml", "<a>ignored</a>")
     txt = v.to_text(z, "application/zip")
     assert "Revenue 296,770" in txt and "x()" not in txt and "ignored" not in txt
+
+
+def _m(p=True, r=False, ni=True, eps=True):
+    return {"period_phrase": p, "revenue": r, "net_income": ni, "eps_informational": eps}
+
+
+def test_revenue_less_rows_need_net_income_and_eps_and_never_count_revenue_as_zero():
+    assert v.decide(_m(), None) == ("VERIFIED", "not_verifiable")
+    assert v.decide(_m(), 0.0) == ("VERIFIED", "not_verifiable")          # stored 0 is unreliable, not a verified zero
+    assert v.decide(_m(eps=False), None)[0] == "NOT_VERIFIED"             # EPS is mandatory when revenue cannot be matched
+    assert v.decide(_m(ni=False), None)[0] == "NOT_VERIFIED"
+    assert v.decide(_m(p=False), None)[0] == "NOT_VERIFIED"
+
+
+def test_positive_revenue_must_still_match():
+    assert v.decide(_m(r=True), 5e8) == ("VERIFIED", "matched")
+    assert v.decide(_m(r=False), 5e8) == ("NOT_VERIFIED", "not_found")

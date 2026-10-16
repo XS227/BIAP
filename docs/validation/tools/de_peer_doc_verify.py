@@ -142,6 +142,21 @@ def _rounded_hit(text, v):
     return False
 
 
+def decide(m, stored_revenue):
+    """(result, revenue_basis). Revenue is never invented and never treated as zero.
+
+    * stored revenue > 0: it must be found in the filing (revenue_basis "matched").
+    * stored revenue None or exactly 0 (no reliable revenue: financial/investment/holding companies or provider gaps):
+      the row is tied to the filing by period phrase + net income + EPS (to the cent) instead, and the revenue is recorded
+      as "not_verifiable" -- it is neither accepted as a value nor read as zero.
+    """
+    if stored_revenue is not None and stored_revenue != 0:
+        ok = m["period_phrase"] and m["revenue"] and m["net_income"]
+        return ("VERIFIED" if ok else "NOT_VERIFIED"), "matched" if m["revenue"] else "not_found"
+    ok = m["period_phrase"] and m["net_income"] and m["eps_informational"]
+    return ("VERIFIED" if ok else "NOT_VERIFIED"), "not_verifiable"
+
+
 def period_phrase(text, iso):
     y, m, d = map(int, iso.split("-")); mon = MONTHS[m - 1]; mon3 = mon[:3]
     de = MONTHS_DE[m - 1]
@@ -199,7 +214,7 @@ def main():
                             bool(re.search(r"(?<![\d.,])" + re.escape(f"{abs(co['eps']):.2f}") + r"(?!\d)", text) or
                                  re.search(r"(?<![\d.,])" + re.escape(f"{abs(co['eps']):.2f}".replace(".", ",")) + r"(?!\d)", text))}
             m = rec["match"]
-            rec["result"] = "VERIFIED" if (m["period_phrase"] and m["revenue"] and m["net_income"]) else "NOT_VERIFIED"
+            rec["result"], rec["revenue_basis"] = decide(m, co.get("revenue"))
             rec["sector_in_row"] = bool(co.get("sector"))
             res.append(rec)
             time.sleep(1.5)                         # polite spacing
