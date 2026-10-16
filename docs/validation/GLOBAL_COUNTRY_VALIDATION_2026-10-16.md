@@ -1,5 +1,324 @@
+<!-- UPDATE8 -->
+# BIAP Global country validation - refreshed 2026-10-16 (Update 8)
+
+- **Code validated:** `c9eb58b29115170e34fdaafcde8867787fb89a49` (PR #52 head, `feat/global-evidence-signals`; no code change since Update 7). PR #54 head `5671891d51ec3b6e322eb7e2aef693d179af24b9` (`fix/mobile-ios-icon-schema`, mobile-only, not part of the runtime validation).
+- **Scope:** the six non-German priority markets, US, GB, FR, IT, SE, NO: **151 companies** (US 26 = 13 NASDAQ + 13 NYSE, GB/FR/IT/SE/NO 25 each), top by market cap of each exchange's deep-scan cache. Germany was refreshed and validated in Update 7 (timer-produced benchmark, 09:57Z) and is carried over unchanged below.
+- **Test window (UTC):** 2026-10-16T13:08:36Z .. 13:14:21Z. 151/151 analysed, 0 errors, 0 lookup failures, 0 degraded providers.
+- **Mode:** online-first (`BIAP_GLOBAL_ONLINE_FIRST=1`, `BIAP_GLOBAL_US_ISIN_RESOLVE=1`), in-process `/global/instruments` + `/global/analyze`, one company at a time with a 0.25 s pause, **~151 small live price requests, no bulk download, no scan, no persisted dataset**. The harness replaces the stale disk price snapshot with a live upstream quote for the analysed ticker only (the same call the service's memo-refresh intends); fundamentals are read from the already-stored official filings (SEC EDGAR, ESEF/OAM, FCA NSM). Production data under `/var/lib/biap-global` was only read; its `scan-cache/*.json` cachedAt values are unchanged by this run. No merge, deploy or service restart.
+- **Differences from Update 7 are price-driven, not code-driven.** Prices are now **0.3 d old (US 1.0 d)** versus 1.9-3.2 d in Update 7, which lifts the evidence freshness multiplier (e.g. AZN 0.8725 -> 0.9745) and therefore the calibrated confidence of many names by about +0.06-0.07. Production, which does not live-refresh in this harness, would still report the older cached prices until its own market refresh runs.
+
+## Data-u7 verification and cleanup
+
+`/home/ubuntu/biap-validation-20261016/data-u7` (927 MB) was the isolated validation copy used for Updates 6-7. Verified before deletion: **38,437 files, 0 symlinks; every file exists in `/var/lib/biap-global` with an identical size and an identical md5 checksum** (`md5sum -c` exit 0), so it held no unique data. Deleted: only that exact directory (see 'Cleanup result' at the bottom). `/dev/shm/val-20261016c` (another session's copy) was not touched. Update 8 itself ran against the same copy before its removal; the small result files (`out7/`, `out9/`, summaries) remain in the validation folder.
+
+## How to read the numbers: verified vs estimated vs cached
+
+| Class | What it covers |
+|---|---|
+| **Verified** | Fundamentals from official filings with provenance `independently_verified`; evidence gates PASS/WARN/BLOCK; ISINs from listing data, GLEIF or OpenFIGI; a **verified BUY_CANDIDATE** = BUY_CANDIDATE **and** evidence PASS **and** governance ACCEPT **and** distress LOW_RISK **and** same-sector peer group >= 8 **and** peer scan state `ok`. |
+| **Estimated** | Relative P/E vs same-sector scan median, calibrated confidence, agent votes, distress category, US ISIN coverage from the flag-gated resolver. Model outputs, not facts. |
+| **Cached** | Annual figures are FY2025 (median 289 d old); peer benchmarks come from persisted scan caches 15.4 h old (cachedAt 2026-10-15 21:42-21:46Z). Prices this run are live quotes for the tested ticker (Yahoo public chart, last close of 2026-10-16T07:00Z), not an official feed. |
+
+## Summary (six markets, 151 companies)
+
+| Country | Tested | Evidence P/W/B | BUY_CANDIDATE (verified?) | REVIEW | ABSTAIN | No price | ISIN issues | Price age med/max | Fundamentals period age med/max | Source quality med/min | Peer benchmark cachedAt -> expires | Status |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| US | 26 | 26/0/0 | - | 21 | 1 | 0 | 4 missing (AMZN, ASML, ETN, KO) | 1.0 d / 1.0 d | 289 d / 384 d | 0.89 / 0.89 | 10-15 21:42-21:43Z -> 10-16 21:42Z | WARN |
+| GB | 25 | 25/0/0 | BHP (verified) | 15 | 0 | 0 | 0 | 0.3 d / 0.3 d | 289 d / 398 d | 0.9 / 0.9 | 10-15 21:44Z -> 10-16 21:44Z | PASS |
+| FR | 25 | 25/0/0 | - | 17 | 0 | 0 | 0 | 0.3 d / 0.3 d | 289 d / 411 d | 0.91 / 0.91 | 10-15 21:45Z -> 10-16 21:45Z | PASS |
+| IT | 25 | 22/0/3 | - | 18 | 3 | 0 | 0 | 0.3 d / 0.3 d | 289 d / 289 d | 0.92 / 0.89 | 10-15 21:46Z -> 10-16 21:46Z | WARN |
+| SE | 25 | 25/0/0 | - | 16 | 0 | 0 | 0 | 0.3 d / 0.3 d | 289 d / 320 d | 0.9 / 0.9 | 10-15 21:44Z -> 10-16 21:44Z | PASS |
+| NO | 25 | 25/0/0 | HAUTO (verified), WWI (verified) | 17 | 0 | 0 | 0 | 0.3 d / 0.3 d | 289 d / 289 d | 0.91 / 0.91 | 10-15 21:44Z -> 10-16 21:44Z | WARN |
+
+Status rule (unchanged): BLOCK = >20% of sample evidence-blocked; WARN = any evidence BLOCK/WARN name, non-fresh peer benchmark, BUY share >30%, or missing ISIN/price; else PASS. All six have at least a PASS-grade evidence base. US is WARN for the 4 unresolved ISINs, IT for 3 evidence BLOCKs, NO for the HAUTO/WWI caveats. GB, FR and SE are PASS on evidence but share defect D1 (benchmark expiry tonight). Missing prices: **0 of 151**. Provenance: US {'independently_verified': 26}; GB {'independently_verified': 25}; FR {'independently_verified': 25}; IT {'independently_verified': 25}; SE {'independently_verified': 25}; NO {'independently_verified': 25}. Distress and calls tables follow.
+
+### Calls per country
+
+| Country | BUY_CANDIDATE | HOLD_OR_WATCH | NO_RECOMMENDATION | Fail-closed BUY (benchmark unavailable) | Distress (LOW/ELEV/HIGH/INSUFF/NA) |
+|---|---|---|---|---|---|
+| US | 0 | 4 | 22 | - | 16/2/1/7/0 |
+| GB | 1 | 9 | 15 | - | 9/5/2/8/1 |
+| FR | 0 | 8 | 17 | - | 4/3/6/8/4 |
+| IT | 0 | 4 | 21 | - | 4/2/2/5/12 |
+| SE | 0 | 9 | 16 | TEL2.B | 14/2/0/5/4 |
+| NO | 2 | 6 | 17 | MEDI | 11/4/2/5/3 |
+
+`BUY_CANDIDATE` / `REVIEW` as asked: **BUY_CANDIDATE 3** (BHP, HAUTO, WWI; all three pass the verified-BUY rule) and **REVIEW 104** governance reviews (US 21, GB 15, FR 17, IT 18, SE 16, NO 17); the other governance outcomes are ACCEPT (43) and ABSTAIN (4: IT A2A/MB/REC, US UBER). The remaining NO_RECOMMENDATION results are mostly REVIEW: low calibrated confidence (< 0.55) or high-confidence agent disagreement.
+
+### Changes versus Update 7 (same code, new prices)
+
+| Name | Update 7 | Update 8 | Why |
+|---|---|---|---|
+| IT PIRC | BUY_CANDIDATE (conf 0.5502) | **NO_RECOMMENDATION / REVIEW** (conf 0.5496 < 0.55) | Price 6.730 -> 6.775 EUR nudged the score down by 0.0003; flagged as borderline in Update 7. Evidence PASS, distress LOW_RISK, 22 peers unchanged. **Italy now has no BUY.** |
+| NO WWI | HOLD_OR_WATCH | **BUY_CANDIDATE** (verified, conf 0.576) | Price 935 -> 915 NOK made the P/E discount larger (comparison vote +0.6). Caveat: net income 671 M USD vs operating income 106 M USD (holding-company/associate income), quality vote only +0.05, so the low P/E is largely associate/one-off driven. Analyst-review item. |
+| FR LIN, NO YAR | HOLD_OR_WATCH | NO_RECOMMENDATION / REVIEW | Governance now flags high-confidence agent disagreement (LIN) / a 4-company peer group (YAR). |
+| GB RIO; SE ALFA, ASSA.B, ERIC.A, ERIC.B, SAND | NO_RECOMMENDATION / REVIEW | HOLD_OR_WATCH / ACCEPT | Confidence rose above 0.55 (fresher prices). |
+| IT G; SE INDU.A, INDU.C | ABSTAIN | REVIEW | Confidence rose from 0.33-0.34 to 0.38-0.39; still below threshold. |
+| US UBER | HOLD_OR_WATCH / ACCEPT | NO_RECOMMENDATION / **ABSTAIN** | Forecast vote -0.2 -> +0.1 created a MATERIAL_CONTRADICTION with the Agent 9 HIGH_RISK distress sidecar (Altman Z'' 1.09); the safety gate abstains. Correct fail-closed behaviour. |
+| BHP, HAUTO | BUY | BUY (verified) | Unchanged; BHP conf 0.6675, HAUTO 0.6282 (29 peers, not P/E-only). |
+
+No defect: the code is identical (c9eb58b); the movements are threshold crossings caused by new live prices. This also shows the BUY list is fragile (3 names today, 3 in Update 7, but only 2 are common), so none of it should be shown as a stable recommendation.
+
+## Per-country detail
+
+### USA (NASDAQ+NYSE) - WARN
+
+- 26/26 evidence PASS (SEC EDGAR, independently verified). 4 HOLD_OR_WATCH, 22 NO_RECOMMENDATION, **no BUY**; 21 REVIEW (almost all 'high-confidence agent disagreement') and 1 ABSTAIN (UBER).
+- ISIN: 22/26 resolved by the GLEIF + OpenFIGI resolver; **AMZN, ASML, ETN, KO unresolved** (ambiguous or no match returns nothing by design). The resolver flag is off in production, so production still shows all 26 as missing until a deploy approves it. Analysis is unaffected.
+- Prices are 1.0 d old (last close of the previous session; US market is closed at the test time).
+- Annual period age median/max 289 d / 384 d (n=26); source quality median/min 0.89 / 0.89.
+
+### UK (LSE) - PASS
+
+- 25/25 evidence PASS (FCA NSM / OAM official, interim period 2026-06-30 for BHP). **Verified BUY: BHP** (conf 0.6675, LOW_RISK, 10 same-sector peers, quality +0.85, fundamental +0.75; comparison -0.3, so not P/E-driven). 9 HOLD_OR_WATCH, 15 NO_RECOMMENDATION. RIO is back to HOLD_OR_WATCH (conf 0.598).
+- Distress: 2 HIGH_RISK, 5 ELEVATED_RISK in the sample; these cannot be BUY.
+- Annual period age median/max 289 d / 398 d (n=25); source quality median/min 0.9 / 0.9.
+
+### France (Euronext Paris) - PASS
+
+- 25/25 evidence PASS (ESEF). 8 HOLD_OR_WATCH, 17 NO_RECOMMENDATION, no BUY; 6 HIGH_RISK distress names in the sample. LIN moved to REVIEW (agent disagreement).
+- Annual period age median/max 289 d / 411 d (n=25); source quality median/min 0.91 / 0.91.
+
+### Italy (Euronext Milan) - WARN
+
+- 22 PASS / 3 BLOCK, unchanged since Update 5 and fail-closed: **A2A** (parent ESEF unavailable: the packages found belong to A2A Energia S.p.A.), **MB** Mediobanca (6-month transition-period ESEF, never annualised), **REC** Recordati (1-day duration contexts, filer defect). Governance ABSTAIN on all three. No official filing that would unblock them was found; no new retrieval was attempted (non-bulk, read-only).
+- **No BUY in Italy in this run.** PIRC (Update 7 verified BUY) dropped by 0.0004 below the 0.55 threshold, see the changes table. It is a REVIEW name, not an error; evidence is PASS (coverage 0.94, source quality 0.92).
+- Annual period age median/max 289 d / 289 d (n=25); source quality median/min 0.92 / 0.89.
+
+### Sweden (Nasdaq Stockholm) - PASS
+
+- 25/25 evidence PASS. 9 HOLD_OR_WATCH, 16 NO_RECOMMENDATION, **no BUY**, 16 REVIEW. TEL2.B is fail-closed for BUY (valuation benchmark unavailable for its sector, peer group < 8, distress INSUFFICIENT_DATA).
+- Annual period age median/max 289 d / 320 d (n=25); source quality median/min 0.9 / 0.9.
+
+### Norway (Euronext Oslo) - WARN
+
+- 25/25 evidence PASS. **2 BUY_CANDIDATEs, both verified: HAUTO** (LOW_RISK, 29 peers, conf 0.628, comparison +0.6, quality +0.65, but fundamental vote -0.05 and a P/E of about 6.8 vs 17.6 for peers, which looks one-off or cyclical; 289-day-old annual figures) **and WWI** (new, LOW_RISK, 28 peers, conf 0.576; see changes table caveat). Both are analyst-review items, not clean BUYs.
+- The other former BUYs remain REVIEW (YAR peer group 4; AKSO/BNOR/SNTIA ELEVATED_RISK distress; DOFG/SOFF/SOMA distress INSUFFICIENT_DATA; EPR peer group 5; MOWI confidence/peer group 6). MEDI fail-closed (no benchmark, peer group < 8). BUY share 2/25 = 8%, below the 30% concentration warning.
+- Annual period age median/max 289 d / 289 d (n=25); source quality median/min 0.91 / 0.91.
+
+### Germany (Xetra) - WARN, carried over from Update 7 (not re-run)
+
+- 25 tested in Update 7 (10:37-10:42Z): evidence 21 PASS / 4 WARN / 0 BLOCK (CBK, HNR1, MUV2, TLX have no official fundamentals source; CBK and TLX correctly rejected after the SEC lookup returned a different issuer). 0 BUY, 2 HOLD_OR_WATCH, 0 missing price, 0 ISIN issues. Peer benchmark `XETRA.json` cachedAt 2026-10-16T09:57:37Z -> expires 2026-10-17T09:57Z; the timer is enabled (next run 09:57:22Z).
+
+## Unresolved defects and risks
+
+| # | Defect | Impact | Owner decision needed |
+|---|---|---|---|
+| D1 | **Peer benchmarks of US, GB, FR, IT, SE, NO expire 2026-10-16 21:42-21:46Z** (hard 24 h limit, `service._scan_peer_state`), about 8.5 h after this run. Only Germany has a refresh timer. | After expiry all valuation comparisons fail closed: BHP, HAUTO, WWI -> NO_RECOMMENDATION, until a scan runs. Safe, but the BUY results are time-limited. Not refreshed here because a scan is a bulk operation (150+ rows per exchange). | Approve a bounded controlled refresh or extend the DE-style timer to these six markets. |
+| D2 | Germany timer margin: expires 09:57:37Z, timer fires 09:57:22Z +/- 1 min and takes ~15 s: 0-60 s fail-closed daily. | Sub-minute window. | Shorten cadence in `deploy/systemd` (code change + approved re-install). |
+| D3 | Italy A2A / Recordati / Mediobanca evidence BLOCK. | 3/25 fail-closed; correct. | Parent ESEF from OAM 1INFO; corrected Recordati package. |
+| D4 | US ISIN: resolver flag off in production; 4/26 unresolved even with it on. | ISIN missing for all 26 in production today. | Approval to enable `BIAP_GLOBAL_US_ISIN_RESOLVE` at deploy. |
+| D5 | Germany: 4 names without official fundamentals. | Fail-closed. | Improvement item. |
+| D6 | Annual figures are FY2025 (median 289 d old); interim/TTM evidence only for a few names (e.g. BHP). Prices are cached or live Yahoo public quotes, not an official feed. | Reported in every row. | Interim evidence for non-US markets is future work. |
+| D7 | Borderline results: PIRC 0.5496, WWI 0.576, SKA.B/others near 0.55; UBER abstain flip. | Calls flip with the price. | Review before presenting; do not publish BUY lists as stable. |
+
+## CI status of the PR heads (checked 2026-10-16 ~13:20Z)
+
+| PR | Head | BIAP Global check (global-backend) | Release candidate check (backend / android-bundle) | Mobile check (typecheck) | Mergeable |
+|---|---|---|---|---|---|
+| #52 | `c9eb58b` | [success](https://github.com/XS227/BIAP/actions/runs/38889638872) | [success](https://github.com/XS227/BIAP/actions/runs/38889638897) (android-installable-apk skipped on PR runs) | - | MERGEABLE / CLEAN |
+| #54 | `5671891` | - | [success](https://github.com/XS227/BIAP/actions/runs/38838152170) | [success](https://github.com/XS227/BIAP/actions/runs/38838152191) (build-apk skipped) | MERGEABLE / CLEAN, draft |
+
+The check runs listed are the runs for the current PR heads. This Update 8 report commit adds docs only; its own CI result is recorded in the PR #52 comment.
+
+## GO / NO-GO
+
+**PR #52 - NO-GO for merge today (technically ready).** CI green on `c9eb58b`; BUY governance behaves as designed in six markets: only 3 of 151 names are BUY and all three satisfy the verified rule. Merging triggers deploy via `analysis/**` + `deploy/systemd/**`, so it needs an explicit deploy window and a decision on D1 (the six benchmarks expire tonight).
+
+**PR #54 - NO-GO for merge today (technically ready).** Draft, mergeable, CI green on `5671891`; merging touches `mobile/**` and triggers the EAS and backend deploy workflows. Merge after or with the #52 window.
+
+Nothing was merged, deployed, restarted or downloaded in bulk. Preserved untouched: historical company data, ESEF archives, DMA agents, rollback snapshots (`backup-*`, `*.prev`) and `/dev/shm/val-20261016c`.
+
+## Per-company results (Update 8, this run)
+
+**US** - ticker / call / evidence / governance / confidence / price / ISIN
+
+| Ticker | Call | Ev | Gov | Conf | Price | ISIN |
+|---|---|---|---|---|---|---|
+| AAPL | NO_RECOMMENDATION | PASS | REVIEW | 0.69 | 342.0 USD | US0378331005 |
+| AMD | NO_RECOMMENDATION | PASS | REVIEW | 0.69 | 562.23 USD | US0079031078 |
+| AMZN | NO_RECOMMENDATION | PASS | REVIEW | 0.63 | 254.76 USD | **missing** |
+| ASML | NO_RECOMMENDATION | PASS | REVIEW | 0.69 | 1657.44 USD | **missing** |
+| AVGO | NO_RECOMMENDATION | PASS | REVIEW | 0.69 | 344.33 USD | US11135F1012 |
+| COST | NO_RECOMMENDATION | PASS | REVIEW | 0.69 | 978.01 USD | US22160K1051 |
+| CSCO | NO_RECOMMENDATION | PASS | REVIEW | 0.69 | 109.85 USD | US17275R1023 |
+| GOOG | NO_RECOMMENDATION | PASS | REVIEW | 0.69 | 344.91 USD | US02079K1079 |
+| GOOGL | NO_RECOMMENDATION | PASS | REVIEW | 0.69 | 349.22 USD | US02079K3059 |
+| MSFT | NO_RECOMMENDATION | PASS | REVIEW | 0.69 | 539.44 USD | US5949181045 |
+| MU | NO_RECOMMENDATION | PASS | REVIEW | 0.69 | 931.24 USD | US5951121038 |
+| NVDA | NO_RECOMMENDATION | PASS | REVIEW | 0.63 | 217.23 USD | US67066G1040 |
+| PLTR | NO_RECOMMENDATION | PASS | REVIEW | 0.64 | 200.5 USD | US69608A1088 |
+| APH | NO_RECOMMENDATION | PASS | REVIEW | 0.64 | 81.49 USD | US0320951017 |
+| DIS | HOLD_OR_WATCH | PASS | ACCEPT | 0.69 | 110.68 USD | US2546871060 |
+| EMR | NO_RECOMMENDATION | PASS | REVIEW | 0.69 | 162.15 USD | US2910111044 |
+| ETN | NO_RECOMMENDATION | PASS | REVIEW | 0.69 | 402.48 USD | **missing** |
+| JNJ | HOLD_OR_WATCH | PASS | ACCEPT | 0.69 | 253.28 USD | US4781601046 |
+| KO | HOLD_OR_WATCH | PASS | ACCEPT | 0.57 | 92.0 USD | **missing** |
+| MRK | HOLD_OR_WATCH | PASS | ACCEPT | 0.69 | 145.19 USD | US58933Y1055 |
+| NEM | NO_RECOMMENDATION | PASS | REVIEW | 0.63 | 115.79 USD | US6516391066 |
+| PFE | NO_RECOMMENDATION | PASS | REVIEW | 0.69 | 29.44 USD | US7170811035 |
+| PG | NO_RECOMMENDATION | PASS | REVIEW | 0.69 | 157.08 USD | US7427181091 |
+| TJX | NO_RECOMMENDATION | PASS | REVIEW | 0.69 | 144.58 USD | US8725401090 |
+| TMO | NO_RECOMMENDATION | PASS | REVIEW | 0.69 | 696.49 USD | US8835561023 |
+| UBER | NO_RECOMMENDATION | PASS | ABSTAIN | 0.69 | 71.27 USD | US90353T1007 |
+
+**GB** - ticker / call / evidence / governance / confidence / price / ISIN
+
+| Ticker | Call | Ev | Gov | Conf | Price | ISIN |
+|---|---|---|---|---|---|---|
+| ABF | NO_RECOMMENDATION | PASS | REVIEW | 0.67 | 19.21 GBP | GB0006731235 |
+| BATS | HOLD_OR_WATCH | PASS | ACCEPT | 0.67 | 44.15 GBP | GB0002875804 |
+| BHP | BUY_CANDIDATE | PASS | ACCEPT | 0.67 | 31.32 GBP | AU000000BHP4 |
+| BNZL | HOLD_OR_WATCH | PASS | ACCEPT | 0.67 | 28.32 GBP | GB00B0744B38 |
+| CCEP | NO_RECOMMENDATION | PASS | REVIEW | 0.67 | 82.7 GBP | GB00BDCPN049 |
+| CCH | HOLD_OR_WATCH | PASS | ACCEPT | 0.67 | 43.74 GBP | CH0198251305 |
+| DPLM | NO_RECOMMENDATION | PASS | REVIEW | 0.6 | 79.2 GBP | GB0001826634 |
+| EXPN | HOLD_OR_WATCH | PASS | ACCEPT | 0.6 | 28.674 GBP | GB00B19NLV48 |
+| FRES | NO_RECOMMENDATION | PASS | REVIEW | 0.67 | 26.9 GBP | GB00B2QPKJ12 |
+| GSK | NO_RECOMMENDATION | PASS | REVIEW | 0.67 | 18.495 GBP | GB00BN7SWP63 |
+| HLMA | NO_RECOMMENDATION | PASS | REVIEW | 0.67 | 34.16 GBP | GB0004052071 |
+| HLN | NO_RECOMMENDATION | PASS | REVIEW | 0.67 | 3.698 GBP | GB00BMX86B70 |
+| IAG | NO_RECOMMENDATION | PASS | REVIEW | 0.61 | 4.144 GBP | ES0177542018 |
+| MKS | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 4.087 GBP | GB0031274896 |
+| NWG | NO_RECOMMENDATION | PASS | REVIEW | 0.39 | 6.626 GBP | GB00BM8PJY71 |
+| NXT | NO_RECOMMENDATION | PASS | REVIEW | 0.67 | 153.65 GBP | GB0032089863 |
+| REL | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 29.34 GBP | GB00B2B0DG97 |
+| RIO | HOLD_OR_WATCH | PASS | ACCEPT | 0.6 | 67.34 GBP | GB0007188757 |
+| RKT | HOLD_OR_WATCH | PASS | ACCEPT | 0.65 | 54.74 GBP | GB00BSZBP530 |
+| RR. | HOLD_OR_WATCH | PASS | ACCEPT | 0.62 | 13.602 GBP | GB00B63H8491 |
+| S32 | HOLD_OR_WATCH | PASS | ACCEPT | 0.67 | 2.41 GBP | AU000000S320 |
+| SHEL | HOLD_OR_WATCH | PASS | ACCEPT | 0.67 | 39.23 GBP | GB00BP6MXD84 |
+| SVT | NO_RECOMMENDATION | PASS | REVIEW | 0.55 | 31.58 GBP | GB00B1FH8J72 |
+| TSCO | NO_RECOMMENDATION | PASS | REVIEW | 0.55 | 5.316 GBP | GB00BLGZ9862 |
+| ULVR | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 48.825 GBP | GB00BVZK7T90 |
+
+**FR** - ticker / call / evidence / governance / confidence / price / ISIN
+
+| Ticker | Call | Ev | Gov | Conf | Price | ISIN |
+|---|---|---|---|---|---|---|
+| ABCA | NO_RECOMMENDATION | PASS | REVIEW | 0.43 | 5.7 EUR | FR0004040608 |
+| AC | HOLD_OR_WATCH | PASS | ACCEPT | 0.57 | 46.46 EUR | FR0000120404 |
+| AF | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 10.505 EUR | FR001400J770 |
+| BOI | HOLD_OR_WATCH | PASS | ACCEPT | 0.67 | 19.05 EUR | FR0000061129 |
+| BUR | HOLD_OR_WATCH | PASS | ACCEPT | 0.65 | 331.0 EUR | FR0000061137 |
+| CS | NO_RECOMMENDATION | PASS | REVIEW | 0.5 | 42.88 EUR | FR0000120628 |
+| DEEZR | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 1.295 EUR | FR001400AYG6 |
+| FNAC | NO_RECOMMENDATION | PASS | REVIEW | 0.42 | 34.55 EUR | FR0011476928 |
+| GTT | HOLD_OR_WATCH | PASS | ACCEPT | 0.57 | 213.4 EUR | FR0011726835 |
+| HO | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 234.7 EUR | FR0000121329 |
+| KOF | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 19.5 EUR | FR0004007813 |
+| LIN | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 48.6 EUR | FR0004156297 |
+| LNA | NO_RECOMMENDATION | PASS | REVIEW | 0.57 | 23.1 EUR | FR0004170017 |
+| NEX | NO_RECOMMENDATION | PASS | REVIEW | 0.55 | 127.4 EUR | FR0000044448 |
+| OR | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 404.65 EUR | FR0000120321 |
+| PEUG | NO_RECOMMENDATION | PASS | REVIEW | 0.54 | 53.6 EUR | FR0000064784 |
+| PLX | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 15.54 EUR | NL0015001W49 |
+| PUB | HOLD_OR_WATCH | PASS | ACCEPT | 0.57 | 104.7 EUR | FR0000130577 |
+| RUI | HOLD_OR_WATCH | PASS | ACCEPT | 0.62 | 35.4 EUR | FR0013269123 |
+| SU | NO_RECOMMENDATION | PASS | REVIEW | 0.67 | 257.2 EUR | FR0000121972 |
+| SW | HOLD_OR_WATCH | PASS | ACCEPT | 0.57 | 56.25 EUR | FR0000121220 |
+| THEP | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 64.6 EUR | FR0013333432 |
+| VIL | HOLD_OR_WATCH | PASS | ACCEPT | 0.55 | 17.56 EUR | FR0000050049 |
+| VIRI | NO_RECOMMENDATION | PASS | REVIEW | 0.57 | 88.7 EUR | FR001400PVN6 |
+| WAVE | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 30.45 EUR | FR0013357621 |
+
+**IT** - ticker / call / evidence / governance / confidence / price / ISIN
+
+| Ticker | Call | Ev | Gov | Conf | Price | ISIN |
+|---|---|---|---|---|---|---|
+| A2A | NO_RECOMMENDATION | BLOCK | ABSTAIN | 0.14 | 2.371 EUR | IT0001233417 |
+| BAMI | NO_RECOMMENDATION | PASS | REVIEW | 0.48 | 13.895 EUR | IT0005218380 |
+| BGN | NO_RECOMMENDATION | PASS | REVIEW | 0.48 | 60.9 EUR | IT0001031084 |
+| BMED | NO_RECOMMENDATION | PASS | REVIEW | 0.48 | 22.92 EUR | IT0004776628 |
+| BMPS | NO_RECOMMENDATION | PASS | REVIEW | 0.48 | 11.23 EUR | IT0005508921 |
+| BPE | NO_RECOMMENDATION | PASS | REVIEW | 0.52 | 13.438 EUR | IT0000066123 |
+| CPR | HOLD_OR_WATCH | PASS | ACCEPT | 0.62 | 6.608 EUR | NL0015435975 |
+| ENEL | NO_RECOMMENDATION | PASS | REVIEW | 0.66 | 9.167 EUR | IT0003128367 |
+| ENI | NO_RECOMMENDATION | PASS | REVIEW | 0.66 | 25.9 EUR | IT0003132476 |
+| FBK | NO_RECOMMENDATION | PASS | REVIEW | 0.48 | 21.34 EUR | IT0000072170 |
+| G | NO_RECOMMENDATION | PASS | REVIEW | 0.38 | 42.66 EUR | IT0000062072 |
+| IG | NO_RECOMMENDATION | PASS | REVIEW | 0.52 | 8.578 EUR | IT0005211237 |
+| ISP | NO_RECOMMENDATION | PASS | REVIEW | 0.52 | 6.164 EUR | IT0000072618 |
+| MB | NO_RECOMMENDATION | BLOCK | ABSTAIN | 0.09 | 25.67 EUR | IT0000062957 |
+| MONC | HOLD_OR_WATCH | PASS | ACCEPT | 0.62 | 44.09 EUR | IT0004965148 |
+| PIRC | NO_RECOMMENDATION | PASS | REVIEW | 0.55 | 6.775 EUR | IT0005278236 |
+| PRY | NO_RECOMMENDATION | PASS | REVIEW | 0.66 | 109.8 EUR | IT0004176001 |
+| PST | NO_RECOMMENDATION | PASS | REVIEW | 0.44 | 24.34 EUR | IT0003796171 |
+| RACE | NO_RECOMMENDATION | PASS | REVIEW | 0.66 | 354.6 EUR | NL0011585146 |
+| REC | NO_RECOMMENDATION | BLOCK | ABSTAIN | 0.06 | 53.05 EUR | IT0003828271 |
+| SPM | HOLD_OR_WATCH | PASS | ACCEPT | 0.57 | 4.559 EUR | IT0005495657 |
+| SRG | HOLD_OR_WATCH | PASS | ACCEPT | 0.62 | 5.778 EUR | IT0003153415 |
+| TPRO | NO_RECOMMENDATION | PASS | REVIEW | 0.41 | 27.14 EUR | IT0005482333 |
+| UCG | NO_RECOMMENDATION | PASS | REVIEW | 0.52 | 75.7 EUR | IT0005239360 |
+| UNI | NO_RECOMMENDATION | PASS | REVIEW | 0.39 | 25.29 EUR | IT0004810054 |
+
+**SE** - ticker / call / evidence / governance / confidence / price / ISIN
+
+| Ticker | Call | Ev | Gov | Conf | Price | ISIN |
+|---|---|---|---|---|---|---|
+| ALFA | HOLD_OR_WATCH | PASS | ACCEPT | 0.61 | 574.6 SEK | SE0000695876 |
+| ASSA.B | HOLD_OR_WATCH | PASS | ACCEPT | 0.61 | 357.0 SEK | SE0007100581 |
+| ATCO.A | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 201.7 SEK | SE0017486889 |
+| ATCO.B | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 177.15 SEK | SE0017486897 |
+| AZN | HOLD_OR_WATCH | PASS | ACCEPT | 0.67 | 1652.5 SEK | GB0009895292 |
+| BOL | HOLD_OR_WATCH | PASS | ACCEPT | 0.67 | 533.8 SEK | SE0020050417 |
+| EPI.A | NO_RECOMMENDATION | PASS | REVIEW | 0.61 | 263.7 SEK | SE0015658109 |
+| EPI.B | NO_RECOMMENDATION | PASS | REVIEW | 0.61 | 223.8 SEK | SE0015658117 |
+| ERIC.A | HOLD_OR_WATCH | PASS | ACCEPT | 0.6 | 105.8 SEK | SE0000108649 |
+| ERIC.B | HOLD_OR_WATCH | PASS | ACCEPT | 0.6 | 104.2 SEK | SE0000108656 |
+| ESSITY.A | NO_RECOMMENDATION | PASS | REVIEW | 0.55 | 275.5 SEK | SE0009922156 |
+| ESSITY.B | NO_RECOMMENDATION | PASS | REVIEW | 0.55 | 275.9 SEK | SE0009922164 |
+| EVO | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 799.8 SEK | SE0012673267 |
+| HM.B | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 172.65 SEK | SE0000106270 |
+| INDU.A | NO_RECOMMENDATION | PASS | REVIEW | 0.39 | 517.0 SEK | SE0000190126 |
+| INDU.C | NO_RECOMMENDATION | PASS | REVIEW | 0.39 | 515.0 SEK | SE0000107203 |
+| INVE.A | NO_RECOMMENDATION | PASS | REVIEW | 0.52 | 409.8 SEK | SE0015811955 |
+| INVE.B | NO_RECOMMENDATION | PASS | REVIEW | 0.52 | 417.35 SEK | SE0015811963 |
+| LIFCO.B | NO_RECOMMENDATION | PASS | REVIEW | 0.67 | 330.8 SEK | SE0015949201 |
+| LUG | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 666.2 SEK | CA5503711080 |
+| LUMI | HOLD_OR_WATCH | PASS | ACCEPT | 0.67 | 233.6 SEK | CA5503721063 |
+| SAAB.B | NO_RECOMMENDATION | PASS | REVIEW | 0.62 | 653.2 SEK | SE0021921269 |
+| SAND | HOLD_OR_WATCH | PASS | ACCEPT | 0.67 | 359.4 SEK | SE0000667891 |
+| SKA.B | HOLD_OR_WATCH | PASS | ACCEPT | 0.62 | 267.9 SEK | SE0000113250 |
+| TEL2.B | NO_RECOMMENDATION | PASS | REVIEW | 0.54 | 160.0 SEK | SE0005190238 |
+
+**NO** - ticker / call / evidence / governance / confidence / price / ISIN
+
+| Ticker | Call | Ev | Gov | Conf | Price | ISIN |
+|---|---|---|---|---|---|---|
+| ABG | NO_RECOMMENDATION | PASS | REVIEW | 0.5 | 7.21 NOK | NO0003021909 |
+| AKSO | NO_RECOMMENDATION | PASS | REVIEW | 0.58 | 40.26 NOK | NO0010716582 |
+| BNOR | NO_RECOMMENDATION | PASS | REVIEW | 0.58 | 610.0 NOK | NO0010379266 |
+| BONHR | HOLD_OR_WATCH | PASS | ACCEPT | 0.67 | 255.5 NOK | NO0003110603 |
+| DOFG | NO_RECOMMENDATION | PASS | REVIEW | 0.56 | 131.1 NOK | NO0012851874 |
+| EPR | NO_RECOMMENDATION | PASS | REVIEW | 0.63 | 84.5 NOK | NO0010735343 |
+| HAUTO | BUY_CANDIDATE | PASS | ACCEPT | 0.63 | 189.5 NOK | NO0011082075 |
+| IDEX | NO_RECOMMENDATION | PASS | REVIEW | 0.48 | 7.58 NOK | NO0013536078 |
+| IWS | HOLD_OR_WATCH | PASS | ACCEPT | 0.63 | 61.4 NOK | NO0013461350 |
+| MEDI | NO_RECOMMENDATION | PASS | REVIEW | 0.52 | 285.0 NOK | NO0010159684 |
+| MORLD | HOLD_OR_WATCH | PASS | ACCEPT | 0.63 | 23.75 NOK | NO0013325506 |
+| MOWI | NO_RECOMMENDATION | PASS | REVIEW | 0.58 | 206.0 NOK | NO0003054108 |
+| MPCC | NO_RECOMMENDATION | PASS | REVIEW | 0.58 | 29.05 NOK | NO0010791353 |
+| NORBT | NO_RECOMMENDATION | PASS | REVIEW | 0.63 | 161.6 NOK | NO0010856511 |
+| ODFB | NO_RECOMMENDATION | PASS | REVIEW | 0.63 | 124.4 NOK | NO0003399917 |
+| SAGA | NO_RECOMMENDATION | PASS | REVIEW | 0.43 | 1.55 NOK | NO0010572589 |
+| SMOP | HOLD_OR_WATCH | PASS | ACCEPT | 0.56 | 51.2 NOK | NO0011012502 |
+| SNTIA | NO_RECOMMENDATION | PASS | REVIEW | 0.58 | 80.7 NOK | NO0013573014 |
+| SOFF | NO_RECOMMENDATION | PASS | REVIEW | 0.61 | 73.8 NOK | NO0003080608 |
+| SOMA | NO_RECOMMENDATION | PASS | REVIEW | 0.61 | 30.15 NOK | NO0013135368 |
+| STB | NO_RECOMMENDATION | PASS | REVIEW | 0.54 | 190.5 NOK | NO0003053605 |
+| WAWI | HOLD_OR_WATCH | PASS | ACCEPT | 0.58 | 177.9 NOK | NO0010571680 |
+| WWI | BUY_CANDIDATE | PASS | ACCEPT | 0.58 | 915.0 NOK | NO0010571698 |
+| WWIB | HOLD_OR_WATCH | PASS | ACCEPT | 0.58 | 842.0 NOK | NO0010576010 |
+| YAR | NO_RECOMMENDATION | PASS | REVIEW | 0.67 | 409.8 NOK | NO0010208051 |
+
+## Cleanup result
+
+2026-10-16 ~13:17Z: after a second md5 verification (38,437 files identical to `/var/lib/biap-global`, 0 mismatches, 0 symlinks) exactly `/home/ubuntu/biap-validation-20261016/data-u7` was removed with `rm -rf`; root filesystem usage fell from 40 G (84%) to 39 G (82%), 7.8 G -> 8.7 G free. The rest of `/home/ubuntu/biap-validation-20261016/` (small JSON results, logs, tools) and `/dev/shm/val-20261016c` were left in place. Production data, ESEF archives, DMA agents and `backup-*` rollback snapshots were not touched.
+
+<!-- HISTORY-START -->
 <!-- UPDATE7 -->
-# BIAP Global country validation - refreshed 2026-10-16 (Update 7)
+# History - Update 7 report as published (superseded by Update 8 above for the six non-DE markets)
 
 - **Code validated:** `1da5cd69e12955d2363a9f16fd26a29824b7218e` (PR #52 head, `feat/global-evidence-signals`). Working tree clean. PR #54 head is `5671891d51ec3b6e322eb7e2aef693d179af24b9` (`fix/mobile-ios-icon-schema`, mobile-only; not part of this runtime validation).
 - **Test window (UTC):** 2026-10-16T10:37:08Z .. 10:42:39Z. Re-run of all seven countries, 176 companies (US 26, GB/FR/IT/SE/NO/DE 25 each), top by market cap from each exchange's deep-scan cache.
