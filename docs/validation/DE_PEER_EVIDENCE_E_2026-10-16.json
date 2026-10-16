@@ -1,7 +1,7 @@
 {
  "schema": "biap-de-peer-evidence-e/1",
  "generatedAt": "2026-10-16",
- "note": "Metadata only (no financial values). VERIFIED = explicit period-end date AND the ledger row's revenue and net income both found in the named official issuer document; EPS informational. Produced by tools/de_peer_doc_verify.py. Pilot = batches 1-3 (20 ISINs); batches 4-7 = continuation.",
+ "note": "Metadata only (no financial values). VERIFIED = explicit period-end date AND ledger revenue and net income both found in the named official issuer document. MISSING_OFFICIAL_EVIDENCE/NOT_ATTEMPTED_BOUNDED/BLOCKED carry the exact reason. Tool: tools/de_peer_doc_verify.py.",
  "results": [
   {
    "isin": "DE0005552004",
@@ -936,6 +936,943 @@
    "result": "VERIFIED",
    "sector_in_row": false,
    "batch": 7
+  },
+  {
+   "isin": "DE000A3ENQ51",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "IR report page is JS-rendered; no direct annual-report PDF link found",
+   "batch": "search"
+  },
+  {
+   "isin": "DE000FTG1111",
+   "markets": {
+    "XETRA": "FTK"
+   },
+   "source_url": "https://s206.q4cdn.com/770226284/files/doc_downloads/annual-and-half-year-reports/2026/260326_flatexDEGIRO_Annual-Report-2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:02:51+00:00",
+   "http_status": 200,
+   "sha256": "c03d0e43f86bfb096b5f1401ca81fc0e7ff98ee3a709daa165d661cf8d875e3f",
+   "bytes": 5685988,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "batch": 8
+  },
+  {
+   "isin": "DE000A1PHFF7",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "annual report link not exposed; guessed URL 404 (not pursued further)",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0006458003",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "no 2025 annual-report link found on lew.de",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0006916604",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "IR page lists report without direct link; low-signal",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0005104400",
+   "markets": {
+    "XETRA": "AOF"
+   },
+   "source_url": "https://backend.atoss.com/sites/default/files/2026-03/2026-hv-konzernabschluss-dez-2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:02:57+00:00",
+   "http_status": 200,
+   "sha256": "cd438f22eb8551445727ef64ef3a5178a46489e83d073a3f0a8b29a119c94894",
+   "bytes": 4272004,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "batch": 8
+  },
+  {
+   "isin": "DE0006083405",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "no report link found (FY ends Feb)",
+   "batch": "search"
+  },
+  {
+   "isin": "DE000A255F11",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "no IR report found",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0007480204",
+   "markets": {
+    "XETRA": "DEQ",
+    "FRANKFURT": "DEQ"
+   },
+   "source_url": "https://www.deutsche-euroshop.de/berichte/epaper/2025/ar25/epaper/ausgabe.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:02:59+00:00",
+   "http_status": 200,
+   "sha256": "1bde04566aa1cc6db61b5600b509b38e4a517f99c3f20fb6fd9a06bfa1c58847",
+   "bytes": 13666107,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "batch": 8
+  },
+  {
+   "isin": "DE000PFSE253",
+   "markets": {
+    "XETRA": "PFS0"
+   },
+   "source_url": "https://reports.pfisterer.com/annual-report/2025/_assets/downloads/consolidated-financial-statements-pfisterer-ar25.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:03:02+00:00",
+   "http_status": 200,
+   "sha256": "030f429da5ce66388a2f2de0eba4560f0655d17b0f899ed80c90817a46a07d7d",
+   "bytes": 1295296,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "batch": 8
+  },
+  {
+   "isin": "DE000A2YN900",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "IR media library link not exposed",
+   "batch": "search"
+  },
+  {
+   "isin": "DE000NCA0001",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "annual report link not exposed (FY Sep)",
+   "batch": "search"
+  },
+  {
+   "isin": "DE000A0HL8N9",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "2025 report not yet published (calendar: 30 June)",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0006200108",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "online-only report, no PDF",
+   "batch": "search"
+  },
+  {
+   "isin": "DE000A0ETBQ4",
+   "markets": {
+    "FRANKFURT": "MBB"
+   },
+   "source_url": "https://www.mbb.com/fileadmin/templates/downloads/finanzberichte/260330-MBB-Annual_Report-2025-EN-Final.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:03:40+00:00",
+   "http_status": 200,
+   "sha256": "2a91a070cdc0018f1b80c623508bb7de917a8450213653ac77b28f5bfa73ecf6",
+   "bytes": 2553077,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "batch": 9
+  },
+  {
+   "isin": "DE0007042301",
+   "markets": {
+    "FRANKFURT": "RHK"
+   },
+   "source_url": "https://www.rhoen-klinikum-ag.com/fileadmin/FILES/RKA/investoren/Geschaeftsberichte/GB_2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:03:04+00:00",
+   "http_status": 200,
+   "sha256": "8d8a8eab6ff71c6353d2e5f4782549517ad105562cd01bd6e2bb2fcd570a6a98",
+   "bytes": 3359962,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "batch": 8
+  },
+  {
+   "isin": "DE0005221303",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE0006052830",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000VNC0014",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "IR page link not exposed",
+   "batch": "search"
+  },
+  {
+   "isin": "DE000ZEAL241",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "no 2025 report link found",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0005403901",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "download link not exposed",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0005659700",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "only results presentation found",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0007203705",
+   "markets": {
+    "XETRA": "SHF",
+    "FRANKFURT": "SHF"
+   },
+   "source_url": "https://investor-relations.snpgroup.com/siteassets/2-publications/archive/en/2025/sn_2025_gb_eng.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:03:45+00:00",
+   "http_status": 200,
+   "sha256": "e26fe6c6a3c1d859e2827d29373c98359f70ed8329b5a947db3d896e29f2f94a",
+   "bytes": 20067811,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": false,
+    "eps_informational": false
+   },
+   "result": "NOT_VERIFIED",
+   "sector_in_row": false,
+   "batch": 9
+  },
+  {
+   "isin": "DE0006069008",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "search returned nothing",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0005800601",
+   "markets": {
+    "XETRA": "GFT",
+    "FRANKFURT": "GFT"
+   },
+   "source_url": "https://www.gft.com/dam/jcr:2285ea8c-1426-49e1-b29b-6ee5580e358a/gft-financial-report-integrated-annual-report-2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:03:51+00:00",
+   "http_status": 200,
+   "sha256": "b3f836d6c7a2f060003aade6a75549dec52e47b0561c392d7f6515ef33810982",
+   "bytes": 5456084,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": false,
+    "eps_informational": true
+   },
+   "result": "NOT_VERIFIED",
+   "sector_in_row": false,
+   "batch": 9
+  },
+  {
+   "isin": "DE0005102008",
+   "markets": {
+    "XETRA": "BSL"
+   },
+   "source_url": "https://assets-ctf.baslerweb.com/dg51pdwahxgw/0AnfMesaOHzNvPM9qnxCv/067346fa45192e12aa222f65b21e94c4/Gescha%C3%8C_ftsbericht_2025_Basler-AG_final_EN.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:03:49+00:00",
+   "http_status": 200,
+   "sha256": "91c1ce40eaca3e1c6738eada45d20f7e6a44af89e6e9d8d3660304cf5b24c6c3",
+   "bytes": 3037064,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "batch": 9
+  },
+  {
+   "isin": "DE0006627201",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "only single-entity (HGB) statements found; group report link not exposed",
+   "batch": "search"
+  },
+  {
+   "isin": "DE000PAT1AG3",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "IR links are signed/secure-download (access control) - not used",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0007448508",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "guessed URL 404",
+   "batch": "search"
+  },
+  {
+   "isin": "DE000A161N30",
+   "markets": {
+    "XETRA": "GLJ"
+   },
+   "source_url": "https://www.grenke.com/a/original/gallery/12428/files/original/a05890bf-5cec-4d88-9842-4250aafe9446.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:04:19+00:00",
+   "http_status": 200,
+   "sha256": "66b0326762298bb3274e712e3f5207482f2e31455135ebc207abc180695ff562",
+   "bytes": 6925103,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": false,
+    "eps_informational": true
+   },
+   "result": "NOT_VERIFIED",
+   "sector_in_row": true,
+   "batch": 10
+  },
+  {
+   "isin": "DE000A0Z23Q5",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "no PDF found",
+   "batch": "search"
+  },
+  {
+   "isin": "DE000A40QVM8",
+   "markets": {
+    "XETRA": "1INN"
+   },
+   "source_url": "https://www.innoscripta.com/EN_innoscripta_GB_2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:04:30+00:00",
+   "http_status": 200,
+   "sha256": "24b13e403bf7889a7d26c4fe6ac05dbb4140e9f510c34451ff8cf430d5a54341",
+   "bytes": 2873632,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "batch": 10
+  },
+  {
+   "isin": "DE000A1TNUT7",
+   "markets": {
+    "XETRA": "DBAN",
+    "FRANKFURT": "DBAN"
+   },
+   "source_url": "https://www.dbag.de/fileadmin/user_upload/260309_DBAG_Jahresabschluss_inkl._Lagebericht_2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:05:23+00:00",
+   "http_status": 200,
+   "sha256": "3e3c6695fa97c4f9796dc3549cd3f69516e84d2936574aa0635eea6932244fa8",
+   "bytes": 2091314,
+   "match": {
+    "period_phrase": true,
+    "revenue": false,
+    "net_income": false,
+    "eps_informational": false
+   },
+   "result": "NOT_VERIFIED",
+   "sector_in_row": false,
+   "batch": 11
+  },
+  {
+   "isin": "DE0007551509",
+   "markets": {
+    "FRANKFURT": "UZU"
+   },
+   "source_url": "https://annualreport.uzin-utz.com/fileadmin/FILES/Uploads/Teilkapitel/Zusammengefasster_Lagebericht_Uzin_Utz_2025_ENG.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:04:32+00:00",
+   "http_status": 200,
+   "sha256": "047683f26e618e0a78893c026f72d3d954855c66301b9eb50b3349857e51cf6a",
+   "bytes": 1093494,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "batch": 10
+  },
+  {
+   "isin": "DE000A161077",
+   "markets": {
+    "XETRA": "ERAG",
+    "FRANKFURT": "ERAG"
+   },
+   "source_url": "https://www.ernst-russ.de/files/uploads/dokumente-download/finanzberichte/2025_Annual-Report_Ernst-Russ-AG-E.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:04:34+00:00",
+   "http_status": 200,
+   "sha256": "636ed715a8a619b43bb40740a79de707356438dce4f868ba6bf6d17e64a70af8",
+   "bytes": 7386250,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "batch": 10
+  },
+  {
+   "isin": "DE000A3DW408",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE0006286560",
+   "markets": {
+    "FRANKFURT": "O4B"
+   },
+   "source_url": "https://www.ovb.eu/fileadmin/assets/Dokumente/ovb_holding/geschaeftsberichte/english/ovb_annual_report_2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:04:37+00:00",
+   "http_status": 200,
+   "sha256": "f8355110ad5447ea12c60f504dcb90c626d9be33f5082a9a514623e1e0b48f28",
+   "bytes": 1430292,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": false,
+    "eps_informational": true
+   },
+   "result": "NOT_VERIFIED",
+   "sector_in_row": false,
+   "batch": 10
+  },
+  {
+   "isin": "DE000A2N4H07",
+   "markets": {
+    "FRANKFURT": "WEW"
+   },
+   "source_url": "https://ir.westwing.com/media/document/f68abf37-9ca9-47ea-8147-b065448687e7/assets/Annual_Report_2025.pdf?disposition=inline",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:04:39+00:00",
+   "http_status": 200,
+   "sha256": "6e2ac04d6be360a15312eba16314c82801105a0a2312d0a43891fc3a664116cb",
+   "bytes": 2772221,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "batch": 10
+  },
+  {
+   "isin": "DE000A0B9N37",
+   "markets": {
+    "XETRA": "JDC"
+   },
+   "source_url": "https://jdcgroup.de/wp-content/uploads/JDCGROUP_GB2025_EN_RZ.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:04:42+00:00",
+   "http_status": 200,
+   "sha256": "eb2913e33d21567653bff9c05a8c69740301b30c9505c395fa2d7556dec3419c",
+   "bytes": 1326734,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": false,
+    "eps_informational": true
+   },
+   "result": "NOT_VERIFIED",
+   "sector_in_row": false,
+   "batch": 10
+  },
+  {
+   "isin": "DE0008055021",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A2LQ2D0",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE0005408686",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A1MME74",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A2DAM03",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "link not exposed",
+   "batch": "search"
+  },
+  {
+   "isin": "DE000A1TNWJ4",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "entity not identified by name search",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0007269003",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A0JDBC7",
+   "markets": {
+    "XETRA": "LIK",
+    "FRANKFURT": "LIK"
+   },
+   "source_url": "https://www.limes-schlosskliniken.de/app/uploads/2026/05/Geschaeftsbericht-2025-LIMES-Schlosskliniken-2.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:06:01+00:00",
+   "http_status": 200,
+   "sha256": "e9501e5d0d1178a5f9dfab7421c34888965cc5a97b73551435398b159558757e",
+   "bytes": 785839,
+   "match": {
+    "period_phrase": true,
+    "revenue": false,
+    "net_income": false,
+    "eps_informational": true
+   },
+   "result": "NOT_VERIFIED",
+   "sector_in_row": false,
+   "batch": 12
+  },
+  {
+   "isin": "DE000A1K0201",
+   "markets": {
+    "XETRA": "GSC1",
+    "FRANKFURT": "GSC1"
+   },
+   "source_url": "https://gesco.de/fileadmin/static/pdfs/en/investor_relations/financial_reports/2025/2025-gesco-annual_report.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:04:45+00:00",
+   "http_status": 200,
+   "sha256": "b54512d59d0a161fbc8bb906845c37e2817f3a98e8ae1243536c7e503cf49aa2",
+   "bytes": 2318561,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": false,
+    "eps_informational": false
+   },
+   "result": "NOT_VERIFIED",
+   "sector_in_row": false,
+   "batch": 10
+  },
+  {
+   "isin": "DE000A42D2N5",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE0005492938",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "link not exposed",
+   "batch": "search"
+  },
+  {
+   "isin": "DE000A420ZL4",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "FY ends March; PDF link not exposed",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0007229007",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "no investor report found",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0006578008",
+   "markets": {
+    "FRANKFURT": "KWG"
+   },
+   "source_url": "https://www.khd.com/wp-content/uploads/2026/03/KHD-AG_Group_Annual_Report___2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:05:21+00:00",
+   "http_status": 200,
+   "sha256": "45bc4ab93f37bf099f99db97dba88808a4794238c72fd2df6fa5bb11f0be7288",
+   "bytes": 2243368,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": false,
+    "eps_informational": true
+   },
+   "result": "NOT_VERIFIED",
+   "sector_in_row": true,
+   "batch": 11
+  },
+  {
+   "isin": "DE000A13SUL5",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A3E5E55",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "report URL not exposed",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0006942808",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "no 2025 report found",
+   "batch": "search"
+  },
+  {
+   "isin": "DE000A42FR12",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A0JM2M1",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE0005405104",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "no direct PDF",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0006569403",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "link not exposed",
+   "batch": "search"
+  },
+  {
+   "isin": "DE000A2BPK34",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "no report found",
+   "batch": "search"
+  },
+  {
+   "isin": "DE000A3E5C24",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "only press coverage found",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0006201403",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE0005767909",
+   "markets": {
+    "FRANKFURT": "FHW"
+   },
+   "source_url": "https://www.hauptversammlung.de/fileadmin/public/user_upload/FHW_GB25.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:05:57+00:00",
+   "http_status": 200,
+   "sha256": "50badff51ceebfe5c6380be2e0631166c4ed236aac0d5943ceed639a65887fd5",
+   "bytes": 4577006,
+   "match": {
+    "period_phrase": true,
+    "revenue": false,
+    "net_income": false,
+    "eps_informational": true
+   },
+   "result": "NOT_VERIFIED",
+   "sector_in_row": false,
+   "batch": 12
+  },
+  {
+   "isin": "DE000A168205",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A40ET13",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A2E4SV8",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A0LBFE4",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "FY Sep; annual report PDF not located",
+   "batch": "search"
+  },
+  {
+   "isin": "DE000A0S9QZ8",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE0005580005",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A3DRAE2",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A0MZ4B0",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE0006004500",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE0005754402",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A40ZW88",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A1RFMZ1",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE0007857476",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "audited 2025 report due end of June; not located",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0005653604",
+   "result": "MISSING_OFFICIAL_EVIDENCE",
+   "reason": "link not exposed",
+   "batch": "search"
+  },
+  {
+   "isin": "DE0001262152",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A35JR33",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A3MQR99",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A32VN59",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A3H2135",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE0007008906",
+   "markets": {
+    "XETRA": "RTC"
+   },
+   "source_url": "https://www.realtech.com/wp-content/uploads/REALTECH-AG-Geschaeftsbericht-2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T20:06:03+00:00",
+   "http_status": 200,
+   "sha256": "70e3609aa1450634643757d23ad54f0f44b80b9e4057b4fdb413710cf51044f9",
+   "bytes": 1793388,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": false,
+    "eps_informational": true
+   },
+   "result": "NOT_VERIFIED",
+   "sector_in_row": false,
+   "batch": 12
+  },
+  {
+   "isin": "DE0006925001",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE0008103102",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A3ESL51",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE0007600108",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A40KXC8",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A3D6Q45",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE0005490601",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A40ZVV0",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A41YFS0",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A41YE64",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A41YH12",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A2YN777",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE0005660104",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A3DSK87",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE000A1X3WF3",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
+  },
+  {
+   "isin": "DE0006492903",
+   "result": "NOT_ATTEMPTED_BOUNDED",
+   "reason": "micro-cap / rights line / delisted-style listing; not searched within bounded effort",
+   "batch": "none"
   }
  ]
 }

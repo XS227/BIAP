@@ -59,15 +59,16 @@ def to_text(path, ctype):
 
 
 def number_forms(v, unit):
-    """Textual forms of v (EUR units) as it may print in a report stated in millions/thousands, with 0/1 decimal places."""
+    """Textual forms of v (EUR units) as it may print in a report stated in EUR/thousands/millions/billions."""
     forms = set()
-    for scale in (1e6, 1e3, 1e9):
+    for scale, decs in ((1, (0, 2)), (1e3, (0, 1)), (1e6, (0, 1)), (1e9, (0, 1))):
         x = abs(v) / scale
-        for dec in (0, 1):
+        for dec in decs:
             s = f"{x:,.{dec}f}"
-            forms |= {s, s.replace(",", "."), s.replace(",", " "), s.replace(",", " "), s.replace(",", "'")}
-            if dec == 1:
-                forms |= {s.replace(",", "").replace(".", ","), s.replace(",", " ").replace(".", ",")}
+            forms |= {s, s.replace(",", "."), s.replace(",", " "), s.replace(",", "\u2009"), s.replace(",", "'")}
+            if dec:
+                forms |= {s.replace(",", "").replace(".", ","), s.replace(",", " ").replace(".", ","),
+                          s.replace(",", "X").replace(".", ",").replace("X", ".")}
     return forms
 
 
