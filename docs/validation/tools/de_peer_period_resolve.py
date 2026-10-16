@@ -23,6 +23,7 @@ import httpx
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "analysis"))
 SCRATCH = Path(sys.argv[1]); OUT = Path(sys.argv[2])
+EVIDENCE = [Path(a) for a in sys.argv[3:]]          # optional option-E evidence files (de_peer_doc_verify.py output); VERIFIED rows only
 DATA = SCRATCH / "data"
 os.environ.update(BIAP_GLOBAL_DATA_DIR=str(DATA), BIAP_GLOBAL_ONLINE_FIRST="1")
 from global_markets import evidence_store as es, freshness as fr  # noqa: E402
@@ -87,9 +88,20 @@ def main():
     for m in MARKETS:
         rows = es.read_ledger_rows("DE", m, limit=100000)          # all in-universe rows with a stored summary (read-only copy)
         universe[m] = rows
+    ev = {}
+    for f in EVIDENCE:
+        for r in json.load(open(f))["results"]:
+            if r.get("result") == "VERIFIED":
+                ev[r["isin"]] = r
+    for m in MARKETS:                                    # option E: issuer-document evidence, already verified against the row
+        for r in universe[m]:
+            co = r["company"]
+            if co.get("isin") in ev and not co.get("filing_period_end"):
+                overlay[(m, co["ticker"])] = ev[co["isin"]]["claimed_period_end"]; outcome[(m, co["ticker"])] = "RESOLVED_E_issuer_document"
     with httpx.Client(headers={"User-Agent": "BIAP-Global/1.0 evidence-verification"}) as client:
         todo = [(m, r) for m in MARKETS for r in universe[m]
-                if (r.get("company") or {}).get("isin") in reg and not (r["company"].get("filing_period_end"))]
+                if (r.get("company") or {}).get("isin") in reg and not (r["company"].get("filing_period_end"))
+                and (m, r["company"]["ticker"]) not in overlay]
         for i in range(0, len(todo), BATCH):
             mem, disk = guard()
             batch = todo[i:i + BATCH]

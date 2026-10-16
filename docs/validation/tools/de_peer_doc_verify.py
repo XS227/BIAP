@@ -1,0 +1,152 @@
+"""DE peer evidence pilot (option E): verify ONE official issuer document per ISIN against the stored ledger row.
+
+Usage: python de_peer_doc_verify.py <scratch_dir> <candidates.json> <out.json>
+  candidates.json: [{"isin": "...", "url": "https://issuer/.../annual-report.pdf", "period_end": "2025-12-31"}, ...]  (<=10 per call)
+
+What it does (per candidate)
+* checks the host's robots.txt (urllib.robotparser) and skips the source when the path is disallowed; no auth/CAPTCHA handling;
+* downloads the single official document into <scratch_dir>/docs (untrusted data, text-extracted with pdftotext, then deleted);
+* ACCEPTS the period end only when, in that document, (a) the claimed period-end date appears in an explicit period phrase,
+  (b) the row's revenue AND net income both appear (exact to the document's rounding) -> the row provably IS this filing.
+  EPS is checked and reported but is informational (basic vs diluted differ across issuers);
+* retains ONLY metadata: ISIN, ticker, period_end, source URL, HTTP status, sha256, match booleans, verification time.
+  No financial values are written to the output. Nothing is invented: a failed check leaves the row undated.
+Stops if MemAvailable < 150 MB or free disk < 3 GB.
+"""
+import hashlib, html, json, os, re, shutil, subprocess, sys, time
+from datetime import datetime, timezone
+from pathlib import Path
+from urllib import robotparser
+from urllib.parse import urlparse
+
+import httpx
+
+SCRATCH = Path(sys.argv[1]); CAND = Path(sys.argv[2]); OUT = Path(sys.argv[3])
+UA = "BIAP-Global/1.0 evidence-verification"
+MAX_BYTES = 60_000_000
+MONTHS_DE = ["januar", "februar", "märz", "april", "mai", "juni", "juli", "august", "september", "oktober", "november", "dezember"]
+MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
+
+
+def guard():
+    mem = int([l for l in open("/proc/meminfo") if l.startswith("MemAvailable")][0].split()[1]) // 1024
+    disk = shutil.disk_usage("/").free // 2**20
+    if mem < 150 or disk < 3072:
+        raise SystemExit(f"RESOURCE STOP mem_available={mem}MB disk_free={disk}MB")
+    return mem, disk
+
+
+def robots_ok(url, client):
+    p = urlparse(url)
+    try:
+        r = client.get(f"{p.scheme}://{p.netloc}/robots.txt", timeout=15)
+        if r.status_code >= 400:
+            return True            # no robots file published -> nothing disallows it
+        rp = robotparser.RobotFileParser(); rp.parse(r.text.splitlines())
+        return rp.can_fetch(UA, url)
+    except Exception:
+        return False               # cannot establish permission -> do not fetch
+
+
+def to_text(path, ctype):
+    if path.suffix == ".pdf":
+        txt = subprocess.run(["pdftotext", "-layout", str(path), "-"], capture_output=True, text=True, timeout=180).stdout
+    else:
+        raw = path.read_text(errors="ignore")
+        raw = re.sub(r"<(script|style)[\s\S]*?</\1>", " ", raw)
+        txt = html.unescape(re.sub(r"<[^>]+>", " ", raw))
+    return re.sub(r"[ \t  ]+", " ", txt)
+
+
+def number_forms(v, unit):
+    """Textual forms of v (EUR units) as it may print in a report stated in millions/thousands, with 0/1 decimal places."""
+    forms = set()
+    for scale in (1e6, 1e3, 1e9):
+        x = abs(v) / scale
+        for dec in (0, 1):
+            s = f"{x:,.{dec}f}"
+            forms |= {s, s.replace(",", "."), s.replace(",", " "), s.replace(",", " "), s.replace(",", "'")}
+            if dec == 1:
+                forms |= {s.replace(",", "").replace(".", ","), s.replace(",", " ").replace(".", ",")}
+    return forms
+
+
+def has_number(text, v):
+    if v is None:
+        return False
+    for f in number_forms(v, None):
+        if len(f.replace(",", "").replace(".", "").replace(" ", "")) < 3:
+            continue
+        if re.search(r"(?<![\d.,])" + re.escape(f) + r"(?![\d])", text):
+            return True
+    return False
+
+
+def period_phrase(text, iso):
+    y, m, d = map(int, iso.split("-")); mon = MONTHS[m - 1]; mon3 = mon[:3]
+    de = MONTHS_DE[m - 1]
+    pats = [rf"{d}\.?\s*{de}\s+{y}", rf"{mon}\s+{d},?\s+{y}", rf"{d}\s+{mon}\s+{y}", rf"{d}\.\s*{mon}\s+{y}", rf"{d:02d}\.{m:02d}\.{y}",
+            rf"{mon3}\.?\s+{d},?\s+{y}", rf"{d}\s+{mon3}\.?\s+{y}", rf"{y}-{m:02d}-{d:02d}"]
+    low = text.lower()
+    # the claimed period-end date must appear explicitly; the row is tied to this filing by the revenue+net-income match,
+    # so a bare "Dec. 31, 2025" statement/balance-sheet date is sufficient (no invented dates).
+    return any(re.search(p, low) for p in pats)
+
+
+def main():
+    cands = json.load(open(CAND))
+    assert len(cands) <= 10, "batch limit is 10 issuers"
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "analysis"))
+    os.environ.update(BIAP_GLOBAL_DATA_DIR=str(SCRATCH / "data"), BIAP_GLOBAL_ONLINE_FIRST="1")
+    from global_markets import evidence_store as es
+    rows = {}
+    for m in ("XETRA", "FRANKFURT"):
+        for r in es.read_ledger_rows("DE", m):
+            c = r["company"]
+            rows.setdefault(c["isin"], {"tickers": {}, "co": c})["tickers"][m] = c["ticker"]
+    docs = SCRATCH / "docs"; docs.mkdir(exist_ok=True)
+    res = []
+    with httpx.Client(headers={"User-Agent": UA}, follow_redirects=True) as client:
+        mem, disk = guard()
+        for c in cands:
+            isin = c["isin"]; row = rows.get(isin)
+            rec = {"isin": isin, "markets": row["tickers"] if row else None, "source_url": c["url"], "claimed_period_end": c["period_end"],
+                   "verified_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat()}
+            if not row:
+                rec["result"] = "NOT_A_UNIVERSE_PEER"; res.append(rec); continue
+            co = row["co"]
+            if not robots_ok(c["url"], client):
+                rec["result"] = "BLOCKED_ROBOTS_OR_UNVERIFIABLE"; res.append(rec); continue
+            try:
+                with client.stream("GET", c["url"], timeout=60) as r:
+                    rec["http_status"] = r.status_code
+                    if r.status_code != 200:
+                        rec["result"] = f"HTTP_{r.status_code}"; res.append(rec); continue
+                    ct = r.headers.get("content-type", ""); h = hashlib.sha256(); n = 0
+                    p = docs / (isin + (".pdf" if "pdf" in ct or c["url"].lower().endswith(".pdf") else ".html"))
+                    with open(p, "wb") as fh:
+                        for chunk in r.iter_bytes():
+                            n += len(chunk)
+                            if n > MAX_BYTES:
+                                raise RuntimeError("too large")
+                            h.update(chunk); fh.write(chunk)
+                rec["sha256"] = h.hexdigest(); rec["bytes"] = n
+                text = to_text(p, ct); p.unlink()
+            except Exception as e:
+                rec["result"] = f"FETCH_ERROR:{type(e).__name__}"; res.append(rec); continue
+            rec["match"] = {"period_phrase": period_phrase(text, c["period_end"]), "revenue": has_number(text, co.get("revenue")),
+                            "net_income": has_number(text, co.get("net_income")), "eps_informational": bool(co.get("eps")) and
+                            bool(re.search(r"(?<![\d.,])" + re.escape(f"{abs(co['eps']):.2f}") + r"(?!\d)", text) or
+                                 re.search(r"(?<![\d.,])" + re.escape(f"{abs(co['eps']):.2f}".replace(".", ",")) + r"(?!\d)", text))}
+            m = rec["match"]
+            rec["result"] = "VERIFIED" if (m["period_phrase"] and m["revenue"] and m["net_income"]) else "NOT_VERIFIED"
+            rec["sector_in_row"] = bool(co.get("sector"))
+            res.append(rec)
+            time.sleep(1.5)                         # polite spacing
+    OUT.write_text(json.dumps({"batch_size": len(cands), "memAvailMB": mem, "diskFreeMB": disk, "results": res}, indent=1))
+    for r in res:
+        print(r["isin"], r["result"], r.get("match"))
+
+
+if __name__ == "__main__":
+    main()
