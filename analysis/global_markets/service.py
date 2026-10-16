@@ -103,25 +103,34 @@ def _supported_operating_equity(company: GlobalCompany) -> bool:
     )
 
 
-def _scan_peer_rows(company: GlobalCompany) -> Optional[list]:
-    """Deep-analyzed rows of the persisted same-exchange scan (<=24h old), else None."""
+def _scan_peer_state(company: GlobalCompany) -> tuple[Optional[list], str]:
+    """(rows, state); state is ok | scan_cache_missing | scan_cache_stale | scan_cache_invalid."""
     country = "".join(ch for ch in company.country.upper() if ch.isalnum() or ch in {"-", "_"})
     exchange = "".join(ch for ch in company.exchange.upper() if ch.isalnum() or ch in {"-", "_"})
     wrapper = read_json(data_root() / "scan-cache" / country / f"{exchange}.json", default=None)
+    if wrapper is None:
+        return None, "scan_cache_missing"
     if not isinstance(wrapper, dict) or wrapper.get("schemaVersion") not in {1, 2, 3}:
-        return None
+        return None, "scan_cache_invalid"
     try:
         cached_at = datetime.fromisoformat(str(wrapper.get("cachedAt") or "").replace("Z", "+00:00"))
         if cached_at.tzinfo is None:
             cached_at = cached_at.replace(tzinfo=timezone.utc)
         age_hours = (datetime.now(timezone.utc) - cached_at.astimezone(timezone.utc)).total_seconds() / 3600.0
     except ValueError:
-        return None
+        return None, "scan_cache_invalid"
     if age_hours < 0 or age_hours > 24:
-        return None
+        return None, "scan_cache_stale"
     payload = wrapper.get("payload")
     rows = payload.get("deepResults") if isinstance(payload, dict) else None
-    return rows if isinstance(rows, list) else None
+    if isinstance(rows, list):
+        return rows, "ok"
+    return None, "scan_cache_invalid"
+
+
+def _scan_peer_rows(company: GlobalCompany) -> Optional[list]:
+    """Deep-analyzed rows of the persisted same-exchange scan (<=24h old), else None."""
+    return _scan_peer_state(company)[0]
 
 
 def _peer_metric_values(company: GlobalCompany, rows: list, field: str, upper: float) -> tuple[list[float], list[float]]:
@@ -392,6 +401,7 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
     peer_scope = None
     peer_count = 0
     exchange_pe_median = None
+    peer_scan_state = _scan_peer_state(company)[1]
     if sector_pe is None:
         peer_pe, peer_scope, peer_count = _peer_pe_benchmark(company)
         if peer_pe is not None and peer_scope == "same_sector_scan_median":
@@ -515,6 +525,7 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
                 "peer_pe_benchmark_is_sector_specific": peer_scope == "same_sector_scan_median",
                 **({"exchange_pe_median_informational": exchange_pe_median} if exchange_pe_median is not None else {}),
             } if peer_scope else {}),
+            "peer_scan_cache_state": peer_scan_state,
             **({"peer_pb_benchmark": peer_pb} if peer_pb is not None else {}),
             **({"fx_conversion": fx_info} if fx_info else {}),
         },
@@ -624,6 +635,26 @@ def _source_plan_payload(country: str) -> dict:
     return plan
 
 
+def _critical_data_gaps(enriched, signals) -> tuple[str, ...]:
+    """Critical comparison evidence that is missing for a company that could be compared.
+
+    A valid positive P/E with no usable sector benchmark (peer scan missing,
+    stale, invalid or too small) means the valuation comparison could not be
+    made. A BUY must not be accepted on that basis.
+    """
+    pe = enriched.pe
+    if pe is None or pe <= 0:
+        return ()
+    comparison = next((s for s in signals if getattr(s, "agent", "") == "comparison"), None)
+    if comparison is not None and comparison.confidence >= 0.5:
+        return ()
+    state = (enriched.raw_provider_fields or {}).get("peer_scan_cache_state") or "unknown"
+    return (
+        "valuation benchmark unavailable (peer scan state: "
+        f"{state}); a BUY requires verified comparison evidence",
+    )
+
+
 def _analysis_payload(
     enriched,
     diagnostics: ProviderDiagnostics,
@@ -638,6 +669,7 @@ def _analysis_payload(
 ) -> dict:
     preliminary_call = _call(score, confidence, evidence.status)
     fundamental_evidence = fundamental_evidence_contract(enriched)
+    critical_gaps = _critical_data_gaps(enriched, signals)
     governance = decision_governance_agent(
         proposed_call=preliminary_call,
         score=score,
@@ -645,6 +677,7 @@ def _analysis_payload(
         decision_confidence=decision_confidence,
         evidence=evidence,
         distress=distress,
+        critical_data_gaps=critical_gaps,
     )
     call = governance.final_call
     distress_gate_applied = (

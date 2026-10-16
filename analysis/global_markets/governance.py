@@ -21,6 +21,7 @@ def decision_governance_agent(
     distress: DistressAssessment,
     accept_threshold: float = 0.55,
     escalate_threshold: float = 0.35,
+    critical_data_gaps: tuple[str, ...] = (),
 ) -> GovernanceAssessment:
     hard_blocks: list[str] = []
     reviews: list[str] = []
@@ -83,6 +84,23 @@ def decision_governance_agent(
             hard_blocks=(),
             review_reasons=tuple(reviews),
             reasoning="Escalated to human review: " + "; ".join(reviews),
+        )
+
+    # Fail closed: a positive call needs the critical comparison evidence that
+    # a derived, time-limited input (e.g. the daily peer scan) can silently
+    # remove. Without it the call is routed to REVIEW instead of being accepted,
+    # so cache expiry alone can never turn NO_RECOMMENDATION into a BUY.
+    if proposed_call == "BUY_CANDIDATE" and critical_data_gaps:
+        reviews.extend(critical_data_gaps)
+        return GovernanceAssessment(
+            action="REVIEW",
+            final_call="NO_RECOMMENDATION",
+            accepted=False,
+            escalated=True,
+            abstained=True,
+            hard_blocks=(),
+            review_reasons=tuple(reviews),
+            reasoning="Escalated to human review (fail-closed): " + "; ".join(reviews),
         )
 
     if conf >= accept_threshold:
