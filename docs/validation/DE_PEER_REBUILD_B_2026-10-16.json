@@ -1,0 +1,222 @@
+{
+ "generatedAt": "2026-10-16T18:48:27+00:00",
+ "batches": [
+  {
+   "batch": 1,
+   "size": 10,
+   "memAvailMB": 827,
+   "diskFreeMB": 7140
+  },
+  {
+   "batch": 2,
+   "size": 10,
+   "memAvailMB": 826,
+   "diskFreeMB": 7140
+  },
+  {
+   "batch": 3,
+   "size": 10,
+   "memAvailMB": 826,
+   "diskFreeMB": 7140
+  },
+  {
+   "batch": 4,
+   "size": 4,
+   "memAvailMB": 825,
+   "diskFreeMB": 7140
+  }
+ ],
+ "outcomes": {
+  "registry_period_differs_from_stored_figures": 17,
+  "RESOLVED": 16,
+  "esef_registry_unverified_against_row": 1
+ },
+ "outcomeByTicker": {
+  "XETRA:SWA": "registry_period_differs_from_stored_figures",
+  "XETRA:YSN": "RESOLVED",
+  "XETRA:VRL": "RESOLVED",
+  "XETRA:VOS": "registry_period_differs_from_stored_figures",
+  "XETRA:S188": "registry_period_differs_from_stored_figures",
+  "XETRA:FYB": "RESOLVED",
+  "XETRA:HMU": "RESOLVED",
+  "XETRA:CSH": "registry_period_differs_from_stored_figures",
+  "XETRA:ETG": "registry_period_differs_from_stored_figures",
+  "XETRA:SGL": "registry_period_differs_from_stored_figures",
+  "XETRA:VME": "RESOLVED",
+  "XETRA:SNG": "RESOLVED",
+  "XETRA:FXT": "RESOLVED",
+  "XETRA:CLIQ": "RESOLVED",
+  "XETRA:P4O": "registry_period_differs_from_stored_figures",
+  "FRANKFURT:VRL": "RESOLVED",
+  "FRANKFURT:SWA": "registry_period_differs_from_stored_figures",
+  "FRANKFURT:YSN": "RESOLVED",
+  "FRANKFURT:S188": "registry_period_differs_from_stored_figures",
+  "FRANKFURT:VOS": "registry_period_differs_from_stored_figures",
+  "FRANKFURT:HMU": "RESOLVED",
+  "FRANKFURT:IFX": "registry_period_differs_from_stored_figures",
+  "FRANKFURT:ETG": "registry_period_differs_from_stored_figures",
+  "FRANKFURT:VME": "RESOLVED",
+  "FRANKFURT:FYB": "RESOLVED",
+  "FRANKFURT:CSH": "registry_period_differs_from_stored_figures",
+  "FRANKFURT:SNG": "RESOLVED",
+  "FRANKFURT:DTE": "registry_period_differs_from_stored_figures",
+  "FRANKFURT:CLIQ": "RESOLVED",
+  "FRANKFURT:SGL": "registry_period_differs_from_stored_figures",
+  "FRANKFURT:ENR": "esef_registry_unverified_against_row",
+  "FRANKFURT:RHM": "registry_period_differs_from_stored_figures",
+  "FRANKFURT:FXT": "RESOLVED",
+  "FRANKFURT:P4O": "registry_period_differs_from_stored_figures"
+ },
+ "overlay": {
+  "XETRA:YSN": "2025-12-31",
+  "XETRA:VRL": "2025-12-31",
+  "XETRA:FYB": "2025-12-31",
+  "XETRA:HMU": "2025-12-31",
+  "XETRA:VME": "2025-12-31",
+  "XETRA:SNG": "2025-12-31",
+  "XETRA:FXT": "2025-12-31",
+  "XETRA:CLIQ": "2025-12-31",
+  "FRANKFURT:VRL": "2025-12-31",
+  "FRANKFURT:YSN": "2025-12-31",
+  "FRANKFURT:HMU": "2025-12-31",
+  "FRANKFURT:VME": "2025-12-31",
+  "FRANKFURT:FYB": "2025-12-31",
+  "FRANKFURT:SNG": "2025-12-31",
+  "FRANKFURT:CLIQ": "2025-12-31",
+  "FRANKFURT:FXT": "2025-12-31"
+ },
+ "tally": {
+  "XETRA": {
+   "other|dated_exact": 16,
+   "other|dated_via_registry_overlay": 6,
+   "other|undated_no_period_source": 69,
+   "other|undated_no_period_source+no_sector": 164,
+   "peer|dated_exact": 40,
+   "peer|dated_via_registry_overlay": 2,
+   "peer|undated_no_period_source": 49,
+   "peer|undated_no_period_source+no_sector": 59,
+   "_totals": {
+    "ledger_in_universe": 406,
+    "without_stored_analysis": {
+     "INSUFFICIENT_DATA": 1
+    },
+    "universe_with_analysis": 405,
+    "peers": 150,
+    "overlay_resolved": 8
+   }
+  },
+  "FRANKFURT": {
+   "other|dated_exact": 19,
+   "other|dated_via_registry_overlay": 6,
+   "other|undated_no_period_source": 87,
+   "other|undated_no_period_source+no_sector": 229,
+   "peer|dated_exact": 57,
+   "peer|dated_via_registry_overlay": 2,
+   "peer|undated_no_period_source": 22,
+   "peer|undated_no_period_source+no_sector": 69,
+   "_totals": {
+    "ledger_in_universe": 498,
+    "without_stored_analysis": {
+     "INSUFFICIENT_DATA": 7
+    },
+    "universe_with_analysis": 491,
+    "peers": 150,
+    "overlay_resolved": 8
+   }
+  }
+ },
+ "dryRun": {
+  "baseline": {
+   "XETRA": {
+    "status": "REJECTED",
+    "replaced": false,
+    "problems": [
+     "fundamentals not valid for repricing: 79% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first"
+    ],
+    "ledgerRows": 150,
+    "raw": {
+     "country": "DE",
+     "exchange": "XETRA",
+     "method": "ledger_rebuild",
+     "status": "REJECTED",
+     "replaced": false,
+     "dryRun": true,
+     "baseCachedAt": "2026-10-16T09:57:37.684137+00:00",
+     "baseAgeHours": 8.85,
+     "rowsTotal": 150,
+     "filingDimension": "{'state': 'UNDETERMINED', 'excludedPct': 78.9, 'excludedCount': 105, 'reasons': {'SVE': 'filing_undated', 'SHF': 'filing_undated', 'KA8': 'filing_undated', 'LIK': 'filing_undated', 'HEN3': 'filing_undated', '1GBS': 'filing_undated', 'FME': 'filing_undated', 'IVU': 'filing_undated', 'EVAC': 'filing_u",
+     "problems": "['fundamentals not valid for repricing: 79% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first']",
+     "ledgerRows": 150
+    }
+   },
+   "FRANKFURT": {
+    "status": "REJECTED",
+    "replaced": false,
+    "problems": [
+     "fundamentals not valid for repricing: 74% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first"
+    ],
+    "ledgerRows": 150,
+    "raw": {
+     "country": "DE",
+     "exchange": "FRANKFURT",
+     "method": "ledger_rebuild",
+     "status": "REJECTED",
+     "replaced": false,
+     "dryRun": true,
+     "baseCachedAt": "2026-10-12T19:23:46.745394+00:00",
+     "baseAgeHours": 95.41,
+     "rowsTotal": 150,
+     "filingDimension": "{'state': 'UNDETERMINED', 'excludedPct': 73.9, 'excludedCount': 85, 'reasons': {'SHF': 'filing_undated', 'SVE': 'filing_undated', 'IVU': 'filing_undated', 'LIK': 'filing_undated', 'KA8': 'filing_undated', 'FPE3': 'filing_undated', 'BOG': 'filing_undated', 'DRW3': 'filing_undated', 'VRL': 'filing_und",
+     "problems": "['fundamentals not valid for repricing: 74% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first']",
+     "ledgerRows": 150
+    }
+   }
+  },
+  "with_overlay": {
+   "XETRA": {
+    "status": "REJECTED",
+    "replaced": false,
+    "problems": [
+     "fundamentals not valid for repricing: 77% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first"
+    ],
+    "ledgerRows": 150,
+    "raw": {
+     "country": "DE",
+     "exchange": "XETRA",
+     "method": "ledger_rebuild",
+     "status": "REJECTED",
+     "replaced": false,
+     "dryRun": true,
+     "baseCachedAt": "2026-10-16T09:57:37.684137+00:00",
+     "baseAgeHours": 8.85,
+     "rowsTotal": 150,
+     "filingDimension": "{'state': 'UNDETERMINED', 'excludedPct': 77.4, 'excludedCount': 103, 'reasons': {'SVE': 'filing_undated', 'SHF': 'filing_undated', 'KA8': 'filing_undated', 'LIK': 'filing_undated', 'HEN3': 'filing_undated', '1GBS': 'filing_undated', 'FME': 'filing_undated', 'IVU': 'filing_undated', 'EVAC': 'filing_u",
+     "problems": "['fundamentals not valid for repricing: 77% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first']",
+     "ledgerRows": 150
+    }
+   },
+   "FRANKFURT": {
+    "status": "REJECTED",
+    "replaced": false,
+    "problems": [
+     "fundamentals not valid for repricing: 72% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first"
+    ],
+    "ledgerRows": 150,
+    "raw": {
+     "country": "DE",
+     "exchange": "FRANKFURT",
+     "method": "ledger_rebuild",
+     "status": "REJECTED",
+     "replaced": false,
+     "dryRun": true,
+     "baseCachedAt": "2026-10-12T19:23:46.745394+00:00",
+     "baseAgeHours": 95.41,
+     "rowsTotal": 150,
+     "filingDimension": "{'state': 'UNDETERMINED', 'excludedPct': 72.2, 'excludedCount': 83, 'reasons': {'SHF': 'filing_undated', 'SVE': 'filing_undated', 'IVU': 'filing_undated', 'LIK': 'filing_undated', 'KA8': 'filing_undated', 'FPE3': 'filing_undated', 'BOG': 'filing_undated', 'DRW3': 'filing_undated', '1GBS': 'filing_un",
+     "problems": "['fundamentals not valid for repricing: 72% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first']",
+     "ledgerRows": 150
+    }
+   }
+  }
+ }
+}
