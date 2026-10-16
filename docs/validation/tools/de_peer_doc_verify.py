@@ -61,9 +61,11 @@ def to_text(path, ctype):
 def number_forms(v, unit):
     """Textual forms of v (EUR units) as it may print in a report stated in EUR/thousands/millions/billions."""
     forms = set()
-    for scale, decs in ((1, (0, 2)), (1e3, (0, 1)), (1e6, (0, 1)), (1e9, (0, 1))):
+    for scale, decs in ((1, (0, 2)), (1e3, (0, 1)), (1e6, (0, 1, 2)), (1e9, (0, 1))):   # 2-dec millions ("32.89") only matches a figure that really prints so
         x = abs(v) / scale
         for dec in decs:
+            if scale == 1e6 and dec == 2 and abs(abs(v) - round(abs(v) / 1e4) * 1e4) >= 1:
+                continue            # 2-decimal millions only when the stored figure is exactly that precise (no fuzzy matches)
             s = f"{x:,.{dec}f}"
             forms |= {s, s.replace(",", "."), s.replace(",", " "), s.replace(",", "\u2009"), s.replace(",", "'")}
             if dec:
@@ -72,13 +74,23 @@ def number_forms(v, unit):
     return forms
 
 
-def has_number(text, v):
+NET_INCOME_LABEL = re.compile(r"(?i)(konzernjahres(ueberschuss|überschuss)|jahres(ueberschuss|überschuss)|konzernergebnis|periodenergebnis|net income|net profit|profit for the (year|period))")
+
+
+def has_number(text, v, label=None):
+    """True when v prints in the document. Forms of <3 digits (e.g. "30" TEUR) are accepted only on a line carrying `label`."""
     if v is None:
         return False
     for f in number_forms(v, None):
-        if len(f.replace(",", "").replace(".", "").replace(" ", "")) < 3:
+        short = len(f.replace(",", "").replace(".", "").replace(" ", "")) < 3
+        # a 1-2 digit figure counts only as an EXACT whole-TEUR amount (e.g. 30 000 EUR = "30" TEUR) on a line carrying the net-income label
+        if short and (label is None or abs(v) < 10_000 or abs(v) % 1000 != 0 or f != str(int(abs(v) // 1000))):
             continue
-        if re.search(r"(?<![\d.,])" + re.escape(f) + r"(?![\d])", text):
+        pat = re.compile(r"(?<![\d.,])" + re.escape(f) + r"(?![\d])")
+        if not short:
+            if pat.search(text):
+                return True
+        elif any(label.search(l) and pat.search(l) for l in text.splitlines()):
             return True
     return False
 
@@ -136,7 +148,7 @@ def main():
             except Exception as e:
                 rec["result"] = f"FETCH_ERROR:{type(e).__name__}"; res.append(rec); continue
             rec["match"] = {"period_phrase": period_phrase(text, c["period_end"]), "revenue": has_number(text, co.get("revenue")),
-                            "net_income": has_number(text, co.get("net_income")), "eps_informational": bool(co.get("eps")) and
+                            "net_income": has_number(text, co.get("net_income"), NET_INCOME_LABEL), "eps_informational": bool(co.get("eps")) and
                             bool(re.search(r"(?<![\d.,])" + re.escape(f"{abs(co['eps']):.2f}") + r"(?!\d)", text) or
                                  re.search(r"(?<![\d.,])" + re.escape(f"{abs(co['eps']):.2f}".replace(".", ",")) + r"(?!\d)", text))}
             m = rec["match"]
