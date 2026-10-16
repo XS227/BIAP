@@ -1,0 +1,157 @@
+{
+ "schema": "biap-de-peer-evidence-e/1",
+ "generatedAt": "2026-10-16T22:53:55+00:00",
+ "note": "E3: re-verification of the 9 NOT_VERIFIED ISINs with the rounded-TEUR matcher (stored 2-decimal-million figures vs unrounded TEUR/EUR amounts printed in the filing). Metadata only: no financial values, no documents. LEG (revenue 1,579.1m not printed) and DBAG (stored NI is Konzern-Gesamtergebnis; no revenue) stay NOT_VERIFIED and are not listed.",
+ "results": [
+  {
+   "isin": "DE0007203705",
+   "markets": {
+    "XETRA": "SHF",
+    "FRANKFURT": "SHF"
+   },
+   "source_url": "https://investor-relations.snpgroup.com/siteassets/2-publications/archive/en/2025/sn_2025_gb_eng.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T22:53:55+00:00",
+   "http_status": 200,
+   "sha256": "e26fe6c6a3c1d859e2827d29373c98359f70ed8329b5a947db3d896e29f2f94a",
+   "bytes": 20067811,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "rounded-TEUR (10 000 EUR window; NI only on attribution-labelled, non-comprehensive lines)"
+  },
+  {
+   "isin": "DE000A161N30",
+   "markets": {
+    "XETRA": "GLJ"
+   },
+   "source_url": "https://www.grenke.com/a/original/gallery/12428/files/original/a05890bf-5cec-4d88-9842-4250aafe9446.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T22:53:55+00:00",
+   "http_status": 200,
+   "sha256": "66b0326762298bb3274e712e3f5207482f2e31455135ebc207abc180695ff562",
+   "bytes": 6925103,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "rounded-TEUR (10 000 EUR window; NI only on attribution-labelled, non-comprehensive lines)"
+  },
+  {
+   "isin": "DE0006286560",
+   "markets": {
+    "FRANKFURT": "O4B"
+   },
+   "source_url": "https://www.ovb.eu/fileadmin/assets/Dokumente/ovb_holding/geschaeftsberichte/english/ovb_annual_report_2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T22:53:55+00:00",
+   "http_status": 200,
+   "sha256": "f8355110ad5447ea12c60f504dcb90c626d9be33f5082a9a514623e1e0b48f28",
+   "bytes": 1430292,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "rounded-TEUR (10 000 EUR window; NI only on attribution-labelled, non-comprehensive lines)"
+  },
+  {
+   "isin": "DE000A0B9N37",
+   "markets": {
+    "XETRA": "JDC"
+   },
+   "source_url": "https://jdcgroup.de/wp-content/uploads/JDCGROUP_GB2025_EN_RZ.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T22:53:55+00:00",
+   "http_status": 200,
+   "sha256": "eb2913e33d21567653bff9c05a8c69740301b30c9505c395fa2d7556dec3419c",
+   "bytes": 1326734,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "rounded-TEUR (10 000 EUR window; NI only on attribution-labelled, non-comprehensive lines)"
+  },
+  {
+   "isin": "DE000A0JDBC7",
+   "markets": {
+    "XETRA": "LIK",
+    "FRANKFURT": "LIK"
+   },
+   "source_url": "https://www.limes-schlosskliniken.de/app/uploads/2026/05/Geschaeftsbericht-2025-LIMES-Schlosskliniken-2.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T22:53:55+00:00",
+   "http_status": 200,
+   "sha256": "e9501e5d0d1178a5f9dfab7421c34888965cc5a97b73551435398b159558757e",
+   "bytes": 785839,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "rounded-TEUR (10 000 EUR window; NI only on attribution-labelled, non-comprehensive lines)"
+  },
+  {
+   "isin": "DE000A1K0201",
+   "markets": {
+    "XETRA": "GSC1",
+    "FRANKFURT": "GSC1"
+   },
+   "source_url": "https://gesco.de/fileadmin/static/pdfs/en/investor_relations/financial_reports/2025/2025-gesco-annual_report.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T22:53:55+00:00",
+   "http_status": 200,
+   "sha256": "b54512d59d0a161fbc8bb906845c37e2817f3a98e8ae1243536c7e503cf49aa2",
+   "bytes": 2318561,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "rounded-TEUR (10 000 EUR window; NI only on attribution-labelled, non-comprehensive lines)"
+  },
+  {
+   "isin": "DE0005767909",
+   "markets": {
+    "FRANKFURT": "FHW"
+   },
+   "source_url": "https://www.hauptversammlung.de/fileadmin/public/user_upload/FHW_GB25.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T22:53:55+00:00",
+   "http_status": 200,
+   "sha256": "50badff51ceebfe5c6380be2e0631166c4ed236aac0d5943ceed639a65887fd5",
+   "bytes": 4577006,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "rounded-TEUR (10 000 EUR window; NI only on attribution-labelled, non-comprehensive lines)"
+  }
+ ]
+}

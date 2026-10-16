@@ -95,6 +95,41 @@ def has_number(text, v, label=None):
     return False
 
 
+_GROUPED = re.compile(r"(?<![\d.,])\d{1,3}(?:[.,\u202f\u2009 ]\d{3})+(?![\d])")
+
+
+def matches_rounded_teur(text, v, label=None):
+    """True when the document prints a whole-TEUR (or whole-EUR) figure that ROUNDS to the stored figure.
+
+    Providers store EUR figures rounded to 2-decimal millions (10 000 EUR); filings print the unrounded TEUR/EUR amount
+    (e.g. 5.694.977 or 9,928 TEUR vs stored 5.69m / 9.93m). Only a stored figure that is exactly 10 000-precise is eligible,
+    and the printed amount must round (within the 10 000 EUR rounding window) to it -- nothing is accepted that the document does not print.
+    """
+    if v is None or abs(v) < 100_000 or abs(abs(v) - round(abs(v) / 1e4) * 1e4) >= 1:
+        return False
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if label is not None:       # net income: figure must sit on/near a net-income label and never on a comprehensive-income line
+            if _COMPREHENSIVE.search(line) or not any(label.search(l) for l in lines[max(0, i - 6):i + 1]):
+                continue
+        if _rounded_hit(line, v):
+            return True
+    return False
+
+
+NI_ATTRIBUTION_LABEL = re.compile(NET_INCOME_LABEL.pattern[:-1] + r"|attributable to|owners of the parent|(profit|share) of (the )?shareholders|after (minority|non-controlling)|nach (anteilen )?(anderer|nicht)|ergebnis nach|anteilseigner|mutterunternehmen)")
+_COMPREHENSIVE = re.compile(r"(?i)(gesamtergebnis|comprehensive|gesamtperiodenergebnis)")
+
+
+def _rounded_hit(text, v):
+    for tok in _GROUPED.findall(text):
+        n = int(re.sub(r"\D", "", tok))
+        # stored = printed amount rounded to 10 000 EUR (+-5 000); a TEUR print is itself rounded (+-500)
+        if abs(n * 1e3 - abs(v)) <= 5500 and len(str(n)) >= 3 or abs(n - abs(v)) <= 5000:
+            return True
+    return False
+
+
 def period_phrase(text, iso):
     y, m, d = map(int, iso.split("-")); mon = MONTHS[m - 1]; mon3 = mon[:3]
     de = MONTHS_DE[m - 1]
@@ -147,8 +182,8 @@ def main():
                 text = to_text(p, ct); p.unlink()
             except Exception as e:
                 rec["result"] = f"FETCH_ERROR:{type(e).__name__}"; res.append(rec); continue
-            rec["match"] = {"period_phrase": period_phrase(text, c["period_end"]), "revenue": has_number(text, co.get("revenue")),
-                            "net_income": has_number(text, co.get("net_income"), NET_INCOME_LABEL), "eps_informational": bool(co.get("eps")) and
+            rec["match"] = {"period_phrase": period_phrase(text, c["period_end"]), "revenue": has_number(text, co.get("revenue")) or matches_rounded_teur(text, co.get("revenue")),
+                            "net_income": has_number(text, co.get("net_income"), NET_INCOME_LABEL) or matches_rounded_teur(text, co.get("net_income"), NI_ATTRIBUTION_LABEL), "eps_informational": bool(co.get("eps")) and
                             bool(re.search(r"(?<![\d.,])" + re.escape(f"{abs(co['eps']):.2f}") + r"(?!\d)", text) or
                                  re.search(r"(?<![\d.,])" + re.escape(f"{abs(co['eps']):.2f}".replace(".", ",")) + r"(?!\d)", text))}
             m = rec["match"]
