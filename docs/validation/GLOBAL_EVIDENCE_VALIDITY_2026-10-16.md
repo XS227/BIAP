@@ -71,3 +71,7 @@ Stored-evidence digest (file names/sizes of fundamentals, market, ledgers) befor
 
 ## 5. Open items / needs approval
 Merge #52, deploy, one `rebuild`/`reprice` run for the 11 markets, timers - none done. Risk-signal gate decision and a source-update feed producer remain open. DE needs a targeted peer rebuild.
+
+## Independent verification (added after review of 9a6c755)
+
+See `GLOBAL_EVIDENCE_REUSE_VERIFICATION_2026-10-16.md` / `.pdf`: per-country reconstruction PASS/FAIL (DE fails closed), decision results, and missing-evidence/stale-price checks on stored data.
