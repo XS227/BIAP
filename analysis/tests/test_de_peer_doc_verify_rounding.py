@@ -34,3 +34,13 @@ def test_net_income_rounded_match_needs_attribution_label_and_skips_comprehensiv
     assert v.matches_rounded_teur("Profit share of shareholders in SNP 31,816 20,244", 31_820_000.0, lab)
     assert not v.matches_rounded_teur("Konzern-Gesamtergebnis 26.397 -35.056", 26_400_000.0, lab)   # DBAG: comprehensive income
     assert not v.matches_rounded_teur("Total assets 9,928", 9_930_000.0, lab)                        # no net-income context
+
+
+def test_esef_zip_package_text_is_extracted(tmp_path):
+    import zipfile
+    z = tmp_path / "pkg.zip"
+    with zipfile.ZipFile(z, "w") as f:
+        f.writestr("reports/r.xhtml", "<html><body><script>x()</script><p>Revenue 296,770</p></body></html>")
+        f.writestr("META-INF/x.xml", "<a>ignored</a>")
+    txt = v.to_text(z, "application/zip")
+    assert "Revenue 296,770" in txt and "x()" not in txt and "ignored" not in txt

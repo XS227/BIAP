@@ -49,7 +49,19 @@ def robots_ok(url, client):
 
 
 def to_text(path, ctype):
-    if path.suffix == ".pdf":
+    if path.suffix == ".zip":                      # ESEF report package: concatenate the (x)html members' text
+        import zipfile
+        parts = []
+        with zipfile.ZipFile(path) as z:
+            for n in z.namelist():
+                if n.lower().endswith((".xhtml", ".html", ".htm")) and z.getinfo(n).file_size < 80_000_000:
+                    raw = z.read(n).decode("utf-8", "ignore")
+                    raw = re.sub(r"<(script|style)[\s\S]*?</\1>", " ", raw)
+                    parts.append(html.unescape(re.sub(r"<[^>]+>", " ", raw)))
+                elif n.lower().endswith(".pdf") and z.getinfo(n).file_size < 80_000_000:
+                    parts.append(subprocess.run(["pdftotext", "-layout", "-", "-"], input=z.read(n), capture_output=True, timeout=180).stdout.decode("utf-8", "ignore"))
+        txt = "\n".join(parts)
+    elif path.suffix == ".pdf":
         txt = subprocess.run(["pdftotext", "-layout", str(path), "-"], capture_output=True, text=True, timeout=180).stdout
     else:
         raw = path.read_text(errors="ignore")
@@ -171,7 +183,7 @@ def main():
                     if r.status_code != 200:
                         rec["result"] = f"HTTP_{r.status_code}"; res.append(rec); continue
                     ct = r.headers.get("content-type", ""); h = hashlib.sha256(); n = 0
-                    p = docs / (isin + (".pdf" if "pdf" in ct or c["url"].lower().endswith(".pdf") else ".html"))
+                    p = docs / (isin + (".pdf" if "pdf" in ct or c["url"].lower().endswith(".pdf") else ".zip" if "zip" in ct or c["url"].lower().split("?")[0].endswith(".zip") else ".html"))
                     with open(p, "wb") as fh:
                         for chunk in r.iter_bytes():
                             n += len(chunk)
