@@ -1,13 +1,13 @@
 [Unit]
-Description=Refresh BIAP Global Germany peer benchmark every 24 h (cache validity is 24 h)
+Description=Refresh BIAP Global Germany peer benchmark every 24 h
 
 [Timer]
-# 20 h cadence keeps a fresh file well inside the 24 h validity window and
-# leaves one retry slot if a run is rejected.
-OnBootSec=20min
-OnUnitActiveSec=20h
+# First run 2 min after enable (before the current cache expires), then 24 h after each run.
+OnActiveSec=2min
+OnUnitActiveSec=24h
+AccuracySec=1min
+RandomizedDelaySec=0
 Persistent=true
-RandomizedDelaySec=10min
 Unit=biap-global-de-benchmark.service
 
 [Install]

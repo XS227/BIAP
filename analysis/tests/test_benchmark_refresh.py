@@ -77,3 +77,29 @@ def test_failed_refresh_leaves_decisions_failing_closed(tmp_path, monkeypatch):
     br.refresh_benchmark("DE", "XETRA", scan=lambda **k: (_ for _ in ()).throw(OSError("x")), now=NOW)
     state = _scan_peer_state(_company(country="DE", exchange="XETRA"))[1]
     assert state == "scan_cache_stale"
+
+
+def test_lock_blocks_second_refresh_and_is_released(tmp_path):
+    p = tmp_path / "XETRA.json"
+    with br.refresh_lock(p):
+        with pytest.raises(br.RefreshLocked):
+            with br.refresh_lock(p):
+                pass
+    with br.refresh_lock(p):
+        pass
+
+
+def test_cleanup_removes_only_old_own_temp_files(tmp_path):
+    import os, time
+    p = tmp_path / "XETRA.json"
+    p.write_text("{}")
+    (tmp_path / "XETRA.json.prev").write_text("{}")
+    old, new = tmp_path / "XETRA.json.a.tmp", tmp_path / "XETRA.json.b.tmp"
+    other = tmp_path / "FRANKFURT.json.c.tmp"
+    for f in (old, new, other):
+        f.write_text("x")
+    os.utime(old, (time.time() - 7200,) * 2)
+    os.utime(other, (time.time() - 7200,) * 2)
+    assert br.cleanup_stale_temp(p) == 1
+    assert not old.exists() and new.exists() and other.exists() and p.exists()
+    assert (tmp_path / "XETRA.json.prev").exists()

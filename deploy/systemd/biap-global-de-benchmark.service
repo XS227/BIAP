@@ -10,12 +10,26 @@ Group=ubuntu
 WorkingDirectory=/home/ubuntu/biap-global/BIAP/analysis
 Environment=BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global
 Environment=BIAP_GLOBAL_ONLINE_FIRST=1
-# Exit 1 on ERROR/REJECTED leaves the previous cache untouched; do not restart on failure.
+Environment=PYTHONUNBUFFERED=1
+# Locking is in-process (flock on XETRA.json.lock); a failed/rejected refresh exits 1
+# and leaves the previous cache untouched. Never restarted automatically.
 ExecStart=/home/ubuntu/biap-global/BIAP/analysis/.venv-global/bin/python -m global_markets.benchmark_refresh DE XETRA
-TimeoutStartSec=15min
+SyslogIdentifier=biap-global-de-benchmark
+# Bounded runtime and resources
+TimeoutStartSec=10min
+TimeoutStopSec=20s
+MemoryMax=768M
+MemorySwapMax=0
+CPUQuota=50%
+TasksMax=64
+LimitNOFILE=256
+LimitFSIZE=20M
 Nice=10
+IOSchedulingClass=idle
+# Hardening; PrivateTmp means temp files vanish when the unit stops
 NoNewPrivileges=true
 PrivateTmp=true
-ProtectSystem=full
-ProtectHome=false
-ReadWritePaths=/var/lib/biap-global
+ProtectSystem=strict
+ProtectHome=read-only
+# analysis-ledger: the scanner opens the DE ledger in WAL mode (side files only; verified no row changes)
+ReadWritePaths=/var/lib/biap-global/scan-cache/DE /var/lib/biap-global/analysis-ledger
