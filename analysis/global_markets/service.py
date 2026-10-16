@@ -447,6 +447,9 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
     exchange_pe_median = None
     peer_scan_state = _scan_peer_state(company)[1]
     peer_bench = _peer_benchmark_meta(company)
+    from . import freshness as _fr
+
+    price_state = _fr.quote_state(company.price_observed_at, datetime.now(timezone.utc))
     if sector_pe is None:
         peer_pe, peer_scope, peer_count = _peer_pe_benchmark(company)
         if peer_pe is not None and peer_scope == "same_sector_scan_median":
@@ -572,6 +575,7 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
             } if peer_scope else {}),
             "peer_scan_cache_state": peer_scan_state,
             **({"peer_benchmark_freshness": peer_bench} if peer_bench else {}),
+            "price_state": price_state,
             **({"peer_pb_benchmark": peer_pb} if peer_pb is not None else {}),
             **({"fx_conversion": fx_info} if fx_info else {}),
         },

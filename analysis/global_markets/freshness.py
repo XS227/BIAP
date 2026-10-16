@@ -16,6 +16,17 @@ risk signals are time-based:
                        an in-memory online read (reprice), never by relabelling.
 * risk-signal        - price-history risk inputs (volatility, drawdown) of the TARGET.
 
+Validity models (what expires and what never does):
+
+* immutable historical evidence - a filing for period P (fundamentals archive, ESEF package, ledger
+                       row) never expires. It can only become SUPERSEDED when a newer period is known;
+                       a superseded report stays stored and readable, it is just not "current".
+* peer benchmark input version - fingerprints of the stored evidence a benchmark was computed from.
+* current quote       - only an exchange quote dated within tolerance is CURRENT; an older price is
+                       HISTORICAL and is never relabelled current (rows without a current quote are
+                       excluded from a benchmark, not repriced from old prices).
+* decision freshness  - derived from the above; BUY needs every critical component valid.
+
 Anything that cannot be established (no period end, fingerprint mismatch, unknown
 version) is UNDETERMINED/STALE and the caller fails closed (no peer benchmark => a
 BUY cannot be accepted). Nothing here extends a timestamp.
@@ -59,7 +70,8 @@ def universe_fingerprint(rows: list) -> str:
 def fundamentals_fingerprint(rows: list) -> str:
     """Price-independent inputs only, so repricing never changes it but a re-extracted filing does."""
     keys = ("sector", "filing_period_end", "eps", "ebitda", "net_income", "revenue", "total_debt")
-    return _h(sorted((str(_co(r).get("ticker") or "").upper(), *[_co(r).get(k) for k in keys]) for r in rows))
+    return _h(sorted((str(_co(r).get("ticker") or "").upper(), r.get("inputsAsOf") if isinstance(r, dict) else None,
+                      *[_co(r).get(k) for k in keys]) for r in rows))
 
 
 def calc_fingerprint(universe_fp: str, fundamentals_fp: str, quotes_as_of: Optional[str]) -> str:
@@ -88,6 +100,11 @@ def base_ceiling_hours() -> float:
 
 
 LAG_SLACK_DAYS = 15
+
+
+def per_row_evidence_age(rows: list) -> bool:
+    """True when every row records when its evidence was produced; then the age ceiling applies per row."""
+    return bool(rows) and all(isinstance(r, dict) and _date(r.get("inputsAsOf")) for r in rows)
 
 
 def filing_may_have_changed(country: str, period_end: date, base: date, today: date) -> bool:
@@ -149,7 +166,12 @@ def filing_dimension(rows: list, country: str, today: date, base: Optional[date]
             continue
         newest = max(newest, pe) if newest else pe
         newer = _date(superseded.get(t))
-        if (newer and newer > pe) or filing_may_have_changed(country, pe, base, today):
+        # Evidence age is per row when the row records when it was analysed (ledger rebuild).
+        own_base = _date(r.get("inputsAsOf")) if isinstance(r, dict) else None
+        row_base = own_base or base
+        if own_base is not None and (today - own_base).days * 24 > base_ceiling_hours():
+            reasons[t] = "inputs_older_than_ceiling"
+        elif (newer and newer > pe) or filing_may_have_changed(country, pe, row_base, today):
             reasons[t] = "filing_may_have_changed"
     n = max(1, members)
     pct = 100.0 * len(reasons) / n
@@ -200,7 +222,7 @@ def evaluate(wrapper: dict, country: str, now: datetime, superseded: Optional[di
     fd = filing_dimension(rows, country, now.date(), base.date() if base else None, superseded)
     if fp.get("fundamentals") != f:
         fd = {**fd, "state": STALE, "reason": "fundamental inputs differ from validated fingerprint"}
-    ceiling = base is not None and (now - base).total_seconds() / 3600.0 > base_ceiling_hours()
+    ceiling = base is not None and not per_row_evidence_age(rows) and (now - base).total_seconds() / 3600.0 > base_ceiling_hours()
     if ceiling:
         fd = {**fd, "state": STALE, "reason": f"base scan older than {base_ceiling_hours():.0f} h ceiling (no source-update feed)"}
     dims["filing"] = fd
@@ -228,3 +250,53 @@ def risk_signal_dimension(volatility_pct, max_drawdown_pct, price_observed_at, n
     age = (now.date() - d).days
     return {"state": VALID if age <= RISK_SIGNAL_MAX_AGE_DAYS else STALE, "ageDays": age,
             "reason": None if age <= RISK_SIGNAL_MAX_AGE_DAYS else "price history older than tolerance"}
+
+
+# ---------------------------------------------------------------------------
+# Validity models other than the benchmark (immutable evidence, quotes, decision)
+# ---------------------------------------------------------------------------
+CURRENT, HISTORICAL, SUPERSEDED = "CURRENT", "HISTORICAL", "SUPERSEDED"
+
+
+def classify_filing(period_end, newest_known_period) -> dict:
+    """A stored filing is immutable. It is CURRENT until a newer period is known, then SUPERSEDED (kept, readable)."""
+    p, n = _date(period_end), _date(newest_known_period)
+    if p is None:
+        return {"state": UNDETERMINED, "reason": "filing period unknown", "retained": True}
+    if n is not None and n > p:
+        return {"state": SUPERSEDED, "supersededBy": n.isoformat(), "retained": True,
+                "reason": "a newer filing period is known; this report remains stored evidence"}
+    return {"state": CURRENT, "retained": True}
+
+
+def quote_state(price_observed_at, now: datetime, tolerance_days: Optional[int] = None) -> dict:
+    """CURRENT only when dated within tolerance. Anything older is HISTORICAL and must not feed a current valuation."""
+    d = _date(price_observed_at)
+    tol = tolerance_days if tolerance_days is not None else quote_tolerance_days()
+    if d is None:
+        return {"state": UNDETERMINED, "reason": "price undated"}
+    age = (now.date() - d).days
+    if age < -1:
+        return {"state": UNDETERMINED, "ageDays": age, "reason": "price dated in the future"}
+    return {"state": CURRENT if age <= tol else HISTORICAL, "ageDays": age, "asOf": d.isoformat()}
+
+
+def decision_freshness(*, quote: dict, benchmark_usable: bool, filing: dict, risk: Optional[dict] = None) -> dict:
+    """A decision is only as fresh as its weakest CRITICAL input; BUY requires all of them."""
+    comps = {"quote": quote.get("state") == CURRENT, "benchmark": bool(benchmark_usable),
+             "filing": filing.get("state") in (CURRENT, SUPERSEDED) and filing.get("state") != UNDETERMINED}
+    if filing.get("state") == SUPERSEDED:
+        comps["filing"] = False       # a superseded report may be shown, never used as the basis of a BUY
+    if risk is not None:
+        comps["risk"] = risk.get("state") == VALID
+    blockers = sorted(k for k, ok in comps.items() if not ok)
+    return {"buyAllowed": not blockers, "blockers": blockers, "components": comps}
+
+
+def ledger_refresh_due(country: str, analyzed_at, period_end, now: datetime) -> bool:
+    """Evidence-based re-analysis trigger: only when a newer filing can have appeared since the row was analysed."""
+    a = _date(analyzed_at)
+    p = _date(period_end)
+    if a is None or p is None:
+        return True            # cannot establish validity -> analyse (online) rather than assume
+    return filing_may_have_changed(country, p, a, now.date())

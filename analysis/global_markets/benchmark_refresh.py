@@ -283,6 +283,8 @@ def reprice_benchmark(
     now: Optional[datetime] = None,
     dry_run: bool = False,
     max_rows: int = MAX_REPRICE_ROWS,
+    source_wrapper: Optional[dict] = None,
+    method: str = "reprice",
 ) -> dict:
     """Re-validate the price-dependent inputs of an existing peer benchmark.
 
@@ -294,17 +296,18 @@ def reprice_benchmark(
     country, exchange = country.upper(), exchange.upper()
     now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     path = _scan_cache_path(country, exchange)
-    result: dict = {"country": country, "exchange": exchange, "method": "reprice", "status": "ERROR",
+    result: dict = {"country": country, "exchange": exchange, "method": method, "status": "ERROR",
                     "replaced": False, "dryRun": dry_run}
-    wrapper = read_json(path, default=None)
+    wrapper = source_wrapper if source_wrapper is not None else read_json(path, default=None)
     payload = wrapper.get("payload") if isinstance(wrapper, dict) else None
     rows = payload.get("deepResults") if isinstance(payload, dict) else None
     if not isinstance(wrapper, dict) or wrapper.get("schemaVersion") != _SCAN_CACHE_SCHEMA_VERSION or not isinstance(rows, list):
         result.update(status="REJECTED", problems=["no valid base scan cache to reprice"])
         return result
     prior = wrapper.get("benchmark") if isinstance(wrapper.get("benchmark"), dict) else {}
-    current = wrapper
-    if prior.get("method") == "reprice":
+    current = wrapper if source_wrapper is None else read_json(path, default=None)   # what is on disk now
+    chain = source_wrapper is None and prior.get("method") in ("reprice", "ledger_rebuild")
+    if chain:
         # Chained repricing always restarts from the pristine full scan (pure function of base + quotes):
         # no cumulative drift, and transient exclusions (e.g. a missing quote) are recovered.
         pristine = read_json(path.with_name(path.name + ".base"), default=None)
@@ -325,7 +328,7 @@ def reprice_benchmark(
     result["filingDimension"] = filing
     if filing["state"] != freshness.VALID:
         problems.append(f"fundamentals not valid for repricing: {filing['reason']}; rebuild the excluded peers (see filingDimension.excluded) first")
-    if base_age_h > freshness.base_ceiling_hours():
+    if base_age_h > freshness.base_ceiling_hours() and not freshness.per_row_evidence_age(rows):
         problems.append(f"base scan is {base_age_h:.1f} h old (> {freshness.base_ceiling_hours():.0f} h ceiling): full rebuild required")
     if len(rows) > max_rows:
         problems.append(f"{len(rows)} rows exceeds bounded reprice limit {max_rows}")
@@ -403,7 +406,7 @@ def reprice_benchmark(
         **{k: v for k, v in wrapper.items() if k not in ("payload", "benchmark")},
         "payload": {**payload, "deepResults": new_rows},
         "benchmark": freshness.stamp_block(
-            new_rows, country, method="reprice", validated_at=now, base_cached_at=str(wrapper.get("cachedAt")),
+            new_rows, country, method=method, validated_at=now, base_cached_at=str(wrapper.get("cachedAt")),
             quotes_as_of=freshness.quotes_as_of_of(new_rows), quoteSource=source, rowsRepriced=repriced,
             rowsExcluded=len(rows) - repriced, coveragePct=result["coveragePct"], medianPriceRatio=result["medianPriceRatio"],
             scope="peer P/E, P/B, EV/EBITDA medians only; recommendations/ranking/cachedAt NOT refreshed"),
@@ -411,12 +414,16 @@ def reprice_benchmark(
     result.update(status="OK" if not dry_run else "DRY_RUN_OK", validatedAt=stamp)
     if dry_run:
         return result
-    if prior.get("method") != "reprice":  # first reprice of this base: keep the full scan itself (two generations, never overwritten by a reprice)
+    if not chain:  # new base: keep the pristine input (two generations); a legacy on-disk scan is kept as .base.prev
         base_path = path.with_name(path.name + ".base")
+        keep = base_path.with_name(base_path.name + ".prev")
         if base_path.exists():
-            os.replace(base_path, base_path.with_name(base_path.name + ".prev"))
-        write_json_atomic(base_path, current)
-    write_json_atomic(path.with_name(path.name + ".prev"), current)
+            os.replace(base_path, keep)
+        elif isinstance(current, dict) and "benchmark" not in current:
+            write_json_atomic(keep, current)
+        write_json_atomic(base_path, wrapper)
+    if current is not None:
+        write_json_atomic(path.with_name(path.name + ".prev"), current)
     write_json_atomic(path, new_wrapper)
     result["replaced"] = True
     return result
@@ -484,7 +491,38 @@ def main_reprice(argv: list[str]) -> int:
     return 0 if all(o.get("status") in ("OK", "DRY_RUN_OK") for o in outcomes) else 1
 
 
+def main_rebuild(argv: list[str]) -> int:
+    """``rebuild [--dry-run] CC:EXCHANGE ...``: reconstruct peer benchmarks from stored ledger evidence + current quotes."""
+    from .evidence_store import rebuild_from_ledger
+
+    os.environ.setdefault("BIAP_GLOBAL_ONLINE_FIRST", "1")
+    logging.basicConfig(level=logging.INFO, format="%(name)s %(levelname)s %(message)s")
+    dry = "--dry-run" in argv
+    markets = [tuple(a.upper().split(":", 1)) for a in argv if ":" in a]
+    if not markets:
+        print("usage: rebuild [--dry-run] CC:EXCHANGE ...", file=sys.stderr)
+        return 2
+    _apply_resource_limits()
+    outcomes = []
+    for country, exchange in markets:
+        path = _scan_cache_path(country, exchange)
+        try:
+            with refresh_lock(path):
+                out = rebuild_from_ledger(country, exchange, dry_run=dry)
+        except RefreshLocked:
+            out = {"country": country, "exchange": exchange, "method": "ledger_rebuild", "status": "LOCKED", "replaced": False}
+        except Exception as exc:  # a market failing must not stop the others
+            out = {"country": country, "exchange": exchange, "method": "ledger_rebuild", "status": "ERROR", "replaced": False,
+                   "error": f"{type(exc).__name__}: {str(exc)[:200]}"}
+        outcomes.append(out)
+        time.sleep(1.0)
+    print("BIAP_BENCHMARK_REPRICE=" + json.dumps(outcomes, sort_keys=True, default=str))
+    return 0 if all(o.get("status") in ("OK", "DRY_RUN_OK") for o in outcomes) else 1
+
+
 def main(argv: list[str]) -> int:
+    if len(argv) >= 2 and argv[1] == "rebuild":
+        return main_rebuild(argv[2:])
     if len(argv) >= 2 and argv[1] == "reprice":
         return main_reprice(argv[2:])
     country, exchange = (argv[1], argv[2]) if len(argv) >= 3 else ("DE", "XETRA")
