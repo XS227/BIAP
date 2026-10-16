@@ -1,3 +1,6 @@
+<!-- UPDATE9 -->
+> **Update 9 (2026-10-16 ~14:15Z) - freshness architecture.** The 24 h benchmark expiry was redesigned as five independent freshness dimensions with versioned input fingerprints, source-aware filing invalidation and a validated, bounded online quote reprice (all countries, one code path). Full root cause, design, migration safety and results: [GLOBAL_FRESHNESS_ARCHITECTURE_2026-10-16.md](GLOBAL_FRESHNESS_ARCHITECTURE_2026-10-16.md) ([PDF](GLOBAL_FRESHNESS_ARCHITECTURE_2026-10-16.pdf)). Headline: 1503 tests pass; BHP/HAUTO/WWI = BUY (0.667532 / 0.62817 / 0.575781) before expiry, fail closed (WATCH) after expiry without refresh, and identical BUYs after the validated reprice. Nothing merged, deployed, restarted or scheduled; production scan-cache fingerprint unchanged. The Update 8 results below are unchanged.
+
 <!-- UPDATE8 -->
 # BIAP Global country validation - refreshed 2026-10-16 (Update 8)
 

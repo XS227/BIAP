@@ -170,6 +170,13 @@ def _write_scan_cache(
         "exchange": exchange.upper(),
         "payload": payload,
     }
+    rows = payload.get("deepResults") if isinstance(payload, dict) else None
+    if isinstance(rows, list) and rows:
+        from . import freshness
+
+        wrapper["benchmark"] = freshness.stamp_block(
+            rows, country.upper(), method="full_scan", validated_at=datetime.fromisoformat(wrapper["cachedAt"]),
+            base_cached_at=wrapper["cachedAt"], quotes_as_of=freshness.quotes_as_of_of(rows))
     try:
         write_json_atomic(path, wrapper)
     except OSError:

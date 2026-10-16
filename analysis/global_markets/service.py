@@ -104,6 +104,42 @@ def _supported_operating_equity(company: GlobalCompany) -> bool:
     )
 
 
+def _peer_invalidations(country: str, exchange: str) -> dict:
+    """Optional source-update feed: {ticker: newest known period end} that supersedes cached peer fundamentals."""
+    feed = read_json(data_root() / "source-index" / "peer-invalidations.json", default=None)
+    entry = feed.get(f"{country.upper()}:{exchange.upper()}") if isinstance(feed, dict) else None
+    return entry if isinstance(entry, dict) else {}
+
+
+def _peer_benchmark_info(wrapper: dict) -> dict:
+    """Freshness of a stored peer benchmark (see ``freshness`` for the five-dimension model).
+
+    * wrappers with a v2 ``benchmark`` block: source-aware, fingerprint-checked, per-dimension
+      verdicts (filing / universe / calc / quote); nothing is judged by a single wall-clock TTL;
+    * legacy wrappers (no block): unchanged behaviour, ``cachedAt`` <= 24 h.
+    The target company's own quote and risk signals are judged elsewhere and never revive a benchmark.
+    """
+    from . import freshness
+
+    now = datetime.now(timezone.utc)
+    try:
+        base = datetime.fromisoformat(str(wrapper.get("cachedAt") or "").replace("Z", "+00:00"))
+    except ValueError:
+        return {"state": "scan_cache_invalid"}
+    base = (base if base.tzinfo else base.replace(tzinfo=timezone.utc)).astimezone(timezone.utc)
+    base_age = (now - base).total_seconds() / 3600.0
+    if isinstance(wrapper.get("benchmark"), dict):
+        country, exchange = str(wrapper.get("country") or ""), str(wrapper.get("exchange") or "")
+        verdict = freshness.evaluate(wrapper, country, now, _peer_invalidations(country, exchange))
+        return {"state": "ok" if verdict["usable"] else "scan_cache_stale", "model": "v2", "method": verdict.get("method"),
+                "validatedAt": verdict.get("validatedAt"), "baseCachedAt": base.isoformat(), "baseAgeHours": round(base_age, 2),
+                "dimensions": verdict["dimensions"], "reason": verdict.get("reason"),
+                "excluded": verdict.get("excluded", [])}
+    out = {"model": "legacy_24h", "method": "full_scan", "validatedAt": base.isoformat(), "ageHours": round(base_age, 2),
+           "baseCachedAt": base.isoformat(), "baseAgeHours": round(base_age, 2)}
+    return {**out, "state": "scan_cache_stale" if (base_age < 0 or base_age > 24) else "ok"}
+
+
 def _scan_peer_state(company: GlobalCompany) -> tuple[Optional[list], str]:
     """(rows, state); state is ok | scan_cache_missing | scan_cache_stale | scan_cache_invalid."""
     country = "".join(ch for ch in company.country.upper() if ch.isalnum() or ch in {"-", "_"})
@@ -113,20 +149,27 @@ def _scan_peer_state(company: GlobalCompany) -> tuple[Optional[list], str]:
         return None, "scan_cache_missing"
     if not isinstance(wrapper, dict) or wrapper.get("schemaVersion") not in {1, 2, 3}:
         return None, "scan_cache_invalid"
-    try:
-        cached_at = datetime.fromisoformat(str(wrapper.get("cachedAt") or "").replace("Z", "+00:00"))
-        if cached_at.tzinfo is None:
-            cached_at = cached_at.replace(tzinfo=timezone.utc)
-        age_hours = (datetime.now(timezone.utc) - cached_at.astimezone(timezone.utc)).total_seconds() / 3600.0
-    except ValueError:
-        return None, "scan_cache_invalid"
-    if age_hours < 0 or age_hours > 24:
-        return None, "scan_cache_stale"
+    info = _peer_benchmark_info(wrapper)
+    if info["state"] != "ok":
+        return None, info["state"]
+    excluded = set(info.get("excluded") or [])
     payload = wrapper.get("payload")
     rows = payload.get("deepResults") if isinstance(payload, dict) else None
     if isinstance(rows, list):
+        if excluded:  # peers whose fundamentals cannot be validated never enter a median
+            rows = [r for r in rows if str(((r or {}).get("company") or {}).get("ticker") or "").upper() not in excluded]
         return rows, "ok"
     return None, "scan_cache_invalid"
+
+
+def _peer_benchmark_meta(company: GlobalCompany) -> Optional[dict]:
+    country = "".join(ch for ch in company.country.upper() if ch.isalnum() or ch in {"-", "_"})
+    exchange = "".join(ch for ch in company.exchange.upper() if ch.isalnum() or ch in {"-", "_"})
+    wrapper = read_json(data_root() / "scan-cache" / country / f"{exchange}.json", default=None)
+    if not isinstance(wrapper, dict):
+        return None
+    info = _peer_benchmark_info(wrapper)
+    return None if info.get("state") == "scan_cache_invalid" else info
 
 
 def _scan_peer_rows(company: GlobalCompany) -> Optional[list]:
@@ -403,6 +446,7 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
     peer_count = 0
     exchange_pe_median = None
     peer_scan_state = _scan_peer_state(company)[1]
+    peer_bench = _peer_benchmark_meta(company)
     if sector_pe is None:
         peer_pe, peer_scope, peer_count = _peer_pe_benchmark(company)
         if peer_pe is not None and peer_scope == "same_sector_scan_median":
@@ -527,6 +571,7 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
                 **({"exchange_pe_median_informational": exchange_pe_median} if exchange_pe_median is not None else {}),
             } if peer_scope else {}),
             "peer_scan_cache_state": peer_scan_state,
+            **({"peer_benchmark_freshness": peer_bench} if peer_bench else {}),
             **({"peer_pb_benchmark": peer_pb} if peer_pb is not None else {}),
             **({"fx_conversion": fx_info} if fx_info else {}),
         },
