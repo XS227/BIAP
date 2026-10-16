@@ -14,7 +14,7 @@ DMA agent or backup touched; all gate runs are dry-runs against an isolated sqli
 XETRA passes every dry-run check. This is a dry run only: `replaced=false`, no cache or live benchmark was written, and no BUY decision was changed. Production still serves the old benchmark until an approved deploy + reprice.
 FRANKFURT clears the 15 % filing gate but still fails closed on **P/B row retention (82.1 %, needs 85 %)**: 16 excluded peers include P/B-bearing rows.
 
-## Verified issuers (E4, 38 new + LEG manual)
+## Verified issuers (E4: 46 by the automatic matcher + LEG by manual reconciliation = 47)
 | ISIN | Issuer (ledger name) | Markets | Period end | Source host | sha256 (first 12) |
 |---|---|---|---|---|---|
 | DE000A1PHFF7 | HUGO BOSS AG NA O.N. | XETRA/FRANKFURT | 2025-12-31 | annualreport.hugoboss.com | bbb7392e91fd |
