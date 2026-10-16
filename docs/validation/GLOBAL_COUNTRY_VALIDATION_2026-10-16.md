@@ -129,14 +129,14 @@ All ten rest on FY2025 annual figures dated 2025-12-31 (289 days old; no interim
 
 Assessment (counts): 3 BUYs carry ELEVATED_RISK distress; 4 have no distress assessment; 3 rest on peer groups of <=6; 6 trade at <40% of the sector P/E (typical of one-off or cyclical earnings); 2 have a non-positive fundamental vote and are carried only by the relative-P/E comparison; every one uses 289-day-old annual earnings. Only **EPR, HAUTO, YAR** carry LOW_RISK distress, and each still has one of the flags above. **None of the 10 should be presented as a clean BUY.**
 
-Recommendation (not implemented, needs approval): route BUY_CANDIDATE to REVIEW when distress is not LOW_RISK/NOT_APPLICABLE, when the sector benchmark has <8 peers, or when the only positive vote is the relative P/E comparison; and add interim/TTM evidence for Norway as done for the US.
+**Governance rule - approved and implemented globally (commit 4a906e9, all markets via `service._analysis_payload`):** BUY_CANDIDATE is routed to REVIEW when (1) distress is not LOW_RISK (NOT_APPLICABLE is allowed; unknown/insufficient data counts as unverified), (2) the same-sector peer group has fewer than 8 valid companies, or (3) relative P/E is the only positive signal. Applying the rule to the table above, all 10 names route to REVIEW (AKSO/BNOR/SNTIA/DOFG/MOWI/SOFF/SOMA by distress, EPR/MOWI/YAR by peer count, HAUTO and SOMA by P/E-only); this is derived from the audit table, not a live re-scan. Regression coverage: `analysis/tests/test_buy_governance_rules.py`, 236 parametrised cases across every market. Interim/TTM evidence for Norway remains future work.
 
-## USA ISIN resolution
+## USA ISIN resolution (revised 2026-10-16)
 
-- Authoritative chain: SEC "List of Section 13(f) Securities" (Q2 2026, official CUSIP list, read in memory, not stored) -> ISO 6166 check digit -> GLEIF LEI-record lookup of the derived ISIN with legal-name match.
-- Result on the 26 sampled names: **25 resolved and GLEIF-verified**, 1 unresolved (ETN: Irish domicile, CINS/IE ISIN, not derivable from the 13(f) CUSIP; fail-closed). Initial automatic pass was 22; name-abbreviation (`&`, HLDG) fixes recovered JNJ, EMR, ASML after separate GLEIF verification.
-- Delivered: `analysis/global_markets/us_isin.py` + 10 tests (pure functions; known ISINs verified; ambiguity returns None). It is **not yet wired** into the universe pipeline, so the US ISIN count in the table above is unchanged.
-- Licensing: CUSIPs are CGS-licensed ("no redistribution"), so the derived mapping is not published here and should not be bulk-persisted without a licence decision. GLEIF data is open.
+- **Superseded approach:** the earlier SEC 13(f) CUSIP -> ISO 6166 derivation is removed (commit 4a906e9). CUSIPs are CGS-licensed, and no restricted CUSIP dataset is used without confirmed licensing.
+- **Current resolver (`analysis/global_markets/us_isin.py`):** legally open sources only - GLEIF (CC0) and OpenFIGI. Flag-gated, best effort, pure functions, nothing persisted. Ambiguity returns no ISIN.
+- **Missing ISIN never invalidates analysis:** a US equity with no ISIN is still analysed from SEC filings and market data; the ISIN is reported as unresolved only. The earlier "25/26 resolved" figure came from the removed CUSIP chain and is no longer a claim of this report.
+- Status: resolver and tests merged on the PR #52 branch; production wiring and live coverage measurement are pending deploy approval.
 
 ## Expo CI failure
 
@@ -147,14 +147,16 @@ Recommendation (not implemented, needs approval): route BUY_CANDIDATE to REVIEW 
 ## Remaining failures and warnings
 
 1. **Italy**: A2A needs the parent's own ESEF from OAM 1INFO; Recordati needs a corrected package from the issuer; Mediobanca stays blocked until a 12-month statement exists.
-2. **Germany**: production benchmark fresh only until 2026-10-17T01:48Z; CBK and MUV2 evidence WARN. Recurring refresh remains a policy decision under online-first.
-3. **Norway**: 10/25 BUY with the flags above; governance rule change pending approval.
-4. **USA**: resolver built and verified (25/26) but not wired; licensing decision needed.
-5. **CI/deploy**: PR #54 must wait for a deploy window; PR #52's CI relies on the doctor pin until then.
+2. **Germany**: production benchmark fresh only until 2026-10-17T01:48Z; CBK and MUV2 evidence WARN. A lightweight 24 h online-first benchmark refresh is implemented (`benchmark_refresh.py`; atomic, validated, keeps one previous generation, failed refresh leaves the cache untouched and fails closed). The systemd timer units are in `deploy/systemd/` but NOT installed.
+3. **Norway**: the 10 flagged BUYs now route to REVIEW under the implemented rule (live re-scan pending deploy).
+4. **USA**: licence-clean resolver (GLEIF + OpenFIGI) implemented, flag-gated; live ISIN coverage not yet measured.
+5. **CI/deploy**: PR #54 must wait for a deploy window; PR #52's CI relies on the doctor pin until then. Italy A2A parent ESEF and Recordati corrected filing remain unresolved; evidence BLOCK retained.
 6. Sample is top-by-market-cap from cached data (prices 1-3 days old), not live quotes or the full universe.
 
 ## Decision-stability evidence
 
 - 8 regression tests (`analysis/tests/test_global_decision_stability.py`): missing/stale/expired cache never yields BUY; fresh-to-stale never flips NO_RECOMMENDATION to BUY; contradiction preserved while fresh; legitimate discount BUY still allowed; identical evidence gives identical decisions.
-- Full backend suite re-run 2026-10-16T02:00Z on tip c158bca: 1197 passed, 0 failed (1187 + 10 new US-ISIN tests).
+- Full backend suite re-run 2026-10-16 on tip 4a906e9 (`pytest analysis/tests`, online-first flag off as in CI): **1439 passed, 0 failed**. Targeted run of governance, decision-stability, service/source-safety, decision-support, US-ISIN and benchmark-refresh tests: 279 passed.
+- Known test-isolation caveat: with `BIAP_GLOBAL_ONLINE_FIRST=1` exported, 35 disk-persistence tests fail because they assert files are written; CI runs with the flag unset. Not a product defect, but tests should pin the flag.
+- CI on 4a906e9 (PR #52): BIAP Global check and Release candidate check green. PR #54 (Expo doctor) CI green. Nothing merged, nothing deployed.
 - Live example: Norway MEDI (P/E 32.1, no sector benchmark) -> REVIEW / NO_RECOMMENDATION "valuation benchmark unavailable".
