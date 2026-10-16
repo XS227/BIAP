@@ -47,4 +47,4 @@ Complete rows — XETRA: 4 HOLD_OR_WATCH, 1 AVOID_OR_REVIEW, 384 NO_RECOMMENDATI
 US, GB, FR, IT, SE, NO: restricted GO (ledger rebuild usable, 0 new BUY without fresh quotes). DE: NO-GO / fail closed.
 
 ## Tests
-No source code changed in this step. Gate behaviour verified by the dry-run above (2/2 DE markets REJECTED as designed). Full suite not re-run (no code delta; last: 1550 PASS on 9a6c755).
+No source code changed in this step. Gate behaviour verified by the dry-run above (2/2 DE markets REJECTED as designed). Full suite re-run on 41837d8 (`cd analysis && PYTHONPATH=. pytest tests`, venv-pdf, Python 3.14): **1550 passed, 0 failed**, 7 subtests passed, 10 warnings (JWT key-length only), 43 s.
