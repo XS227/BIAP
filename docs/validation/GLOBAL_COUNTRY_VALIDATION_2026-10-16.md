@@ -147,7 +147,7 @@ Assessment (counts): 3 BUYs carry ELEVATED_RISK distress; 4 have no distress ass
 ## Remaining failures and warnings
 
 1. **Italy**: A2A needs the parent's own ESEF from OAM 1INFO; Recordati needs a corrected package from the issuer; Mediobanca stays blocked until a 12-month statement exists.
-2. **Germany**: production benchmark fresh only until 2026-10-17T01:48Z; CBK and MUV2 evidence WARN. A lightweight 24 h online-first benchmark refresh is implemented (`benchmark_refresh.py`; atomic, validated, keeps one previous generation, failed refresh leaves the cache untouched and fails closed). The systemd timer units are in `deploy/systemd/` but NOT installed.
+2. **Germany**: production benchmark fresh only until 2026-10-17T01:48Z; CBK and MUV2 evidence WARN. The first controlled refresh was run 2026-10-16T02:50Z (see below). A lightweight 24 h online-first benchmark refresh is implemented (`benchmark_refresh.py`; atomic, validated, keeps one previous generation, failed refresh leaves the cache untouched and fails closed). The systemd timer units are in `deploy/systemd/` but NOT installed.
 3. **Norway**: the 10 flagged BUYs now route to REVIEW under the implemented rule (live re-scan pending deploy).
 4. **USA**: licence-clean resolver (GLEIF + OpenFIGI) implemented, flag-gated; live ISIN coverage not yet measured.
 5. **CI/deploy**: PR #54 must wait for a deploy window; PR #52's CI relies on the doctor pin until then. Italy A2A parent ESEF and Recordati corrected filing remain unresolved; evidence BLOCK retained.
@@ -157,6 +157,34 @@ Assessment (counts): 3 BUYs carry ELEVATED_RISK distress; 4 have no distress ass
 
 - 8 regression tests (`analysis/tests/test_global_decision_stability.py`): missing/stale/expired cache never yields BUY; fresh-to-stale never flips NO_RECOMMENDATION to BUY; contradiction preserved while fresh; legitimate discount BUY still allowed; identical evidence gives identical decisions.
 - Full backend suite re-run 2026-10-16 on tip 4a906e9 (`pytest analysis/tests`, online-first flag off as in CI): **1439 passed, 0 failed**. Targeted run of governance, decision-stability, service/source-safety, decision-support, US-ISIN and benchmark-refresh tests: 279 passed.
-- Known test-isolation caveat: with `BIAP_GLOBAL_ONLINE_FIRST=1` exported, 35 disk-persistence tests fail because they assert files are written; CI runs with the flag unset. Not a product defect, but tests should pin the flag.
+- Test-isolation caveat (resolved, see "Controlled Germany refresh" below): with `BIAP_GLOBAL_ONLINE_FIRST=1` exported, 35 disk-persistence tests used to fail; `tests/conftest.py` now pins persistence mode per test.
 - CI on 4a906e9 (PR #52): BIAP Global check and Release candidate check green. PR #54 (Expo doctor) CI green. Nothing merged, nothing deployed.
 - Live example: Norway MEDI (P/E 32.1, no sector benchmark) -> REVIEW / NO_RECOMMENDATION "valuation benchmark unavailable".
+
+## Controlled Germany refresh (2026-10-16, manual, single run)
+
+Command: `BIAP_GLOBAL_ONLINE_FIRST=1 python -m global_markets.benchmark_refresh DE XETRA` against `/var/lib/biap-global`, 17 s, status **OK**. No timer installed, no deploy, 8091 not restarted.
+
+| Item | Before | After |
+|---|---|---|
+| `scan-cache/DE/XETRA.json` cachedAt | 2026-10-16T01:48:32Z (interactive) | 2026-10-16T02:50:11Z (benchmark-refresh); 24 h expiry moves to 2026-10-17T02:50Z |
+| deep rows / screening coverage / rankingEligible | 150 / 99.26% / true | 150 / 99.26% / true |
+| Analysis ledger (405 analysed, evidence PASS 372 / WARN 17 / BLOCK 16, BLOCKED 11, buyQualified 0) | identical | identical |
+| Calls + evidence status, 146 shared tickers | - | **0 changes**; distribution 118 NO_RECOMMENDATION/PASS, 16 /BLOCK, 12 /WARN, 4 HOLD_OR_WATCH/PASS; no BUY |
+| Prices and filing periods, shared tickers | - | 0 differences (no new prices fetched; existing data only) |
+| Storage | - | +575,090 bytes = new XETRA.json (+1.5 KB) and the single `.prev` rollback generation (544,932 B); no other file created or modified |
+
+Findings to be aware of (not defects, not hidden):
+- The 150-row ranked sample changed membership by 4 names: out ADS, BAS, ENR, IFX; in BMW, DTG, HEI, VOW3 (all NO_RECOMMENDATION). Scores of 12 shared names moved (e.g. SAP 0.192 -> 0.096, SIE 0.207 -> 0.241) with identical prices, i.e. the refresh re-ranks peers; calls did not change. The ranking gate count WATCHLIST_HOLD went 5 -> 4 and Top-10 swapped ENR/RHM/SAP order; ENR's own new call was not individually re-analysed.
+- `batchLimit` is no longer present in the payload (interactive-scan field only).
+- Rollback: `mv XETRA.json.prev XETRA.json`; pre-refresh copy also kept outside the data dir.
+- Not done: a full per-company re-analysis of the 25 DE names through `/global/analyze` after the refresh. A disk-quota limit prevented building an isolated data copy; running it against the live data dir was rejected to keep historical datasets untouched.
+
+## Persistence tests vs online-first
+
+All 35 failures were persistence-mode tests (market/universe/fundamentals caches, history store, FX, AMF, Brreg, exchange shares, etc.) that assert files are written and inherited the ambient `BIAP_GLOBAL_ONLINE_FIRST=1`. Fix (no test disabled or weakened): `tests/conftest.py` autouse fixture `_persistence_mode_by_default` removes the flag per test; `tests/test_global_online_first.py` keeps the explicit online-first assertions (it sets the flag itself) and gains a leak test. Result: **1440 passed, 0 failed with the flag exported to 1 and with it unset.**
+
+## Italy follow-up
+
+- A2A, Recordati, Mediobanca: evidence BLOCK retained (no new official filing available; unchanged cause analysis above).
+- Other 22 Italian names (2026-10-16 run on d66fc67, before the BUY-governance rule): 17 NO_RECOMMENDATION/PASS, 4 HOLD_OR_WATCH/PASS, 1 BUY_CANDIDATE/PASS (Pirelli, PIRC: distress LOW_RISK, but its comparison agent had no valid P/E). Under the new rule PIRC needs a verified same-sector peer group of at least 8; this was not re-run after the rule landed, so its post-rule call is **unconfirmed** and must be checked after deploy.

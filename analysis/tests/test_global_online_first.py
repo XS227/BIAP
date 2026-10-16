@@ -41,3 +41,12 @@ def test_issuer_drop_sync_skips_when_online_first(monkeypatch, capsys):
     monkeypatch.setenv("BIAP_GLOBAL_ONLINE_FIRST", "1")
     assert issuer_drop_sync.main() == 0
     assert "skipped" in capsys.readouterr().out
+
+
+def test_ambient_online_first_env_does_not_leak_into_tests():
+    """conftest pins persistence mode; the flag must read as off unless a test sets it."""
+    import os
+    from global_markets import source_cache
+
+    assert "BIAP_GLOBAL_ONLINE_FIRST" not in os.environ
+    assert source_cache.online_first() is False

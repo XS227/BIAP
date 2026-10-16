@@ -35,6 +35,20 @@ def _external_tsetmc_enrichment_disabled_by_default(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _persistence_mode_by_default(monkeypatch):
+    """Run every test in persistence mode regardless of the ambient environment.
+
+    Production sets BIAP_GLOBAL_ONLINE_FIRST=1 (no new bulk disk writes); a
+    developer shell or service environment can leak that into pytest and make
+    ~35 persistence tests (which assert files are written) fail. Persistence
+    behaviour is pinned here; online-first behaviour is covered explicitly by
+    tests/test_global_online_first.py, which sets the flag itself via
+    monkeypatch (that overrides this fixture).
+    """
+    monkeypatch.delenv("BIAP_GLOBAL_ONLINE_FIRST", raising=False)
+
+
+@pytest.fixture(autouse=True)
 def _isolated_performance_store(tmp_path, monkeypatch):
     """Prevent any test from writing into the real production performance DB.
 
