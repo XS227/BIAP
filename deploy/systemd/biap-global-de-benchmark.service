@@ -1,0 +1,21 @@
+[Unit]
+Description=BIAP Global Germany peer-benchmark refresh (online-first, validated, fail-safe)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/biap-global/BIAP/analysis
+Environment=BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global
+Environment=BIAP_GLOBAL_ONLINE_FIRST=1
+# Exit 1 on ERROR/REJECTED leaves the previous cache untouched; do not restart on failure.
+ExecStart=/home/ubuntu/biap-global/BIAP/analysis/.venv-global/bin/python -m global_markets.benchmark_refresh DE XETRA
+TimeoutStartSec=15min
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=false
+ReadWritePaths=/var/lib/biap-global

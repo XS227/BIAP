@@ -1,53 +1,74 @@
-import pytest
+from global_markets import us_isin
+from global_markets.us_isin import enrich_with_us_isin, is_valid_isin, issuer_tokens, resolve_us_isin
+from tests.test_global_governance_agent import _company
 
-from global_markets.us_isin import isin_from_cusip, issuer_tokens, match_13f_rows, resolve_us_isin
-
-ROWS = [
-    ("037833100", "APPLE INC", "COM"),
-    ("037833900", "APPLE INC", "CALL"),
-    ("02079K107", "ALPHABET INC", "CAP STK CL C"),
-    ("02079K305", "ALPHABET INC", "CAP STK CL A"),
-    ("478160104", "JOHNSON & JOHNSON", "COM"),
-    ("46620W201", "JOHNSON CTLS INTL PLC", "SHS"),
-    ("N07059210", "ASML HLDG NV", "N Y REGISTRY SHS"),
-    ("291011104", "EMERSON ELEC CO", "COM"),
-    ("343927307", "EMERSON ELEC CO", "COM"),
-]
+AAPL_LEI = "HWUPKR0MPOU8FGXBT394"
 
 
-@pytest.mark.parametrize("cusip,isin", [
-    ("037833100", "US0378331005"),
-    ("594918104", "US5949181045"),
-    ("02079K305", "US02079K3059"),
-    ("N07059210", "USN070592100"),
-])
-def test_check_digit_matches_published_isins(cusip, isin):
-    assert isin_from_cusip(cusip) == isin
+class FakeHttp:
+    def __init__(self, *, figi_ticker="AAPL", figi_name="APPLE INC", raise_on=None):
+        self.calls = []
+        self.figi_ticker, self.figi_name, self.raise_on = figi_ticker, figi_name, raise_on
+
+    def get(self, url, params=None):
+        self.calls.append(("get", url))
+        if self.raise_on == "gleif":
+            raise RuntimeError("down")
+        if url.endswith("/lei-records"):
+            return {"data": [{"id": AAPL_LEI, "attributes": {"entity": {"legalName": {"name": "Apple Inc."}}}}]}
+        return {
+            "meta": {"pagination": {"lastPage": 1}},
+            "data": [{"attributes": {"isin": i}} for i in ("US037833EK20", "US0378331005", "US037833AK68")],
+        }
+
+    def post(self, url, payload):
+        self.calls.append(("post", url))
+        out = []
+        for job in payload:
+            ok = job["idValue"] == "US0378331005"
+            out.append({"data": [{"figi": "BBG000B9XRY4", "name": self.figi_name, "ticker": self.figi_ticker,
+                                  "marketSector": "Equity", "securityType": "Common Stock"}]} if ok else {"error": "No identifier found."})
+        return out
 
 
-def test_invalid_cusip_is_rejected():
-    assert isin_from_cusip("123") is None
-    assert isin_from_cusip("037833100", prefix="USA") is None
+def test_isin_check_digit_validation():
+    assert is_valid_isin("US0378331005") and is_valid_isin("US02079K3059") and is_valid_isin("USN070592100")
+    assert not is_valid_isin("US0378331006") and not is_valid_isin("garbage")
 
 
-def test_unique_exact_match_resolves_and_ignores_options():
-    assert resolve_us_isin("Apple Inc. - Common Stock", ROWS) == "US0378331005"
+def test_resolves_only_the_equity_isin_with_matching_ticker_and_name():
+    found = resolve_us_isin("AAPL", "Apple Inc. - Common Stock", http=FakeHttp())
+    assert found["isin"] == "US0378331005" and found["lei"] == AAPL_LEI and found["provenance"] == us_isin.PROVENANCE
 
 
-def test_share_class_disambiguates():
-    assert resolve_us_isin("Alphabet Inc. - Class A Common Stock", ROWS, share_class="A") == "US02079K3059"
-    assert resolve_us_isin("Alphabet Inc.", ROWS) is None  # two classes, no class given -> not guessed
+def test_ticker_mismatch_or_name_mismatch_stays_unresolved():
+    assert resolve_us_isin("AAPL", "Apple Inc.", http=FakeHttp(figi_ticker="MSFT")) is None
+    assert resolve_us_isin("AAPL", "Apple Inc.", http=FakeHttp(figi_name="MICROSOFT CORP")) is None
 
 
-def test_ampersand_name_is_exact_not_fuzzy():
-    assert resolve_us_isin("Johnson & Johnson Common Stock", ROWS) == "US4781601046"
+def test_provider_failure_returns_none_not_an_exception():
+    assert resolve_us_isin("AAPL", "Apple Inc.", http=FakeHttp(raise_on="gleif")) is None
 
 
-def test_abbreviated_issuer_resolves_but_ambiguity_stays_unresolved():
-    assert resolve_us_isin("ASML Holding N.V. - New York Registry Shares", ROWS) == "USN070592100"
-    assert resolve_us_isin("Emerson Electric Company", ROWS) is None
-    assert len(match_13f_rows("Emerson Electric Company", ROWS)) == 2
+def test_restricted_cusip_datasets_are_not_used():
+    src = open(us_isin.__file__).read().lower()
+    assert "13flist" not in src and "sec.gov/files" not in src and "isin_from_cusip" not in src
 
 
-def test_tokens_drop_legal_suffixes():
+def test_enrichment_is_flag_gated_and_never_changes_analytics(monkeypatch):
+    company = _company()
+    monkeypatch.delenv("BIAP_GLOBAL_US_ISIN_RESOLVE", raising=False)
+    assert enrich_with_us_isin(company) is company
+    monkeypatch.setenv("BIAP_GLOBAL_US_ISIN_RESOLVE", "1")
+    monkeypatch.setattr(us_isin, "resolve_us_isin", lambda *a, **k: None)
+    us_isin._cached.cache_clear()
+    assert enrich_with_us_isin(company).isin is None  # unresolved -> unchanged
+    monkeypatch.setattr(us_isin, "resolve_us_isin", lambda *a, **k: {"isin": "US0378331005", "lei": AAPL_LEI, "figi": "F"})
+    us_isin._cached.cache_clear()
+    out = enrich_with_us_isin(company)
+    assert out.isin == "US0378331005" and out.pe == company.pe and out.price == company.price
+    assert out.raw_provider_fields["isin_resolution"]["provenance"] == us_isin.PROVENANCE
+
+
+def test_tokens():
     assert issuer_tokens("Walt Disney Company (The) Common Stock") == ["WALT", "DISNEY"]

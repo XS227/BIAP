@@ -8,7 +8,13 @@ NEW positive call; it never creates a directional decision.
 """
 from __future__ import annotations
 
+from typing import Optional
+
 from .models import DistressAssessment, EvidenceAssessment, GovernanceAssessment
+
+
+MIN_BUY_PEER_GROUP = 8
+BUY_DISTRESS_OK = frozenset({"LOW_RISK", "NOT_APPLICABLE"})
 
 
 def decision_governance_agent(
@@ -22,6 +28,9 @@ def decision_governance_agent(
     accept_threshold: float = 0.55,
     escalate_threshold: float = 0.35,
     critical_data_gaps: tuple[str, ...] = (),
+    buy_review_rules: bool = False,
+    peer_group_size: Optional[int] = None,
+    positive_signal_agents: tuple[str, ...] = (),
 ) -> GovernanceAssessment:
     hard_blocks: list[str] = []
     reviews: list[str] = []
@@ -90,8 +99,29 @@ def decision_governance_agent(
     # a derived, time-limited input (e.g. the daily peer scan) can silently
     # remove. Without it the call is routed to REVIEW instead of being accepted,
     # so cache expiry alone can never turn NO_RECOMMENDATION into a BUY.
-    if proposed_call == "BUY_CANDIDATE" and critical_data_gaps:
+    # Conservative BUY rules (all markets). Each is a reason to ask a human,
+    # never to invent a negative call: the BUY becomes REVIEW / NO_RECOMMENDATION.
+    #  1. distress assessment must be LOW_RISK (NOT_APPLICABLE is allowed: banks
+    #     and insurers have no operating-distress model; INSUFFICIENT_DATA is not);
+    #  2. the sector peer group behind the valuation comparison needs >= 8 valid
+    #     companies (unknown size counts as not verifiable);
+    #  3. a relative-P/E (comparison) signal alone cannot carry a BUY.
+    rule_reasons: list[str] = []
+    if proposed_call == "BUY_CANDIDATE" and buy_review_rules:
+        if distress.status not in BUY_DISTRESS_OK:
+            rule_reasons.append(f"distress assessment is {distress.status}, a BUY requires LOW_RISK")
+        if peer_group_size is None or peer_group_size < MIN_BUY_PEER_GROUP:
+            shown = "unverified" if peer_group_size is None else str(peer_group_size)
+            rule_reasons.append(
+                f"sector peer group {shown} (< {MIN_BUY_PEER_GROUP} valid companies); relative valuation is not reliable"
+            )
+        others = [a for a in positive_signal_agents if a != "comparison"]
+        if not others:
+            rule_reasons.append("the only positive signal is relative P/E (comparison); no independent supporting signal")
+
+    if proposed_call == "BUY_CANDIDATE" and (critical_data_gaps or rule_reasons):
         reviews.extend(critical_data_gaps)
+        reviews.extend(rule_reasons)
         return GovernanceAssessment(
             action="REVIEW",
             final_call="NO_RECOMMENDATION",

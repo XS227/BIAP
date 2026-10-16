@@ -26,6 +26,7 @@ from .decision_support import build_decision_table, profile_assessment
 from .distress import distress_agent
 from .decision_reasons import split_decision_reasons
 from .financial_signals import is_correctly_classified_financial
+from .us_isin import enrich_with_us_isin
 from .governance import decision_governance_agent
 from .opportunity import classify_opportunity
 from .exchange_shares import apply_to_company as apply_exchange_share_counts
@@ -655,6 +656,29 @@ def _critical_data_gaps(enriched, signals) -> tuple[str, ...]:
     )
 
 
+def _peer_group_size(enriched) -> Optional[int]:
+    """Valid same-sector companies behind the valuation benchmark, or None if unverifiable."""
+    raw = enriched.raw_provider_fields or {}
+    if raw.get("peer_pe_benchmark_scope") == "same_sector_scan_median":
+        count = raw.get("peer_pe_benchmark_count")
+        if isinstance(count, int) and not isinstance(count, bool):
+            return count
+    pb = raw.get("peer_pb_benchmark")
+    if isinstance(pb, dict) and pb.get("scope") == "same_sector_scan_median" and isinstance(pb.get("count"), int):
+        return pb["count"]
+    return None
+
+
+def _positive_signal_agents(signals) -> tuple[str, ...]:
+    return tuple(
+        sorted(
+            str(getattr(s, "agent", ""))
+            for s in signals
+            if float(getattr(s, "vote", 0.0) or 0.0) > 0.0 and float(getattr(s, "confidence", 0.0) or 0.0) > 0.0
+        )
+    )
+
+
 def _analysis_payload(
     enriched,
     diagnostics: ProviderDiagnostics,
@@ -678,6 +702,9 @@ def _analysis_payload(
         evidence=evidence,
         distress=distress,
         critical_data_gaps=critical_gaps,
+        buy_review_rules=True,
+        peer_group_size=_peer_group_size(enriched),
+        positive_signal_agents=_positive_signal_agents(signals),
     )
     call = governance.final_call
     distress_gate_applied = (
@@ -761,6 +788,8 @@ def analyze_company(
 ) -> dict:
     registry = registry or build_registry()
     evaluated = _evaluate(company, registry)
+    # Identifier only (flag-gated, best effort): never affects scoring or gates.
+    evaluated = (enrich_with_us_isin(evaluated[0]), *evaluated[1:])
     return _analysis_payload(*evaluated)
 
 
