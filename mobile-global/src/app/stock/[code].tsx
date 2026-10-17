@@ -5,7 +5,7 @@ import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing 
 import { analyzeGlobalInstrument, GlobalAnalysis, GlobalAgentSignal, GlobalInstrument } from '@/lib/global-api';
 import { getGlobalMarketSelection } from '@/lib/global-market-selection';
 import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
-import { fundamentalFreshnessLines } from '@/lib/freshness-labels';
+import { dataLimitationLines, fundamentalFreshnessLines, governanceReasonLines } from '@/lib/freshness-labels';
 
 function n(value: number | null | undefined, digits = 2) {
   if (value == null || !Number.isFinite(Number(value))) return '—';
@@ -280,7 +280,12 @@ export default function GlobalStockDetailScreen() {
           <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Final call {friendly(governance?.final_call || analysis.call)} • {governance?.accepted ? 'accepted' : governance?.escalated ? 'human review' : governance?.abstained ? 'abstained' : 'pending'}</Text>
           <Text style={[styles.agentReason, { color: colors.textSecondary }]}>{governance?.reasoning || 'Governance assessment unavailable.'}</Text>
           {governance?.hard_blocks?.length ? <Text style={[styles.warning, { color: Brand.negative }]}>Hard blocks: {governance.hard_blocks.join(' • ')}</Text> : null}
-          {governance?.review_reasons?.length ? <Text style={[styles.warning, { color: Brand.warning }]}>Review: {governance.review_reasons.join(' • ')}</Text> : null}
+          {analysis.decisionReasons
+            ? (governanceReasonLines(analysis.decisionReasons).length
+                ? <Text style={[styles.warning, { color: Brand.warning }]}>Governance: {governanceReasonLines(analysis.decisionReasons).join(' • ')}</Text>
+                : null)
+            : (governance?.review_reasons?.length ? <Text style={[styles.warning, { color: Brand.warning }]}>Review: {governance.review_reasons.join(' • ')}</Text> : null)}
+          {dataLimitationLines(analysis.decisionReasons).length ? <Text style={[styles.agentReason, { color: colors.textSecondary }]}>Data limitations (separate from governance): {dataLimitationLines(analysis.decisionReasons).join(' • ')}</Text> : null}
         </View>
 
         <View style={[styles.agentCard, { backgroundColor: colors.backgroundElement, borderColor: distress?.status === 'HIGH_RISK' ? Brand.negative : distress?.status === 'ELEVATED_RISK' ? Brand.warning : distress?.status === 'LOW_RISK' ? Brand.positive : colors.backgroundSelected }]}>

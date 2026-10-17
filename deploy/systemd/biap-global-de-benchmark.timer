@@ -1,0 +1,14 @@
+[Unit]
+Description=Refresh BIAP Global Germany peer benchmark every 24 h
+
+[Timer]
+# First run 2 min after enable (before the current cache expires), then 24 h after each run.
+OnActiveSec=2min
+OnUnitActiveSec=24h
+AccuracySec=1min
+RandomizedDelaySec=0
+Persistent=true
+Unit=biap-global-de-benchmark.service
+
+[Install]
+WantedBy=timers.target

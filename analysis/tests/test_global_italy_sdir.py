@@ -165,14 +165,64 @@ def _annual_facts(lei, year=2025):
     }
 
 
-def test_a2a_package_with_subsidiary_lei_is_never_promoted(monkeypatch):
+MARR_LEI = "815600576D5536AC7B34"
+LENERGIA_LEI = "815600E787F3B6565561"
+
+
+def _promote(monkeypatch, doc_id, issuer_lei, embedded, ticker, isin, name, oam="it-1info"):
+    filing = OAMFiling(oam=oam, document_id=doc_id, package_url="u", landing_url="l",
+                       published_at="2026-04-17T09:59:16+00:00", scope="consolidated")
+    provider = NationalOAMESEFProvider(locators=[_Fixed([filing])])
+    monkeypatch.setattr(provider, "_resolve_lei", lambda company: (issuer_lei, name))
+    monkeypatch.setattr(provider, "package_facts", lambda f: _annual_facts(embedded) if isinstance(embedded, str) else embedded)
+    return provider.enrich_fundamentals(_company(ticker, ticker, isin))
+
+
+def test_a2a_unreviewed_package_with_subsidiary_lei_is_never_promoted(monkeypatch):
+    # Any 1INFO document that is not one of the two hand-verified A2A annual reports keeps the strict guard.
+    with pytest.raises(GlobalProviderError, match=f"report entity \\['{A2A_ENERGIA_LEI}'\\] != LEI {A2A_LEI}"):
+        _promote(monkeypatch, "1INFO:999999_oneinfo.zip", A2A_LEI, A2A_ENERGIA_LEI, "A2A", "IT0001233417", "A2A S.P.A.")
+
+
+def test_a2a_reviewed_reports_are_promoted_only_with_the_exact_documented_defect(monkeypatch):
+    for doc in ("1INFO:166284_oneinfo.zip", "1INFO:165545_oneinfo.zip"):
+        r = _promote(monkeypatch, doc, A2A_LEI, A2A_ENERGIA_LEI, "A2A", "IT0001233417", "A2A S.P.A.")
+        raw = r.raw_provider_fields
+        assert raw["oam_entity_identity_exception"] == "A2A_REPORT_CARRIES_A2A_ENERGIA_LEI"
+        assert raw["oam_entity_lei_verified"] is False and raw["oam_report_entity_ids"] == [A2A_ENERGIA_LEI]
+        assert "documented Italian embedded-LEI filer defect" in r.sources[-1].notes
+
+
+def test_italy_lei_exception_is_not_a_broad_bypass(monkeypatch):
+    bad_cases = [
+        ("1INFO:166284_oneinfo.zip", A2A_LEI, "FFFFFFFFFFFFFFFFFFFF", "A2A", "IT0001233417"),                 # other embedded LEI
+        ("1INFO:166284_oneinfo.zip", A2A_LEI, {"entities": [A2A_ENERGIA_LEI, LENERGIA_LEI],                  # entity set must equal the one reviewed
+                                                "facts": _annual_facts(A2A_ENERGIA_LEI)["facts"]}, "A2A", "IT0001233417"),
+        ("1INFO:166284_oneinfo.zip", MARR_LEI, A2A_ENERGIA_LEI, "MARR", "IT0003428445"),                      # other issuer, same document id
+        ("EMARKET-STORAGE:180822", A2A_LEI, LENERGIA_LEI, "A2A", "IT0001233417"),                             # MARR's defect on another issuer
+        ("EMARKET-STORAGE:163889", MARR_LEI, LENERGIA_LEI, "MARR", "IT0003428445"),                           # earlier MARR report: not reviewed
+        ("EMARKET-STORAGE:145143", MARR_LEI, LENERGIA_LEI, "MARR", "IT0003428445"),
+    ]
+    for doc, lei, embedded, ticker, isin in bad_cases:
+        with pytest.raises(GlobalProviderError, match="!= LEI"):
+            _promote(monkeypatch, doc, lei, embedded, ticker, isin, ticker + " S.P.A.", oam="it-emarket-storage" if doc.startswith("EMARKET") else "it-1info")
+
+
+def test_italy_lei_exception_applies_to_italy_only(monkeypatch):
     filing = OAMFiling(oam="it-1info", document_id="1INFO:166284_oneinfo.zip", package_url="u", landing_url="l",
                        published_at="2026-04-17T09:59:16+00:00", scope="consolidated")
     provider = NationalOAMESEFProvider(locators=[_Fixed([filing])])
     monkeypatch.setattr(provider, "_resolve_lei", lambda company: (A2A_LEI, "A2A S.P.A."))
     monkeypatch.setattr(provider, "package_facts", lambda f: _annual_facts(A2A_ENERGIA_LEI))
-    with pytest.raises(GlobalProviderError, match=f"report entity \\['{A2A_ENERGIA_LEI}'\\] != LEI {A2A_LEI}"):
-        provider.enrich_fundamentals(_company("A2A", "A2A", "IT0001233417"))
+    foreign = _company("A2A", "A2A", "IT0001233417")
+    import dataclasses
+    with pytest.raises(GlobalProviderError):
+        provider.enrich_fundamentals(dataclasses.replace(foreign, country="FR"))
+
+
+def test_marr_reviewed_report_promoted_with_documented_defect(monkeypatch):
+    r = _promote(monkeypatch, "EMARKET-STORAGE:180822", MARR_LEI, LENERGIA_LEI, "MARR", "IT0003428445", "MARR S.P.A.", oam="it-emarket-storage")
+    assert r.raw_provider_fields["oam_entity_identity_exception"] == "MARR_REPORT_CARRIES_LENERGIA_LEI"
 
 
 def test_matching_lei_fy2025_package_is_official_with_scope(monkeypatch):

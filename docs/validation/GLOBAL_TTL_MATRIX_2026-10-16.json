@@ -1,0 +1,2599 @@
+{
+ "at": "2026-10-16T14:37:28.728463+00:00",
+ "evidenceDigestBefore": "ad0b3786b1dc43a5",
+ "evidenceDigestAfter": "ad0b3786b1dc43a5",
+ "markets": [
+  {
+   "country": "AE",
+   "exchange": "ADX",
+   "stored": {
+    "before": {
+     "country": "AE",
+     "exchange": "ADX",
+     "ledger": {
+      "BLOCKED": 3,
+      "COMPLETE": 10,
+      "INSUFFICIENT_DATA": 89
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:23:05.991975+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:23:19.702644+00:00",
+     "fundamentalsCompanies": 18,
+     "fundamentalsArchivedPeriods": 18,
+     "marketSnapshots": 28
+    },
+    "after": {
+     "country": "AE",
+     "exchange": "ADX",
+     "ledger": {
+      "BLOCKED": 3,
+      "COMPLETE": 10,
+      "INSUFFICIENT_DATA": 89
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:23:05.991975+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:23:19.702644+00:00",
+     "fundamentalsCompanies": 18,
+     "fundamentalsArchivedPeriods": 18,
+     "marketSnapshots": 28
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-13T10:35:27.228555+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 102
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 19,
+    "rowsRepriced": 0,
+    "coveragePct": 0.0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%",
+     "P/E rows retained 0.0% < 85.0%",
+     "P/B rows retained 0.0% < 85.0%",
+     "only 0% of quotes within 4 days"
+    ],
+    "quoteSource": "Twelve Data licensed batch market feed"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "AE",
+   "exchange": "DFM",
+   "stored": {
+    "before": {
+     "country": "AE",
+     "exchange": "DFM",
+     "ledger": {
+      "INSUFFICIENT_DATA": 65
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:23:27.894999+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:23:51.853008+00:00",
+     "fundamentalsCompanies": 7,
+     "fundamentalsArchivedPeriods": 7,
+     "marketSnapshots": 23
+    },
+    "after": {
+     "country": "AE",
+     "exchange": "DFM",
+     "ledger": {
+      "INSUFFICIENT_DATA": 65
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:23:27.894999+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:23:51.853008+00:00",
+     "fundamentalsCompanies": 7,
+     "fundamentalsArchivedPeriods": 7,
+     "marketSnapshots": 23
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-13T10:35:27.304134+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 65
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 3,
+    "rowsRepriced": 0,
+    "coveragePct": 0.0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%",
+     "only 0% of quotes within 4 days"
+    ],
+    "quoteSource": "Twelve Data licensed batch market feed"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "AU",
+   "exchange": "ASX",
+   "stored": {
+    "before": {
+     "country": "AU",
+     "exchange": "ASX",
+     "ledger": {
+      "BLOCKED": 1,
+      "COMPLETE": 1,
+      "INSUFFICIENT_DATA": 1814,
+      "PENDING": 1
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:21:04.122834+00:00",
+     "ledgerNewestAnalysis": "2026-10-13T10:35:27.972074+00:00",
+     "fundamentalsCompanies": 34,
+     "fundamentalsArchivedPeriods": 34,
+     "marketSnapshots": 37
+    },
+    "after": {
+     "country": "AU",
+     "exchange": "ASX",
+     "ledger": {
+      "BLOCKED": 1,
+      "COMPLETE": 1,
+      "INSUFFICIENT_DATA": 1814,
+      "PENDING": 1
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:21:04.122834+00:00",
+     "ledgerNewestAnalysis": "2026-10-13T10:35:27.972074+00:00",
+     "fundamentalsCompanies": 34,
+     "fundamentalsArchivedPeriods": 34,
+     "marketSnapshots": 37
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-13T10:35:28.069204+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 22,
+    "rowsRepriced": 0,
+    "coveragePct": 0.0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%",
+     "P/E rows retained 0.0% < 85.0%",
+     "only 0% of quotes within 4 days"
+    ],
+    "quoteSource": "Twelve Data licensed batch market feed"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "BE",
+   "exchange": "EURONEXT_BRUSSELS",
+   "stored": {
+    "before": {
+     "country": "BE",
+     "exchange": "EURONEXT_BRUSSELS",
+     "ledger": {
+      "BLOCKED": 3,
+      "COMPLETE": 81,
+      "INSUFFICIENT_DATA": 18
+     },
+     "ledgerOldestAnalysis": "2026-10-13T11:26:23.095671+00:00",
+     "ledgerNewestAnalysis": "2026-10-13T11:27:21.248725+00:00",
+     "fundamentalsCompanies": 99,
+     "fundamentalsArchivedPeriods": 131,
+     "marketSnapshots": 102
+    },
+    "after": {
+     "country": "BE",
+     "exchange": "EURONEXT_BRUSSELS",
+     "ledger": {
+      "BLOCKED": 3,
+      "COMPLETE": 81,
+      "INSUFFICIENT_DATA": 18
+     },
+     "ledgerOldestAnalysis": "2026-10-13T11:26:23.095671+00:00",
+     "ledgerNewestAnalysis": "2026-10-13T11:27:21.248725+00:00",
+     "fundamentalsCompanies": 99,
+     "fundamentalsArchivedPeriods": 131,
+     "marketSnapshots": 102
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-12T19:23:34.190292+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 102
+   },
+   "rebuilt": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 102,
+    "rowsRepriced": 68,
+    "coveragePct": 100.0,
+    "problems": null,
+    "quoteSource": "Euronext regulated official EOD (XBRU)"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "VALID",
+     "quote": "STALE",
+     "reason": "quote: peer quotes older than tolerance: online reprice required"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 3,
+    "passCriticalGate": 3
+   }
+  },
+  {
+   "country": "BR",
+   "exchange": "B3",
+   "stored": {
+    "before": {
+     "country": "BR",
+     "exchange": "B3",
+     "ledger": {
+      "BLOCKED": 5,
+      "COMPLETE": 339,
+      "INSUFFICIENT_DATA": 73
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:24:12.290973+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T14:06:46.492604+00:00",
+     "fundamentalsCompanies": 0,
+     "fundamentalsArchivedPeriods": 0,
+     "marketSnapshots": 384
+    },
+    "after": {
+     "country": "BR",
+     "exchange": "B3",
+     "ledger": {
+      "BLOCKED": 5,
+      "COMPLETE": 339,
+      "INSUFFICIENT_DATA": 73
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:24:12.290973+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T14:06:46.492604+00:00",
+     "fundamentalsCompanies": 0,
+     "fundamentalsArchivedPeriods": 0,
+     "marketSnapshots": 384
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-12T19:24:04.305567+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 150,
+    "rowsRepriced": 4,
+    "coveragePct": 100.0,
+    "problems": [
+     "only 4 rows repriced (< 50)"
+    ],
+    "quoteSource": "B3 official BVBG.028.02 + COTAHIST (2026-10-15)"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "CA",
+   "exchange": "TSX",
+   "stored": {
+    "before": {
+     "country": "CA",
+     "exchange": "TSX",
+     "ledger": {
+      "BLOCKED": 1,
+      "COMPLETE": 17,
+      "INSUFFICIENT_DATA": 561
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:13:52.519031+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:14:08.756118+00:00",
+     "fundamentalsCompanies": 54,
+     "fundamentalsArchivedPeriods": 58,
+     "marketSnapshots": 54
+    },
+    "after": {
+     "country": "CA",
+     "exchange": "TSX",
+     "ledger": {
+      "BLOCKED": 1,
+      "COMPLETE": 17,
+      "INSUFFICIENT_DATA": 561
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:13:52.519031+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:14:08.756118+00:00",
+     "fundamentalsCompanies": 54,
+     "fundamentalsArchivedPeriods": 58,
+     "marketSnapshots": 54
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-13T10:35:33.419542+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 44,
+    "rowsRepriced": 0,
+    "coveragePct": 0.0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%",
+     "P/E rows retained 0.0% < 85.0%",
+     "only 0% of quotes within 4 days"
+    ],
+    "quoteSource": "Twelve Data licensed batch market feed"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 1,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "CA",
+   "exchange": "TSXV",
+   "stored": {
+    "before": {
+     "country": "CA",
+     "exchange": "TSXV",
+     "ledger": {
+      "BLOCKED": 2,
+      "INSUFFICIENT_DATA": 1216
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:13:58.331253+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:14:11.187539+00:00",
+     "fundamentalsCompanies": 41,
+     "fundamentalsArchivedPeriods": 42,
+     "marketSnapshots": 41
+    },
+    "after": {
+     "country": "CA",
+     "exchange": "TSXV",
+     "ledger": {
+      "BLOCKED": 2,
+      "INSUFFICIENT_DATA": 1216
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:13:58.331253+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:14:11.187539+00:00",
+     "fundamentalsCompanies": 41,
+     "fundamentalsArchivedPeriods": 42,
+     "marketSnapshots": 41
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-13T10:35:33.576563+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 28,
+    "rowsRepriced": 0,
+    "coveragePct": 0.0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%",
+     "P/E rows retained 0.0% < 85.0%",
+     "only 0% of quotes within 4 days"
+    ],
+    "quoteSource": "Twelve Data licensed batch market feed"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "CH",
+   "exchange": "SIX",
+   "stored": {
+    "before": {
+     "country": "CH",
+     "exchange": "SIX",
+     "ledger": {
+      "COMPLETE": 4,
+      "INSUFFICIENT_DATA": 193
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:20:50.620626+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:21:01.737956+00:00",
+     "fundamentalsCompanies": 35,
+     "fundamentalsArchivedPeriods": 40,
+     "marketSnapshots": 36
+    },
+    "after": {
+     "country": "CH",
+     "exchange": "SIX",
+     "ledger": {
+      "COMPLETE": 4,
+      "INSUFFICIENT_DATA": 193
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:20:50.620626+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:21:01.737956+00:00",
+     "fundamentalsCompanies": 35,
+     "fundamentalsArchivedPeriods": 40,
+     "marketSnapshots": 36
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-13T10:35:33.721086+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 25,
+    "rowsRepriced": 0,
+    "coveragePct": 0.0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%",
+     "P/E rows retained 0.0% < 85.0%",
+     "only 0% of quotes within 4 days"
+    ],
+    "quoteSource": "Twelve Data licensed batch market feed"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "DE",
+   "exchange": "FRANKFURT",
+   "stored": {
+    "before": {
+     "country": "DE",
+     "exchange": "FRANKFURT",
+     "ledger": {
+      "BLOCKED": 28,
+      "COMPLETE": 456,
+      "INSUFFICIENT_DATA": 14
+     },
+     "ledgerOldestAnalysis": "2026-10-13T11:23:33.705902+00:00",
+     "ledgerNewestAnalysis": "2026-10-13T11:24:04.673361+00:00",
+     "fundamentalsCompanies": 492,
+     "fundamentalsArchivedPeriods": 905,
+     "marketSnapshots": 499
+    },
+    "after": {
+     "country": "DE",
+     "exchange": "FRANKFURT",
+     "ledger": {
+      "BLOCKED": 28,
+      "COMPLETE": 456,
+      "INSUFFICIENT_DATA": 14
+     },
+     "ledgerOldestAnalysis": "2026-10-13T11:23:33.705902+00:00",
+     "ledgerNewestAnalysis": "2026-10-13T11:24:04.673361+00:00",
+     "fundamentalsCompanies": 492,
+     "fundamentalsArchivedPeriods": 905,
+     "marketSnapshots": 499
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-12T19:23:46.745394+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 150,
+    "rowsRepriced": null,
+    "coveragePct": null,
+    "problems": [
+     "fundamentals not valid for repricing: 74% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first"
+    ],
+    "quoteSource": null
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 1,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "DE",
+   "exchange": "XETRA",
+   "stored": {
+    "before": {
+     "country": "DE",
+     "exchange": "XETRA",
+     "ledger": {
+      "BLOCKED": 11,
+      "COMPLETE": 389,
+      "INSUFFICIENT_DATA": 6
+     },
+     "ledgerOldestAnalysis": "2026-10-13T11:24:09.281124+00:00",
+     "ledgerNewestAnalysis": "2026-10-16T09:57:37.663288+00:00",
+     "fundamentalsCompanies": 402,
+     "fundamentalsArchivedPeriods": 750,
+     "marketSnapshots": 412
+    },
+    "after": {
+     "country": "DE",
+     "exchange": "XETRA",
+     "ledger": {
+      "BLOCKED": 11,
+      "COMPLETE": 389,
+      "INSUFFICIENT_DATA": 6
+     },
+     "ledgerOldestAnalysis": "2026-10-13T11:24:09.281124+00:00",
+     "ledgerNewestAnalysis": "2026-10-16T09:57:37.663288+00:00",
+     "fundamentalsCompanies": 402,
+     "fundamentalsArchivedPeriods": 750,
+     "marketSnapshots": 412
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-16T09:57:37.684137+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 150,
+    "rowsRepriced": null,
+    "coveragePct": null,
+    "problems": [
+     "fundamentals not valid for repricing: 79% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first"
+    ],
+    "quoteSource": null
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "DK",
+   "exchange": "NASDAQ_COPENHAGEN",
+   "stored": {
+    "before": {
+     "country": "DK",
+     "exchange": "NASDAQ_COPENHAGEN",
+     "ledger": {
+      "COMPLETE": 99,
+      "INSUFFICIENT_DATA": 17
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:14:15.281919+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:41:09.428388+00:00",
+     "fundamentalsCompanies": 116,
+     "fundamentalsArchivedPeriods": 171,
+     "marketSnapshots": 117
+    },
+    "after": {
+     "country": "DK",
+     "exchange": "NASDAQ_COPENHAGEN",
+     "ledger": {
+      "COMPLETE": 99,
+      "INSUFFICIENT_DATA": 17
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:14:15.281919+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:41:09.428388+00:00",
+     "fundamentalsCompanies": 116,
+     "fundamentalsArchivedPeriods": 171,
+     "marketSnapshots": 117
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-12T19:23:25.723740+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 116
+   },
+   "rebuilt": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 116,
+    "rowsRepriced": 74,
+    "coveragePct": 100.0,
+    "problems": null,
+    "quoteSource": "Nasdaq Nordic official Main Market (CPH)"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "VALID",
+     "quote": "STALE",
+     "reason": "quote: peer quotes older than tolerance: online reprice required"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 3,
+    "passCriticalGate": 3
+   }
+  },
+  {
+   "country": "ES",
+   "exchange": "BME_MADRID",
+   "stored": {
+    "before": {
+     "country": "ES",
+     "exchange": "BME_MADRID",
+     "ledger": {
+      "BLOCKED": 2,
+      "COMPLETE": 95,
+      "INSUFFICIENT_DATA": 12
+     },
+     "ledgerOldestAnalysis": "2026-10-13T11:12:48.820448+00:00",
+     "ledgerNewestAnalysis": "2026-10-13T11:23:31.223670+00:00",
+     "fundamentalsCompanies": 110,
+     "fundamentalsArchivedPeriods": 137,
+     "marketSnapshots": 108
+    },
+    "after": {
+     "country": "ES",
+     "exchange": "BME_MADRID",
+     "ledger": {
+      "BLOCKED": 2,
+      "COMPLETE": 95,
+      "INSUFFICIENT_DATA": 12
+     },
+     "ledgerOldestAnalysis": "2026-10-13T11:12:48.820448+00:00",
+     "ledgerNewestAnalysis": "2026-10-13T11:23:31.223670+00:00",
+     "fundamentalsCompanies": 110,
+     "fundamentalsArchivedPeriods": 137,
+     "marketSnapshots": 108
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-12T19:23:47.585312+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 106
+   },
+   "rebuilt": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 106,
+    "rowsRepriced": 73,
+    "coveragePct": 97.33,
+    "problems": null,
+    "quoteSource": "BME official Continuous Market Daily Bulletin (2026-10-15)"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "VALID",
+     "quote": "STALE",
+     "reason": "quote: peer quotes older than tolerance: online reprice required"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 1,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "FI",
+   "exchange": "NASDAQ_HELSINKI",
+   "stored": {
+    "before": {
+     "country": "FI",
+     "exchange": "NASDAQ_HELSINKI",
+     "ledger": {
+      "COMPLETE": 123,
+      "INSUFFICIENT_DATA": 25
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:14:18.251003+00:00",
+     "ledgerNewestAnalysis": "2026-10-13T14:15:18.146070+00:00",
+     "fundamentalsCompanies": 145,
+     "fundamentalsArchivedPeriods": 164,
+     "marketSnapshots": 147
+    },
+    "after": {
+     "country": "FI",
+     "exchange": "NASDAQ_HELSINKI",
+     "ledger": {
+      "COMPLETE": 123,
+      "INSUFFICIENT_DATA": 25
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:14:18.251003+00:00",
+     "ledgerNewestAnalysis": "2026-10-13T14:15:18.146070+00:00",
+     "fundamentalsCompanies": 145,
+     "fundamentalsArchivedPeriods": 164,
+     "marketSnapshots": 147
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-12T19:23:28.329288+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 146
+   },
+   "rebuilt": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 146,
+    "rowsRepriced": 95,
+    "coveragePct": 100.0,
+    "problems": null,
+    "quoteSource": "Nasdaq Nordic official Main Market (HEL)"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "STALE",
+     "quote": "STALE",
+     "reason": "filing: 98% of peers excluded (possibly superseded/undated/unvalidated) > 15%"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 4,
+    "passCriticalGate": 4
+   }
+  },
+  {
+   "country": "FR",
+   "exchange": "EURONEXT_PARIS",
+   "stored": {
+    "before": {
+     "country": "FR",
+     "exchange": "EURONEXT_PARIS",
+     "ledger": {
+      "BLOCKED": 8,
+      "COMPLETE": 259,
+      "INSUFFICIENT_DATA": 27
+     },
+     "ledgerOldestAnalysis": "2026-10-14T11:39:38.053929+00:00",
+     "ledgerNewestAnalysis": "2026-10-15T21:45:08.515823+00:00",
+     "fundamentalsCompanies": 295,
+     "fundamentalsArchivedPeriods": 327,
+     "marketSnapshots": 295
+    },
+    "after": {
+     "country": "FR",
+     "exchange": "EURONEXT_PARIS",
+     "ledger": {
+      "BLOCKED": 8,
+      "COMPLETE": 259,
+      "INSUFFICIENT_DATA": 27
+     },
+     "ledgerOldestAnalysis": "2026-10-14T11:39:38.053929+00:00",
+     "ledgerNewestAnalysis": "2026-10-15T21:45:08.515823+00:00",
+     "fundamentalsCompanies": 295,
+     "fundamentalsArchivedPeriods": 327,
+     "marketSnapshots": 295
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-14T11:39:38.053929+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 150,
+    "rowsRepriced": 124,
+    "coveragePct": 96.88,
+    "problems": null,
+    "quoteSource": "Euronext regulated official EOD (XPAR)"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "VALID",
+     "quote": "STALE",
+     "reason": "quote: peer quotes older than tolerance: online reprice required"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 3,
+    "passCriticalGate": 2
+   }
+  },
+  {
+   "country": "GB",
+   "exchange": "LSE",
+   "stored": {
+    "before": {
+     "country": "GB",
+     "exchange": "LSE",
+     "ledger": {
+      "BLOCKED": 18,
+      "COMPLETE": 420,
+      "INSUFFICIENT_DATA": 89
+     },
+     "ledgerOldestAnalysis": "2026-10-12T08:37:28.407594+00:00",
+     "ledgerNewestAnalysis": "2026-10-15T21:44:29.392054+00:00",
+     "fundamentalsCompanies": 799,
+     "fundamentalsArchivedPeriods": 819,
+     "marketSnapshots": 808
+    },
+    "after": {
+     "country": "GB",
+     "exchange": "LSE",
+     "ledger": {
+      "BLOCKED": 18,
+      "COMPLETE": 420,
+      "INSUFFICIENT_DATA": 89
+     },
+     "ledgerOldestAnalysis": "2026-10-12T08:37:28.407594+00:00",
+     "ledgerNewestAnalysis": "2026-10-15T21:44:29.392054+00:00",
+     "fundamentalsCompanies": 799,
+     "fundamentalsArchivedPeriods": 819,
+     "marketSnapshots": 808
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-14T11:36:34.682085+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 150,
+    "rowsRepriced": 132,
+    "coveragePct": 88.59,
+    "problems": null,
+    "quoteSource": "LSE official Main Market Price Explorer (2026-10-16)"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "VALID",
+     "quote": "STALE",
+     "reason": "quote: peer quotes older than tolerance: online reprice required"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 17,
+    "passCriticalGate": 15
+   }
+  },
+  {
+   "country": "GR",
+   "exchange": "ATHENS",
+   "stored": {
+    "before": {
+     "country": "GR",
+     "exchange": "ATHENS",
+     "ledger": {
+      "COMPLETE": 16,
+      "INSUFFICIENT_DATA": 112
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:20:27.359874+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:29:22.527572+00:00",
+     "fundamentalsCompanies": 37,
+     "fundamentalsArchivedPeriods": 39,
+     "marketSnapshots": 54
+    },
+    "after": {
+     "country": "GR",
+     "exchange": "ATHENS",
+     "ledger": {
+      "COMPLETE": 16,
+      "INSUFFICIENT_DATA": 112
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:20:27.359874+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:29:22.527572+00:00",
+     "fundamentalsCompanies": 37,
+     "fundamentalsArchivedPeriods": 39,
+     "marketSnapshots": 54
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-13T10:35:38.711270+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 128
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 46,
+    "rowsRepriced": 0,
+    "coveragePct": 0.0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%",
+     "P/E rows retained 0.0% < 85.0%",
+     "only 0% of quotes within 4 days"
+    ],
+    "quoteSource": "Twelve Data licensed batch market feed"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "HK",
+   "exchange": "HKEX",
+   "stored": {
+    "before": {
+     "country": "HK",
+     "exchange": "HKEX",
+     "ledger": {
+      "BLOCKED": 1,
+      "COMPLETE": 1,
+      "INSUFFICIENT_DATA": 2765
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:22:28.882862+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T18:51:59.130570+00:00",
+     "fundamentalsCompanies": 50,
+     "fundamentalsArchivedPeriods": 61,
+     "marketSnapshots": 50
+    },
+    "after": {
+     "country": "HK",
+     "exchange": "HKEX",
+     "ledger": {
+      "BLOCKED": 1,
+      "COMPLETE": 1,
+      "INSUFFICIENT_DATA": 2765
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:22:28.882862+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T18:51:59.130570+00:00",
+     "fundamentalsCompanies": 50,
+     "fundamentalsArchivedPeriods": 61,
+     "marketSnapshots": 50
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-13T10:35:38.965148+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 34,
+    "rowsRepriced": 0,
+    "coveragePct": 0.0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%",
+     "P/E rows retained 0.0% < 85.0%",
+     "only 0% of quotes within 4 days"
+    ],
+    "quoteSource": "Twelve Data licensed batch market feed"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "IE",
+   "exchange": "EURONEXT_DUBLIN",
+   "stored": {
+    "before": {
+     "country": "IE",
+     "exchange": "EURONEXT_DUBLIN",
+     "ledger": {
+      "COMPLETE": 11,
+      "INSUFFICIENT_DATA": 5
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:15:24.767042+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T16:23:22.313899+00:00",
+     "fundamentalsCompanies": 15,
+     "fundamentalsArchivedPeriods": 23,
+     "marketSnapshots": 17
+    },
+    "after": {
+     "country": "IE",
+     "exchange": "EURONEXT_DUBLIN",
+     "ledger": {
+      "COMPLETE": 11,
+      "INSUFFICIENT_DATA": 5
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:15:24.767042+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T16:23:22.313899+00:00",
+     "fundamentalsCompanies": 15,
+     "fundamentalsArchivedPeriods": 23,
+     "marketSnapshots": 17
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-13T10:35:39.931638+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 16
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 16,
+    "rowsRepriced": 12,
+    "coveragePct": 100.0,
+    "problems": [
+     "only 12 rows repriced (< 50)"
+    ],
+    "quoteSource": "Euronext regulated official EOD (XMSM)"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "IN",
+   "exchange": "BSE",
+   "stored": {
+    "before": {
+     "country": "IN",
+     "exchange": "BSE",
+     "fundamentalsCompanies": 25,
+     "fundamentalsArchivedPeriods": 25,
+     "marketSnapshots": 25
+    },
+    "after": {
+     "country": "IN",
+     "exchange": "BSE",
+     "fundamentalsCompanies": 25,
+     "fundamentalsArchivedPeriods": 25,
+     "marketSnapshots": 25
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-05T18:40:29.777390+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 25
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": null,
+    "rowsRepriced": null,
+    "coveragePct": null,
+    "problems": [
+     "no stored ledger evidence for this market"
+    ],
+    "quoteSource": null
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 1,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "IN",
+   "exchange": "NSE",
+   "stored": {
+    "before": {
+     "country": "IN",
+     "exchange": "NSE",
+     "ledger": {
+      "COMPLETE": 33,
+      "INSUFFICIENT_DATA": 2318
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:22:42.604716+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:29:41.502728+00:00",
+     "fundamentalsCompanies": 52,
+     "fundamentalsArchivedPeriods": 52,
+     "marketSnapshots": 52
+    },
+    "after": {
+     "country": "IN",
+     "exchange": "NSE",
+     "ledger": {
+      "COMPLETE": 33,
+      "INSUFFICIENT_DATA": 2318
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:22:42.604716+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:29:41.502728+00:00",
+     "fundamentalsCompanies": 52,
+     "fundamentalsArchivedPeriods": 52,
+     "marketSnapshots": 52
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-13T10:35:40.293419+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 39,
+    "rowsRepriced": 0,
+    "coveragePct": 0.0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%",
+     "P/E rows retained 0.0% < 85.0%",
+     "only 0% of quotes within 4 days"
+    ],
+    "quoteSource": "Twelve Data licensed batch market feed"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 1,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "IS",
+   "exchange": "NASDAQ_ICELAND",
+   "stored": {
+    "before": {
+     "country": "IS",
+     "exchange": "NASDAQ_ICELAND",
+     "ledger": {
+      "BLOCKED": 1,
+      "COMPLETE": 23,
+      "INSUFFICIENT_DATA": 3
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:14:42.308709+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:17:19.803540+00:00",
+     "fundamentalsCompanies": 27,
+     "fundamentalsArchivedPeriods": 42,
+     "marketSnapshots": 27
+    },
+    "after": {
+     "country": "IS",
+     "exchange": "NASDAQ_ICELAND",
+     "ledger": {
+      "BLOCKED": 1,
+      "COMPLETE": 23,
+      "INSUFFICIENT_DATA": 3
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:14:42.308709+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:17:19.803540+00:00",
+     "fundamentalsCompanies": 27,
+     "fundamentalsArchivedPeriods": 42,
+     "marketSnapshots": 27
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-12T19:23:31.863661+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 27
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 27,
+    "rowsRepriced": 12,
+    "coveragePct": 92.31,
+    "problems": [
+     "only 12 rows repriced (< 50)"
+    ],
+    "quoteSource": "Nasdaq Nordic official Main Market (ICE)"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "IT",
+   "exchange": "EURONEXT_MILAN",
+   "stored": {
+    "before": {
+     "country": "IT",
+     "exchange": "EURONEXT_MILAN",
+     "ledger": {
+      "BLOCKED": 8,
+      "COMPLETE": 169,
+      "INSUFFICIENT_DATA": 16
+     },
+     "ledgerOldestAnalysis": "2026-10-14T11:27:46.729001+00:00",
+     "ledgerNewestAnalysis": "2026-10-15T21:46:14.194390+00:00",
+     "fundamentalsCompanies": 194,
+     "fundamentalsArchivedPeriods": 222,
+     "marketSnapshots": 203
+    },
+    "after": {
+     "country": "IT",
+     "exchange": "EURONEXT_MILAN",
+     "ledger": {
+      "BLOCKED": 8,
+      "COMPLETE": 169,
+      "INSUFFICIENT_DATA": 16
+     },
+     "ledgerOldestAnalysis": "2026-10-14T11:27:46.729001+00:00",
+     "ledgerNewestAnalysis": "2026-10-15T21:46:14.194390+00:00",
+     "fundamentalsCompanies": 194,
+     "fundamentalsArchivedPeriods": 222,
+     "marketSnapshots": 203
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-14T11:27:46.729001+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 150,
+    "rowsRepriced": 142,
+    "coveragePct": 99.3,
+    "problems": null,
+    "quoteSource": "Euronext regulated official EOD (MTAA)"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "VALID",
+     "quote": "STALE",
+     "reason": "quote: peer quotes older than tolerance: online reprice required"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 5,
+    "passCriticalGate": 5
+   }
+  },
+  {
+   "country": "JP",
+   "exchange": "TSE_JP",
+   "stored": {
+    "before": {
+     "country": "JP",
+     "exchange": "TSE_JP",
+     "ledger": {
+      "INSUFFICIENT_DATA": 3695
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:22:21.726692+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:22:27.074278+00:00",
+     "fundamentalsCompanies": 0,
+     "fundamentalsArchivedPeriods": 0,
+     "marketSnapshots": 36
+    },
+    "after": {
+     "country": "JP",
+     "exchange": "TSE_JP",
+     "ledger": {
+      "INSUFFICIENT_DATA": 3695
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:22:21.726692+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:22:27.074278+00:00",
+     "fundamentalsCompanies": 0,
+     "fundamentalsArchivedPeriods": 0,
+     "marketSnapshots": 36
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-13T10:35:42.097361+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 24,
+    "rowsRepriced": 0,
+    "coveragePct": 0.0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%",
+     "P/E rows retained 0.0% < 85.0%",
+     "only 0% of quotes within 4 days"
+    ],
+    "quoteSource": "Twelve Data licensed batch market feed"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "KR",
+   "exchange": "KRX",
+   "stored": {
+    "before": {
+     "country": "KR",
+     "exchange": "KRX",
+     "ledger": {
+      "INSUFFICIENT_DATA": 2641
+     },
+     "ledgerOldestAnalysis": null,
+     "ledgerNewestAnalysis": null,
+     "fundamentalsCompanies": 0,
+     "fundamentalsArchivedPeriods": 0,
+     "marketSnapshots": 0
+    },
+    "after": {
+     "country": "KR",
+     "exchange": "KRX",
+     "ledger": {
+      "INSUFFICIENT_DATA": 2641
+     },
+     "ledgerOldestAnalysis": null,
+     "ledgerNewestAnalysis": null,
+     "fundamentalsCompanies": 0,
+     "fundamentalsArchivedPeriods": 0,
+     "marketSnapshots": 0
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-13T10:35:42.263108+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": null,
+    "rowsRepriced": null,
+    "coveragePct": null,
+    "problems": [
+     "no stored ledger evidence for this market"
+    ],
+    "quoteSource": null
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "NL",
+   "exchange": "EURONEXT_AMSTERDAM",
+   "stored": {
+    "before": {
+     "country": "NL",
+     "exchange": "EURONEXT_AMSTERDAM",
+     "ledger": {
+      "BLOCKED": 2,
+      "COMPLETE": 83,
+      "INSUFFICIENT_DATA": 13
+     },
+     "ledgerOldestAnalysis": "2026-10-13T11:11:21.132741+00:00",
+     "ledgerNewestAnalysis": "2026-10-13T11:12:36.474959+00:00",
+     "fundamentalsCompanies": 97,
+     "fundamentalsArchivedPeriods": 118,
+     "marketSnapshots": 98
+    },
+    "after": {
+     "country": "NL",
+     "exchange": "EURONEXT_AMSTERDAM",
+     "ledger": {
+      "BLOCKED": 2,
+      "COMPLETE": 83,
+      "INSUFFICIENT_DATA": 13
+     },
+     "ledgerOldestAnalysis": "2026-10-13T11:11:21.132741+00:00",
+     "ledgerNewestAnalysis": "2026-10-13T11:12:36.474959+00:00",
+     "fundamentalsCompanies": 97,
+     "fundamentalsArchivedPeriods": 118,
+     "marketSnapshots": 98
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-12T19:23:32.583543+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 98
+   },
+   "rebuilt": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 98,
+    "rowsRepriced": 58,
+    "coveragePct": 96.67,
+    "problems": null,
+    "quoteSource": "Euronext regulated official EOD (XAMS)"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "VALID",
+     "quote": "STALE",
+     "reason": "quote: peer quotes older than tolerance: online reprice required"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 3,
+    "passCriticalGate": 3
+   }
+  },
+  {
+   "country": "NO",
+   "exchange": "EURONEXT_OSLO",
+   "stored": {
+    "before": {
+     "country": "NO",
+     "exchange": "EURONEXT_OSLO",
+     "ledger": {
+      "COMPLETE": 136,
+      "INSUFFICIENT_DATA": 10
+     },
+     "ledgerOldestAnalysis": "2026-10-14T11:25:33.745074+00:00",
+     "ledgerNewestAnalysis": "2026-10-15T21:44:49.133400+00:00",
+     "fundamentalsCompanies": 149,
+     "fundamentalsArchivedPeriods": 241,
+     "marketSnapshots": 158
+    },
+    "after": {
+     "country": "NO",
+     "exchange": "EURONEXT_OSLO",
+     "ledger": {
+      "COMPLETE": 136,
+      "INSUFFICIENT_DATA": 10
+     },
+     "ledgerOldestAnalysis": "2026-10-14T11:25:33.745074+00:00",
+     "ledgerNewestAnalysis": "2026-10-15T21:44:49.133400+00:00",
+     "fundamentalsCompanies": 149,
+     "fundamentalsArchivedPeriods": 241,
+     "marketSnapshots": 158
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-14T11:25:33.745074+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 146
+   },
+   "rebuilt": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 146,
+    "rowsRepriced": 94,
+    "coveragePct": 100.0,
+    "problems": null,
+    "quoteSource": "Euronext regulated official EOD (XOSL)"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "STALE",
+     "quote": "STALE",
+     "reason": "filing: 100% of peers excluded (possibly superseded/undated/unvalidated) > 15%"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 10,
+    "passCriticalGate": 10
+   }
+  },
+  {
+   "country": "NZ",
+   "exchange": "NZX",
+   "stored": {
+    "before": {
+     "country": "NZ",
+     "exchange": "NZX",
+     "ledger": {
+      "BLOCKED": 3,
+      "COMPLETE": 2,
+      "INSUFFICIENT_DATA": 96
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:21:26.722269+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:22:19.969229+00:00",
+     "fundamentalsCompanies": 14,
+     "fundamentalsArchivedPeriods": 31,
+     "marketSnapshots": 28
+    },
+    "after": {
+     "country": "NZ",
+     "exchange": "NZX",
+     "ledger": {
+      "BLOCKED": 3,
+      "COMPLETE": 2,
+      "INSUFFICIENT_DATA": 96
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:21:26.722269+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:22:19.969229+00:00",
+     "fundamentalsCompanies": 14,
+     "fundamentalsArchivedPeriods": 31,
+     "marketSnapshots": 28
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-13T10:35:42.529514+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 101
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 18,
+    "rowsRepriced": null,
+    "coveragePct": null,
+    "problems": [
+     "fundamentals not valid for repricing: 15% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first"
+    ],
+    "quoteSource": null
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "PT",
+   "exchange": "EURONEXT_LISBON",
+   "stored": {
+    "before": {
+     "country": "PT",
+     "exchange": "EURONEXT_LISBON",
+     "ledger": {
+      "COMPLETE": 28,
+      "INSUFFICIENT_DATA": 2
+     },
+     "ledgerOldestAnalysis": "2026-10-13T11:10:42.956908+00:00",
+     "ledgerNewestAnalysis": "2026-10-13T11:11:13.909878+00:00",
+     "fundamentalsCompanies": 30,
+     "fundamentalsArchivedPeriods": 60,
+     "marketSnapshots": 30
+    },
+    "after": {
+     "country": "PT",
+     "exchange": "EURONEXT_LISBON",
+     "ledger": {
+      "COMPLETE": 28,
+      "INSUFFICIENT_DATA": 2
+     },
+     "ledgerOldestAnalysis": "2026-10-13T11:10:42.956908+00:00",
+     "ledgerNewestAnalysis": "2026-10-13T11:11:13.909878+00:00",
+     "fundamentalsCompanies": 30,
+     "fundamentalsArchivedPeriods": 60,
+     "marketSnapshots": 30
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-12T19:23:36.424639+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 30
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 30,
+    "rowsRepriced": 26,
+    "coveragePct": 100.0,
+    "problems": [
+     "only 26 rows repriced (< 50)"
+    ],
+    "quoteSource": "Euronext regulated official EOD (XLIS)"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "SA",
+   "exchange": "SAUDI_EXCHANGE",
+   "stored": {
+    "before": {
+     "country": "SA",
+     "exchange": "SAUDI_EXCHANGE",
+     "ledger": {
+      "INSUFFICIENT_DATA": 376
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:22:57.175428+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:23:02.468946+00:00",
+     "fundamentalsCompanies": 0,
+     "fundamentalsArchivedPeriods": 0,
+     "marketSnapshots": 33
+    },
+    "after": {
+     "country": "SA",
+     "exchange": "SAUDI_EXCHANGE",
+     "ledger": {
+      "INSUFFICIENT_DATA": 376
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:22:57.175428+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:23:02.468946+00:00",
+     "fundamentalsCompanies": 0,
+     "fundamentalsArchivedPeriods": 0,
+     "marketSnapshots": 33
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-13T10:35:43.571727+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 21,
+    "rowsRepriced": 0,
+    "coveragePct": 0.0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%",
+     "P/E rows retained 0.0% < 85.0%",
+     "only 0% of quotes within 4 days"
+    ],
+    "quoteSource": "Twelve Data licensed batch market feed"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "SE",
+   "exchange": "NASDAQ_STOCKHOLM",
+   "stored": {
+    "before": {
+     "country": "SE",
+     "exchange": "NASDAQ_STOCKHOLM",
+     "ledger": {
+      "BLOCKED": 1,
+      "COMPLETE": 373,
+      "INSUFFICIENT_DATA": 28
+     },
+     "ledgerOldestAnalysis": "2026-10-14T22:31:11.956701+00:00",
+     "ledgerNewestAnalysis": "2026-10-14T23:30:19.053501+00:00",
+     "fundamentalsCompanies": 403,
+     "fundamentalsArchivedPeriods": 594,
+     "marketSnapshots": 407
+    },
+    "after": {
+     "country": "SE",
+     "exchange": "NASDAQ_STOCKHOLM",
+     "ledger": {
+      "BLOCKED": 1,
+      "COMPLETE": 373,
+      "INSUFFICIENT_DATA": 28
+     },
+     "ledgerOldestAnalysis": "2026-10-14T22:31:11.956701+00:00",
+     "ledgerNewestAnalysis": "2026-10-14T23:30:19.053501+00:00",
+     "fundamentalsCompanies": 403,
+     "fundamentalsArchivedPeriods": 594,
+     "marketSnapshots": 407
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-14T22:31:11.956701+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 150,
+    "rowsRepriced": 144,
+    "coveragePct": 98.63,
+    "problems": null,
+    "quoteSource": "Nasdaq Nordic official Main Market (STO)"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "STALE",
+     "quote": "STALE",
+     "reason": "filing: 97% of peers excluded (possibly superseded/undated/unvalidated) > 15%"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 1,
+    "passCriticalGate": 1
+   }
+  },
+  {
+   "country": "SG",
+   "exchange": "SGX",
+   "stored": {
+    "before": {
+     "country": "SG",
+     "exchange": "SGX",
+     "ledger": {
+      "BLOCKED": 1,
+      "COMPLETE": 1,
+      "INSUFFICIENT_DATA": 563
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:22:35.233585+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:29:32.802034+00:00",
+     "fundamentalsCompanies": 46,
+     "fundamentalsArchivedPeriods": 61,
+     "marketSnapshots": 45
+    },
+    "after": {
+     "country": "SG",
+     "exchange": "SGX",
+     "ledger": {
+      "BLOCKED": 1,
+      "COMPLETE": 1,
+      "INSUFFICIENT_DATA": 563
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:22:35.233585+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:29:32.802034+00:00",
+     "fundamentalsCompanies": 46,
+     "fundamentalsArchivedPeriods": 61,
+     "marketSnapshots": 45
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-13T10:35:44.020635+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 34,
+    "rowsRepriced": 0,
+    "coveragePct": 0.0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%",
+     "P/E rows retained 0.0% < 85.0%",
+     "only 0% of quotes within 4 days"
+    ],
+    "quoteSource": "Twelve Data licensed batch market feed"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 1,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "TR",
+   "exchange": "BIST",
+   "stored": {
+    "before": {
+     "country": "TR",
+     "exchange": "BIST",
+     "ledger": {
+      "BLOCKED": 5,
+      "COMPLETE": 564,
+      "INSUFFICIENT_DATA": 62
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:23:54.882801+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T20:28:01.323505+00:00",
+     "fundamentalsCompanies": 603,
+     "fundamentalsArchivedPeriods": 646,
+     "marketSnapshots": 632
+    },
+    "after": {
+     "country": "TR",
+     "exchange": "BIST",
+     "ledger": {
+      "BLOCKED": 5,
+      "COMPLETE": 564,
+      "INSUFFICIENT_DATA": 62
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:23:54.882801+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T20:28:01.323505+00:00",
+     "fundamentalsCompanies": 603,
+     "fundamentalsArchivedPeriods": 646,
+     "marketSnapshots": 632
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-12T20:28:01.351772+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 150,
+    "rowsRepriced": 17,
+    "coveragePct": 100.0,
+    "problems": [
+     "only 17 rows repriced (< 50)"
+    ],
+    "quoteSource": "Borsa Istanbul official Daily Bulletin (2026-10-15)"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  },
+  {
+   "country": "US",
+   "exchange": "NASDAQ",
+   "stored": {
+    "before": {
+     "country": "US",
+     "exchange": "NASDAQ",
+     "ledger": {
+      "BLOCKED": 15,
+      "COMPLETE": 2809,
+      "INSUFFICIENT_DATA": 190
+     },
+     "ledgerOldestAnalysis": "2026-10-12T09:04:58.155191+00:00",
+     "ledgerNewestAnalysis": "2026-10-15T21:42:43.896849+00:00",
+     "fundamentalsCompanies": 2843,
+     "fundamentalsArchivedPeriods": 2869,
+     "marketSnapshots": 3040
+    },
+    "after": {
+     "country": "US",
+     "exchange": "NASDAQ",
+     "ledger": {
+      "BLOCKED": 15,
+      "COMPLETE": 2809,
+      "INSUFFICIENT_DATA": 190
+     },
+     "ledgerOldestAnalysis": "2026-10-12T09:04:58.155191+00:00",
+     "ledgerNewestAnalysis": "2026-10-15T21:42:43.896849+00:00",
+     "fundamentalsCompanies": 2843,
+     "fundamentalsArchivedPeriods": 2869,
+     "marketSnapshots": 3040
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-14T09:04:10.317318+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 150,
+    "rowsRepriced": 143,
+    "coveragePct": 96.62,
+    "problems": null,
+    "quoteSource": "Nasdaq official full Stock Screener (2026-10-16)"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "STALE",
+     "quote": "STALE",
+     "reason": "filing: 88% of peers excluded (possibly superseded/undated/unvalidated) > 15%"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 19,
+    "passCriticalGate": 17
+   }
+  },
+  {
+   "country": "US",
+   "exchange": "NYSE",
+   "stored": {
+    "before": {
+     "country": "US",
+     "exchange": "NYSE",
+     "ledger": {
+      "BLOCKED": 9,
+      "COMPLETE": 1600,
+      "INSUFFICIENT_DATA": 187
+     },
+     "ledgerOldestAnalysis": "2026-10-12T14:00:41.202314+00:00",
+     "ledgerNewestAnalysis": "2026-10-15T21:43:03.212474+00:00",
+     "fundamentalsCompanies": 1618,
+     "fundamentalsArchivedPeriods": 1628,
+     "marketSnapshots": 1791
+    },
+    "after": {
+     "country": "US",
+     "exchange": "NYSE",
+     "ledger": {
+      "BLOCKED": 9,
+      "COMPLETE": 1600,
+      "INSUFFICIENT_DATA": 187
+     },
+     "ledgerOldestAnalysis": "2026-10-12T14:00:41.202314+00:00",
+     "ledgerNewestAnalysis": "2026-10-15T21:43:03.212474+00:00",
+     "fundamentalsCompanies": 1618,
+     "fundamentalsArchivedPeriods": 1628,
+     "marketSnapshots": 1791
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-14T11:08:16.165952+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 150,
+    "rowsRepriced": 139,
+    "coveragePct": 95.86,
+    "problems": null,
+    "quoteSource": "Nasdaq official full Stock Screener (2026-10-16)"
+   },
+   "after_ttl": {
+    "now": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "filing": "VALID",
+     "quote": "VALID",
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "STALE",
+     "quote": "STALE",
+     "reason": "filing: 90% of peers excluded (possibly superseded/undated/unvalidated) > 15%"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 18,
+    "passCriticalGate": 15
+   }
+  },
+  {
+   "country": "ZA",
+   "exchange": "JSE",
+   "stored": {
+    "before": {
+     "country": "ZA",
+     "exchange": "JSE",
+     "ledger": {
+      "BLOCKED": 1,
+      "COMPLETE": 4,
+      "INSUFFICIENT_DATA": 298
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:23:59.825861+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:24:06.857181+00:00",
+     "fundamentalsCompanies": 26,
+     "fundamentalsArchivedPeriods": 29,
+     "marketSnapshots": 26
+    },
+    "after": {
+     "country": "ZA",
+     "exchange": "JSE",
+     "ledger": {
+      "BLOCKED": 1,
+      "COMPLETE": 4,
+      "INSUFFICIENT_DATA": 298
+     },
+     "ledgerOldestAnalysis": "2026-10-12T13:23:59.825861+00:00",
+     "ledgerNewestAnalysis": "2026-10-12T13:24:06.857181+00:00",
+     "fundamentalsCompanies": 26,
+     "fundamentalsArchivedPeriods": 29,
+     "marketSnapshots": 26
+    },
+    "unchanged": true
+   },
+   "legacy": {
+    "baseCachedAt": "2026-10-13T10:35:49.101573+00:00",
+    "peerBenchmarkAt_plus25h": "UNAVAILABLE (24h rule)",
+    "peerRowsLostAtExpiry": 150
+   },
+   "rebuilt": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 17,
+    "rowsRepriced": null,
+    "coveragePct": null,
+    "problems": [
+     "fundamentals not valid for repricing: 27% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first"
+    ],
+    "quoteSource": null
+   },
+   "after_ttl": {
+    "now": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "filing": "UNDETERMINED",
+     "quote": "UNDETERMINED",
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "buy": {
+    "ledgerBuyCandidates": 0,
+    "passCriticalGate": 0
+   }
+  }
+ ],
+ "evidenceUnchanged": true
+}

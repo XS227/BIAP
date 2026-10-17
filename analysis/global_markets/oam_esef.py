@@ -130,6 +130,26 @@ _ROME = ZoneInfo("Europe/Rome")
 _WANTED_CONCEPTS = {c.lower() for concepts in _CONCEPTS.values() for c in concepts}
 
 
+# Official annual ESEF reports whose inline-XBRL contexts carry the LEI of a group company instead of the issuer's (filer
+# defect). Each row was checked by hand against the document itself and GLEIF (2026-10-17): the report is the issuer's
+# consolidated annual report, the embedded LEI belongs to a different legal entity, and independent identity evidence ties
+# the report to the issuer. Keyed by (ticker, issuer LEI, OAM document id); the embedded entity set must equal ``entity``.
+ITALY_ENTITY_LEI_ANOMALIES: dict[tuple[str, str, str], dict[str, str]] = {
+    **{("A2A", "81560076E3944316DB24", doc): {
+        "entity": "815600B7FD80E48C1896",
+        "code": "A2A_REPORT_CARRIES_A2A_ENERGIA_LEI",
+        "evidence": ("A2A Group consolidated report (parent company A2A S.p.A., Via Lamarmora 230 Brescia = GLEIF address of the issuer LEI; "
+                     "share capital EUR 1,629m; revenue EUR 14.06bn, assets EUR 21.4bn) while the contexts carry the LEI of subsidiary "
+                     "A2A Energia S.p.A. (Milan)")}
+       for doc in ("1INFO:166284_oneinfo.zip", "1INFO:165545_oneinfo.zip")},
+    ("MARR", "815600576D5536AC7B34", "EMARKET-STORAGE:180822"): {
+        "entity": "815600E787F3B6565561",
+        "code": "MARR_REPORT_CARRIES_LENERGIA_LEI",
+        "evidence": ("MARR S.p.A. FY2025 report (Rimini; prints Codice Fiscale 01836980365 = GLEIF registeredAs of the issuer LEI; "
+                     "extension taxonomy www.marr.it) while the contexts carry the LEI of unrelated L'Energia S.p.A. (Terni)")},
+}
+
+
 @dataclass(frozen=True)
 class OAMFiling:
     oam: str
@@ -1839,7 +1859,9 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                 and filing.document_id in {"NEWSWEB:671702:324302", "NEWSWEB:644779:303171"}
                 and entity_ids == {"5493001KJTIIGC8Y1R12"}
             )
-            if not entity_lei_verified and not registry_entity_verified and not newsweb_elabs_entity_anomaly:
+            italy_anomaly = ITALY_ENTITY_LEI_ANOMALIES.get((company.ticker.upper(), lei.upper(), filing.document_id)) if company.country.upper() == "IT" else None
+            italy_anomaly = italy_anomaly if italy_anomaly and entity_ids == {italy_anomaly["entity"]} else None
+            if not entity_lei_verified and not registry_entity_verified and not newsweb_elabs_entity_anomaly and not italy_anomaly:
                 errors.append(f"{filing.document_id}: report entity {package.get('entities')} != LEI {lei}")
                 continue
             facts = package["facts"]
@@ -1883,7 +1905,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                     "oam_retrieved_at": retrieved,
                     "oam_entity_lei_verified": entity_lei_verified,
                     "oam_entity_registry_verified": registry_entity_verified,
-                    "oam_entity_identity_exception": "ELABS_NEWSWEB_WRONG_EMBEDDED_LEI" if newsweb_elabs_entity_anomaly else None,
+                    "oam_entity_identity_exception": "ELABS_NEWSWEB_WRONG_EMBEDDED_LEI" if newsweb_elabs_entity_anomaly else (italy_anomaly["code"] if italy_anomaly else None),
                     "oam_report_entity_ids": sorted(entity_ids),
                     "oam_credit_extraction": normalization_meta,
                     **({"net_income_attributable_to_owners": normalization_meta["net_income_attributable_to_owners"]}
@@ -1904,7 +1926,8 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                     f"Issuer ESEF annual report lodged with national OAM {filing.oam}; "
                     + (f"inline XBRL entity LEI={lei} verified; " if entity_lei_verified else
                        f"inline XBRL entity {','.join(sorted(report_ids))} verified against GLEIF registry link of LEI={lei}; " if registry_entity_verified else
-                       f"documented ELABS Newsweb embedded-LEI anomaly; expected LEI={lei}, report entity={','.join(sorted(entity_ids))}; ")
+                       f"documented ELABS Newsweb embedded-LEI anomaly; expected LEI={lei}, report entity={','.join(sorted(entity_ids))}; " if newsweb_elabs_entity_anomaly else
+                       f"documented Italian embedded-LEI filer defect ({italy_anomaly['code']}); expected LEI={lei}, report entity={','.join(sorted(entity_ids))}; {italy_anomaly['evidence']}; ")
                     + (filing.label or "")
                 ).strip(),
             ))
