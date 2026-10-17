@@ -37,8 +37,10 @@ def test_rule_b_requires_zero_revenue_and_no_revenue_line():
 
 
 def test_rule_b2_derives_eps_to_the_cent():
-    assert ev.rule_b2(Z29, f("DE000A2LQ2D0")) and ev.rule_b2(RKB, f("DE0008103102"))
-    assert not ev.rule_b2({**Z29, "eps": -0.50}, f("DE000A2LQ2D0"))
+    assert ev.rule_b2(RKB, f("DE0008103102"))
+    assert not ev.rule_b2(Z29, f("DE000A2LQ2D0"))                     # loss-making shell: evidence valid, not an eligible peer
+    assert ev.rule_b(Z29, f("DE000A2LQ2D0"))                          # rule B (sensitivity only) would still admit it
+    assert not ev.rule_b2({**RKB, "eps": 0.50}, f("DE0008103102"))
 
 
 def test_corrections_only_unambiguous_printed_values():

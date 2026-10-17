@@ -69,7 +69,7 @@ def rule_b(co, f):
 
 
 def rule_b2(co, f):
-    return rule_b(co, f) and eps_derived_ok(co, f)
+    return rule_b(co, f) and eps_derived_ok(co, f) and f["net_income"]["printed"] > 0     # positive earnings only (Z29 loss-making: not an eligible peer)
 
 
 def corrections(co, f):
@@ -94,6 +94,9 @@ def apply_correction(co, new):
     if "eps" in new and old_eps and co.get("pe") and co.get("pe") > 0:
         co["pe"] = co["pe"] * old_eps / new["eps"]                     # price unchanged: pe = price / eps
     return co
+
+
+LIVE = os.environ.get("DE_EVAL_LIVE") == "1"    # live official post-trade quotes in memory (dry run); default = offline fixture
 
 
 def main():
@@ -134,7 +137,7 @@ def main():
         res = {"label": label, "flags": sorted(flags), "applied": log}
         try:
             for m in ("XETRA", "FRANKFURT"):
-                o = es.rebuild_from_ledger("DE", m, quote_fetch=fixture, now=now, dry_run=True)
+                o = (es.rebuild_from_ledger("DE", m, dry_run=True) if LIVE else es.rebuild_from_ledger("DE", m, quote_fetch=fixture, now=now, dry_run=True))
                 fd = o.get("filingDimension") or {}
                 members = [r["company"] for r in patched("DE", m) if (r["company"].get("pe") or 0) > 0 or (r["company"].get("pb") or 0) > 0]
                 kept = [c for c in members if c["ticker"].upper() not in (fd.get("reasons") or {})]
@@ -149,6 +152,8 @@ def main():
 
     variants = [("baseline", set()), ("A", {"A"}), ("B", {"B"}), ("B2", {"B2"}), ("A+B", {"A", "B"}), ("A+B2", {"A", "B2"}),
                 ("C", {"C"}), ("C+A", {"C", "A"}), ("C+B", {"C", "B"}), ("C+B2", {"C", "B2"}), ("C+A+B", {"C", "A", "B"}), ("B-extended(+None revenue)", {"Bx"})]
+    if LIVE:
+        variants = [v for v in variants if v[0] in ("baseline", "C", "C+B2")]      # Monday check: baseline vs corrections vs corrections + B2 (RKB only)
     out = [run(l, f) for l, f in variants]
     json.dump(out, open(outp, "w"), indent=1, default=str)
     print(f"{'variant':26s} | XETRA excl (pct) status | FRANKFURT excl (pct) P/B ret status")

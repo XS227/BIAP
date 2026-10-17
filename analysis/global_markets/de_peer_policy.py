@@ -9,7 +9,9 @@ printed in the issuer's own filing (data/de_peer_evidence.json; evidence: docs/v
           (revenue: stored is exactly the printed figure rounded to the provider's 10,000 step; net income: stored is
           'Gesamtergebnis'; EPS only together with a net-income correction). Definition-dependent revenue is never corrected.
 * B2      stored revenue is exactly 0.0, the filing's income statement has no revenue line, period + net income match,
-          and stored EPS reproduces to the cent from printed net income / printed shares.
+          stored EPS reproduces to the cent from printed net income / printed shares,
+          and printed net income is positive (a loss-making revenue-less holding has no earnings anchor and its quote is not
+          corroborated by turnover: 029 Group is therefore NOT admitted as a peer).
 """
 from __future__ import annotations
 
@@ -79,7 +81,7 @@ def strict(co: dict, f: dict) -> bool:
 
 def rule_b2(co: dict, f: dict) -> bool:
     return bool(f.get("period_phrase_found") and co.get("revenue") == 0 and f.get("revenue") is None
-                and _ni_ok(co, f) and _eps_derived_ok(co, f))
+                and _ni_ok(co, f) and f["net_income"]["printed"] > 0 and _eps_derived_ok(co, f))
 
 
 def corrections(co: dict, f: dict) -> dict[str, float]:
