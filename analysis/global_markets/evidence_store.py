@@ -101,6 +101,11 @@ def rebuild_from_ledger(
     if not rows:
         return {"country": country, "exchange": exchange, "method": "ledger_rebuild", "status": "REJECTED", "replaced": False,
                 "problems": ["no stored ledger evidence for this market"]}
+    policy_log: dict = {}
+    if country == "DE":
+        from . import de_peer_policy
+        if de_peer_policy.enabled():
+            policy_log = de_peer_policy.apply_to_rows(rows)      # in memory only; the ledger database is never written
     existing = read_json(_scan_cache_path(country, exchange), default=None)
     payload = existing.get("payload") if isinstance(existing, dict) else None
     if isinstance(existing, dict) and isinstance(payload, dict) and existing.get("schemaVersion") == 3 and existing.get("cachedAt"):
@@ -118,4 +123,6 @@ def rebuild_from_ledger(
     out = br.reprice_benchmark(country, exchange, quote_fetch=quote_fetch, now=now, dry_run=dry_run,
                                source_wrapper=source, method="ledger_rebuild")
     out["ledgerRows"] = len(rows)
+    if policy_log:
+        out["dePeerPolicy"] = policy_log
     return out
