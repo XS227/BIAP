@@ -74,6 +74,12 @@ RANKING_ELIGIBLE_SQL = (
 )
 
 
+def refresh_mode() -> str:
+    """``age`` (default, historical behaviour: re-analyse everything older than the refresh window) or
+    ``evidence`` (re-analyse only rows whose filing may have been superseded since they were analysed)."""
+    return "evidence" if os.environ.get("BIAP_GLOBAL_ANALYSIS_REFRESH_MODE", "age").strip().lower() == "evidence" else "age"
+
+
 def rank_min_coverage_pct() -> float:
     try:
         return max(0.0, min(100.0, float(os.environ.get("BIAP_GLOBAL_RANK_MIN_COVERAGE_PCT", "60"))))
@@ -470,7 +476,9 @@ class AnalysisLedger:
             ) if row["ticker"] not in skip
         ]
         batch = pending[:limit]
-        if len(batch) < limit:
+        if len(batch) < limit and refresh_mode() == "evidence":
+            batch.extend([t for t in self._evidence_due() if t not in skip][: limit - len(batch)])
+        elif len(batch) < limit:
             cutoff = (datetime.now(timezone.utc) - timedelta(hours=max(0.0, refresh_after_hours))).isoformat()
             stale = [
                 row["ticker"] for row in conn.execute(
@@ -481,6 +489,22 @@ class AnalysisLedger:
             ]
             batch.extend(stale[: limit - len(batch)])
         return batch
+
+    def _evidence_due(self) -> list[str]:
+        """Finished rows whose stored evidence may be superseded (a newer filing can have appeared since
+        ``analyzed_at``) or cannot be dated. Age alone never makes a row due. Oldest analysis first."""
+        from . import freshness
+
+        now = datetime.now(timezone.utc)
+        due = []
+        for r in self._conn().execute(
+            "SELECT ticker, analyzed_at, json_extract(summary,'$.company.filing_period_end') AS pe FROM ledger "
+            "WHERE status IN (?,?,?) AND in_universe=1 AND quote IS NOT NULL ORDER BY analyzed_at ASC, priority DESC",
+            (COMPLETE, BLOCKED, INSUFFICIENT_DATA),
+        ):
+            if r["analyzed_at"] is None or freshness.ledger_refresh_due(self.country, r["analyzed_at"], r["pe"], now):
+                due.append(r["ticker"])
+        return due
 
     def quote_for(self, ticker: str) -> Optional[dict]:
         row = self._conn().execute("SELECT quote FROM ledger WHERE ticker=?", (ticker,)).fetchone()
@@ -591,10 +615,13 @@ class AnalysisLedger:
             "valuationComplete": one("SELECT COUNT(*) FROM ledger WHERE in_universe=1 AND json_extract(financial,'$.valuationComplete')=1"),
             "creditComplete": one("SELECT COUNT(*) FROM ledger WHERE in_universe=1 AND json_extract(financial,'$.creditComplete')=1"),
             "buyQualified": buy,
-            "refreshDue": one(
-                "SELECT COUNT(*) FROM ledger WHERE in_universe=1 AND status IN (?,?,?) AND analyzed_at IS NOT NULL AND analyzed_at < ?",
-                COMPLETE, BLOCKED, INSUFFICIENT_DATA, cutoff,
+            "refreshDue": (
+                len(self._evidence_due()) if refresh_mode() == "evidence" else one(
+                    "SELECT COUNT(*) FROM ledger WHERE in_universe=1 AND status IN (?,?,?) AND analyzed_at IS NOT NULL AND analyzed_at < ?",
+                    COMPLETE, BLOCKED, INSUFFICIENT_DATA, cutoff,
+                )
             ),
+            "refreshMode": refresh_mode(),
             "progressPct": round(100.0 * (total - by_status[PENDING] - by_status[ANALYZING]) / total, 2) if total else 0.0,
             "blockedReasons": reasons(BLOCKED),
             "insufficientReasons": reasons(INSUFFICIENT_DATA),

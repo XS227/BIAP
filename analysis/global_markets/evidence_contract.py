@@ -227,6 +227,13 @@ def fundamental_evidence_contract(company: GlobalCompany, *, now: Optional[datet
     raw = company.raw_provider_fields or {}
     audit = str(getattr(best, "audit_status", "") or "unknown").lower() if best else "unknown"
     limitations = fundamental_limitations(company, status=status, age=age)
+    interim = raw.get("sec_interim") if isinstance(raw.get("sec_interim"), dict) else None
+    if interim and status == STATUS_OFFICIAL_CURRENT and age is not None and age > LAST_ANNUAL_AFTER_DAYS:
+        limitations.append(
+            f"later unaudited 10-Q (period ended {interim.get('periodEnd')}) is shown separately as "
+            "interimEvidence; it is not part of the annual figures or the freshness tier"
+        )
+    from .financial_signals import financial_metrics  # local: avoids an import cycle
     return {
         "contractVersion": CONTRACT_VERSION,
         "identity": {
@@ -267,4 +274,7 @@ def fundamental_evidence_contract(company: GlobalCompany, *, now: Optional[datet
         "freshnessTier": freshness_tier(status, age),
         "limitations": limitations,
         "fiscalYearTransition": _transition_block(raw.get("fiscal_year_transition"), best, company),
+        # Separately labelled; never merged into ``values``.
+        "interimEvidence": interim,
+        "financialSector": financial_metrics(company, now=now),
     }

@@ -1,0 +1,1026 @@
+[
+ {
+  "label": "baseline",
+  "flags": [],
+  "applied": {},
+  "XETRA": {
+   "status": "DRY_RUN_OK",
+   "members": 133,
+   "excluded": 17,
+   "excludedPct": 12.8,
+   "pbRetentionPct": 85.95,
+   "pbRetained": 104,
+   "pbBase": 121,
+   "peRetentionPct": 88.98,
+   "coveragePct": 87.22,
+   "problems": null,
+   "medianPB": 2.0162,
+   "medianPE": 16.1558,
+   "excludedTickers": [
+    "0M0",
+    "1GBS",
+    "D77",
+    "DBAN",
+    "DTD2",
+    "EVK",
+    "G6P0",
+    "GBF",
+    "HBH",
+    "LEOW",
+    "MA10",
+    "NCH2",
+    "PZS",
+    "SZ50",
+    "V1NC",
+    "VNA",
+    "Z29"
+   ]
+  },
+  "FRANKFURT": {
+   "status": "REJECTED",
+   "members": 115,
+   "excluded": 16,
+   "excludedPct": 13.9,
+   "pbRetentionPct": 82.14,
+   "pbRetained": 69,
+   "pbBase": 84,
+   "peRetentionPct": 88.99,
+   "coveragePct": 86.09,
+   "problems": [
+    "P/B rows retained 82.1% < 85.0%"
+   ],
+   "medianPB": 1.8207,
+   "medianPE": 16.0345,
+   "excludedTickers": [
+    "1GBS",
+    "ARI",
+    "BFV",
+    "D77",
+    "DBAN",
+    "HBH",
+    "HE8",
+    "HYI",
+    "NF4",
+    "OEL",
+    "PIT",
+    "PZS",
+    "RKB",
+    "SLSA",
+    "SMWN",
+    "Z29"
+   ]
+  }
+ },
+ {
+  "label": "A",
+  "flags": [
+   "A"
+  ],
+  "applied": {
+   "DE0006942808": {
+    "dated_by": [
+     "A"
+    ]
+   }
+  },
+  "XETRA": {
+   "status": "DRY_RUN_OK",
+   "members": 133,
+   "excluded": 16,
+   "excludedPct": 12.0,
+   "pbRetentionPct": 86.78,
+   "pbRetained": 105,
+   "pbBase": 121,
+   "peRetentionPct": 89.76,
+   "coveragePct": 87.97,
+   "problems": null,
+   "medianPB": 1.9667,
+   "medianPE": 16.1442,
+   "excludedTickers": [
+    "0M0",
+    "1GBS",
+    "D77",
+    "DBAN",
+    "DTD2",
+    "EVK",
+    "G6P0",
+    "GBF",
+    "HBH",
+    "LEOW",
+    "MA10",
+    "NCH2",
+    "SZ50",
+    "V1NC",
+    "VNA",
+    "Z29"
+   ]
+  },
+  "FRANKFURT": {
+   "status": "REJECTED",
+   "members": 115,
+   "excluded": 15,
+   "excludedPct": 13.0,
+   "pbRetentionPct": 83.33,
+   "pbRetained": 70,
+   "pbBase": 84,
+   "peRetentionPct": 89.91,
+   "coveragePct": 86.96,
+   "problems": [
+    "P/B rows retained 83.3% < 85.0%"
+   ],
+   "medianPB": 1.7947,
+   "medianPE": 15.9792,
+   "excludedTickers": [
+    "1GBS",
+    "ARI",
+    "BFV",
+    "D77",
+    "DBAN",
+    "HBH",
+    "HE8",
+    "HYI",
+    "NF4",
+    "OEL",
+    "PIT",
+    "RKB",
+    "SLSA",
+    "SMWN",
+    "Z29"
+   ]
+  }
+ },
+ {
+  "label": "B",
+  "flags": [
+   "B"
+  ],
+  "applied": {
+   "DE000A2LQ2D0": {
+    "dated_by": [
+     "B"
+    ]
+   },
+   "DE0008103102": {
+    "dated_by": [
+     "B"
+    ]
+   }
+  },
+  "XETRA": {
+   "status": "DRY_RUN_OK",
+   "members": 133,
+   "excluded": 16,
+   "excludedPct": 12.0,
+   "pbRetentionPct": 86.78,
+   "pbRetained": 105,
+   "pbBase": 121,
+   "peRetentionPct": 88.98,
+   "coveragePct": 87.97,
+   "problems": null,
+   "medianPB": 2.0658,
+   "medianPE": 16.1558,
+   "excludedTickers": [
+    "0M0",
+    "1GBS",
+    "D77",
+    "DBAN",
+    "DTD2",
+    "EVK",
+    "G6P0",
+    "GBF",
+    "HBH",
+    "LEOW",
+    "MA10",
+    "NCH2",
+    "PZS",
+    "SZ50",
+    "V1NC",
+    "VNA"
+   ]
+  },
+  "FRANKFURT": {
+   "status": "REJECTED",
+   "members": 115,
+   "excluded": 14,
+   "excludedPct": 12.2,
+   "pbRetentionPct": 84.52,
+   "pbRetained": 71,
+   "pbBase": 84,
+   "peRetentionPct": 89.91,
+   "coveragePct": 87.83,
+   "problems": [
+    "P/B rows retained 84.5% < 85.0%"
+   ],
+   "medianPB": 1.8207,
+   "medianPE": 15.9792,
+   "excludedTickers": [
+    "1GBS",
+    "ARI",
+    "BFV",
+    "D77",
+    "DBAN",
+    "HBH",
+    "HE8",
+    "HYI",
+    "NF4",
+    "OEL",
+    "PIT",
+    "PZS",
+    "SLSA",
+    "SMWN"
+   ]
+  }
+ },
+ {
+  "label": "B2",
+  "flags": [
+   "B2"
+  ],
+  "applied": {
+   "DE000A2LQ2D0": {
+    "dated_by": [
+     "B"
+    ]
+   },
+   "DE0008103102": {
+    "dated_by": [
+     "B"
+    ]
+   }
+  },
+  "XETRA": {
+   "status": "DRY_RUN_OK",
+   "members": 133,
+   "excluded": 16,
+   "excludedPct": 12.0,
+   "pbRetentionPct": 86.78,
+   "pbRetained": 105,
+   "pbBase": 121,
+   "peRetentionPct": 88.98,
+   "coveragePct": 87.97,
+   "problems": null,
+   "medianPB": 2.0658,
+   "medianPE": 16.1558,
+   "excludedTickers": [
+    "0M0",
+    "1GBS",
+    "D77",
+    "DBAN",
+    "DTD2",
+    "EVK",
+    "G6P0",
+    "GBF",
+    "HBH",
+    "LEOW",
+    "MA10",
+    "NCH2",
+    "PZS",
+    "SZ50",
+    "V1NC",
+    "VNA"
+   ]
+  },
+  "FRANKFURT": {
+   "status": "REJECTED",
+   "members": 115,
+   "excluded": 14,
+   "excludedPct": 12.2,
+   "pbRetentionPct": 84.52,
+   "pbRetained": 71,
+   "pbBase": 84,
+   "peRetentionPct": 89.91,
+   "coveragePct": 87.83,
+   "problems": [
+    "P/B rows retained 84.5% < 85.0%"
+   ],
+   "medianPB": 1.8207,
+   "medianPE": 15.9792,
+   "excludedTickers": [
+    "1GBS",
+    "ARI",
+    "BFV",
+    "D77",
+    "DBAN",
+    "HBH",
+    "HE8",
+    "HYI",
+    "NF4",
+    "OEL",
+    "PIT",
+    "PZS",
+    "SLSA",
+    "SMWN"
+   ]
+  }
+ },
+ {
+  "label": "A+B",
+  "flags": [
+   "A",
+   "B"
+  ],
+  "applied": {
+   "DE0006942808": {
+    "dated_by": [
+     "A"
+    ]
+   },
+   "DE000A2LQ2D0": {
+    "dated_by": [
+     "B"
+    ]
+   },
+   "DE0008103102": {
+    "dated_by": [
+     "B"
+    ]
+   }
+  },
+  "XETRA": {
+   "status": "DRY_RUN_OK",
+   "members": 133,
+   "excluded": 15,
+   "excludedPct": 11.3,
+   "pbRetentionPct": 87.6,
+   "pbRetained": 106,
+   "pbBase": 121,
+   "peRetentionPct": 89.76,
+   "coveragePct": 88.72,
+   "problems": null,
+   "medianPB": 2.0162,
+   "medianPE": 16.1442,
+   "excludedTickers": [
+    "0M0",
+    "1GBS",
+    "D77",
+    "DBAN",
+    "DTD2",
+    "EVK",
+    "G6P0",
+    "GBF",
+    "HBH",
+    "LEOW",
+    "MA10",
+    "NCH2",
+    "SZ50",
+    "V1NC",
+    "VNA"
+   ]
+  },
+  "FRANKFURT": {
+   "status": "DRY_RUN_OK",
+   "members": 115,
+   "excluded": 13,
+   "excludedPct": 11.3,
+   "pbRetentionPct": 85.71,
+   "pbRetained": 72,
+   "pbBase": 84,
+   "peRetentionPct": 90.83,
+   "coveragePct": 88.7,
+   "problems": null,
+   "medianPB": 1.7947,
+   "medianPE": 15.9239,
+   "excludedTickers": [
+    "1GBS",
+    "ARI",
+    "BFV",
+    "D77",
+    "DBAN",
+    "HBH",
+    "HE8",
+    "HYI",
+    "NF4",
+    "OEL",
+    "PIT",
+    "SLSA",
+    "SMWN"
+   ]
+  }
+ },
+ {
+  "label": "A+B2",
+  "flags": [
+   "A",
+   "B2"
+  ],
+  "applied": {
+   "DE0006942808": {
+    "dated_by": [
+     "A"
+    ]
+   },
+   "DE000A2LQ2D0": {
+    "dated_by": [
+     "B"
+    ]
+   },
+   "DE0008103102": {
+    "dated_by": [
+     "B"
+    ]
+   }
+  },
+  "XETRA": {
+   "status": "DRY_RUN_OK",
+   "members": 133,
+   "excluded": 15,
+   "excludedPct": 11.3,
+   "pbRetentionPct": 87.6,
+   "pbRetained": 106,
+   "pbBase": 121,
+   "peRetentionPct": 89.76,
+   "coveragePct": 88.72,
+   "problems": null,
+   "medianPB": 2.0162,
+   "medianPE": 16.1442,
+   "excludedTickers": [
+    "0M0",
+    "1GBS",
+    "D77",
+    "DBAN",
+    "DTD2",
+    "EVK",
+    "G6P0",
+    "GBF",
+    "HBH",
+    "LEOW",
+    "MA10",
+    "NCH2",
+    "SZ50",
+    "V1NC",
+    "VNA"
+   ]
+  },
+  "FRANKFURT": {
+   "status": "DRY_RUN_OK",
+   "members": 115,
+   "excluded": 13,
+   "excludedPct": 11.3,
+   "pbRetentionPct": 85.71,
+   "pbRetained": 72,
+   "pbBase": 84,
+   "peRetentionPct": 90.83,
+   "coveragePct": 88.7,
+   "problems": null,
+   "medianPB": 1.7947,
+   "medianPE": 15.9239,
+   "excludedTickers": [
+    "1GBS",
+    "ARI",
+    "BFV",
+    "D77",
+    "DBAN",
+    "HBH",
+    "HE8",
+    "HYI",
+    "NF4",
+    "OEL",
+    "PIT",
+    "SLSA",
+    "SMWN"
+   ]
+  }
+ },
+ {
+  "label": "C",
+  "flags": [
+   "C"
+  ],
+  "applied": {
+   "DE0006942808": {
+    "corrected": [
+     "revenue"
+    ],
+    "dated_by": [
+     "strict"
+    ]
+   },
+   "DE000A1TNUT7": {
+    "corrected": [
+     "eps",
+     "net_income"
+    ],
+    "dated_by": [
+     "strict"
+    ]
+   }
+  },
+  "XETRA": {
+   "status": "DRY_RUN_OK",
+   "members": 133,
+   "excluded": 15,
+   "excludedPct": 11.3,
+   "pbRetentionPct": 87.6,
+   "pbRetained": 106,
+   "pbBase": 121,
+   "peRetentionPct": 90.55,
+   "coveragePct": 88.72,
+   "problems": null,
+   "medianPB": 1.9629,
+   "medianPE": 16.1325,
+   "excludedTickers": [
+    "0M0",
+    "1GBS",
+    "D77",
+    "DTD2",
+    "EVK",
+    "G6P0",
+    "GBF",
+    "HBH",
+    "LEOW",
+    "MA10",
+    "NCH2",
+    "SZ50",
+    "V1NC",
+    "VNA",
+    "Z29"
+   ]
+  },
+  "FRANKFURT": {
+   "status": "REJECTED",
+   "members": 115,
+   "excluded": 14,
+   "excludedPct": 12.2,
+   "pbRetentionPct": 84.52,
+   "pbRetained": 71,
+   "pbBase": 84,
+   "peRetentionPct": 90.83,
+   "coveragePct": 87.83,
+   "problems": [
+    "P/B rows retained 84.5% < 85.0%"
+   ],
+   "medianPB": 1.7686,
+   "medianPE": 15.9239,
+   "excludedTickers": [
+    "1GBS",
+    "ARI",
+    "BFV",
+    "D77",
+    "HBH",
+    "HE8",
+    "HYI",
+    "NF4",
+    "OEL",
+    "PIT",
+    "RKB",
+    "SLSA",
+    "SMWN",
+    "Z29"
+   ]
+  }
+ },
+ {
+  "label": "C+A",
+  "flags": [
+   "A",
+   "C"
+  ],
+  "applied": {
+   "DE0006942808": {
+    "corrected": [
+     "revenue"
+    ],
+    "dated_by": [
+     "strict"
+    ]
+   },
+   "DE000A1TNUT7": {
+    "corrected": [
+     "eps",
+     "net_income"
+    ],
+    "dated_by": [
+     "strict"
+    ]
+   }
+  },
+  "XETRA": {
+   "status": "DRY_RUN_OK",
+   "members": 133,
+   "excluded": 15,
+   "excludedPct": 11.3,
+   "pbRetentionPct": 87.6,
+   "pbRetained": 106,
+   "pbBase": 121,
+   "peRetentionPct": 90.55,
+   "coveragePct": 88.72,
+   "problems": null,
+   "medianPB": 1.9629,
+   "medianPE": 16.1325,
+   "excludedTickers": [
+    "0M0",
+    "1GBS",
+    "D77",
+    "DTD2",
+    "EVK",
+    "G6P0",
+    "GBF",
+    "HBH",
+    "LEOW",
+    "MA10",
+    "NCH2",
+    "SZ50",
+    "V1NC",
+    "VNA",
+    "Z29"
+   ]
+  },
+  "FRANKFURT": {
+   "status": "REJECTED",
+   "members": 115,
+   "excluded": 14,
+   "excludedPct": 12.2,
+   "pbRetentionPct": 84.52,
+   "pbRetained": 71,
+   "pbBase": 84,
+   "peRetentionPct": 90.83,
+   "coveragePct": 87.83,
+   "problems": [
+    "P/B rows retained 84.5% < 85.0%"
+   ],
+   "medianPB": 1.7686,
+   "medianPE": 15.9239,
+   "excludedTickers": [
+    "1GBS",
+    "ARI",
+    "BFV",
+    "D77",
+    "HBH",
+    "HE8",
+    "HYI",
+    "NF4",
+    "OEL",
+    "PIT",
+    "RKB",
+    "SLSA",
+    "SMWN",
+    "Z29"
+   ]
+  }
+ },
+ {
+  "label": "C+B",
+  "flags": [
+   "B",
+   "C"
+  ],
+  "applied": {
+   "DE0006942808": {
+    "corrected": [
+     "revenue"
+    ],
+    "dated_by": [
+     "strict"
+    ]
+   },
+   "DE000A1TNUT7": {
+    "corrected": [
+     "eps",
+     "net_income"
+    ],
+    "dated_by": [
+     "strict"
+    ]
+   },
+   "DE000A2LQ2D0": {
+    "dated_by": [
+     "B"
+    ]
+   },
+   "DE0008103102": {
+    "dated_by": [
+     "B"
+    ]
+   }
+  },
+  "XETRA": {
+   "status": "DRY_RUN_OK",
+   "members": 133,
+   "excluded": 14,
+   "excludedPct": 10.5,
+   "pbRetentionPct": 88.43,
+   "pbRetained": 107,
+   "pbBase": 121,
+   "peRetentionPct": 90.55,
+   "coveragePct": 89.47,
+   "problems": null,
+   "medianPB": 1.9667,
+   "medianPE": 16.1325,
+   "excludedTickers": [
+    "0M0",
+    "1GBS",
+    "D77",
+    "DTD2",
+    "EVK",
+    "G6P0",
+    "GBF",
+    "HBH",
+    "LEOW",
+    "MA10",
+    "NCH2",
+    "SZ50",
+    "V1NC",
+    "VNA"
+   ]
+  },
+  "FRANKFURT": {
+   "status": "DRY_RUN_OK",
+   "members": 115,
+   "excluded": 12,
+   "excludedPct": 10.4,
+   "pbRetentionPct": 86.9,
+   "pbRetained": 73,
+   "pbBase": 84,
+   "peRetentionPct": 91.74,
+   "coveragePct": 89.57,
+   "problems": null,
+   "medianPB": 1.7686,
+   "medianPE": 15.8985,
+   "excludedTickers": [
+    "1GBS",
+    "ARI",
+    "BFV",
+    "D77",
+    "HBH",
+    "HE8",
+    "HYI",
+    "NF4",
+    "OEL",
+    "PIT",
+    "SLSA",
+    "SMWN"
+   ]
+  }
+ },
+ {
+  "label": "C+B2",
+  "flags": [
+   "B2",
+   "C"
+  ],
+  "applied": {
+   "DE0006942808": {
+    "corrected": [
+     "revenue"
+    ],
+    "dated_by": [
+     "strict"
+    ]
+   },
+   "DE000A1TNUT7": {
+    "corrected": [
+     "eps",
+     "net_income"
+    ],
+    "dated_by": [
+     "strict"
+    ]
+   },
+   "DE000A2LQ2D0": {
+    "dated_by": [
+     "B"
+    ]
+   },
+   "DE0008103102": {
+    "dated_by": [
+     "B"
+    ]
+   }
+  },
+  "XETRA": {
+   "status": "DRY_RUN_OK",
+   "members": 133,
+   "excluded": 14,
+   "excludedPct": 10.5,
+   "pbRetentionPct": 88.43,
+   "pbRetained": 107,
+   "pbBase": 121,
+   "peRetentionPct": 90.55,
+   "coveragePct": 89.47,
+   "problems": null,
+   "medianPB": 1.9667,
+   "medianPE": 16.1325,
+   "excludedTickers": [
+    "0M0",
+    "1GBS",
+    "D77",
+    "DTD2",
+    "EVK",
+    "G6P0",
+    "GBF",
+    "HBH",
+    "LEOW",
+    "MA10",
+    "NCH2",
+    "SZ50",
+    "V1NC",
+    "VNA"
+   ]
+  },
+  "FRANKFURT": {
+   "status": "DRY_RUN_OK",
+   "members": 115,
+   "excluded": 12,
+   "excludedPct": 10.4,
+   "pbRetentionPct": 86.9,
+   "pbRetained": 73,
+   "pbBase": 84,
+   "peRetentionPct": 91.74,
+   "coveragePct": 89.57,
+   "problems": null,
+   "medianPB": 1.7686,
+   "medianPE": 15.8985,
+   "excludedTickers": [
+    "1GBS",
+    "ARI",
+    "BFV",
+    "D77",
+    "HBH",
+    "HE8",
+    "HYI",
+    "NF4",
+    "OEL",
+    "PIT",
+    "SLSA",
+    "SMWN"
+   ]
+  }
+ },
+ {
+  "label": "C+A+B",
+  "flags": [
+   "A",
+   "B",
+   "C"
+  ],
+  "applied": {
+   "DE0006942808": {
+    "corrected": [
+     "revenue"
+    ],
+    "dated_by": [
+     "strict"
+    ]
+   },
+   "DE000A1TNUT7": {
+    "corrected": [
+     "eps",
+     "net_income"
+    ],
+    "dated_by": [
+     "strict"
+    ]
+   },
+   "DE000A2LQ2D0": {
+    "dated_by": [
+     "B"
+    ]
+   },
+   "DE0008103102": {
+    "dated_by": [
+     "B"
+    ]
+   }
+  },
+  "XETRA": {
+   "status": "DRY_RUN_OK",
+   "members": 133,
+   "excluded": 14,
+   "excludedPct": 10.5,
+   "pbRetentionPct": 88.43,
+   "pbRetained": 107,
+   "pbBase": 121,
+   "peRetentionPct": 90.55,
+   "coveragePct": 89.47,
+   "problems": null,
+   "medianPB": 1.9667,
+   "medianPE": 16.1325,
+   "excludedTickers": [
+    "0M0",
+    "1GBS",
+    "D77",
+    "DTD2",
+    "EVK",
+    "G6P0",
+    "GBF",
+    "HBH",
+    "LEOW",
+    "MA10",
+    "NCH2",
+    "SZ50",
+    "V1NC",
+    "VNA"
+   ]
+  },
+  "FRANKFURT": {
+   "status": "DRY_RUN_OK",
+   "members": 115,
+   "excluded": 12,
+   "excludedPct": 10.4,
+   "pbRetentionPct": 86.9,
+   "pbRetained": 73,
+   "pbBase": 84,
+   "peRetentionPct": 91.74,
+   "coveragePct": 89.57,
+   "problems": null,
+   "medianPB": 1.7686,
+   "medianPE": 15.8985,
+   "excludedTickers": [
+    "1GBS",
+    "ARI",
+    "BFV",
+    "D77",
+    "HBH",
+    "HE8",
+    "HYI",
+    "NF4",
+    "OEL",
+    "PIT",
+    "SLSA",
+    "SMWN"
+   ]
+  }
+ },
+ {
+  "label": "B-extended(+None revenue)",
+  "flags": [
+   "Bx"
+  ],
+  "applied": {
+   "DE000A2LQ2D0": {
+    "dated_by": [
+     "B"
+    ]
+   },
+   "DE0008103102": {
+    "dated_by": [
+     "B"
+    ]
+   },
+   "DE0005221303": {
+    "dated_by": []
+   }
+  },
+  "XETRA": {
+   "status": "DRY_RUN_OK",
+   "members": 133,
+   "excluded": 16,
+   "excludedPct": 12.0,
+   "pbRetentionPct": 86.78,
+   "pbRetained": 105,
+   "pbBase": 121,
+   "peRetentionPct": 88.98,
+   "coveragePct": 87.97,
+   "problems": null,
+   "medianPB": 2.0658,
+   "medianPE": 16.1558,
+   "excludedTickers": [
+    "0M0",
+    "1GBS",
+    "D77",
+    "DBAN",
+    "DTD2",
+    "EVK",
+    "G6P0",
+    "GBF",
+    "HBH",
+    "LEOW",
+    "MA10",
+    "NCH2",
+    "PZS",
+    "SZ50",
+    "V1NC",
+    "VNA"
+   ]
+  },
+  "FRANKFURT": {
+   "status": "DRY_RUN_OK",
+   "members": 115,
+   "excluded": 13,
+   "excludedPct": 11.3,
+   "pbRetentionPct": 85.71,
+   "pbRetained": 72,
+   "pbBase": 84,
+   "peRetentionPct": 90.83,
+   "coveragePct": 88.7,
+   "problems": null,
+   "medianPB": 1.8593,
+   "medianPE": 16.0345,
+   "excludedTickers": [
+    "1GBS",
+    "ARI",
+    "D77",
+    "DBAN",
+    "HBH",
+    "HE8",
+    "HYI",
+    "NF4",
+    "OEL",
+    "PIT",
+    "PZS",
+    "SLSA",
+    "SMWN"
+   ]
+  }
+ }
+]

@@ -1,4 +1,4 @@
-import type { GlobalFundamentalEvidence } from './global-api.ts';
+import type { GlobalDecisionReasons, GlobalFundamentalEvidence } from './global-api.ts';
 
 const TIER_LABEL: Record<string, string> = {
   RECENT_ANNUAL_FILING: 'Recent annual filing',
@@ -25,4 +25,15 @@ export function fundamentalFreshnessLines(fe?: GlobalFundamentalEvidence | null)
     lines.push('Price observed: date unavailable');
   }
   return lines;
+}
+
+// Governance / agent-disagreement reasons and data limitations are different
+// facts; the app shows them under different headings so a review caused by
+// disagreeing agents is never read as a stale-data problem.
+export function governanceReasonLines(dr?: GlobalDecisionReasons | null): string[] {
+  return (dr?.governance ?? []).map((r) => r.text);
+}
+
+export function dataLimitationLines(dr?: GlobalDecisionReasons | null): string[] {
+  return (dr?.dataLimitations ?? []).map((r) => (r.blocksDecision ? `${r.text}` : `${r.text} (informational)`));
 }

@@ -1,0 +1,1018 @@
+{
+ "schema": "biap-de-peer-evidence-e/1",
+ "generatedAt": "2026-10-16T23:16:47+00:00",
+ "note": "E4 (option E, issuer by issuer): official filings read transiently; metadata only, no financial values or documents.",
+ "results": [
+  {
+   "isin": "DE000A1PHFF7",
+   "markets": {
+    "XETRA": "BOSS",
+    "FRANKFURT": "BOSS"
+   },
+   "source_url": "https://annualreport.hugoboss.com/2025/_assets/downloads/entire-hb-ar25.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:02:29+00:00",
+   "http_status": 200,
+   "sha256": "bbb7392e91fdf165a1fd6aa80f0a73581fefe71e52efc1c6033420cb6bbd3e97",
+   "bytes": 8019503,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0006458003",
+   "markets": {
+    "FRANKFURT": "LEC"
+   },
+   "source_url": "https://www.hauptversammlung.de/fileadmin/public/user_upload/lew_gb25.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:02:33+00:00",
+   "http_status": 200,
+   "sha256": "9e1a975e86a6034f980efdd204ecd5153363eaf6331d469989bf1ff18ebf2736",
+   "bytes": 6578759,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0006916604",
+   "markets": {
+    "XETRA": "PFV",
+    "FRANKFURT": "PFV"
+   },
+   "source_url": "https://s1.q4cdn.com/944141433/files/doc_financials/2025/ar/Pfeiffer-Vacuum_Geschaeftsbericht-2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:02:36+00:00",
+   "http_status": 200,
+   "sha256": "2157a5da90b85ce3d61952d3ddda4bd5544bb1aa283d6622fb0588862261b059",
+   "bytes": 1317958,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0006083405",
+   "markets": {
+    "XETRA": "HBH",
+    "FRANKFURT": "HBH"
+   },
+   "source_url": "https://www.hauptversammlung.de/fileadmin/public/user_upload/Hornb_2025_GB.pdf",
+   "claimed_period_end": "2026-02-28",
+   "verified_at": "2026-10-16T23:02:38+00:00",
+   "http_status": 200,
+   "sha256": "a2151d481da60beee1e2b34078583021517cc25304db80d80af9eee50b7a64f8",
+   "bytes": 8012714,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A2YN900",
+   "markets": {
+    "XETRA": "TMV"
+   },
+   "source_url": "https://ir-api.eqs.com//media/document/82a3641a-6647-41ac-b435-f7a47fa71aeb/assets/DE000A2YN900-JA-2025-EQ-D-00.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:02:42+00:00",
+   "http_status": 200,
+   "sha256": "68751590557987b71c891d321071a955575a0ff6f137cda708e0301fb7376d2c",
+   "bytes": 7300086,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0006200108",
+   "markets": {
+    "XETRA": "INH",
+    "FRANKFURT": "INH"
+   },
+   "source_url": "https://www.hauptversammlung.de/fileadmin/public/user_upload/INDUS_GB25.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:02:45+00:00",
+   "http_status": 200,
+   "sha256": "a17a3893dc864cac9a76808f5b852ab3b3bcac1f003ba4552d8df4edf32058f7",
+   "bytes": 4053411,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0006052830",
+   "markets": {
+    "FRANKFURT": "MBH3"
+   },
+   "source_url": "https://www.hermle.de/fileadmin/website/5_NEWS-UND-MEDIA/5_2_Mediathek/Gesch%C3%A4ftsberichte/Gesch%C3%A4ftsbericht_2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:02:48+00:00",
+   "http_status": 200,
+   "sha256": "4fb6123a90c0f8cc3464e9a8b1e1d157778d6bab5968777d75138563107545ea",
+   "bytes": 1179653,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0005653604",
+   "markets": {
+    "XETRA": "EIF"
+   },
+   "source_url": "https://mednation.de/wp-content/uploads/MedNation-AG-Geschaeftsbericht-2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:09:22+00:00",
+   "http_status": 200,
+   "sha256": "01ff7cf0131f143589bee45dc02e221ae90fb59dfd9735addfcb2f488d6dc18c",
+   "bytes": 6140600,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A0LBFE4",
+   "markets": {
+    "XETRA": "M3V",
+    "FRANKFURT": "M3V"
+   },
+   "source_url": "https://www.mevis.de/fileadmin/files/Finanzberichte/MMS_JA_2025_en_convenience-translation.pdf",
+   "claimed_period_end": "2025-09-30",
+   "verified_at": "2026-10-16T23:09:27+00:00",
+   "http_status": 200,
+   "sha256": "a9d9d8739a2b5a61a8ac442819d508811b1429634541bee760e89ae21d31aee1",
+   "bytes": 2106639,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A40ZW88",
+   "markets": {
+    "XETRA": "TPG0",
+    "FRANKFURT": "TPG0"
+   },
+   "source_url": "https://www.hauptversammlung.de/fileadmin/public/user_upload/platform_GB25.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:09:56+00:00",
+   "http_status": 200,
+   "sha256": "e42a167a25d8495568b2cb69512197110b22b4ca450a32b120e800646b81c018",
+   "bytes": 9623012,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0007857476",
+   "markets": {
+    "XETRA": "KA8",
+    "FRANKFURT": "KA8"
+   },
+   "source_url": "https://assets.ctfassets.net/jkv7j7ridlow/7wtMWTaTYzNWl0cRA13yIw/8bca1246ac9d928ddf69f74c99da4785/KR_GB_online_final.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:10:33+00:00",
+   "http_status": 200,
+   "sha256": "703c9e20c34a5e3ff0e169aa25f4519dfcc5af4d22a618874f2e5ced4fc40ee2",
+   "bytes": 1079741,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0005580005",
+   "markets": {
+    "FRANKFURT": "DIE"
+   },
+   "source_url": "https://www.dierig.de/fileadmin/Konzernberichte/2025/dierig_gb_2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:10:35+00:00",
+   "http_status": 200,
+   "sha256": "f70c23fb5d15a7c86bc655f71048bb8c657c4f4c60311bf4f049e19b44d73777",
+   "bytes": 5293985,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A168205",
+   "markets": {
+    "XETRA": "SVE",
+    "FRANKFURT": "SVE"
+   },
+   "source_url": "https://svb-ag.de/wp-content/uploads/2026/04/Geschaeftsbericht-2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:10:45+00:00",
+   "http_status": 200,
+   "sha256": "c89c03bc32e257d5e019065c5334f3f2d2c3a274f2ea038bc13ac657c2f22a65",
+   "bytes": 1204284,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0006627201",
+   "markets": {
+    "XETRA": "MUB",
+    "FRANKFURT": "MUB"
+   },
+   "source_url": "https://www.muehlbauer.de/media/xyxbjypi/annual_report_2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:11:50+00:00",
+   "http_status": 200,
+   "sha256": "015ce386df129e871813a69b8758d3c4d08b0a6ef6da22f77152e41abb0ead12",
+   "bytes": 5335801,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A1TNWJ4",
+   "markets": {
+    "XETRA": "MPCG",
+    "FRANKFURT": "MPCG"
+   },
+   "source_url": "https://www.mpc-oceanic.com/fileadmin/mpc/oceanic/Downloads/Financial_Reports/Financial_Reports_2025/MPC_Capital_Annual_Report_2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:11:58+00:00",
+   "http_status": 200,
+   "sha256": "c51b2e2e7caf9e4c30ab4f7d567c3449a77daabeeb5c45c7ffda99d401baf703",
+   "bytes": 1751081,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A0S9QZ8",
+   "markets": {
+    "XETRA": "BOG",
+    "FRANKFURT": "BOG"
+   },
+   "source_url": "https://inside.stock3.com/wp-content/uploads/2026/07/05.-Gebilligter-Konzernabschluss-zum-31.-Dezember-2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:12:20+00:00",
+   "http_status": 200,
+   "sha256": "82454827a0f0b427602014f44d073482bcb057b9e27f77798f0f5a7a2c3598b7",
+   "bytes": 1142181,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A2E4SV8",
+   "markets": {
+    "XETRA": "CYR",
+    "FRANKFURT": "CYR"
+   },
+   "source_url": "https://ir.cyansecurity.com/wp-content/uploads/2026/05/cyan_Annual_Report_2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:12:47+00:00",
+   "http_status": 200,
+   "sha256": "e070bd67deecc0cc38f146af24b3d4a63ef7a1adf313e436db852e6e11c2dd8b",
+   "bytes": 10135508,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0005403901",
+   "markets": {
+    "XETRA": "CWC",
+    "FRANKFURT": "CWC"
+   },
+   "source_url": "https://ir-api.eqs.com//media/document/76ba250f-b8dd-4481-8eba-298bbe692b14/assets/DE0005403901-JA-2025-EQ-D-00.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:03:12+00:00",
+   "http_status": 200,
+   "sha256": "a80dad2102c0d24badda0a782c0bb5934ed4a80ec40dffc1b29cb2cd8ab6b80d",
+   "bytes": 3332194,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0005659700",
+   "markets": {
+    "XETRA": "EUZ"
+   },
+   "source_url": "https://ir-api.eqs.com//media/document/7b0f4291-b354-457b-b48e-f15cb54a05ac/assets/DE0005659700-JA-2025-EQ-D-01.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:03:15+00:00",
+   "http_status": 200,
+   "sha256": "83a1f460e960c7237c987a028c3081ae60dac5ebbb0c34bbc8115c08c577dca3",
+   "bytes": 6031102,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000PAT1AG3",
+   "markets": {
+    "XETRA": "PAT"
+   },
+   "source_url": "https://ir-api.eqs.com//media/document/384cfa5e-2bec-4e5f-87fb-e924f4c0a63c/assets/DE000PAT1AG3-JA-2025-EQ-D-00.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:03:18+00:00",
+   "http_status": 200,
+   "sha256": "621d9ea166a2110f4ebfa5cea0a39353f02694fde05e088e5420909eb99cb169",
+   "bytes": 4082472,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A42FR12",
+   "markets": {
+    "XETRA": "1SMA"
+   },
+   "source_url": "https://www.smag.de/s/smag-mobile-antenna-masts-gmbh-ja-2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:13:49+00:00",
+   "http_status": 200,
+   "sha256": "925fc2dcf54cc75c039dd43e384392950e19039b045bf1bc81f077e48510b75e",
+   "bytes": 966013,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A0HL8N9",
+   "markets": {
+    "XETRA": "2GB"
+   },
+   "source_url": "https://2-g.com/downloads/de/IR/hauptversammlung/2026/02_Gesch%C3%A4ftsbericht%202025%20mit%20dem%20Konzernabschluss%20und%20Konzernlagebericht%202025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:14:28+00:00",
+   "http_status": 200,
+   "sha256": "aca0072b1f6bab41d694c71d53bab179812f7e6665a4aeb52c5d7712656a49c3",
+   "bytes": 2354964,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A3E5C24",
+   "markets": {
+    "XETRA": "CDZ0",
+    "FRANKFURT": "CDZ0"
+   },
+   "source_url": "https://www.mhphotels.com/download/mhp-hotel-ag_konzernabschluss-zum-31-12-2025-2/?wpdmdl=14165",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:14:45+00:00",
+   "http_status": 200,
+   "sha256": "67203582e10b099d6d653c02ee9865a9d265f220f4383f2c1e9af2f450c1c79a",
+   "bytes": 2643872,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0007229007",
+   "markets": {
+    "XETRA": "SWA",
+    "FRANKFURT": "SWA"
+   },
+   "source_url": "https://www.schloss-wachenheim.com/upload/dokumente/11138.pdf",
+   "claimed_period_end": "2026-06-30",
+   "verified_at": "2026-10-16T23:15:24+00:00",
+   "http_status": 200,
+   "sha256": "877918f8f1944302a861e00550527d83fb5bbba482982a21036f4eef5c1ce72b",
+   "bytes": 3164194,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A420ZL4",
+   "markets": {
+    "XETRA": "EVAC",
+    "FRANKFURT": "EVAC"
+   },
+   "source_url": "https://www.electrovac.com/wp-content/uploads/1-EN-GB-electrovac_Final-2.pdf",
+   "claimed_period_end": "2026-03-31",
+   "verified_at": "2026-10-16T23:16:06+00:00",
+   "http_status": 200,
+   "sha256": "a6102ec87aae94ce559f6d5c415944733a10d7e4d31de143cbfcca16b2749219",
+   "bytes": 4159450,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0007600108",
+   "markets": {
+    "FRANKFURT": "VEH"
+   },
+   "source_url": "https://veh.de/ftp/VEHGeschaeftsbericht2026.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:16:39+00:00",
+   "http_status": 200,
+   "sha256": "0932afcfa3ec37eef3911d8ac70f92437cd90e7cd3587b020ff3e6b56f810b4d",
+   "bytes": 3731005,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000ZEAL241",
+   "markets": {
+    "XETRA": "TIMA",
+    "FRANKFURT": "TIMA"
+   },
+   "source_url": "https://www.lobbyregister.bundestag.de/media/c3/1d/769221/ZEAL_Network_Geschaftsbericht_2025_DE.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:03:49+00:00",
+   "http_status": 200,
+   "sha256": "c79f2700aa3fa4d65d0fd83ccd35ba1a74e1d02d7278c5f0bd8d385375881212",
+   "bytes": 9786838,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A2DAM03",
+   "markets": {
+    "XETRA": "AAG",
+    "FRANKFURT": "AAG"
+   },
+   "source_url": "https://ir-api.eqs.com//media/document/16f5a35e-f0c3-47f7-8649-2bed05129473/assets/DE000A2DAM03-JA-2025-EQ-D-00.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:03:52+00:00",
+   "http_status": 200,
+   "sha256": "9f7ea81cf1249ec6d49631b3493ad1ecdf4246bf1c287f3f537d0e1cc6e98cf9",
+   "bytes": 2836273,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0005492938",
+   "markets": {
+    "FRANKFURT": "MZX"
+   },
+   "source_url": "https://ir-api.eqs.com//media/document/c879f65c-30a6-4087-a5b4-19788da70a06/assets/DE0005492938-JA-2025-EQ-D-00.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:03:54+00:00",
+   "http_status": 200,
+   "sha256": "f408a75240407fa1efcdddf23c1e74ced5af433aaf8396e92fd7e35280fc266a",
+   "bytes": 27088483,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A0JM2M1",
+   "markets": {
+    "XETRA": "B7E",
+    "FRANKFURT": "B7E"
+   },
+   "source_url": "https://www.hauptversammlung.de/fileadmin/public/user_upload/BlueCap_GB25.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:03:58+00:00",
+   "http_status": 200,
+   "sha256": "e341c865c603fcf8c23a6fbf35ecf1a61df3ed114594628ed1b2cde2086a6191",
+   "bytes": 4816041,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0005405104",
+   "markets": {
+    "FRANKFURT": "TSS"
+   },
+   "source_url": "https://www.hauptversammlung.de/fileadmin/public/user_upload/InnoTec_GB25.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:04:01+00:00",
+   "http_status": 200,
+   "sha256": "8384dc6fd47adf47f74158195890327132d71731f321175b2631177a3f125bb5",
+   "bytes": 24294667,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0008055021",
+   "markets": {
+    "FRANKFURT": "DRE2"
+   },
+   "source_url": "https://www.hauptversammlung.de/fileadmin/public/user_upload/DRE_GB_2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:04:35+00:00",
+   "http_status": 200,
+   "sha256": "0690553d3ead0d282b626956973526e52762e71527d7b0d62e67fef756298e1a",
+   "bytes": 808095,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0005408686",
+   "markets": {
+    "XETRA": "VVV3",
+    "FRANKFURT": "VVV3"
+   },
+   "source_url": "https://www.hauptversammlung.de/fileadmin/public/user_upload/OEKOWORLD_GB25.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:04:37+00:00",
+   "http_status": 200,
+   "sha256": "4e74a362a0cbb97fcdb0f6f26fffc9ec63bad9c85e1d2c7b91917a39ac9eecdf",
+   "bytes": 9634033,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A13SUL5",
+   "markets": {
+    "FRANKFURT": "DEF"
+   },
+   "source_url": "https://www.hauptversammlung.de/fileadmin/public/user_upload/Defama_GB25.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:04:39+00:00",
+   "http_status": 200,
+   "sha256": "73d99357e88e732183522f2e3df48ba62a9b574ed8a83267ec4c063f7f47ef55",
+   "bytes": 1904017,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A255F11",
+   "markets": {
+    "XETRA": "VH2"
+   },
+   "source_url": "https://www.friedrich-vorwerk-group.de/media/friedrich_vorwerk_group_se_-_annual_report_2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:05:17+00:00",
+   "http_status": 200,
+   "sha256": "009fe5bbfaca8e782ec8fe3a53fa9174e6a0c241b4dd20d2df342a9a148f3bd8",
+   "bytes": 2390864,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A0Z23Q5",
+   "markets": {
+    "XETRA": "ADN1"
+   },
+   "source_url": "https://www.adesso-group.de/adesso-group-de/investor-relations/veroeffentlichungen/finanzberichte/2025/adesso-geschaeftsbericht-2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:05:25+00:00",
+   "http_status": 200,
+   "sha256": "1d8dcd653cb889493b5d406ebc831b39e0d523fcb76315ac933b29fe274da5d0",
+   "bytes": 4936548,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0006569403",
+   "markets": {
+    "XETRA": "ALG"
+   },
+   "source_url": "https://xozalbisassets.blob.core.windows.net/live/file/0001/05/2d0ba63661bd2f77d0f0f8a818112ef6bb0439b0.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:05:28+00:00",
+   "http_status": 200,
+   "sha256": "ac1a31d739a4fcdccec88fe9a6cce6b46fed94ea0cf49165c3e53de3f6a1063e",
+   "bytes": 3056966,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A40ET13",
+   "markets": {
+    "XETRA": "3ITN"
+   },
+   "source_url": "https://www.audius.de/sites/default/files/2026-05/2.%20Konzern-%20und%20Einzelabschluss%20audius%20SE%20Gesch%C3%A4ftsjahr%202025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:06:19+00:00",
+   "http_status": 200,
+   "sha256": "cccd4e47a328e0877aa4c8f0f70a654227ed160f4633df11492102ef824c5ee6",
+   "bytes": 1337567,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A0MZ4B0",
+   "markets": {
+    "XETRA": "DLX"
+   },
+   "source_url": "https://ir-api.eqs.com//media/document/a1f530a7-6bbe-424a-b29f-eaa259f798ae/assets/DE000A0MZ4B0-JA-2025-EQ-D-00.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:06:21+00:00",
+   "http_status": 200,
+   "sha256": "65fec57230e9c6cc8c57a48c71472d07e1ad3dd3f415dbd3d7e3c41a523e409c",
+   "bytes": 1568992,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0006069008",
+   "markets": {
+    "FRANKFURT": "NLM"
+   },
+   "source_url": "https://www.frosta-ag.com/en/dokumente/jahresfinanzbericht-frosta-konzern-2025/",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:06:23+00:00",
+   "http_status": 200,
+   "sha256": "60c398bfd95710005d43c0680b61e3f5f2af4a343a23e83bb7e1b58967880871",
+   "bytes": 1291719,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A3DRAE2",
+   "markets": {
+    "XETRA": "S188"
+   },
+   "source_url": "https://www.hauptversammlung.de/fileadmin/public/user_upload/SMT_GB25.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:06:46+00:00",
+   "http_status": 200,
+   "sha256": "8bb47cd53a00eaf8aafbe5b3a69ae97d1f9727a625f54c169f7120d12fcee344",
+   "bytes": 3189952,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0005754402",
+   "markets": {
+    "XETRA": "LSX",
+    "FRANKFURT": "LSX"
+   },
+   "source_url": "https://ir-api.eqs.com//media/document/b4521c7a-12c7-4df0-a696-69f3917821ad/assets/DE0005754402-JA-2024-EQ-D-00.pdf",
+   "claimed_period_end": "2025-09-30",
+   "verified_at": "2026-10-16T23:06:48+00:00",
+   "http_status": 200,
+   "sha256": "c6ad5d8066a5fbb2309c3c85e10bebcf759cc82e22b3e5325f69ebb2db1c735e",
+   "bytes": 3823375,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A3ENQ51",
+   "markets": {
+    "XETRA": "1SXP",
+    "FRANKFURT": "1SXP"
+   },
+   "source_url": "https://ir.schott-pharma.com/investor-relations/media/document/9e2817bc-7a38-4373-9ff8-3ac953566aad/assets/DE000A3ENQ51-JA-2024-EQ-E-00.pdf",
+   "claimed_period_end": "2025-09-30",
+   "verified_at": "2026-10-16T23:07:52+00:00",
+   "http_status": 200,
+   "sha256": "e85f9e640f8034b399e0a40e3b893164549e67a9bcdb5888acc34c51faef9553",
+   "bytes": 5706090,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0006201403",
+   "markets": {
+    "FRANKFURT": "PEH"
+   },
+   "source_url": "https://www.peh.de/wp-content/uploads/2026/06/2025-Geschaeftsbericht-PEH-Wertpapier-AG_Konzern.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:07:55+00:00",
+   "http_status": 200,
+   "sha256": "c265ef961667350e13dc42150ce4aaddccddd2424b60af6cbe18585eb5b70e2e",
+   "bytes": 1567923,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE0007448508",
+   "markets": {
+    "XETRA": "IVU",
+    "FRANKFURT": "IVU"
+   },
+   "source_url": "https://www.ivu.com/fileadmin/ivu/08_Investoren/Berichte/2025/IVU_Annual_Report_2025.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:08:58+00:00",
+   "http_status": 200,
+   "sha256": "e77b32347e42ee3d3686d5e644762378701eeb75365ab706b90c8f6e8dc3b667",
+   "bytes": 14137589,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000A3E5E55",
+   "markets": {
+    "XETRA": "HP3A",
+    "FRANKFURT": "HP3A"
+   },
+   "source_url": "https://ringmetall.de/wp-content/uploads/2026/04/Ringmetall_GB_2025_DE-1.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:09:00+00:00",
+   "http_status": 200,
+   "sha256": "82c3096dc1e08c96e19f5ae620ca9add1e63482db3a18acf9fed7276c977989f",
+   "bytes": 7625202,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": true
+   },
+   "result": "VERIFIED",
+   "sector_in_row": false,
+   "matcher": "de_peer_doc_verify (rounded-TEUR enabled)"
+  },
+  {
+   "isin": "DE000LEG1110",
+   "markets": {
+    "XETRA": "LEG"
+   },
+   "source_url": "https://ir.leg-se.com/media/document/70b5d258-3ce1-4c3d-bd29-d9bc6da8c94c/assets/LEG_GB_2025_e.pdf",
+   "claimed_period_end": "2025-12-31",
+   "verified_at": "2026-10-16T23:16:47+00:00",
+   "http_status": 200,
+   "sha256": "cf3d3e4fae3f6ae5342c49667b71f5aad0ddd7e668645013bf8ace937e241806",
+   "bytes": 17499275,
+   "match": {
+    "period_phrase": true,
+    "revenue": true,
+    "net_income": true,
+    "eps_informational": false
+   },
+   "result": "VERIFIED",
+   "sector_in_row": true,
+   "matcher": "MANUAL reconciliation: stored revenue 1,579.1m = IFRS revenue note components 1,377.3 (rental) + 187.8 (disposal of investment property) + 14.0 (other services); net income 1,458.2 printed"
+  }
+ ]
+}
