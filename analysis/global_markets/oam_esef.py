@@ -1315,7 +1315,7 @@ class UKNSMLocator(OAMLocator):
                 untagged += 1
                 continue
             link = str(row.get("download_link") or "")
-            if not re.search(r"\.(zip|xhtml|html)$", link, re.I):
+            if not re.search(r"\.(zip|xbri|xhtml|html)$", link, re.I):
                 continue
             filings.append(OAMFiling(
                 oam=self.oam, document_id=f"FCA-NSM:{row.get('disclosure_id')}",
@@ -1798,11 +1798,39 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
             return self.locators[home]
         return self.locators.get(company.country.upper())
 
+    def locators_for(self, company: GlobalCompany) -> list[OAMLocator]:
+        """OAMs to try, in order: the home-state OAM, then (UK listings only) the FCA NSM.
+
+        A London-listed issuer incorporated elsewhere (Canal+, FR ISIN) may
+        lodge its ESEF annual report only with the FCA NSM while the home
+        OAM lists none. The NSM fallback keeps the LEI hard gate: every NSM
+        hit must carry exactly the issuer's LEI and the package entity is
+        re-checked below.
+        """
+        first = self.locator_for(company)
+        chosen = [first] if first is not None else []
+        if company.country.upper() == "GB":
+            nsm = self.locators.get("GB")
+            if nsm is not None and all(nsm is not other for other in chosen):
+                chosen.append(nsm)
+        return chosen
+
     def enrich_fundamentals(self, company: GlobalCompany) -> GlobalCompany:
-        locator = self.locator_for(company)
-        if locator is None:
+        locators = self.locators_for(company)
+        if not locators:
             raise GlobalProviderError(f"no official OAM ESEF locator for {company.country}")
         lei, legal_name = self._resolve_lei(company)
+        errors: list[str] = []
+        for locator in locators:
+            try:
+                return self._enrich_from_locator(company, locator, lei, legal_name)
+            except GlobalProviderError as exc:
+                if len(locators) == 1:
+                    raise
+                errors.append(f"{locator.oam}: {exc}")
+        raise GlobalProviderError("; ".join(errors)[:600])
+
+    def _enrich_from_locator(self, company: GlobalCompany, locator: OAMLocator, lei: str, legal_name: str) -> GlobalCompany:
         filings = locator.annual_filings(company, lei, legal_name)
         errors: list[str] = []
         for filing in filings[:3]:
@@ -1848,7 +1876,7 @@ class NationalOAMESEFProvider(CachedESEFFundamentalsProvider):
                 errors.append(f"{filing.document_id}: no annual IFRS duration facts")
                 continue
             period_end = date.fromisoformat(period_text)
-            normalized = self.normalized_fields(facts, period_end)
+            normalized = self.normalized_fields(facts, period_end, derive_net_income=company.country.upper() == "GB")
             # Guard against an older parsed OAM package omitting the aggregate
             # liabilities tag while preserving same-period assets and equity.
             # Both values originate from this one verified annual filing.
