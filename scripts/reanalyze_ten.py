@@ -32,7 +32,7 @@ def _child(country: str, exchange: str, budget: float) -> int:
     from global_markets.scan_service import scan_global_market
 
     result = scan_global_market(country=country, exchange=exchange, top_n=10, discovery_limit=5000, deep_limit=500,
-                                origin="manual", time_budget_sec=budget)
+                                origin="scheduled", time_budget_sec=budget)
     ledger = AnalysisLedger(country, exchange)
     try:
         counts = ledger.counts(refresh_after_hours=float(os.environ.get("BIAP_GLOBAL_ANALYSIS_REFRESH_HOURS", "24")))
@@ -44,6 +44,8 @@ def _child(country: str, exchange: str, budget: float) -> int:
 
 
 def main() -> int:
+    if len(sys.argv) >= 5 and sys.argv[1] == "--child":
+        return _child(sys.argv[2], sys.argv[3], float(sys.argv[4]))
     ap = argparse.ArgumentParser()
     ap.add_argument("--budget", type=float, default=900.0, help="seconds per pass per exchange")
     ap.add_argument("--max-passes", type=int, default=40)
@@ -51,8 +53,6 @@ def main() -> int:
     ap.add_argument("--data-dir", default=os.environ.get("BIAP_GLOBAL_DATA_DIR", "/var/lib/biap-global"))
     ap.add_argument("--only", help="comma list like SE:NASDAQ_STOCKHOLM,DE:XETRA")
     args = ap.parse_args()
-    if len(sys.argv) >= 5 and sys.argv[1] == "--child":
-        return _child(sys.argv[2], sys.argv[3], float(sys.argv[4]))
     wanted = {m.strip().upper() for m in args.only.split(",")} if args.only else None
     started = time.time()
     for country, exchange in MARKETS:
