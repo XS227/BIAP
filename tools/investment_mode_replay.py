@@ -56,6 +56,7 @@ class Row:
     company: dict = dataclasses.field(default_factory=dict)
     providers: tuple = ()
     key: str = ""
+    gate: object = None      # optional per-row payload set by a load_all ``on_result`` hook (conservative gate replay)
 
     @property
     def analysed(self) -> bool:
@@ -73,10 +74,16 @@ def copy_ledger(src: Path, dst_dir: Path) -> Path:
     return dst
 
 
-def load_all(ledger_dir: Path, tmp: Path, sector_ref: dict) -> list[Row]:
+def load_all(ledger_dir: Path, tmp: Path, sector_ref: dict, on_result=None) -> list[Row]:
+    """Hidden markets (outside ``INVESTMENT_MODE_MARKETS``) are skipped unless the scope switch is ``all``.
+
+    ``on_result(row, decoded_result)`` is called for every row that has a stored result.
+    """
     rows: list[Row] = []
     for src in sorted(ledger_dir.glob("*__*.sqlite3")):
         cc, ex = src.stem.split("__", 1)
+        if not im.in_scope(f"{cc}:{ex}"):
+            continue
         db = copy_ledger(src, tmp)
         conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
         try:
@@ -110,6 +117,8 @@ def load_all(ledger_dir: Path, tmp: Path, sector_ref: dict) -> list[Row]:
                     if cand is not None:
                         cand = dataclasses.replace(cand, exchange=row.exchange)
                     row.candidate = cand
+                    if on_result is not None:
+                        on_result(row, d)
                 rows.append(row)
         finally:
             conn.close()
@@ -366,7 +375,7 @@ def build_workbook(rows, decisions, nowiden, cov, out: Path, top_n: int, extra_n
         "One batch for all exchanges so the cross-market 'global_sector' peer scope is available; ranking/tiers are per exchange.",
         "Agent without data = confidence < 0.30; excluded from score and confidence. Confidence x n/4 if < 4 agents have data; < 3 agents = hard block.",
         "Risk vote = percentile of volatility/drawdown/leverage/debt-cover/current ratio in the exchange (sector if >= 8 peers).",
-        "Tiers (config): BUY top 10% & score>0.10; ACCUMULATE top 25% & score>0; REDUCE bottom 25% & score<0; SELL bottom 10% & score<-0.10.",
+        "Tiers (config): BUY top 10% & score>0 & >=4 agents with data; ACCUMULATE top 25% & score>0; REDUCE bottom 25% & score<0; SELL bottom 10% & score<0 & >=4 agents (no 0.10 floor since 2026-10-19).",
         "Soft flags (disagreement, distress not LOW_RISK, native peer group<8 w/o wider scope, no independent signal, evidence WARN) move BUY->ACCUMULATE, SELL->REDUCE (disagreement), at most one tier.",
         "Hard blocks: evidence BLOCK, fewer than 3 agents with data, distress positive_block (only on would-be BUY/ACCUMULATE).",
         "Sector gaps were filled for the replay from /var/lib/biap-global/sector-reference by ISIN (marked 'sector_ref' in All_Decisions).",

@@ -1,0 +1,194 @@
+{
+ "saved_utc": "2026-10-19T19:19:44Z",
+ "snapshot_frozen_at": "2026-10-19T19:17:05Z",
+ "threshold_pct": 5.0,
+ "markets": {
+  "DE": {
+   "analysed": 494,
+   "conservative": {
+    "BUY": 1,
+    "HOLD": 4,
+    "SELL": 1,
+    "NO_RECOMMENDATION": 488
+   },
+   "investment": {
+    "BUY": 3,
+    "ACCUMULATE": 109,
+    "HOLD": 231,
+    "REDUCE": 69,
+    "SELL": 45,
+    "NO_RECOMMENDATION": 37
+   }
+  },
+  "ES:BME_MADRID": {
+   "analysed": 106,
+   "conservative": {
+    "BUY": 1,
+    "HOLD": 3,
+    "SELL": 2,
+    "NO_RECOMMENDATION": 100
+   },
+   "investment": {
+    "BUY": 3,
+    "ACCUMULATE": 18,
+    "HOLD": 49,
+    "REDUCE": 14,
+    "SELL": 9,
+    "NO_RECOMMENDATION": 13
+   }
+  },
+  "FI:NASDAQ_HELSINKI": {
+   "analysed": 146,
+   "conservative": {
+    "BUY": 4,
+    "HOLD": 19,
+    "SELL": 1,
+    "NO_RECOMMENDATION": 122
+   },
+   "investment": {
+    "BUY": 9,
+    "ACCUMULATE": 21,
+    "HOLD": 63,
+    "REDUCE": 19,
+    "SELL": 11,
+    "NO_RECOMMENDATION": 23
+   }
+  },
+  "FR:EURONEXT_PARIS": {
+   "analysed": 293,
+   "conservative": {
+    "BUY": 3,
+    "HOLD": 54,
+    "SELL": 2,
+    "NO_RECOMMENDATION": 234
+   },
+   "investment": {
+    "BUY": 10,
+    "ACCUMULATE": 49,
+    "HOLD": 131,
+    "REDUCE": 39,
+    "SELL": 25,
+    "NO_RECOMMENDATION": 39
+   }
+  },
+  "GB:LSE": {
+   "analysed": 521,
+   "conservative": {
+    "BUY": 17,
+    "HOLD": 90,
+    "SELL": 2,
+    "NO_RECOMMENDATION": 412
+   },
+   "investment": {
+    "BUY": 28,
+    "ACCUMULATE": 68,
+    "HOLD": 210,
+    "REDUCE": 64,
+    "SELL": 41,
+    "NO_RECOMMENDATION": 110
+   }
+  },
+  "IT:EURONEXT_MILAN": {
+   "analysed": 193,
+   "conservative": {
+    "BUY": 5,
+    "HOLD": 29,
+    "SELL": 2,
+    "NO_RECOMMENDATION": 157
+   },
+   "investment": {
+    "BUY": 9,
+    "ACCUMULATE": 32,
+    "HOLD": 85,
+    "REDUCE": 29,
+    "SELL": 13,
+    "NO_RECOMMENDATION": 25
+   }
+  },
+  "NL:EURONEXT_AMSTERDAM": {
+   "analysed": 98,
+   "conservative": {
+    "BUY": 3,
+    "HOLD": 12,
+    "SELL": 0,
+    "NO_RECOMMENDATION": 83
+   },
+   "investment": {
+    "BUY": 3,
+    "ACCUMULATE": 14,
+    "HOLD": 43,
+    "REDUCE": 12,
+    "SELL": 8,
+    "NO_RECOMMENDATION": 18
+   }
+  },
+  "NO:EURONEXT_OSLO": {
+   "analysed": 146,
+   "conservative": {
+    "BUY": 10,
+    "HOLD": 21,
+    "SELL": 1,
+    "NO_RECOMMENDATION": 114
+   },
+   "investment": {
+    "BUY": 7,
+    "ACCUMULATE": 23,
+    "HOLD": 68,
+    "REDUCE": 22,
+    "SELL": 12,
+    "NO_RECOMMENDATION": 14
+   }
+  },
+  "SE:NASDAQ_STOCKHOLM": {
+   "analysed": 402,
+   "conservative": {
+    "BUY": 1,
+    "HOLD": 54,
+    "SELL": 1,
+    "NO_RECOMMENDATION": 346
+   },
+   "investment": {
+    "BUY": 15,
+    "ACCUMULATE": 71,
+    "HOLD": 187,
+    "REDUCE": 56,
+    "SELL": 37,
+    "NO_RECOMMENDATION": 36
+   }
+  },
+  "US:NASDAQ": {
+   "analysed": 3003,
+   "conservative": {
+    "BUY": 19,
+    "HOLD": 105,
+    "SELL": 12,
+    "NO_RECOMMENDATION": 2867
+   },
+   "investment": {
+    "BUY": 137,
+    "ACCUMULATE": 431,
+    "HOLD": 1405,
+    "REDUCE": 489,
+    "SELL": 213,
+    "NO_RECOMMENDATION": 328
+   }
+  },
+  "US:NYSE": {
+   "analysed": 1786,
+   "conservative": {
+    "BUY": 19,
+    "HOLD": 139,
+    "SELL": 1,
+    "NO_RECOMMENDATION": 1627
+   },
+   "investment": {
+    "BUY": 84,
+    "ACCUMULATE": 284,
+    "HOLD": 800,
+    "REDUCE": 304,
+    "SELL": 96,
+    "NO_RECOMMENDATION": 218
+   }
+  }
+ }
+}

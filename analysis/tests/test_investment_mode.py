@@ -7,6 +7,12 @@ from global_markets.investment_mode import Candidate, InvestmentConfig, decide_m
 CFG = InvestmentConfig()
 
 
+@pytest.fixture(autouse=True)
+def _all_markets_in_scope(monkeypatch):
+    """The synthetic exchanges below are not in INVESTMENT_MODE_MARKETS; scope tests set the switch themselves."""
+    monkeypatch.setenv(im.SCOPE_ENV, "all")
+
+
 def sig(f=0.0, r=0.0, fc=0.0, c=0.0, q=0.0, l=0.0, conf=0.6, **conf_over):
     base = {"fundamental": (f, conf), "risk": (r, conf), "forecast": (fc, conf),
             "comparison": (c, conf), "quality": (q, conf), "liquidity": (l, conf)}
@@ -55,7 +61,7 @@ def test_thresholds_are_config_values_not_hard_coded():
     base = decide_market(ladder(20), CFG)
     wide = decide_market(ladder(20), InvestmentConfig(buy_top_fraction=0.5, accumulate_top_fraction=0.5))
     assert sum(d.call == "BUY" for d in base.values()) == 2
-    assert sum(d.call == "BUY" for d in wide.values()) == 6      # capped by the 0.10 score floor, not by the fraction
+    assert sum(d.call == "BUY" for d in wide.values()) == 10      # top 50% (score > 0 only; the 0.10 floor is gone)
 
 
 # ------------------------------------------------------------------ (a) missing data = unknown
@@ -225,10 +231,20 @@ def test_tier_distribution_follows_fractions():
     assert all(c[f"s{i:02d}"] == "HOLD" for i in range(10, 30))
 
 
-def test_buy_requires_score_above_floor():
-    d = decide_market(ladder(20, top=0.12, step=0.001))    # whole market scores ~0.06: top 10% fails > 0.10
-    assert not any(v.call == "BUY" for v in d.values())
-    assert d["s00"].call == "ACCUMULATE"                    # but > 0, so the next tier
+def test_buy_has_no_score_floor_beyond_positive():
+    d = decide_market(ladder(20, top=0.12, step=0.001))    # whole market scores ~0.06: still top 10% and > 0
+    assert d["s00"].call == "BUY"
+    assert d["s00"].score < 0.10
+
+
+def test_buy_and_sell_need_four_agents_with_data():
+    thin = {a: (0.0, 0.0) for a in ("risk", "comparison", "liquidity")}
+    items = [cand(f"s{i:02d}", dict(sig(f=0.8 - 0.08 * i, fc=0.4 - 0.04 * i, q=0.1), **thin)) for i in range(20)]
+    d = decide_market(items)
+    assert d["s00"].agents_with_data == 3 and d["s00"].call == "ACCUMULATE"      # top 10% but only 3 agents
+    low = [cand(f"n{i:02d}", dict(sig(f=-0.1 - 0.05 * i, fc=-0.1, q=-0.1), **thin)) for i in range(20)]
+    d = decide_market(low)
+    assert d["n19"].call == "REDUCE"                                              # bottom 10% but only 3 agents
 
 
 def test_no_buy_or_accumulate_with_nonpositive_score():
@@ -237,12 +253,11 @@ def test_no_buy_or_accumulate_with_nonpositive_score():
     assert all(v.score <= 0 for v in d.values())
 
 
-def test_sell_requires_score_below_floor_and_reduce_below_zero():
+def test_sell_requires_negative_score_and_reduce_below_zero():
     d = decide_market(ladder(20, top=0.30, step=0.001))    # all positive: the bottom tiers must stay HOLD
     assert not any(v.call in ("SELL", "REDUCE") for v in d.values())
-    d = decide_market(ladder(20, top=-0.02, step=0.006, q=-0.02))   # bottom 10% around -0.05: REDUCE, not SELL
-    assert not any(v.call == "SELL" for v in d.values())
-    assert d["s19"].call == "REDUCE"
+    d = decide_market(ladder(20, top=-0.02, step=0.006, q=-0.02))   # symmetric to BUY: bottom 10% and < 0 is SELL
+    assert d["s19"].call == "SELL" and d["s19"].score < 0
 
 
 def test_tiers_are_recomputed_per_exchange():
@@ -463,3 +478,25 @@ def test_xetra_and_frankfurt_are_one_market_deduped_by_isin():
 def test_listings_without_isin_or_other_exchanges_are_not_collapsed():
     d = decide_market([cand(f"a{i}", sig(f=0.5 - 0.1 * i, fc=0.2, q=0.1), exchange="DE:XETRA") for i in range(4)])
     assert not any("duplicate_listing" in v.flags for v in d.values())
+
+
+# ------------------------------------------------------------------ research-paper scope (10 countries)
+def test_hidden_markets_take_no_part_by_default(monkeypatch):
+    monkeypatch.delenv(im.SCOPE_ENV, raising=False)
+    jp = [cand("jp_" + c.key, c.signals, exchange="JP:TSE") for c in ladder(20)]
+    d = decide_market(ladder(20, exchange="US:NYSE") + jp)
+    assert d and not any(k.startswith("jp_") for k in d)
+    assert len(d) == 20
+
+
+def test_scope_switch_re_enables_hidden_markets(monkeypatch):
+    monkeypatch.setenv(im.SCOPE_ENV, "all")
+    d = decide_market(ladder(20, exchange="JP:TSE"))
+    assert len(d) == 20
+    assert len(decide_market(ladder(20, exchange="JP:TSE"), InvestmentConfig(restrict_to_markets=False))) == 20
+
+
+def test_scope_lists_the_ten_countries():
+    countries = {m.split(":")[0] for m in im.INVESTMENT_MODE_MARKETS}
+    assert countries == {"US", "GB", "IT", "SE", "NO", "DE", "FR", "NL", "FI", "ES"}
+    assert im.in_scope("DE:XETRA", True) and im.in_scope("DE:FRANKFURT", True) and not im.in_scope("CH:SIX", True)

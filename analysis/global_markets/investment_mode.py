@@ -11,8 +11,10 @@ The investment mode is opt-in and works on a *batch* of analysed stocks, because
      >= ``risk_sector_min_peers`` peers), mapped to [-1, +1]; the median-risk stock gets ~0;
   c. comparison vote: native sector peers (>= 8) -> exchange-wide sector -> same sector across all covered
      markets; ``peer_scope`` records which; PEG / growth-adjusted P/E is blended in where growth exists;
-  d. per exchange, recomputed every run: BUY top 10% and score > 0.10, ACCUMULATE top 25% and score > 0,
-     REDUCE bottom 25% and score < 0, SELL bottom 10% and score < -0.10, else HOLD (all in ``InvestmentConfig``);
+  d. per market, recomputed every run: BUY top 10% and score > 0 and >= 4 agents with data, ACCUMULATE top 25% and
+     score > 0, REDUCE bottom 25% and score < 0, SELL bottom 10% and score < 0 and >= 4 agents with data, else HOLD
+     (all in ``InvestmentConfig``). A top-10% / bottom-10% stock with only 3 agents falls to ACCUMULATE / REDUCE;
+     there is no score floor besides the sign;
   e. high-confidence disagreement downgrades one tier (BUY->ACCUMULATE, SELL->REDUCE) and sets ``agents_disagree``;
   f. the PR #52 BUY gates (distress not LOW_RISK, peer group < 8, no independent non-comparison signal,
      evidence WARN) are downgrade flags (BUY->ACCUMULATE); soft flags together move a stock at most one tier.
@@ -43,6 +45,29 @@ SOFT_DOWNGRADE_FLAGS_DEFAULT = (
     "widened_peers",
 )
 
+# Research-paper scope (frozen 2026-10-19): only these exchanges take part in investment-mode runs, reports and the
+# paper. Every other exchange is HIDDEN, not deleted: its adapters, ledgers and data stay untouched. One switch
+# re-enables them: ``BIAP_INVESTMENT_SCOPE=all`` (or ``InvestmentConfig(restrict_to_markets=False)``).
+# DE:XETRA and DE:FRANKFURT are one market (``MARKET_GROUPS``): ranked together, deduped by ISIN.
+INVESTMENT_MODE_MARKETS = (
+    "US:NASDAQ", "US:NYSE", "GB:LSE", "IT:EURONEXT_MILAN", "SE:NASDAQ_STOCKHOLM", "NO:EURONEXT_OSLO",
+    "DE:XETRA", "DE:FRANKFURT", "FR:EURONEXT_PARIS", "NL:EURONEXT_AMSTERDAM", "FI:NASDAQ_HELSINKI", "ES:BME_MADRID",
+)
+SCOPE_ENV = "BIAP_INVESTMENT_SCOPE"          # "restricted" (default) | "all"
+
+
+def scope_restricted(value: Optional[str] = None) -> bool:
+    """True = only ``INVESTMENT_MODE_MARKETS`` are in scope (default); ``all`` re-enables the hidden markets."""
+    raw = (value if value is not None else os.environ.get(SCOPE_ENV, "restricted")).strip().lower()
+    return raw != "all"
+
+
+def in_scope(exchange: str, restricted: Optional[bool] = None) -> bool:
+    """``exchange`` is ``CC:EXCHANGE`` (e.g. ``US:NYSE``)."""
+    restricted = scope_restricted() if restricted is None else restricted
+    return (not restricted) or exchange in INVESTMENT_MODE_MARKETS
+
+
 # Listings of one issuer on several venues are ranked as ONE market (deduped by ISIN).
 MARKET_GROUPS = {"DE:XETRA": "DE", "DE:FRANKFURT": "DE"}
 
@@ -64,10 +89,13 @@ class InvestmentConfig:
     accumulate_top_fraction: float = 0.25
     reduce_bottom_fraction: float = 0.25
     sell_bottom_fraction: float = 0.10
-    buy_min_score: float = 0.10
+    buy_min_score: float = 0.0               # strict: score > 0 (the 0.10 floor was removed 2026-10-19)
     accumulate_min_score: float = 0.0
     reduce_max_score: float = 0.0
-    sell_max_score: float = -0.10
+    sell_max_score: float = 0.0              # strict: score < 0 (symmetric to BUY)
+    buy_min_agents: int = 4                  # BUY / SELL need at least this many of the 6 agents with data
+    sell_min_agents: int = 4
+    restrict_to_markets: bool = True         # False = hidden markets back in scope (same as BIAP_INVESTMENT_SCOPE=all)
     # risk agent
     risk_sector_min_peers: int = 8
     risk_min_metrics: int = 2
@@ -400,17 +428,17 @@ def _blocked(key: str, why: str, n: int = 0, scope: str = "none", flags: Tuple[s
     )
 
 
-def _tier(rank_index: int, total: int, score: float, cfg: InvestmentConfig) -> str:
-    """Relative tier by position in the exchange, gated by the absolute score floors."""
+def _tier(rank_index: int, total: int, score: float, cfg: InvestmentConfig, n_agents: int = 6) -> str:
+    """Relative tier by position in the market, gated by the score sign and (BUY / SELL) the agents with data."""
     if total <= 0:
         return "HOLD"
     pos = (rank_index + 1) / total                       # 0 < pos <= 1, small = best
-    if pos <= cfg.buy_top_fraction and score > cfg.buy_min_score:
+    if pos <= cfg.buy_top_fraction and score > cfg.buy_min_score and n_agents >= cfg.buy_min_agents:
         return "BUY"
     if pos <= cfg.accumulate_top_fraction and score > cfg.accumulate_min_score:
         return "ACCUMULATE"
     inv = (total - rank_index) / total                   # small = worst
-    if inv <= cfg.sell_bottom_fraction and score < cfg.sell_max_score:
+    if inv <= cfg.sell_bottom_fraction and score < cfg.sell_max_score and n_agents >= cfg.sell_min_agents:
         return "SELL"
     if inv <= cfg.reduce_bottom_fraction and score < cfg.reduce_max_score:
         return "REDUCE"
@@ -447,7 +475,11 @@ def decide_market(
 
     Xetra and Frankfurt are one market (``MARKET_GROUPS``), deduplicated by ISIN before ranking and tiering.
     Hand over every covered market in one batch to enable the cross-market ``global_sector`` peer scope.
+    Exchanges outside ``INVESTMENT_MODE_MARKETS`` are hidden (no decision, not in any peer pool) unless the scope
+    switch is ``all``.
     """
+    if cfg.restrict_to_markets and scope_restricted():
+        candidates = [c for c in candidates if in_scope(c.exchange, True)]       # hidden markets take no part
     batch, dups = _collapse_listings(candidates, cfg)
     decisions = _decide_core(batch, cfg)
     for rep_key, others in dups.items():
@@ -498,7 +530,7 @@ def _decide_core(
         total = len(ordered)
         for idx, key in enumerate(ordered):
             c, signals, score, confidence, n, used, scope = detail[key]
-            tier = _tier(idx, total, score, cfg)
+            tier = _tier(idx, total, score, cfg, n)
             base_tier = tier
             flags: List[str] = []
             if has_disagreement(signals, cfg):
@@ -587,6 +619,9 @@ def candidate_from_result(result: Mapping[str, Any], *, key: Optional[str] = Non
     ev = result.get("evidence") or {}
     dist = result.get("distress") or {}
     exchange = str(result.get("exchange") or company.get("exchange") or "")
+    country = str(result.get("country") or company.get("country") or "")
+    if country and ":" not in exchange:
+        exchange = f"{country}:{exchange}"                 # same CC:EXCHANGE form as MARKET_GROUPS / the scope list
     ticker = str(result.get("ticker") or company.get("ticker") or "")
     mult = _num(ev.get("confidence_multiplier"))
     return Candidate(
