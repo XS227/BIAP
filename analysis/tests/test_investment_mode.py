@@ -304,6 +304,38 @@ def test_pr52_gates_are_downgrade_flags_not_blocks():
     assert d["s00"].blocked_by is None
 
 
+def test_distress_unknown_is_info_flag_and_does_not_downgrade():
+    for status in ("INSUFFICIENT_DATA", "NOT_RUN", None):
+        items = ladder(20)
+        items[0] = cand("s00", sig(f=0.9, fc=0.9, q=0.9), distress_status=status)
+        d = decide_market(items)["s00"]
+        assert d.call == "BUY" and d.tier_before_flags is None
+        assert "distress_unknown" in d.flags and "distress_not_low_risk" not in d.flags
+
+
+def test_distress_medium_and_high_still_downgrade_and_are_not_unknown():
+    for status in ("ELEVATED_RISK", "HIGH_RISK"):
+        items = ladder(20)
+        items[0] = cand("s00", sig(f=0.9, fc=0.9, q=0.9), distress_status=status)
+        d = decide_market(items)["s00"]
+        assert d.call == "ACCUMULATE" and d.tier_before_flags == "BUY"
+        assert "distress_not_low_risk" in d.flags and "distress_unknown" not in d.flags
+
+
+def test_distress_low_risk_and_not_applicable_set_no_distress_flag():
+    for status in ("LOW_RISK", "NOT_APPLICABLE"):
+        items = ladder(20)
+        items[0] = cand("s00", sig(f=0.9, fc=0.9, q=0.9), distress_status=status)
+        d = decide_market(items)["s00"]
+        assert d.call == "BUY" and not {"distress_unknown", "distress_not_low_risk"} & set(d.flags)
+
+
+def test_distress_unknown_is_not_a_hard_block():
+    items = ladder(20)
+    items[0] = cand("s00", sig(f=0.9, fc=0.9, q=0.9), distress_status="INSUFFICIENT_DATA", positive_block=False)
+    assert decide_market(items)["s00"].blocked_by is None
+
+
 def test_comparison_only_positive_signal_flags_no_independent_signal():
     items = ladder(20)
     only_cmp = {"fundamental": (-0.1, 0.6), "risk": (-0.1, 0.6), "forecast": (-0.1, 0.6),

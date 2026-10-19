@@ -18,6 +18,8 @@ The investment mode is opt-in and works on a *batch* of analysed stocks, because
   e. high-confidence disagreement downgrades one tier (BUY->ACCUMULATE, SELL->REDUCE) and sets ``agents_disagree``;
   f. the PR #52 BUY gates (distress not LOW_RISK, peer group < 8, no independent non-comparison signal,
      evidence WARN) are downgrade flags (BUY->ACCUMULATE); soft flags together move a stock at most one tier.
+     Distress UNKNOWN (INSUFFICIENT_DATA: missing inputs) is not a finding: it only sets the info flag ``distress_unknown``;
+     only ELEVATED_RISK / HIGH_RISK set the soft ``distress_not_low_risk`` flag;
      Hard blocks stay only for: distress ``positive_block`` (on BUY/ACCUMULATE), evidence BLOCK, < 3 agents with data;
   g. every decision carries tier, score, confidence, position_size_hint, top-2 positive / negative agents, flags, peer_scope.
 
@@ -121,6 +123,8 @@ class InvestmentConfig:
     size_medium: float = 0.50
     soft_downgrade_flags: Tuple[str, ...] = SOFT_DOWNGRADE_FLAGS_DEFAULT
     buy_distress_ok: Tuple[str, ...] = ("LOW_RISK", "NOT_APPLICABLE")
+    # missing data (e.g. no operating cash flow) is not a distress finding: info flag ``distress_unknown``, no downgrade
+    distress_unknown: Tuple[Optional[str], ...] = ("INSUFFICIENT_DATA", "NOT_RUN", "UNKNOWN", None)
 
 
 DEFAULT_CONFIG = InvestmentConfig()
@@ -541,7 +545,9 @@ def _decide_core(
                 flags.append(f"peer_scope_{scope}")
             if scope in ("small_group", "book_value", "none"):
                 flags.append("peer_group_small" if scope == "small_group" else "no_peer_comparison")
-            if c.distress_status not in cfg.buy_distress_ok:
+            if c.distress_status in cfg.distress_unknown:
+                flags.append("distress_unknown")
+            elif c.distress_status not in cfg.buy_distress_ok:
                 flags.append("distress_not_low_risk")
             if not any(a != "comparison" and v > 0 for a, v in used.items()):
                 flags.append("no_independent_signal")
