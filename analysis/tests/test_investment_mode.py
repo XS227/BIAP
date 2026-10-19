@@ -532,3 +532,22 @@ def test_scope_lists_the_ten_countries():
     countries = {m.split(":")[0] for m in im.INVESTMENT_MODE_MARKETS}
     assert countries == {"US", "GB", "IT", "SE", "NO", "DE", "FR", "NL", "FI", "ES"}
     assert im.in_scope("DE:XETRA", True) and im.in_scope("DE:FRANKFURT", True) and not im.in_scope("CH:SIX", True)
+
+
+# ------------------------------------------------------------------ statement coverage is a flag, not a block
+def test_low_statement_coverage_flags_and_lowers_confidence_without_blocking():
+    batch = ladder(20)
+    base = decide_market(batch, CFG)
+    low = decide_market([c if c.key != "s00" else Candidate(
+        key=c.key, exchange=c.exchange, sector=c.sector, signals=c.signals, distress_status="LOW_RISK",
+        statement_coverage=0.4) for c in batch], CFG)
+    assert low["s00"].call != im.NO_REC and low["s00"].blocked_by is None
+    assert "statement_coverage_below_min" in low["s00"].flags
+    assert low["s00"].confidence == pytest.approx(base["s00"].confidence * im.LOW_COVERAGE_CONFIDENCE_FACTOR, abs=1e-5)
+    assert "statement_coverage_below_min" not in base["s00"].flags
+
+
+def test_unknown_or_sufficient_statement_coverage_changes_nothing():
+    assert not im.low_statement_coverage(None)
+    assert not im.low_statement_coverage(0.6)
+    assert im.low_statement_coverage(0.59)

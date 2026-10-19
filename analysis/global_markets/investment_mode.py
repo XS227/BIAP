@@ -172,6 +172,7 @@ class Candidate:
     growth_pct: Optional[float] = None          # earnings growth, else revenue growth
     peer_count: Optional[int] = None            # native comparison-agent peer group
     risk_metrics: Mapping[str, Optional[float]] = field(default_factory=dict)
+    statement_coverage: Optional[float] = None  # evidence coverage 0..1; None = unknown (no flag, no penalty)
 
 
 @dataclass(frozen=True)
@@ -424,6 +425,20 @@ def reasons(used: Mapping[str, float], conf: Mapping[str, float]) -> Tuple[Tuple
     return tuple(f"{a} ({used[a]:+.2f})" for a in pos), tuple(f"{a} ({used[a]:+.2f})" for a in neg)
 
 
+LOW_COVERAGE_CONFIDENCE_FACTOR = 0.85
+
+
+def low_statement_coverage(coverage: Optional[float]) -> bool:
+    """Evidence coverage under the conservative ranking minimum (``BIAP_GLOBAL_RANK_MIN_COVERAGE_PCT``, default 60)."""
+    if coverage is None:
+        return False
+    try:
+        minimum = float(os.environ.get("BIAP_GLOBAL_RANK_MIN_COVERAGE_PCT", "60"))
+    except ValueError:
+        minimum = 60.0
+    return coverage * 100.0 < max(0.0, min(100.0, minimum))
+
+
 def _blocked(key: str, why: str, n: int = 0, scope: str = "none", flags: Tuple[str, ...] = ()) -> InvestmentDecision:
     return InvestmentDecision(
         key=key, call=NO_REC, score=None, confidence=None, agents_with_data=n, rank=None, percentile=None,
@@ -524,6 +539,8 @@ def _decide_core(
                 c.key, f"only {n} agent(s) with data (need {cfg.min_agents_hard_block})", n, scope)
             continue
         confidence = mean_conf * _clamp(c.evidence_multiplier, 0.0, 1.0)
+        if low_statement_coverage(c.statement_coverage):
+            confidence *= LOW_COVERAGE_CONFIDENCE_FACTOR     # the conservative 60% rule is a flag here, not a block
         if n < cfg.min_agents_full_confidence:
             confidence *= n / cfg.min_agents_full_confidence
         detail[c.key] = (c, signals, score, confidence, n, used, scope)
@@ -553,6 +570,8 @@ def _decide_core(
                 flags.append("no_independent_signal")
             if c.evidence_status == "WARN":
                 flags.append("evidence_warn")
+            if low_statement_coverage(c.statement_coverage):
+                flags.append("statement_coverage_below_min")
             if (cfg.widened_guard and base_tier == "BUY" and scope in ("exchange_sector", "global_sector")
                     and not any(a != "comparison" and signals[a][0] >= cfg.widened_guard_vote
                                 and signals[a][1] >= cfg.widened_guard_confidence for a in used)):
@@ -631,6 +650,7 @@ def candidate_from_result(result: Mapping[str, Any], *, key: Optional[str] = Non
     ticker = str(result.get("ticker") or company.get("ticker") or "")
     mult = _num(ev.get("confidence_multiplier"))
     return Candidate(
+        statement_coverage=_num(ev.get("coverage")),
         key=key or f"{exchange}:{ticker}", exchange=exchange,
         sector=sector_override or company.get("sector") or None, signals=signals,
         evidence_status=str(ev.get("status") or "PASS"),
