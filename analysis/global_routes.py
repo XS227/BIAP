@@ -13,6 +13,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from global_markets import decision_overlay
 from global_markets.country_packs import country_catalog, get_exchange
 from global_markets.credit_scoring import score_individual_credit
 from global_markets.models import InvestorProfile
@@ -463,14 +464,52 @@ def global_analysis_ledger(
         return {"country": country, "exchange": exchange, "counts": None, "rows": [], "note": "No scan has registered this market yet."}
     ledger = AnalysisLedger(country, exchange)
     try:
-        return {
-            "country": country,
-            "exchange": exchange,
-            "counts": ledger.counts(),
-            "rows": ledger.summaries(status=wanted, limit=max(1, min(int(limit), 500)), offset=max(0, int(offset))),
-        }
+        rows = ledger.summaries(status=wanted, limit=max(1, min(int(limit), 500)), offset=max(0, int(offset)))
+        counts = ledger.counts()
     finally:
         ledger.close()
+    view = decision_overlay.market_view(country, exchange)
+    if view:
+        for row in rows:
+            decision = view.get(str(row.get("ticker") or ""))
+            if decision is not None:
+                row["investment"] = decision      # additive: the stored conservative ``call`` is unchanged
+    return {"country": country, "exchange": exchange, "counts": counts, "rows": rows,
+            "decisionMode": "investment" if view else "conservative"}
+
+
+@router.get("/recommendations")
+def global_recommendations(country: str, exchange: str, tier: Optional[str] = None, limit: int = 50, offset: int = 0):
+    """Investment-mode tiers (BUY/ACCUMULATE/HOLD/REDUCE/SELL) for one exchange, best rank first."""
+    from global_markets.analysis_ledger import AnalysisLedger, ledger_path
+
+    country, exchange = country.strip().upper(), exchange.strip().upper()
+    try:
+        get_exchange(country, exchange)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    wanted = tier.strip().upper() if tier else None
+    if wanted and wanted not in decision_overlay.TIER_FA:
+        raise HTTPException(status_code=400, detail=f"tier must be one of {', '.join(decision_overlay.TIERS)}")
+    view = decision_overlay.market_view(country, exchange) if ledger_path(country, exchange).exists() else {}
+    if not view:
+        return {"country": country, "exchange": exchange, "decisionMode": "conservative", "counts": None, "rows": [],
+                "note": "Investment mode is off, this exchange is outside the research scope, or no scan has registered it yet."}
+    ranked = sorted((t for t, d in view.items() if d["rank"] is not None and (not wanted or d["tier"] == wanted)),
+                    key=lambda t: view[t]["rank"])
+    start, size = max(0, int(offset)), max(1, min(int(limit), 500))
+    names = {}
+    if ranked[start:start + size]:
+        ledger = AnalysisLedger(country, exchange)
+        try:
+            for row in ledger.summaries(limit=100000):
+                names[str(row.get("ticker"))] = row.get("name")
+        finally:
+            ledger.close()
+    rows = [{"ticker": t, "name": names.get(t), "investment": view[t]} for t in ranked[start:start + size]]
+    return {"country": country, "exchange": exchange, "decisionMode": "investment",
+            "counts": decision_overlay.tier_counts(view), "total": len(ranked), "rows": rows,
+            "disclaimerFa": decision_overlay.DISCLAIMER_FA}
 
 
 @router.get("/opportunities")
@@ -505,7 +544,13 @@ def global_scan_top10(req: GlobalTop10Request):
 @router.post("/analyze")
 def global_analyze(req: InstrumentRequest):
     try:
-        return analyze_company(_seed(req))
+        result = analyze_company(_seed(req))
+        if isinstance(result, dict):
+            view = decision_overlay.market_view(str(result.get("country") or ""), str(result.get("exchange") or ""))
+            decision = view.get(str(result.get("ticker") or ""))
+            if decision is not None:
+                result = {**result, "investment": decision}     # additive; ``call`` stays the conservative value
+        return result
     except HTTPException:
         raise
     except Exception as exc:

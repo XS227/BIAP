@@ -52,6 +52,12 @@
     .sub{color:var(--muted);font-size:10px}.tag{display:inline-flex;padding:4px 7px;border-radius:999px;background:#1b2941;color:#bcd0ef;font-size:9px;font-weight:800}
     .tag.pass{background:rgba(55,208,139,.13);color:#65e4a6}.tag.warn{background:rgba(244,184,79,.14);color:#ffd077}
     .tag.block{background:rgba(255,107,122,.12);color:#ff97a4}.analysisGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+    .tag.t-BUY{background:rgba(55,208,139,.2);color:#65e4a6}.tag.t-ACCUMULATE{background:rgba(55,208,139,.1);color:#9be9c0}
+    .tag.t-HOLD{background:rgba(244,184,79,.14);color:#ffd077}.tag.t-REDUCE{background:rgba(255,107,122,.1);color:#ffb0b9}
+    .tag.t-SELL{background:rgba(255,107,122,.2);color:#ff97a4}.tierTag{font-size:12px;padding:6px 11px}
+    .fa{direction:rtl;unicode-bidi:plaintext;font-family:Tahoma,"Vazirmatn","Segoe UI",sans-serif}.reasons{margin-top:8px;font-size:11px;line-height:1.7;color:var(--muted)}
+    .reasons b{color:var(--text)}.disclaimer{margin-top:6px;font-size:10px;color:var(--muted)}.tierTabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+    .tierTabs .btn{padding:7px 10px;font-size:11px}.tierTabs .btn.active{background:#234ea5;border-color:#3d7cff}
     .kv{padding:11px;border:1px solid #25324a;border-radius:12px;background:#121b2a}.kv span{display:block;color:var(--muted);font-size:9px}
     .kv b{display:block;font-size:13px;margin-top:4px;word-break:break-word}.signals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
     .signal{padding:11px;border:1px solid #25324a;border-radius:12px;background:#101827}.signalTop{display:flex;justify-content:space-between;gap:8px;font-size:10px}
@@ -108,6 +114,13 @@
           <button class="btn" id="addScopeBtn">Add market to portfolio</button>
         </div>
         <div id="marketNotice" class="notice hidden"></div>
+        <div id="recoBox" class="hidden">
+          <div class="eyebrow" style="margin-top:14px">INVESTMENT-MODE RECOMMENDATIONS</div>
+          <div class="tierTabs" id="tierTabs"></div>
+          <div class="tableWrap"><table style="min-width:640px"><thead><tr><th>#</th><th>Ticker</th><th>Company</th><th>Tier</th><th>Why (top agents)</th></tr></thead>
+          <tbody id="recoRows"></tbody></table></div>
+          <div class="disclaimer fa" id="recoDisclaimer"></div>
+        </div>
         <div class="tableWrap">
           <table><thead><tr><th>Ticker</th><th>Company</th><th>Exchange / MIC</th><th>Currency</th><th>Sector</th></tr></thead>
           <tbody id="instrumentRows"></tbody></table>
@@ -123,8 +136,10 @@
         <div id="analysisView" class="hidden">
           <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
             <div><div class="eyebrow" id="analysisIdentity">—</div><h3 id="analysisName" style="margin:7px 0 0">—</h3></div>
-            <div><span id="analysisCall" class="tag">—</span></div>
+            <div><span id="analysisTier" class="tag tierTag fa hidden"></span> <span id="analysisCall" class="tag">—</span></div>
           </div>
+          <div id="analysisReasons" class="reasons fa hidden"></div>
+          <div id="analysisDisclaimer" class="disclaimer fa hidden"></div>
           <div class="analysisGrid" id="analysisMetrics"></div>
           <div id="analysisEvidence" class="notice"></div>
           <div class="signals" id="signalCards"></div>
@@ -266,6 +281,7 @@
         if (q) params.set('q',q);
         const data = await request(`/global/instruments/${encodeURIComponent(state.country.country)}/${encodeURIComponent(state.exchange.code)}?${params}`);
         renderInstruments(data.instruments || []);
+        void loadRecommendations();
         const catalog = data.catalog?.status ? ` · catalog ${data.catalog.status}` : '';
         notice('marketNotice', `${data.totalMatched ?? 0} matched · ${data.returned ?? 0} loaded${catalog}`, 'good');
       } catch (err) {
@@ -296,6 +312,41 @@
       finally { setBusy(btn,false); }
     }
 
+    const TIERS = ['BUY','ACCUMULATE','HOLD','REDUCE','SELL'];
+    const TIER_FA = {BUY:'خرید',ACCUMULATE:'خرید تدریجی',HOLD:'نگهداری',REDUCE:'کاهش',SELL:'فروش',NO_RECOMMENDATION:'بدون توصیه'};
+    const DISCLAIMER_FA = 'رتبه‌بندی نسبی در همان بورس؛ مشاوره مالی شخصی نیست';
+    // Old ledger rows / conservative mode have no `investment` block and keep the old call values.
+    const OLD_CALL = {BUY_CANDIDATE:'pass',AVOID_OR_REVIEW:'block'};
+    const agentList = (items) => (items||[]).map((a)=>`${esc(a.labelFa || a.agent)} (${Number(a.vote)>=0?'+':''}${num(a.vote,2)})`).join('، ') || '—';
+    function reasonsHtml(inv) {
+      return `<b>دلایل مثبت:</b> ${agentList(inv.positive)}<br><b>دلایل منفی:</b> ${agentList(inv.negative)}`;
+    }
+
+    async function loadRecommendations(tier) {
+      const box = $('recoBox');
+      if (!state.country || !state.exchange) { box.classList.add('hidden'); return; }
+      try {
+        const q = new URLSearchParams({country:state.country.country,exchange:state.exchange.code,tier:tier||state.tier||'BUY',limit:'50'});
+        const data = await request(`/global/recommendations?${q}`);
+        if (data.decisionMode !== 'investment') { box.classList.add('hidden'); return; }
+        state.tier = tier || state.tier || 'BUY';
+        box.classList.remove('hidden');
+        $('tierTabs').innerHTML = TIERS.map((t)=>`<button class="btn${t===state.tier?' active':''}" data-tier="${t}"><span class="fa">${TIER_FA[t]}</span> · ${num(data.counts?.[t] ?? 0,0)}</button>`).join('');
+        [...$('tierTabs').querySelectorAll('button')].forEach((b)=>b.addEventListener('click',()=>loadRecommendations(b.dataset.tier)));
+        state.recos = data.rows || [];
+        $('recoRows').innerHTML = state.recos.map((r,i)=>`<tr data-index="${i}">
+          <td>${num(r.investment.rank,0)}</td><td><span class="ticker">${esc(r.ticker)}</span></td><td>${esc(r.name || r.ticker)}</td>
+          <td><span class="tag fa t-${esc(r.investment.tier)}">${esc(r.investment.labelFa)}</span></td>
+          <td class="fa" style="font-size:11px">${agentList(r.investment.positive.slice(0,2))} | ${agentList(r.investment.negative.slice(0,2))}</td></tr>`).join('')
+          || '<tr><td colspan="5" class="sub">No stocks in this tier.</td></tr>';
+        [...$('recoRows').querySelectorAll('tr[data-index]')].forEach((row)=>row.addEventListener('click',()=>{
+          const r = state.recos[Number(row.dataset.index)];
+          analyzeInstrument({ticker:r.ticker,name:r.name,country:state.country.country,exchange:state.exchange.code});
+        }));
+        $('recoDisclaimer').textContent = data.disclaimerFa || DISCLAIMER_FA;
+      } catch { box.classList.add('hidden'); }
+    }
+
     function metric(label,value) { return `<div class="kv"><span>${esc(label)}</span><b>${esc(value)}</b></div>`; }
 
     async function analyzeInstrument(item) {
@@ -310,7 +361,18 @@
         $('analysisIdentity').textContent = data.identity || `${data.country || item.country}:${data.exchange || item.exchange}:${data.ticker || item.ticker}`;
         $('analysisName').textContent = data.name || item.name || item.ticker;
         $('analysisCall').textContent = data.call || 'NO_RECOMMENDATION';
-        $('analysisCall').className = `tag ${data.call==='BUY_CANDIDATE' ? 'pass' : data.call==='AVOID_OR_REVIEW' ? 'block' : 'warn'}`;
+        $('analysisCall').className = `tag ${OLD_CALL[data.call] || 'warn'}`;
+        const inv = data.investment;
+        $('analysisTier').classList.toggle('hidden', !inv);
+        $('analysisReasons').classList.toggle('hidden', !inv);
+        $('analysisDisclaimer').classList.toggle('hidden', !inv);
+        if (inv) {
+          $('analysisTier').textContent = inv.labelFa || TIER_FA[inv.tier] || inv.tier;
+          $('analysisTier').className = `tag tierTag fa t-${inv.tier}`;
+          $('analysisReasons').innerHTML = reasonsHtml(inv);
+          $('analysisDisclaimer').textContent = inv.disclaimerFa || DISCLAIMER_FA;
+          $('analysisCall').textContent = `engine: ${data.call || 'NO_RECOMMENDATION'}`;
+        }
         const c = data.company || {};
         $('analysisMetrics').innerHTML = [
           metric('Price',`${num(c.price)} ${c.currency || data.currency || ''}`.trim()),
