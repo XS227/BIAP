@@ -40,7 +40,15 @@ AGENTS = ("fundamental", "risk", "forecast", "comparison", "quality", "liquidity
 
 SOFT_DOWNGRADE_FLAGS_DEFAULT = (
     "agents_disagree", "distress_not_low_risk", "peer_group_small", "no_independent_signal", "evidence_warn",
+    "widened_peers",
 )
+
+# Listings of one issuer on several venues are ranked as ONE market (deduped by ISIN).
+MARKET_GROUPS = {"DE:XETRA": "DE", "DE:FRANKFURT": "DE"}
+
+
+def market_of(exchange: str) -> str:
+    return MARKET_GROUPS.get(exchange, exchange)
 
 
 @dataclass(frozen=True)
@@ -72,6 +80,10 @@ class InvestmentConfig:
     comparison_confidence_global: float = 0.55
     peg_growth_cap_pct: float = 50.0
     peg_growth_floor_pct: float = 1.0
+    # widened-peer guard: a BUY whose comparison vote rests on widened peers needs another agent this strong
+    widened_guard: bool = True
+    widened_guard_vote: float = 0.35
+    widened_guard_confidence: float = 0.55
     # disagreement (same constants as agents.evidence_agent)
     disagree_confidence: float = 0.55
     disagree_positive: float = 0.35
@@ -405,13 +417,50 @@ def _tier(rank_index: int, total: int, score: float, cfg: InvestmentConfig) -> s
     return "HOLD"
 
 
+def _collapse_listings(candidates: Sequence[Candidate], cfg: InvestmentConfig):
+    """One candidate per (market, ISIN) for grouped venues (Xetra + Frankfurt = ``DE``); returns (batch, dup map).
+
+    The listing with the most agents with data (then the highest summed confidence, then key) represents the
+    issuer; its decision is copied to the other listings (flag ``duplicate_listing``).
+    """
+    groups: Dict[Tuple[str, str], List[Candidate]] = {}
+    batch: List[Candidate] = []
+    for c in candidates:
+        if c.exchange in MARKET_GROUPS and c.isin:
+            groups.setdefault((MARKET_GROUPS[c.exchange], c.isin), []).append(c)
+        else:
+            batch.append(c)
+    dups: Dict[str, List[str]] = {}
+    for (market, _), members in groups.items():
+        members.sort(key=lambda m: (-sum(1 for v in m.signals.values() if has_data(v, cfg)),
+                                    -sum(v[1] for v in m.signals.values()), m.key))
+        batch.append(replace(members[0], exchange=market))
+        if len(members) > 1:
+            dups[members[0].key] = [m.key for m in members[1:]]
+    return batch, dups
+
+
 def decide_market(
     candidates: Sequence[Candidate], cfg: InvestmentConfig = DEFAULT_CONFIG
 ) -> Dict[str, InvestmentDecision]:
-    """Investment-mode decisions for a batch (any number of exchanges); ranking is done per exchange.
+    """Investment-mode decisions for a batch (any number of exchanges); ranking is done per market.
 
+    Xetra and Frankfurt are one market (``MARKET_GROUPS``), deduplicated by ISIN before ranking and tiering.
     Hand over every covered market in one batch to enable the cross-market ``global_sector`` peer scope.
     """
+    batch, dups = _collapse_listings(candidates, cfg)
+    decisions = _decide_core(batch, cfg)
+    for rep_key, others in dups.items():
+        if rep_key in decisions:
+            for key in others:
+                d = decisions[rep_key]
+                decisions[key] = replace(d, key=key, flags=d.flags + ("duplicate_listing",))
+    return decisions
+
+
+def _decide_core(
+    candidates: Sequence[Candidate], cfg: InvestmentConfig = DEFAULT_CONFIG
+) -> Dict[str, InvestmentDecision]:
     risk_votes = relative_risk_votes(candidates, cfg)
     comp = comparison_votes(candidates, cfg)
     decisions: Dict[str, InvestmentDecision] = {}
@@ -466,6 +515,10 @@ def decide_market(
                 flags.append("no_independent_signal")
             if c.evidence_status == "WARN":
                 flags.append("evidence_warn")
+            if (cfg.widened_guard and base_tier == "BUY" and scope in ("exchange_sector", "global_sector")
+                    and not any(a != "comparison" and signals[a][0] >= cfg.widened_guard_vote
+                                and signals[a][1] >= cfg.widened_guard_confidence for a in used)):
+                flags.append("widened_peers")
             soft = [f for f in flags if f in cfg.soft_downgrade_flags]
             if tier == "SELL" and "agents_disagree" in flags:
                 tier = "REDUCE"

@@ -412,3 +412,54 @@ def test_decide_ledger_is_read_only_and_uses_full_results():
                 yield r
     d = im.decide_ledger(FakeLedger())
     assert len(d) == 12 and d["NYSE:T0"].call == "BUY"
+
+
+# ------------------------------------------------------------------ widened-peer guard / DE dedupe
+def _widened_market(strong_other: bool):
+    """20 stocks, 19 with sector P/E 20 (no native peer count -> widened scope); 't' is cheap and ranks first."""
+    others = [cand(f"p{i}", sig(f=-0.2 - 0.01 * i, fc=-0.1, q=-0.1, c=0.0), sector="Tech", pe=20.0) for i in range(19)]
+    top = sig(f=0.9 if strong_other else 0.2, fc=0.9 if strong_other else 0.2, q=0.2, c=0.0, conf=0.7)
+    return others + [cand("t", top, sector="Tech", pe=10.0)]
+
+
+def test_widened_buy_without_strong_independent_agent_is_downgraded():
+    d = decide_market(_widened_market(strong_other=False))
+    assert d["t"].peer_scope in ("exchange_sector", "global_sector")
+    assert d["t"].call == "ACCUMULATE" and "widened_peers" in d["t"].flags and d["t"].tier_before_flags == "BUY"
+
+
+def test_widened_buy_with_strong_independent_agent_stays_buy():
+    d = decide_market(_widened_market(strong_other=True))
+    assert d["t"].call == "BUY" and "widened_peers" not in d["t"].flags
+
+
+def test_widened_guard_can_be_switched_off():
+    d = decide_market(_widened_market(strong_other=False), InvestmentConfig(widened_guard=False))
+    assert d["t"].call == "BUY" and "widened_peers" not in d["t"].flags
+
+
+def test_widened_guard_ignores_native_peer_buys():
+    items = ladder(20)
+    items[0] = cand("s00", sig(f=0.2, fc=0.2, q=0.2, c=0.6), sector="Tech", pe=10.0, peer_count=12)
+    d = decide_market(items)
+    assert d["s00"].peer_scope == "scan_sector" and "widened_peers" not in d["s00"].flags
+
+
+def test_xetra_and_frankfurt_are_one_market_deduped_by_isin():
+    items = []
+    for i in range(20):
+        s = sig(f=0.8 - 0.08 * i, fc=0.4 - 0.04 * i, q=0.1)
+        items.append(cand(f"x{i:02d}", s, exchange="DE:XETRA", isin=f"DE{i:010d}"))
+        items.append(cand(f"f{i:02d}", s, exchange="DE:FRANKFURT", isin=f"DE{i:010d}"))
+    items.append(cand("fonly", sig(f=0.1, fc=0.05, q=0.1), exchange="DE:FRANKFURT", isin="DE9999999999"))
+    d = decide_market(items)
+    reps = [k for k, v in d.items() if "duplicate_listing" not in v.flags]
+    assert len(reps) == 21 and len(d) == 41                                  # ranked as 21 issuers, 41 listings
+    assert sorted(v.rank for k, v in d.items() if k in reps) == list(range(1, 22))
+    assert d["x00"].call == d["f00"].call and d["x00"].score == d["f00"].score
+    assert sum(1 for v in d.values() if v.call == "BUY" and "duplicate_listing" not in v.flags) <= 2
+
+
+def test_listings_without_isin_or_other_exchanges_are_not_collapsed():
+    d = decide_market([cand(f"a{i}", sig(f=0.5 - 0.1 * i, fc=0.2, q=0.1), exchange="DE:XETRA") for i in range(4)])
+    assert not any("duplicate_listing" in v.flags for v in d.values())
