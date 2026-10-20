@@ -7,6 +7,7 @@ import { categoryLabel, gateLines, groupLine, marketListRows } from '@/lib/scan-
 import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-market-selection';
 import { setSelectedGlobalCompany } from '@/lib/global-company-selection';
 import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
+import type { GlobalInvestmentDecision } from '@/lib/decision-tier';
 import { tierCountsFa, tierLabelFa, tierTone } from '@/lib/decision-tier';
 
 const PAGE_SIZE = 80;
@@ -79,7 +80,7 @@ export default function MarketScreen() {
   const [scanStatus, setScanStatus] = useState('');
   const [scanMode, setScanMode] = useState<ScanMode>('');
   const [tiers, setTiers] = useState<GlobalTierView | null>(null);
-  const tierByTicker = useMemo(() => new Map((tiers?.rows || []).map((r) => [r.ticker, r.investment])), [tiers]);
+  const tierByTicker = useMemo(() => new Map<string | undefined, GlobalInvestmentDecision>((tiers?.rows || []).map((r) => [r.ticker, r.investment])), [tiers]);
 
   const load = useCallback(async (forceSearch?: string) => {
     const selected = await getGlobalMarketSelection();

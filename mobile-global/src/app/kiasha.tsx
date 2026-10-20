@@ -6,6 +6,7 @@ import { fetchGlobalTiers, GlobalAnalysis, GlobalInstrument, GlobalTierView, sca
 import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-market-selection';
 import { EvidenceCounts, evidenceCounts } from '@/lib/scan-summary';
 import { setSelectedGlobalCompany } from '@/lib/global-company-selection';
+import type { GlobalInvestmentDecision } from '@/lib/decision-tier';
 import { DISCLAIMER_FA, tierCountsFa, tierLabelFa, tierTone } from '@/lib/decision-tier';
 
 type DataMode = '' | 'live' | 'cached' | 'catalog';
@@ -34,7 +35,7 @@ export default function KiashaGlobalScreen() {
   const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
   const [selection, setSelection] = useState<GlobalMarketSelection | null>(null);
   const [tiers, setTiers] = useState<GlobalTierView | null>(null);
-  const tierByTicker = useMemo(() => new Map((tiers?.rows || []).map((r) => [r.ticker, r.investment])), [tiers]);
+  const tierByTicker = useMemo(() => new Map<string | undefined, GlobalInvestmentDecision>((tiers?.rows || []).map((r) => [r.ticker, r.investment])), [tiers]);
   const [picks, setPicks] = useState<GlobalAnalysis[]>([]);
   const [deepResults, setDeepResults] = useState<GlobalAnalysis[]>([]);
   const [status, setStatus] = useState('');
