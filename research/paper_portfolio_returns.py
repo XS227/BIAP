@@ -8,6 +8,9 @@ Usage: python research/paper_portfolio_returns.py research/paper_portfolio_2026-
   (Stored value: vendor close on snapshotDate.) Exit = last vendor close on or before ``--end``
   (default: snapshotDate + 31 days). Same source and units for both legs, so pence/pound scale and splits cancel out.
   Closes are vendor-adjusted-close-free ``close`` (split-adjusted, no dividends): returns are price returns.
+* Holdings the snapshot has no entry close for may be filled from the separate entry supplement
+  (``<snapshot>_entry_supplement.json`` next to it, or ``--supplement``); it is only accepted if its ``snapshotSha256`` matches the
+  snapshot file, and only its exact snapshot-date closes are used. Report lines show how many entries came from it.
 * Rows without an entry close, or without any close in the window, are listed as missing and excluded - never filled.
 * Weights are the snapshot's equal weights within each exchange and side, renormalised over rows that have data.
 * Benchmark = price index named in ``markets[...].benchmark``, same entry date / exit rule.
@@ -17,6 +20,7 @@ Reads the snapshot only; never modifies it.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import statistics
 import sys
@@ -64,14 +68,30 @@ def main() -> int:
     ap.add_argument("snapshot")
     ap.add_argument("--end")
     ap.add_argument("--json")
+    ap.add_argument("--supplement")
     args = ap.parse_args()
-    snap = json.loads(Path(args.snapshot).read_text())
+    raw = Path(args.snapshot).read_bytes()
+    snap = json.loads(raw)
+    sup_path = Path(args.supplement) if args.supplement else Path(args.snapshot).with_name(Path(args.snapshot).stem + "_entry_supplement.json")
+    fills = {}
+    if sup_path.exists():
+        sup = json.loads(sup_path.read_text())
+        if sup.get("snapshotSha256") != hashlib.sha256(raw).hexdigest():
+            sys.exit(f"{sup_path.name} was built for a different snapshot file (sha256 mismatch)")
+        fills = {(f["market"], f["ticker"], f["side"]): f for f in sup["fills"] if f.get("close") is not None and f.get("closeDate") == snap["snapshotDate"]}
     start = date.fromisoformat(snap["snapshotDate"])
     end = date.fromisoformat(args.end) if args.end else start + timedelta(days=31)
     if end > datetime.now(timezone.utc).date():
         print(f"warning: end {end} is in the future; returns use the latest available close", file=sys.stderr)
     rows = snap["holdings"]
 
+    def fill_of(r):
+        return fills.get((r["market"], r["ticker"], r["side"])) if r.get("entryClose") is None else None
+
+    for r in rows:                      # in-memory view only; the snapshot file is never written
+        f = fill_of(r)
+        if f:
+            r["vendorSymbol"], r["entryClose"], r["fromSupplement"] = f["vendorSymbol"], f["close"], True
     symbols = sorted({r["vendorSymbol"] for r in rows if r.get("vendorSymbol")})
     with ThreadPoolExecutor(max_workers=4) as pool:
         series = dict(zip(symbols, pool.map(lambda s: closes(s, start, end), symbols)))
@@ -116,7 +136,8 @@ def main() -> int:
                "benchmark": pooled("benchmarkReturn"), "BUY_minus_SELL": pooled("BUY_minus_SELL"),
                "BUY_excess": pooled(("BUY", "excessVsBenchmark")), "SELL_excess": pooled(("SELL", "excessVsBenchmark"))}
     report = {"snapshot": snap["snapshotDate"], "end": end.isoformat(), "markets": per_market, "ALL_exchange_equal_weighted": summary,
-              "missing": missing, "entryDriftOver2pct": entry_drift}
+              "missing": missing, "entryDriftOver2pct": entry_drift,
+              "entriesFromSupplement": sum(1 for r in rows if r.get("fromSupplement")), "supplement": sup_path.name if fills else None}
     pct = lambda v: "   n/a " if v is None else f"{v*100:+7.2f}%"
     print(f"Paper portfolio {snap['snapshotDate']} -> {end}  (price returns, equal weight; ALL = exchanges equally weighted)")
     print(f"{'market':<26}{'BUY n':>7}{'BUY':>9}{'SELL n':>8}{'SELL':>9}{'bench':>9}{'BUY-bm':>9}{'SELL-bm':>9}{'BUY-SELL':>10}")
@@ -126,6 +147,7 @@ def main() -> int:
               f"{pct(m['BUY']['excessVsBenchmark'])}{pct(m['SELL']['excessVsBenchmark'])}{pct(m['BUY_minus_SELL'])}")
     print(f"{'ALL':<26}{'':>7}{pct(summary['BUY'])}{'':>8}{pct(summary['SELL'])}{pct(summary['benchmark'])}"
           f"{pct(summary['BUY_excess'])}{pct(summary['SELL_excess'])}{pct(summary['BUY_minus_SELL'])}")
+    print(f"entries from supplement: {sum(1 for r in rows if r.get('fromSupplement'))}")
     print(f"missing/excluded rows: {len(missing)}; entry close re-read differs >2% from stored: {len(entry_drift)}")
     if args.json:
         Path(args.json).write_text(json.dumps(report, indent=1))

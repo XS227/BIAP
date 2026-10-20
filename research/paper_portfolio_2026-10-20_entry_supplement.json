@@ -1,0 +1,962 @@
+{
+ "schema": 1,
+ "kind": "entry-close supplement (the frozen snapshot is not modified)",
+ "snapshotFile": "paper_portfolio_2026-10-20.json",
+ "snapshotSha256": "0bd9066eb980d9293566c2cb682dce579f6d6fbf15e102eeb341e2e7e52621a1",
+ "snapshotDate": "2026-10-20",
+ "retrievedAt": "2026-10-20T23:29:14+00:00",
+ "source": "Yahoo Finance public chart endpoint (query1.finance.yahoo.com/v8/finance/chart), interval 1d, vendor units",
+ "symbolMapping": "research/vendor_symbols.py (share classes ERIC.B -> ERIC-B.ST; trailing dot dropped; exchange suffix)",
+ "summary": {
+  "missingInSnapshot": 48,
+  "filled": 25,
+  "stillMissing": 23,
+  "filledBuy": 16,
+  "filledSell": 9
+ },
+ "fills": [
+  {
+   "market": "US:NASDAQ",
+   "ticker": "SENEB",
+   "side": "BUY",
+   "name": "Seneca Foods Corp",
+   "vendorSymbol": "SENEB",
+   "symbolsTried": [
+    "SENEB"
+   ],
+   "vendorCurrency": "USD",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 179.22000122070312,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "US:NASDAQ",
+   "ticker": "GIW",
+   "side": "BUY",
+   "name": "GigCapital8 Corp.",
+   "vendorSymbol": "GIW",
+   "symbolsTried": [
+    "GIW"
+   ],
+   "vendorCurrency": "USD",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 10.170000076293945,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "US:NASDAQ",
+   "ticker": "APLM",
+   "side": "SELL",
+   "name": "Apollomics Inc.",
+   "vendorSymbol": "APLM",
+   "symbolsTried": [
+    "APLM"
+   ],
+   "vendorCurrency": "USD",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 22.04800033569336,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "US:NASDAQ",
+   "ticker": "TJGC",
+   "side": "SELL",
+   "name": "TJGC Group Limited",
+   "vendorSymbol": "TJGC",
+   "symbolsTried": [
+    "TJGC"
+   ],
+   "vendorCurrency": "USD",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 31.889999389648438,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "US:NASDAQ",
+   "ticker": "LSE",
+   "side": "SELL",
+   "name": "Leishen Energy Holding Co., Ltd.",
+   "vendorSymbol": "LSE",
+   "symbolsTried": [
+    "LSE"
+   ],
+   "vendorCurrency": "USD",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 4.564000129699707,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "US:NASDAQ",
+   "ticker": "NCEW",
+   "side": "SELL",
+   "name": "NEW CENTURY LOGISTICS (BVI) LIMITED",
+   "vendorSymbol": "NCEW",
+   "symbolsTried": [
+    "NCEW"
+   ],
+   "vendorCurrency": "USD",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 16.530000686645508,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "US:NYSE",
+   "ticker": "HEI.A",
+   "side": "BUY",
+   "name": "HEICO CORPORATION",
+   "vendorSymbol": "HEI-A",
+   "symbolsTried": [
+    "HEI-A"
+   ],
+   "vendorCurrency": "USD",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 233.50999450683594,
+    "used": false
+   },
+   "close": 231.1699981689453,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor daily close on snapshot date",
+   "ledgerPrice": 233.51,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 0.9899790080465304
+  },
+  {
+   "market": "GB:LSE",
+   "ticker": "JD.",
+   "side": "BUY",
+   "name": "JD SPORTS FASHION PLC",
+   "vendorSymbol": "JD.L",
+   "symbolsTried": [
+    "JD.L"
+   ],
+   "vendorCurrency": "GBp",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 91.9800033569336,
+    "used": false
+   },
+   "close": 90.36,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 0.9036,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 100.0,
+   "unitNote": "vendor quotes in pence (GBp), ledger in pounds: same-source entry and exit keep returns unit-free"
+  },
+  {
+   "market": "GB:LSE",
+   "ticker": "AT.",
+   "side": "BUY",
+   "name": "ASHTEAD TECHNOLOGY HOLDINGS PLC",
+   "vendorSymbol": "AT.L",
+   "symbolsTried": [
+    "AT.L"
+   ],
+   "vendorCurrency": "GBp",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 512.0,
+    "used": false
+   },
+   "close": 530.0,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 5.3,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 100.0,
+   "unitNote": "vendor quotes in pence (GBp), ledger in pounds: same-source entry and exit keep returns unit-free"
+  },
+  {
+   "market": "GB:LSE",
+   "ticker": "COR",
+   "side": "SELL",
+   "name": "CORPUS RESOURCES PLC",
+   "vendorSymbol": "COR.L",
+   "symbolsTried": [
+    "COR.L"
+   ],
+   "vendorCurrency": "GBp",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 0.012000000104308128,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "GB:LSE",
+   "ticker": "ASBE",
+   "side": "SELL",
+   "name": "ASSOCIATED BRITISH ENGINEERING PLC",
+   "vendorSymbol": "ASBE.L",
+   "symbolsTried": [
+    "ASBE.L"
+   ],
+   "vendorCurrency": "GBp",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 20.0,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "GB:LSE",
+   "ticker": "AFRK",
+   "side": "SELL",
+   "name": "Afarak Group SE",
+   "vendorSymbol": "AFRK.L",
+   "symbolsTried": [
+    "AFRK.L"
+   ],
+   "vendorCurrency": "GBp",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 0.2240000069141388,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "GB:LSE",
+   "ticker": "EGY",
+   "side": "SELL",
+   "name": "VAALCO ENERGY INC /DE/",
+   "vendorSymbol": "EGY.L",
+   "symbolsTried": [
+    "EGY.L"
+   ],
+   "vendorCurrency": "GBp",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 455.0,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "GB:LSE",
+   "ticker": "PLAZ",
+   "side": "SELL",
+   "name": "PLAZA CENTERS N.V.",
+   "vendorSymbol": "PLAZ.L",
+   "symbolsTried": [
+    "PLAZ.L"
+   ],
+   "vendorCurrency": "GBp",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 0.14499999582767487,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "GB:LSE",
+   "ticker": "GVMH",
+   "side": "SELL",
+   "name": "GRAND VISION MEDIA HOLDINGS PLC",
+   "vendorSymbol": "GVMH.L",
+   "symbolsTried": [
+    "GVMH.L"
+   ],
+   "vendorCurrency": "GBp",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 0.006000000052154064,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "GB:LSE",
+   "ticker": "CFYN",
+   "side": "SELL",
+   "name": "CAFFYNS PUBLIC LIMITED COMPANY",
+   "vendorSymbol": "CFYN.L",
+   "symbolsTried": [
+    "CFYN.L"
+   ],
+   "vendorCurrency": "GBp",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 485.0,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "GB:LSE",
+   "ticker": "PPP",
+   "side": "SELL",
+   "name": "PENNPETRO ENERGY PLC",
+   "vendorSymbol": "PPP.L",
+   "symbolsTried": [
+    "PPP.L"
+   ],
+   "vendorCurrency": "GBp",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 0.09549999982118607,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "GB:LSE",
+   "ticker": "IFRX",
+   "side": "SELL",
+   "name": "IFOREX FINANCIAL TRADING HOLDINGS LTD.",
+   "vendorSymbol": "IFRX.L",
+   "symbolsTried": [
+    "IFRX.L"
+   ],
+   "vendorCurrency": "GBp",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 142.5,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "TEL2.B",
+   "side": "BUY",
+   "name": "TELE2 AB",
+   "vendorSymbol": "TEL2-B.ST",
+   "symbolsTried": [
+    "TEL2-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 158.6999969482422,
+    "used": false
+   },
+   "close": 161.05,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 161.05,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "SOF.B",
+   "side": "BUY",
+   "name": "Softronic Aktiebolag",
+   "vendorSymbol": "SOF-B.ST",
+   "symbolsTried": [
+    "SOF-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 21.649999618530273,
+    "used": false
+   },
+   "close": 21.5,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 21.5,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "BETS.B",
+   "side": "BUY",
+   "name": "Betsson AB",
+   "vendorSymbol": "BETS-B.ST",
+   "symbolsTried": [
+    "BETS-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 91.5,
+    "used": false
+   },
+   "close": 92.85,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 92.85,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "MSAB.B",
+   "side": "BUY",
+   "name": "Micro Systemation AB (publ)",
+   "vendorSymbol": "MSAB-B.ST",
+   "symbolsTried": [
+    "MSAB-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 104.0,
+    "used": false
+   },
+   "close": 109.0,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 109.0,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "TEL2.A",
+   "side": "BUY",
+   "name": "TELE2 AB",
+   "vendorSymbol": "TEL2-A.ST",
+   "symbolsTried": [
+    "TEL2-A.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 159.5,
+    "used": false
+   },
+   "close": 162.5,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 162.5,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "KARNEL.B",
+   "side": "BUY",
+   "name": "Karnell Group AB (publ)",
+   "vendorSymbol": "KARNEL-B.ST",
+   "symbolsTried": [
+    "KARNEL-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 100.0,
+    "used": false
+   },
+   "close": 98.4,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 98.4,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "LAGR.B",
+   "side": "BUY",
+   "name": "Lagercrantz Group Aktiebolag",
+   "vendorSymbol": "LAGR-B.ST",
+   "symbolsTried": [
+    "LAGR-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 234.0,
+    "used": false
+   },
+   "close": 228.8,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 228.8,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "GETI.B",
+   "side": "BUY",
+   "name": "Getinge AB (publ)",
+   "vendorSymbol": "GETI-B.ST",
+   "symbolsTried": [
+    "GETI-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 260.3999938964844,
+    "used": false
+   },
+   "close": 259.7,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 259.7,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "NTEK.B",
+   "side": "BUY",
+   "name": "NOVOTEK Aktiebolag",
+   "vendorSymbol": "NTEK-B.ST",
+   "symbolsTried": [
+    "NTEK-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 70.30000305175781,
+    "used": false
+   },
+   "close": 68.4,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 68.4,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "ERIC.B",
+   "side": "BUY",
+   "name": "Telefonaktiebolaget LM Ericsson",
+   "vendorSymbol": "ERIC-B.ST",
+   "symbolsTried": [
+    "ERIC-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 103.1500015258789,
+    "used": false
+   },
+   "close": 104.85,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 104.85,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "SVED.B",
+   "side": "BUY",
+   "name": "Svedbergs Group AB",
+   "vendorSymbol": "SVED-B.ST",
+   "symbolsTried": [
+    "SVED-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 56.599998474121094,
+    "used": false
+   },
+   "close": 56.9,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 56.9,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "BIOA.B",
+   "side": "BUY",
+   "name": "BioArctic AB",
+   "vendorSymbol": "BIOA-B.ST",
+   "symbolsTried": [
+    "BIOA-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 289.0,
+    "used": false
+   },
+   "close": 300.0,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 300.0,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "TREL.B",
+   "side": "BUY",
+   "name": "Trelleborg AB",
+   "vendorSymbol": "TREL-B.ST",
+   "symbolsTried": [
+    "TREL-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 465.79998779296875,
+    "used": false
+   },
+   "close": 464.0,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 464.0,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "CORE.B",
+   "side": "SELL",
+   "name": "Corem Property Group AB",
+   "vendorSymbol": "CORE-B.ST",
+   "symbolsTried": [
+    "CORE-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 2.0239999294281006,
+    "used": false
+   },
+   "close": 2.05,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 2.05,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "BONAV.A",
+   "side": "SELL",
+   "name": "Bonava AB (publ)",
+   "vendorSymbol": "BONAV-A.ST",
+   "symbolsTried": [
+    "BONAV-A.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 8.25,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "VOLCAR.B",
+   "side": "SELL",
+   "name": "Volvo Car AB",
+   "vendorSymbol": "VOLCAR-B.ST",
+   "symbolsTried": [
+    "VOLCAR-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 13.760000228881836,
+    "used": false
+   },
+   "close": 14.365,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 14.365,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "EPIS.B",
+   "side": "SELL",
+   "name": "Episurf Medical AB",
+   "vendorSymbol": "EPIS-B.ST",
+   "symbolsTried": [
+    "EPIS-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 0.061400000005960464,
+    "used": false
+   },
+   "close": 0.0601,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 0.0601,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "WBGR.B",
+   "side": "SELL",
+   "name": "Wästbygg Gruppen AB (publ)",
+   "vendorSymbol": "WBGR-B.ST",
+   "symbolsTried": [
+    "WBGR-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 1.934999942779541,
+    "used": false
+   },
+   "close": 1.925,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 1.925,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "KFAST.B",
+   "side": "SELL",
+   "name": "K-Fast Holding AB",
+   "vendorSymbol": "KFAST-B.ST",
+   "symbolsTried": [
+    "KFAST-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 10.15999984741211,
+    "used": false
+   },
+   "close": 10.0,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 10.0,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "ELAN.B",
+   "side": "SELL",
+   "name": "Elanders AB",
+   "vendorSymbol": "ELAN-B.ST",
+   "symbolsTried": [
+    "ELAN-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 50.099998474121094,
+    "used": false
+   },
+   "close": 49.85,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 49.85,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "IRLAB.A",
+   "side": "SELL",
+   "name": "IRLAB Therapeutics AB",
+   "vendorSymbol": "IRLAB-A.ST",
+   "symbolsTried": [
+    "IRLAB-A.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 1.9819999933242798,
+    "used": false
+   },
+   "close": 2.065,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 2.065,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "VPLAY.B",
+   "side": "SELL",
+   "name": "Viaplay Group AB (publ)",
+   "vendorSymbol": "VPLAY-B.ST",
+   "symbolsTried": [
+    "VPLAY-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 1.1979999542236328,
+    "used": false
+   },
+   "close": 1.209,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 1.209,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "BACTI.B",
+   "side": "SELL",
+   "name": "Bactiguard Holding AB",
+   "vendorSymbol": "BACTI-B.ST",
+   "symbolsTried": [
+    "BACTI-B.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 15.449999809265137,
+    "used": false
+   },
+   "close": 15.1,
+   "closeDate": "2026-10-20",
+   "closeKind": "vendor last trade of the snapshot-date session (daily bar not final)",
+   "ledgerPrice": 15.1,
+   "ledgerPriceDate": "2026-10-20",
+   "vendorOverLedger": 1.0
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "ticker": "VPLAY.A",
+   "side": "SELL",
+   "name": "Viaplay Group AB (publ)",
+   "vendorSymbol": "VPLAY-A.ST",
+   "symbolsTried": [
+    "VPLAY-A.ST"
+   ],
+   "vendorCurrency": "SEK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 2.140000104904175,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "NO:EURONEXT_OSLO",
+   "ticker": "NEXT",
+   "side": "SELL",
+   "name": "NEXT BIOMETRICS GROUP ASA",
+   "vendorSymbol": "NEXT.OL",
+   "symbolsTried": [
+    "NEXT.OL"
+   ],
+   "vendorCurrency": "NOK",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 0.23199999332427979,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "TLIK",
+   "side": "SELL",
+   "name": "ARZNEIWERK AG VIDA INH ON",
+   "vendorSymbol": "TLIK.F",
+   "symbolsTried": [
+    "TLIK.F"
+   ],
+   "vendorCurrency": "EUR",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 0.1509999930858612,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "FR:EURONEXT_PARIS",
+   "ticker": "FCMC",
+   "side": "BUY",
+   "name": "FERMIERE DU CASINO MUNICIPAL CANNES",
+   "vendorSymbol": "FCMC.PA",
+   "symbolsTried": [
+    "FCMC.PA"
+   ],
+   "vendorCurrency": "EUR",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 2820.0,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "FR:EURONEXT_PARIS",
+   "ticker": "BLEE",
+   "side": "SELL",
+   "name": "BLEECKER",
+   "vendorSymbol": "BLEE.PA",
+   "symbolsTried": [
+    "BLEE.PA"
+   ],
+   "vendorCurrency": "EUR",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 92.5,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "ES:BME_MADRID",
+   "ticker": "TRG",
+   "side": "SELL",
+   "name": "TUBOS REUNIDOS S.A.",
+   "vendorSymbol": "TRG.MC",
+   "symbolsTried": [
+    "TRG.MC"
+   ],
+   "vendorCurrency": "EUR",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 0.14380000531673431,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  },
+  {
+   "market": "ES:BME_MADRID",
+   "ticker": "ENER",
+   "side": "SELL",
+   "name": "ECOENER, S.A.",
+   "vendorSymbol": "ENER.MC",
+   "symbolsTried": [
+    "ENER.MC"
+   ],
+   "vendorCurrency": "EUR",
+   "priorClose": {
+    "date": "2026-10-19",
+    "close": 3.3299999237060547,
+    "used": false
+   },
+   "error": "no vendor trade on the snapshot date"
+  }
+ ]
+}

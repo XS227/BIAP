@@ -12,3 +12,6 @@
   address-space limit (peak RSS measured ~50 MB). It reads the ledgers only. `filingDate` is the publication date; `filingObservedAt`
   is BIAP's retrieval date and must not be used as one. Cron points at this worktree and branch: repoint
   `run_daily_snapshot.sh`'s checkout when the branch is merged or the worktree is removed.
+- `build_entry_supplement.py`, `vendor_symbols.py`, `paper_portfolio_2026-10-20_entry_supplement.json` (+ `.sha256`) - separate dated file with vendor
+  closes for snapshot holdings that had no entry close (Swedish share classes ERIC.B -> ERIC-B.ST etc.), with source and retrieval time.
+  The returns script uses it automatically when its `snapshotSha256` matches the snapshot. The frozen snapshot is never modified.
