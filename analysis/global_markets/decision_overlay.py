@@ -31,6 +31,23 @@ AGENT_FA = {
     "liquidity": "نقدشوندگی",
 }
 DISCLAIMER_FA = "رتبه‌بندی نسبی در همان بورس؛ مشاوره مالی شخصی نیست"
+TIER_EN = {
+    "BUY": "Buy",
+    "ACCUMULATE": "Accumulate",
+    "HOLD": "Hold",
+    "REDUCE": "Reduce",
+    "SELL": "Sell",
+    im.NO_REC: "No recommendation",
+}
+AGENT_EN = {
+    "fundamental": "Fundamentals",
+    "risk": "Risk",
+    "forecast": "Price trend",
+    "comparison": "Peer comparison",
+    "quality": "Earnings quality",
+    "liquidity": "Liquidity",
+}
+DISCLAIMER_EN = "Relative ranking within the same exchange; not personal financial advice."
 TIERS = ("BUY", "ACCUMULATE", "HOLD", "REDUCE", "SELL")
 
 _REASON = re.compile(r"^(?P<agent>\w+) \((?P<vote>[+-]?\d+(?:\.\d+)?)\)$")
@@ -50,7 +67,7 @@ def _agents(items) -> list[dict]:
     for text in items:
         m = _REASON.match(text)
         if m:
-            out.append({"agent": m["agent"], "vote": float(m["vote"]), "labelFa": AGENT_FA.get(m["agent"], m["agent"])})
+            out.append({"agent": m["agent"], "vote": float(m["vote"]), "label": AGENT_EN.get(m["agent"], m["agent"]), "labelFa": AGENT_FA.get(m["agent"], m["agent"])})
     return out
 
 
@@ -58,6 +75,7 @@ def payload(decision: im.InvestmentDecision) -> dict:
     return {
         "mode": im.INVESTMENT,
         "tier": decision.call,
+        "label": TIER_EN.get(decision.call, decision.call),
         "labelFa": TIER_FA.get(decision.call, decision.call),
         "score": decision.score,
         "confidence": decision.confidence,
@@ -69,6 +87,7 @@ def payload(decision: im.InvestmentDecision) -> dict:
         "flags": list(decision.flags),
         "peerScope": decision.peer_scope,
         "blockedBy": decision.blocked_by,
+        "disclaimer": DISCLAIMER_EN,
         "disclaimerFa": DISCLAIMER_FA,
     }
 
