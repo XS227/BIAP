@@ -510,10 +510,6 @@ const FALLBACK_COUNTRIES: GlobalCountry[] = [
   { country: 'AU', name: 'Australia', marketProvider: 'Licensed global feed', fundamentalsProvider: 'ASX / issuer filings', officialEvidenceSource: 'ASX announcements + issuer annual reports', exchanges: [
     { code: 'ASX', label: 'Australian Securities Exchange', mic: 'XASX', currencies: ['AUD'] },
   ] },
-  { country: 'IR', name: 'Iran', marketProvider: 'TSETMC + Tindex', fundamentalsProvider: 'CODAL', officialEvidenceSource: 'CODAL', exchanges: [
-    { code: 'TSE', label: 'Tehran Stock Exchange', currencies: ['IRR'] },
-    { code: 'IFB', label: 'Iran Fara Bourse', currencies: ['IRR'] },
-  ] },
 ];
 
 export class GlobalApiError extends Error {

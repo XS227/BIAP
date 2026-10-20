@@ -65,7 +65,7 @@ type ScanWithMode = Awaited<ReturnType<typeof scanGlobalMarket>> & {
   cachedMarketData?: boolean;
 };
 
-const PRIORITY = ['US', 'GB', 'IT', 'SE', 'NO', 'DE', 'FR', 'NL', 'FI', 'ES', 'IR'];
+const PRIORITY = ['US', 'GB', 'IT', 'SE', 'NO', 'DE', 'FR', 'NL', 'FI', 'ES'];
 const AGENTS = ['fundamental', 'risk', 'forecast', 'comparison', 'quality', 'liquidity'] as const;
 const MAX_INPUTS = 50;
 

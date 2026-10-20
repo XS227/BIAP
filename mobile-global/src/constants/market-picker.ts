@@ -2,7 +2,7 @@
 // this only orders it and hides entries. To bring JP/AU back, set HIDE_JP_AU to false.
 export const HIDE_JP_AU = true;
 
-export const PICKER_ORDER = ['US', 'GB', 'IT', 'SE', 'NO', 'DE', 'FR', 'NL', 'FI', 'ES', 'IR'];
+export const PICKER_ORDER = ['US', 'GB', 'IT', 'SE', 'NO', 'DE', 'FR', 'NL', 'FI', 'ES'];
 const HIDDEN_WHEN_SWITCHED = ['JP', 'AU'];
 
 /** Server rows may carry `hidden: true` or `enabled: false`; honoured when present. */
