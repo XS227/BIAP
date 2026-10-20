@@ -8,6 +8,8 @@ Nothing is written; results are cached per ledger file (mtime + size) so repeate
 from __future__ import annotations
 
 import re
+import time
+from datetime import datetime, timezone
 from threading import Lock
 from typing import Any, Dict, Optional
 
@@ -99,6 +101,34 @@ def cap_for_evidence(item: Optional[dict], evidence_status: Optional[str], confi
             "positionSizeHint": None, "flags": flags, "insufficientEvidence": True, "notice": INSUFFICIENT_NOTICE}
 
 
+# Same limits as the evidence gate in agents.py: a price older than 7 days is ``fresh_price`` missing -> BLOCK, fundamentals
+# older than 550 days are ``fresh_fundamentals`` missing -> BLOCK.
+MAX_PRICE_AGE_DAYS = 7.0
+MAX_FUNDAMENTAL_AGE_DAYS = 550.0
+_PRICE_AGE = re.compile(r"priceAgeDays=([0-9.]+)")
+_FUND_AGE = re.compile(r"fundamentalPeriodAgeDays=([0-9.]+)")
+
+
+def effective_evidence_status(status: Optional[str], reasoning: Optional[str], analyzed_at: Optional[str],
+                              now: Optional[datetime] = None) -> str:
+    """Evidence status as of now, from the stored row: stored BLOCK stays BLOCK, and the ages recorded at analysis time
+    keep growing, so a price or filing that has since crossed the gate limits is BLOCK again (what a fresh analysis says)."""
+    if str(status or "").upper() == "BLOCK":
+        return "BLOCK"
+    try:
+        then = datetime.fromisoformat(str(analyzed_at).replace("Z", "+00:00"))
+        then = then if then.tzinfo else then.replace(tzinfo=timezone.utc)
+        elapsed = max(0.0, ((now or datetime.now(timezone.utc)) - then).total_seconds() / 86400.0)
+    except (TypeError, ValueError):
+        return str(status or "PASS").upper()
+    text = str(reasoning or "")
+    for pattern, limit in ((_PRICE_AGE, MAX_PRICE_AGE_DAYS), (_FUND_AGE, MAX_FUNDAMENTAL_AGE_DAYS)):
+        found = pattern.search(text)
+        if found and float(found.group(1)) + elapsed > limit:
+            return "BLOCK"
+    return str(status or "PASS").upper()
+
+
 def market_view(country: str, exchange: str) -> Dict[str, dict]:
     """{ticker: display payload} for one exchange ledger; ``{}`` when investment mode is off / out of scope / no ledger."""
     code = f"{country.upper()}:{exchange.upper()}"
@@ -109,7 +139,7 @@ def market_view(country: str, exchange: str) -> Dict[str, dict]:
         st = path.stat()
     except OSError:
         return {}
-    stamp = (str(path), st.st_mtime_ns, st.st_size, im.load_config().__hash__())
+    stamp = (str(path), st.st_mtime_ns, st.st_size, im.load_config().__hash__(), int(time.time() // 3600))
     with _LOCK:
         hit = _CACHE.get(stamp)
     if hit is not None:
@@ -117,10 +147,14 @@ def market_view(country: str, exchange: str) -> Dict[str, dict]:
     ledger = AnalysisLedger(country.upper(), exchange.upper())
     try:
         decisions = im.decide_ledger(ledger)
+        evidence = ledger.evidence_rows()
     finally:
         ledger.close()
     prefix = f"{code}:"
     view = {k[len(prefix):] if k.startswith(prefix) else k: payload(d) for k, d in decisions.items()}
+    for ticker, item in view.items():
+        analyzed_at, status, why = evidence.get(ticker, (None, None, None))
+        view[ticker] = cap_for_evidence(item, effective_evidence_status(status, why, analyzed_at), item.get("confidence"))
     with _LOCK:
         for old in [k for k in _CACHE if k[0] == stamp[0]]:
             _CACHE.pop(old, None)

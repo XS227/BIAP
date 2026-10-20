@@ -157,3 +157,14 @@ def test_cap_for_evidence_blocks_buy_and_accumulate_only():
     assert ov.cap_for_evidence(base, "PASS", 0.7) is base                                       # healthy: untouched
     assert ov.cap_for_evidence({**base, "tier": "SELL"}, "BLOCK", 0.1)["tier"] == "SELL"       # only the upside is capped
     assert ov.cap_for_evidence(None, "BLOCK", 0.1) is None
+
+
+def test_effective_evidence_status_blocks_when_stored_ages_cross_the_gate_limits():
+    from datetime import datetime, timezone
+    now = datetime(2026, 10, 20, 12, tzinfo=timezone.utc)
+    why = "coverage=100%; priceAgeDays=2.3; fundamentalPeriodAgeDays=288.0"
+    eff = ov.effective_evidence_status
+    assert eff("PASS", why, "2026-10-15T21:38:37+00:00", now) == "BLOCK"   # 2.3 + 4.6 days > 7
+    assert eff("PASS", why, "2026-10-19T12:00:00+00:00", now) == "PASS"
+    assert eff("BLOCK", why, "2026-10-19T12:00:00+00:00", now) == "BLOCK"
+    assert eff("PASS", why, None, now) == "PASS"                            # undatable row: stored status stands

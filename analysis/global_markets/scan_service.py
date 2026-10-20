@@ -417,14 +417,18 @@ def scan_global_top10(
         reverse=True,
     )
     recommendations = []
-    for index, row in enumerate(ranked[:top_n], start=1):
+    for row in ranked:
+        if len(recommendations) >= top_n:
+            break
         enriched = dict(row)
-        enriched["globalRank"] = index
         view = decision_overlay.market_view(str(row.get("country") or ""), str(row.get("exchange") or ""))
         tier = view.get(str(row.get("ticker") or ""))
         if tier is not None:
-            enriched["investment"] = decision_overlay.cap_for_evidence(
-                tier, (row.get("evidence") or {}).get("status"), row.get("confidence"))
+            tier = decision_overlay.cap_for_evidence(tier, (row.get("evidence") or {}).get("status"), row.get("confidence"))
+            if tier.get("insufficientEvidence"):
+                continue                    # Evidence BLOCK / low confidence is not a shortlist entry
+            enriched["investment"] = tier
+        enriched["globalRank"] = len(recommendations) + 1
         recommendations.append(enriched)
 
     errors = sum(1 for row in market_summary if row["status"] == "ERROR")
