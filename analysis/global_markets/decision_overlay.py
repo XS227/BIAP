@@ -30,6 +30,7 @@ AGENT_LABEL = {
     "quality": "Earnings quality",
     "liquidity": "Liquidity",
 }
+INSUFFICIENT_NOTICE = "Insufficient evidence"
 DISCLAIMER = "Relative ranking within this exchange; not personal financial advice"
 TIERS = ("BUY", "ACCUMULATE", "HOLD", "REDUCE", "SELL")
 
@@ -55,7 +56,7 @@ def _agents(items) -> list[dict]:
 
 
 def payload(decision: im.InvestmentDecision) -> dict:
-    return {
+    out = {
         "mode": im.INVESTMENT,
         "tier": decision.call,
         "label": TIER_LABEL.get(decision.call, decision.call),
@@ -71,6 +72,31 @@ def payload(decision: im.InvestmentDecision) -> dict:
         "blockedBy": decision.blocked_by,
         "disclaimer": DISCLAIMER,
     }
+    if "insufficient_evidence" in decision.flags or decision.blocked_by:
+        out["insufficientEvidence"] = True
+        out["notice"] = INSUFFICIENT_NOTICE
+    return out
+
+
+def cap_for_evidence(item: Optional[dict], evidence_status: Optional[str], confidence: Optional[float],
+                     cfg: Optional[im.InvestmentConfig] = None) -> Optional[dict]:
+    """Fresh-analysis guard: Evidence BLOCK or confidence under the threshold never keeps BUY / ACCUMULATE.
+
+    The ranked tier comes from the stored ledger row, which can be older than the analysis shown next to it (a price
+    that has since gone stale turns Evidence into BLOCK). Such a stock is capped at HOLD with the notice
+    "Insufficient evidence"; HOLD / REDUCE / SELL and NO_RECOMMENDATION are left alone.
+    """
+    if item is None:
+        return None
+    floor = (cfg or im.load_config()).min_tier_confidence
+    weak = str(evidence_status or "").upper() == "BLOCK" or (confidence is not None and confidence < floor)
+    if not weak or item.get("tier") not in ("BUY", "ACCUMULATE"):
+        return item
+    flags = list(item.get("flags") or [])
+    if "insufficient_evidence" not in flags:
+        flags.append("insufficient_evidence")
+    return {**item, "tier": "HOLD", "label": TIER_LABEL["HOLD"], "tierBeforeEvidenceCap": item["tier"],
+            "positionSizeHint": None, "flags": flags, "insufficientEvidence": True, "notice": INSUFFICIENT_NOTICE}
 
 
 def market_view(country: str, exchange: str) -> Dict[str, dict]:

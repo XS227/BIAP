@@ -337,6 +337,13 @@ def global_instruments(
         except Exception as exc:
             raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
 
+    # Results must belong to the selected exchange whatever a provider returned for the text query.
+    if q:
+        instruments = [
+            item for item in instruments
+            if str(item.country).upper() == country.upper() and str(item.exchange).upper() == spec.code.upper()
+        ]
+
     # list_instruments() may have created/refreshed the persistent snapshot.
     # Re-read metadata after that operation so a single API response cannot
     # simultaneously return official instruments while claiming catalog
@@ -549,6 +556,8 @@ def global_analyze(req: InstrumentRequest):
             view = decision_overlay.market_view(str(result.get("country") or ""), str(result.get("exchange") or ""))
             decision = view.get(str(result.get("ticker") or ""))
             if decision is not None:
+                evidence = result.get("evidence") if isinstance(result.get("evidence"), dict) else {}
+                decision = decision_overlay.cap_for_evidence(decision, evidence.get("status"), result.get("confidence"))
                 result = {**result, "investment": decision}     # additive; ``call`` stays the conservative value
         return result
     except HTTPException:

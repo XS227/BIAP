@@ -126,3 +126,34 @@ def test_endpoints_unchanged_in_conservative_mode(ledger, monkeypatch):
     led = c.get(f"{prefix}/analysis-ledger", params={"country": "SE", "exchange": "NASDAQ_STOCKHOLM"}).json()
     assert led["decisionMode"] == "conservative" and not any("investment" in r for r in led["rows"])
     assert c.get(f"{prefix}/recommendations", params={"country": "SE", "exchange": "NASDAQ_STOCKHOLM"}).json()["rows"] == []
+
+
+def _weak_result(i, strength, confidence):
+    r = _result(i, strength)
+    r["signals"] = [{**s, "confidence": confidence} for s in r["signals"]]
+    return r
+
+
+def test_low_confidence_top_ranked_stock_is_capped_at_hold(tmp_path, monkeypatch):
+    monkeypatch.setenv("BIAP_GLOBAL_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("DECISION_MODE", "investment")
+    led = al.AnalysisLedger("SE", "NASDAQ_STOCKHOLM")
+    universe = [SimpleNamespace(ticker=f"T{i:03d}", name=f"Company {i}") for i in range(20)]
+    led.sync_universe(universe, {u.ticker: {"ticker": u.ticker, "liquidityValue": 1000.0} for u in universe}, screening_source="t")
+    for i in range(20):
+        led.record_result(f"T{i:03d}", _weak_result(i, 0.9 - 0.08 * i, 0.31) if i == 0 else _result(i, 0.9 - 0.08 * i))
+    led.close()
+    top = ov.market_view("SE", "NASDAQ_STOCKHOLM")["T000"]
+    assert top["tier"] == "HOLD" and top["insufficientEvidence"] is True and top["notice"] == "Insufficient evidence"
+    assert "insufficient_evidence" in top["flags"]
+
+
+def test_cap_for_evidence_blocks_buy_and_accumulate_only():
+    base = {"tier": "ACCUMULATE", "label": "ACCUMULATE", "flags": ["agents_disagree"], "positionSizeHint": "high"}
+    capped = ov.cap_for_evidence(base, "BLOCK", 0.128)
+    assert capped["tier"] == "HOLD" and capped["tierBeforeEvidenceCap"] == "ACCUMULATE"
+    assert capped["notice"] == "Insufficient evidence" and "insufficient_evidence" in capped["flags"]
+    assert ov.cap_for_evidence({**base, "tier": "BUY"}, "PASS", 0.2)["tier"] == "HOLD"        # below the threshold
+    assert ov.cap_for_evidence(base, "PASS", 0.7) is base                                       # healthy: untouched
+    assert ov.cap_for_evidence({**base, "tier": "SELL"}, "BLOCK", 0.1)["tier"] == "SELL"       # only the upside is capped
+    assert ov.cap_for_evidence(None, "BLOCK", 0.1) is None
