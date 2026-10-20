@@ -299,10 +299,11 @@
       const coverage = data.screeningCoveragePct == null ? '' : ` · ${num(data.screeningCoveragePct,1)}% coverage`;
       const flags = data.tiersReleased && !data.rankingEligible && (data.dataReadiness?.releaseFlags || []).length
         ? ` · flags: ${data.dataReadiness.releaseFlags.join(', ')}` : '';
-      const tiers = data.tiersReleased && tierCountsText() ? ` · tiers: ${tierCountsText()}` : '';
-      notice('marketNotice', `${mode} · ${data.recommendationCount ?? recs.length} conservative-qualified${tiers} · ${data.deepAnalyzed ?? 0} deep analyses${coverage}${flags}`,
-        mode==='catalog only' ? 'warn' : 'good');
-      void loadTierMap().then(()=>{ const t = data.tiersReleased && tierCountsText(); if (t) notice('marketNotice', `${mode} · ${data.recommendationCount ?? recs.length} conservative-qualified · tiers: ${t} · ${data.deepAnalyzed ?? 0} deep analyses${coverage}${flags}`, 'good'); });
+      const cons = `قاعده محافظه‌کار: ${data.recommendationCount ?? recs.length} واجد شرایط`;
+      const line = (t) => t ? `${mode} · ${t} · ${cons} · ${data.deepAnalyzed ?? 0} deep analyses${coverage}${flags}`
+        : `${mode} · ${data.recommendationCount ?? recs.length} conservative-qualified · ${data.deepAnalyzed ?? 0} deep analyses${coverage}${flags}`;
+      notice('marketNotice', line(tierCountsText()), mode==='catalog only' ? 'warn' : 'good');
+      void loadTierMap().then(()=>{ const t = tierCountsText(); if (t) notice('marketNotice', line(t), 'good'); });
     }
 
     async function runScan() {
@@ -335,7 +336,7 @@
     }
     function tierCountsText() {
       const c = state.tierCounts;
-      return c ? TIERS.map((t)=>`${t} ${num(c[t] ?? 0,0)}`).join(' · ') : '';
+      return c ? TIERS.map((t)=>`${TIER_FA[t]} ${num(c[t] ?? 0,0)}`).join(' · ') : '';
     }
     async function loadTierMap() {
       state.tierMap = {}; state.tierCounts = null;
@@ -391,7 +392,7 @@
         $('analysisIdentity').textContent = data.identity || `${data.country || item.country}:${data.exchange || item.exchange}:${data.ticker || item.ticker}`;
         $('analysisName').textContent = data.name || item.name || item.ticker;
         $('analysisCall').textContent = data.call || 'NO_RECOMMENDATION';
-        $('analysisCall').className = `tag ${OLD_CALL[data.call] || 'warn'}`;
+        $('analysisCall').className = `tag ${OLD_CALL[data.call] || 'warn'}`; $('analysisCall').style.opacity = ''; $('analysisCall').style.fontSize = '';
         const inv = data.investment;
         $('analysisTier').classList.toggle('hidden', !inv);
         $('analysisReasons').classList.toggle('hidden', !inv);
@@ -401,7 +402,8 @@
           $('analysisTier').className = `tag tierTag fa t-${inv.tier}`;
           $('analysisReasons').innerHTML = reasonsHtml(inv);
           $('analysisDisclaimer').textContent = inv.disclaimerFa || DISCLAIMER_FA;
-          $('analysisCall').textContent = `engine: ${data.call || 'NO_RECOMMENDATION'}`;
+          $('analysisCall').textContent = `قاعده محافظه‌کار: ${data.call || 'NO_RECOMMENDATION'}`;
+          $('analysisCall').classList.add('fa'); $('analysisCall').style.opacity = '.7'; $('analysisCall').style.fontSize = '10px';
         }
         const c = data.company || {};
         $('analysisMetrics').innerHTML = [
