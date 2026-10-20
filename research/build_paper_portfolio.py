@@ -46,8 +46,12 @@ def _history_meta(country: str, exchange: str, ticker: str) -> dict:
     return {**(doc.get("metadata") or {}), "currency": (doc.get("identity") or {}).get("currency")}
 
 
-def _yahoo_close(symbol: str, snapshot_date: str) -> tuple[float | None, str | None]:
-    """Vendor close on ``snapshot_date`` exactly (never a neighbouring day). Returns (close, error)."""
+def _yahoo_close(symbol: str, snapshot_date: str) -> tuple[float | None, str, str | None]:
+    """Vendor close on ``snapshot_date`` exactly (never a neighbouring day). Returns (close, source label, error).
+
+    Right after a European close the vendor's daily bar is still null; its ``regularMarketPrice`` is then the last trade of
+    that session (the closing-auction print) and is used, labelled as such. The returns script re-reads the final daily
+    close for the entry date at check time, so the label is only a provisional marker."""
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(symbol)}?range=10d&interval=1d"
     for attempt in range(3):
         try:
@@ -58,11 +62,15 @@ def _yahoo_close(symbol: str, snapshot_date: str) -> tuple[float | None, str | N
             for ts, close in zip(result["timestamp"], closes):
                 day = datetime.fromtimestamp(ts + (result["meta"].get("gmtoffset") or 0), timezone.utc).date().isoformat()
                 if day == snapshot_date and close is not None:
-                    return float(close), None
-            return None, "no close on snapshot date"
+                    return float(close), "yahoo daily close", None
+            meta = result["meta"]
+            traded = datetime.fromtimestamp((meta.get("regularMarketTime") or 0) + (meta.get("gmtoffset") or 0), timezone.utc)
+            if traded.date().isoformat() == snapshot_date and meta.get("regularMarketPrice") is not None:
+                return float(meta["regularMarketPrice"]), "yahoo regularMarketPrice at session end (daily bar not final)", None
+            return None, "", "no close on snapshot date"
         except Exception as exc:                       # noqa: BLE001 - recorded per row, never fatal
             err = f"{type(exc).__name__}: {str(exc)[:80]}"
-    return None, err
+    return None, "", err
 
 
 def _refresh_summary(path: str | None) -> dict:
@@ -120,10 +128,10 @@ def build(snapshot_date: str, refresh_log: str | None = None) -> dict:
                 })
         markets[f"{country}:{exchange}"] = mk
     with ThreadPoolExecutor(max_workers=4) as pool:
-        got = list(pool.map(lambda r: _yahoo_close(r["vendorSymbol"], snapshot_date) if r["vendorSymbol"] else (None, "no vendor symbol"), rows))
-    for row, (close, err) in zip(rows, got):
+        got = list(pool.map(lambda r: _yahoo_close(r["vendorSymbol"], snapshot_date) if r["vendorSymbol"] else (None, "", "no vendor symbol"), rows))
+    for row, (close, label, err) in zip(rows, got):
         row["entryClose"], row["entryCloseDate"] = (close, snapshot_date) if close is not None else (None, None)
-        row["entryCloseSource"] = "yahoo-public-chart (vendor close, vendor units)" if close is not None else None
+        row["entryCloseSource"] = label or None
         row["entryCloseError"] = err
     for key, mk in markets.items():
         mine = [r for r in rows if r["market"] == key]

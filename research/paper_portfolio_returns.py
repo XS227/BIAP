@@ -3,7 +3,9 @@
 
 Usage: python research/paper_portfolio_returns.py research/paper_portfolio_2026-10-20.json [--end 2026-11-20] [--json out.json]
 
-* Entry = ``entryClose`` stored in the snapshot (vendor close on snapshotDate). Exit = last vendor close on or before ``--end``
+* Entry = the vendor's final daily close on snapshotDate, re-read now; the snapshot's ``entryClose`` is used only when the vendor no longer
+  returns that day. Rows whose re-read differs from the stored value by more than 2% are counted in the output.
+  (Stored value: vendor close on snapshotDate.) Exit = last vendor close on or before ``--end``
   (default: snapshotDate + 31 days). Same source and units for both legs, so pence/pound scale and splits cancel out.
   Closes are vendor-adjusted-close-free ``close`` (split-adjusted, no dividends): returns are price returns.
 * Rows without an entry close, or without any close in the window, are listed as missing and excluded - never filled.
@@ -76,7 +78,7 @@ def main() -> int:
     bench = {m["benchmark"] for m in snap["markets"].values() if isinstance(m, dict) and m.get("benchmark")}
     bseries = {b: closes(b, start, end) for b in sorted(bench)}
 
-    per_market, missing = {}, []
+    per_market, missing, entry_drift = {}, [], []
     for key, mk in snap["markets"].items():
         if not isinstance(mk, dict) or "benchmark" not in mk:
             continue
@@ -88,7 +90,11 @@ def main() -> int:
             mine = [r for r in rows if r["market"] == key and r["side"] == side]
             pairs, rets = [], []
             for r in mine:
-                ret, exit_day, why = leg_return(series.get(r.get("vendorSymbol"), {}), snap["snapshotDate"], r.get("entryClose"), end)
+                sr = series.get(r.get("vendorSymbol"), {})
+                entry = sr.get(snap["snapshotDate"]) or r.get("entryClose")
+                if r.get("entryClose") and sr.get(snap["snapshotDate"]) and abs(sr[snap["snapshotDate"]] / r["entryClose"] - 1) > 0.02:
+                    entry_drift.append(r["ticker"])
+                ret, exit_day, why = leg_return(sr, snap["snapshotDate"], entry, end)
                 if ret is None:
                     missing.append({"market": key, "side": side, "ticker": r["ticker"], "reason": why})
                     continue
@@ -110,7 +116,7 @@ def main() -> int:
                "benchmark": pooled("benchmarkReturn"), "BUY_minus_SELL": pooled("BUY_minus_SELL"),
                "BUY_excess": pooled(("BUY", "excessVsBenchmark")), "SELL_excess": pooled(("SELL", "excessVsBenchmark"))}
     report = {"snapshot": snap["snapshotDate"], "end": end.isoformat(), "markets": per_market, "ALL_exchange_equal_weighted": summary,
-              "missing": missing}
+              "missing": missing, "entryDriftOver2pct": entry_drift}
     pct = lambda v: "   n/a " if v is None else f"{v*100:+7.2f}%"
     print(f"Paper portfolio {snap['snapshotDate']} -> {end}  (price returns, equal weight; ALL = exchanges equally weighted)")
     print(f"{'market':<26}{'BUY n':>7}{'BUY':>9}{'SELL n':>8}{'SELL':>9}{'bench':>9}{'BUY-bm':>9}{'SELL-bm':>9}{'BUY-SELL':>10}")
@@ -120,7 +126,7 @@ def main() -> int:
               f"{pct(m['BUY']['excessVsBenchmark'])}{pct(m['SELL']['excessVsBenchmark'])}{pct(m['BUY_minus_SELL'])}")
     print(f"{'ALL':<26}{'':>7}{pct(summary['BUY'])}{'':>8}{pct(summary['SELL'])}{pct(summary['benchmark'])}"
           f"{pct(summary['BUY_excess'])}{pct(summary['SELL_excess'])}{pct(summary['BUY_minus_SELL'])}")
-    print(f"missing/excluded rows: {len(missing)}")
+    print(f"missing/excluded rows: {len(missing)}; entry close re-read differs >2% from stored: {len(entry_drift)}")
     if args.json:
         Path(args.json).write_text(json.dumps(report, indent=1))
     return 0
