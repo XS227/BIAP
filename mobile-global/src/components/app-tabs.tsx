@@ -33,15 +33,11 @@ export default function AppTabs({ onLogout }: Props) {
         <Tabs.Screen name="favorites" options={{ href: null }} />
         <Tabs.Screen name="data-connect" options={{ href: null }} />
         <Tabs.Screen name="how-to" options={{ href: null }} />
-        <Tabs.Screen name="kiasha-profile" options={{ href: null }} />
         <Tabs.Screen name="stock/[code]" options={{ href: null }} />
         <Tabs.Screen name="register" options={{ href: null }} />
-        <Tabs.Screen name="bizdev" options={{ href: null }} />
-        <Tabs.Screen name="data" options={{ href: null }} />
         <Tabs.Screen name="modules" options={{ href: null }} />
         <Tabs.Screen name="module" options={{ href: null }} />
         <Tabs.Screen name="profile" options={{ href: null }} />
-        <Tabs.Screen name="search" options={{ href: null }} />
       </Tabs>
     </LogoutContext.Provider>
   );
