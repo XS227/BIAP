@@ -44,3 +44,11 @@ export function tierTone(call: string | undefined): 'positive' | 'warning' | 'ne
 export function reasonLineFa(items: InvestmentAgentReason[] | undefined) {
   return (items || []).slice(0, 2).map((a) => `${a.labelFa || a.agent} (${a.vote >= 0 ? '+' : ''}${a.vote.toFixed(2)})`).join('، ') || '—';
 }
+
+export const TIER_ORDER = ['BUY', 'ACCUMULATE', 'HOLD', 'REDUCE', 'SELL'] as const;
+
+/** "خرید 25 · خرید تدریجی 60 · …" for the five tiers; empty when counts are missing. */
+export function tierCountsFa(counts: Record<string, number> | null | undefined) {
+  if (!counts) return '';
+  return TIER_ORDER.map((t) => `${TIER_FA[t]} ${counts[t] ?? 0}`).join(' · ');
+}

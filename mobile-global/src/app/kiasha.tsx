@@ -1,12 +1,12 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
-import { GlobalAnalysis, GlobalInstrument, scanGlobalMarket } from '@/lib/global-api';
+import { fetchGlobalTiers, GlobalAnalysis, GlobalInstrument, GlobalTierView, scanGlobalMarket } from '@/lib/global-api';
 import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-market-selection';
 import { EvidenceCounts, evidenceCounts } from '@/lib/scan-summary';
 import { setSelectedGlobalCompany } from '@/lib/global-company-selection';
-import { tierTone } from '@/lib/decision-tier';
+import { DISCLAIMER_FA, tierCountsFa, tierLabelFa, tierTone } from '@/lib/decision-tier';
 
 type DataMode = '' | 'live' | 'cached' | 'catalog';
 
@@ -33,6 +33,8 @@ function signalChipLabel(agent: string, vote: number | null | undefined, confide
 export default function KiashaGlobalScreen() {
   const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
   const [selection, setSelection] = useState<GlobalMarketSelection | null>(null);
+  const [tiers, setTiers] = useState<GlobalTierView | null>(null);
+  const tierByTicker = useMemo(() => new Map((tiers?.rows || []).map((r) => [r.ticker, r.investment])), [tiers]);
   const [picks, setPicks] = useState<GlobalAnalysis[]>([]);
   const [deepResults, setDeepResults] = useState<GlobalAnalysis[]>([]);
   const [status, setStatus] = useState('');
@@ -46,6 +48,7 @@ export default function KiashaGlobalScreen() {
   const load = useCallback(async () => {
     const selected = await getGlobalMarketSelection();
     setSelection(selected);
+    void fetchGlobalTiers(selected.country, selected.exchange).then(setTiers);
     try {
       setError('');
       const result = await scanGlobalMarket(selected.country, selected.exchange, 10);
@@ -133,12 +136,21 @@ export default function KiashaGlobalScreen() {
 
           {dataMode !== 'catalog' ? <View style={[styles.evidenceStrip, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stripTitle, { color: colors.text }]}>Evidence gate</Text><Text style={[styles.stripText, { color: Brand.positive }]}>PASS {passed}</Text><Text style={[styles.stripText, { color: Brand.warning }]}>WARN {warned}</Text><Text style={[styles.stripText, { color: Brand.negative }]}>BLOCK {blocked}</Text><Text style={[styles.stripText, { color: colors.textSecondary }]}>of {evidence.denominator}{evidence.basis === 'payload_sample' ? ' shown' : ' analyzed'}</Text></View> : null}
 
+          {tiers ? <View style={[styles.evidenceStrip, { backgroundColor: colors.backgroundElement }]}>
+            <Text style={[styles.stripTitle, { color: colors.text, writingDirection: 'rtl', textAlign: 'right' }]}>رتبه‌بندی سرمایه‌گذاری</Text>
+            <Text style={[styles.pickMeta, { color: colors.textSecondary, writingDirection: 'rtl', textAlign: 'right' }]}>{tierCountsFa(tiers.counts)}</Text>
+            {tiers.rows.slice(0, 10).map((row, index) => <Pressable key={`tier-${row.ticker}-${index}`} onPress={() => { void open({ ticker: row.ticker, name: row.name || row.ticker } as GlobalAnalysis); }} style={styles.reviewed}>
+              <View style={{ flex: 1 }}><Text style={[styles.ticker, { color: colors.text }]}>#{index + 1} {row.ticker}</Text><Text numberOfLines={1} style={[styles.name, { color: colors.textSecondary }]}>{row.name}</Text></View>
+              <Text style={[styles.call, { color: tone(row.investment.tier, colors.textSecondary) }]}>{tierLabelFa(row.investment.tier, row.investment.labelFa)}</Text>
+            </Pressable>)}
+            <Text style={[styles.pickMeta, { color: colors.textSecondary, writingDirection: 'rtl', textAlign: 'right' }]}>{tiers.rows[0]?.investment.disclaimerFa || DISCLAIMER_FA}</Text>
+          </View> : null}
           <View style={styles.sectionRow}><Text style={[styles.sectionTitle, { color: colors.text }]}>Kiasha picks</Text><Text style={[styles.sectionMeta, { color: colors.textSecondary }]}>{status || 'scan complete'}</Text></View>
           {dataMode === 'catalog' ? <View style={[styles.empty, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.emptyTitle, { color: colors.text }]}>Ranking pending verified market data</Text><Text style={[styles.emptyText, { color: colors.textSecondary }]}>The exchange universe is available, but Kiasha will not rank stocks or manufacture a Top 10 from reference metadata alone. Once verified price/history is seeded, the same six agents and Evidence gate run automatically.</Text></View> : picks.length ? picks.map((pick, index) => {
-            const c = tone(pick.call, colors.textSecondary);
+            const c = tone(tierByTicker.get(pick.ticker)?.tier ?? pick.call, colors.textSecondary);
             const signals = Array.isArray(pick.signals) ? pick.signals : [];
             return <Pressable key={`${pick.ticker}-${index}`} onPress={() => { void open(pick); }} style={[styles.pick, { backgroundColor: colors.backgroundElement }]}>
-              <View style={styles.pickTop}><View style={[styles.rank, { backgroundColor: Brand.primary }]}><Text style={styles.rankText}>#{index + 1}</Text></View><View style={{ flex: 1 }}><Text style={[styles.ticker, { color: colors.text }]}>{pick.ticker}</Text><Text numberOfLines={1} style={[styles.name, { color: colors.textSecondary }]}>{pick.name}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.call, { color: c }]}>{pick.call}</Text><Text style={[styles.conf, { color: colors.textSecondary }]}>{pct(pick.confidence)} confidence</Text></View></View>
+              <View style={styles.pickTop}><View style={[styles.rank, { backgroundColor: Brand.primary }]}><Text style={styles.rankText}>#{index + 1}</Text></View><View style={{ flex: 1 }}><Text style={[styles.ticker, { color: colors.text }]}>{pick.ticker}</Text><Text numberOfLines={1} style={[styles.name, { color: colors.textSecondary }]}>{pick.name}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.call, { color: c }]}>{tierByTicker.has(pick.ticker) ? tierLabelFa(tierByTicker.get(pick.ticker)?.tier, tierByTicker.get(pick.ticker)?.labelFa) : pick.call}</Text><Text style={[styles.conf, { color: colors.textSecondary }]}>{pct(pick.confidence)} confidence</Text></View></View>
               <View style={styles.agentRow}>{signals.map((signal) => <View key={signal.agent} style={[styles.agentChip, { borderColor: colors.backgroundSelected }]}><Text style={[styles.agentChipText, { color: signal.vote >= .25 ? Brand.positive : signal.vote <= -.25 ? Brand.negative : colors.textSecondary }]}>{signalChipLabel(signal.agent, signal.vote, signal.confidence)}</Text></View>)}</View>
               <Text style={[styles.pickMeta, { color: colors.textSecondary }]}>Score {pick.score == null ? '—' : pick.score.toFixed(3)} • Evidence {pick.evidence?.status || '—'} • tap for full analysis</Text>
             </Pressable>;
@@ -147,10 +159,10 @@ export default function KiashaGlobalScreen() {
             {deepResults.length ? <>
               <View style={styles.sectionRow}><Text style={[styles.sectionTitle, { color: colors.text }]}>Analyzed stocks</Text><Text style={[styles.sectionMeta, { color: colors.textSecondary }]}>tap any stock for decision table</Text></View>
               {deepResults.map((item, index) => {
-                const c = tone(item.call, colors.textSecondary);
+                const c = tone(tierByTicker.get(item.ticker)?.tier ?? item.call, colors.textSecondary);
                 return <Pressable key={`reviewed-${item.ticker}-${index}`} onPress={() => { void open(item); }} style={[styles.reviewed, { backgroundColor: colors.backgroundElement }]}>
                   <View style={{ flex: 1 }}><Text style={[styles.ticker, { color: colors.text }]}>{item.ticker}</Text><Text numberOfLines={1} style={[styles.name, { color: colors.textSecondary }]}>{item.name || item.ticker}</Text><Text style={[styles.pickMeta, { color: colors.textSecondary }]}>Evidence {item.evidence?.status || '—'} • Score {item.score == null ? '—' : item.score.toFixed(3)} • open decision table</Text></View>
-                  <Text style={[styles.call, { color: c }]}>{item.call || 'REVIEW'}</Text>
+                  <Text style={[styles.call, { color: c }]}>{tierByTicker.has(item.ticker) ? tierLabelFa(tierByTicker.get(item.ticker)?.tier, tierByTicker.get(item.ticker)?.labelFa) : (item.call || 'REVIEW')}</Text>
                 </Pressable>;
               })}
             </> : null}

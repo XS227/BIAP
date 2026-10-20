@@ -643,6 +643,19 @@ export async function scanGlobalMarket(country: string, exchange: string, topN =
   }, 125_000, 2);
 }
 
+export type GlobalTierRow = { ticker: string; name?: string | null; investment: GlobalInvestmentDecision };
+export type GlobalTierView = { counts: Record<string, number> | null; rows: GlobalTierRow[] };
+
+/** Investment-mode tiers for one exchange; null in conservative mode or when the API is unavailable. */
+export async function fetchGlobalTiers(country: string, exchange: string, limit = 500): Promise<GlobalTierView | null> {
+  try {
+    const q = new URLSearchParams({ country: country.toUpperCase(), exchange, limit: String(limit) });
+    const data = await request<{ decisionMode?: string; counts?: Record<string, number> | null; rows?: GlobalTierRow[] }>(`/global/recommendations?${q.toString()}`, undefined, 25_000);
+    if (data.decisionMode !== 'investment' || !Array.isArray(data.rows)) return null;
+    return { counts: data.counts ?? null, rows: data.rows };
+  } catch { return null; }
+}
+
 export async function scanGlobalTop10(topN = 10, maxAgeHours = 30): Promise<GlobalTop10Response> {
   return request<GlobalTop10Response>('/global/scan-global', {
     method: 'POST',
