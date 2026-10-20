@@ -11,7 +11,9 @@ Usage: python research/paper_portfolio_returns.py research/paper_portfolio_2026-
 * Holdings the snapshot has no entry close for may be filled from the separate entry supplement
   (``<snapshot>_entry_supplement.json`` next to it, or ``--supplement``); it is only accepted if its ``snapshotSha256`` matches the
   snapshot file, and only its exact snapshot-date closes are used. Report lines show how many entries came from it.
-* Rows without an entry close, or without any close in the window, are listed as missing and excluded - never filled.
+* Report groups: (A) all decisions, priced or not, for decision-behaviour statistics; (B) the priced subset, for returns;
+  (C) every holding not in (B), listed with its reason (no entry price / no exit price). priced + unpriced always equals the
+  number of decisions (asserted). Excluded rows are never filled and never dropped silently.
 * Weights are the snapshot's equal weights within each exchange and side, renormalised over rows that have data.
 * Benchmark = price index named in ``markets[...].benchmark``, same entry date / exit rule.
 * The pooled "ALL" rows weight each exchange equally (not each stock).
@@ -20,6 +22,7 @@ Reads the snapshot only; never modifies it.
 from __future__ import annotations
 
 import argparse
+import collections
 import hashlib
 import json
 import statistics
@@ -88,7 +91,9 @@ def main() -> int:
     def fill_of(r):
         return fills.get((r["market"], r["ticker"], r["side"])) if r.get("entryClose") is None else None
 
+    sup_by_key = {(f["market"], f["ticker"], f["side"]): f for f in (sup["fills"] if fills or sup_path.exists() else [])} if sup_path.exists() else {}
     for r in rows:                      # in-memory view only; the snapshot file is never written
+        r["_snapshotHadEntry"] = r.get("entryClose") is not None
         f = fill_of(r)
         if f:
             r["vendorSymbol"], r["entryClose"], r["fromSupplement"] = f["vendorSymbol"], f["close"], True
@@ -98,7 +103,7 @@ def main() -> int:
     bench = {m["benchmark"] for m in snap["markets"].values() if isinstance(m, dict) and m.get("benchmark")}
     bseries = {b: closes(b, start, end) for b in sorted(bench)}
 
-    per_market, missing, entry_drift = {}, [], []
+    per_market, entry_drift, outcomes = {}, [], {}
     for key, mk in snap["markets"].items():
         if not isinstance(mk, dict) or "benchmark" not in mk:
             continue
@@ -116,8 +121,10 @@ def main() -> int:
                     entry_drift.append(r["ticker"])
                 ret, exit_day, why = leg_return(sr, snap["snapshotDate"], entry, end)
                 if ret is None:
-                    missing.append({"market": key, "side": side, "ticker": r["ticker"], "reason": why})
+                    outcomes[id(r)] = ("no_entry_price", unpriced_reason(r, sup_by_key.get((r["market"], r["ticker"], r["side"])))) if entry is None \
+                        else ("no_exit_price", f"entry close recorded but {why} up to {end.isoformat()}")
                     continue
+                outcomes[id(r)] = ("priced", "")
                 pairs.append((r["weight"], ret)); rets.append(ret)
             r_ = weighted(pairs)
             out[side] = {"holdings": len(mine), "withData": len(pairs), "equalWeightReturn": r_,
@@ -135,11 +142,44 @@ def main() -> int:
     summary = {"BUY": pooled(("BUY", "equalWeightReturn")), "SELL": pooled(("SELL", "equalWeightReturn")),
                "benchmark": pooled("benchmarkReturn"), "BUY_minus_SELL": pooled("BUY_minus_SELL"),
                "BUY_excess": pooled(("BUY", "excessVsBenchmark")), "SELL_excess": pooled(("SELL", "excessVsBenchmark"))}
-    report = {"snapshot": snap["snapshotDate"], "end": end.isoformat(), "markets": per_market, "ALL_exchange_equal_weighted": summary,
-              "missing": missing, "entryDriftOver2pct": entry_drift,
+
+    # ---- group A: every decision in the snapshot, priced or not (decision-behaviour statistics) ----
+    def mean(xs):
+        xs = [x for x in xs if x is not None]
+        return sum(xs) / len(xs) if xs else None
+    decisions = {}
+    for key in list(per_market) + ["ALL"]:
+        for side in ("BUY", "SELL"):
+            mine = [r for r in rows if (key == "ALL" or r["market"] == key) and r["side"] == side]
+            decisions[f"{key}|{side}"] = {
+                "decisions": len(mine), "pricedForReturns": sum(outcomes[id(r)][0] == "priced" for r in mine),
+                "noEntryPrice": sum(outcomes[id(r)][0] == "no_entry_price" for r in mine),
+                "noExitPrice": sum(outcomes[id(r)][0] == "no_exit_price" for r in mine),
+                "meanScore": mean([r.get("score") for r in mine]), "meanConfidence": mean([r.get("confidence") for r in mine]),
+                "evidenceStatus": dict(collections.Counter(r.get("evidenceStatus") for r in mine)),
+            }
+    unpriced = [{"market": r["market"], "side": r["side"], "ticker": r["ticker"], "name": r.get("name"),
+                 "category": outcomes[id(r)][0], "reason": outcomes[id(r)][1]}
+                for r in rows if outcomes[id(r)][0] != "priced"]
+    n_priced = sum(outcomes[id(r)][0] == "priced" for r in rows)
+    assert n_priced + len(unpriced) == len(rows), "every decision must be priced or listed as unpriced"
+
+    report = {"snapshot": snap["snapshotDate"], "end": end.isoformat(),
+              "reconciliation": {"decisions": len(rows), "pricedForReturns": n_priced, "unpriced": len(unpriced)},
+              "A_decisions_all": decisions,
+              "B_returns_priced_subset": {"markets": per_market, "ALL_exchange_equal_weighted": summary},
+              "C_unpriced": unpriced, "entryDriftOver2pct": entry_drift,
               "entriesFromSupplement": sum(1 for r in rows if r.get("fromSupplement")), "supplement": sup_path.name if fills else None}
     pct = lambda v: "   n/a " if v is None else f"{v*100:+7.2f}%"
-    print(f"Paper portfolio {snap['snapshotDate']} -> {end}  (price returns, equal weight; ALL = exchanges equally weighted)")
+    num = lambda v: "   n/a" if v is None else f"{v:+6.3f}"
+    print(f"Paper portfolio {snap['snapshot'] if False else snap['snapshotDate']} -> {end}   decisions {len(rows)} = priced {n_priced} + unpriced {len(unpriced)}")
+    print("\n(A) ALL DECISIONS - decision behaviour (priced or not; no returns)")
+    print(f"{'market':<24}{'side':<6}{'n':>5}{'priced':>8}{'no entry':>10}{'no exit':>9}{'mean score':>12}{'mean conf':>11}  evidence")
+    for k, v in decisions.items():
+        m, side = k.split("|")
+        print(f"{m:<24}{side:<6}{v['decisions']:>5}{v['pricedForReturns']:>8}{v['noEntryPrice']:>10}{v['noExitPrice']:>9}"
+              f"{num(v['meanScore']):>12}{num(v['meanConfidence']):>11}  {v['evidenceStatus']}")
+    print(f"\n(B) PRICED SUBSET ONLY - price returns, equal weight (ALL = exchanges equally weighted); n = priced/decisions")
     print(f"{'market':<26}{'BUY n':>7}{'BUY':>9}{'SELL n':>8}{'SELL':>9}{'bench':>9}{'BUY-bm':>9}{'SELL-bm':>9}{'BUY-SELL':>10}")
     for key, m in per_market.items():
         print(f"{key:<26}{m['BUY']['withData']:>3}/{m['BUY']['holdings']:<3}{pct(m['BUY']['equalWeightReturn'])}"
@@ -147,11 +187,23 @@ def main() -> int:
               f"{pct(m['BUY']['excessVsBenchmark'])}{pct(m['SELL']['excessVsBenchmark'])}{pct(m['BUY_minus_SELL'])}")
     print(f"{'ALL':<26}{'':>7}{pct(summary['BUY'])}{'':>8}{pct(summary['SELL'])}{pct(summary['benchmark'])}"
           f"{pct(summary['BUY_excess'])}{pct(summary['SELL_excess'])}{pct(summary['BUY_minus_SELL'])}")
-    print(f"entries from supplement: {sum(1 for r in rows if r.get('fromSupplement'))}")
-    print(f"missing/excluded rows: {len(missing)}; entry close re-read differs >2% from stored: {len(entry_drift)}")
+    print(f"\n(C) NOT PRICED - excluded from (B) only, still counted in (A): {len(unpriced)}")
+    for u in sorted(unpriced, key=lambda x: (x["market"], x["side"], x["ticker"])):
+        print(f"  {u['market']:<22}{u['side']:<5}{u['ticker']:<10}{u['category']:<15}{u['reason']}")
+    print(f"\nentries from supplement: {sum(1 for r in rows if r.get('fromSupplement'))}; entry close re-read differs >2% from stored: {len(entry_drift)}")
     if args.json:
-        Path(args.json).write_text(json.dumps(report, indent=1))
+        Path(args.json).write_text(json.dumps(report, indent=1, ensure_ascii=False))
     return 0
+
+
+def unpriced_reason(row: dict, sup: dict | None) -> str:
+    parts = [f"snapshot: {row.get('entryCloseError') or 'no entry close'}"]
+    if sup is not None:
+        why = sup.get("rejected") or sup.get("error") or "no usable close"
+        prior = sup.get("priorClose")
+        parts.append(f"supplement ({sup.get('vendorSymbol') or ', '.join(sup.get('symbolsTried', []))}): {why}"
+                     + (f"; last prior close {prior['close']} on {prior['date']} not used" if prior else ""))
+    return "; ".join(parts)
 
 
 if __name__ == "__main__":
