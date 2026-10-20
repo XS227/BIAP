@@ -2,7 +2,7 @@
 
 The stored ledger rows keep the conservative engine's ``call`` untouched (old rows and old clients keep working).
 When ``DECISION_MODE=investment`` this module ranks each in-scope exchange with ``investment_mode.decide_ledger`` and
-returns a display payload (tier, Persian label, top-2 positive / negative agents, flags, disclaimer) per ticker.
+returns a display payload (tier, English label, top-2 positive / negative agents, flags, disclaimer) per ticker.
 Nothing is written; results are cached per ledger file (mtime + size) so repeated requests are cheap.
 """
 from __future__ import annotations
@@ -14,23 +14,23 @@ from typing import Any, Dict, Optional
 from . import investment_mode as im
 from .analysis_ledger import AnalysisLedger, ledger_path
 
-TIER_FA = {
-    "BUY": "خرید",
-    "ACCUMULATE": "خرید تدریجی",
-    "HOLD": "نگهداری",
-    "REDUCE": "کاهش",
-    "SELL": "فروش",
-    im.NO_REC: "بدون توصیه",
+TIER_LABEL = {
+    "BUY": "BUY",
+    "ACCUMULATE": "ACCUMULATE",
+    "HOLD": "HOLD",
+    "REDUCE": "REDUCE",
+    "SELL": "SELL",
+    im.NO_REC: "NO RECOMMENDATION",
 }
-AGENT_FA = {
-    "fundamental": "بنیادی",
-    "risk": "ریسک",
-    "forecast": "روند قیمت",
-    "comparison": "مقایسه با همتایان",
-    "quality": "کیفیت سود",
-    "liquidity": "نقدشوندگی",
+AGENT_LABEL = {
+    "fundamental": "Fundamentals",
+    "risk": "Risk",
+    "forecast": "Price trend",
+    "comparison": "Peer comparison",
+    "quality": "Earnings quality",
+    "liquidity": "Liquidity",
 }
-DISCLAIMER_FA = "رتبه‌بندی نسبی در همان بورس؛ مشاوره مالی شخصی نیست"
+DISCLAIMER = "Relative ranking within this exchange; not personal financial advice"
 TIERS = ("BUY", "ACCUMULATE", "HOLD", "REDUCE", "SELL")
 
 _REASON = re.compile(r"^(?P<agent>\w+) \((?P<vote>[+-]?\d+(?:\.\d+)?)\)$")
@@ -50,7 +50,7 @@ def _agents(items) -> list[dict]:
     for text in items:
         m = _REASON.match(text)
         if m:
-            out.append({"agent": m["agent"], "vote": float(m["vote"]), "labelFa": AGENT_FA.get(m["agent"], m["agent"])})
+            out.append({"agent": m["agent"], "vote": float(m["vote"]), "label": AGENT_LABEL.get(m["agent"], m["agent"])})
     return out
 
 
@@ -58,7 +58,7 @@ def payload(decision: im.InvestmentDecision) -> dict:
     return {
         "mode": im.INVESTMENT,
         "tier": decision.call,
-        "labelFa": TIER_FA.get(decision.call, decision.call),
+        "label": TIER_LABEL.get(decision.call, decision.call),
         "score": decision.score,
         "confidence": decision.confidence,
         "rank": decision.rank,
@@ -69,7 +69,7 @@ def payload(decision: im.InvestmentDecision) -> dict:
         "flags": list(decision.flags),
         "peerScope": decision.peer_scope,
         "blockedBy": decision.blocked_by,
-        "disclaimerFa": DISCLAIMER_FA,
+        "disclaimer": DISCLAIMER,
     }
 
 

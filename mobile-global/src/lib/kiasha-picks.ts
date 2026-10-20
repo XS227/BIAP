@@ -95,7 +95,7 @@ function pickFromScan(row: KiashaMarketScanItem, horizon: InvestmentHorizon, ran
     source: 'live',
     price: null,
     changePercent: row.changePercent ?? null,
-    rationale: row.explanation || 'رتبه‌بندی از اسکن واحد و تأییدشدهٔ کیا‌شا در سرور ساخته شده است.',
+    rationale: row.explanation || 'Ranking built from the server\'s single verified Kiasha scan.',
     recommendation,
   };
 }

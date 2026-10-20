@@ -17,22 +17,22 @@ export default function AppTabs() {
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="home" href="/" asChild>
-            <TabButton accent={Brand.primary}>خانه</TabButton>
+            <TabButton accent={Brand.primary}>Home</TabButton>
           </TabTrigger>
           <TabTrigger name="market" href="/market" asChild>
-            <TabButton accent={Brand.positive}>بازار</TabButton>
+            <TabButton accent={Brand.positive}>Market</TabButton>
           </TabTrigger>
           <TabTrigger name="orders" href="/orders" asChild>
-            <TabButton accent={Brand.warning}>سفارش‌ها</TabButton>
+            <TabButton accent={Brand.warning}>Orders</TabButton>
           </TabTrigger>
           <TabTrigger name="portfolio" href="/portfolio" asChild>
-            <TabButton accent={Brand.secondary}>پرتفوی</TabButton>
+            <TabButton accent={Brand.secondary}>Portfolio</TabButton>
           </TabTrigger>
           <TabTrigger name="kiasha" href="/kiasha" asChild>
-            <TabButton accent={Brand.primary}>کیاشا</TabButton>
+            <TabButton accent={Brand.primary}>Kiasha</TabButton>
           </TabTrigger>
           <TabTrigger name="more" href="/more" asChild>
-            <TabButton>بیشتر</TabButton>
+            <TabButton>More</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>

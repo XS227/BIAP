@@ -47,17 +47,17 @@ def test_view_has_tier_persian_label_reasons_and_disclaimer(ledger):
     view = ov.market_view("SE", "NASDAQ_STOCKHOLM")
     assert len(view) == 20
     best, worst = view["T000"], view["T019"]
-    assert best["tier"] == "BUY" and best["labelFa"] == "خرید"
-    assert worst["tier"] in {"SELL", "REDUCE"} and worst["labelFa"] in {"فروش", "کاهش"}
-    assert best["disclaimerFa"] == "رتبه‌بندی نسبی در همان بورس؛ مشاوره مالی شخصی نیست"
+    assert best["tier"] == "BUY" and best["label"] == "BUY"
+    assert worst["tier"] in {"SELL", "REDUCE"} and worst["label"] in {"SELL", "REDUCE"}
+    assert best["disclaimer"] == "Relative ranking within this exchange; not personal financial advice"
     assert 1 <= len(best["positive"]) <= 2 and len(best["negative"]) <= 2
-    assert {"agent", "vote", "labelFa"} <= set(best["positive"][0])
+    assert {"agent", "vote", "label"} <= set(best["positive"][0])
     assert best["rank"] == 1
 
 
 def test_all_five_tier_labels():
-    assert ov.TIER_FA["ACCUMULATE"] == "خرید تدریجی" and ov.TIER_FA["HOLD"] == "نگهداری"
-    assert ov.TIER_FA["REDUCE"] == "کاهش" and ov.TIER_FA["SELL"] == "فروش"
+    assert ov.TIER_LABEL["ACCUMULATE"] == "ACCUMULATE" and ov.TIER_LABEL["HOLD"] == "HOLD"
+    assert ov.TIER_LABEL["REDUCE"] == "REDUCE" and ov.TIER_LABEL["SELL"] == "SELL"
 
 
 def test_counts_and_cache_invalidated_by_ledger_change(ledger):
@@ -113,7 +113,7 @@ def test_recommendations_endpoint_and_ledger_rows_carry_investment_block(ledger)
     prefix = _prefix()
     body = c.get(f"{prefix}/recommendations", params={"country": "SE", "exchange": "NASDAQ_STOCKHOLM", "tier": "BUY"}).json()
     assert body["decisionMode"] == "investment" and body["rows"] and all(r["investment"]["tier"] == "BUY" for r in body["rows"])
-    assert body["counts"]["BUY"] == body["total"] and body["disclaimerFa"].startswith("رتبه‌بندی نسبی")
+    assert body["counts"]["BUY"] == body["total"] and body["disclaimer"].startswith("Relative ranking")
     led = c.get(f"{prefix}/analysis-ledger", params={"country": "SE", "exchange": "NASDAQ_STOCKHOLM"}).json()
     assert led["decisionMode"] == "investment" and any(r.get("investment") for r in led["rows"])
     assert c.get(f"{prefix}/recommendations", params={"country": "SE", "exchange": "NASDAQ_STOCKHOLM", "tier": "MAYBE"}).status_code == 400

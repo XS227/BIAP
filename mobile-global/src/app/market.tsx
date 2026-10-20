@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, SafeAreaView, StyleSheet, Text, TextInput, View, useColorScheme } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -8,7 +8,7 @@ import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-ma
 import { setSelectedGlobalCompany } from '@/lib/global-company-selection';
 import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
 import type { GlobalInvestmentDecision } from '@/lib/decision-tier';
-import { tierCountsFa, tierLabelFa, tierTone } from '@/lib/decision-tier';
+import { tierCounts, tierLabel, tierTone } from '@/lib/decision-tier';
 
 const PAGE_SIZE = 80;
 
@@ -41,6 +41,8 @@ function searchScore(item: GlobalInstrument, rawQuery: string) {
   if (name === q) return 760;
   if (words.some((word) => word === q)) return 700;
   if (words.some((word) => word.startsWith(q))) return 620;
+  if (ticker.includes(q.replace(/ /g, ''))) return 580;
+  if (name.includes(q)) return 540;
 
   const queryWords = q.split(' ').filter(Boolean);
   if (queryWords.length > 1 && queryWords.every((part) => words.some((word) => word === part || word.startsWith(part)))) return 560;
@@ -82,7 +84,10 @@ export default function MarketScreen() {
   const [tiers, setTiers] = useState<GlobalTierView | null>(null);
   const tierByTicker = useMemo(() => new Map<string | undefined, GlobalInvestmentDecision>((tiers?.rows || []).map((r) => [r.ticker, r.investment])), [tiers]);
 
+  const loadSeq = useRef(0);
+
   const load = useCallback(async (forceSearch?: string) => {
+    const seq = ++loadSeq.current;
     const selected = await getGlobalMarketSelection();
     setSelection(selected);
     void fetchGlobalTiers(selected.country, selected.exchange).then(setTiers);
@@ -94,22 +99,38 @@ export default function MarketScreen() {
         limit: searchText ? 150 : PAGE_SIZE,
         offset: 0,
       });
+      if (seq !== loadSeq.current) return;
       setInstruments((result.instruments || []).filter(isSupportedGlobalEquityInstrument));
       setTotalMatched(result.totalMatched || 0);
       setHasMore(Boolean(result.hasMore));
       setNextOffset(result.nextOffset ?? null);
     } catch (err) {
+      if (seq !== loadSeq.current) return;
       setInstruments([]);
       setTotalMatched(0);
       setHasMore(false);
       setNextOffset(null);
       setError(err instanceof Error ? err.message.slice(0, 220) : 'Market universe is unavailable.');
     } finally {
-      setLoading(false);
-      setRefreshing(false);
-      setLoadingSearch(false);
+      if (seq === loadSeq.current) {
+        setLoading(false);
+        setRefreshing(false);
+        setLoadingSearch(false);
+      }
     }
   }, []);
+
+  // Search as you type: debounce the query, then ask the API for the selected exchange (ticker prefix + company name).
+  useEffect(() => {
+    const text = query.trim();
+    if (text === submittedQuery.trim()) return;
+    const timer = setTimeout(() => {
+      setSubmittedQuery(text);
+      setLoadingSearch(true);
+      void load(text);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [query, submittedQuery, load]);
 
   const loadMore = async () => {
     if (!selection || loading || loadingMore || !hasMore || nextOffset == null) return;
@@ -174,7 +195,7 @@ export default function MarketScreen() {
       if (tierView) setTiers(tierView);
       if (tierView && tierView.rows.length && !extended.catalogOnly && result.status !== 'MARKET_DATA_REQUIRED') {
         setScanMode('live');
-        setScanStatus(`رتبه‌بندی سرمایه‌گذاری • ${tierCountsFa(tierView.counts)} • قاعده محافظه‌کار: ${result.qualifiedBuyCount ?? result.recommendationCount ?? 0} خرید واجد شرایط`);
+        setScanStatus(`Investment ranking • ${tierCounts(tierView.counts)} • Conservative rule (reference): ${result.qualifiedBuyCount ?? result.recommendationCount ?? 0} qualified BUY`);
       } else if (extended.catalogOnly || result.status === 'MARKET_DATA_REQUIRED') {
         setScanMode('catalog');
         setScanStatus(`Ranking blocked • ${(result.universeDiscovered ?? totalMatched) || instruments.length} eligible equities • fresh market feed unavailable`);
@@ -256,11 +277,11 @@ export default function MarketScreen() {
     <View style={styles.searchRow}><TextInput value={query} onChangeText={setQuery} onSubmitEditing={() => { void searchRemote(); }} autoCapitalize="characters" placeholder="Search ticker, company or ISIN" placeholderTextColor={colors.textSecondary} style={[styles.search, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected, color: colors.text }]} /><Pressable disabled={loadingSearch} onPress={() => { void searchRemote(); }} style={[styles.searchButton, { backgroundColor: Brand.primary, opacity: loadingSearch ? .6 : 1 }]}>{loadingSearch ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.searchButtonText}>Search</Text>}</Pressable></View>
 
     <View style={styles.scanRow}><View style={{ flex: 1 }}><Text style={[styles.scanTitle, { color: colors.text }]}>Kiasha stock selection</Text><Text style={[styles.scanText, { color: colors.textSecondary }]}>Evidence-gated ranking: objective stock score first, investor fit later.</Text></View><View style={styles.scanActions}><Pressable disabled={scanning || !selection} onPress={() => { void runScan(); }} style={[styles.scanButton, { borderColor: Brand.primary }]}>{scanning ? <ActivityIndicator color={Brand.primary} size="small" /> : <Text style={styles.scanButtonText}>This market</Text>}</Pressable><Pressable disabled={scanning} onPress={() => { void runGlobalTop10(); }} style={[styles.scanButton, { borderColor: Brand.primary, backgroundColor: Brand.primary }]}><Text style={[styles.scanButtonText, { color: '#fff' }]}>Global Top 10</Text></Pressable></View></View>
-    {scanStatus ? <View style={[styles.statusBox, { backgroundColor: colors.backgroundElement, borderColor: modeColor }]}><Text style={[styles.status, { color: modeColor }]}>{scanStatus}</Text>{scanMode === 'catalog' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>The instrument list is real. BIAP will not create BUY candidates until verified market prices are available.</Text> : scanMode === 'cached' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>Stored market records are available, but BIAP will not rank this exchange until fresh ordinary-equity coverage and verified fundamental coverage meet the required thresholds.</Text> : scanMode === 'global' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>Global Top 10 is one cross-market shortlist, so it stays the same when you change the selected exchange. Use “This market” for a ranking limited to the exchange shown above.</Text> : null}{gateInfo.length ? <View style={{ marginTop: 6 }}><Text style={[styles.statusHint, { color: colors.textSecondary }]}>Companies rejected at each gate:</Text>{gateInfo.map((line) => <Text key={line} style={[styles.statusHint, { color: colors.textSecondary }]}>• {line}</Text>)}</View> : null}</View> : null}
-    {scan.length ? <View style={styles.picks}>{scan.slice(0, 20).map((item, index) => <Pressable key={`${item.ticker}-${index}`} onPress={() => { void openStock(item); }} style={[styles.pick, { backgroundColor: colors.backgroundElement }]}><View><Text style={[styles.pickTicker, { color: colors.text }]}>#{index + 1} {item.ticker}</Text><Text numberOfLines={1} style={[styles.pickName, { color: colors.textSecondary }]}>{item.name}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.pickCall, { color: callColor(tierByTicker.get(item.ticker)?.tier ?? (item as GlobalAnalysis).investment?.tier ?? item.call, colors.textSecondary) }]}>{(tierByTicker.get(item.ticker) ?? (item as GlobalAnalysis).investment) ? tierLabelFa((tierByTicker.get(item.ticker) ?? (item as GlobalAnalysis).investment)?.tier, (tierByTicker.get(item.ticker) ?? (item as GlobalAnalysis).investment)?.labelFa) : categoryLabel(item)}</Text><Text style={[styles.pickConfidence, { color: colors.textSecondary }]}>{item.confidence == null ? '—' : `${Math.round(item.confidence * 100)}% conf.`}</Text></View></Pressable>)}</View> : null}
+    {scanStatus ? <View style={[styles.statusBox, { backgroundColor: colors.backgroundElement, borderColor: modeColor }]}><Text style={[styles.status, { color: modeColor }]}>{scanStatus}</Text>{scanMode === 'catalog' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>The instrument list is real. BIAP will not create BUY candidates until verified market prices are available.</Text> : scanMode === 'cached' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>Stored market records are available, but BIAP will not rank this exchange until fresh ordinary-equity coverage and verified fundamental coverage meet the required thresholds.</Text> : scanMode === 'global' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>Global Top 10 is one cross-market shortlist, so it stays the same when you change the selected exchange. Use “This market” for a ranking limited to the exchange shown above.</Text> : null}{gateInfo.length ? <View style={{ marginTop: 6 }}><Text style={[styles.statusHint, { color: colors.textSecondary }]}>{tiers ? 'Conservative rule (reference) — a stricter screen, separate from the investment tiers above. Companies rejected at each gate:' : 'Companies rejected at each gate:'}</Text>{gateInfo.map((line) => <Text key={line} style={[styles.statusHint, { color: colors.textSecondary }]}>• {line}</Text>)}</View> : null}</View> : null}
+    {scan.length ? <View style={styles.picks}>{scan.slice(0, 20).map((item, index) => <Pressable key={`${item.ticker}-${index}`} onPress={() => { void openStock(item); }} style={[styles.pick, { backgroundColor: colors.backgroundElement }]}><View><Text style={[styles.pickTicker, { color: colors.text }]}>#{index + 1} {item.ticker}</Text><Text numberOfLines={1} style={[styles.pickName, { color: colors.textSecondary }]}>{item.name}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.pickCall, { color: callColor(tierByTicker.get(item.ticker)?.tier ?? (item as GlobalAnalysis).investment?.tier ?? item.call, colors.textSecondary) }]}>{(tierByTicker.get(item.ticker) ?? (item as GlobalAnalysis).investment) ? tierLabel((tierByTicker.get(item.ticker) ?? (item as GlobalAnalysis).investment)?.tier) : categoryLabel(item)}</Text><Text style={[styles.pickConfidence, { color: colors.textSecondary }]}>{item.confidence == null ? '—' : `${Math.round(item.confidence * 100)}% conf.`}</Text></View></Pressable>)}</View> : null}
     {tiers ? <View style={styles.picks}>
-      <Text style={[styles.tierSummary, { color: colors.textSecondary }]}>{tierCountsFa(tiers.counts)}</Text>
-      {!scan.length ? tiers.rows.slice(0, 20).map((row, index) => <Pressable key={`tier-${row.ticker}-${index}`} onPress={() => { void openStock({ ...(instruments.find((i) => i.ticker === row.ticker) || { country: selection?.country || '', exchange: selection?.exchange || '', currency: '' }), ticker: row.ticker, name: row.name || row.ticker } as GlobalInstrument); }} style={[styles.pick, { backgroundColor: colors.backgroundElement }]}><View><Text style={[styles.pickTicker, { color: colors.text }]}>#{index + 1} {row.ticker}</Text><Text numberOfLines={1} style={[styles.pickName, { color: colors.textSecondary }]}>{row.name}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.pickCall, { color: callColor(row.investment.tier, colors.textSecondary) }]}>{tierLabelFa(row.investment.tier, row.investment.labelFa)}</Text><Text style={[styles.pickConfidence, { color: colors.textSecondary }]}>{row.investment.confidence == null ? '—' : `${Math.round(row.investment.confidence * 100)}% conf.`}</Text></View></Pressable>) : null}
+      <Text style={[styles.tierSummary, { color: colors.textSecondary }]}>{tierCounts(tiers.counts)}</Text>
+      {!scan.length ? tiers.rows.slice(0, 20).map((row, index) => <Pressable key={`tier-${row.ticker}-${index}`} onPress={() => { void openStock({ ...(instruments.find((i) => i.ticker === row.ticker) || { country: selection?.country || '', exchange: selection?.exchange || '', currency: '' }), ticker: row.ticker, name: row.name || row.ticker } as GlobalInstrument); }} style={[styles.pick, { backgroundColor: colors.backgroundElement }]}><View><Text style={[styles.pickTicker, { color: colors.text }]}>#{index + 1} {row.ticker}</Text><Text numberOfLines={1} style={[styles.pickName, { color: colors.textSecondary }]}>{row.name}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.pickCall, { color: callColor(row.investment.tier, colors.textSecondary) }]}>{tierLabel(row.investment.tier)}</Text><Text style={[styles.pickConfidence, { color: colors.textSecondary }]}>{row.investment.confidence == null ? '—' : `${Math.round(row.investment.confidence * 100)}% conf.`}</Text></View></Pressable>) : null}
     </View> : null}
     {error ? <View style={[styles.errorBox, { borderColor: Brand.warning }]}><Text style={[styles.errorText, { color: colors.textSecondary }]}>{error}</Text></View> : null}
 
@@ -274,8 +295,8 @@ export default function MarketScreen() {
       onEndReachedThreshold={0.45}
       ListHeaderComponent={<Text style={[styles.listTitle, { color: colors.text }]}>{listLabel}</Text>}
       ListFooterComponent={loadingMore ? <ActivityIndicator color={Brand.primary} style={{ marginVertical: 18 }} /> : (!submittedQuery.trim() && totalMatched > 0 && !hasMore ? <Text style={[styles.endText, { color: colors.textSecondary }]}>All {totalMatched} available instruments loaded.</Text> : null)}
-      ListEmptyComponent={loading ? <ActivityIndicator color={Brand.primary} style={{ marginTop: 30 }} /> : <Text style={[styles.empty, { color: colors.textSecondary }]}>{submittedQuery.trim() ? 'No exact ticker or company-name match on this exchange.' : 'No instruments available from the selected market provider.'}</Text>}
-      renderItem={({ item }) => <Pressable onPress={() => { void openStock(item); }} style={[styles.row, { backgroundColor: colors.backgroundElement }]}><View style={styles.identity}><Text style={[styles.ticker, { color: colors.text }]}>{item.ticker}</Text><Text numberOfLines={1} style={[styles.name, { color: colors.textSecondary }]}>{item.name}</Text><Text style={[styles.meta, { color: colors.textSecondary }]}>{item.mic_code || selection?.mic || item.exchange} • {item.currency}{item.sector ? ` • ${item.sector}` : ''}</Text></View>{tierByTicker.get(item.ticker) ? <Text style={[styles.tierBadge, { color: callColor(tierByTicker.get(item.ticker)?.tier, colors.textSecondary) }]}>{tierLabelFa(tierByTicker.get(item.ticker)?.tier, tierByTicker.get(item.ticker)?.labelFa)}</Text> : null}<Text style={[styles.chevron, { color: Brand.primary }]}>›</Text></Pressable>}
+      ListEmptyComponent={loading || loadingSearch ? <ActivityIndicator color={Brand.primary} style={{ marginTop: 30 }} /> : <Text style={[styles.empty, { color: colors.textSecondary }]}>{submittedQuery.trim() ? 'No exact ticker or company-name match on this exchange.' : 'No instruments available from the selected market provider.'}</Text>}
+      renderItem={({ item }) => <Pressable onPress={() => { void openStock(item); }} style={[styles.row, { backgroundColor: colors.backgroundElement }]}><View style={styles.identity}><Text style={[styles.ticker, { color: colors.text }]}>{item.ticker}</Text><Text numberOfLines={1} style={[styles.name, { color: colors.textSecondary }]}>{item.name}</Text><Text style={[styles.meta, { color: colors.textSecondary }]}>{item.mic_code || selection?.mic || item.exchange} • {item.currency}{item.sector ? ` • ${item.sector}` : ''}</Text></View>{tierByTicker.get(item.ticker) ? <Text style={[styles.tierBadge, { color: callColor(tierByTicker.get(item.ticker)?.tier, colors.textSecondary) }]}>{tierLabel(tierByTicker.get(item.ticker)?.tier)}</Text> : null}<Text style={[styles.chevron, { color: Brand.primary }]}>›</Text></Pressable>}
     />
   </View></SafeAreaView>;
 }

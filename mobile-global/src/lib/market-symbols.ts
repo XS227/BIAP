@@ -4,7 +4,7 @@ const ORDINARY_SHARE_PAPER_TYPES = new Set(['300', '303', '307', '309', '313']);
 type ClassifiedMarketSymbol = MarketSymbolResult & { paper_type?: string | null; source?: string | null };
 
 function normalize(value: string | null | undefined): string {
-  return String(value || '').trim().replace(/ي/g, 'ی').replace(/ك/g, 'ک').toLowerCase();
+  return String(value || '').trim().toLowerCase();
 }
 
 export function isVerifiedEquitySymbol(item: MarketSymbolResult): boolean {

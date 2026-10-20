@@ -489,7 +489,7 @@ def global_recommendations(country: str, exchange: str, tier: Optional[str] = No
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     wanted = tier.strip().upper() if tier else None
-    if wanted and wanted not in decision_overlay.TIER_FA:
+    if wanted and wanted not in decision_overlay.TIER_LABEL:
         raise HTTPException(status_code=400, detail=f"tier must be one of {', '.join(decision_overlay.TIERS)}")
     view = decision_overlay.market_view(country, exchange) if ledger_path(country, exchange).exists() else {}
     if not view:
@@ -509,7 +509,7 @@ def global_recommendations(country: str, exchange: str, tier: Optional[str] = No
     rows = [{"ticker": t, "name": names.get(t), "investment": view[t]} for t in ranked[start:start + size]]
     return {"country": country, "exchange": exchange, "decisionMode": "investment",
             "counts": decision_overlay.tier_counts(view), "total": len(ranked), "rows": rows,
-            "disclaimerFa": decision_overlay.DISCLAIMER_FA}
+            "disclaimer": decision_overlay.DISCLAIMER}
 
 
 @router.get("/opportunities")

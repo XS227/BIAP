@@ -21,13 +21,13 @@ export default function FavoritesScreen() {
     <View style={[styles.wrap, { maxWidth: MaxContentWidth }]}> 
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={[styles.back, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.backText, { color: colors.text }]}>←</Text></Pressable>
-        <View style={styles.headerCopy}><Text style={[styles.title, { color: colors.text }]}>علاقه‌مندی‌ها</Text><Text style={[styles.sub, { color: colors.textSecondary }]}>نمادهای ذخیره‌شده روی این دستگاه</Text></View>
+        <View style={styles.headerCopy}><Text style={[styles.title, { color: colors.text }]}>Favorites</Text><Text style={[styles.sub, { color: colors.textSecondary }]}>Symbols saved on this device</Text></View>
       </View>
       <FlatList
         data={items}
         keyExtractor={(item) => item.code}
         contentContainerStyle={{ paddingBottom: BottomTabInset + Spacing.four }}
-        ListEmptyComponent={!loading ? <View style={[styles.empty, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.emptyTitle, { color: colors.text }]}>هنوز نمادی ذخیره نشده</Text><Text style={[styles.emptyBody, { color: colors.textSecondary }]}>در صفحه هر سهم روی ★ بزن تا اینجا اضافه شود.</Text><Pressable onPress={() => router.push('/market')} style={styles.marketBtn}><Text style={styles.marketBtnText}>رفتن به بازار</Text></Pressable></View> : null}
+        ListEmptyComponent={!loading ? <View style={[styles.empty, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.emptyTitle, { color: colors.text }]}>No symbols saved yet</Text><Text style={[styles.emptyBody, { color: colors.textSecondary }]}>Tap ★ on a stock page to add it here.</Text><Pressable onPress={() => router.push('/market')} style={styles.marketBtn}><Text style={styles.marketBtnText}>Go to Market</Text></Pressable></View> : null}
         renderItem={({ item }) => <Pressable onPress={() => router.push(`/stock/${encodeURIComponent(item.code)}`)} style={[styles.row, { backgroundColor: colors.backgroundElement }]}>
           <Text style={[styles.chevron, { color: colors.textSecondary }]}>‹</Text>
           <View style={styles.copy}><Text style={[styles.symbol, { color: colors.text }]}>{item.symbol}</Text><Text style={[styles.name, { color: colors.textSecondary }]} numberOfLines={1}>{item.name}</Text><Text style={[styles.market, { color: colors.textSecondary }]}>{item.market ?? 'BIAP Market'}</Text></View>
