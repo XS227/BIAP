@@ -1,0 +1,28 @@
+{
+ "schema": 1,
+ "snapshot": "research/paper_portfolio_2026-10-20.json",
+ "snapshotSha256": "0bd9066eb980d9293566c2cb682dce579f6d6fbf15e102eeb341e2e7e52621a1",
+ "tag": "paper-portfolio-2026-10-20",
+ "rule": "Evaluation records are separate files in this directory; the snapshot is never edited. Each run writes one new file named paper_portfolio_2026-10-20_eval_<end>.json and refuses to overwrite.",
+ "entryBasis": "close of 2026-10-20; first eligible trading session 2026-10-21",
+ "horizons": [
+  {
+   "label": "1m",
+   "end": "2026-11-20"
+  },
+  {
+   "label": "3m",
+   "end": "2027-01-20"
+  },
+  {
+   "label": "6m",
+   "end": "2027-04-20"
+  }
+ ],
+ "command": "python research/paper_portfolio_returns.py research/paper_portfolio_2026-10-20.json --end <end> --json research/evaluations/paper_portfolio_2026-10-20_eval_<end>.json",
+ "knownLimits": [
+  "48 holdings without an entry close are excluded (24 Swedish share classes lack a vendor symbol)",
+  "price returns only, no dividends",
+  "no point-in-time backtest before 2026-10-20 (see point_in_time_feasibility_2026-10-20.md)"
+ ]
+}
