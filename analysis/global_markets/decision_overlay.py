@@ -110,9 +110,11 @@ _FUND_AGE = re.compile(r"fundamentalPeriodAgeDays=([0-9.]+)")
 
 
 def effective_evidence_status(status: Optional[str], reasoning: Optional[str], analyzed_at: Optional[str],
-                              now: Optional[datetime] = None) -> str:
+                              now: Optional[datetime] = None, quote_observed: Optional[str] = None) -> str:
     """Evidence status as of now, from the stored row: stored BLOCK stays BLOCK, and the ages recorded at analysis time
-    keep growing, so a price or filing that has since crossed the gate limits is BLOCK again (what a fresh analysis says)."""
+    keep growing, so a price or filing that has since crossed the gate limits is BLOCK again (what a fresh analysis says).
+    ``quote_observed`` (date/time of the ledger's latest stage-1 quote) replaces the analysis-time price age when given,
+    so a price-only refresh clears a stale-price BLOCK without re-analysing."""
     if str(status or "").upper() == "BLOCK":
         return "BLOCK"
     try:
@@ -122,8 +124,21 @@ def effective_evidence_status(status: Optional[str], reasoning: Optional[str], a
     except (TypeError, ValueError):
         return str(status or "PASS").upper()
     text = str(reasoning or "")
+    when = now or datetime.now(timezone.utc)
+    quote_age = None
+    if quote_observed:
+        try:
+            seen = datetime.fromisoformat(str(quote_observed).replace("Z", "+00:00"))
+            seen = seen if seen.tzinfo else seen.replace(tzinfo=timezone.utc)
+            quote_age = max(0.0, (when - seen).total_seconds() / 86400.0)
+        except ValueError:
+            quote_age = None
     for pattern, limit in ((_PRICE_AGE, MAX_PRICE_AGE_DAYS), (_FUND_AGE, MAX_FUNDAMENTAL_AGE_DAYS)):
         found = pattern.search(text)
+        if pattern is _PRICE_AGE and quote_age is not None:
+            if quote_age > limit:
+                return "BLOCK"
+            continue
         if found and float(found.group(1)) + elapsed > limit:
             return "BLOCK"
     return str(status or "PASS").upper()
@@ -148,13 +163,15 @@ def market_view(country: str, exchange: str) -> Dict[str, dict]:
     try:
         decisions = im.decide_ledger(ledger)
         evidence = ledger.evidence_rows()
+        stage1 = ledger.get_meta("stage1_synced_at")       # quotes without their own date (live Euronext / Nordic) are as old as the sync
     finally:
         ledger.close()
     prefix = f"{code}:"
     view = {k[len(prefix):] if k.startswith(prefix) else k: payload(d) for k, d in decisions.items()}
     for ticker, item in view.items():
-        analyzed_at, status, why = evidence.get(ticker, (None, None, None))
-        view[ticker] = cap_for_evidence(item, effective_evidence_status(status, why, analyzed_at), item.get("confidence"))
+        analyzed_at, status, why, quote_date = evidence.get(ticker, (None, None, None, None))
+        view[ticker] = cap_for_evidence(
+            item, effective_evidence_status(status, why, analyzed_at, quote_observed=quote_date or stage1), item.get("confidence"))
     with _LOCK:
         for old in [k for k in _CACHE if k[0] == stamp[0]]:
             _CACHE.pop(old, None)

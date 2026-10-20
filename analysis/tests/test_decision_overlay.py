@@ -168,3 +168,14 @@ def test_effective_evidence_status_blocks_when_stored_ages_cross_the_gate_limits
     assert eff("PASS", why, "2026-10-20T12:00:00+00:00", now) == "PASS"
     assert eff("BLOCK", why, "2026-10-20T12:00:00+00:00", now) == "BLOCK"
     assert eff("PASS", why, None, now) == "PASS"                            # undatable row: stored status stands
+
+
+def test_effective_evidence_status_uses_refreshed_quote_date_over_stored_price_age():
+    from datetime import datetime, timezone
+    now = datetime(2026, 10, 21, 12, tzinfo=timezone.utc)
+    why = "coverage=100%; priceAgeDays=2.3; fundamentalPeriodAgeDays=288.0"
+    eff = ov.effective_evidence_status
+    assert eff("PASS", why, "2026-10-15T21:38:37+00:00", now, quote_observed="2026-10-20") == "PASS"     # price-only refresh clears it
+    assert eff("PASS", why, "2026-10-15T21:38:37+00:00", now, quote_observed="2026-10-10") == "BLOCK"    # refreshed quote itself is stale
+    long_ago = "coverage=100%; priceAgeDays=1.0; fundamentalPeriodAgeDays=540.0"
+    assert eff("PASS", long_ago, "2026-10-01T00:00:00+00:00", now, quote_observed="2026-10-20") == "BLOCK"  # filing age still ages

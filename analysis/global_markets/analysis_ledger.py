@@ -720,11 +720,12 @@ class AnalysisLedger:
             "buyCandidates": buy, "evidenceNotPass": not_pass, "evidenceNotPassReasons": reasons, "callsAmongScored": calls,
         }
 
-    def evidence_rows(self) -> dict[str, tuple[Optional[str], Optional[str], Optional[str]]]:
-        """{ticker: (analyzed_at, evidence status, evidence reasoning)} from the stored summaries; no result blobs."""
+    def evidence_rows(self) -> dict[str, tuple[Optional[str], Optional[str], Optional[str], Optional[str]]]:
+        """{ticker: (analyzed_at, evidence status, evidence reasoning, stage-1 quote date)} from the stored rows; no result blobs."""
         sql = ("SELECT ticker, analyzed_at, COALESCE(json_extract(summary,'$.evidence.status'), evidence_status) AS st, "
-               "json_extract(summary,'$.evidence.reasoning') AS why FROM ledger WHERE in_universe=1 AND result IS NOT NULL")
-        return {r["ticker"]: (r["analyzed_at"], r["st"], r["why"]) for r in self._conn().execute(sql)}
+               "json_extract(summary,'$.evidence.reasoning') AS why, json_extract(quote,'$.quoteDate') AS qd "
+               "FROM ledger WHERE in_universe=1 AND result IS NOT NULL")
+        return {r["ticker"]: (r["analyzed_at"], r["st"], r["why"], r["qd"]) for r in self._conn().execute(sql)}
 
     def full_results(self, *, buys_only: bool = False) -> Iterator[dict]:
         sql = "SELECT result FROM ledger WHERE in_universe=1 AND result IS NOT NULL"
