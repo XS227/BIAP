@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { fetchGlobalTiers, GlobalAnalysis, GlobalInstrument, GlobalTierView, scanGlobalMarket } from '@/lib/global-api';
@@ -7,7 +8,7 @@ import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-ma
 import { EvidenceCounts, evidenceCounts } from '@/lib/scan-summary';
 import { setSelectedGlobalCompany } from '@/lib/global-company-selection';
 import type { GlobalInvestmentDecision } from '@/lib/decision-tier';
-import { DISCLAIMER, tierCounts, tierLabel, tierTone } from '@/lib/decision-tier';
+import { DISCLAIMER, investmentBadge, tierCounts, tierLabel, tierTone } from '@/lib/decision-tier';
 
 type DataMode = '' | 'live' | 'cached' | 'catalog';
 
@@ -137,33 +138,35 @@ export default function KiashaGlobalScreen() {
 
           {dataMode !== 'catalog' ? <View style={[styles.evidenceStrip, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stripTitle, { color: colors.text }]}>Evidence gate</Text><Text style={[styles.stripText, { color: Brand.positive }]}>PASS {passed}</Text><Text style={[styles.stripText, { color: Brand.warning }]}>WARN {warned}</Text><Text style={[styles.stripText, { color: Brand.negative }]}>BLOCK {blocked}</Text><Text style={[styles.stripText, { color: colors.textSecondary }]}>of {evidence.denominator}{evidence.basis === 'payload_sample' ? ' shown' : ' analyzed'}</Text></View> : null}
 
-          {tiers ? <View style={[styles.evidenceStrip, { backgroundColor: colors.backgroundElement }]}>
-            <Text style={[styles.stripTitle, { color: colors.text }]}>Investment ranking</Text>
+          {tiers ? <View style={[styles.tierCard, { backgroundColor: colors.backgroundElement }]}>
+            <Text style={[styles.stripTitle, { color: colors.text, flex: 0 }]}>Investment ranking</Text>
             <Text style={[styles.pickMeta, { color: colors.textSecondary }]}>{tierCounts(tiers.counts)}</Text>
             {tiers.rows.slice(0, 10).map((row, index) => <Pressable key={`tier-${row.ticker}-${index}`} onPress={() => { void open({ ticker: row.ticker, name: row.name || row.ticker } as GlobalAnalysis); }} style={styles.reviewed}>
               <View style={{ flex: 1 }}><Text style={[styles.ticker, { color: colors.text }]}>#{index + 1} {row.ticker}</Text><Text numberOfLines={1} style={[styles.name, { color: colors.textSecondary }]}>{row.name}</Text></View>
-              <Text style={[styles.call, { color: tone(row.investment.tier, colors.textSecondary) }]}>{tierLabel(row.investment.tier)}</Text>
+              <View style={{ alignItems: 'flex-end' }}><Text style={[styles.call, { color: tone(row.investment.tier, colors.textSecondary) }]}>{tierLabel(row.investment.tier)}</Text>{investmentBadge(row.investment).notice ? <Text style={[styles.notice, { color: Brand.warning }]}>{investmentBadge(row.investment).notice}</Text> : null}</View>
             </Pressable>)}
             <Text style={[styles.pickMeta, { color: colors.textSecondary }]}>{DISCLAIMER}</Text>
           </View> : null}
           <View style={styles.sectionRow}><Text style={[styles.sectionTitle, { color: colors.text }]}>Kiasha picks</Text><Text style={[styles.sectionMeta, { color: colors.textSecondary }]}>{status || 'scan complete'}</Text></View>
           {dataMode === 'catalog' ? <View style={[styles.empty, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.emptyTitle, { color: colors.text }]}>Ranking pending verified market data</Text><Text style={[styles.emptyText, { color: colors.textSecondary }]}>The exchange universe is available, but Kiasha will not rank stocks or manufacture a Top 10 from reference metadata alone. Once verified price/history is seeded, the same six agents and Evidence gate run automatically.</Text></View> : picks.length ? picks.map((pick, index) => {
-            const c = tone(tierByTicker.get(pick.ticker)?.tier ?? pick.call, colors.textSecondary);
+            const badge = investmentBadge(pick.investment ?? tierByTicker.get(pick.ticker));
+            const c = tone(badge.tier, colors.textSecondary);
             const signals = Array.isArray(pick.signals) ? pick.signals : [];
             return <Pressable key={`${pick.ticker}-${index}`} onPress={() => { void open(pick); }} style={[styles.pick, { backgroundColor: colors.backgroundElement }]}>
-              <View style={styles.pickTop}><View style={[styles.rank, { backgroundColor: Brand.primary }]}><Text style={styles.rankText}>#{index + 1}</Text></View><View style={{ flex: 1 }}><Text style={[styles.ticker, { color: colors.text }]}>{pick.ticker}</Text><Text numberOfLines={1} style={[styles.name, { color: colors.textSecondary }]}>{pick.name}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.call, { color: c }]}>{tierByTicker.has(pick.ticker) ? tierLabel(tierByTicker.get(pick.ticker)?.tier) : pick.call}</Text><Text style={[styles.conf, { color: colors.textSecondary }]}>{pct(pick.confidence)} confidence</Text></View></View>
+              <View style={styles.pickTop}><View style={[styles.rank, { backgroundColor: Brand.primary }]}><Text style={styles.rankText}>#{index + 1}</Text></View><View style={{ flex: 1 }}><Text style={[styles.ticker, { color: colors.text }]}>{pick.ticker}</Text><Text numberOfLines={1} style={[styles.name, { color: colors.textSecondary }]}>{pick.name}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.call, { color: c }]}>{badge.label}</Text>{badge.notice ? <Text style={[styles.notice, { color: Brand.warning }]}>{badge.notice}</Text> : null}<Text style={[styles.conf, { color: colors.textSecondary }]}>{pct(pick.confidence)} confidence</Text></View></View>
               <View style={styles.agentRow}>{signals.map((signal) => <View key={signal.agent} style={[styles.agentChip, { borderColor: colors.backgroundSelected }]}><Text style={[styles.agentChipText, { color: signal.vote >= .25 ? Brand.positive : signal.vote <= -.25 ? Brand.negative : colors.textSecondary }]}>{signalChipLabel(signal.agent, signal.vote, signal.confidence)}</Text></View>)}</View>
               <Text style={[styles.pickMeta, { color: colors.textSecondary }]}>Score {pick.score == null ? '—' : pick.score.toFixed(3)} • Evidence {pick.evidence?.status || '—'} • tap for full analysis</Text>
             </Pressable>;
           }) : <>
-            <View style={[styles.empty, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.emptyTitle, { color: colors.text }]}>{tiers?.rows.length ? 'No conservative-rule BUY candidates' : 'No qualified BUY candidates'}</Text><Text style={[styles.emptyText, { color: colors.textSecondary }]}>{tiers?.rows.length ? 'The investment tiers above are the primary ranking. ' : ''}This is a valid analytical result. Kiasha will not fill a Top 10 list with weaker names when evidence or confidence is insufficient.</Text></View>
+            {tiers?.rows.length ? <Text style={[styles.pickMeta, { color: colors.textSecondary }]}>No stock passes the stricter conservative rule; the investment ranking above is the primary view.</Text> : <View style={[styles.empty, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.emptyTitle, { color: colors.text }]}>{tiers?.rows.length ? 'No conservative-rule BUY candidates' : 'No qualified BUY candidates'}</Text><Text style={[styles.emptyText, { color: colors.textSecondary }]}>{tiers?.rows.length ? 'The investment tiers above are the primary ranking. ' : ''}This is a valid analytical result. Kiasha will not fill a Top 10 list with weaker names when evidence or confidence is insufficient.</Text></View>}
             {deepResults.length ? <>
               <View style={styles.sectionRow}><Text style={[styles.sectionTitle, { color: colors.text }]}>Analyzed stocks</Text><Text style={[styles.sectionMeta, { color: colors.textSecondary }]}>tap any stock for decision table</Text></View>
               {deepResults.map((item, index) => {
-                const c = tone(tierByTicker.get(item.ticker)?.tier ?? item.call, colors.textSecondary);
+                const badge = investmentBadge(item.investment ?? tierByTicker.get(item.ticker));
+                const c = tone(badge.tier, colors.textSecondary);
                 return <Pressable key={`reviewed-${item.ticker}-${index}`} onPress={() => { void open(item); }} style={[styles.reviewed, { backgroundColor: colors.backgroundElement }]}>
                   <View style={{ flex: 1 }}><Text style={[styles.ticker, { color: colors.text }]}>{item.ticker}</Text><Text numberOfLines={1} style={[styles.name, { color: colors.textSecondary }]}>{item.name || item.ticker}</Text><Text style={[styles.pickMeta, { color: colors.textSecondary }]}>Evidence {item.evidence?.status || '—'} • Score {item.score == null ? '—' : item.score.toFixed(3)} • open decision table</Text></View>
-                  <Text style={[styles.call, { color: c }]}>{tierByTicker.has(item.ticker) ? tierLabel(tierByTicker.get(item.ticker)?.tier) : (item.call || 'REVIEW')}</Text>
+                  <View style={{ alignItems: 'flex-end' }}><Text style={[styles.call, { color: c }]}>{badge.label}</Text>{badge.notice ? <Text style={[styles.notice, { color: Brand.warning }]}>{badge.notice}</Text> : null}</View>
                 </Pressable>;
               })}
             </> : null}
@@ -190,6 +193,7 @@ const styles = StyleSheet.create({
   sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 8 }, sectionTitle: { fontFamily: Fonts.sans, fontSize: 16, fontWeight: '900' }, sectionMeta: { fontFamily: Fonts.mono, fontSize: 8.5 },
   pick: { borderRadius: Radius.lg, padding: Spacing.three, marginBottom: 8 },
   reviewed: { borderRadius: Radius.md, padding: Spacing.three, marginBottom: 7, flexDirection: 'row', alignItems: 'center', gap: 10 }, pickTop: { flexDirection: 'row', alignItems: 'center', gap: 10 }, rank: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' }, rankText: { color: '#fff', fontFamily: Fonts.mono, fontSize: 9, fontWeight: '900' }, ticker: { fontFamily: Fonts.mono, fontSize: 15, fontWeight: '900' }, name: { fontFamily: Fonts.sans, fontSize: 9.5, marginTop: 2 }, call: { fontFamily: Fonts.mono, fontSize: 8.5, fontWeight: '900' }, conf: { fontFamily: Fonts.mono, fontSize: 8, marginTop: 3 }, agentRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 10 }, agentChip: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 7, paddingVertical: 4 }, agentChipText: { fontFamily: Fonts.mono, fontSize: 7.5, fontWeight: '800' }, pickMeta: { fontFamily: Fonts.mono, fontSize: 8.5, marginTop: 9 },
+  tierCard: { borderRadius: Radius.md, padding: 12, marginTop: 10 }, notice: { fontFamily: Fonts.sans, fontSize: 8.5, fontWeight: '700', marginTop: 2 },
   empty: { borderRadius: Radius.lg, padding: Spacing.four, marginTop: 12 }, emptyTitle: { fontFamily: Fonts.sans, fontSize: 13, fontWeight: '900' }, emptyText: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 17, marginTop: 5 }, coverage: { borderRadius: Radius.lg, padding: Spacing.three, marginTop: 12 }, coverageTitle: { fontFamily: Fonts.sans, fontSize: 12, fontWeight: '900' }, coverageText: { fontFamily: Fonts.sans, fontSize: 9.5, lineHeight: 15, marginTop: 4 },
   portfolioCard: { borderRadius: Radius.lg, padding: Spacing.four, marginTop: 18 }, portfolioTitle: { fontFamily: Fonts.sans, fontSize: 14, fontWeight: '900' }, portfolioText: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 17, marginTop: 6 }, action: { minHeight: 46, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center', marginTop: 12 }, actionText: { color: '#fff', fontFamily: Fonts.sans, fontSize: 11, fontWeight: '900' }, disclaimer: { fontFamily: Fonts.sans, fontSize: 9.5, lineHeight: 15, textAlign: 'center', marginTop: 22 },
 });

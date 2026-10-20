@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, SafeAreaView, StyleSheet, Text, TextInput, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View, useColorScheme } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { fetchGlobalInstruments, fetchGlobalTiers, GlobalAnalysis, GlobalInstrument, GlobalTierView, scanGlobalMarket, scanGlobalTop10 } from '@/lib/global-api';
-import { categoryLabel, gateLines, groupLine, marketListRows } from '@/lib/scan-summary';
+import { gateLines, groupLine, marketListRows } from '@/lib/scan-summary';
 import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-market-selection';
 import { setSelectedGlobalCompany } from '@/lib/global-company-selection';
 import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
 import type { GlobalInvestmentDecision } from '@/lib/decision-tier';
-import { tierCounts, tierLabel, tierTone } from '@/lib/decision-tier';
+import { investmentBadge, tierCounts, tierLabel, tierTone } from '@/lib/decision-tier';
 
 const PAGE_SIZE = 80;
 
@@ -20,6 +21,16 @@ function callColor(call: string | undefined, secondary: string) {
   if (t === 'warning') return Brand.warning;
   if (t === 'negative') return Brand.negative;
   return secondary;
+}
+
+/** Rows that belong to the selected exchange (rows without country/exchange fields are kept). */
+function inMarket(item: GlobalInstrument, sel: { country: string; exchange: string; mic?: string | null } | null) {
+  if (!sel) return true;
+  if (item.country && String(item.country).toUpperCase() !== sel.country.toUpperCase()) return false;
+  if (item.exchange && String(item.exchange).toUpperCase() !== sel.exchange.toUpperCase()) {
+    return Boolean(sel.mic && item.mic_code && String(item.mic_code).toUpperCase() === sel.mic.toUpperCase());
+  }
+  return true;
 }
 
 function normalizedSearch(value: string | null | undefined) {
@@ -85,12 +96,18 @@ export default function MarketScreen() {
   const tierByTicker = useMemo(() => new Map<string | undefined, GlobalInvestmentDecision>((tiers?.rows || []).map((r) => [r.ticker, r.investment])), [tiers]);
 
   const loadSeq = useRef(0);
+  const marketKeyRef = useRef('');
 
   const load = useCallback(async (forceSearch?: string) => {
     const seq = ++loadSeq.current;
     const selected = await getGlobalMarketSelection();
+    const marketKey = `${selected.country}:${selected.exchange}`;
+    if (marketKeyRef.current !== marketKey) {
+      marketKeyRef.current = marketKey;
+      setInstruments([]); setTiers(null); setTotalMatched(0); setHasMore(false); setNextOffset(null);
+    }
     setSelection(selected);
-    void fetchGlobalTiers(selected.country, selected.exchange).then(setTiers);
+    void fetchGlobalTiers(selected.country, selected.exchange).then((view) => { if (marketKeyRef.current === marketKey) setTiers(view); });
     const searchText = typeof forceSearch === 'string' ? forceSearch.trim() : '';
     try {
       setError('');
@@ -101,7 +118,7 @@ export default function MarketScreen() {
       });
       if (seq !== loadSeq.current) return;
       console.log('[market-search]', `/global/instruments/${selected.country}/${selected.exchange}`, { q: searchText, count: (result.instruments || []).length, totalMatched: result.totalMatched });
-      setInstruments((result.instruments || []).filter(isSupportedGlobalEquityInstrument));
+      setInstruments((result.instruments || []).filter((i) => isSupportedGlobalEquityInstrument(i) && inMarket(i, selected)));
       setTotalMatched(result.totalMatched || 0);
       setHasMore(Boolean(result.hasMore));
       setNextOffset(result.nextOffset ?? null);
@@ -136,6 +153,7 @@ export default function MarketScreen() {
   const loadMore = async () => {
     if (!selection || loading || loadingMore || !hasMore || nextOffset == null) return;
     setLoadingMore(true);
+    const marketKey = `${selection.country}:${selection.exchange}`;
     try {
       const searchText = submittedQuery.trim();
       const result = await fetchGlobalInstruments(selection.country, selection.exchange, {
@@ -143,7 +161,8 @@ export default function MarketScreen() {
         limit: searchText ? 150 : PAGE_SIZE,
         offset: nextOffset,
       });
-      setInstruments((current) => appendUnique(current, (result.instruments || []).filter(isSupportedGlobalEquityInstrument)));
+      if (marketKeyRef.current !== marketKey) return;
+      setInstruments((current) => appendUnique(current, (result.instruments || []).filter((i) => isSupportedGlobalEquityInstrument(i) && inMarket(i, selection))));
       setTotalMatched(result.totalMatched || totalMatched);
       setHasMore(Boolean(result.hasMore));
       setNextOffset(result.nextOffset ?? null);
@@ -166,13 +185,14 @@ export default function MarketScreen() {
 
   const filtered = useMemo(() => {
     const q = submittedQuery.trim();
-    if (!q) return instruments;
-    return instruments
+    const own = instruments.filter((item) => inMarket(item, selection));
+    if (!q) return own;
+    return own
       .map((item) => ({ item, score: searchScore(item, q) }))
       .filter((entry) => entry.score >= 0)
       .sort((a, b) => b.score - a.score || a.item.ticker.localeCompare(b.item.ticker))
       .map((entry) => entry.item);
-  }, [instruments, submittedQuery]);
+  }, [instruments, submittedQuery, selection]);
 
   const searchRemote = async () => {
     const searchText = query.trim();
@@ -277,15 +297,18 @@ export default function MarketScreen() {
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><View style={[styles.container, { backgroundColor: colors.background }]}>
     <View style={styles.header}><View style={styles.headerTop}><View style={{ flex: 1 }}><Text style={[styles.title, { color: colors.text }]}>Market</Text><Text style={[styles.subtitle, { color: colors.textSecondary }]}>{selection ? `${selection.countryName} • ${selection.exchangeLabel}` : 'Loading market context…'}</Text></View><Pressable onPress={() => router.push('/global')} style={[styles.changeButton, { borderColor: Brand.primary }]}><Text style={styles.changeButtonText}>Change market</Text></Pressable></View>{selection ? <Text style={[styles.contextLine, { color: colors.textSecondary }]}>{selection.mic || selection.exchange} • {selection.currency} • one BIAP engine</Text> : null}</View>
 
-    <View style={styles.searchRow}><TextInput value={query} onChangeText={setQuery} onSubmitEditing={() => { void searchRemote(); }} autoCapitalize="characters" placeholder={selection ? `Search ${selection.exchangeLabel} (ticker, company, ISIN)` : 'Search ticker, company or ISIN'} placeholderTextColor={colors.textSecondary} style={[styles.search, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected, color: colors.text }]} /><Pressable disabled={loadingSearch} onPress={() => { void searchRemote(); }} style={[styles.searchButton, { backgroundColor: Brand.primary, opacity: loadingSearch ? .6 : 1 }]}>{loadingSearch ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.searchButtonText}>Search</Text>}</Pressable></View>
+    <View style={styles.searchRow}><TextInput value={query} onChangeText={setQuery} onSubmitEditing={() => { void searchRemote(); }} autoCapitalize="characters" placeholder="Ticker, company or ISIN" numberOfLines={1} placeholderTextColor={colors.textSecondary} style={[styles.search, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected, color: colors.text }]} /><Pressable disabled={loadingSearch} onPress={() => { void searchRemote(); }} style={[styles.searchButton, { backgroundColor: Brand.primary, opacity: loadingSearch ? .6 : 1 }]}>{loadingSearch ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.searchButtonText}>Search</Text>}</Pressable></View>
 
     {!searching ? <>
     <View style={styles.scanRow}><View style={{ flex: 1 }}><Text style={[styles.scanTitle, { color: colors.text }]}>Kiasha stock selection</Text><Text style={[styles.scanText, { color: colors.textSecondary }]}>Evidence-gated ranking: objective stock score first, investor fit later.</Text></View><View style={styles.scanActions}><Pressable disabled={scanning || !selection} onPress={() => { void runScan(); }} style={[styles.scanButton, { borderColor: Brand.primary }]}>{scanning ? <ActivityIndicator color={Brand.primary} size="small" /> : <Text style={styles.scanButtonText}>This market</Text>}</Pressable><Pressable disabled={scanning} onPress={() => { void runGlobalTop10(); }} style={[styles.scanButton, { borderColor: Brand.primary, backgroundColor: Brand.primary }]}><Text style={[styles.scanButtonText, { color: '#fff' }]}>Global Top 10</Text></Pressable></View></View>
     {scanStatus ? <View style={[styles.statusBox, { backgroundColor: colors.backgroundElement, borderColor: modeColor }]}><Text style={[styles.status, { color: modeColor }]}>{scanStatus}</Text>{scanMode === 'catalog' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>The instrument list is real. BIAP will not create BUY candidates until verified market prices are available.</Text> : scanMode === 'cached' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>Stored market records are available, but BIAP will not rank this exchange until fresh ordinary-equity coverage and verified fundamental coverage meet the required thresholds.</Text> : scanMode === 'global' ? <Text style={[styles.statusHint, { color: colors.textSecondary }]}>Global Top 10 is one cross-market shortlist, so it stays the same when you change the selected exchange. Use “This market” for a ranking limited to the exchange shown above.</Text> : null}{gateInfo.length ? <View style={{ marginTop: 6 }}><Text style={[styles.statusHint, { color: colors.textSecondary }]}>{tiers ? 'Conservative rule (reference) — a stricter screen, separate from the investment tiers above. Companies rejected at each gate:' : 'Companies rejected at each gate:'}</Text>{gateInfo.map((line) => <Text key={line} style={[styles.statusHint, { color: colors.textSecondary }]}>• {line}</Text>)}</View> : null}</View> : null}
-    {scan.length ? <View style={styles.picks}>{scan.slice(0, 20).map((item, index) => <Pressable key={`${item.ticker}-${index}`} onPress={() => { void openStock(item); }} style={[styles.pick, { backgroundColor: colors.backgroundElement }]}><View><Text style={[styles.pickTicker, { color: colors.text }]}>#{index + 1} {item.ticker}</Text><Text numberOfLines={1} style={[styles.pickName, { color: colors.textSecondary }]}>{item.name}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.pickCall, { color: callColor(tierByTicker.get(item.ticker)?.tier ?? (item as GlobalAnalysis).investment?.tier ?? item.call, colors.textSecondary) }]}>{(tierByTicker.get(item.ticker) ?? (item as GlobalAnalysis).investment) ? tierLabel((tierByTicker.get(item.ticker) ?? (item as GlobalAnalysis).investment)?.tier) : categoryLabel(item)}</Text><Text style={[styles.pickConfidence, { color: colors.textSecondary }]}>{item.confidence == null ? '—' : `${Math.round(item.confidence * 100)}% conf.`}</Text></View></Pressable>)}</View> : null}
+    {scan.length ? <View style={styles.picks}>{scan.slice(0, 20).map((item, index) => {
+      const badge = investmentBadge((item as GlobalAnalysis).investment ?? (scanMode === 'global' ? undefined : tierByTicker.get(item.ticker)));
+      return <Pressable key={`${item.ticker}-${index}`} onPress={() => { void openStock(item); }} style={[styles.pick, { backgroundColor: colors.backgroundElement }]}><View style={styles.pickLeft}><Text numberOfLines={1} style={[styles.pickTicker, { color: colors.text }]}>#{index + 1} {item.ticker}</Text><Text numberOfLines={1} style={[styles.pickName, { color: colors.textSecondary }]}>{item.name}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.pickCall, { color: callColor(badge.tier, colors.textSecondary) }]}>{badge.label}</Text>{badge.notice ? <Text style={[styles.pickNotice, { color: Brand.warning }]}>{badge.notice}</Text> : null}<Text style={[styles.pickConfidence, { color: colors.textSecondary }]}>{item.confidence == null ? '—' : `${Math.round(item.confidence * 100)}% conf.`}</Text></View></Pressable>;
+    })}</View> : null}
     {tiers ? <View style={styles.picks}>
       <Text style={[styles.tierSummary, { color: colors.textSecondary }]}>{tierCounts(tiers.counts)}</Text>
-      {!scan.length ? tiers.rows.slice(0, 20).map((row, index) => <Pressable key={`tier-${row.ticker}-${index}`} onPress={() => { void openStock({ ...(instruments.find((i) => i.ticker === row.ticker) || { country: selection?.country || '', exchange: selection?.exchange || '', currency: '' }), ticker: row.ticker, name: row.name || row.ticker } as GlobalInstrument); }} style={[styles.pick, { backgroundColor: colors.backgroundElement }]}><View><Text style={[styles.pickTicker, { color: colors.text }]}>#{index + 1} {row.ticker}</Text><Text numberOfLines={1} style={[styles.pickName, { color: colors.textSecondary }]}>{row.name}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.pickCall, { color: callColor(row.investment.tier, colors.textSecondary) }]}>{tierLabel(row.investment.tier)}</Text><Text style={[styles.pickConfidence, { color: colors.textSecondary }]}>{row.investment.confidence == null ? '—' : `${Math.round(row.investment.confidence * 100)}% conf.`}</Text></View></Pressable>) : null}
+      {!scan.length ? tiers.rows.slice(0, 20).map((row, index) => <Pressable key={`tier-${row.ticker}-${index}`} onPress={() => { void openStock({ ...(instruments.find((i) => i.ticker === row.ticker) || { country: selection?.country || '', exchange: selection?.exchange || '', currency: '' }), ticker: row.ticker, name: row.name || row.ticker } as GlobalInstrument); }} style={[styles.pick, { backgroundColor: colors.backgroundElement }]}><View style={styles.pickLeft}><Text numberOfLines={1} style={[styles.pickTicker, { color: colors.text }]}>#{index + 1} {row.ticker}</Text><Text numberOfLines={1} style={[styles.pickName, { color: colors.textSecondary }]}>{row.name}</Text></View><View style={{ alignItems: 'flex-end' }}><Text style={[styles.pickCall, { color: callColor(row.investment.tier, colors.textSecondary) }]}>{tierLabel(row.investment.tier)}</Text>{investmentBadge(row.investment).notice ? <Text style={[styles.pickNotice, { color: Brand.warning }]}>{investmentBadge(row.investment).notice}</Text> : null}<Text style={[styles.pickConfidence, { color: colors.textSecondary }]}>{row.investment.confidence == null ? '—' : `${Math.round(row.investment.confidence * 100)}% conf.`}</Text></View></Pressable>) : null}
     </View> : null}
     </> : null}
     {error ? <View style={[styles.errorBox, { borderColor: Brand.warning }]}><Text style={[styles.errorText, { color: colors.textSecondary }]}>{error}</Text></View> : null}
@@ -308,5 +331,6 @@ export default function MarketScreen() {
 }
 
 const styles = StyleSheet.create({
+  pickLeft:{flex:1,paddingRight:8},pickNotice:{fontFamily:Fonts.sans,fontSize:9,fontWeight:'700',marginTop:2},
   safe:{flex:1},container:{flex:1},header:{paddingHorizontal:Spacing.three,paddingTop:Spacing.four,paddingBottom:Spacing.two,maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},headerTop:{flexDirection:'row',alignItems:'center',gap:12},title:{fontFamily:Fonts.sans,fontSize:25,fontWeight:'900'},subtitle:{fontFamily:Fonts.sans,fontSize:12,marginTop:2},contextLine:{fontFamily:Fonts.mono,fontSize:9.5,marginTop:7},changeButton:{borderWidth:1,borderRadius:18,paddingHorizontal:12,paddingVertical:8},changeButtonText:{color:Brand.primary,fontFamily:Fonts.sans,fontSize:10,fontWeight:'800'},searchRow:{flexDirection:'row',gap:8,paddingHorizontal:Spacing.three,maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},search:{flex:1,borderWidth:1,borderRadius:Radius.md,paddingHorizontal:13,paddingVertical:11,fontFamily:Fonts.sans,fontSize:12},searchButton:{minWidth:76,borderRadius:Radius.md,alignItems:'center',justifyContent:'center'},searchButtonText:{color:'#fff',fontFamily:Fonts.sans,fontSize:11,fontWeight:'900'},scanRow:{flexDirection:'row',alignItems:'center',gap:10,marginHorizontal:Spacing.three,marginTop:Spacing.three,padding:Spacing.three,borderRadius:Radius.md,maxWidth:MaxContentWidth,alignSelf:'center'},scanTitle:{fontFamily:Fonts.sans,fontSize:12.5,fontWeight:'900'},scanText:{fontFamily:Fonts.sans,fontSize:9.5,lineHeight:15,marginTop:3},scanActions:{gap:6},scanButton:{borderWidth:1,minWidth:92,minHeight:38,borderRadius:19,alignItems:'center',justifyContent:'center',paddingHorizontal:10},scanButtonText:{color:Brand.primary,fontFamily:Fonts.sans,fontSize:9.5,fontWeight:'900'},statusBox:{borderWidth:1,borderRadius:Radius.md,padding:10,marginHorizontal:Spacing.three,marginTop:8,maxWidth:MaxContentWidth,alignSelf:'center',width:'90%'},status:{fontFamily:Fonts.mono,fontSize:9,textAlign:'center'},statusHint:{fontFamily:Fonts.sans,fontSize:9,lineHeight:14,textAlign:'center',marginTop:5},picks:{paddingHorizontal:Spacing.three,paddingTop:Spacing.two,maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},pick:{borderRadius:Radius.md,padding:12,marginBottom:7,flexDirection:'row',justifyContent:'space-between',gap:10},pickTicker:{fontFamily:Fonts.mono,fontSize:12,fontWeight:'900'},pickName:{fontFamily:Fonts.sans,fontSize:9.5,marginTop:2,maxWidth:220},pickCall:{fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},tierBadge:{fontFamily:Fonts.sans,fontSize:11,fontWeight:'900',marginLeft:8,writingDirection:'rtl'},tierSummary:{fontFamily:Fonts.sans,fontSize:10.5,textAlign:'center',marginBottom:6,writingDirection:'rtl'},pickConfidence:{fontFamily:Fonts.mono,fontSize:8.5,marginTop:2},errorBox:{borderWidth:1,borderRadius:Radius.md,padding:10,marginHorizontal:Spacing.three,marginTop:8},errorText:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:17},list:{paddingHorizontal:Spacing.three,paddingBottom:BottomTabInset+Spacing.four,maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},listTitle:{fontFamily:Fonts.sans,fontSize:14,fontWeight:'900',marginTop:Spacing.three,marginBottom:Spacing.two},row:{borderRadius:Radius.md,padding:13,marginBottom:8,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},identity:{flex:1},ticker:{fontFamily:Fonts.mono,fontSize:14,fontWeight:'900'},name:{fontFamily:Fonts.sans,fontSize:10.5,marginTop:2},meta:{fontFamily:Fonts.mono,fontSize:8.5,marginTop:4},chevron:{fontSize:26,marginLeft:10},empty:{fontFamily:Fonts.sans,fontSize:11,textAlign:'center',marginTop:30},endText:{fontFamily:Fonts.sans,fontSize:9.5,textAlign:'center',marginVertical:16},
 });

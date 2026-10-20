@@ -15,6 +15,10 @@ export type GlobalInvestmentDecision = {
   positive?: InvestmentAgentReason[];
   negative?: InvestmentAgentReason[];
   flags?: string[];
+  /** "Insufficient evidence" when Evidence is BLOCK or confidence is below the tier floor (tier already capped at HOLD). */
+  notice?: string | null;
+  insufficientEvidence?: boolean;
+  tierBeforeEvidenceCap?: string;
 };
 
 export const TIER_LABEL: Record<string, string> = {
@@ -65,4 +69,13 @@ export const TIER_ORDER = ['BUY', 'ACCUMULATE', 'HOLD', 'REDUCE', 'SELL'] as con
 export function tierCounts(counts: Record<string, number> | null | undefined) {
   if (!counts) return '';
   return TIER_ORDER.map((t) => `${TIER_LABEL[t]} ${counts[t] ?? 0}`).join(' · ');
+}
+
+export const INSUFFICIENT_EVIDENCE = 'Insufficient evidence';
+
+/** Badge text for any row that may carry an investment decision; rows without one are shown as "Not ranked", never as a raw engine call. */
+export function investmentBadge(inv: GlobalInvestmentDecision | null | undefined) {
+  if (!inv) return { label: 'Not ranked', tier: undefined as string | undefined, notice: '' };
+  const weak = inv.insufficientEvidence || Boolean(inv.notice) || (inv.flags || []).includes('insufficient_evidence');
+  return { label: tierLabel(inv.tier), tier: inv.tier as string, notice: weak ? inv.notice || INSUFFICIENT_EVIDENCE : '' };
 }
