@@ -368,6 +368,7 @@ def scan_global_top10(
             "exchange": exchange,
             "status": result.get("status") or "UNKNOWN",
             "rankingEligible": ranking_eligible,
+            "tiersReleased": bool(result.get("tiersReleased")),
             "recommendationCount": len(rows) if ranking_eligible else 0,
             "eligibleEquities": result.get("universeDiscovered") or 0,
             "screenedEquities": result.get("universeScreened") or 0,

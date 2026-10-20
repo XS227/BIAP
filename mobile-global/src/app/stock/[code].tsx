@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { analyzeGlobalInstrument, GlobalAnalysis, GlobalAgentSignal, GlobalInstrument } from '@/lib/global-api';
 import { getGlobalMarketSelection } from '@/lib/global-market-selection';
+import { DISCLAIMER_FA, reasonLineFa, tierLabelFa, tierTone } from '@/lib/decision-tier';
 import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
 import { dataLimitationLines, fundamentalFreshnessLines, governanceReasonLines } from '@/lib/freshness-labels';
 
@@ -60,9 +61,10 @@ function sourceTypeName(value: string | null | undefined) {
 }
 
 function decisionColor(call: string | undefined, secondary: string) {
-  if (call === 'BUY_CANDIDATE') return Brand.positive;
-  if (call === 'HOLD_OR_WATCH') return Brand.warning;
-  if (call === 'AVOID_OR_REVIEW') return Brand.negative;
+  const t = tierTone(call);
+  if (t === 'positive') return Brand.positive;
+  if (t === 'warning') return Brand.warning;
+  if (t === 'negative') return Brand.negative;
   return secondary;
 }
 
@@ -241,6 +243,13 @@ export default function GlobalStockDetailScreen() {
           <View style={styles.priceRow}><Text style={[styles.price, { color: colors.text }]}>{price == null ? '—' : priceN(price)}</Text><Text style={[styles.currency, { color: colors.textSecondary }]}>{analysis.currency}</Text></View>
           <Text style={[styles.timestamp, { color: colors.textSecondary }]}>{priceTimestamp ? `Price observed ${priceTimestamp}` : 'Verified price timestamp unavailable'}</Text>
         </View>
+
+        {analysis.investment ? <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
+          <Text style={[styles.cardTitle, { color: decisionColor(analysis.investment.tier, colors.textSecondary), writingDirection: 'rtl', textAlign: 'right' }]}>{tierLabelFa(analysis.investment.tier, analysis.investment.labelFa)}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary, writingDirection: 'rtl', textAlign: 'right' }]}>{`دلایل مثبت: ${reasonLineFa(analysis.investment.positive)}`}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary, writingDirection: 'rtl', textAlign: 'right' }]}>{`دلایل منفی: ${reasonLineFa(analysis.investment.negative)}`}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary, marginTop: 8, writingDirection: 'rtl', textAlign: 'right' }]}>{analysis.investment.disclaimerFa || DISCLAIMER_FA}</Text>
+        </View> : null}
 
         {(lowPriceWarning || extremeVolatilityWarning) ? <View style={[styles.caution, { backgroundColor: colors.backgroundElement, borderColor: Brand.warning }]}><Text style={[styles.cautionTitle, { color: Brand.warning }]}>Market-data caution</Text><Text style={[styles.body, { color: colors.textSecondary }]}>{lowPriceWarning ? 'This is a very low-priced instrument; BIAP preserves extra decimal precision instead of rounding it to zero. ' : ''}{extremeVolatilityWarning ? 'Observed volatility is extreme, so risk metrics should be interpreted with extra caution and remain subject to the Evidence gate.' : ''}</Text></View> : null}
 
