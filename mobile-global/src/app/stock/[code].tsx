@@ -154,6 +154,7 @@ export default function GlobalStockDetailScreen() {
   const signals = Array.isArray(analysis?.signals) ? analysis!.signals! : [];
   const sources = Array.isArray(company?.sources) ? company!.sources! : [];
   const callTone = decisionColor(analysis?.call, colors.textSecondary);
+  const badgeTone = decisionColor(analysis?.investment?.tier ?? analysis?.call, colors.textSecondary);
   const price = company?.price;
   const priceTimestamp = company?.price_observed_at;
   const lowPriceWarning = price != null && Number.isFinite(Number(price)) && Number(price) > 0 && Number(price) < 0.1;
@@ -239,7 +240,7 @@ export default function GlobalStockDetailScreen() {
       <View style={styles.header}><Pressable onPress={() => router.back()} style={[styles.back, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.backText, { color: colors.text }]}>← Back</Text></Pressable><Text style={[styles.headerMeta, { color: colors.textSecondary }]}>Global stock analysis</Text></View>
       {loading ? <View style={{ marginTop: 50, alignItems: 'center' }}><ActivityIndicator color={Brand.primary} /><Text style={[styles.body, { color: colors.textSecondary, marginTop: 12 }]}>Loading verified market, filing and decision data…</Text></View> : error ? <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Analysis unavailable</Text><Text style={[styles.body, { color: colors.textSecondary }]}>{error}</Text><Pressable onPress={() => { setLoading(true); void load(); }} style={[styles.action, { backgroundColor: Brand.primary }]}><Text style={styles.actionText}>Retry analysis</Text></Pressable></View> : analysis ? <>
         <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}>
-          <View style={styles.rowBetween}><View style={{ flex: 1 }}><Text style={[styles.ticker, { color: colors.text }]}>{analysis.ticker}</Text><Text style={[styles.companyName, { color: colors.textSecondary }]}>{analysis.name}</Text><Text style={[styles.identity, { color: colors.textSecondary }]}>{analysis.country} • {analysis.exchange} • {analysis.mic || 'MIC n/a'} • {analysis.currency}</Text></View><View style={[styles.callPill, { borderColor: callTone }]}><Text style={[styles.callText, { color: callTone }]}>{analysis.call}</Text></View></View>
+          <View style={styles.rowBetween}><View style={{ flex: 1 }}><Text style={[styles.ticker, { color: colors.text }]}>{analysis.ticker}</Text><Text style={[styles.companyName, { color: colors.textSecondary }]}>{analysis.name}</Text><Text style={[styles.identity, { color: colors.textSecondary }]}>{analysis.country} • {analysis.exchange} • {analysis.mic || 'MIC n/a'} • {analysis.currency}</Text></View><View style={[styles.callPill, { borderColor: badgeTone }]}><Text style={[styles.callText, { color: badgeTone, writingDirection: 'rtl' }]}>{analysis.investment ? tierLabelFa(analysis.investment.tier, analysis.investment.labelFa) : analysis.call}</Text></View></View>
           <View style={styles.priceRow}><Text style={[styles.price, { color: colors.text }]}>{price == null ? '—' : priceN(price)}</Text><Text style={[styles.currency, { color: colors.textSecondary }]}>{analysis.currency}</Text></View>
           <Text style={[styles.timestamp, { color: colors.textSecondary }]}>{priceTimestamp ? `Price observed ${priceTimestamp}` : 'Verified price timestamp unavailable'}</Text>
         </View>
@@ -248,6 +249,7 @@ export default function GlobalStockDetailScreen() {
           <Text style={[styles.cardTitle, { color: decisionColor(analysis.investment.tier, colors.textSecondary), writingDirection: 'rtl', textAlign: 'right' }]}>{tierLabelFa(analysis.investment.tier, analysis.investment.labelFa)}</Text>
           <Text style={[styles.body, { color: colors.textSecondary, writingDirection: 'rtl', textAlign: 'right' }]}>{`دلایل مثبت: ${reasonLineFa(analysis.investment.positive)}`}</Text>
           <Text style={[styles.body, { color: colors.textSecondary, writingDirection: 'rtl', textAlign: 'right' }]}>{`دلایل منفی: ${reasonLineFa(analysis.investment.negative)}`}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary, fontSize: 12, marginTop: 8, writingDirection: 'rtl', textAlign: 'right' }]}>{`قاعده محافظه‌کار: ${friendly(analysis.call)}`}</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 8, writingDirection: 'rtl', textAlign: 'right' }]}>{analysis.investment.disclaimerFa || DISCLAIMER_FA}</Text>
         </View> : null}
 
