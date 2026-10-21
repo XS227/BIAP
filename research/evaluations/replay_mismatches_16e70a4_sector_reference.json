@@ -1,0 +1,8382 @@
+{
+ "rows": 7188,
+ "matched": 6384,
+ "mismatches": [
+  {
+   "key": "DE:FRANKFURT:02P",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:0M0",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:123F",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:14D",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:1COV",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:1GBS",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:1INN",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:1SMA",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:1SXP",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:1U1",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:2GB",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk,no_independent_signal",
+     "replay": "peer_scope_exchange_sector,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:2HRA",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:2INV",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:3330",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:3ITN",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:4DS",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:7V0",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:93M1",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:A1OS",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:A6T",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:AAD",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:AAG",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:AAQ1",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:ABX",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:ACT0",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:ACWN",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:ACX",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:ADE",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:ADV",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:AEIN",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:AFX",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:AIXA",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:AJ91",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:ALXA",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:AMA0",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:AMI",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:AMV0",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:AOF",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:ARI",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:B7E",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:B8FK",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:B9B",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:BAS",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:BC8",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:BDT",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:BENH",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:BEZ",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:BFV",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:BIG",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:BIJ",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:BIKE",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:BMM",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:BNR",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:BOG",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:BOSS",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:BSL",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:BST",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:BVB",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:C1V0",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:CA1",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:CCB",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:CDZ0",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:CEK",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:CGX",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:CHG",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:CLIQ",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:CNW",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:COK",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:CTNK",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk,no_independent_signal",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:CWC",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:CY1K",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:CYR",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:D77",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:DAM",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:DAR",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:DBAN",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:DCIK",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:DEF",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:DEQ",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:DEZ",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:DFTK",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:DGR",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:DIE",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:DLX",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:DMP",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:DR0",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:DRE2",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:DRW3",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:DRW8",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:DTD2",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:DUE",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:DWNI",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:E4C",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:EAD",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:ECF",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:ECX",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:EDL",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:EFF0",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:EIF",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:EIN",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:EIS",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:ELG",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:ERAG",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:ETG",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:EUK3",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:EUX",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:EUZ",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:EVAC",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:EVK",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:EVT",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:EXJ0",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:EXL",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:F3C",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:FC9",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:FEV",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:FHW",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:FIE",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:FME",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:FNTN",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:FPE",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:FPE3",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:FRE",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:FRS",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:FVI",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:FXT",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:FYB",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:G1A",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:G24",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:G6P0",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:GBF",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:GFT",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:GIL",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:GME",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:GSC1",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:GTH",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:GTK",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:GTY",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:H2O",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:H9W",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:HABA",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:HBH",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:HEI",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:HEN",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:HEN3",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:HG1",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:HIGH",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:HLAG",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:HLE",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:HMU",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:HNL",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:HP3A",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:HRPK",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:HVB",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:HYI",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:HYQ",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk,no_independent_signal",
+     "replay": "peer_scope_exchange_sector,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:IBU",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:ILM1",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:INH",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:IPOK",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:IVU",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:JEN",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:KA1",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:KA8",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:KRN",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:KSB",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:KSB3",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:KSW",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:KWG",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:KWS",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:LEC",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:LEG",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:LEH",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:LEI",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:LEOW",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:LIK",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:LPK",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:LSX",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:LUS1",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:LXS",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:M12",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:M3B0",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:M3V",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:M7U",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:MA10",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:MBB",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:MBH3",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:MBQ",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:ML2",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:MNV6",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:MPCG",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:MRK",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:MSAG",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:MTX",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:MUB",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:MUM",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:MUT",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk,no_independent_signal",
+     "replay": "peer_scope_exchange_sector,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:MUT3",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:MVV1",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:MWB0",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,evidence_warn",
+     "replay": "no_peer_comparison,distress_unknown,evidence_warn"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:MXHN",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:MZX",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:N4G0",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:NCH2",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:NDA",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:NEM",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:NF4",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:NFN",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:NLM",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:NN6",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:NOEJ",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:NTG",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:OBS",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:OEL",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:P4O",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:P911",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:PAH3",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:PAT",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:PCZ",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk,no_independent_signal,evidence_warn",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown,no_independent_signal,evidence_warn"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:PDA0",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:PEH",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:PFS0",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:PFV",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:PHH2",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:PIT",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:PKB",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:PLEK",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:PTHH",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:PTP",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:PWO",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:PYR",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:PZS",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:QBY0",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:R1B",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:RAA",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:RCMN",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:RGB",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk,no_independent_signal",
+     "replay": "peer_scope_exchange_sector,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:RHK",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:RKB",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:RTC",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:RTML",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:RTV",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:RWE",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:S188",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SB1",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SBS",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:SDF",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SGU",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SHF",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SIM0",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SIS",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SMB",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SMHN",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SMWN",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SPB",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SPC",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SPG",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SPT6",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk,evidence_warn",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown,evidence_warn"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SSH",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:ST5",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:STO3",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SUR",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SVE",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SWA",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:SY1",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SYT",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:XETRA:SZ50",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:SZG",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:T2G",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk,evidence_warn",
+     "replay": "peer_scope_exchange_sector,distress_unknown,evidence_warn"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:T3T1",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:T5O",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:TIMA",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:TLIK",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:TPE",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:TPG0",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:TSS",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:TTK",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:TTR1",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:TUF",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:UCA1",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:UMD",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,evidence_warn",
+     "replay": "no_peer_comparison,distress_unknown,evidence_warn"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:UN0",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk,no_independent_signal",
+     "replay": "peer_scope_exchange_sector,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:UUU",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:UZU",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:V6C",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:VAD",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:VBK",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:VEH",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:VEZ",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:VG80",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk,evidence_warn",
+     "replay": "peer_scope_exchange_sector,distress_unknown,evidence_warn"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:VH2",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:VIH1",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:VME",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:VRL",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:WAC",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:WAF",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:WCH",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:WEW",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:WOLF",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:WSU",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:WWG",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:XK4",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:XTP",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,evidence_warn",
+     "replay": "no_peer_comparison,distress_unknown,evidence_warn"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:Z29",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "DE:FRANKFURT:ZN2",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "ES:BME_MADRID:CIE",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "ES:BME_MADRID:CLNX",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "ES:BME_MADRID:ENG",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "ES:BME_MADRID:FAE",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "ES:BME_MADRID:ISUR",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "ES:BME_MADRID:LOG",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "ES:BME_MADRID:PUIG",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "ES:BME_MADRID:REN",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "ES:BME_MADRID:VOC",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:DIGIA",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:DIGIGR",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:HIAB",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:KEMIRA",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_global_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:KESKOA",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:KESKOB",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:KOSKI",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:METSO",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:NOHO",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:NOKIA",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_global_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:OLVAS",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:OVARO",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk,no_independent_signal",
+     "replay": "peer_scope_global_sector,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:SSABAH",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:SSABBH",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:STEAV",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:STERV",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:TRH1V",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:TTALO",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FI:NASDAQ_HELSINKI:UPM",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_global_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:74SW",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:AC",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:ACAN",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:AI",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_global_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:AIR",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:AKW",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:ALDV",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:ALO",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:ALTA",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:ARAMI",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:ARG",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:ARTE",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:ARVEN",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:ASY",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:ATE",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:ATLD",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:AURE",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:BASS",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk,no_independent_signal",
+     "replay": "distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:BEN",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:BIM",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:BOL",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:BUR",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:BVI",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:CARM",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:CBSM",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:CDA",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:CDI",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:CLARI",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:COUR",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:COV",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:COVH",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:CRI",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:DBG",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:DG",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:DPT",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:EEM",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:EL",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:ELEC",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:EMEIS",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:EN",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:EXENS",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:FCMC",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:FII",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:FNAC",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:FREY",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:FRVIA",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:FSDV",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:GDS",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:GFC",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:GPE",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:GTT",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:GUI",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:HCO",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:HDF",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:ICAD",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:IMDA",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:INEA",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:IPN",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:IPS",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:JCQ",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:KER",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:LIN",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:LOUP",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:MC",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:ML",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:NK",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:NRO",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:ODET",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:PARRO",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:PAT",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:POMRY",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:QDT",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:RI",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:SAF",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:SAMS",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:SBT",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:SFCA",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:SGO",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:SK",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:SOP",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:SU",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:TEP",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:TFI",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:THEP",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:TNG",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:TRI",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:TTE",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:URW",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:VCT",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:VIRP",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:VIV",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk,no_independent_signal",
+     "replay": "distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:VK",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_global_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:VU",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "FR:EURONEXT_PARIS:WAVE",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:AAL",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:AEP",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:ASBE",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:ASLI",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:AVON",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:BKY",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:BLND",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:BOOT",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:BT.A",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:CKI",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:CKN",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:DOCS",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:DPLM",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:DRX",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:ELM",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:EXPN",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:EZJ",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:FOUR",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:FRES",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:FSTA",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:GENL",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:GRX",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:HTG",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:ITV",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:MARS",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:PRV",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:PSON",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:RIO",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:RKT",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:RSW",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:RTO",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:SAGA",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:SEPL",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:SHEL",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:SREI",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:SVS",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:SVT",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:THRL",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:TRN",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:TSCO",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:UTG",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:VIP",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "GB:LSE:WTB",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:AC5",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:AGP",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:ARIS",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:AVIO",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:B",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:BAN",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk,no_independent_signal",
+     "replay": "no_peer_comparison,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:BC",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:BRI",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:BZU",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:CAI",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:CRL",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:DAN",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:DLG",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:ELN",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:ENEL",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:ENI",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_global_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:ENV",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_global_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:ERG",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:FCT",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:FNM",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:GAB",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:GE",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:GHC",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:GVS",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:IGD",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:IP",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:IRC",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:IVG",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:NEXI",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:ORS",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:PRY",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:RACE",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:RCS",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:SES",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:SFL",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:SYS",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:TRN",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:VLS",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "IT:EURONEXT_MILAN:YACHT",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NL:EURONEXT_AMSTERDAM:ACOMO",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_global_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NL:EURONEXT_AMSTERDAM:AD",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NL:EURONEXT_AMSTERDAM:AXS",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NL:EURONEXT_AMSTERDAM:BAMNB",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NL:EURONEXT_AMSTERDAM:FFARM",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NL:EURONEXT_AMSTERDAM:FUR",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NL:EURONEXT_AMSTERDAM:NRP",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NL:EURONEXT_AMSTERDAM:NSI",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NL:EURONEXT_AMSTERDAM:SHELL",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NO:EURONEXT_OSLO:AUSS",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_global_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NO:EURONEXT_OSLO:DOFG",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NO:EURONEXT_OSLO:EQNR",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NO:EURONEXT_OSLO:GSF",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NO:EURONEXT_OSLO:HERMA",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NO:EURONEXT_OSLO:MOWI",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NO:EURONEXT_OSLO:ODF",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NO:EURONEXT_OSLO:ODFB",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NO:EURONEXT_OSLO:OTEC",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NO:EURONEXT_OSLO:POL",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_global_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NO:EURONEXT_OSLO:SOFF",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NO:EURONEXT_OSLO:SOMA",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NO:EURONEXT_OSLO:STRO",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "NO:EURONEXT_OSLO:ZAL",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:ALTRA",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:ARJO.B",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:ATRLJ.B",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:BALD.B",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:BRIN.B",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:BUFAB",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:CANTA",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:CATE",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:CIBUS",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:CLA.B",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:EMIL.B",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:EPRO.B",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:ESSITY.A",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:ESSITY.B",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:FNOVA.B",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:G5EN",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:JOMA",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:LAGR.B",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:LOGI.B",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:LUG",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:LUMI",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:NEOBO",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:NEWA.B",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:NIVI.B",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:NP3",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:PLAZ.B",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:PRISMA",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:RVRC",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:SAGA.A",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:SAGA.B",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:SAGA.D",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:SFAST",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:SINT",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:SSAB.A",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:SSAB.B",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:STE.A",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:STE.R",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:STEF.B",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:TEL2.A",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:TEL2.B",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:WALL.B",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "SE:NASDAQ_STOCKHOLM:WIHL",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:ACXP",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:AEHL",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:AFCG",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:AMPL",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:ANDE",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:ARBB",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:ASTS",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:ATHR",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:AUGO",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:AVXL",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:BEAT",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:BHST",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:BIIB",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:BKR",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:BLIV",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:BMHL",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:BXBL",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:CASS",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:CASY",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:CBC",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:CDRO",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:CRML",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:CRMT",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:CSWC",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:DCBO",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:DPRO",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:DRMA",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:DTI",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:EDUC",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:ELDN",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:ELVA",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:EOCN",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:ETOR",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:FCFS",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:FNUC",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:FOX",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:FOXA",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:GAIN",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:GDTC",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:HCSG",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:HRZN",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:ICMB",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:IMVT",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:INCR",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:INTR",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:JCTC",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:KGEI",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:KLAC",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:KMDA",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:KYIV",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:LBRX",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:LGIH",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:LIEN",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:MCRI",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:MEOH",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:MGRC",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:NAUT",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:NB",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:NEXM",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:NIKI",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:NMFC",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:NNE",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:NWS",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:NWSA",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:OIO",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:PAGP",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:PAL",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:PBM",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:PCAR",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:PFX",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:PHIO",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:PLSM",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:PNRG",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:PTLE",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:REYN",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:RWAY",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:SAGT",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:SANG",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:SGC",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:SLNG",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:SRAD",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:STKE",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:TIGO",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:TMCR",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:TRI",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:TWG",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:UPBD",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:VBNK",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:VC",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:VFF",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:VOXR",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:VRAX",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:VRM",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:WLDS",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:WOK",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:WWD",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:ZENA",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NASDAQ:ZTG",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:AA",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:ADM",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:AER",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:AGBK",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:AIR",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:ANVS",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:AROC",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:ASC",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:ASIX",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:AU",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:B",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:BAP",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:BBDC",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:BBW",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:BCE",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:BCSF",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:BG",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:BGSI",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:BH",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:BLSH",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:BTE",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:BZH",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:CCJ",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:CCS",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:CION",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:CMC",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:CNH",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:CNK",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:CNQ",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:CNX",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:COHR",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:COP",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:CTVA",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_global_sector,distress_not_low_risk",
+     "replay": "peer_scope_global_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:CVE",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:CVX",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:DD",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:DE",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:DFH",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:DHI",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:DVN",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:EHC",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:ELAN",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:EMN",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:EMR",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:EPAM",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:EPD",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:EQS",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:ETN",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:EXP",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:FSK",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:FUL",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:GATX",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:GBX",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:GFR",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:GIB",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:GRBK",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:GSBD",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:HGV",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:HMY",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:HOV",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:HTGC",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:HVT",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:HVT.A",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:IIIN",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:IMAX",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:JBS",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:JCI",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:JNJ",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:KBH",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:LAC",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:LEN",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:LLY",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:MAIN",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:MHO",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:MLR",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:MRK",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:MTH",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:MTUS",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:MTZ",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:NCDL",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:NEM",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:NKE",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:NU",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:NUE",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:NVR",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:OBDC",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:ONON",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:OTF",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:OXY",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:PFE",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:PHM",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:PNNT",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:PPG",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:PRG",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:PRSU",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:PSBD",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:PSX",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:PUK",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:Q",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:RACE",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:REX",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:RPM",
+   "fields": {
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:RRC",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:SAR",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:SCM",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:SDHC",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk,no_independent_signal",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown,no_independent_signal"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:SEG",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:SGU",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:SHO",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:SII",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:SLB",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:SMC",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:SRE",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:STN",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:SU",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:SWK",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:TFPM",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:TG",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:THO",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:TJX",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "agents_disagree,peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:TOL",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "peer_scope_exchange_sector,distress_not_low_risk",
+     "replay": "peer_scope_exchange_sector,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:TPVG",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:TRIN",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:TRN",
+   "fields": {
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:TSLX",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:TTE",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:TVC",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:TVE",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:TXT",
+   "fields": {
+    "investment_tier": {
+     "xlsx": "ACCUMULATE",
+     "replay": "BUY"
+    },
+    "tier_before_flags": {
+     "xlsx": "BUY",
+     "replay": null
+    },
+    "flags": {
+     "xlsx": "distress_not_low_risk",
+     "replay": "distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:VIK",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,no_peer_comparison,distress_not_low_risk",
+     "replay": "agents_disagree,no_peer_comparison,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:WU",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:XOM",
+   "fields": {
+    "flags": {
+     "xlsx": "agents_disagree,distress_not_low_risk",
+     "replay": "agents_disagree,distress_unknown"
+    }
+   }
+  },
+  {
+   "key": "US:NYSE:ZGN",
+   "fields": {
+    "flags": {
+     "xlsx": "no_peer_comparison,distress_not_low_risk",
+     "replay": "no_peer_comparison,distress_unknown"
+    }
+   }
+  }
+ ],
+ "decisions_not_in_xlsx": [
+  "DE:FRANKFURT:ADS",
+  "DE:FRANKFURT:AFX",
+  "DE:FRANKFURT:AG1",
+  "DE:FRANKFURT:AIXA",
+  "DE:FRANKFURT:ALV",
+  "DE:FRANKFURT:BAS",
+  "DE:FRANKFURT:BC8",
+  "DE:FRANKFURT:BEI",
+  "DE:FRANKFURT:BMW",
+  "DE:FRANKFURT:BNR",
+  "DE:FRANKFURT:BOSS",
+  "DE:FRANKFURT:CBK",
+  "DE:FRANKFURT:DAM",
+  "DE:FRANKFURT:DB1",
+  "DE:FRANKFURT:DBK",
+  "DE:FRANKFURT:DEZ",
+  "DE:FRANKFURT:DHL",
+  "DE:FRANKFURT:DTE",
+  "DE:FRANKFURT:DTG",
+  "DE:FRANKFURT:DUE",
+  "DE:FRANKFURT:DWS",
+  "DE:FRANKFURT:ENR",
+  "DE:FRANKFURT:EOAN",
+  "DE:FRANKFURT:EVD",
+  "DE:FRANKFURT:EVK",
+  "DE:FRANKFURT:FME",
+  "DE:FRANKFURT:FRA",
+  "DE:FRANKFURT:FRE",
+  "DE:FRANKFURT:FTK",
+  "DE:FRANKFURT:G1A",
+  "DE:FRANKFURT:G24",
+  "DE:FRANKFURT:GBF",
+  "DE:FRANKFURT:GLJ",
+  "DE:FRANKFURT:HAG",
+  "DE:FRANKFURT:HEI",
+  "DE:FRANKFURT:HEN3",
+  "DE:FRANKFURT:HNR1",
+  "DE:FRANKFURT:HOT",
+  "DE:FRANKFURT:IFX",
+  "DE:FRANKFURT:JEN",
+  "DE:FRANKFURT:KBX",
+  "DE:FRANKFURT:KGX",
+  "DE:FRANKFURT:LHA",
+  "DE:FRANKFURT:MBG",
+  "DE:FRANKFURT:MLP",
+  "DE:FRANKFURT:MRK",
+  "DE:FRANKFURT:MTX",
+  "DE:FRANKFURT:MUV2",
+  "DE:FRANKFURT:NDA",
+  "DE:FRANKFURT:NDX1",
+  "DE:FRANKFURT:NEM",
+  "DE:FRANKFURT:O4B",
+  "DE:FRANKFURT:OHB",
+  "DE:FRANKFURT:P911",
+  "DE:FRANKFURT:PAH3",
+  "DE:FRANKFURT:PBB",
+  "DE:FRANKFURT:R3NK",
+  "DE:FRANKFURT:RAA",
+  "DE:FRANKFURT:RHM",
+  "DE:FRANKFURT:S92",
+  "DE:FRANKFURT:SAP",
+  "DE:FRANKFURT:SDF",
+  "DE:FRANKFURT:SGL",
+  "DE:FRANKFURT:SHL",
+  "DE:FRANKFURT:SIE",
+  "DE:FRANKFURT:SIX2",
+  "DE:FRANKFURT:SIX3",
+  "DE:FRANKFURT:SRT3",
+  "DE:FRANKFURT:SY1",
+  "DE:FRANKFURT:TEG",
+  "DE:FRANKFURT:TKA",
+  "DE:FRANKFURT:TKMS",
+  "DE:FRANKFURT:TLX",
+  "DE:FRANKFURT:TMV",
+  "DE:FRANKFURT:TUI1",
+  "DE:FRANKFURT:ULC",
+  "DE:FRANKFURT:UTDI",
+  "DE:FRANKFURT:VOS",
+  "DE:FRANKFURT:VOW",
+  "DE:FRANKFURT:VOW3",
+  "DE:FRANKFURT:WUW",
+  "DE:FRANKFURT:YSN",
+  "DE:FRANKFURT:ZAL",
+  "DE:XETRA:123F",
+  "DE:XETRA:14D",
+  "DE:XETRA:1GBS",
+  "DE:XETRA:1INN",
+  "DE:XETRA:1SMA",
+  "DE:XETRA:1SXP",
+  "DE:XETRA:1U1",
+  "DE:XETRA:27N0",
+  "DE:XETRA:2GB",
+  "DE:XETRA:2HRA",
+  "DE:XETRA:3ITN",
+  "DE:XETRA:4DS",
+  "DE:XETRA:7V0",
+  "DE:XETRA:8TRA",
+  "DE:XETRA:93M1",
+  "DE:XETRA:A1OS",
+  "DE:XETRA:A6T",
+  "DE:XETRA:AAD",
+  "DE:XETRA:AAG",
+  "DE:XETRA:AAQ1",
+  "DE:XETRA:AB9",
+  "DE:XETRA:ABO",
+  "DE:XETRA:ABX",
+  "DE:XETRA:ACT0",
+  "DE:XETRA:ACWN",
+  "DE:XETRA:ACX",
+  "DE:XETRA:ADE",
+  "DE:XETRA:ADN1",
+  "DE:XETRA:ADV",
+  "DE:XETRA:AEIN",
+  "DE:XETRA:AJ91",
+  "DE:XETRA:ALG",
+  "DE:XETRA:AMI",
+  "DE:XETRA:AMM",
+  "DE:XETRA:AMV0",
+  "DE:XETRA:AOF",
+  "DE:XETRA:B7E",
+  "DE:XETRA:B8FK",
+  "DE:XETRA:BAYN",
+  "DE:XETRA:BDT",
+  "DE:XETRA:BENH",
+  "DE:XETRA:BEZ",
+  "DE:XETRA:BIG",
+  "DE:XETRA:BIJ",
+  "DE:XETRA:BIKE",
+  "DE:XETRA:BKHT",
+  "DE:XETRA:BNN",
+  "DE:XETRA:BOG",
+  "DE:XETRA:BRNK",
+  "DE:XETRA:BSL",
+  "DE:XETRA:BST",
+  "DE:XETRA:BVB",
+  "DE:XETRA:BWB",
+  "DE:XETRA:BYW",
+  "DE:XETRA:BYW6",
+  "DE:XETRA:C1V0",
+  "DE:XETRA:C3R",
+  "DE:XETRA:CA1",
+  "DE:XETRA:CBK0",
+  "DE:XETRA:CDZ0",
+  "DE:XETRA:CEA",
+  "DE:XETRA:CEC",
+  "DE:XETRA:CECV",
+  "DE:XETRA:CEK",
+  "DE:XETRA:CFC",
+  "DE:XETRA:CGX",
+  "DE:XETRA:CHG",
+  "DE:XETRA:CLIQ",
+  "DE:XETRA:COK",
+  "DE:XETRA:CON",
+  "DE:XETRA:CSH",
+  "DE:XETRA:CWC",
+  "DE:XETRA:CY1K",
+  "DE:XETRA:CYR",
+  "DE:XETRA:D77",
+  "DE:XETRA:DAR",
+  "DE:XETRA:DBAN",
+  "DE:XETRA:DEF",
+  "DE:XETRA:DEQ",
+  "DE:XETRA:DEX",
+  "DE:XETRA:DFTK",
+  "DE:XETRA:DGR",
+  "DE:XETRA:DHE1",
+  "DE:XETRA:DHER",
+  "DE:XETRA:DIE",
+  "DE:XETRA:DKG",
+  "DE:XETRA:DLX",
+  "DE:XETRA:DMP",
+  "DE:XETRA:DMRE",
+  "DE:XETRA:DOU",
+  "DE:XETRA:DR0",
+  "DE:XETRA:DRW3",
+  "DE:XETRA:DRW8",
+  "DE:XETRA:DTD2",
+  "DE:XETRA:DWNI",
+  "DE:XETRA:E4C",
+  "DE:XETRA:EBK",
+  "DE:XETRA:ECF",
+  "DE:XETRA:EDL",
+  "DE:XETRA:EFF0",
+  "DE:XETRA:EIF",
+  "DE:XETRA:EIN",
+  "DE:XETRA:EKT",
+  "DE:XETRA:ELB",
+  "DE:XETRA:ELG",
+  "DE:XETRA:EMH",
+  "DE:XETRA:ERAG",
+  "DE:XETRA:ERW",
+  "DE:XETRA:ETG",
+  "DE:XETRA:EUZ",
+  "DE:XETRA:EVAC",
+  "DE:XETRA:EVT",
+  "DE:XETRA:EXJ0",
+  "DE:XETRA:EXL",
+  "DE:XETRA:F3C",
+  "DE:XETRA:FC9",
+  "DE:XETRA:FEV",
+  "DE:XETRA:FIE",
+  "DE:XETRA:FNTN",
+  "DE:XETRA:FPE",
+  "DE:XETRA:FPE3",
+  "DE:XETRA:FRS",
+  "DE:XETRA:FXT",
+  "DE:XETRA:FYB",
+  "DE:XETRA:G6P0",
+  "DE:XETRA:GFT",
+  "DE:XETRA:GIL",
+  "DE:XETRA:GME",
+  "DE:XETRA:GMM",
+  "DE:XETRA:GSC1",
+  "DE:XETRA:GTH",
+  "DE:XETRA:GTK",
+  "DE:XETRA:GTY",
+  "DE:XETRA:GXI",
+  "DE:XETRA:H2O",
+  "DE:XETRA:H9W",
+  "DE:XETRA:HABA",
+  "DE:XETRA:HAW",
+  "DE:XETRA:HBH",
+  "DE:XETRA:HDD",
+  "DE:XETRA:HE8",
+  "DE:XETRA:HEN",
+  "DE:XETRA:HFG",
+  "DE:XETRA:HGEA",
+  "DE:XETRA:HHFA",
+  "DE:XETRA:HIGH",
+  "DE:XETRA:HLAG",
+  "DE:XETRA:HLE",
+  "DE:XETRA:HMU",
+  "DE:XETRA:HNL",
+  "DE:XETRA:HP3A",
+  "DE:XETRA:HPHA",
+  "DE:XETRA:HRPK",
+  "DE:XETRA:HYQ",
+  "DE:XETRA:IBU",
+  "DE:XETRA:ILM1",
+  "DE:XETRA:INH",
+  "DE:XETRA:INS",
+  "DE:XETRA:IOS",
+  "DE:XETRA:IPOK",
+  "DE:XETRA:IS7",
+  "DE:XETRA:ISHA",
+  "DE:XETRA:ITN",
+  "DE:XETRA:IUR",
+  "DE:XETRA:IVU",
+  "DE:XETRA:IXX",
+  "DE:XETRA:JDC",
+  "DE:XETRA:JST",
+  "DE:XETRA:JUN3",
+  "DE:XETRA:KA1",
+  "DE:XETRA:KA8",
+  "DE:XETRA:KRN",
+  "DE:XETRA:KSB",
+  "DE:XETRA:KSB3",
+  "DE:XETRA:KSC",
+  "DE:XETRA:KTA",
+  "DE:XETRA:KWG",
+  "DE:XETRA:KWS",
+  "DE:XETRA:LEG",
+  "DE:XETRA:LEI",
+  "DE:XETRA:LEOW",
+  "DE:XETRA:LIK",
+  "DE:XETRA:LPK",
+  "DE:XETRA:LQAG",
+  "DE:XETRA:LSX",
+  "DE:XETRA:LUS1",
+  "DE:XETRA:LXS",
+  "DE:XETRA:M12",
+  "DE:XETRA:M3B0",
+  "DE:XETRA:M3V",
+  "DE:XETRA:M5S",
+  "DE:XETRA:M7U",
+  "DE:XETRA:MA10",
+  "DE:XETRA:MAK",
+  "DE:XETRA:MBB",
+  "DE:XETRA:MBK",
+  "DE:XETRA:MBQ",
+  "DE:XETRA:MED",
+  "DE:XETRA:MLL",
+  "DE:XETRA:MPCG",
+  "DE:XETRA:MRX",
+  "DE:XETRA:MSAG",
+  "DE:XETRA:MUB",
+  "DE:XETRA:MUM",
+  "DE:XETRA:MUX",
+  "DE:XETRA:MVV1",
+  "DE:XETRA:MWB0",
+  "DE:XETRA:MXHN",
+  "DE:XETRA:MZX",
+  "DE:XETRA:N4G0",
+  "DE:XETRA:NA9",
+  "DE:XETRA:NA9A",
+  "DE:XETRA:NBG6",
+  "DE:XETRA:NC5A",
+  "DE:XETRA:NCH2",
+  "DE:XETRA:NF4",
+  "DE:XETRA:NFN",
+  "DE:XETRA:NN6",
+  "DE:XETRA:NOEJ",
+  "DE:XETRA:NTG",
+  "DE:XETRA:OBCK",
+  "DE:XETRA:OBS",
+  "DE:XETRA:P4O",
+  "DE:XETRA:PAT",
+  "DE:XETRA:PCZ",
+  "DE:XETRA:PDA0",
+  "DE:XETRA:PFS0",
+  "DE:XETRA:PFV",
+  "DE:XETRA:PNE3",
+  "DE:XETRA:PO1",
+  "DE:XETRA:PSAN",
+  "DE:XETRA:PSM",
+  "DE:XETRA:PTHH",
+  "DE:XETRA:PTP",
+  "DE:XETRA:PUM",
+  "DE:XETRA:PWO",
+  "DE:XETRA:PYR",
+  "DE:XETRA:PZS",
+  "DE:XETRA:QB7",
+  "DE:XETRA:QBY0",
+  "DE:XETRA:R1B",
+  "DE:XETRA:RCMN",
+  "DE:XETRA:RHK",
+  "DE:XETRA:RSL2",
+  "DE:XETRA:RTC",
+  "DE:XETRA:RTV",
+  "DE:XETRA:RWE",
+  "DE:XETRA:S188",
+  "DE:XETRA:SAX",
+  "DE:XETRA:SB1",
+  "DE:XETRA:SBS",
+  "DE:XETRA:SBX",
+  "DE:XETRA:SCE",
+  "DE:XETRA:SF3",
+  "DE:XETRA:SFQ",
+  "DE:XETRA:SHA0",
+  "DE:XETRA:SHF",
+  "DE:XETRA:SIS",
+  "DE:XETRA:SJJ",
+  "DE:XETRA:SKB",
+  "DE:XETRA:SLSA",
+  "DE:XETRA:SMHN",
+  "DE:XETRA:SMWN",
+  "DE:XETRA:SNG",
+  "DE:XETRA:SPC",
+  "DE:XETRA:SPG",
+  "DE:XETRA:SRT",
+  "DE:XETRA:ST5",
+  "DE:XETRA:STM",
+  "DE:XETRA:STO3",
+  "DE:XETRA:SUR",
+  "DE:XETRA:SVE",
+  "DE:XETRA:SWA",
+  "DE:XETRA:SYT",
+  "DE:XETRA:SYZ",
+  "DE:XETRA:SZG",
+  "DE:XETRA:SZU",
+  "DE:XETRA:T3T1",
+  "DE:XETRA:TGTA",
+  "DE:XETRA:TIMA",
+  "DE:XETRA:TIW",
+  "DE:XETRA:TPE",
+  "DE:XETRA:TPG0",
+  "DE:XETRA:TTK",
+  "DE:XETRA:TTR1",
+  "DE:XETRA:TUF",
+  "DE:XETRA:UBK",
+  "DE:XETRA:UMD",
+  "DE:XETRA:UN0",
+  "DE:XETRA:UUU",
+  "DE:XETRA:UZU",
+  "DE:XETRA:V1NC",
+  "DE:XETRA:V3V",
+  "DE:XETRA:V6C",
+  "DE:XETRA:VAD",
+  "DE:XETRA:VBK",
+  "DE:XETRA:VG80",
+  "DE:XETRA:VH2",
+  "DE:XETRA:VIB3",
+  "DE:XETRA:VIH1",
+  "DE:XETRA:VME",
+  "DE:XETRA:VNA",
+  "DE:XETRA:VOTR",
+  "DE:XETRA:VRL",
+  "DE:XETRA:VVV3",
+  "DE:XETRA:WAC",
+  "DE:XETRA:WAF",
+  "DE:XETRA:WCH",
+  "DE:XETRA:WDL1",
+  "DE:XETRA:WEW",
+  "DE:XETRA:WFA",
+  "DE:XETRA:WOLF",
+  "DE:XETRA:WSU",
+  "DE:XETRA:XK4",
+  "DE:XETRA:XTP",
+  "DE:XETRA:YOC",
+  "DE:XETRA:Z29",
+  "DE:XETRA:ZIL2",
+  "DE:XETRA:ZN2"
+ ]
+}
