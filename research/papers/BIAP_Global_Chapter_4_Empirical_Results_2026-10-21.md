@@ -91,7 +91,7 @@ $$
 
 All 445 BUY decisions have evidence **PASS**. Of 519 SELL, 516 are PASS, 2 WARN and 1 BLOCK. In total, **941/964 (97.61%)** of selected positions have a date-aligned entry price after a separately logged supplement filled 25 of the 48 originally missing values. **23** remain unpriced (3 BUY, 20 SELL); these stay in counts but are excluded from realized return calculations. Frozen snapshot SHA-256:
 
-\`0bd9066eb980d9293566c2cb682dce579f6d6fbf15e102eeb341e2e7e52621a1\`
+`0bd9066eb980d9293566c2cb682dce579f6d6fbf15e102eeb341e2e7e52621a1`
 
 The snapshot and price-supplement checksums were revalidated on 2026-10-21. The recorded regression suite had **1,665 passing tests**, zero failures and ten warnings. Exact decision reconstruction from backup ledgers reported **964/964** tier-and-score matches. Unit test success does not prove that future stock returns will be predicted correctly.
 
@@ -103,7 +103,7 @@ $$
 
 ## 4.6 Germany: diagnosed source failure and independent recovery
 
-The 2026-10-20 price-only refresh produced \`INSUFFICIENT_MARKET_COVERAGE\` and \`marketCoveragePct=0\` for both German venues. **The archived stage-1 ledgers establish the concrete failure chain:** the public Deutsche Börse service had returned **"no downloadable daily consolidated file"**, causing the adapter to fall back to Twelve Data; **\`BIAP_GLOBAL_MARKET_API_KEY\` was not configured**. Thus five batch-level missing-key errors were retained and ranking eligibility was false. This is a **market-feed availability/fallback configuration fault**, not proof that all German firms lacked underlying company analyses.
+The 2026-10-20 price-only refresh produced `INSUFFICIENT_MARKET_COVERAGE` and `marketCoveragePct=0` for both German venues. **The archived stage-1 ledgers establish the concrete failure chain:** the public Deutsche Börse service had returned **"no downloadable daily consolidated file"**, causing the adapter to fall back to Twelve Data; **`BIAP_GLOBAL_MARKET_API_KEY` was not configured**. Thus five batch-level missing-key errors were retained and ranking eligibility was false. This is a **market-feed availability/fallback configuration fault**, not proof that all German firms lacked underlying company analyses.
 
 On 2026-10-21 the *unchanged* Deutsche Börse 2026-10-20 daily post-trade files were fetched again and parsed in memory by the existing adapter, against the archived authoritative universes:
 
@@ -159,8 +159,8 @@ The historical data do not provide the vintage of fundamentals, issuer membershi
 
 ### Reproducibility and provenance
 
-- Frozen portfolio: \`research/paper_portfolio_2026-10-20.json\`; tag \`paper-portfolio-2026-10-20\`; snapshot commit \`e2d32897e40d8a824c84d372ee91dfd0a4b67ffc\`.
-- Decision engine commit: \`7c0606e81c5944d92566299a13692ab4c2f07dfb\`.
+- Frozen portfolio: `research/paper_portfolio_2026-10-20.json`; tag `paper-portfolio-2026-10-20`; snapshot commit `e2d32897e40d8a824c84d372ee91dfd0a4b67ffc`.
+- Decision engine commit: `7c0606e81c5944d92566299a13692ab4c2f07dfb`.
 - Full individual Section A decision ledger: [paper_portfolio_2026-10-20_sectionA.md](../evaluations/paper_portfolio_2026-10-20_sectionA.md).
-- Frozen ledger backups: \`/home/ubuntu/backups/paper-portfolio-ledgers-20261020\` (retained on authorized research server; not new permanent bulk company-data collection).
+- Frozen ledger backups: `/home/ubuntu/backups/paper-portfolio-ledgers-20261020` (retained on authorized research server; not new permanent bulk company-data collection).
 - This paper updates **documentation only**; no frozen snapshots, historical company ledgers, DMA agents, tier decisions or production services were changed.
