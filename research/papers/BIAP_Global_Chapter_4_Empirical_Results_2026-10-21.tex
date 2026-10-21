@@ -1,0 +1,176 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=23mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,amsmath,amssymb,booktabs,tabularx,array,longtable,xcolor,microtype}
+\usepackage[colorlinks=true,linkcolor=MidnightBlue,urlcolor=MidnightBlue]{hyperref}
+\usepackage{graphicx,fancyhdr}
+\definecolor{MidnightBlue}{HTML}{163657}
+\definecolor{AccentTeal}{HTML}{107C83}
+\definecolor{SoftBlue}{HTML}{EAF2F5}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\footnotesize BIAP GLOBAL \textbar\ EMPIRICAL RESULTS}
+\fancyhead[R]{\footnotesize 21 OCTOBER 2026}
+\fancyfoot[C]{\thepage}
+\setlength{\headheight}{14pt}
+\renewcommand{\arraystretch}{1.23}
+\newcommand{\sectitle}[1]{\subsection{#1}}
+\begin{document}
+{\color{AccentTeal}\small RESEARCH MANUSCRIPT \textbar\ FORWARD TEST BASELINE}\\[5pt]
+{\color{MidnightBlue}\LARGE\bfseries Chapter 4. Empirical Results}\\[5pt]
+{\large Ten-country cross-sectional analysis of BIAP Global}\\[5pt]
+{\small Frozen portfolio: 20 October 2026 \quad\textbar\quad Six primary agents \quad\textbar\quad Twelve exchange feeds}\\
+\noindent\rule{\linewidth}{0.8pt}
+
+\noindent\textbf{Research status.} Preliminary decision-stage statistics. No one-month realised investment results are available at the manuscript date. The prespecified forward outcome is due on 20 November 2026. Neither past market returns nor current classifications are represented as an historical backtest.
+
+\section{Study design and decision sample}
+The frozen research scope includes the United States, United Kingdom, Germany, France, Italy, Sweden, Norway, Netherlands, Finland, and Spain. US and German equities are split across two venues each. The classification census contains 7,593 exchange-level rows; a separate extreme-tier analysis uses 445 BUY and 519 SELL labels, summing to 964 decisions. The census is not a deduplicated unique-issuer count.
+
+\begin{table}[ht]
+\centering\small
+\caption{Frozen decision-stage classification census, 20 October 2026}
+\begin{tabular}{lrr}\toprule
+Decision & Count & Share (\%)\\\midrule
+BUY & 445 & 5.86\\
+ACCUMULATE & 1,040 & 13.70\\
+HOLD & 3,475 & 45.77\\
+REDUCE & 1,195 & 15.74\\
+SELL & 519 & 6.84\\
+NO RECOMMENDATION & 919 & 12.10\\\midrule
+\textbf{Total} & \textbf{7,593} & \textbf{100.00}\\\bottomrule
+\end{tabular}
+\label{tab:classification}
+\end{table}
+
+\section{Agent framework and score definition}
+The six primary voting agents are fundamental, risk, forecast, comparison, quality, and liquidity. Four further integration/governance components must not be counted as independent investment-vote agents. The investment score takes confidence-weighted votes \emph{after} market-relative risk and sector-peer adjustments. The vote inclusion threshold is 0.30:
+\begin{equation}
+S_i =
+\frac{\sum_{a\in A_i} c_{ia} v_{ia}^{*}}
+{\sum_{a\in A_i} c_{ia}}, \qquad
+A_i = \{a:c_{ia}\geq0.30\},\qquad v_{ia}^{*}\in[-1,1].
+\label{eq:weighted}
+\end{equation}
+Raw vote means below are \emph{not} the weighted inputs in Equation~\eqref{eq:weighted}; risk/peer votes can be transformed in investment mode. Evidence constraints, data availability, disagreements and governance downgrades further change the final tier.
+
+\section{Cross-country empirical results}
+\begin{table}[ht]
+\centering\scriptsize
+\caption{Ten-country final BUY/SELL decisions and entry-price completeness. Mean score and confidence are frozen engine outputs.}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrrrr}
+\toprule
+Country & BUY & SELL & Mean $S_{\mathrm{BUY}}$ & Mean $S_{\mathrm{SELL}}$ & $C_{\mathrm{BUY}}$ & $C_{\mathrm{SELL}}$ & Priced/selected\\\midrule
+United States & 269 & 278 & +.395 & -.371 & .628 & .574 & 541/547\\
+Germany & 54 & 80 & +.252 & -.406 & .463 & .435 & 133/134\\
+United Kingdom & 27 & 42 & +.403 & -.346 & .617 & .506 & 60/69\\
+Sweden & 25 & 37 & +.367 & -.398 & .616 & .553 & 60/62\\
+France & 23 & 26 & +.307 & -.441 & .511 & .480 & 47/49\\
+Italy & 15 & 15 & +.364 & -.342 & .521 & .491 & 30/30\\
+Norway & 12 & 12 & +.428 & -.482 & .595 & .554 & 23/24\\
+Finland & 9 & 12 & +.388 & -.430 & .557 & .507 & 21/21\\
+Netherlands & 7 & 8 & +.422 & -.365 & .556 & .460 & 15/15\\
+Spain & 4 & 9 & +.336 & -.429 & .516 & .473 & 11/13\\\midrule
+\textbf{Total} & \textbf{445} & \textbf{519} & --- & --- & --- & --- & \textbf{941/964}\\
+\bottomrule
+\end{tabular}}
+\label{tab:markets}
+\end{table}
+
+These descriptive differences show that the ranking engine separates its selected extremes by construction. They do not demonstrate prospective predictive accuracy or return outperformance. Small-country samples have markedly greater sampling uncertainty.
+
+\section{Recoverable agent outputs}
+All 964 compressed company result records in the frozen ledger backup were readable and contained the six primary agent signal objects. Let $T_i$ denote final selected tier and $v_{ia}^{raw}$ the original stored vote:
+\begin{equation}
+\bar v_{a,g} = n_g^{-1}\sum_{i:T_i=g}v_{ia}^{raw},
+\quad g\in\{\mathrm{BUY},\mathrm{SELL}\}.
+\label{eq:rawmeans}
+\end{equation}
+
+\begin{table}[ht]
+\centering\small
+\caption{Agent-level descriptive raw vote and confidence means, conditional on extreme-tier selection}
+\begin{tabular}{lrrrr}\toprule
+Agent & BUY vote & SELL vote & BUY confidence & SELL confidence\\\midrule
+Fundamental & +.379 & -.720 & .626 & .614\\
+Risk & -.129 & -.788 & .704 & .701\\
+Forecast & +.086 & -.106 & .689 & .688\\
+Comparison & +.099 & -.010 & .380 & .019\\
+Quality & +.460 & -.302 & .618 & .485\\
+Liquidity & +.207 & +.049 & .589 & .546\\\bottomrule
+\end{tabular}
+\label{tab:agents}
+\end{table}
+
+The risk agent's mean vote remains negative within the selected BUY cohort. The comparison agent has frequent zero/abstaining raw signals and exceptionally low confidence for SELL. Neither pattern implies causal importance or forecasting performance.
+
+\begin{equation}
+Z_{a,g}=n_g^{-1}\sum_{i:T_i=g}\mathbb{1}\!\left(v_{ia}^{raw}=0\right).
+\label{eq:abstention}
+\end{equation}
+
+\section{Evidence and reproducibility}
+All 445 BUY labels are evidence PASS. SELL evidence is PASS 516, WARN 2, BLOCK 1. The frozen JSON, unchanged at snapshot date, contains 964 selected labels. Of 48 originally absent entry prices, a separately logged vendor supplement filled 25 without mutating those labels; 23 remain unpriced (three BUY, 20 SELL). Consequently:
+\begin{equation}
+\mathrm{EntryCoverage}=\frac{N_{\mathrm{priced}}}{N_{\mathrm{selected}}}\times100
+=\frac{941}{964}\times100=97.61\%.
+\label{eq:coverage}
+\end{equation}
+Research snapshot SHA-256:
+\begin{quote}\ttfamily\footnotesize
+0bd9066eb980d9293566c2cb682dce579f6d6fbf15e102eeb341e2e7e52621a1
+\end{quote}
+The checksums were revalidated on 21 October. The recorded suite passed 1,665 tests with zero failures and ten warnings, and full decision-tier/score reconstruction reported 964/964 agreement. Software testing does not validate market forecasting.
+
+\section{Germany: identified feed failure and controlled recovery test}
+The saved German stage-1 status for 20 October records the root cause: Deutsche B\"orse's daily delayed post-trade object was not downloadable at scan time; the software selected its fallback Twelve Data batch feed, which then failed because \texttt{BIAP\_GLOBAL\_MARKET\_API\_KEY} was absent. As a result, both German venues reported zero market coverage and \texttt{rankingEligible=false} despite pre-existing company financial results.
+
+\begin{table}[ht]
+\centering\small
+\caption{Independent read-only recovery test on 21 October, using Deutsche B\"orse's October 20 daily files}
+\begin{tabular}{lrrrr}
+\toprule
+Venue & Universe & Valid matches & Coverage (\%) & Errors\\\midrule
+Xetra & 409 & 406 & 99.27 & 0\\
+Frankfurt & 499 & 487 & 97.60 & 0\\\bottomrule
+\end{tabular}
+\label{tab:germany}
+\end{table}
+
+The unchanged source adapter successfully decoded both venue files and joined trades to issuer ISINs. The recovery is a \emph{data-source test only}; it does not reclassify German stocks, restore live production ranking eligibility, or amend the 20 October frozen decisions. A safe fix needs bounded retries, session-date freshness checks, isolated rerun validation, and explicit fallback readiness. Never force a green ranking status from historical cached quotes.
+
+\section{Pre-registered forward-test formulae (not yet evaluated)}
+All outcomes here remain \emph{pending} until the chosen 20 November 2026 horizon. Adjust both opening and closing prices consistently for corporate actions, and report missing exits.
+\begin{equation}
+R_{i,H}=\frac{P_{i,H}^{adj}}{P_{i,0}^{adj}}-1,\qquad
+R_{m,g,H}=\frac{1}{|E_{m,g,H}|}\sum_{i\in E_{m,g,H}}R_{i,H}.
+\label{eq:returns}
+\end{equation}
+The sell basket is an \emph{underperformance comparator}, not an assumed implemented short book:
+\begin{equation}
+\Delta_{m,H}=R_{m,\mathrm{BUY},H}-R_{m,\mathrm{SELL},H},\qquad
+\alpha_{m,H}=R_{m,\mathrm{BUY},H}-R_{m,\mathrm{benchmark},H}.
+\label{eq:spread}
+\end{equation}
+Before observing future returns, register cross-venue aggregation weights; stratify bootstrap replicates by venue and report confidence intervals, missingness, and calendar/FX treatment. For same-date market activity exploration, pre-specify:
+\begin{equation}
+\rho_{S,V}=
+\operatorname{Corr}\!\bigl(\operatorname{rank}(S_i),
+                           \operatorname{rank}(\operatorname{tradingValue}_i)\bigr).
+\label{eq:spearman}
+\end{equation}
+For genuine agent contribution evidence, run prospective leave-one-agent-out \emph{rerankings} and compare outcomes, rather than inferring causality from conditional raw vote averages. No outcome-level $p$-values, Sharpe ratios or predictive ROC-AUC estimates are claimed.
+
+\section{Limitations and conclusion}
+A true pre-freeze point-in-time backtest is not possible with the archived versioned fundamentals, membership history and past decision rules. Other limitations are selection bias, US cohort dominance, peer scarcity, nontrading securities, different price units/currencies, corporate actions, and German market-feed downtime.
+
+\textbf{Conclusion.} The documented evidence establishes an auditable ten-country forward-test baseline, six recoverable primary agent signals, 964 frozen BUY/SELL decisions and 97.61\% date-aligned entry-price coverage. The study has \emph{not} yet established investment profitability, benchmark outperformance or causal agent importance.
+
+\vspace{1em}
+\noindent\textbf{Source register.} Frozen portfolio \texttt{research/paper\_portfolio\_2026-10-20.json};
+freeze commit \texttt{e2d32897e40d8a824c84d372ee91dfd0a4b67ffc};
+engine commit \texttt{7c0606e81c5944d92566299a13692ab4c2f07dfb};
+full decision statistics \texttt{research/evaluations/paper\_portfolio\_2026-10-20\_sectionA.md}.
+Research document only; no production deployment or frozen data mutation.
+\end{document}
