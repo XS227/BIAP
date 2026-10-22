@@ -54,6 +54,9 @@ class LiveQuote:
     # keeps its original fetch time, so age = now - fetched_at reflects how
     # long ago BIAP last talked to the source for this price.
     fetched_at: float = field(default_factory=time.time)
+    # Which upstream served this price: "tsetmc-relay" (BIAP_TSETMC_API_BASE) or
+    # "tsetmc-direct" (BIAP_TSETMC_FALLBACK_BASE). Logged per price and stored in provenance.
+    source: str = "tsetmc-relay"
 
 
 @dataclass(frozen=True)
@@ -108,6 +111,26 @@ def base_url() -> str:
 
 def tsetmc_api_base() -> str:
     return os.environ.get("BIAP_TSETMC_API_BASE", DEFAULT_TSETMC_API_BASE).rstrip("/")
+
+
+def tsetmc_fallback_base() -> Optional[str]:
+    """Direct TSETMC, used only when the relay fails. Opt-in: unset/empty disables it, because
+    cdn.tsetmc.com is unreachable (TCP connect times out) from the production VPS, where a default
+    fallback would only double the wait on every price lookup while the relay is down."""
+    value = os.environ.get("BIAP_TSETMC_FALLBACK_BASE", "").rstrip("/")
+    return value if value and value != tsetmc_api_base() else None
+
+
+def _tsetmc_get(path: str, *, timeout: float) -> tuple[dict, str]:
+    """GET a TSETMC API path via the relay, then the direct fallback. Returns (payload, source)."""
+    try:
+        return _read_json(f"{tsetmc_api_base()}{path}", timeout=timeout), "tsetmc-relay"
+    except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as primary_exc:
+        fallback = tsetmc_fallback_base()
+        if not fallback:
+            raise
+        logger.warning("market_data relay_failed path=%s error=%s; trying direct", path.split("/")[1], type(primary_exc).__name__)
+        return _read_json(f"{fallback}{path}", timeout=timeout), "tsetmc-direct"
 
 
 def _is_tsetmc_instrument_code(code: str) -> bool:
@@ -317,12 +340,13 @@ def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuot
     if instrument_code is None:
         return None
     try:
-        payload = _read_json(f"{tsetmc_api_base()}/ClosingPrice/GetClosingPriceInfo/{instrument_code}", timeout=timeout)
+        payload, price_source = _tsetmc_get(f"/ClosingPrice/GetClosingPriceInfo/{instrument_code}", timeout=timeout)
     except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError):
         return None
     row = payload.get("closingPriceInfo")
     if not isinstance(row, dict):
         return None
+    logger.info("market_data price_source code=%s source=%s", instrument_code, price_source)
     last_price = _num(row, "pDrCotVal")
     closing_price = _num(row, "pClosing")
     yesterday_price = _num(row, "priceYesterday")
@@ -370,6 +394,7 @@ def _fetch_tsetmc_quote(code: str, *, timeout: float = 8.0) -> Optional[LiveQuot
         yesterday_price=yesterday_price,
         change=change,
         change_percent=change_percent,
+        source=price_source,
     )
 
 

@@ -11,11 +11,12 @@ company_registry_store.py) even when it is not a company.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import time
 from typing import Any, Iterable
 import uuid
 
+import codal_data
 from codal_data import CodalDataUnavailable, list_companies
 from company_builder import build_company_from_quote, build_company_from_symbol
 from company_registry_store import CompanyRegistryStore, company_id_for
@@ -42,6 +43,9 @@ ALLOWED_MARKETS = {"TSE", "IFB", "IFB_BASE"}
 # invented: rows selected through this fallback keep market=None until a verified
 # upstream later supplies the exchange/board.
 ORDINARY_SHARE_YVALS = {"300", "303", "307", "309", "313"}
+BACKLOG_PER_RUN = 25  # never-enriched companies attempted per run after new-filing companies
+MAX_CONSECUTIVE_RATE_LIMITS = 3  # stop the run cleanly after this many 429s in a row
+FAILED_RETRY_DAYS = 7  # a company with a non-429 failure is not retried for this long
 
 
 def _now_iso() -> str:
@@ -305,7 +309,14 @@ def refresh_universe(
 
     outcome = _classify_and_register(raw_items, target=target, registry=reg, run_id=effective_run_id)
     codes = reg.primary_company_codes()
+    traded = {}
+    for item in raw_items:
+        data = _raw_row(item)
+        value = data.get("traded_value")
+        if value:
+            traded[str(data.get("code") or "")] = float(value)
     return {
+        "_traded_value": traded,
         "ok": bool(codes),
         "count": len(codes),
         "rawCount": target.count(),
@@ -349,6 +360,10 @@ def run_batch(
     reset: bool = False,
     interval_seconds: float = 0.0,
     restrict_to_codes: Iterable[str] | None = None,
+    backlog_per_run: int | None = None,
+    new_filing_codes: Iterable[str] | None = None,
+    max_consecutive_rate_limits: int = MAX_CONSECUTIVE_RATE_LIMITS,
+    sleep=time.sleep,
 ) -> dict[str, Any]:
     """Enrich up to one bounded daily slice of the listed-company universe.
 
@@ -386,6 +401,14 @@ def run_batch(
     discovered by that same refresh is never enrolled into enrichment unless
     it was already in the caller's explicit set. Without it, behavior is
     unchanged: the full never-enriched-first priority order applies.
+
+    ``backlog_per_run`` switches to the financials-only policy used by the daily timer:
+    (1) companies with new CODAL filings since the last run (``new_filing_codes``) first,
+    (2) then up to ``backlog_per_run`` never-enriched companies, most-traded first,
+    (3) nothing else -- already-enriched companies with no new filing are not refetched.
+    A 429 is retried after ``codal_data.backoff_delay`` (Retry-After honoured); after
+    ``max_consecutive_rate_limits`` in a row the run saves progress and stops cleanly
+    with status ``rate_limited`` (the caller maps that to a non-failing exit code).
     """
     target = store or ListedCompanyStore()
     reg = registry or CompanyRegistryStore(target.db_path)
@@ -396,6 +419,7 @@ def run_batch(
     total_enriched_before = target.status()["enriched"]
 
     universe = refresh_universe(target, reg, run_id=run_id)
+    traded_value = universe.pop("_traded_value", None) or {}
     eligible_codes = universe.pop("_codes", None)
     # Backward-compatible path for unit tests/callers that replace refresh_universe.
     if eligible_codes is None:
@@ -407,11 +431,22 @@ def run_batch(
     total = len(eligible_codes)
     discovered = int(universe.get("rawUniverseCount") or universe.get("rawCount") or total)
 
-    ordered = target.order_by_enrichment_priority(eligible_codes)
     never_enriched_before = target.never_enriched_count(eligible_codes)
     safe_interval = max(0.0, float(interval_seconds or 0.0))
     safe_batch_size = max(1, min(int(batch_size), DAILY_BATCH_SIZE))
-    codes = ordered[:safe_batch_size]
+    previous_state = target.get_state(WORKER_NAME) or {}
+    failed_at: dict[str, str] = dict((previous_state.get("metadata") or {}).get("failedCodes") or {})
+    filing_codes: list[str] = []
+    if backlog_per_run is None:
+        codes = target.order_by_enrichment_priority(eligible_codes)[:safe_batch_size]
+    else:
+        eligible_set = set(eligible_codes)
+        filing_codes = [c for c in dict.fromkeys(str(c) for c in (new_filing_codes or ())) if c in eligible_set][:safe_batch_size]
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=FAILED_RETRY_DAYS)).isoformat()
+        never_enriched, _ = target._split_by_enrichment(eligible_codes)
+        backlog = [c for c in never_enriched if c not in set(filing_codes) and failed_at.get(c, "") < cutoff]
+        backlog.sort(key=lambda c: (-traded_value.get(c, 0.0), c))  # most-traded first; unknown volume last
+        codes = filing_codes + backlog[:max(0, int(backlog_per_run))]
 
     already_enriched_in_slice: set[str] = set()
     if codes:
@@ -436,7 +471,12 @@ def run_batch(
         "externalBlockers": [],
         "rateLimitPolicy": "stop-current-batch-immediately; un-enriched company retried at front of next run",
         "companyUniversePolicy": "TSETMC discovery -> instrument classification -> issuer resolution -> dedup -> company enrichment; CODAL is enrichment/verification only",
-        "schedulerPriority": "never-enriched genuine companies first, then oldest-enriched for refresh",
+        "schedulerPriority": (
+            "never-enriched genuine companies first, then oldest-enriched for refresh" if backlog_per_run is None
+            else "new CODAL filings first, then never-enriched most-traded first; no refresh of unchanged financials"
+        ),
+        "newFilingCompanies": len(filing_codes),
+        "backlogPerRun": backlog_per_run,
         "neverEnrichedBeforeRun": never_enriched_before,
         "runId": run_id,
         "restrictedToCodesCount": len(eligible_codes) if restrict_to_codes is not None else None,
@@ -493,56 +533,88 @@ def run_batch(
 
     target.save_state(WORKER_NAME, status="running", cursor=max(0, total - never_enriched_before), total=total, processed=0, succeeded=0, failed=0, started_at=started_at, metadata=metadata)
 
+    consecutive_rate_limits = 0
+    total_rate_limits = 0
+    price_sources: dict[str, int] = {}
+
+    def _try_company(code: str) -> None:
+        nonlocal succeeded, processed, re_enriched_companies
+        instrument = reg.get_instrument(code)
+        company, source = _build_verified_company(code)
+        if company is not None and instrument and instrument.get("symbol"):
+            company["name_fa"] = str(instrument["symbol"])
+        if company is None:
+            raise ValueError("no verified company data available")
+        if code in already_enriched_in_slice:
+            re_enriched_companies += 1
+        availability = company.get("data_available") or {}
+        codal_diag = (company.get("data_diagnostics") or {}).get("codal") or {}
+        codal_error = " ".join(str(codal_diag.get(key) or "") for key in ("metadataError", "fundamentalsError", "error"))
+        if _is_rate_limit_error(RuntimeError(codal_error)) and not availability.get("codal"):
+            raise RuntimeError(f"CODAL rate limit during financial enrichment: {codal_error[:240]}")
+        price_source = (company.get("market") or {}).get("price_source")
+        target.save_enriched(
+            code,
+            company,
+            provenance={
+                "builder": source,
+                "ingestedAt": _now_iso(),
+                "priceSource": price_source,
+                "dataAvailability": availability,
+                "moduleTargets": ["kpi", "sql", "financial-model"],
+                "tindexConfigured": tindex_configured(),
+            },
+        )
+        price_label = price_source or "no-live-quote"  # no live quote recorded for this company this run
+        price_sources[price_label] = price_sources.get(price_label, 0) + 1
+        succeeded += 1
+        processed += 1
+
     for index, code in enumerate(codes):
         last_code = code
-        try:
-            # Resolve the canonical Persian issuer symbol from the registry so
-            # numeric TSETMC codes do not get sent to CODAL as a symbol.
-            instrument = reg.get_instrument(code)
-            company, source = _build_verified_company(code)
-            if company is not None and instrument and instrument.get("symbol"):
-                company["name_fa"] = str(instrument["symbol"])
-            if company is None:
-                raise ValueError("no verified company data available")
-            if code in already_enriched_in_slice:
-                re_enriched_companies += 1
-            availability = company.get("data_available") or {}
-            codal_diag = (company.get("data_diagnostics") or {}).get("codal") or {}
-            codal_error = " ".join(str(codal_diag.get(key) or "") for key in ("metadataError", "fundamentalsError", "error"))
-            if _is_rate_limit_error(RuntimeError(codal_error)) and not availability.get("codal"):
-                raise RuntimeError(f"CODAL rate limit during financial enrichment: {codal_error[:240]}")
-            target.save_enriched(
-                code,
-                company,
-                provenance={
-                    "builder": source,
-                    "ingestedAt": _now_iso(),
-                    "dataAvailability": availability,
-                    "moduleTargets": ["kpi", "sql", "financial-model"],
-                    "tindexConfigured": tindex_configured(),
-                },
-            )
-            succeeded += 1
-            processed += 1
-        except Exception as exc:
-            last_error = str(exc)[:1000]
-            if len(sample_errors) < 5:
-                sample_errors.append(f"{code}: {last_error}"[:240])
-            target.record_error(code, last_error)
-            if _is_rate_limit_error(exc):
+        while True:  # retried only after a rate-limit backoff
+            try:
+                _try_company(code)
+                consecutive_rate_limits = 0
+                break
+            except Exception as exc:
+                last_error = str(exc)[:1000]
+                if len(sample_errors) < 5:
+                    sample_errors.append(f"{code}: {last_error}"[:240])
+                target.record_error(code, last_error)
+                if not _is_rate_limit_error(exc):
+                    failed += 1
+                    processed += 1
+                    failed_at[code] = _now_iso()
+                    break
                 rate_limited = True
+                consecutive_rate_limits += 1
+                total_rate_limits += 1
                 metadata["rateLimitedAt"] = _now_iso()
                 metadata["rateLimitedCode"] = code
                 metadata["rateLimitError"] = last_error
-            else:
-                failed += 1
-                processed += 1
+                if backlog_per_run is None or consecutive_rate_limits >= max_consecutive_rate_limits:
+                    break
+                delay = codal_data.backoff_delay(consecutive_rate_limits, codal_data.last_retry_after())
+                metadata["lastBackoffSeconds"] = round(delay, 1)
+                sleep(delay)
+                codal_data.clear_rate_limit()
+                rate_limited = False
 
         if rate_limited:
-            return _finish(_save_state("rate_limited"))
+            break
 
         if safe_interval and index + 1 < len(codes):
-            time.sleep(safe_interval)
+            sleep(safe_interval)
+
+    metadata["failedCodes"] = dict(sorted(failed_at.items(), key=lambda kv: kv[1])[-2000:])
+    metadata["rateLimitedCount"] = total_rate_limits
+    metadata["priceSources"] = price_sources
+    metadata["stoppedEarly"] = (
+        f"CODAL rate limit: {consecutive_rate_limits} consecutive 429s, stopped at {last_code}" if rate_limited else None
+    )
+    if rate_limited:
+        return _finish(_save_state("rate_limited"))
 
     remaining_never_enriched = target.never_enriched_count(eligible_codes)
     completed = remaining_never_enriched == 0
