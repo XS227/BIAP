@@ -55,18 +55,18 @@ async function save(wallet: DemoWallet): Promise<void> { await AsyncStorage.setI
 
 export async function executeDemoTrade(params: { code: string; side: 'BUY' | 'SELL'; quantity: number; price: number }): Promise<{ ok: true; wallet: DemoWallet } | { ok: false; message: string }> {
   const { code, side, quantity, price } = params;
-  if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price) || price <= 0) return { ok: false, message: 'قیمت یا تعداد برای معامله دمو معتبر نیست.' };
+  if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price) || price <= 0) return { ok: false, message: 'Price or quantity is not valid for a demo trade.' };
   const wallet = await getDemoWallet();
   const symbol = displaySymbol(code).toUpperCase();
   const holding = wallet.holdings[symbol] ?? { quantity: 0, averageCost: 0 };
   const value = quantity * price;
   if (side === 'BUY') {
-    if (wallet.cash < value) return { ok: false, message: 'موجودی دمو برای این خرید کافی نیست.' };
+    if (wallet.cash < value) return { ok: false, message: 'Demo balance is not enough for this buy.' };
     const nextQty = holding.quantity + quantity;
     wallet.cash -= value;
     wallet.holdings[symbol] = { quantity: nextQty, averageCost: ((holding.quantity * holding.averageCost) + value) / nextQty };
   } else {
-    if (holding.quantity < quantity) return { ok: false, message: 'تعداد سهم دمو برای این فروش کافی نیست.' };
+    if (holding.quantity < quantity) return { ok: false, message: 'Demo share quantity is not enough for this sell.' };
     wallet.cash += value;
     const nextQty = holding.quantity - quantity;
     if (nextQty === 0) delete wallet.holdings[symbol]; else wallet.holdings[symbol] = { ...holding, quantity: nextQty };

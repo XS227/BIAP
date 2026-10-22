@@ -120,3 +120,21 @@ def test_global_top_cache_miss_never_runs_full_market_scan_in_user_request(monke
     missing=next(row for row in result["markets"] if row["country"]=="BR")
     assert missing["status"]=="SCAN_CACHE_MISSING"
     assert missing["rankingEligible"] is False
+
+
+def test_markets_are_counted_per_country_inside_the_investment_scope(monkeypatch):
+    monkeypatch.setenv("DECISION_MODE", "investment")
+    monkeypatch.setenv("BIAP_INVESTMENT_SCOPE", "restricted")
+    monkeypatch.setattr(scan_service, "_global_top_markets", lambda: (
+        ("US", "NASDAQ"), ("US", "NYSE"), ("DE", "XETRA"), ("DE", "FRANKFURT"), ("JP", "TSE"), ("AU", "ASX")))
+
+    def cached(country, exchange, max_age_hours):
+        if (country, exchange) == ("US", "NYSE"):
+            return None                      # one US exchange missing -> US is not ready
+        return {"status": "OK", "country": country, "exchange": exchange, "rankingEligible": True, "recommendations": []}
+
+    monkeypatch.setattr(scan_service, "_read_scan_cache", cached)
+    result = scan_service.scan_global_top10(top_n=10, max_age_hours=30)
+    assert result["marketsScanned"] == 2 and result["marketsEligible"] == 1 and result["marketsExcluded"] == 1   # US, DE
+    assert result["exchangesScanned"] == 4 and result["exchangesEligible"] == 3
+    assert {m["country"] for m in result["markets"]} == {"US", "DE"}

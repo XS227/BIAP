@@ -84,6 +84,9 @@ class InvestmentConfig:
 
     # an agent with confidence below this has no usable data (core agents emit 0.0 unavailable / 0.25 abstaining)
     data_min_confidence: float = 0.30
+    # decision confidence under this never earns BUY / ACCUMULATE: capped at HOLD, flag ``insufficient_evidence``
+    # (same floor as the conservative engine's min_confidence in agents.py)
+    min_tier_confidence: float = 0.35
     min_agents_hard_block: int = 3
     min_agents_full_confidence: int = 4
     # relative tiers (fractions of the analysed stocks of one exchange) + absolute score floors
@@ -584,6 +587,9 @@ def _decide_core(
             if c.positive_block and tier in ("BUY", "ACCUMULATE"):
                 decisions[key] = _blocked(key, "distress positive_block", n, scope, tuple(flags))
                 continue
+            if tier in ("BUY", "ACCUMULATE") and confidence < cfg.min_tier_confidence:
+                flags.append("insufficient_evidence")
+                tier = "HOLD"
             pos, neg = reasons(used, {a: signals[a][1] for a in used})
             decisions[key] = InvestmentDecision(
                 key=key, call=tier, score=round(score, 6), confidence=round(confidence, 6), agents_with_data=n,

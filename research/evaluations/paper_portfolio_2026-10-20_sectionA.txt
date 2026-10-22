@@ -1,0 +1,105 @@
+Paper portfolio 2026-10-20 (sha256 0bd9066eb980...)  section A   decisions 964 = priced 941 + unpriced 23
+  * Weights are renormalised over priced holdings: each basket is equal-weighted among the holdings that have data, not over all decisions.
+  * 'Priced' = has an entry price.
+  * Bootstrap: 10000 resamples, seed 20261020, percentile 95% CI; markets with <10 priced holdings on either side are marked 'too small to interpret'.
+
+(A1) ALL DECISIONS - decision behaviour (priced or not)
+market                side      n  priced  no entry  no exit  mean score  mean conf  evidence
+US:NASDAQ             BUY     151     149         2        0      +0.381     +0.626  {'PASS': 151}
+US:NASDAQ             SELL    212     208         4        0      -0.381     +0.577  {'PASS': 212}
+US:NYSE               BUY     118     118         0        0      +0.413     +0.630  {'PASS': 118}
+US:NYSE               SELL     66      66         0        0      -0.340     +0.565  {'PASS': 66}
+GB:LSE                BUY      27      27         0        0      +0.403     +0.617  {'PASS': 27}
+GB:LSE                SELL     42      33         9        0      -0.346     +0.506  {'PASS': 42}
+IT:EURONEXT_MILAN     BUY      15      15         0        0      +0.364     +0.521  {'PASS': 15}
+IT:EURONEXT_MILAN     SELL     15      15         0        0      -0.342     +0.491  {'PASS': 15}
+SE:NASDAQ_STOCKHOLM   BUY      25      25         0        0      +0.367     +0.616  {'PASS': 25}
+SE:NASDAQ_STOCKHOLM   SELL     37      35         2        0      -0.398     +0.553  {'PASS': 37}
+NO:EURONEXT_OSLO      BUY      12      12         0        0      +0.428     +0.595  {'PASS': 12}
+NO:EURONEXT_OSLO      SELL     12      11         1        0      -0.482     +0.554  {'PASS': 12}
+DE:XETRA              BUY      23      23         0        0      +0.288     +0.470  {'PASS': 23}
+DE:XETRA              SELL     36      36         0        0      -0.371     +0.439  {'PASS': 35, 'WARN': 1}
+DE:FRANKFURT          BUY      31      31         0        0      +0.226     +0.458  {'PASS': 31}
+DE:FRANKFURT          SELL     44      43         1        0      -0.434     +0.432  {'PASS': 42, 'BLOCK': 1, 'WARN': 1}
+FR:EURONEXT_PARIS     BUY      23      22         1        0      +0.307     +0.511  {'PASS': 23}
+FR:EURONEXT_PARIS     SELL     26      25         1        0      -0.441     +0.480  {'PASS': 26}
+NL:EURONEXT_AMSTERDAM BUY       7       7         0        0      +0.422     +0.556  {'PASS': 7}
+NL:EURONEXT_AMSTERDAM SELL      8       8         0        0      -0.365     +0.460  {'PASS': 8}
+FI:NASDAQ_HELSINKI    BUY       9       9         0        0      +0.388     +0.557  {'PASS': 9}
+FI:NASDAQ_HELSINKI    SELL     12      12         0        0      -0.430     +0.507  {'PASS': 12}
+ES:BME_MADRID         BUY       4       4         0        0      +0.336     +0.516  {'PASS': 4}
+ES:BME_MADRID         SELL      9       7         2        0      -0.429     +0.473  {'PASS': 9}
+ALL                   BUY     445     442         3        0      +0.372     +0.592  {'PASS': 445}
+ALL                   SELL    519     499        20        0      -0.384     +0.533  {'PASS': 516, 'WARN': 2, 'BLOCK': 1}
+
+(A2) COVERAGE - priced / total decisions
+market                           BUY          SELL
+US:NASDAQ               149/151   99%  208/212   98%
+US:NYSE                 118/118  100%   66/66   100%
+GB:LSE                   27/27   100%   33/42    79%
+IT:EURONEXT_MILAN        15/15   100%   15/15   100%
+SE:NASDAQ_STOCKHOLM      25/25   100%   35/37    95%
+NO:EURONEXT_OSLO         12/12   100%   11/12    92%
+DE:XETRA                 23/23   100%   36/36   100%
+DE:FRANKFURT             31/31   100%   43/44    98%
+FR:EURONEXT_PARIS        22/23    96%   25/26    96%
+NL:EURONEXT_AMSTERDAM     7/7    100%    8/8    100%
+FI:NASDAQ_HELSINKI        9/9    100%   12/12   100%
+ES:BME_MADRID             4/4    100%    7/9     78%
+ALL                     442/445   99%  499/519   96%
+
+(A3) SELECTION-BIAS CHECK - priced vs unpriced (difference = priced minus unpriced; n/a when a group is empty)
+market                side   n pr/unpr  score pr  score un     diff  conf pr  conf un     diff
+US:NASDAQ             BUY     149/2       +0.381    +0.370   +0.011   +0.627   +0.536   +0.091
+US:NASDAQ             SELL    208/4       -0.381    -0.351   -0.030   +0.576   +0.604   -0.028
+US:NYSE               BUY     118/0       +0.413       n/a      n/a   +0.630      n/a      n/a
+US:NYSE               SELL     66/0       -0.340       n/a      n/a   +0.565      n/a      n/a
+GB:LSE                BUY      27/0       +0.403       n/a      n/a   +0.617      n/a      n/a
+GB:LSE                SELL     33/9       -0.338    -0.375   +0.037   +0.519   +0.458   +0.061
+IT:EURONEXT_MILAN     BUY      15/0       +0.364       n/a      n/a   +0.521      n/a      n/a
+IT:EURONEXT_MILAN     SELL     15/0       -0.342       n/a      n/a   +0.491      n/a      n/a
+SE:NASDAQ_STOCKHOLM   BUY      25/0       +0.367       n/a      n/a   +0.616      n/a      n/a
+SE:NASDAQ_STOCKHOLM   SELL     35/2       -0.395    -0.447   +0.052   +0.555   +0.522   +0.033
+NO:EURONEXT_OSLO      BUY      12/0       +0.428       n/a      n/a   +0.595      n/a      n/a
+NO:EURONEXT_OSLO      SELL     11/1       -0.478    -0.519   +0.041   +0.565   +0.428   +0.137
+DE:XETRA              BUY      23/0       +0.288       n/a      n/a   +0.470      n/a      n/a
+DE:XETRA              SELL     36/0       -0.371       n/a      n/a   +0.439      n/a      n/a
+DE:FRANKFURT          BUY      31/0       +0.226       n/a      n/a   +0.458      n/a      n/a
+DE:FRANKFURT          SELL     43/1       -0.434    -0.420   -0.014   +0.432   +0.414   +0.018
+FR:EURONEXT_PARIS     BUY      22/1       +0.308    +0.280   +0.028   +0.510   +0.513   -0.003
+FR:EURONEXT_PARIS     SELL     25/1       -0.440    -0.467   +0.028   +0.478   +0.516   -0.037
+NL:EURONEXT_AMSTERDAM BUY       7/0       +0.422       n/a      n/a   +0.556      n/a      n/a
+NL:EURONEXT_AMSTERDAM SELL      8/0       -0.365       n/a      n/a   +0.460      n/a      n/a
+FI:NASDAQ_HELSINKI    BUY       9/0       +0.388       n/a      n/a   +0.557      n/a      n/a
+FI:NASDAQ_HELSINKI    SELL     12/0       -0.430       n/a      n/a   +0.507      n/a      n/a
+ES:BME_MADRID         BUY       4/0       +0.336       n/a      n/a   +0.516      n/a      n/a
+ES:BME_MADRID         SELL      7/2       -0.443    -0.379   -0.064   +0.472   +0.477   -0.005
+ALL                   BUY     442/3       +0.372    +0.340   +0.032   +0.593   +0.528   +0.064
+ALL                   SELL    499/20      -0.383    -0.392   +0.008   +0.534   +0.495   +0.040
+
+(C) NOT PRICED - 23 holdings; excluded from returns, still counted in (A)
+  DE:FRANKFURT          SELL TLIK      no_entry_price snapshot: no close on snapshot date; supplement (TLIK.F): no vendor trade on the snapshot date; last prior close 0.1509999930858612 on 2026-10-19 not used
+  ES:BME_MADRID         SELL ENER      no_entry_price snapshot: no close on snapshot date; supplement (ENER.MC): no vendor trade on the snapshot date; last prior close 3.3299999237060547 on 2026-10-19 not used
+  ES:BME_MADRID         SELL TRG       no_entry_price snapshot: no close on snapshot date; supplement (TRG.MC): no vendor trade on the snapshot date; last prior close 0.14380000531673431 on 2026-10-19 not used
+  FR:EURONEXT_PARIS     BUY  FCMC      no_entry_price snapshot: no close on snapshot date; supplement (FCMC.PA): no vendor trade on the snapshot date; last prior close 2820.0 on 2026-10-19 not used
+  FR:EURONEXT_PARIS     SELL BLEE      no_entry_price snapshot: no close on snapshot date; supplement (BLEE.PA): no vendor trade on the snapshot date; last prior close 92.5 on 2026-10-19 not used
+  GB:LSE                SELL AFRK      no_entry_price snapshot: no close on snapshot date; supplement (AFRK.L): no vendor trade on the snapshot date; last prior close 0.2240000069141388 on 2026-10-19 not used
+  GB:LSE                SELL ASBE      no_entry_price snapshot: no close on snapshot date; supplement (ASBE.L): no vendor trade on the snapshot date; last prior close 20.0 on 2026-10-19 not used
+  GB:LSE                SELL CFYN      no_entry_price snapshot: no close on snapshot date; supplement (CFYN.L): no vendor trade on the snapshot date; last prior close 485.0 on 2026-10-19 not used
+  GB:LSE                SELL COR       no_entry_price snapshot: no close on snapshot date; supplement (COR.L): no vendor trade on the snapshot date; last prior close 0.012000000104308128 on 2026-10-19 not used
+  GB:LSE                SELL EGY       no_entry_price snapshot: no close on snapshot date; supplement (EGY.L): no vendor trade on the snapshot date; last prior close 455.0 on 2026-10-19 not used
+  GB:LSE                SELL GVMH      no_entry_price snapshot: no close on snapshot date; supplement (GVMH.L): no vendor trade on the snapshot date; last prior close 0.006000000052154064 on 2026-10-19 not used
+  GB:LSE                SELL IFRX      no_entry_price snapshot: no close on snapshot date; supplement (IFRX.L): no vendor trade on the snapshot date; last prior close 142.5 on 2026-10-19 not used
+  GB:LSE                SELL PLAZ      no_entry_price snapshot: no close on snapshot date; supplement (PLAZ.L): no vendor trade on the snapshot date; last prior close 0.14499999582767487 on 2026-10-19 not used
+  GB:LSE                SELL PPP       no_entry_price snapshot: no close on snapshot date; supplement (PPP.L): no vendor trade on the snapshot date; last prior close 0.09549999982118607 on 2026-10-19 not used
+  NO:EURONEXT_OSLO      SELL NEXT      no_entry_price snapshot: no close on snapshot date; supplement (NEXT.OL): no vendor trade on the snapshot date; last prior close 0.23199999332427979 on 2026-10-19 not used
+  SE:NASDAQ_STOCKHOLM   SELL BONAV.A   no_entry_price snapshot: no vendor symbol; supplement (BONAV-A.ST): no vendor trade on the snapshot date; last prior close 8.25 on 2026-10-19 not used
+  SE:NASDAQ_STOCKHOLM   SELL VPLAY.A   no_entry_price snapshot: no vendor symbol; supplement (VPLAY-A.ST): no vendor trade on the snapshot date; last prior close 2.140000104904175 on 2026-10-19 not used
+  US:NASDAQ             BUY  GIW       no_entry_price snapshot: no close on snapshot date; supplement (GIW): no vendor trade on the snapshot date; last prior close 10.170000076293945 on 2026-10-19 not used
+  US:NASDAQ             BUY  SENEB     no_entry_price snapshot: no close on snapshot date; supplement (SENEB): no vendor trade on the snapshot date; last prior close 179.22000122070312 on 2026-10-19 not used
+  US:NASDAQ             SELL APLM      no_entry_price snapshot: no close on snapshot date; supplement (APLM): no vendor trade on the snapshot date; last prior close 22.04800033569336 on 2026-10-19 not used
+  US:NASDAQ             SELL LSE       no_entry_price snapshot: no close on snapshot date; supplement (LSE): no vendor trade on the snapshot date; last prior close 4.564000129699707 on 2026-10-19 not used
+  US:NASDAQ             SELL NCEW      no_entry_price snapshot: no close on snapshot date; supplement (NCEW): no vendor trade on the snapshot date; last prior close 16.530000686645508 on 2026-10-19 not used
+  US:NASDAQ             SELL TJGC      no_entry_price snapshot: no close on snapshot date; supplement (TJGC): no vendor trade on the snapshot date; last prior close 31.889999389648438 on 2026-10-19 not used
+
+entries from supplement: 25

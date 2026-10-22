@@ -337,6 +337,13 @@ def global_instruments(
         except Exception as exc:
             raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
 
+    # Results must belong to the selected exchange whatever a provider returned for the text query.
+    if q:
+        instruments = [
+            item for item in instruments
+            if str(item.country).upper() == country.upper() and str(item.exchange).upper() == spec.code.upper()
+        ]
+
     # list_instruments() may have created/refreshed the persistent snapshot.
     # Re-read metadata after that operation so a single API response cannot
     # simultaneously return official instruments while claiming catalog
@@ -489,7 +496,7 @@ def global_recommendations(country: str, exchange: str, tier: Optional[str] = No
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     wanted = tier.strip().upper() if tier else None
-    if wanted and wanted not in decision_overlay.TIER_FA:
+    if wanted and wanted not in decision_overlay.TIER_LABEL:
         raise HTTPException(status_code=400, detail=f"tier must be one of {', '.join(decision_overlay.TIERS)}")
     view = decision_overlay.market_view(country, exchange) if ledger_path(country, exchange).exists() else {}
     if not view:
@@ -509,7 +516,7 @@ def global_recommendations(country: str, exchange: str, tier: Optional[str] = No
     rows = [{"ticker": t, "name": names.get(t), "investment": view[t]} for t in ranked[start:start + size]]
     return {"country": country, "exchange": exchange, "decisionMode": "investment",
             "counts": decision_overlay.tier_counts(view), "total": len(ranked), "rows": rows,
-            "disclaimerFa": decision_overlay.DISCLAIMER_FA}
+            "disclaimer": decision_overlay.DISCLAIMER}
 
 
 @router.get("/opportunities")
@@ -549,6 +556,8 @@ def global_analyze(req: InstrumentRequest):
             view = decision_overlay.market_view(str(result.get("country") or ""), str(result.get("exchange") or ""))
             decision = view.get(str(result.get("ticker") or ""))
             if decision is not None:
+                evidence = result.get("evidence") if isinstance(result.get("evidence"), dict) else {}
+                decision = decision_overlay.cap_for_evidence(decision, evidence.get("status"), result.get("confidence"))
                 result = {**result, "investment": decision}     # additive; ``call`` stays the conservative value
         return result
     except HTTPException:

@@ -47,17 +47,17 @@ def test_view_has_tier_persian_label_reasons_and_disclaimer(ledger):
     view = ov.market_view("SE", "NASDAQ_STOCKHOLM")
     assert len(view) == 20
     best, worst = view["T000"], view["T019"]
-    assert best["tier"] == "BUY" and best["labelFa"] == "خرید"
-    assert worst["tier"] in {"SELL", "REDUCE"} and worst["labelFa"] in {"فروش", "کاهش"}
-    assert best["disclaimerFa"] == "رتبه‌بندی نسبی در همان بورس؛ مشاوره مالی شخصی نیست"
+    assert best["tier"] == "BUY" and best["label"] == "BUY"
+    assert worst["tier"] in {"SELL", "REDUCE"} and worst["label"] in {"SELL", "REDUCE"}
+    assert best["disclaimer"] == "Relative ranking within this exchange; not personal financial advice"
     assert 1 <= len(best["positive"]) <= 2 and len(best["negative"]) <= 2
-    assert {"agent", "vote", "labelFa"} <= set(best["positive"][0])
+    assert {"agent", "vote", "label"} <= set(best["positive"][0])
     assert best["rank"] == 1
 
 
 def test_all_five_tier_labels():
-    assert ov.TIER_FA["ACCUMULATE"] == "خرید تدریجی" and ov.TIER_FA["HOLD"] == "نگهداری"
-    assert ov.TIER_FA["REDUCE"] == "کاهش" and ov.TIER_FA["SELL"] == "فروش"
+    assert ov.TIER_LABEL["ACCUMULATE"] == "ACCUMULATE" and ov.TIER_LABEL["HOLD"] == "HOLD"
+    assert ov.TIER_LABEL["REDUCE"] == "REDUCE" and ov.TIER_LABEL["SELL"] == "SELL"
 
 
 def test_counts_and_cache_invalidated_by_ledger_change(ledger):
@@ -113,7 +113,7 @@ def test_recommendations_endpoint_and_ledger_rows_carry_investment_block(ledger)
     prefix = _prefix()
     body = c.get(f"{prefix}/recommendations", params={"country": "SE", "exchange": "NASDAQ_STOCKHOLM", "tier": "BUY"}).json()
     assert body["decisionMode"] == "investment" and body["rows"] and all(r["investment"]["tier"] == "BUY" for r in body["rows"])
-    assert body["counts"]["BUY"] == body["total"] and body["disclaimerFa"].startswith("رتبه‌بندی نسبی")
+    assert body["counts"]["BUY"] == body["total"] and body["disclaimer"].startswith("Relative ranking")
     led = c.get(f"{prefix}/analysis-ledger", params={"country": "SE", "exchange": "NASDAQ_STOCKHOLM"}).json()
     assert led["decisionMode"] == "investment" and any(r.get("investment") for r in led["rows"])
     assert c.get(f"{prefix}/recommendations", params={"country": "SE", "exchange": "NASDAQ_STOCKHOLM", "tier": "MAYBE"}).status_code == 400
@@ -126,3 +126,56 @@ def test_endpoints_unchanged_in_conservative_mode(ledger, monkeypatch):
     led = c.get(f"{prefix}/analysis-ledger", params={"country": "SE", "exchange": "NASDAQ_STOCKHOLM"}).json()
     assert led["decisionMode"] == "conservative" and not any("investment" in r for r in led["rows"])
     assert c.get(f"{prefix}/recommendations", params={"country": "SE", "exchange": "NASDAQ_STOCKHOLM"}).json()["rows"] == []
+
+
+def _weak_result(i, strength, confidence):
+    r = _result(i, strength)
+    r["signals"] = [{**s, "confidence": confidence} for s in r["signals"]]
+    return r
+
+
+def test_low_confidence_top_ranked_stock_is_capped_at_hold(tmp_path, monkeypatch):
+    monkeypatch.setenv("BIAP_GLOBAL_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("DECISION_MODE", "investment")
+    led = al.AnalysisLedger("SE", "NASDAQ_STOCKHOLM")
+    universe = [SimpleNamespace(ticker=f"T{i:03d}", name=f"Company {i}") for i in range(20)]
+    led.sync_universe(universe, {u.ticker: {"ticker": u.ticker, "liquidityValue": 1000.0} for u in universe}, screening_source="t")
+    for i in range(20):
+        led.record_result(f"T{i:03d}", _weak_result(i, 0.9 - 0.08 * i, 0.31) if i == 0 else _result(i, 0.9 - 0.08 * i))
+    led.close()
+    top = ov.market_view("SE", "NASDAQ_STOCKHOLM")["T000"]
+    assert top["tier"] == "HOLD" and top["insufficientEvidence"] is True and top["notice"] == "Insufficient evidence"
+    assert "insufficient_evidence" in top["flags"]
+
+
+def test_cap_for_evidence_blocks_buy_and_accumulate_only():
+    base = {"tier": "ACCUMULATE", "label": "ACCUMULATE", "flags": ["agents_disagree"], "positionSizeHint": "high"}
+    capped = ov.cap_for_evidence(base, "BLOCK", 0.128)
+    assert capped["tier"] == "HOLD" and capped["tierBeforeEvidenceCap"] == "ACCUMULATE"
+    assert capped["notice"] == "Insufficient evidence" and "insufficient_evidence" in capped["flags"]
+    assert ov.cap_for_evidence({**base, "tier": "BUY"}, "PASS", 0.2)["tier"] == "HOLD"        # below the threshold
+    assert ov.cap_for_evidence(base, "PASS", 0.7) is base                                       # healthy: untouched
+    assert ov.cap_for_evidence({**base, "tier": "SELL"}, "BLOCK", 0.1)["tier"] == "SELL"       # only the upside is capped
+    assert ov.cap_for_evidence(None, "BLOCK", 0.1) is None
+
+
+def test_effective_evidence_status_blocks_when_stored_ages_cross_the_gate_limits():
+    from datetime import datetime, timezone
+    now = datetime(2026, 10, 21, 12, tzinfo=timezone.utc)
+    why = "coverage=100%; priceAgeDays=2.3; fundamentalPeriodAgeDays=288.0"
+    eff = ov.effective_evidence_status
+    assert eff("PASS", why, "2026-10-15T21:38:37+00:00", now) == "BLOCK"   # 2.3 + 5.6 days > 7
+    assert eff("PASS", why, "2026-10-20T12:00:00+00:00", now) == "PASS"
+    assert eff("BLOCK", why, "2026-10-20T12:00:00+00:00", now) == "BLOCK"
+    assert eff("PASS", why, None, now) == "PASS"                            # undatable row: stored status stands
+
+
+def test_effective_evidence_status_uses_refreshed_quote_date_over_stored_price_age():
+    from datetime import datetime, timezone
+    now = datetime(2026, 10, 21, 12, tzinfo=timezone.utc)
+    why = "coverage=100%; priceAgeDays=2.3; fundamentalPeriodAgeDays=288.0"
+    eff = ov.effective_evidence_status
+    assert eff("PASS", why, "2026-10-15T21:38:37+00:00", now, quote_observed="2026-10-20") == "PASS"     # price-only refresh clears it
+    assert eff("PASS", why, "2026-10-15T21:38:37+00:00", now, quote_observed="2026-10-10") == "BLOCK"    # refreshed quote itself is stale
+    long_ago = "coverage=100%; priceAgeDays=1.0; fundamentalPeriodAgeDays=540.0"
+    assert eff("PASS", long_ago, "2026-10-01T00:00:00+00:00", now, quote_observed="2026-10-20") == "BLOCK"  # filing age still ages

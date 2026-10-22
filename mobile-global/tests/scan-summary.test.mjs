@@ -65,6 +65,6 @@ test('category labels never upgrade a non-BUY row, and the group line covers eve
   assert.equal(categoryLabel({ call: 'NO_RECOMMENDATION', category: 'NO_SIGNAL' }), 'RANKED · NO BUY SIGNAL');
   assert.equal(categoryLabel({ call: 'BUY_CANDIDATE', category: 'QUALIFIED_BUY' }), 'QUALIFIED BUY');
   assert.equal(categoryLabel({ call: 'HOLD_OR_WATCH' }), 'HOLD_OR_WATCH');
-  assert.match(groupLine({ rankingGroups: { QUALIFIED_BUY: 0, WATCHLIST_HOLD: 45, NO_SIGNAL: 328, INSUFFICIENT_EVIDENCE: 29 } }), /Qualified BUY 0 • Watchlist\/Hold 45 .* Insufficient evidence 29/);
+  assert.match(groupLine({ rankingGroups: { QUALIFIED_BUY: 0, WATCHLIST_HOLD: 45, NO_SIGNAL: 328, INSUFFICIENT_EVIDENCE: 29 } }), /Conservative qualified BUY 0 • Watchlist\/Hold 45 .* Insufficient evidence 29/);
   assert.equal(groupLine({}), '');
 });

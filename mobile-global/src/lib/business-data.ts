@@ -49,11 +49,11 @@ function trackDatasetImport(dataset: BusinessDataset) {
 
 export function parseBusinessData(input: string, name = 'Company data'): BusinessDataset {
   const text = input.trim();
-  if (!text) throw new Error('داده خالی است');
+  if (!text) throw new Error('Data is empty');
   if (text.startsWith('[') || text.startsWith('{')) {
     const parsed: unknown = JSON.parse(text);
     const arr = asRecordArray(parsed);
-    if (!arr.length) throw new Error('JSON باید شامل آرایه‌ای از رکوردها باشد');
+    if (!arr.length) throw new Error('JSON must contain an array of records');
     const columns: string[] = Array.from(new Set<string>(arr.flatMap((row) => Object.keys(row))));
     const rows: Record<string, string>[] = arr.map((row) => Object.fromEntries(
       columns.map((c) => [c, row[c] == null ? '' : String(row[c])])
@@ -61,7 +61,7 @@ export function parseBusinessData(input: string, name = 'Company data'): Busines
     return { name, columns, rows, importedAt: new Date().toISOString(), source: 'json-paste' };
   }
   const lines = text.split(/\r?\n/).filter((x) => x.trim());
-  if (lines.length < 2) throw new Error('CSV باید حداقل یک ردیف عنوان و یک ردیف داده داشته باشد');
+  if (lines.length < 2) throw new Error('CSV needs at least a header row and one data row');
   const columns = splitCsvLine(lines[0]);
   const rows: Record<string, string>[] = lines.slice(1).map((line) => {
     const values = splitCsvLine(line);

@@ -23,7 +23,7 @@ export function AnimatedSplashOverlay() {
   const logoContent = (
     <View style={styles.biapLogoWrap}>
       <Text style={styles.biapLogoText}>BIAP</Text>
-      <Text style={styles.biapLogoSub}>پلتفرم هوشمند مالی</Text>
+      <Text style={styles.biapLogoSub}>Intelligent financial platform</Text>
     </View>
   );
 

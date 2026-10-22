@@ -489,15 +489,26 @@ const FALLBACK_COUNTRIES: GlobalCountry[] = [
   { country: 'SE', name: 'Sweden', marketProvider: 'Nasdaq Nordic / licensed feed', fundamentalsProvider: 'ESEF', officialEvidenceSource: 'ESEF + issuer disclosures', exchanges: [
     { code: 'NASDAQ_STOCKHOLM', label: 'Nasdaq Stockholm', mic: 'XSTO', currencies: ['SEK'] },
   ] },
+  { country: 'FR', name: 'France', marketProvider: 'twelve-data', fundamentalsProvider: 'esef-issuer', officialEvidenceSource: 'Euronext + ESEF/issuer filings', exchanges: [
+    { code: 'EURONEXT_PARIS', label: 'Euronext Paris', mic: 'XPAR', currencies: ['EUR'] },
+  ] },
+  { country: 'IT', name: 'Italy', marketProvider: 'twelve-data', fundamentalsProvider: 'esef-issuer', officialEvidenceSource: 'Euronext + ESEF/issuer filings', exchanges: [
+    { code: 'EURONEXT_MILAN', label: 'Euronext Milan', mic: 'XMIL', currencies: ['EUR'] },
+  ] },
+  { country: 'NL', name: 'Netherlands', marketProvider: 'twelve-data', fundamentalsProvider: 'esef-issuer', officialEvidenceSource: 'Euronext + ESEF/issuer filings', exchanges: [
+    { code: 'EURONEXT_AMSTERDAM', label: 'Euronext Amsterdam', mic: 'XAMS', currencies: ['EUR'] },
+  ] },
+  { country: 'FI', name: 'Finland', marketProvider: 'twelve-data', fundamentalsProvider: 'esef-issuer', officialEvidenceSource: 'Nasdaq Nordic + ESEF/issuer filings', exchanges: [
+    { code: 'NASDAQ_HELSINKI', label: 'Nasdaq Helsinki', mic: 'XHEL', currencies: ['EUR'] },
+  ] },
+  { country: 'ES', name: 'Spain', marketProvider: 'twelve-data', fundamentalsProvider: 'esef-issuer', officialEvidenceSource: 'Issuer/OAM + ESEF filings', exchanges: [
+    { code: 'BME_MADRID', label: 'Bolsa de Madrid', mic: 'XMAD', currencies: ['EUR'] },
+  ] },
   { country: 'JP', name: 'Japan', marketProvider: 'Licensed global feed', fundamentalsProvider: 'FSA EDINET', officialEvidenceSource: 'EDINET API v2', exchanges: [
     { code: 'TSE_JP', label: 'Tokyo Stock Exchange', mic: 'XTKS', currencies: ['JPY'] },
   ] },
   { country: 'AU', name: 'Australia', marketProvider: 'Licensed global feed', fundamentalsProvider: 'ASX / issuer filings', officialEvidenceSource: 'ASX announcements + issuer annual reports', exchanges: [
     { code: 'ASX', label: 'Australian Securities Exchange', mic: 'XASX', currencies: ['AUD'] },
-  ] },
-  { country: 'IR', name: 'Iran', marketProvider: 'TSETMC + Tindex', fundamentalsProvider: 'CODAL', officialEvidenceSource: 'CODAL', exchanges: [
-    { code: 'TSE', label: 'Tehran Stock Exchange', currencies: ['IRR'] },
-    { code: 'IFB', label: 'Iran Fara Bourse', currencies: ['IRR'] },
   ] },
 ];
 
@@ -641,6 +652,19 @@ export async function scanGlobalMarket(country: string, exchange: string, topN =
     method: 'POST',
     body: JSON.stringify({ country, exchange, topN, discoveryLimit: 5000, deepLimit: 75 }),
   }, 125_000, 2);
+}
+
+export type GlobalTierRow = { ticker: string; name?: string | null; investment: GlobalInvestmentDecision };
+export type GlobalTierView = { counts: Record<string, number> | null; rows: GlobalTierRow[] };
+
+/** Investment-mode tiers for one exchange; null in conservative mode or when the API is unavailable. */
+export async function fetchGlobalTiers(country: string, exchange: string, limit = 500): Promise<GlobalTierView | null> {
+  try {
+    const q = new URLSearchParams({ country: country.toUpperCase(), exchange, limit: String(limit) });
+    const data = await request<{ decisionMode?: string; counts?: Record<string, number> | null; rows?: GlobalTierRow[] }>(`/global/recommendations?${q.toString()}`, undefined, 25_000);
+    if (data.decisionMode !== 'investment' || !Array.isArray(data.rows)) return null;
+    return { counts: data.counts ?? null, rows: data.rows };
+  } catch { return null; }
 }
 
 export async function scanGlobalTop10(topN = 10, maxAgeHours = 30): Promise<GlobalTop10Response> {
