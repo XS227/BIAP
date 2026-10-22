@@ -320,10 +320,60 @@ def test_new_filings_search_is_all_or_nothing(monkeypatch):
 
     monkeypatch.setattr(codal_data, "_get_json", flaky)
     with pytest.raises(codal_data.CodalDataUnavailable):
-        codal_data.symbols_with_new_financial_filings(datetime.date(2026, 10, 15))
+        codal_data.symbols_with_new_financial_filings(datetime.date(2026, 10, 15), sleep=lambda s: None)
 
 
 def test_report_surfaces_a_failed_new_filings_check():
     meta = {"newFilingCheckError": "new-filings check failed (HTTP 400); same window retried next run"}
     report = baseline_report.build_report({"succeeded": 1, "failed": 0, "metadata": meta}, None, {}, 5)
     assert report["warnings"] and "Warnings: new-filings check failed" in baseline_report.render(report)
+
+
+def test_new_filings_page_timeout_is_retried_and_the_window_still_succeeds(monkeypatch):
+    import datetime
+
+    calls, naps = [], []
+
+    def flaky(path, params=None):
+        calls.append(params["PageNumber"])
+        if params["PageNumber"] == 2 and calls.count(2) == 1:
+            raise codal_data.CodalDataUnavailable("CODAL request failed: timed out")
+        return {"Letters": [{"Symbol": f"S{params['PageNumber']}", "Title": "صورت‌های مالی"}], "Page": 3}
+
+    monkeypatch.setattr(codal_data, "_get_json", flaky)
+    symbols = codal_data.symbols_with_new_financial_filings(datetime.date(2026, 10, 15), sleep=naps.append)
+    assert symbols == {"S1", "S2", "S3"} and calls == [1, 2, 2, 3]
+    assert len(naps) == 1 and 1.0 <= naps[0] <= 2.0  # first-retry wait: 2 s with 50-100% jitter
+
+
+def test_new_filings_retry_honours_retry_after_and_lifts_the_cooldown(monkeypatch):
+    import datetime
+
+    state = {"n": 0, "cleared": 0}
+
+    def limited(path, params=None):
+        state["n"] += 1
+        if state["n"] == 1:
+            raise codal_data.CodalRateLimited("429", retry_after=40.0)
+        return {"Letters": [{"Symbol": "A", "Title": "صورت‌های مالی"}], "Page": 1}
+
+    naps = []
+    monkeypatch.setattr(codal_data, "_get_json", limited)
+    monkeypatch.setattr(codal_data, "clear_rate_limit", lambda: state.__setitem__("cleared", state["cleared"] + 1))
+    assert codal_data.symbols_with_new_financial_filings(datetime.date(2026, 10, 15), sleep=naps.append) == {"A"}
+    assert 40.0 <= naps[0] <= 45.0 and state["cleared"] == 1
+
+
+def test_new_filings_gives_up_after_the_attempt_limit(monkeypatch):
+    import datetime
+
+    calls = []
+
+    def down(path, params=None):
+        calls.append(1)
+        raise codal_data.CodalDataUnavailable("timed out")
+
+    monkeypatch.setattr(codal_data, "_get_json", down)
+    with pytest.raises(codal_data.CodalDataUnavailable):
+        codal_data.symbols_with_new_financial_filings(datetime.date(2026, 10, 15), sleep=lambda s: None)
+    assert len(calls) == 3

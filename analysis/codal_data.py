@@ -327,14 +327,36 @@ def gregorian_to_jalali(year: int, month: int, day: int) -> tuple[int, int, int]
 _FINANCIAL_TITLE_MARKERS = ("صورت‌های مالی", "صورتهای مالی", "صورت های مالی")
 
 
-def symbols_with_new_financial_filings(since: "datetime.date", *, max_pages: int = 10) -> set[str]:
+def _get_json_with_retry(path: str, params: dict[str, Any], *, attempts: int = 3, sleep=time.sleep) -> Any:
+    """``_get_json`` with a bounded retry so one timed-out page does not fail a multi-page check.
+
+    A 429 waits ``backoff_delay`` (Retry-After is a floor) and lifts the in-process cooldown first;
+    any other CodalDataUnavailable (timeout, 5xx) waits 1-4 s, then 2-8 s. The last failure is raised.
+    """
+    for attempt in range(1, attempts + 1):
+        try:
+            return _get_json(path, params)
+        except CodalRateLimited as exc:
+            if attempt == attempts:
+                raise
+            sleep(backoff_delay(attempt, exc.retry_after))
+            clear_rate_limit()
+        except CodalDataUnavailable:
+            if attempt == attempts:
+                raise
+            sleep(2.0 * 2 ** (attempt - 1) * (0.5 + random.random() * 0.5))
+
+
+def symbols_with_new_financial_filings(
+    since: "datetime.date", *, max_pages: int = 10, attempts: int = 3, sleep=time.sleep
+) -> set[str]:
     """Symbols that published a financial-statement filing on/after ``since`` (one request per page).
 
     Uses CODAL's symbol-less search filtered server-side to financial statements, so the daily
     "new filings" check costs a handful of requests (live 2026-10-22: 127 filings = 7 pages of 20 for
-    a week) instead of one per company. Only identifiers CODAL returns are used. All-or-nothing: any
-    page failure raises CodalDataUnavailable so the caller does not advance its "checked up to" date
-    over a partial result.
+    a week) instead of one per company. Only identifiers CODAL returns are used. Each page is retried
+    up to ``attempts`` times; if a page still fails the check is all-or-nothing: CodalDataUnavailable
+    is raised so the caller does not advance its "checked up to" date over a partial result.
     """
     jy, jm, jd = gregorian_to_jalali(since.year, since.month, since.day)
     symbols: set[str] = set()
@@ -346,7 +368,7 @@ def symbols_with_new_financial_filings(since: "datetime.date", *, max_pages: int
             "FromDate": f"{jy:04d}/{jm:02d}/{jd:02d}", "ToDate": f"{jy + 1:04d}/12/29",
             "Mains": "true", "Childs": "true", "Publisher": "false", "search": "true",
         }
-        payload = _get_json("/api/search/v2/q", params)
+        payload = _get_json_with_retry("/api/search/v2/q", params, attempts=attempts, sleep=sleep)
         rows = payload.get("Letters") if isinstance(payload, dict) else None
         if not isinstance(rows, list) or not rows:
             break
