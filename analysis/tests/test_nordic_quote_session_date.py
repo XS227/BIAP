@@ -80,3 +80,47 @@ def test_enabling_a_market_without_a_calendar_still_yields_no_stamp(monkeypatch)
     c, spec, co = _client(monkeypatch, "SE", "NASDAQ_STOCKHOLM", "SE0000108656")
     quotes, _, _ = c.batch_quotes([co], "SE", spec, now=utc(2026, 10, 24, 12))
     assert quotes[0]["quoteDate"] is None
+
+
+# --- a newer venue-dated stage-one quote must not be rolled back by a stored market snapshot ---------------------
+
+from dataclasses import replace
+
+from global_markets.cached_market import PersistentMarketProvider
+from global_markets.scanner import GlobalMarketScanner
+
+
+def _seeded(basis):
+    spec = get_exchange("DK", "NASDAQ_COPENHAGEN")
+    co = GlobalCompany(country="DK", exchange=spec.code, mic_code=spec.mic, currency="DKK", ticker="AAA", name="A", isin="DK0060868966")
+    quote = {"ticker": "AAA", "price": 79.3, "averageVolume": 5.0, "provider": "official-nasdaq-nordic-main-market",
+             "quoteDate": "2026-10-23" if basis else None}
+    if basis:
+        quote["quoteDateBasis"] = basis
+    return GlobalMarketScanner._seed_screening_quote(co, quote)
+
+
+_SNAPSHOT = {"fetchedAt": "2026-10-13T21:49:29+00:00", "provider": "yahoo-public-chart-global",
+             "market": {"currency": "DKK", "price": 76.2, "price_observed_at": "2026-10-13T07:00:00+00:00", "volume_today": 9.0, "pe": 20.0}}
+
+
+def test_cached_snapshot_does_not_overwrite_newer_session_dated_quote(tmp_path):
+    seed = _seeded("last_completed_session")
+    assert seed.raw_provider_fields["stage_one_quote_date_basis"] == "last_completed_session"
+    out = PersistentMarketProvider(None, data_dir=str(tmp_path))._decode(seed, _SNAPSHOT, fallback=False)
+    assert out.price == 79.3 and out.price_observed_at.startswith("2026-10-23")
+    assert out.pe == 20.0  # other snapshot fields still applied
+
+
+def test_cached_snapshot_still_wins_when_it_is_newer_than_the_session_quote(tmp_path):
+    seed = _seeded("last_completed_session")
+    snap = {**_SNAPSHOT, "market": {**_SNAPSHOT["market"], "price": 80.0, "price_observed_at": "2026-10-24T07:00:00+00:00"}}
+    out = PersistentMarketProvider(None, data_dir=str(tmp_path))._decode(seed, snap, fallback=False)
+    assert out.price == 80.0
+
+
+def test_undated_quote_path_is_unchanged_snapshot_still_overrides(tmp_path):
+    seed = _seeded(None)  # SE/FI today: quoteDate None, no basis marker
+    assert "stage_one_quote_date_basis" not in seed.raw_provider_fields
+    out = PersistentMarketProvider(None, data_dir=str(tmp_path))._decode(seed, _SNAPSHOT, fallback=False)
+    assert out.price == 76.2 and out.price_observed_at.startswith("2026-10-13")
