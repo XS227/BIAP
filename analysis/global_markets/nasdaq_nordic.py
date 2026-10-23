@@ -8,6 +8,7 @@ screening. No cross-market inference from ISIN prefixes is used.
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import os
 import re
 from typing import Iterable, Optional
 
@@ -16,6 +17,7 @@ import requests
 from .country_packs import ExchangeSpec, get_exchange
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
+from .session_calendar import has_calendar, last_completed_session
 
 
 _URL = "https://api.nasdaq.com/api/nordic/screener/shares"
@@ -26,6 +28,22 @@ _MARKETS: dict[tuple[str, str], str] = {
     ("FI", "NASDAQ_HELSINKI"): "HEL",
     ("IS", "NASDAQ_ICELAND"): "ICE",
 }
+# The screener row has no trade date (lastTradedDate/time are empty). Markets listed here get the date of the last
+# completed session on their venue calendar; every other market keeps quoteDate=None exactly as before. SE/FI are
+# paper-portfolio markets and stay unchanged until explicitly added (env BIAP_NORDIC_SESSION_DATE_MARKETS="DK:NASDAQ_COPENHAGEN,...").
+_DEFAULT_SESSION_DATE_MARKETS = "DK:NASDAQ_COPENHAGEN"
+
+
+def _session_date_markets() -> set[tuple[str, str]]:
+    raw = os.environ.get("BIAP_NORDIC_SESSION_DATE_MARKETS", _DEFAULT_SESSION_DATE_MARKETS)
+    out = set()
+    for part in raw.split(","):
+        if ":" in part:
+            c, e = part.strip().upper().split(":", 1)
+            out.add((c, e))
+    return out
+
+
 _DR_RE = re.compile(r"(?:^|[ ._-])(ADR|GDR|SDR|FDR)(?:$|[ ._-])", re.I)
 _PREF_RE = re.compile(r"\b(PREF|PREFERENCE|PREFERRED)\b", re.I)
 
@@ -142,8 +160,13 @@ class NasdaqNordicOfficialClient:
         instruments: Iterable[GlobalCompany],
         country: str,
         spec: ExchangeSpec,
+        *,
+        now: Optional[datetime] = None,
     ) -> tuple[list[dict], list[str], str]:
         rows, _ = self.eligible_rows(country=country, exchange=spec.code)
+        session = None
+        if (country.upper(), spec.code.upper()) in _session_date_markets() and has_calendar(spec.mic):
+            session = last_completed_session(spec.mic, now)
         by_isin = {_valid_isin(row.get("isin")): row for row in rows if _valid_isin(row.get("isin"))}
         quotes: list[dict] = []
         for company in instruments:
@@ -162,7 +185,8 @@ class NasdaqNordicOfficialClient:
                 "averageVolume": volume,
                 "liquidityValue": max(0.0, float(turnover or (price * volume))),
                 "rangePosition": None,
-                "quoteDate": None,
+                "quoteDate": session.isoformat() if session else None,
+                **({"quoteDateBasis": "last_completed_session"} if session else {}),
                 "mic": company.mic_code or spec.mic,
                 "provider": self.provider_id,
                 "isin": isin,
