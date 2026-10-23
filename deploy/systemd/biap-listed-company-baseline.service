@@ -11,7 +11,7 @@ Environment=PYTHONUNBUFFERED=1
 # Per-run limits: companies visited, never-enriched backlog slice, delay between CODAL calls.
 Environment=BIAP_LISTED_COMPANY_DAILY_BASELINE_BATCH=300
 Environment=BIAP_LISTED_COMPANY_BACKLOG_PER_RUN=25
-Environment=BIAP_LISTED_COMPANY_INTERVAL_SECONDS=2.5
+Environment=BIAP_LISTED_COMPANY_INTERVAL_SECONDS=5
 Environment=TINDEX_FULL_ENRICHMENT=false
 EnvironmentFile=-/etc/biap/market-memory.env
 EnvironmentFile=-/etc/biap/mail.env

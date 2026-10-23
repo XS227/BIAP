@@ -74,7 +74,7 @@ def _run_tindex() -> dict | None:
 def main() -> int:
     batch_size = _env_int("BIAP_LISTED_COMPANY_DAILY_BASELINE_BATCH", 300)
     backlog_per_run = _env_int("BIAP_LISTED_COMPANY_BACKLOG_PER_RUN", 25, minimum=0, maximum=100)
-    interval = _env_float("BIAP_LISTED_COMPANY_INTERVAL_SECONDS", 2.5)
+    interval = _env_float("BIAP_LISTED_COMPANY_INTERVAL_SECONDS", 5.0)
     store = ListedCompanyStore()
     filing_check_error = None
     try:
