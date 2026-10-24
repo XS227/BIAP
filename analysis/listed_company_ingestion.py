@@ -17,6 +17,7 @@ from typing import Any, Iterable
 import uuid
 
 import codal_data
+import codal_inbox
 from codal_data import CodalDataUnavailable, list_companies
 from company_builder import build_company_from_quote, build_company_from_symbol
 from company_registry_store import CompanyRegistryStore, company_id_for
@@ -46,6 +47,14 @@ ORDINARY_SHARE_YVALS = {"300", "303", "307", "309", "313"}
 BACKLOG_PER_RUN = 25  # never-enriched companies attempted per run after new-filing companies
 MAX_CONSECUTIVE_RATE_LIMITS = 3  # stop the run cleanly after this many 429s in a row
 FAILED_RETRY_DAYS = 7  # a company with a non-429 failure is not retried for this long
+
+
+class InboxPending(Exception):
+    """Inbox mode: the Liara export has no usable CODAL answer for this company yet.
+
+    Not a failure and not "no data": the company stays never-enriched and is not put on the
+    7-day failed list, so tomorrow's export can still fill it.
+    """
 
 
 def _now_iso() -> str:
@@ -445,6 +454,12 @@ def run_batch(
         cutoff = (datetime.now(timezone.utc) - timedelta(days=FAILED_RETRY_DAYS)).isoformat()
         never_enriched, _ = target._split_by_enrichment(eligible_codes)
         backlog = [c for c in never_enriched if c not in set(filing_codes) and failed_at.get(c, "") < cutoff]
+        if codal_inbox.enabled():
+            # Do not spend the daily slots on companies the Liara export has not delivered.
+            inbox = codal_inbox.current()
+            has = lambda c: inbox.has_record(str((reg.get_instrument(c) or {}).get("symbol") or ""))  # noqa: E731
+            filing_codes = [c for c in filing_codes if has(c)]
+            backlog = [c for c in backlog if has(c)]
         backlog.sort(key=lambda c: (-traded_value.get(c, 0.0), c))  # most-traded first; unknown volume last
         codes = filing_codes + backlog[:max(0, int(backlog_per_run))]
 
@@ -536,6 +551,7 @@ def run_batch(
     consecutive_rate_limits = 0
     total_rate_limits = 0
     price_sources: dict[str, int] = {}
+    awaiting_inbox = 0
 
     def _try_company(code: str) -> None:
         nonlocal succeeded, processed, re_enriched_companies
@@ -545,11 +561,13 @@ def run_batch(
             company["name_fa"] = str(instrument["symbol"])
         if company is None:
             raise ValueError("no verified company data available")
-        if code in already_enriched_in_slice:
-            re_enriched_companies += 1
         availability = company.get("data_available") or {}
         codal_diag = (company.get("data_diagnostics") or {}).get("codal") or {}
         codal_error = " ".join(str(codal_diag.get(key) or "") for key in ("metadataError", "fundamentalsError", "error"))
+        if codal_inbox.MISS_MARKER in codal_error and not availability.get("codal"):
+            raise InboxPending(codal_error[:240])
+        if code in already_enriched_in_slice:
+            re_enriched_companies += 1
         if _is_rate_limit_error(RuntimeError(codal_error)) and not availability.get("codal"):
             raise RuntimeError(f"CODAL rate limit during financial enrichment: {codal_error[:240]}")
         price_source = (company.get("market") or {}).get("price_source")
@@ -576,6 +594,9 @@ def run_batch(
             try:
                 _try_company(code)
                 consecutive_rate_limits = 0
+                break
+            except InboxPending:
+                awaiting_inbox += 1
                 break
             except Exception as exc:
                 last_error = str(exc)[:1000]
@@ -609,6 +630,8 @@ def run_batch(
 
     metadata["failedCodes"] = dict(sorted(failed_at.items(), key=lambda kv: kv[1])[-2000:])
     metadata["rateLimitedCount"] = total_rate_limits
+    if codal_inbox.enabled():
+        metadata["awaitingCodalInbox"] = awaiting_inbox
     metadata["priceSources"] = price_sources
     metadata["stoppedEarly"] = (
         f"CODAL rate limit: {consecutive_rate_limits} consecutive 429s, stopped at {last_code}" if rate_limited else None

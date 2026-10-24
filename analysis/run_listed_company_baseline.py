@@ -18,6 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 
 import baseline_report
 import codal_data
+import codal_inbox
 import tindex_indices
 from company_registry_store import CompanyRegistryStore
 from instrument_classifier import normalize_text
@@ -75,11 +76,17 @@ def main() -> int:
     batch_size = _env_int("BIAP_LISTED_COMPANY_DAILY_BASELINE_BATCH", 300)
     backlog_per_run = _env_int("BIAP_LISTED_COMPANY_BACKLOG_PER_RUN", 25, minimum=0, maximum=100)
     interval = _env_float("BIAP_LISTED_COMPANY_INTERVAL_SECONDS", 5.0)
+    inbox_mode = codal_inbox.enabled()
+    if inbox_mode:
+        interval = 0.0  # CODAL is read from the local Liara export; there is nothing to throttle
     store = ListedCompanyStore()
     filing_check_error = None
     try:
         filing_codes = _new_filing_codes(store)
         check_date = datetime.now(timezone.utc).date().isoformat()
+        if inbox_mode:
+            # Only claim the window the export actually covered, not today's date.
+            check_date = codal_inbox.current().new_filings_through
     except codal_data.CodalDataUnavailable as exc:
         filing_check_error = f"new-filings check failed ({str(exc)[:100]}); same window retried next run"
         filing_codes = []
@@ -90,6 +97,8 @@ def main() -> int:
         backlog_per_run=backlog_per_run, new_filing_codes=filing_codes,
     )
     meta = result.get("metadata") or {}
+    if inbox_mode:
+        meta["codalInbox"] = codal_inbox.summary()
     if check_date:
         meta["lastFilingCheckDate"] = check_date
     if filing_check_error:

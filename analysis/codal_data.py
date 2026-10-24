@@ -29,6 +29,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urljoin
 from urllib.request import Request, urlopen
 
+import codal_inbox
+
 
 DEFAULT_BASE = "https://search.codal.ir"
 _TIMEOUT = 8
@@ -46,6 +48,18 @@ _last_retry_after: Optional[float] = None
 
 class CodalDataUnavailable(RuntimeError):
     pass
+
+
+class CodalInboxMiss(CodalDataUnavailable):
+    """Inbox mode: the Liara export has no usable answer for this request (yet). Not a CODAL "no data"."""
+
+
+def _from_inbox(read):
+    """Answer a request from the verified Liara inbox (BIAP_CODAL_INBOX), never from CODAL."""
+    try:
+        return read(codal_inbox.current())
+    except codal_inbox.InboxError as exc:
+        raise CodalInboxMiss(str(exc)) from exc
 
 
 class CodalRateLimited(CodalDataUnavailable):
@@ -165,6 +179,8 @@ def www_base_url() -> str:
 
 def _get_json(path: str, params: Optional[dict[str, Any]] = None) -> Any:
     global _rate_limited_until, _last_retry_after
+    if codal_inbox.enabled():
+        raise CodalDataUnavailable("CODAL is not called directly in inbox mode (BIAP_CODAL_INBOX is set)")
     now = time.monotonic()
     if now < _rate_limited_until:
         raise CodalDataUnavailable("CODAL search temporarily cooling down after upstream 429")
@@ -199,6 +215,8 @@ def _get_json(path: str, params: Optional[dict[str, Any]] = None) -> Any:
 
 def list_companies() -> list[dict[str, Any]]:
     global _companies_cache
+    if codal_inbox.enabled():
+        return _from_inbox(lambda inbox: inbox.directory())
     now = time.time()
     if _companies_cache and now - _companies_cache[0] < _COMPANIES_TTL:
         return _companies_cache[1]
@@ -215,6 +233,8 @@ def find_company(symbol: str) -> Optional[dict[str, Any]]:
     wanted = symbol.strip()
     if not wanted:
         return None
+    if codal_inbox.enabled():
+        return _from_inbox(lambda inbox: inbox.record(wanted).get("company"))
 
     # The full /companies payload is ~750 KB and the relay can trickle it for
     # well beyond the request timeout. Resolve issuer metadata from the much
@@ -261,6 +281,8 @@ def financial_years(symbol: str) -> list[str]:
     wanted = symbol.strip()
     if not wanted:
         return []
+    if codal_inbox.enabled():
+        return _from_inbox(lambda inbox: [str(y) for y in (inbox.record(wanted).get("financial_years") or [])])
     now = time.time()
     cached = _years_cache.get(wanted)
     if cached and now - cached[0] < _YEARS_TTL:
@@ -359,6 +381,8 @@ def symbols_with_new_financial_filings(
     is raised so the caller does not advance its "checked up to" date over a partial result.
     """
     jy, jm, jd = gregorian_to_jalali(since.year, since.month, since.day)
+    if codal_inbox.enabled():
+        return _from_inbox(lambda inbox: inbox.new_filing_symbols(f"{jy:04d}/{jm:02d}/{jd:02d}"))
     symbols: set[str] = set()
     for page in range(1, max_pages + 1):
         # CODAL rejects Length != 12 and a missing ToDate with 400 (verified 2026-10-22); it pages by 20.
@@ -393,6 +417,8 @@ def latest_filings(symbol: str, limit: int = 5) -> list[CodalFiling]:
     if not wanted:
         return []
     limit = max(1, min(int(limit), _CODAL_PAGE_LENGTH))
+    if codal_inbox.enabled():
+        return _from_inbox(lambda inbox: [CodalFiling(**f) for f in inbox.record(wanted).get("filings") or []][:limit])
 
     now = time.time()
     cached = _filings_cache.get(wanted)
@@ -446,6 +472,8 @@ def latest_financial_filings(symbol: str, limit: int = 3) -> list[CodalFiling]:
     if not wanted:
         return []
     limit = max(1, min(int(limit), _CODAL_PAGE_LENGTH))
+    if codal_inbox.enabled():
+        return _from_inbox(lambda inbox: [CodalFiling(**f) for f in inbox.record(wanted).get("financial_filings") or []][:limit])
 
     now = time.time()
     cached = _financial_filings_cache.get(wanted)
@@ -561,6 +589,8 @@ def _parse_number(value: str) -> Optional[float]:
 
 
 def _fetch_filing_html(filing: CodalFiling) -> str:
+    if codal_inbox.enabled():
+        return _from_inbox(lambda inbox: inbox.report_html(filing.tracing_no))
     if not filing.excel_url:
         raise CodalDataUnavailable("CODAL filing has no report payload URL")
     url = filing.excel_url
