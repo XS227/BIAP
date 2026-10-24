@@ -156,10 +156,6 @@ _CONCEPTS = {
         "ifrs-full:DilutedEarningsLossPerShareFromContinuingOperations",
     ),
     "discontinued_profit": ("ifrs-full:ProfitLossFromDiscontinuedOperations",),
-    # Used only by the labelled UK net-income derivation (profit before tax
-    # minus income tax) when a filing tags no ProfitLoss total at all.
-    "profit_before_tax": ("ifrs-full:ProfitLossBeforeTax",),
-    "income_tax_expense": ("ifrs-full:IncomeTaxExpenseContinuingOperations",),
     # Top line tagged as "revenue and operating income" (Norwegian "sum
     # driftsinntekter", e.g. Komplett, Scana, Axactor) when no IFRS Revenue
     # total is tagged; separately tagged other income is netted out.
@@ -673,23 +669,6 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         method = "revenue_and_operating_income_minus_other_income" if netted else "revenue_and_operating_income_total"
         return revenue, revenue_prev, method
 
-    @classmethod
-    def _net_income_from_pretax(cls, concept_facts: dict, period_end: date, *, previous: bool = False) -> Optional[float]:
-        """Profit before tax minus income tax, only when it provably is the net result.
-
-        Some filers (Regional REIT, Rainbow Rare Earths) tag no ProfitLoss
-        total. The derivation needs both annual lines for the same year and
-        refuses when a discontinued-operations result is tagged for it (it
-        would sit between the two lines and the identity would not hold).
-        """
-        if cls._duration_value(concept_facts["discontinued_profit"], period_end, previous=previous):
-            return None
-        pretax = cls._duration_value(concept_facts["profit_before_tax"], period_end, previous=previous)
-        tax = cls._duration_value(concept_facts["income_tax_expense"], period_end, previous=previous)
-        if pretax is None or tax is None:
-            return None
-        return pretax - tax
-
     @staticmethod
     def _pct_change(current: Optional[float], previous: Optional[float]) -> Optional[float]:
         return None if current is None or previous in (None, 0) else (current / previous - 1.0) * 100.0
@@ -890,7 +869,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             debt_status = "not_tagged_borrowings"
         return {"shares_outstanding": shares_status, "ebitda": ebitda_status, "total_debt": debt_status}
 
-    def normalized_fields(self, facts: list[dict], period_end: date, *, derive_net_income: bool = False) -> dict:
+    def normalized_fields(self, facts: list[dict], period_end: date) -> dict:
         """Map plain annual IFRS facts to GlobalCompany fields.
 
         Shared by every ESEF transport (xbrl.org index JSON and national OAM
@@ -977,16 +956,6 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                 retained_earnings_method = "equity_statement_retained_earnings_column"
         net_income = self._duration_value(concept_facts["net_income"], period_end)
         net_income_prev = self._duration_value(concept_facts["net_income"], period_end, previous=True)
-        net_income_method = "direct_profit_loss_tag" if net_income is not None else None
-        # Conservative scope: only a filing that tags neither a revenue total
-        # nor a ProfitLoss total (so its statement would be rejected as having
-        # no P&L core figure) gets the labelled derivation; filings that
-        # already pass keep exactly the values they had.
-        if net_income is None and revenue is None and derive_net_income:
-            net_income = self._net_income_from_pretax(concept_facts, period_end)
-            if net_income is not None:
-                net_income_method = "derived_profit_before_tax_minus_income_tax_same_period"
-                net_income_prev = self._net_income_from_pretax(concept_facts, period_end, previous=True)
         operating_income = self._duration_value(concept_facts["operating_income"], period_end)
         direct_ebitda = self._duration_value(concept_facts["ebitda"], period_end)
         depreciation_amortisation = self._duration_value(concept_facts["depreciation_amortisation"], period_end)
@@ -1156,7 +1125,6 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
                     debt=debt, debt_method=debt_method,
                 ),
                 "revenue_method": revenue_method,
-                "net_income_method": net_income_method,
                 "equity_method": equity_method,
                 "liabilities_method": liabilities_method,
                 "retained_earnings_method": retained_earnings_method,
@@ -1233,7 +1201,7 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
 
         indexed_period = period_end
         period_end, period_corrected = self.anchor_period(facts, period_end)
-        normalized = self.normalized_fields(facts, period_end, derive_net_income=company.country.upper() == "GB")
+        normalized = self.normalized_fields(facts, period_end)
         reporting_currency = normalized.pop("reporting_currency")
         normalization_meta = normalized.pop("__normalization_meta__", {})
         transition = normalization_meta.pop("fiscal_year_transition", None)
