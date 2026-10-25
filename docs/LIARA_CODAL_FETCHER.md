@@ -39,7 +39,7 @@ If `date` on Liara is not UTC and your cron ignores `CRON_TZ`, use the local hou
 
 The cron run pulls its company list from the VPS (`/home/ubuntu/codal-inbox/request/symbols.txt`, written by
 `codal_inbox.py request` there), checks new financial filings since its last cursor, fetches those first and then
-the backlog, and uploads. At 5 s per request, 3 hours (`--max-seconds`) covers roughly 100-300 companies; it resumes
+the backlog, and uploads. The default is one request per 12 s (`--interval`); every 429 doubles the interval for the rest of that run (cap 60 s). 3 hours (`--max-seconds`) therefore covers roughly 50-150 companies; it resumes
 the same day if re-run. Exit codes: 0 complete, 3 partial but uploaded (e.g. CODAL 429s), 1 upload failed, 2 no list, 75 already running.
 
 **Not verified live:** CODAL was unreachable from the dev host, so the request shapes (page length 12, a

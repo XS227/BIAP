@@ -45,7 +45,8 @@ DEFAULT_OUT_ROOT = "/root/codal-export"
 DEFAULT_REMOTE = "ubuntu@5.249.252.88"
 DEFAULT_REMOTE_INBOX = "/home/ubuntu/codal-inbox"
 DEFAULT_KEY = "/root/.ssh/id_ed25519"
-INTERVAL_SECONDS = 5.0
+INTERVAL_SECONDS = 12.0
+MAX_INTERVAL_SECONDS = 60.0  # after a 429 the interval doubles for the rest of the run, up to this
 HTTP_TIMEOUT = 30
 ATTEMPTS = 4
 BACKOFF_BASE = 30.0
@@ -104,7 +105,9 @@ def default_fetch(url, timeout=HTTP_TIMEOUT):
 
 
 class Client(object):
-    """Throttled HTTP client: >= ``interval`` s between request starts, backoff on 429/5xx/timeouts."""
+    """Throttled HTTP client: >= ``interval`` s between request starts, backoff on 429/5xx/timeouts.
+
+    Every 429 doubles ``interval`` (capped at MAX_INTERVAL_SECONDS) and it stays doubled until the run ends."""
 
     def __init__(self, fetch=default_fetch, sleep=time.sleep, clock=time.monotonic, interval=INTERVAL_SECONDS,
                  attempts=ATTEMPTS, rng=random.random):
@@ -114,6 +117,7 @@ class Client(object):
         self.requests = 0
         self.retries = 0
         self.consecutive_exhausted_429 = 0
+        self.slowdowns = 0
 
     def _throttle(self):
         if self._last is not None:
@@ -157,6 +161,9 @@ class Client(object):
                 self.consecutive_exhausted_429 = 0
                 return body
             retryable = status is None or status == 429 or 500 <= status < 600
+            if status == 429 and self.interval < MAX_INTERVAL_SECONDS:  # never speeds back up within a run
+                self.interval = min(MAX_INTERVAL_SECONDS, self.interval * 2)
+                self.slowdowns += 1
             if not retryable:  # 4xx other than 429: retrying will not help
                 raise FetchError("%s for %s" % (last_msg, _redact(url)), status)
             if attempt < self.attempts:

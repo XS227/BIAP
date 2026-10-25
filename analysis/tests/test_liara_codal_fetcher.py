@@ -197,3 +197,55 @@ def test_upload_and_pull_build_scp_commands():
 
 def test_read_symbols_dedupes_and_skips_comments():
     assert lf.read_symbols("a\n\n# c\nb\na\n") == ["a", "b"]
+
+
+def test_default_interval_is_12_seconds():
+    assert lf.INTERVAL_SECONDS == 12.0 and lf.Client().interval == 12.0
+
+
+def test_each_429_doubles_the_interval_for_the_rest_of_the_run_up_to_60():
+    sleeps = []
+    script = iter([(429, {}, b""), (200, {}, b"{}"), (429, {}, b""), (200, {}, b"{}"), (429, {}, b""), (200, {}, b"{}")])
+    t = {"now": 0.0}
+    def sleep(s):
+        sleeps.append(s)
+        t["now"] += s
+    c = lf.Client(fetch=lambda url, timeout=30: next(script), sleep=sleep, clock=lambda: t["now"], interval=12.0, rng=lambda: 0.0)
+    c.get("https://h/a")
+    assert c.interval == 24.0
+    c.get("https://h/b")
+    assert c.interval == 48.0
+    c.get("https://h/c")
+    assert c.interval == 60.0  # capped, not 96
+    assert c.slowdowns == 3
+
+
+def test_interval_stays_slow_after_success_and_spaces_later_requests():
+    sleeps = []
+    calls = {"n": 0}
+    def fetch(url, timeout=30):
+        calls["n"] += 1
+        return (429, {}, b"") if calls["n"] == 1 else (200, {}, b"{}")
+    t = {"now": 0.0}
+    def sleep(s):
+        sleeps.append(s)
+        t["now"] += s
+    c = lf.Client(fetch=fetch, sleep=sleep, clock=lambda: t["now"], interval=12.0, rng=lambda: 0.0)
+    c.get("https://h/a")
+    sleeps.clear()
+    c.get("https://h/b"); c.get("https://h/c")
+    assert c.interval == 24.0 and sleeps == [24.0, 24.0]
+
+
+def test_non_429_errors_do_not_change_the_interval():
+    c = make_client(FakeCodal({"/p": [(503, b""), (404, b"")]}), [])
+    with pytest.raises(lf.FetchError):
+        c.get("https://h/p")
+    assert c.interval == 5.0 and c.slowdowns == 0
+
+
+def test_interval_above_the_cap_is_left_alone():
+    c = lf.Client(fetch=lambda url, timeout=30: (429, {}, b""), sleep=lambda s: None, clock=lambda: 0.0, interval=90.0, rng=lambda: 0.0)
+    with pytest.raises(lf.FetchError):
+        c.get("https://h/p")
+    assert c.interval == 90.0
