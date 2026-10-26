@@ -280,7 +280,7 @@ def build_company_from_quote(quote: LiveQuote, *, codal_symbol: str | None = Non
     data_available["tindex"] = tindex is not None
     data_available["market_extended"] = extended is not None and extended.price_52w_high is not None and extended.price_52w_low is not None and extended.avg_volume_30d is not None and extended.volume_today is not None
     market = {
-        "price": price, "last_price": quote.last_price, "closing_price": quote.closing_price,
+        "price": price, "price_source": getattr(quote, "source", None), "last_price": quote.last_price, "closing_price": quote.closing_price,
         "yesterday_price": quote.yesterday_price, "change": quote.change, "change_percent": quote.change_percent,
         "price_52w_high": extended.price_52w_high if extended else None, "price_52w_low": extended.price_52w_low if extended else None,
         "day_high": extended.day_high if extended else None, "day_low": extended.day_low if extended else None,

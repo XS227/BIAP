@@ -23,6 +23,9 @@ class MarketSymbol:
     # builds the universe) so ranking (top gainers/losers) never needs a
     # per-symbol quote request — see _enrich_markets and mobile market.tsx.
     last_price:Optional[float]=None;closing_price:Optional[float]=None;yesterday_price:Optional[float]=None;change_percent:Optional[float]=None
+    # Today's traded value, used only to rank the enrichment backlog most-traded first. Key names are
+    # tried in order; absent => None (ranked last), never imputed.
+    traded_value:Optional[float]=None
     def to_dict(self)->dict:return asdict(self)
 def tsetmc_base()->str:return os.getenv("BIAP_TSETMC_API_BASE",DEFAULT_TSETMC_BASE).rstrip("/")
 def tsetmc_legacy_url()->str:return os.getenv("BIAP_TSETMC_LEGACY_URL",DEFAULT_TSETMC_LEGACY_URL)
@@ -68,7 +71,7 @@ def _parse_symbol(raw:dict)->Optional[MarketSymbol]:
     change_percent=None
     if effective_price not in(None,0) and yesterday_price not in(None,0):
         change_percent=(effective_price-yesterday_price)/yesterday_price*100.0
-    return MarketSymbol(code=str(code),symbol=str(symbol).strip(),name=str(name or symbol).strip(),market=market,flow=flow,industry_code=str(industry) if industry not in(None,"") else None,paper_type=str(paper_type) if paper_type not in(None,"") else None,last_price=last_price,closing_price=closing_price,yesterday_price=yesterday_price,change_percent=change_percent)
+    return MarketSymbol(code=str(code),symbol=str(symbol).strip(),name=str(name or symbol).strip(),market=market,flow=flow,industry_code=str(industry) if industry not in(None,"") else None,paper_type=str(paper_type) if paper_type not in(None,"") else None,last_price=last_price,closing_price=closing_price,yesterday_price=yesterday_price,change_percent=change_percent,traded_value=_f("qTotCap","qtc","tval","qTotTran5J"))
 def _market_watch_url()->str:
     params=[("market","0"),("withBestLimits","false"),("showTraded","false"),("hEven","0"),("RefID","0")];params.extend((f"paperTypes[{i}]",str(i+1)) for i in range(9));return f"{tsetmc_base()}/ClosingPrice/GetMarketWatch?{urllib.parse.urlencode(params)}"
 def _read_url(url:str,*,timeout:float,accept:str="*/*")->bytes:

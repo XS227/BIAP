@@ -1,5 +1,5 @@
 [Unit]
-Description=BIAP rolling listed-company TSETMC/CODAL/Tindex baseline refresh
+Description=BIAP rolling listed-company TSETMC/CODAL/TIndex baseline refresh
 After=network-online.target biap-fin.service
 Wants=network-online.target
 
@@ -8,10 +8,23 @@ Type=oneshot
 User=ubuntu
 WorkingDirectory=/home/ubuntu/biap-kiasha/XS227-BIAP/analysis
 Environment=PYTHONUNBUFFERED=1
+# Per-run limits: companies visited, never-enriched backlog slice, delay between CODAL calls.
 Environment=BIAP_LISTED_COMPANY_DAILY_BASELINE_BATCH=300
-Environment=BIAP_LISTED_COMPANY_INTERVAL_SECONDS=2.5
+Environment=BIAP_LISTED_COMPANY_BACKLOG_PER_RUN=25
+Environment=BIAP_LISTED_COMPANY_INTERVAL_SECONDS=5
 Environment=TINDEX_FULL_ENRICHMENT=false
 EnvironmentFile=-/etc/biap/market-memory.env
+EnvironmentFile=-/etc/biap/mail.env
 EnvironmentFile=-/etc/biap/listed-company.env
-ExecStart=/home/ubuntu/biap-kiasha/XS227-BIAP/analysis/.venv/bin/python /home/ubuntu/biap-kiasha/XS227-BIAP/analysis/run_listed_company_baseline.py
+# A second run (manual or a late Persistent catch-up) must not overlap the first: exit 75 shows as a
+# failed unit in the journal instead of silently doing nothing.
+ExecStart=/usr/bin/flock --nonblock --conflict-exit-code 75 /run/lock/biap-listed-company-baseline.lock /home/ubuntu/biap-kiasha/XS227-BIAP/analysis/.venv/bin/python /home/ubuntu/biap-kiasha/XS227-BIAP/analysis/run_listed_company_baseline.py
+TimeoutStartSec=90min
+KillMode=mixed
+# Host has ~2 GB RAM shared with the API; a run peaked at ~100 MB.
+MemoryHigh=384M
+MemoryMax=512M
+CPUQuota=50%
+TasksMax=64
 Nice=10
+IOSchedulingClass=idle

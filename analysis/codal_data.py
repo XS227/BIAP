@@ -18,14 +18,18 @@ from dataclasses import asdict, dataclass, replace
 from deadline import DeadlineExceeded, run_parallel_with_deadline
 from html import unescape
 from html.parser import HTMLParser
+import datetime
 import json
 import os
 import re
 import time
+import random
 from typing import Any, Optional
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urljoin
 from urllib.request import Request, urlopen
+
+import codal_inbox
 
 
 DEFAULT_BASE = "https://search.codal.ir"
@@ -36,11 +40,66 @@ _FILINGS_TTL = 5 * 60
 _CODAL_PAGE_LENGTH = 12
 _FINANCIAL_LETTER_TYPE = 6
 _RATE_LIMIT_COOLDOWN_SECONDS = 15 * 60
+_BACKOFF_BASE_SECONDS = 30.0
+_BACKOFF_CAP_SECONDS = 600.0
 _rate_limited_until = 0.0
+_last_retry_after: Optional[float] = None
 
 
 class CodalDataUnavailable(RuntimeError):
     pass
+
+
+class CodalInboxMiss(CodalDataUnavailable):
+    """Inbox mode: the Liara export has no usable answer for this request (yet). Not a CODAL "no data"."""
+
+
+def _from_inbox(read):
+    """Answer a request from the verified Liara inbox (BIAP_CODAL_INBOX), never from CODAL."""
+    try:
+        return read(codal_inbox.current())
+    except codal_inbox.InboxError as exc:
+        raise CodalInboxMiss(str(exc)) from exc
+
+
+class CodalRateLimited(CodalDataUnavailable):
+    """Upstream 429. ``retry_after`` is the server's Retry-After in seconds, when sent."""
+
+    def __init__(self, message: str, retry_after: Optional[float] = None) -> None:
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+def _parse_retry_after(value: Optional[str]) -> Optional[float]:
+    try:
+        seconds = float(str(value).strip())
+    except (TypeError, ValueError):
+        return None  # HTTP-date form is not used by CODAL; fall back to computed backoff
+    return seconds if seconds >= 0 else None
+
+
+def backoff_delay(attempt: int, retry_after: Optional[float] = None, *, rng=random.random) -> float:
+    """Seconds to wait after the ``attempt``-th consecutive 429 (1-based).
+
+    Retry-After is a floor and is always honoured (plus 0-5 s jitter so runs do not
+    resynchronise). Otherwise exponential 30 s, 60 s, 120 s ... capped at 600 s with
+    equal jitter (50-100% of the nominal delay).
+    """
+    if retry_after is not None:
+        return retry_after + rng() * 5.0
+    nominal = min(_BACKOFF_CAP_SECONDS, _BACKOFF_BASE_SECONDS * (2 ** max(0, attempt - 1)))
+    return nominal * (0.5 + rng() * 0.5)
+
+
+def last_retry_after() -> Optional[float]:
+    return _last_retry_after
+
+
+def clear_rate_limit() -> None:
+    """Lift the in-process cooldown after the caller has waited out a backoff."""
+    global _rate_limited_until, _last_retry_after
+    _rate_limited_until = 0.0
+    _last_retry_after = None
 
 
 @dataclass(frozen=True)
@@ -119,7 +178,9 @@ def www_base_url() -> str:
 
 
 def _get_json(path: str, params: Optional[dict[str, Any]] = None) -> Any:
-    global _rate_limited_until
+    global _rate_limited_until, _last_retry_after
+    if codal_inbox.enabled():
+        raise CodalDataUnavailable("CODAL is not called directly in inbox mode (BIAP_CODAL_INBOX is set)")
     now = time.monotonic()
     if now < _rate_limited_until:
         raise CodalDataUnavailable("CODAL search temporarily cooling down after upstream 429")
@@ -139,7 +200,10 @@ def _get_json(path: str, params: Optional[dict[str, Any]] = None) -> Any:
             raw = resp.read().decode("utf-8", errors="replace")
     except HTTPError as exc:
         if exc.code == 429:
-            _rate_limited_until = time.monotonic() + _RATE_LIMIT_COOLDOWN_SECONDS
+            retry_after = _parse_retry_after(exc.headers.get("Retry-After") if exc.headers else None)
+            _last_retry_after = retry_after
+            _rate_limited_until = time.monotonic() + (retry_after if retry_after is not None else _RATE_LIMIT_COOLDOWN_SECONDS)
+            raise CodalRateLimited(f"CODAL request failed: {exc}", retry_after) from exc
         raise CodalDataUnavailable(f"CODAL request failed: {exc}") from exc
     except (URLError, TimeoutError, OSError) as exc:
         raise CodalDataUnavailable(f"CODAL request failed: {exc}") from exc
@@ -151,6 +215,8 @@ def _get_json(path: str, params: Optional[dict[str, Any]] = None) -> Any:
 
 def list_companies() -> list[dict[str, Any]]:
     global _companies_cache
+    if codal_inbox.enabled():
+        return _from_inbox(lambda inbox: inbox.directory())
     now = time.time()
     if _companies_cache and now - _companies_cache[0] < _COMPANIES_TTL:
         return _companies_cache[1]
@@ -167,6 +233,8 @@ def find_company(symbol: str) -> Optional[dict[str, Any]]:
     wanted = symbol.strip()
     if not wanted:
         return None
+    if codal_inbox.enabled():
+        return _from_inbox(lambda inbox: inbox.record(wanted).get("company"))
 
     # The full /companies payload is ~750 KB and the relay can trickle it for
     # well beyond the request timeout. Resolve issuer metadata from the much
@@ -213,6 +281,8 @@ def financial_years(symbol: str) -> list[str]:
     wanted = symbol.strip()
     if not wanted:
         return []
+    if codal_inbox.enabled():
+        return _from_inbox(lambda inbox: [str(y) for y in (inbox.record(wanted).get("financial_years") or [])])
     now = time.time()
     cached = _years_cache.get(wanted)
     if cached and now - cached[0] < _YEARS_TTL:
@@ -259,12 +329,96 @@ def _search_payload(symbol: str, params: dict[str, Any]) -> list[CodalFiling]:
     return [_normalize_filing(row) for row in rows if isinstance(row, dict)]
 
 
+def gregorian_to_jalali(year: int, month: int, day: int) -> tuple[int, int, int]:
+    """Standard arithmetic Gregorian -> Solar Hijri conversion (no extra dependency)."""
+    g_days = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+    gy2 = year + 1 if month > 2 else year
+    days = 355666 + 365 * year + (gy2 + 3) // 4 - (gy2 + 99) // 100 + (gy2 + 399) // 400 + day + g_days[month - 1]
+    jy = -1595 + 33 * (days // 12053)
+    days %= 12053
+    jy += 4 * (days // 1461)
+    days %= 1461
+    if days > 365:
+        jy += (days - 1) // 365
+        days = (days - 1) % 365
+    if days < 186:
+        return jy, 1 + days // 31, 1 + days % 31
+    return jy, 7 + (days - 186) // 30, 1 + (days - 186) % 30
+
+
+_FINANCIAL_TITLE_MARKERS = ("صورت‌های مالی", "صورتهای مالی", "صورت های مالی")
+
+
+def _get_json_with_retry(path: str, params: dict[str, Any], *, attempts: int = 3, sleep=time.sleep) -> Any:
+    """``_get_json`` with a bounded retry so one timed-out page does not fail a multi-page check.
+
+    A 429 waits ``backoff_delay`` (Retry-After is a floor) and lifts the in-process cooldown first;
+    any other CodalDataUnavailable (timeout, 5xx) waits 1-4 s, then 2-8 s. The last failure is raised.
+    """
+    for attempt in range(1, attempts + 1):
+        try:
+            return _get_json(path, params)
+        except CodalRateLimited as exc:
+            if attempt == attempts:
+                raise
+            sleep(backoff_delay(attempt, exc.retry_after))
+            clear_rate_limit()
+        except CodalDataUnavailable:
+            if attempt == attempts:
+                raise
+            sleep(2.0 * 2 ** (attempt - 1) * (0.5 + random.random() * 0.5))
+
+
+def symbols_with_new_financial_filings(
+    since: "datetime.date", *, max_pages: int = 10, attempts: int = 3, sleep=time.sleep
+) -> set[str]:
+    """Symbols that published a financial-statement filing on/after ``since`` (one request per page).
+
+    Uses CODAL's symbol-less search filtered server-side to financial statements, so the daily
+    "new filings" check costs a handful of requests (live 2026-10-22: 127 filings = 7 pages of 20 for
+    a week) instead of one per company. Only identifiers CODAL returns are used. Each page is retried
+    up to ``attempts`` times; if a page still fails the check is all-or-nothing: CodalDataUnavailable
+    is raised so the caller does not advance its "checked up to" date over a partial result.
+    """
+    jy, jm, jd = gregorian_to_jalali(since.year, since.month, since.day)
+    if codal_inbox.enabled():
+        return _from_inbox(lambda inbox: inbox.new_filing_symbols(f"{jy:04d}/{jm:02d}/{jd:02d}"))
+    symbols: set[str] = set()
+    for page in range(1, max_pages + 1):
+        # CODAL rejects Length != 12 and a missing ToDate with 400 (verified 2026-10-22); it pages by 20.
+        params = {
+            "PageNumber": page, "Length": _CODAL_PAGE_LENGTH, "LetterType": _FINANCIAL_LETTER_TYPE,
+            "CompanyState": -1, "CompanyType": -1,
+            "FromDate": f"{jy:04d}/{jm:02d}/{jd:02d}", "ToDate": f"{jy + 1:04d}/12/29",
+            "Mains": "true", "Childs": "true", "Publisher": "false", "search": "true",
+        }
+        payload = _get_json_with_retry("/api/search/v2/q", params, attempts=attempts, sleep=sleep)
+        rows = payload.get("Letters") if isinstance(payload, dict) else None
+        if not isinstance(rows, list) or not rows:
+            break
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            title = str(row.get("Title") or "")
+            symbol = str(row.get("Symbol") or "").strip()
+            if symbol and any(marker in title for marker in _FINANCIAL_TITLE_MARKERS):
+                symbols.add(symbol)
+        total_pages = payload.get("Page") if isinstance(payload, dict) else None
+        if isinstance(total_pages, int) and page >= total_pages:
+            break
+    else:
+        raise CodalDataUnavailable(f"CODAL new-filings search exceeded {max_pages} pages")
+    return symbols
+
+
 def latest_filings(symbol: str, limit: int = 5) -> list[CodalFiling]:
     """Return recent CODAL filings using the live-verified query shape."""
     wanted = symbol.strip()
     if not wanted:
         return []
     limit = max(1, min(int(limit), _CODAL_PAGE_LENGTH))
+    if codal_inbox.enabled():
+        return _from_inbox(lambda inbox: [CodalFiling(**f) for f in inbox.record(wanted).get("filings") or []][:limit])
 
     now = time.time()
     cached = _filings_cache.get(wanted)
@@ -318,6 +472,8 @@ def latest_financial_filings(symbol: str, limit: int = 3) -> list[CodalFiling]:
     if not wanted:
         return []
     limit = max(1, min(int(limit), _CODAL_PAGE_LENGTH))
+    if codal_inbox.enabled():
+        return _from_inbox(lambda inbox: [CodalFiling(**f) for f in inbox.record(wanted).get("financial_filings") or []][:limit])
 
     now = time.time()
     cached = _financial_filings_cache.get(wanted)
@@ -433,6 +589,8 @@ def _parse_number(value: str) -> Optional[float]:
 
 
 def _fetch_filing_html(filing: CodalFiling) -> str:
+    if codal_inbox.enabled():
+        return _from_inbox(lambda inbox: inbox.report_html(filing.tracing_no))
     if not filing.excel_url:
         raise CodalDataUnavailable("CODAL filing has no report payload URL")
     url = filing.excel_url
