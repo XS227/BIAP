@@ -24,6 +24,9 @@ from .country_packs import get_exchange
 from .credit_scoring import score_legal_entity_company
 from .decision_support import build_decision_table, profile_assessment
 from .distress import distress_agent
+from .decision_reasons import split_decision_reasons
+from .financial_signals import is_correctly_classified_financial
+from .us_isin import enrich_with_us_isin
 from .governance import decision_governance_agent
 from .opportunity import classify_opportunity
 from .exchange_shares import apply_to_company as apply_exchange_share_counts
@@ -101,34 +104,81 @@ def _supported_operating_equity(company: GlobalCompany) -> bool:
     )
 
 
-def _peer_pe_benchmark(company: GlobalCompany) -> tuple[Optional[float], Optional[str], int]:
-    """Return a recent derived peer P/E benchmark from the persisted market scan.
+def _peer_invalidations(country: str, exchange: str) -> dict:
+    """Optional source-update feed: {ticker: newest known period end} that supersedes cached peer fundamentals."""
+    feed = read_json(data_root() / "source-index" / "peer-invalidations.json", default=None)
+    entry = feed.get(f"{country.upper()}:{exchange.upper()}") if isinstance(feed, dict) else None
+    return entry if isinstance(entry, dict) else {}
 
-    This is deliberately a comparison metric, never official filing evidence.
-    Same-sector peers are preferred when at least three valid peers exist;
-    otherwise a broader same-exchange median requires at least five peers.
+
+def _peer_benchmark_info(wrapper: dict) -> dict:
+    """Freshness of a stored peer benchmark (see ``freshness`` for the five-dimension model).
+
+    * wrappers with a v2 ``benchmark`` block: source-aware, fingerprint-checked, per-dimension
+      verdicts (filing / universe / calc / quote); nothing is judged by a single wall-clock TTL;
+    * legacy wrappers (no block): unchanged behaviour, ``cachedAt`` <= 24 h.
+    The target company's own quote and risk signals are judged elsewhere and never revive a benchmark.
     """
+    from . import freshness
+
+    now = datetime.now(timezone.utc)
+    try:
+        base = datetime.fromisoformat(str(wrapper.get("cachedAt") or "").replace("Z", "+00:00"))
+    except ValueError:
+        return {"state": "scan_cache_invalid"}
+    base = (base if base.tzinfo else base.replace(tzinfo=timezone.utc)).astimezone(timezone.utc)
+    base_age = (now - base).total_seconds() / 3600.0
+    if isinstance(wrapper.get("benchmark"), dict):
+        country, exchange = str(wrapper.get("country") or ""), str(wrapper.get("exchange") or "")
+        verdict = freshness.evaluate(wrapper, country, now, _peer_invalidations(country, exchange))
+        return {"state": "ok" if verdict["usable"] else "scan_cache_stale", "model": "v2", "method": verdict.get("method"),
+                "validatedAt": verdict.get("validatedAt"), "baseCachedAt": base.isoformat(), "baseAgeHours": round(base_age, 2),
+                "dimensions": verdict["dimensions"], "reason": verdict.get("reason"),
+                "excluded": verdict.get("excluded", [])}
+    out = {"model": "legacy_24h", "method": "full_scan", "validatedAt": base.isoformat(), "ageHours": round(base_age, 2),
+           "baseCachedAt": base.isoformat(), "baseAgeHours": round(base_age, 2)}
+    return {**out, "state": "scan_cache_stale" if (base_age < 0 or base_age > 24) else "ok"}
+
+
+def _scan_peer_state(company: GlobalCompany) -> tuple[Optional[list], str]:
+    """(rows, state); state is ok | scan_cache_missing | scan_cache_stale | scan_cache_invalid."""
     country = "".join(ch for ch in company.country.upper() if ch.isalnum() or ch in {"-", "_"})
     exchange = "".join(ch for ch in company.exchange.upper() if ch.isalnum() or ch in {"-", "_"})
     wrapper = read_json(data_root() / "scan-cache" / country / f"{exchange}.json", default=None)
+    if wrapper is None:
+        return None, "scan_cache_missing"
     if not isinstance(wrapper, dict) or wrapper.get("schemaVersion") not in {1, 2, 3}:
-        return None, None, 0
-
-    try:
-        cached_at = datetime.fromisoformat(str(wrapper.get("cachedAt") or "").replace("Z", "+00:00"))
-        if cached_at.tzinfo is None:
-            cached_at = cached_at.replace(tzinfo=timezone.utc)
-        age_hours = (datetime.now(timezone.utc) - cached_at.astimezone(timezone.utc)).total_seconds() / 3600.0
-    except ValueError:
-        return None, None, 0
-    if age_hours < 0 or age_hours > 24:
-        return None, None, 0
-
+        return None, "scan_cache_invalid"
+    info = _peer_benchmark_info(wrapper)
+    if info["state"] != "ok":
+        return None, info["state"]
+    excluded = set(info.get("excluded") or [])
     payload = wrapper.get("payload")
     rows = payload.get("deepResults") if isinstance(payload, dict) else None
-    if not isinstance(rows, list):
-        return None, None, 0
+    if isinstance(rows, list):
+        if excluded:  # peers whose fundamentals cannot be validated never enter a median
+            rows = [r for r in rows if str(((r or {}).get("company") or {}).get("ticker") or "").upper() not in excluded]
+        return rows, "ok"
+    return None, "scan_cache_invalid"
 
+
+def _peer_benchmark_meta(company: GlobalCompany) -> Optional[dict]:
+    country = "".join(ch for ch in company.country.upper() if ch.isalnum() or ch in {"-", "_"})
+    exchange = "".join(ch for ch in company.exchange.upper() if ch.isalnum() or ch in {"-", "_"})
+    wrapper = read_json(data_root() / "scan-cache" / country / f"{exchange}.json", default=None)
+    if not isinstance(wrapper, dict):
+        return None
+    info = _peer_benchmark_info(wrapper)
+    return None if info.get("state") == "scan_cache_invalid" else info
+
+
+def _scan_peer_rows(company: GlobalCompany) -> Optional[list]:
+    """Deep-analyzed rows of the persisted same-exchange scan (<=24h old), else None."""
+    return _scan_peer_state(company)[0]
+
+
+def _peer_metric_values(company: GlobalCompany, rows: list, field: str, upper: float) -> tuple[list[float], list[float]]:
+    """(same-sector, same-market) positive values of ``field`` for other issuers."""
     same_sector: list[float] = []
     same_market: list[float] = []
     target_sector = (company.sector or "").strip().casefold()
@@ -144,21 +194,56 @@ def _peer_pe_benchmark(company: GlobalCompany) -> tuple[Optional[float], Optiona
         if issuer_key_of(peer) == issuer_key_of(company):
             continue
         try:
-            pe = float(peer.get("pe"))
+            value = float(peer.get(field))
         except (TypeError, ValueError):
             continue
-        if not (0 < pe < 500):
+        if not (0 < value < upper):
             continue
-        same_market.append(pe)
+        same_market.append(value)
         peer_sector = str(peer.get("sector") or "").strip().casefold()
         if target_sector and peer_sector and peer_sector == target_sector:
-            same_sector.append(pe)
+            same_sector.append(value)
+    return same_sector, same_market
 
+
+def _peer_pe_benchmark(company: GlobalCompany) -> tuple[Optional[float], Optional[str], int]:
+    """Return a recent derived peer P/E benchmark from the persisted market scan.
+
+    This is deliberately a comparison metric, never official filing evidence.
+    Same-sector peers are preferred when at least three valid peers exist;
+    otherwise a broader same-exchange median requires at least five peers.
+    """
+    rows = _scan_peer_rows(company)
+    if rows is None:
+        return None, None, 0
+    same_sector, same_market = _peer_metric_values(company, rows, "pe", 500)
     if len(same_sector) >= 3:
         return float(median(same_sector)), "same_sector_scan_median", len(same_sector)
     if len(same_market) >= 5:
         return float(median(same_market)), "same_exchange_scan_median", len(same_market)
     return None, None, 0
+
+
+def _peer_pb_benchmark(company: GlobalCompany) -> Optional[dict]:
+    """Same-sector P/B median for classified financial issuers only (>=3 peers).
+
+    No exchange-wide fallback: a bank's P/B against an all-sector median is not
+    a valid benchmark. Derived comparison metric, never filing evidence.
+    """
+    if not is_correctly_classified_financial(company):
+        return None
+    rows = _scan_peer_rows(company)
+    if rows is None:
+        return None
+    same_sector, _ = _peer_metric_values(company, rows, "pb", 50)
+    if len(same_sector) < 3:
+        return None
+    return {
+        "value": float(median(same_sector)),
+        "scope": "same_sector_scan_median",
+        "count": len(same_sector),
+        "cohort": "deep_analyzed_scan_sample_excluding_same_issuer",
+    }
 
 
 _CLASS_SUFFIX = re.compile(r"[.\-/ ](?:[A-Z]|[A-Z]{1,2}\d?|SDB|PREF|PR)$")
@@ -360,6 +445,11 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
     peer_scope = None
     peer_count = 0
     exchange_pe_median = None
+    peer_scan_state = _scan_peer_state(company)[1]
+    peer_bench = _peer_benchmark_meta(company)
+    from . import freshness as _fr
+
+    price_state = _fr.quote_state(company.price_observed_at, datetime.now(timezone.utc))
     if sector_pe is None:
         peer_pe, peer_scope, peer_count = _peer_pe_benchmark(company)
         if peer_pe is not None and peer_scope == "same_sector_scan_median":
@@ -385,6 +475,12 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
         # exists: P/B = market cap / book equity is the same ratio.
         pb = float(market_cap) / float(equity)
         derived.append("pb=market_cap/total_equity")
+
+    peer_pb = None
+    if pb is not None and float(pb) > 0 and not (company.raw_provider_fields or {}).get("peer_pb_benchmark"):
+        peer_pb = _peer_pb_benchmark(company)
+        if peer_pb is not None:
+            derived.append("peer_pb_benchmark=same_sector_scan_median")
 
     if (
         same_currency
@@ -477,6 +573,10 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
                 "peer_pe_benchmark_is_sector_specific": peer_scope == "same_sector_scan_median",
                 **({"exchange_pe_median_informational": exchange_pe_median} if exchange_pe_median is not None else {}),
             } if peer_scope else {}),
+            "peer_scan_cache_state": peer_scan_state,
+            **({"peer_benchmark_freshness": peer_bench} if peer_bench else {}),
+            "price_state": price_state,
+            **({"peer_pb_benchmark": peer_pb} if peer_pb is not None else {}),
             **({"fx_conversion": fx_info} if fx_info else {}),
         },
         sources=[
@@ -585,6 +685,49 @@ def _source_plan_payload(country: str) -> dict:
     return plan
 
 
+def _critical_data_gaps(enriched, signals) -> tuple[str, ...]:
+    """Critical comparison evidence that is missing for a company that could be compared.
+
+    A valid positive P/E with no usable sector benchmark (peer scan missing,
+    stale, invalid or too small) means the valuation comparison could not be
+    made. A BUY must not be accepted on that basis.
+    """
+    pe = enriched.pe
+    if pe is None or pe <= 0:
+        return ()
+    comparison = next((s for s in signals if getattr(s, "agent", "") == "comparison"), None)
+    if comparison is not None and comparison.confidence >= 0.5:
+        return ()
+    state = (enriched.raw_provider_fields or {}).get("peer_scan_cache_state") or "unknown"
+    return (
+        "valuation benchmark unavailable (peer scan state: "
+        f"{state}); a BUY requires verified comparison evidence",
+    )
+
+
+def _peer_group_size(enriched) -> Optional[int]:
+    """Valid same-sector companies behind the valuation benchmark, or None if unverifiable."""
+    raw = enriched.raw_provider_fields or {}
+    if raw.get("peer_pe_benchmark_scope") == "same_sector_scan_median":
+        count = raw.get("peer_pe_benchmark_count")
+        if isinstance(count, int) and not isinstance(count, bool):
+            return count
+    pb = raw.get("peer_pb_benchmark")
+    if isinstance(pb, dict) and pb.get("scope") == "same_sector_scan_median" and isinstance(pb.get("count"), int):
+        return pb["count"]
+    return None
+
+
+def _positive_signal_agents(signals) -> tuple[str, ...]:
+    return tuple(
+        sorted(
+            str(getattr(s, "agent", ""))
+            for s in signals
+            if float(getattr(s, "vote", 0.0) or 0.0) > 0.0 and float(getattr(s, "confidence", 0.0) or 0.0) > 0.0
+        )
+    )
+
+
 def _analysis_payload(
     enriched,
     diagnostics: ProviderDiagnostics,
@@ -598,6 +741,8 @@ def _analysis_payload(
     confidence: float,
 ) -> dict:
     preliminary_call = _call(score, confidence, evidence.status)
+    fundamental_evidence = fundamental_evidence_contract(enriched)
+    critical_gaps = _critical_data_gaps(enriched, signals)
     governance = decision_governance_agent(
         proposed_call=preliminary_call,
         score=score,
@@ -605,6 +750,10 @@ def _analysis_payload(
         decision_confidence=decision_confidence,
         evidence=evidence,
         distress=distress,
+        critical_data_gaps=critical_gaps,
+        buy_review_rules=True,
+        peer_group_size=_peer_group_size(enriched),
+        positive_signal_agents=_positive_signal_agents(signals),
     )
     call = governance.final_call
     distress_gate_applied = (
@@ -633,10 +782,17 @@ def _analysis_payload(
         "providerDiagnostics": diagnostics.to_dict(),
         "sourcePlan": _source_plan_payload(enriched.country),
         "evidence": asdict(evidence),
-        "fundamentalEvidence": fundamental_evidence_contract(enriched),
+        "fundamentalEvidence": fundamental_evidence,
         "distress": asdict(distress),
         "creditScoring": credit_scoring,
         "governance": asdict(governance),
+        "decisionReasons": split_decision_reasons(
+            governance=asdict(governance),
+            evidence=asdict(evidence),
+            distress=asdict(distress),
+            fundamental_evidence=fundamental_evidence,
+            confidence=confidence,
+        ),
         "opportunity": classify_opportunity(
             preliminary_call=preliminary_call,
             final_call=call,
@@ -681,6 +837,8 @@ def analyze_company(
 ) -> dict:
     registry = registry or build_registry()
     evaluated = _evaluate(company, registry)
+    # Identifier only (flag-gated, best effort): never affects scoring or gates.
+    evaluated = (enrich_with_us_isin(evaluated[0]), *evaluated[1:])
     return _analysis_payload(*evaluated)
 
 

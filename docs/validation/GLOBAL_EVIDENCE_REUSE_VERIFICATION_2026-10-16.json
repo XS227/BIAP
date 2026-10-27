@@ -1,0 +1,1356 @@
+{
+ "at": "2026-10-16T15:47:32+00:00",
+ "commit": "9a6c755",
+ "markets": [
+  {
+   "country": "DE",
+   "exchange": "XETRA",
+   "ledgerDigestBefore": "5164d89f30983d5d",
+   "inventory": {
+    "country": "DE",
+    "exchange": "XETRA",
+    "ledger": {
+     "BLOCKED": 11,
+     "COMPLETE": 389,
+     "INSUFFICIENT_DATA": 6
+    },
+    "ledgerOldestAnalysis": "2026-10-13T11:24:09.281124+00:00",
+    "ledgerNewestAnalysis": "2026-10-16T09:57:37.663288+00:00",
+    "fundamentalsCompanies": 402,
+    "fundamentalsArchivedPeriods": 750,
+    "marketSnapshots": 412
+   },
+   "evidence": {
+    "storedResults": 405,
+    "complete": 389,
+    "reusableValidated": 21,
+    "completeButMissingCritical": 368,
+    "missingCriticalAmongComplete": {
+     "price": 0,
+     "price_observed_at": 0,
+     "filing_period_end": 344,
+     "sector": 240,
+     "market_cap(informational)": 26,
+     "earnings(eps|net_income)": 2
+    }
+   },
+   "legacy": {
+    "cachedAt": "2026-10-16T09:57:37.684137+00:00",
+    "rows": 150,
+    "ageHoursNow": 5.8,
+    "usableUnder24hRule": true
+   },
+   "rebuildDry": {
+    "status": "REJECTED",
+    "ledgerRows": 150,
+    "rowsRepriced": null,
+    "rowsExcluded": null,
+    "coveragePct": null,
+    "excludedReasons": null,
+    "problems": [
+     "fundamentals not valid for repricing: 79% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first"
+    ],
+    "fileUnchangedAfterDry": true
+   },
+   "rebuild": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 150,
+    "rowsRepriced": null,
+    "rowsExcluded": null,
+    "coveragePct": null,
+    "excludedReasons": null,
+    "problems": [
+     "fundamentals not valid for repricing: 79% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first"
+    ],
+    "quotesAsOf": null
+   },
+   "afterTTL": {
+    "now": {
+     "usable": false,
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "staleQuotes": {
+    "status": "REJECTED",
+    "rowsRepriced": null,
+    "problems": [
+     "fundamentals not valid for repricing: 79% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first"
+    ]
+   },
+   "stalePartial": {
+    "status": "REJECTED",
+    "excludedQuoteStale": 0,
+    "excludedRowsKeepingMultiples": 0,
+    "excludedRowsMarkedCurrent": 0,
+    "repricedRowsDatedAfterQuote": 0
+   },
+   "preservation": {
+    "rebuiltRows": 150,
+    "inputsAsOfEqualsLedgerAnalyzedAt": 0,
+    "benchmarkValidatedAt": null,
+    "baseCachedAt": "2026-10-16T09:57:37.684137+00:00",
+    "cachedAtRewrittenToNow": false,
+    "fundamentalsSampleReadable": "25/25",
+    "historyFilesInSample": 47
+   },
+   "decisions": {
+    "ledgerBuyCandidates": 0,
+    "reDecidedWithRebuiltBenchmark": {},
+    "withExpiredBenchmark": {},
+    "staleBuyBasePriceState": {},
+    "missingCritical": {
+     "no_price": {},
+     "no_earnings": {},
+     "no_filing_period": {},
+     "no_sector": {},
+     "stale_price_40d": {}
+    },
+    "errors": 0,
+    "withOriginalLegacyBenchmark": {},
+    "sameCallOriginalVsRebuilt": 0,
+    "buyOrig": 0,
+    "buyRebuilt": 0,
+    "buyBothOrigAndRebuilt": 0,
+    "buyOnlyRebuilt": 0
+   },
+   "ledgerDigestAfter": "5164d89f30983d5d",
+   "ledgerUnchanged": true,
+   "inventoryUnchanged": true
+  },
+  {
+   "country": "DE",
+   "exchange": "FRANKFURT",
+   "ledgerDigestBefore": "e0bef1ba0b4c31f2",
+   "inventory": {
+    "country": "DE",
+    "exchange": "FRANKFURT",
+    "ledger": {
+     "BLOCKED": 28,
+     "COMPLETE": 456,
+     "INSUFFICIENT_DATA": 14
+    },
+    "ledgerOldestAnalysis": "2026-10-13T11:23:33.705902+00:00",
+    "ledgerNewestAnalysis": "2026-10-13T11:24:04.673361+00:00",
+    "fundamentalsCompanies": 492,
+    "fundamentalsArchivedPeriods": 905,
+    "marketSnapshots": 499
+   },
+   "evidence": {
+    "storedResults": 491,
+    "complete": 456,
+    "reusableValidated": 14,
+    "completeButMissingCritical": 442,
+    "missingCriticalAmongComplete": {
+     "price": 0,
+     "price_observed_at": 0,
+     "filing_period_end": 408,
+     "sector": 323,
+     "market_cap(informational)": 49,
+     "earnings(eps|net_income)": 2
+    }
+   },
+   "legacy": {
+    "cachedAt": "2026-10-12T19:23:46.745394+00:00",
+    "rows": 150,
+    "ageHoursNow": 92.4,
+    "usableUnder24hRule": false
+   },
+   "rebuildDry": {
+    "status": "REJECTED",
+    "ledgerRows": 150,
+    "rowsRepriced": null,
+    "rowsExcluded": null,
+    "coveragePct": null,
+    "excludedReasons": null,
+    "problems": [
+     "fundamentals not valid for repricing: 74% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first"
+    ],
+    "fileUnchangedAfterDry": true
+   },
+   "rebuild": {
+    "status": "REJECTED",
+    "replaced": false,
+    "ledgerRows": 150,
+    "rowsRepriced": null,
+    "rowsExcluded": null,
+    "coveragePct": null,
+    "excludedReasons": null,
+    "problems": [
+     "fundamentals not valid for repricing: 74% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first"
+    ],
+    "quotesAsOf": null
+   },
+   "afterTTL": {
+    "now": {
+     "usable": false,
+     "reason": "no v2 benchmark block"
+    },
+    "plus25h": {
+     "usable": false,
+     "reason": "no v2 benchmark block"
+    },
+    "plus7d": {
+     "usable": false,
+     "reason": "no v2 benchmark block"
+    }
+   },
+   "staleQuotes": {
+    "status": "REJECTED",
+    "rowsRepriced": null,
+    "problems": [
+     "fundamentals not valid for repricing: 74% of peers excluded (possibly superseded/undated/unvalidated) > 15%; rebuild the excluded peers (see filingDimension.excluded) first"
+    ]
+   },
+   "stalePartial": {
+    "status": "REJECTED",
+    "excludedQuoteStale": 0,
+    "excludedRowsKeepingMultiples": 0,
+    "excludedRowsMarkedCurrent": 0,
+    "repricedRowsDatedAfterQuote": 0
+   },
+   "preservation": {
+    "rebuiltRows": 150,
+    "inputsAsOfEqualsLedgerAnalyzedAt": 0,
+    "benchmarkValidatedAt": null,
+    "baseCachedAt": "2026-10-12T19:23:46.745394+00:00",
+    "cachedAtRewrittenToNow": false,
+    "fundamentalsSampleReadable": "25/25",
+    "historyFilesInSample": 46
+   },
+   "decisions": {
+    "ledgerBuyCandidates": 1,
+    "reDecidedWithRebuiltBenchmark": {
+     "NO_RECOMMENDATION": 1
+    },
+    "withExpiredBenchmark": {
+     "NO_RECOMMENDATION": 1
+    },
+    "staleBuyBasePriceState": {
+     "stored price state=None": 1
+    },
+    "missingCritical": {
+     "no_price": {
+      "NO_RECOMMENDATION": 1
+     },
+     "no_earnings": {
+      "NO_RECOMMENDATION": 1
+     },
+     "no_filing_period": {
+      "NO_RECOMMENDATION": 1
+     },
+     "no_sector": {
+      "NO_RECOMMENDATION": 1
+     },
+     "stale_price_40d": {
+      "NO_RECOMMENDATION": 1
+     }
+    },
+    "errors": 0,
+    "withOriginalLegacyBenchmark": {
+     "NO_RECOMMENDATION": 1
+    },
+    "sameCallOriginalVsRebuilt": 1,
+    "buyOrig": 0,
+    "buyRebuilt": 0,
+    "buyBothOrigAndRebuilt": 0,
+    "buyOnlyRebuilt": 0,
+    "withCurrentTargetPrice": {
+     "NO_RECOMMENDATION": 1
+    }
+   },
+   "ledgerDigestAfter": "e0bef1ba0b4c31f2",
+   "ledgerUnchanged": true,
+   "inventoryUnchanged": true
+  },
+  {
+   "country": "US",
+   "exchange": "NASDAQ",
+   "ledgerDigestBefore": "777936e9c66a20d5",
+   "inventory": {
+    "country": "US",
+    "exchange": "NASDAQ",
+    "ledger": {
+     "BLOCKED": 15,
+     "COMPLETE": 2809,
+     "INSUFFICIENT_DATA": 190
+    },
+    "ledgerOldestAnalysis": "2026-10-12T09:04:58.155191+00:00",
+    "ledgerNewestAnalysis": "2026-10-15T21:42:43.896849+00:00",
+    "fundamentalsCompanies": 2843,
+    "fundamentalsArchivedPeriods": 2869,
+    "marketSnapshots": 3040
+   },
+   "evidence": {
+    "storedResults": 3003,
+    "complete": 2809,
+    "reusableValidated": 2660,
+    "completeButMissingCritical": 149,
+    "missingCriticalAmongComplete": {
+     "price": 0,
+     "price_observed_at": 0,
+     "filing_period_end": 0,
+     "sector": 148,
+     "market_cap(informational)": 683,
+     "earnings(eps|net_income)": 1
+    }
+   },
+   "legacy": {
+    "cachedAt": "2026-10-15T21:42:44.196133+00:00",
+    "rows": 150,
+    "ageHoursNow": 18.1,
+    "usableUnder24hRule": true
+   },
+   "rebuildDry": {
+    "status": "DRY_RUN_OK",
+    "ledgerRows": 150,
+    "rowsRepriced": 143,
+    "rowsExcluded": 7,
+    "coveragePct": 96.62,
+    "excludedReasons": {
+     "filing_may_have_changed": 5,
+     "no_price_dependent_multiple": 2
+    },
+    "problems": null,
+    "fileUnchangedAfterDry": true
+   },
+   "rebuild": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 150,
+    "rowsRepriced": 143,
+    "rowsExcluded": 7,
+    "coveragePct": 96.62,
+    "excludedReasons": {
+     "filing_may_have_changed": 5,
+     "no_price_dependent_multiple": 2
+    },
+    "problems": null,
+    "quotesAsOf": "2026-10-16"
+   },
+   "afterTTL": {
+    "now": {
+     "usable": true,
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "reason": "filing: 88% of peers excluded (possibly superseded/undated/unvalidated) > 15%"
+    }
+   },
+   "staleQuotes": {
+    "status": "REJECTED",
+    "rowsRepriced": 0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%"
+    ]
+   },
+   "stalePartial": {
+    "status": "REJECTED",
+    "excludedQuoteStale": 0,
+    "excludedRowsKeepingMultiples": 0,
+    "excludedRowsMarkedCurrent": 0,
+    "repricedRowsDatedAfterQuote": 0
+   },
+   "preservation": {
+    "rebuiltRows": 150,
+    "inputsAsOfEqualsLedgerAnalyzedAt": 150,
+    "benchmarkValidatedAt": "2026-10-16T15:47:32+00:00",
+    "baseCachedAt": "2026-10-15T21:42:44.196133+00:00",
+    "cachedAtRewrittenToNow": false,
+    "fundamentalsSampleReadable": "25/25",
+    "historyFilesInSample": 26
+   },
+   "decisions": {
+    "ledgerBuyCandidates": 19,
+    "reDecidedWithRebuiltBenchmark": {
+     "BUY_CANDIDATE": 6,
+     "NO_RECOMMENDATION": 9,
+     "HOLD_OR_WATCH": 4
+    },
+    "withExpiredBenchmark": {
+     "NO_RECOMMENDATION": 17,
+     "HOLD_OR_WATCH": 2
+    },
+    "staleBuyBasePriceState": {
+     "stored price state=CURRENT": 19
+    },
+    "missingCritical": {
+     "no_price": {
+      "NO_RECOMMENDATION": 19
+     },
+     "no_earnings": {
+      "NO_RECOMMENDATION": 19
+     },
+     "no_filing_period": {
+      "NO_RECOMMENDATION": 19
+     },
+     "no_sector": {
+      "NO_RECOMMENDATION": 17,
+      "HOLD_OR_WATCH": 2
+     },
+     "stale_price_40d": {
+      "NO_RECOMMENDATION": 19
+     }
+    },
+    "errors": 0,
+    "withOriginalLegacyBenchmark": {
+     "BUY_CANDIDATE": 6,
+     "NO_RECOMMENDATION": 9,
+     "HOLD_OR_WATCH": 4
+    },
+    "sameCallOriginalVsRebuilt": 19,
+    "buyOrig": 6,
+    "buyRebuilt": 6,
+    "buyBothOrigAndRebuilt": 6,
+    "buyOnlyRebuilt": 0,
+    "withCurrentTargetPrice": {
+     "BUY_CANDIDATE": 9,
+     "NO_RECOMMENDATION": 10
+    }
+   },
+   "ledgerDigestAfter": "777936e9c66a20d5",
+   "ledgerUnchanged": true,
+   "inventoryUnchanged": true
+  },
+  {
+   "country": "US",
+   "exchange": "NYSE",
+   "ledgerDigestBefore": "a0444bb560559676",
+   "inventory": {
+    "country": "US",
+    "exchange": "NYSE",
+    "ledger": {
+     "BLOCKED": 9,
+     "COMPLETE": 1600,
+     "INSUFFICIENT_DATA": 187
+    },
+    "ledgerOldestAnalysis": "2026-10-12T14:00:41.202314+00:00",
+    "ledgerNewestAnalysis": "2026-10-15T21:43:03.212474+00:00",
+    "fundamentalsCompanies": 1618,
+    "fundamentalsArchivedPeriods": 1628,
+    "marketSnapshots": 1791
+   },
+   "evidence": {
+    "storedResults": 1786,
+    "complete": 1600,
+    "reusableValidated": 1456,
+    "completeButMissingCritical": 144,
+    "missingCriticalAmongComplete": {
+     "price": 0,
+     "price_observed_at": 0,
+     "filing_period_end": 0,
+     "sector": 144,
+     "market_cap(informational)": 602,
+     "earnings(eps|net_income)": 0
+    }
+   },
+   "legacy": {
+    "cachedAt": "2026-10-15T21:43:03.430746+00:00",
+    "rows": 150,
+    "ageHoursNow": 18.1,
+    "usableUnder24hRule": true
+   },
+   "rebuildDry": {
+    "status": "DRY_RUN_OK",
+    "ledgerRows": 150,
+    "rowsRepriced": 139,
+    "rowsExcluded": 11,
+    "coveragePct": 95.86,
+    "excludedReasons": {
+     "filing_may_have_changed": 6,
+     "no_price_dependent_multiple": 5
+    },
+    "problems": null,
+    "fileUnchangedAfterDry": true
+   },
+   "rebuild": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 150,
+    "rowsRepriced": 139,
+    "rowsExcluded": 11,
+    "coveragePct": 95.86,
+    "excludedReasons": {
+     "filing_may_have_changed": 6,
+     "no_price_dependent_multiple": 5
+    },
+    "problems": null,
+    "quotesAsOf": "2026-10-16"
+   },
+   "afterTTL": {
+    "now": {
+     "usable": true,
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "reason": "filing: 90% of peers excluded (possibly superseded/undated/unvalidated) > 15%"
+    }
+   },
+   "staleQuotes": {
+    "status": "REJECTED",
+    "rowsRepriced": 0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%"
+    ]
+   },
+   "stalePartial": {
+    "status": "OK",
+    "excludedQuoteStale": 15,
+    "excludedRowsKeepingMultiples": 0,
+    "excludedRowsMarkedCurrent": 0,
+    "repricedRowsDatedAfterQuote": 0
+   },
+   "preservation": {
+    "rebuiltRows": 150,
+    "inputsAsOfEqualsLedgerAnalyzedAt": 150,
+    "benchmarkValidatedAt": "2026-10-16T15:47:32+00:00",
+    "baseCachedAt": "2026-10-15T21:43:03.430746+00:00",
+    "cachedAtRewrittenToNow": false,
+    "fundamentalsSampleReadable": "25/25",
+    "historyFilesInSample": 25
+   },
+   "decisions": {
+    "ledgerBuyCandidates": 18,
+    "reDecidedWithRebuiltBenchmark": {
+     "BUY_CANDIDATE": 10,
+     "NO_RECOMMENDATION": 6,
+     "HOLD_OR_WATCH": 2
+    },
+    "withExpiredBenchmark": {
+     "NO_RECOMMENDATION": 15,
+     "HOLD_OR_WATCH": 3
+    },
+    "staleBuyBasePriceState": {
+     "stored price state=CURRENT": 18
+    },
+    "missingCritical": {
+     "no_price": {
+      "NO_RECOMMENDATION": 18
+     },
+     "no_earnings": {
+      "NO_RECOMMENDATION": 18
+     },
+     "no_filing_period": {
+      "NO_RECOMMENDATION": 18
+     },
+     "no_sector": {
+      "NO_RECOMMENDATION": 15,
+      "HOLD_OR_WATCH": 3
+     },
+     "stale_price_40d": {
+      "NO_RECOMMENDATION": 18
+     }
+    },
+    "errors": 0,
+    "withOriginalLegacyBenchmark": {
+     "BUY_CANDIDATE": 10,
+     "NO_RECOMMENDATION": 6,
+     "HOLD_OR_WATCH": 2
+    },
+    "sameCallOriginalVsRebuilt": 18,
+    "buyOrig": 10,
+    "buyRebuilt": 10,
+    "buyBothOrigAndRebuilt": 10,
+    "buyOnlyRebuilt": 0,
+    "withCurrentTargetPrice": {
+     "BUY_CANDIDATE": 10,
+     "NO_RECOMMENDATION": 7,
+     "HOLD_OR_WATCH": 1
+    }
+   },
+   "ledgerDigestAfter": "a0444bb560559676",
+   "ledgerUnchanged": true,
+   "inventoryUnchanged": true
+  },
+  {
+   "country": "GB",
+   "exchange": "LSE",
+   "ledgerDigestBefore": "34c96fce3e21212c",
+   "inventory": {
+    "country": "GB",
+    "exchange": "LSE",
+    "ledger": {
+     "BLOCKED": 18,
+     "COMPLETE": 420,
+     "INSUFFICIENT_DATA": 89
+    },
+    "ledgerOldestAnalysis": "2026-10-12T08:37:28.407594+00:00",
+    "ledgerNewestAnalysis": "2026-10-15T21:44:29.392054+00:00",
+    "fundamentalsCompanies": 799,
+    "fundamentalsArchivedPeriods": 819,
+    "marketSnapshots": 808
+   },
+   "evidence": {
+    "storedResults": 521,
+    "complete": 420,
+    "reusableValidated": 420,
+    "completeButMissingCritical": 0,
+    "missingCriticalAmongComplete": {
+     "price": 0,
+     "price_observed_at": 0,
+     "filing_period_end": 0,
+     "sector": 0,
+     "market_cap(informational)": 28,
+     "earnings(eps|net_income)": 0
+    }
+   },
+   "legacy": {
+    "cachedAt": "2026-10-15T21:44:29.467959+00:00",
+    "rows": 150,
+    "ageHoursNow": 18.1,
+    "usableUnder24hRule": true
+   },
+   "rebuildDry": {
+    "status": "DRY_RUN_OK",
+    "ledgerRows": 150,
+    "rowsRepriced": 132,
+    "rowsExcluded": 18,
+    "coveragePct": 88.59,
+    "excludedReasons": {
+     "filing_may_have_changed": 17,
+     "no_price_dependent_multiple": 1
+    },
+    "problems": null,
+    "fileUnchangedAfterDry": true
+   },
+   "rebuild": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 150,
+    "rowsRepriced": 132,
+    "rowsExcluded": 18,
+    "coveragePct": 88.59,
+    "excludedReasons": {
+     "filing_may_have_changed": 17,
+     "no_price_dependent_multiple": 1
+    },
+    "problems": null,
+    "quotesAsOf": "2026-10-16"
+   },
+   "afterTTL": {
+    "now": {
+     "usable": true,
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "reason": "quote: peer quotes older than tolerance: online reprice required"
+    }
+   },
+   "staleQuotes": {
+    "status": "REJECTED",
+    "rowsRepriced": 0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%"
+    ]
+   },
+   "stalePartial": {
+    "status": "REJECTED",
+    "excludedQuoteStale": 0,
+    "excludedRowsKeepingMultiples": 0,
+    "excludedRowsMarkedCurrent": 0,
+    "repricedRowsDatedAfterQuote": 0
+   },
+   "preservation": {
+    "rebuiltRows": 150,
+    "inputsAsOfEqualsLedgerAnalyzedAt": 150,
+    "benchmarkValidatedAt": "2026-10-16T15:47:32+00:00",
+    "baseCachedAt": "2026-10-15T21:44:29.467959+00:00",
+    "cachedAtRewrittenToNow": false,
+    "fundamentalsSampleReadable": "25/25",
+    "historyFilesInSample": 25
+   },
+   "decisions": {
+    "ledgerBuyCandidates": 17,
+    "reDecidedWithRebuiltBenchmark": {
+     "BUY_CANDIDATE": 7,
+     "HOLD_OR_WATCH": 5,
+     "NO_RECOMMENDATION": 5
+    },
+    "withExpiredBenchmark": {
+     "NO_RECOMMENDATION": 11,
+     "HOLD_OR_WATCH": 6
+    },
+    "staleBuyBasePriceState": {
+     "stored price state=CURRENT": 17
+    },
+    "missingCritical": {
+     "no_price": {
+      "NO_RECOMMENDATION": 17
+     },
+     "no_earnings": {
+      "NO_RECOMMENDATION": 17
+     },
+     "no_filing_period": {
+      "NO_RECOMMENDATION": 17
+     },
+     "no_sector": {
+      "NO_RECOMMENDATION": 11,
+      "HOLD_OR_WATCH": 6
+     },
+     "stale_price_40d": {
+      "NO_RECOMMENDATION": 17
+     }
+    },
+    "errors": 0,
+    "withOriginalLegacyBenchmark": {
+     "BUY_CANDIDATE": 10,
+     "HOLD_OR_WATCH": 5,
+     "NO_RECOMMENDATION": 2
+    },
+    "sameCallOriginalVsRebuilt": 14,
+    "buyOrig": 10,
+    "buyRebuilt": 7,
+    "buyBothOrigAndRebuilt": 7,
+    "buyOnlyRebuilt": 0,
+    "withCurrentTargetPrice": {
+     "BUY_CANDIDATE": 7,
+     "HOLD_OR_WATCH": 5,
+     "NO_RECOMMENDATION": 5
+    }
+   },
+   "ledgerDigestAfter": "34c96fce3e21212c",
+   "ledgerUnchanged": true,
+   "inventoryUnchanged": true
+  },
+  {
+   "country": "FR",
+   "exchange": "EURONEXT_PARIS",
+   "ledgerDigestBefore": "305399702e730e56",
+   "inventory": {
+    "country": "FR",
+    "exchange": "EURONEXT_PARIS",
+    "ledger": {
+     "BLOCKED": 8,
+     "COMPLETE": 259,
+     "INSUFFICIENT_DATA": 27
+    },
+    "ledgerOldestAnalysis": "2026-10-14T11:39:38.053929+00:00",
+    "ledgerNewestAnalysis": "2026-10-15T21:45:08.515823+00:00",
+    "fundamentalsCompanies": 295,
+    "fundamentalsArchivedPeriods": 327,
+    "marketSnapshots": 295
+   },
+   "evidence": {
+    "storedResults": 293,
+    "complete": 259,
+    "reusableValidated": 259,
+    "completeButMissingCritical": 0,
+    "missingCriticalAmongComplete": {
+     "price": 0,
+     "price_observed_at": 0,
+     "filing_period_end": 0,
+     "sector": 0,
+     "market_cap(informational)": 182,
+     "earnings(eps|net_income)": 0
+    }
+   },
+   "legacy": {
+    "cachedAt": "2026-10-15T21:45:08.539055+00:00",
+    "rows": 150,
+    "ageHoursNow": 18.0,
+    "usableUnder24hRule": true
+   },
+   "rebuildDry": {
+    "status": "DRY_RUN_OK",
+    "ledgerRows": 150,
+    "rowsRepriced": 124,
+    "rowsExcluded": 26,
+    "coveragePct": 96.88,
+    "excludedReasons": {
+     "filing_may_have_changed": 4,
+     "no_price_dependent_multiple": 22
+    },
+    "problems": null,
+    "fileUnchangedAfterDry": true
+   },
+   "rebuild": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 150,
+    "rowsRepriced": 124,
+    "rowsExcluded": 26,
+    "coveragePct": 96.88,
+    "excludedReasons": {
+     "filing_may_have_changed": 4,
+     "no_price_dependent_multiple": 22
+    },
+    "problems": null,
+    "quotesAsOf": "2026-10-16"
+   },
+   "afterTTL": {
+    "now": {
+     "usable": true,
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "reason": "quote: peer quotes older than tolerance: online reprice required"
+    }
+   },
+   "staleQuotes": {
+    "status": "REJECTED",
+    "rowsRepriced": 0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%"
+    ]
+   },
+   "stalePartial": {
+    "status": "REJECTED",
+    "excludedQuoteStale": 0,
+    "excludedRowsKeepingMultiples": 0,
+    "excludedRowsMarkedCurrent": 0,
+    "repricedRowsDatedAfterQuote": 0
+   },
+   "preservation": {
+    "rebuiltRows": 150,
+    "inputsAsOfEqualsLedgerAnalyzedAt": 150,
+    "benchmarkValidatedAt": "2026-10-16T15:47:32+00:00",
+    "baseCachedAt": "2026-10-15T21:45:08.539055+00:00",
+    "cachedAtRewrittenToNow": false,
+    "fundamentalsSampleReadable": "25/25",
+    "historyFilesInSample": 30
+   },
+   "decisions": {
+    "ledgerBuyCandidates": 3,
+    "reDecidedWithRebuiltBenchmark": {
+     "NO_RECOMMENDATION": 2,
+     "HOLD_OR_WATCH": 1
+    },
+    "withExpiredBenchmark": {
+     "NO_RECOMMENDATION": 2,
+     "HOLD_OR_WATCH": 1
+    },
+    "staleBuyBasePriceState": {
+     "stored price state=CURRENT": 3
+    },
+    "missingCritical": {
+     "no_price": {
+      "NO_RECOMMENDATION": 3
+     },
+     "no_earnings": {
+      "NO_RECOMMENDATION": 3
+     },
+     "no_filing_period": {
+      "NO_RECOMMENDATION": 3
+     },
+     "no_sector": {
+      "NO_RECOMMENDATION": 2,
+      "HOLD_OR_WATCH": 1
+     },
+     "stale_price_40d": {
+      "NO_RECOMMENDATION": 3
+     }
+    },
+    "errors": 0,
+    "withOriginalLegacyBenchmark": {
+     "NO_RECOMMENDATION": 2,
+     "HOLD_OR_WATCH": 1
+    },
+    "sameCallOriginalVsRebuilt": 3,
+    "buyOrig": 0,
+    "buyRebuilt": 0,
+    "buyBothOrigAndRebuilt": 0,
+    "buyOnlyRebuilt": 0,
+    "withCurrentTargetPrice": {
+     "NO_RECOMMENDATION": 2,
+     "HOLD_OR_WATCH": 1
+    }
+   },
+   "ledgerDigestAfter": "305399702e730e56",
+   "ledgerUnchanged": true,
+   "inventoryUnchanged": true
+  },
+  {
+   "country": "IT",
+   "exchange": "EURONEXT_MILAN",
+   "ledgerDigestBefore": "00f8790ae7f4f5a6",
+   "inventory": {
+    "country": "IT",
+    "exchange": "EURONEXT_MILAN",
+    "ledger": {
+     "BLOCKED": 8,
+     "COMPLETE": 169,
+     "INSUFFICIENT_DATA": 16
+    },
+    "ledgerOldestAnalysis": "2026-10-14T11:27:46.729001+00:00",
+    "ledgerNewestAnalysis": "2026-10-15T21:46:14.194390+00:00",
+    "fundamentalsCompanies": 194,
+    "fundamentalsArchivedPeriods": 222,
+    "marketSnapshots": 203
+   },
+   "evidence": {
+    "storedResults": 193,
+    "complete": 169,
+    "reusableValidated": 169,
+    "completeButMissingCritical": 0,
+    "missingCriticalAmongComplete": {
+     "price": 0,
+     "price_observed_at": 0,
+     "filing_period_end": 0,
+     "sector": 0,
+     "market_cap(informational)": 8,
+     "earnings(eps|net_income)": 0
+    }
+   },
+   "legacy": {
+    "cachedAt": "2026-10-15T21:46:14.374461+00:00",
+    "rows": 150,
+    "ageHoursNow": 18.0,
+    "usableUnder24hRule": true
+   },
+   "rebuildDry": {
+    "status": "DRY_RUN_OK",
+    "ledgerRows": 150,
+    "rowsRepriced": 142,
+    "rowsExcluded": 8,
+    "coveragePct": 99.3,
+    "excludedReasons": {
+     "no_price_dependent_multiple": 7,
+     "filing_may_have_changed": 1
+    },
+    "problems": null,
+    "fileUnchangedAfterDry": true
+   },
+   "rebuild": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 150,
+    "rowsRepriced": 142,
+    "rowsExcluded": 8,
+    "coveragePct": 99.3,
+    "excludedReasons": {
+     "no_price_dependent_multiple": 7,
+     "filing_may_have_changed": 1
+    },
+    "problems": null,
+    "quotesAsOf": "2026-10-16"
+   },
+   "afterTTL": {
+    "now": {
+     "usable": true,
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "reason": "quote: peer quotes older than tolerance: online reprice required"
+    }
+   },
+   "staleQuotes": {
+    "status": "REJECTED",
+    "rowsRepriced": 0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%"
+    ]
+   },
+   "stalePartial": {
+    "status": "OK",
+    "excludedQuoteStale": 15,
+    "excludedRowsKeepingMultiples": 0,
+    "excludedRowsMarkedCurrent": 0,
+    "repricedRowsDatedAfterQuote": 0
+   },
+   "preservation": {
+    "rebuiltRows": 150,
+    "inputsAsOfEqualsLedgerAnalyzedAt": 150,
+    "benchmarkValidatedAt": "2026-10-16T15:47:32+00:00",
+    "baseCachedAt": "2026-10-15T21:46:14.374461+00:00",
+    "cachedAtRewrittenToNow": false,
+    "fundamentalsSampleReadable": "25/25",
+    "historyFilesInSample": 26
+   },
+   "decisions": {
+    "ledgerBuyCandidates": 5,
+    "reDecidedWithRebuiltBenchmark": {
+     "NO_RECOMMENDATION": 2,
+     "BUY_CANDIDATE": 3
+    },
+    "withExpiredBenchmark": {
+     "NO_RECOMMENDATION": 3,
+     "HOLD_OR_WATCH": 2
+    },
+    "staleBuyBasePriceState": {
+     "stored price state=CURRENT": 5
+    },
+    "missingCritical": {
+     "no_price": {
+      "NO_RECOMMENDATION": 5
+     },
+     "no_earnings": {
+      "NO_RECOMMENDATION": 5
+     },
+     "no_filing_period": {
+      "NO_RECOMMENDATION": 5
+     },
+     "no_sector": {
+      "NO_RECOMMENDATION": 3,
+      "HOLD_OR_WATCH": 2
+     },
+     "stale_price_40d": {
+      "NO_RECOMMENDATION": 5
+     }
+    },
+    "errors": 0,
+    "withOriginalLegacyBenchmark": {
+     "NO_RECOMMENDATION": 2,
+     "BUY_CANDIDATE": 3
+    },
+    "sameCallOriginalVsRebuilt": 5,
+    "buyOrig": 3,
+    "buyRebuilt": 3,
+    "buyBothOrigAndRebuilt": 3,
+    "buyOnlyRebuilt": 0,
+    "withCurrentTargetPrice": {
+     "NO_RECOMMENDATION": 2,
+     "BUY_CANDIDATE": 3
+    }
+   },
+   "ledgerDigestAfter": "00f8790ae7f4f5a6",
+   "ledgerUnchanged": true,
+   "inventoryUnchanged": true
+  },
+  {
+   "country": "SE",
+   "exchange": "NASDAQ_STOCKHOLM",
+   "ledgerDigestBefore": "b0c3edb9a5a0fc66",
+   "inventory": {
+    "country": "SE",
+    "exchange": "NASDAQ_STOCKHOLM",
+    "ledger": {
+     "BLOCKED": 1,
+     "COMPLETE": 373,
+     "INSUFFICIENT_DATA": 28
+    },
+    "ledgerOldestAnalysis": "2026-10-14T22:31:11.956701+00:00",
+    "ledgerNewestAnalysis": "2026-10-14T23:30:19.053501+00:00",
+    "fundamentalsCompanies": 403,
+    "fundamentalsArchivedPeriods": 594,
+    "marketSnapshots": 407
+   },
+   "evidence": {
+    "storedResults": 402,
+    "complete": 373,
+    "reusableValidated": 373,
+    "completeButMissingCritical": 0,
+    "missingCriticalAmongComplete": {
+     "price": 0,
+     "price_observed_at": 0,
+     "filing_period_end": 0,
+     "sector": 0,
+     "market_cap(informational)": 70,
+     "earnings(eps|net_income)": 0
+    }
+   },
+   "legacy": {
+    "cachedAt": "2026-10-15T21:44:32.172169+00:00",
+    "rows": 150,
+    "ageHoursNow": 18.0,
+    "usableUnder24hRule": true
+   },
+   "rebuildDry": {
+    "status": "DRY_RUN_OK",
+    "ledgerRows": 150,
+    "rowsRepriced": 144,
+    "rowsExcluded": 6,
+    "coveragePct": 98.63,
+    "excludedReasons": {
+     "no_price_dependent_multiple": 4,
+     "filing_may_have_changed": 2
+    },
+    "problems": null,
+    "fileUnchangedAfterDry": true
+   },
+   "rebuild": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 150,
+    "rowsRepriced": 144,
+    "rowsExcluded": 6,
+    "coveragePct": 98.63,
+    "excludedReasons": {
+     "no_price_dependent_multiple": 4,
+     "filing_may_have_changed": 2
+    },
+    "problems": null,
+    "quotesAsOf": "2026-10-16"
+   },
+   "afterTTL": {
+    "now": {
+     "usable": true,
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "reason": "filing: 97% of peers excluded (possibly superseded/undated/unvalidated) > 15%"
+    }
+   },
+   "staleQuotes": {
+    "status": "REJECTED",
+    "rowsRepriced": 0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%"
+    ]
+   },
+   "stalePartial": {
+    "status": "OK",
+    "excludedQuoteStale": 15,
+    "excludedRowsKeepingMultiples": 0,
+    "excludedRowsMarkedCurrent": 0,
+    "repricedRowsDatedAfterQuote": 0
+   },
+   "preservation": {
+    "rebuiltRows": 150,
+    "inputsAsOfEqualsLedgerAnalyzedAt": 150,
+    "benchmarkValidatedAt": "2026-10-16T15:47:32+00:00",
+    "baseCachedAt": "2026-10-15T21:44:32.172169+00:00",
+    "cachedAtRewrittenToNow": false,
+    "fundamentalsSampleReadable": "25/25",
+    "historyFilesInSample": 49
+   },
+   "decisions": {
+    "ledgerBuyCandidates": 1,
+    "reDecidedWithRebuiltBenchmark": {
+     "HOLD_OR_WATCH": 1
+    },
+    "withExpiredBenchmark": {
+     "NO_RECOMMENDATION": 1
+    },
+    "staleBuyBasePriceState": {
+     "stored price state=CURRENT": 1
+    },
+    "missingCritical": {
+     "no_price": {
+      "NO_RECOMMENDATION": 1
+     },
+     "no_earnings": {
+      "NO_RECOMMENDATION": 1
+     },
+     "no_filing_period": {
+      "NO_RECOMMENDATION": 1
+     },
+     "no_sector": {
+      "NO_RECOMMENDATION": 1
+     },
+     "stale_price_40d": {
+      "NO_RECOMMENDATION": 1
+     }
+    },
+    "errors": 0,
+    "withOriginalLegacyBenchmark": {
+     "HOLD_OR_WATCH": 1
+    },
+    "sameCallOriginalVsRebuilt": 1,
+    "buyOrig": 0,
+    "buyRebuilt": 0,
+    "buyBothOrigAndRebuilt": 0,
+    "buyOnlyRebuilt": 0,
+    "withCurrentTargetPrice": {
+     "BUY_CANDIDATE": 1
+    }
+   },
+   "ledgerDigestAfter": "b0c3edb9a5a0fc66",
+   "ledgerUnchanged": true,
+   "inventoryUnchanged": true
+  },
+  {
+   "country": "NO",
+   "exchange": "EURONEXT_OSLO",
+   "ledgerDigestBefore": "b67e1bd375f49ed1",
+   "inventory": {
+    "country": "NO",
+    "exchange": "EURONEXT_OSLO",
+    "ledger": {
+     "COMPLETE": 136,
+     "INSUFFICIENT_DATA": 10
+    },
+    "ledgerOldestAnalysis": "2026-10-14T11:25:33.745074+00:00",
+    "ledgerNewestAnalysis": "2026-10-15T21:44:49.133400+00:00",
+    "fundamentalsCompanies": 149,
+    "fundamentalsArchivedPeriods": 241,
+    "marketSnapshots": 158
+   },
+   "evidence": {
+    "storedResults": 146,
+    "complete": 136,
+    "reusableValidated": 136,
+    "completeButMissingCritical": 0,
+    "missingCriticalAmongComplete": {
+     "price": 0,
+     "price_observed_at": 0,
+     "filing_period_end": 0,
+     "sector": 0,
+     "market_cap(informational)": 131,
+     "earnings(eps|net_income)": 0
+    }
+   },
+   "legacy": {
+    "cachedAt": "2026-10-15T21:44:49.160160+00:00",
+    "rows": 146,
+    "ageHoursNow": 18.0,
+    "usableUnder24hRule": true
+   },
+   "rebuildDry": {
+    "status": "DRY_RUN_OK",
+    "ledgerRows": 146,
+    "rowsRepriced": 94,
+    "rowsExcluded": 52,
+    "coveragePct": 100.0,
+    "excludedReasons": {
+     "no_price_dependent_multiple": 52
+    },
+    "problems": null,
+    "fileUnchangedAfterDry": true
+   },
+   "rebuild": {
+    "status": "OK",
+    "replaced": true,
+    "ledgerRows": 146,
+    "rowsRepriced": 94,
+    "rowsExcluded": 52,
+    "coveragePct": 100.0,
+    "excludedReasons": {
+     "no_price_dependent_multiple": 52
+    },
+    "problems": null,
+    "quotesAsOf": "2026-10-16"
+   },
+   "afterTTL": {
+    "now": {
+     "usable": true,
+     "reason": null
+    },
+    "plus25h": {
+     "usable": true,
+     "reason": null
+    },
+    "plus7d": {
+     "usable": false,
+     "reason": "filing: 100% of peers excluded (possibly superseded/undated/unvalidated) > 15%"
+    }
+   },
+   "staleQuotes": {
+    "status": "REJECTED",
+    "rowsRepriced": 0,
+    "problems": [
+     "only 0 rows repriced (< 50)",
+     "reprice coverage 0.0% < 85.0%"
+    ]
+   },
+   "stalePartial": {
+    "status": "REJECTED",
+    "excludedQuoteStale": 0,
+    "excludedRowsKeepingMultiples": 0,
+    "excludedRowsMarkedCurrent": 0,
+    "repricedRowsDatedAfterQuote": 0
+   },
+   "preservation": {
+    "rebuiltRows": 146,
+    "inputsAsOfEqualsLedgerAnalyzedAt": 146,
+    "benchmarkValidatedAt": "2026-10-16T15:47:32+00:00",
+    "baseCachedAt": "2026-10-15T21:44:49.160160+00:00",
+    "cachedAtRewrittenToNow": false,
+    "fundamentalsSampleReadable": "25/25",
+    "historyFilesInSample": 36
+   },
+   "decisions": {
+    "ledgerBuyCandidates": 10,
+    "reDecidedWithRebuiltBenchmark": {
+     "NO_RECOMMENDATION": 8,
+     "HOLD_OR_WATCH": 1,
+     "BUY_CANDIDATE": 1
+    },
+    "withExpiredBenchmark": {
+     "NO_RECOMMENDATION": 7,
+     "HOLD_OR_WATCH": 3
+    },
+    "staleBuyBasePriceState": {
+     "stored price state=CURRENT": 10
+    },
+    "missingCritical": {
+     "no_price": {
+      "NO_RECOMMENDATION": 10
+     },
+     "no_earnings": {
+      "NO_RECOMMENDATION": 10
+     },
+     "no_filing_period": {
+      "NO_RECOMMENDATION": 10
+     },
+     "no_sector": {
+      "NO_RECOMMENDATION": 7,
+      "HOLD_OR_WATCH": 3
+     },
+     "stale_price_40d": {
+      "NO_RECOMMENDATION": 10
+     }
+    },
+    "errors": 0,
+    "withOriginalLegacyBenchmark": {
+     "NO_RECOMMENDATION": 8,
+     "HOLD_OR_WATCH": 1,
+     "BUY_CANDIDATE": 1
+    },
+    "sameCallOriginalVsRebuilt": 10,
+    "buyOrig": 1,
+    "buyRebuilt": 1,
+    "buyBothOrigAndRebuilt": 1,
+    "buyOnlyRebuilt": 0,
+    "withCurrentTargetPrice": {
+     "NO_RECOMMENDATION": 9,
+     "BUY_CANDIDATE": 1
+    }
+   },
+   "ledgerDigestAfter": "b67e1bd375f49ed1",
+   "ledgerUnchanged": true,
+   "inventoryUnchanged": true
+  }
+ ],
+ "evidenceFilesBefore": [
+  "f9743be9df369942",
+  29123
+ ],
+ "evidenceFilesAfter": [
+  "f9743be9df369942",
+  29123
+ ]
+}

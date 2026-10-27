@@ -25,7 +25,7 @@ All **32 WARN** are agent disagreement (e.g. `positive=comparison negative=funda
 |---|---|---|
 | Latest official filing is FY2024 or older (stale guard) | AEF RN TSL OPR OPS LNDR DEX CLE BST (9) | Newest storage packages: AEF eMarket 163548, RN 167846, TSL 168389, OPR 174553 (all FY2024); OPS 1INFO 160451 (FY2024); LNDR eMarket 189039 is its **FY2024** report lodged late on 2026-09-10; DEX 1INFO newest is FY2024. **CLE**: 1INFO 166984 is titled "…2025" but 1INFO's own `dataEsercizio` and the package content are FY2024 (`81560022EE962F731A95-2024-12-31`). **BST**: 1INFO row 165391 "Bilancio al 31 dicembre 2025 (ESEF)" under Banca Sistema actually contains **Neodecortech S.p.A.** (LEI 8156005E235E751B6662, taxonomy `neodecortech.it`) — rejected by the LEI gate; Banca Sistema's own FY2025 ESEF is not on either storage. |
 | Official package has no inline-XBRL tags | AUTME CLI EPH GF OEC RWAY (6) | Packages exist and are LEI-attributable, but the report carries no iXBRL facts; nothing official to parse. |
-| Official package embeds another entity's LEI | A2A MARR (2) | **A2A**: 1INFO FY2025 packages 166284/165545 embed `815600B7FD80E48C1896` = A2A ENERGIA S.P.A. (subsidiary). **MARR**: eMarket 180822/163889/145143 embed `815600E787F3B6565561` = LENERGIA S.P.A. **Guard not bypassed**; vendor data stays non-official. |
+| Official package embeds another entity's LEI | A2A MARR (2) | **A2A**: 1INFO FY2025 packages 166284/165545 embed `815600B7FD80E48C1896` = A2A ENERGIA S.P.A. (subsidiary). **MARR**: eMarket 180822/163889/145143 embed `815600E787F3B6565561` = LENERGIA S.P.A. **Guard not bypassed at audit time**; vendor data stayed non-official. Update 2026-10-17: A2A 1INFO 166284/165545 and MARR eMarket 180822 were verified against the package text and GLEIF and are admitted by a document-keyed exception (`ITALY_ENTITY_LEI_ANOMALIES`, flagged `oam_entity_identity_exception`); every other package keeps the strict guard. Not deployed. |
 | Stale official + issuer not uniquely in storage register | CIR ZUC AEDES (3) | CIR: eMarket lists both "C.I.R." and "CIR" (genuinely ambiguous, refused); 1INFO "C.I.R." has no ESEF rows. ZUC: GLEIF "VINCENZO ZUCCHI - SOCIETA' PER AZIONI" vs register "ZUCCHI" — matching would require dropping a business word (deliberately forbidden). AEDES: GLEIF name does not correspond to either register entry ("AEDES S.p.A." / "Aedes SIIQ S.p.A."). |
 | No official source at all | ICOP KK OROX (3) | ICOP absent from both registers; KK (Kruso Kapital) and OROX (Gens Aurea) are on the 1INFO register with no ESEF rows. |
 
@@ -67,3 +67,21 @@ Unchanged and verified live in production after deploy: A2A BLOCK (OFFICIAL_SOUR
 - Staging: 127.0.0.1:8092 is still running from the working tree with `BIAP_GLOBAL_DATA_DIR=/home/ubuntu/biap-global-staging-data` and `BIAP_GLOBAL_FUNDAMENTALS_CACHE_HOURS=0`. Stop it and delete the 6.6 GB staging data copy when no longer needed.
 - `/tmp` is a 982 MB tmpfs with a per-user quota: run pytest with `--basetemp` on the home disk. The previous session's `/tmp/italy-pkgs` was moved to `/home/ubuntu/italy-audit/prev-session-italy-pkgs`.
 - Nothing committed. Iran and legacy Kiasha untouched.
+
+
+## Re-audit 2026-10-17/18 (commit 2f661e6, live online sources, isolated staging :8092, no production writes)
+
+Production Italy ledger (read-only, 193 in-universe, analysed 2026-10-14/15, before 2f661e6): **169 PASS / 24 BLOCK** (BUY_CANDIDATE 5, HOLD_OR_WATCH 29, AVOID_OR_REVIEW 2, NO_RECOMMENDATION 157).
+Live re-run on staging of all 24 BLOCKs + CIR + LNDR (26 instruments): **A2A PASS, MARR PASS** (both via the scoped LEI exception; A2A revenue 14.063bn / profit 782m / assets 21.383bn, MARR full core figures), CIR PASS, LNDR PASS; 22 remain BLOCK. Projected universe after deploy of 2f661e6: **171 PASS / 22 BLOCK** (no deploy done; ledger not rewritten).
+
+| Remaining BLOCK cause | Tickers | Root cause |
+|---|---|---|
+| Latest official filing FY2024 or older | AEF RN TSL OPR OPS AEDES OEC ZUC (stale) + BST CLE DEX (newer period only from non-official source) | upstream: no FY2025 ESEF lodged on 1INFO/eMarket |
+| No official source / untagged package | AUTME CLI EPH GF RWAY ICOP KK OROX | no iXBRL facts or issuer absent from both registers |
+| Official FY2025 filing, core P&L figures unreadable | **REC BSS MB** | see below |
+
+**REC / BSS / MB** (official filings.xbrl.org packages 24437 / 24444 / 24491, FY2025, balance sheet readable, `fundamental_core_figures` missing). The 2026-10-05 audit counted these as PASS with the same empty revenue/net income/OCF; the core-figures gate now blocks them correctly.
+* **REC and BSS: filer defect in the official report.** The income-statement and cash-flow facts sit in contexts with `startDate = endDate = 2025-12-31` (and 2024-12-31 for the comparative), i.e. a one-day duration, instead of 2025-01-01..2025-12-31 (verified in the Recordati inline-XBRL itself: Revenue 2,618.4m, ProfitLoss 443.6m both on the one-day context; BSS identical pattern, 64 such facts). No annual duration value exists, so none is taken. Treating one-day contexts as annual would be an inference, not evidence; not implemented. Options: a document-keyed reviewed exception (like the LEI one) after checking each printed statement, or wait for a corrected filing. Either changes REC/BSS analysis, so it needs owner approval.
+* **MB: fiscal-year change.** The report covers 2025-07-01..2025-12-31 (6 months); the 12-month guard correctly withholds annual flows (revenue 513.3m is the 6-month figure).
+
+No thresholds relaxed, no data fabricated, no BUY output changed.

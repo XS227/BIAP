@@ -45,7 +45,10 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
       - run: npm ci
       - run: npx tsc --noEmit
-      - run: npx expo-doctor
+      # Pinned: unpinned npx pulled expo-doctor 1.21.4, which added a stricter ios.icon
+      # schema check (green on 1.20.4 on 2026-10-05). Bump deliberately together with
+      # the mobile/app.json change, which is deploy-owned and triggers EAS + backend deploy.
+      - run: npx --yes expo-doctor@1.20.4
       - run: npx expo export --platform android --output-dir dist-android
 
   android-installable-apk:
