@@ -124,3 +124,13 @@ def test_undated_quote_path_is_unchanged_snapshot_still_overrides(tmp_path):
     assert "stage_one_quote_date_basis" not in seed.raw_provider_fields
     out = PersistentMarketProvider(None, data_dir=str(tmp_path))._decode(seed, _SNAPSHOT, fallback=False)
     assert out.price == 76.2 and out.price_observed_at.startswith("2026-10-13")
+
+
+def test_same_day_intraday_cache_timestamp_does_not_overwrite_session_quote(tmp_path):
+    # Session quote is dated 2026-10-23 (midnight UTC); a snapshot priced intraday the same day (07:00Z) compares
+    # later as an instant but is the same session date, so it must not replace the completed-session quote.
+    seed = _seeded("last_completed_session")
+    snap = {**_SNAPSHOT, "market": {**_SNAPSHOT["market"], "price": 78.0, "price_observed_at": "2026-10-23T07:00:00+00:00"}}
+    out = PersistentMarketProvider(None, data_dir=str(tmp_path))._decode(seed, snap, fallback=False)
+    assert out.price == 79.3 and out.price_observed_at.startswith("2026-10-23")
+    assert out.pe == 20.0
