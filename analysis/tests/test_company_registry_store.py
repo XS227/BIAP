@@ -188,3 +188,33 @@ def test_growth_by_date_reconstructs_history_from_run_log(tmp_path):
     assert by_day["2026-09-17"]["new_companies"] == 4  # 3 + 1
     assert by_day["2026-09-17"]["re_enrichments"] == 6  # 2 + 4
     assert by_day["2026-09-17"]["runs"] == 2
+
+
+def _open_fds() -> int:
+    import os
+    return len(os.listdir("/proc/self/fd"))
+
+
+def test_registry_and_listed_stores_do_not_leak_file_descriptors(tmp_path):
+    """The nightly baseline calls get_instrument() once per candidate code. A connection left open
+    by each call exhausted the service's 1024 fd limit ("unable to open database file")."""
+    import gc
+    from listed_company_store import ListedCompanyStore
+
+    if not Path("/proc/self/fd").exists():
+        import pytest
+        pytest.skip("needs /proc/self/fd")
+    db = str(tmp_path / "registry.sqlite3")
+    reg = CompanyRegistryStore(db)
+    store = ListedCompanyStore(db)
+    gc.disable()  # make the leak deterministic: do not let the collector hide it
+    try:
+        reg.get_instrument("1")
+        store.get_state("worker")
+        before = _open_fds()
+        for i in range(2000):
+            reg.get_instrument(str(i))
+            store.get_state("worker")
+        assert _open_fds() - before <= 2
+    finally:
+        gc.enable()

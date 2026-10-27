@@ -26,7 +26,7 @@ from typing import Any, Iterable, Optional
 
 from instrument_classifier import COMPANY_CATEGORIES, normalize_text
 
-from listed_company_store import DEFAULT_LISTED_COMPANY_DB
+from listed_company_store import DEFAULT_LISTED_COMPANY_DB, ClosingConnection
 
 
 def _now_iso() -> str:
@@ -45,7 +45,7 @@ class CompanyRegistryStore:
         self._init_db()
 
     def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path, timeout=30)
+        conn = sqlite3.connect(self.db_path, timeout=30, factory=ClosingConnection)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         return conn
