@@ -40,6 +40,18 @@ def copenhagen_holidays(year: int) -> frozenset[date]:
     return frozenset(days)
 
 
+def lisbon_holidays(year: int) -> frozenset[date]:
+    """Euronext Lisbon closures plus every Portuguese public holiday (superset, see module note)."""
+    easter = easter_sunday(year)
+    days = {
+        date(year, 1, 1), easter - timedelta(days=2), easter + timedelta(days=1),
+        date(year, 4, 25), date(year, 5, 1), easter + timedelta(days=60), date(year, 6, 10),
+        date(year, 8, 15), date(year, 10, 5), date(year, 11, 1), date(year, 12, 1), date(year, 12, 8),
+        date(year, 12, 24), date(year, 12, 25), date(year, 12, 26), date(year, 12, 31),
+    }
+    return frozenset(days)
+
+
 @dataclass(frozen=True)
 class VenueCalendar:
     tz: str
@@ -50,6 +62,9 @@ class VenueCalendar:
 
 _VENUES: dict[str, VenueCalendar] = {
     "XCSE": VenueCalendar("Europe/Copenhagen", time(17, 0), 30, copenhagen_holidays),
+    # Euronext closing auction 17:30 CET = 16:30 Lisbon. The regulated-equities CSV states "as of end of last active
+    # trading day" but not when it is regenerated, so the lag is generous: a late publish only makes the stamp older.
+    "XLIS": VenueCalendar("Europe/Lisbon", time(16, 30), 120, lisbon_holidays),
 }
 
 
