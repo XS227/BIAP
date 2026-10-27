@@ -150,6 +150,16 @@ class PersistentMarketProvider(MarketDataProvider):
                 stored_sources.append(SourceEvidence(**{key: raw.get(key) for key in SourceEvidence.__dataclass_fields__}))
             except TypeError:
                 continue
+        # A venue-dated stage-one quote at least as recent as the snapshot's own price DATE wins over the cached
+        # price: a stored snapshot (even one still inside the freshness window) must not roll the price back.
+        # The session quote is stamped at midnight UTC, so compare calendar dates, not instants: a same-day
+        # intraday cache timestamp (e.g. 07:00Z) is not newer than that day's completed-session quote.
+        if (seed.raw_provider_fields.get("stage_one_quote_date_basis") == "last_completed_session"
+                and seed.price and seed.price > 0 and seed.price_observed_at):
+            seed_at, cached_at = _parse_iso(seed.price_observed_at), _parse_iso(updates.get("price_observed_at"))
+            if seed_at is not None and (cached_at is None or seed_at.date() >= cached_at.date()):
+                for field in ("price", "price_observed_at", "volume_today"):
+                    updates.pop(field, None)
         age = self._age_seconds(payload)
         age_hours = None if age is None else age / 3600.0
         fetched_at = str(payload.get("fetchedAt") or "") or None

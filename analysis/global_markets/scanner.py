@@ -253,6 +253,7 @@ class GlobalMarketScanner:
                 **company.raw_provider_fields,
                 "stage_one_market_provider": provider,
                 "stage_one_quote_date": quote_date or None,
+                **({"stage_one_quote_date_basis": quote["quoteDateBasis"]} if quote.get("quoteDateBasis") else {}),
                 "stage_one_liquidity_value": quote.get("liquidityValue"),
             },
             sources=[*company.sources, source],

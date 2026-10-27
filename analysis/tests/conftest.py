@@ -1,7 +1,26 @@
+import os
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
+
+# Global data root. The code defaults to the production directory when BIAP_GLOBAL_DATA_DIR is unset, so the test
+# session must never run without it: an import-time default here, a per-test temp dir below, and a hard guard that
+# fails any test that unsets it or points it at production (a past pytest run rewrote live caches that way).
+PROD_DATA_ROOT = Path("/var/lib/biap-global")
+_SESSION_DATA_DIR = tempfile.mkdtemp(prefix="biap-pytest-data-")
+os.environ["BIAP_GLOBAL_DATA_DIR"] = _SESSION_DATA_DIR
+
+
+def _points_at_production(value: str | None) -> bool:
+    if not value:
+        return True
+    try:
+        resolved = Path(value).expanduser().resolve()
+    except OSError:
+        return True
+    return resolved == PROD_DATA_ROOT or PROD_DATA_ROOT in resolved.parents
 
 # Keep analysis modules importable whether pytest is launched from the repo
 # root or from the analysis directory.
@@ -100,3 +119,13 @@ def _codal_issuer_directory_disabled_by_default(monkeypatch):
 def _isolated_fx_history(tmp_path, monkeypatch):
     """Historical FX reads only from a per-test cache path (never the host's)."""
     monkeypatch.setenv("BIAP_GLOBAL_FX_HISTORY_PATH", str(tmp_path / "fx-hist-absent.json"))
+
+
+@pytest.fixture(autouse=True)
+def _never_touch_production_global_data(tmp_path, monkeypatch):
+    """Every test gets its own empty BIAP_GLOBAL_DATA_DIR and may never leave it unset or pointed at production."""
+    monkeypatch.setenv("BIAP_GLOBAL_DATA_DIR", str(tmp_path / "biap-global-data"))
+    yield
+    value = os.environ.get("BIAP_GLOBAL_DATA_DIR")
+    assert not _points_at_production(value), (
+        f"test left BIAP_GLOBAL_DATA_DIR={value!r}: tests must not read or write /var/lib/biap-global")
