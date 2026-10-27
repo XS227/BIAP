@@ -264,9 +264,11 @@ def _cohort_note(company: GlobalCompany) -> str:
 def _financial_pb_signal(company: GlobalCompany) -> Optional[AgentSignal]:
     """P/B vs a verified same-sector benchmark, financial issuers only.
 
-    Used only when the P/E comparison cannot be made. Confidence is fixed below
-    the 0.55 high-confidence line: it informs the vote but cannot, alone, create
-    an agent disagreement or lift calibrated confidence.
+    Used only when the P/E comparison cannot be made. Confidence is 0.0, exactly what the
+    comparison agent returned before this fallback existed: decision confidence is the mean of
+    every signal's confidence, so any positive value here would lift it (and could carry a
+    REVIEW decision over the 0.55 governance threshold). The vote and reasoning stay visible,
+    but with zero weight in the aggregate; the benchmark is derived, not filing evidence.
     """
     data = financial_metrics(company)
     block = data.get("pbRelative") if data and data.get("applicable") else None
@@ -285,7 +287,7 @@ def _financial_pb_signal(company: GlobalCompany) -> Optional[AgentSignal]:
     return AgentSignal(
         agent="comparison",
         vote=vote,
-        confidence=0.50,
+        confidence=0.0,
         reasoning=(
             f"P/B {block['pb']:.2f} vs same-sector median {block['sectorMedianPb']:.2f} "
             f"({rel:+.0f}%, {block['peerCount']} peers; derived scan benchmark, not filing evidence)"
