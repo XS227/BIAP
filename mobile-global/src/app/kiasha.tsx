@@ -6,13 +6,15 @@ import { GlobalAnalysis, GlobalInstrument, scanGlobalMarket } from '@/lib/global
 import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-market-selection';
 import { EvidenceCounts, evidenceCounts } from '@/lib/scan-summary';
 import { setSelectedGlobalCompany } from '@/lib/global-company-selection';
+import { tierTone } from '@/lib/decision-tier';
 
 type DataMode = '' | 'live' | 'cached' | 'catalog';
 
 function tone(call: string | undefined, secondary: string) {
-  if (call === 'BUY_CANDIDATE') return Brand.positive;
-  if (call === 'HOLD_OR_WATCH') return Brand.warning;
-  if (call === 'AVOID_OR_REVIEW') return Brand.negative;
+  const t = tierTone(call);
+  if (t === 'positive') return Brand.positive;
+  if (t === 'warning') return Brand.warning;
+  if (t === 'negative') return Brand.negative;
   return secondary;
 }
 

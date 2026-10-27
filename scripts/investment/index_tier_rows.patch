@@ -1,0 +1,83 @@
+diff --git a/web-showcase/global/index.html b/web-showcase/global/index.html
+index 8856b2d..1bdf602 100644
+--- a/web-showcase/global/index.html
++++ b/web-showcase/global/index.html
+@@ -122,7 +122,7 @@
+           <div class="disclaimer fa" id="recoDisclaimer"></div>
+         </div>
+         <div class="tableWrap">
+-          <table><thead><tr><th>Ticker</th><th>Company</th><th>Exchange / MIC</th><th>Currency</th><th>Sector</th></tr></thead>
++          <table><thead><tr><th>Ticker</th><th>Company</th><th>Tier</th><th>Exchange / MIC</th><th>Currency</th><th>Sector</th></tr></thead>
+           <tbody id="instrumentRows"></tbody></table>
+         </div>
+         <div id="instrumentEmpty" class="empty">Select a market to load instruments.</div>
+@@ -174,7 +174,7 @@
+   <script>
+     const API = '/global-api';
+     const PRIORITY = ['US','NO','SE','GB','JP','AU','DE','FR','NL','FI','DK','KR','IR'];
+-    const state = { countries:[], country:null, exchange:null, instruments:[], scopes:[], lastScan:null };
++    const state = { countries:[], country:null, exchange:null, instruments:[], scopes:[], lastScan:null, tierMap:{}, tierCounts:null };
+ 
+     const $ = (id) => document.getElementById(id);
+     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+@@ -263,6 +263,7 @@
+       $('instrumentRows').innerHTML = state.instruments.map((item,index)=>`<tr data-index="${index}">
+         <td><span class="ticker">${esc(item.ticker)}</span></td>
+         <td>${esc(item.name || item.ticker)}</td>
++        <td>${tierTag(item.ticker)}</td>
+         <td><span class="sub">${esc(item.mic_code || item.exchange || state.exchange?.mic || '')}</span></td>
+         <td>${esc(item.currency || '')}</td>
+         <td><span class="sub">${esc(item.sector || '—')}</span></td>
+@@ -282,6 +283,7 @@
+         const data = await request(`/global/instruments/${encodeURIComponent(state.country.country)}/${encodeURIComponent(state.exchange.code)}?${params}`);
+         renderInstruments(data.instruments || []);
+         void loadRecommendations();
++        void loadTierMap();
+         const catalog = data.catalog?.status ? ` · catalog ${data.catalog.status}` : '';
+         notice('marketNotice', `${data.totalMatched ?? 0} matched · ${data.returned ?? 0} loaded${catalog}`, 'good');
+       } catch (err) {
+@@ -295,8 +297,12 @@
+       renderInstruments(recs.map((a)=>a.company || a));
+       const mode = data.catalogOnly || data.status==='MARKET_DATA_REQUIRED' ? 'catalog only' : data.cachedMarketData || String(data.status||'').startsWith('CACHED_') ? 'cached verified data' : 'live/verified data';
+       const coverage = data.screeningCoveragePct == null ? '' : ` · ${num(data.screeningCoveragePct,1)}% coverage`;
+-      notice('marketNotice', `${mode} · ${data.recommendationCount ?? recs.length} qualified · ${data.deepAnalyzed ?? 0} deep analyses${coverage}`,
++      const flags = data.tiersReleased && !data.rankingEligible && (data.dataReadiness?.releaseFlags || []).length
++        ? ` · flags: ${data.dataReadiness.releaseFlags.join(', ')}` : '';
++      const tiers = data.tiersReleased && tierCountsText() ? ` · tiers: ${tierCountsText()}` : '';
++      notice('marketNotice', `${mode} · ${data.recommendationCount ?? recs.length} conservative-qualified${tiers} · ${data.deepAnalyzed ?? 0} deep analyses${coverage}${flags}`,
+         mode==='catalog only' ? 'warn' : 'good');
++      void loadTierMap().then(()=>{ const t = data.tiersReleased && tierCountsText(); if (t) notice('marketNotice', `${mode} · ${data.recommendationCount ?? recs.length} conservative-qualified · tiers: ${t} · ${data.deepAnalyzed ?? 0} deep analyses${coverage}${flags}`, 'good'); });
+     }
+ 
+     async function runScan() {
+@@ -322,6 +328,30 @@
+       return `<b>دلایل مثبت:</b> ${agentList(inv.positive)}<br><b>دلایل منفی:</b> ${agentList(inv.negative)}`;
+     }
+ 
++    // Investment-mode tier per ticker for the whole exchange (instrument rows + scan line); empty in conservative mode.
++    function tierTag(ticker) {
++      const inv = state.tierMap[ticker];
++      return inv ? `<span class="tag fa t-${esc(inv.tier)}">${esc(inv.labelFa || TIER_FA[inv.tier] || inv.tier)}</span>` : '<span class="sub">—</span>';
++    }
++    function tierCountsText() {
++      const c = state.tierCounts;
++      return c ? TIERS.map((t)=>`${t} ${num(c[t] ?? 0,0)}`).join(' · ') : '';
++    }
++    async function loadTierMap() {
++      state.tierMap = {}; state.tierCounts = null;
++      if (!state.country || !state.exchange) return;
++      try {
++        const q = new URLSearchParams({country:state.country.country,exchange:state.exchange.code,limit:'500'});
++        const data = await request(`/global/recommendations?${q}`);
++        if (data.decisionMode !== 'investment') return;
++        state.tierCounts = data.counts || null;
++        (data.rows || []).forEach((r)=>{ state.tierMap[r.ticker] = r.investment; });
++        // a market whose conservative ranking is not released returns no scan rows: list the tiered stocks instead
++        renderInstruments(state.instruments.length ? state.instruments
++          : (data.rows || []).map((r)=>({ticker:r.ticker,name:r.name,country:state.country.country,exchange:state.exchange.code})));
++      } catch { /* conservative mode or API unavailable: rows keep the engine call */ }
++    }
++
+     async function loadRecommendations(tier) {
+       const box = $('recoBox');
+       if (!state.country || !state.exchange) { box.classList.add('hidden'); return; }

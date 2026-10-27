@@ -34,6 +34,13 @@ from .runtime import build_registry
 from .service import analyze_company
 from .us_official import NasdaqUSFullScreenerClient
 from .xetra_delayed import DeutscheBoerseXetraDelayedClient
+from . import investment_mode
+
+
+def investment_tiers_active(country: str, exchange: str) -> bool:
+    """``DECISION_MODE=investment`` and the exchange (``CC:EXCHANGE``) is inside the research scope."""
+    return investment_mode.decision_mode() == investment_mode.INVESTMENT and investment_mode.in_scope(
+        f"{country.upper()}:{exchange.upper()}")
 
 
 class GlobalMarketScanner:
@@ -335,7 +342,12 @@ class GlobalMarketScanner:
         if screening_errors:
             reasons.append("market_data_batch_errors")
         ranking_eligible = not reasons and universe_count > 0 and analyzed > 0
+        # Investment mode shows relative tiers whether or not the conservative ranking is released: the release
+        # reasons stay visible as flags (``releaseFlags``) and ``rankingEligible`` keeps its conservative meaning.
+        tiers_released = investment_tiers_active(country, exchange) and analyzed > 0
         return {
+            "tiersReleased": tiers_released,
+            "releaseFlags": list(reasons) if tiers_released and not ranking_eligible else [],
             "status": "READY" if ranking_eligible else "BLOCKED" if not live_market_data else "PARTIAL",
             "rankingEligible": ranking_eligible,
             "universeSource": universe_source,
@@ -444,13 +456,14 @@ class GlobalMarketScanner:
         )
 
     @staticmethod
-    def ranking_gates(gates: dict, *, buy_after_issuer: int, ranking_eligible: bool, readiness_reasons: list[str]) -> list[dict]:
+    def ranking_gates(gates: dict, *, buy_after_issuer: int, ranking_eligible: bool, readiness_reasons: list[str],
+                      advisory: bool = False) -> list[dict]:
         """Ordered gate funnel: how many companies entered, passed and were rejected, and why."""
         universe, analyzed = gates["universe"], gates["analyzed"]
         passed, scored, buy = gates["evidencePass"], gates["scoredAndComplete"], gates["buyCandidates"]
         eligible, min_cov = gates["rankingEligible"], gates["rankMinCoveragePct"]
         calls = gates.get("callsAmongScored") or {}
-        return [
+        funnel = [
             {"gate": "market_ranking_released", "entered": universe, "passed": universe if ranking_eligible else 0,
              "rejected": 0 if ranking_eligible else universe,
              "reasons": {} if ranking_eligible else {r: universe for r in readiness_reasons or ["ranking_not_released"]}},
@@ -467,6 +480,11 @@ class GlobalMarketScanner:
             {"gate": "one_security_per_issuer", "entered": buy, "passed": buy_after_issuer, "rejected": buy - buy_after_issuer,
              "reasons": {"duplicate_share_class_of_same_issuer": buy - buy_after_issuer} if buy > buy_after_issuer else {}},
         ]
+        if advisory:    # investment mode: these gates only gate the conservative Qualified BUY list, not the tiers
+            for gate in funnel:
+                if gate["gate"] in ("market_ranking_released", "ranking_evidence_standard", "buy_threshold"):
+                    gate["advisory"] = True
+        return funnel
 
     @staticmethod
     def evidence_summary(counts: dict) -> dict:
@@ -735,6 +753,7 @@ class GlobalMarketScanner:
             )
             return {
                 "status": "MARKET_DATA_REQUIRED" if not cached_quotes else "CACHED_REFERENCE_ONLY",
+                "tiersReleased": bool(readiness.get("tiersReleased")),
                 "country": country.upper(),
                 "exchange": spec.code,
                 "mic": spec.mic,
@@ -782,6 +801,7 @@ class GlobalMarketScanner:
             self.ranking_gates(
                 gate_counts, buy_after_issuer=buy_after_issuer,
                 ranking_eligible=bool(readiness["rankingEligible"]), readiness_reasons=list(readiness.get("reasons") or []),
+                advisory=bool(readiness.get("tiersReleased")),
             ) if gate_counts else []
         )
         if readiness["rankingEligible"]:
@@ -817,6 +837,7 @@ class GlobalMarketScanner:
             "deepResults": deep_results,
             "cachedMarketData": False,
             "rankingEligible": readiness["rankingEligible"],
+            "tiersReleased": bool(readiness.get("tiersReleased")),
             "dataReadiness": readiness,
             "notes": (
                 "Ranking is released only when the ordinary-equity universe has broad fresh market coverage "

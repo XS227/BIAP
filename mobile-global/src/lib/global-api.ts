@@ -1,3 +1,5 @@
+import type { GlobalInvestmentDecision } from '@/lib/decision-tier';
+
 export const GLOBAL_API_BASE = (process.env.EXPO_PUBLIC_BIAP_GLOBAL_API_BASE || 'https://biap.dadashi.no/global-api').replace(/\/$/, '');
 
 export type GlobalExchange = {
@@ -273,6 +275,8 @@ export type GlobalAnalysis = {
   lei?: string | null;
   currency?: string;
   call?: 'BUY_CANDIDATE' | 'HOLD_OR_WATCH' | 'AVOID_OR_REVIEW' | 'NO_RECOMMENDATION' | string;
+  /** Present only in investment mode (BUY/ACCUMULATE/HOLD/REDUCE/SELL); old rows and conservative mode omit it. */
+  investment?: GlobalInvestmentDecision;
   score?: number;
   confidence?: number;
   decisionConfidence?: number;
