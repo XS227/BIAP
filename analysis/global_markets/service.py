@@ -90,10 +90,20 @@ def _supported_operating_equity(company: GlobalCompany) -> bool:
         spec = get_exchange(company.country, company.exchange)
     except Exception:
         return False
+    raw = company.raw_provider_fields
     row = {
         "name": company.name,
         "type": company.instrument_type or "Common Stock",
-        "cfi_code": company.raw_provider_fields.get("cfi"),
+        "cfi_code": raw.get("cfi"),
+        # Same certification the catalog applies (cached_universe): the LSE
+        # adapter already screened the row on its official description, so the
+        # generic digit-led-ticker / name heuristics must not reject 1SN, LWDB
+        # or 3IN here while the catalog lists them.
+        "trusted_official_equity": (
+            company.country.upper() == "GB"
+            and raw.get("official_universe") is True
+            and bool(str(raw.get("lse_description") or "").strip())
+        ),
     }
     return _ordinary_equity_row(
         country=company.country,
