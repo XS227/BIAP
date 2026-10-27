@@ -128,6 +128,12 @@ def build_interim_evidence(
             by_len = sorted(rows, key=lambda r: (end - _day(r["start"])).days)
             longest = by_len[-1]
             span = (end - _day(longest["start"])).days
+            if str(longest.get("fp") or "").upper() in ("Q2", "Q3") and span <= 110:
+                # Only a three-month fact exists for a Q2/Q3 period: it is a discrete quarter, not
+                # cumulative YTD. Keep it as the quarter value; never label it YTD or let its later
+                # start date break the fiscal-boundary check for the other metrics.
+                quarter[name] = longest
+                continue
             ytd[name] = longest
             tags_used[name] = tag
             units[name] = longest["_unit"]

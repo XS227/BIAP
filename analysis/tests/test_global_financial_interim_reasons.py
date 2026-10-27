@@ -122,6 +122,17 @@ class FinancialSignalTests(unittest.TestCase):
             self.assertIsNone(financial_metrics(c2, now=NOW)["pbRelative"])
             self.assertEqual(comparison_agent(c2).confidence, 0.0)
 
+    def test_pb_fallback_does_not_raise_decision_confidence_when_pe_missing(self):
+        from global_markets.service import _weighted_score
+        bench = {"value": 1.2, "scope": "same_sector_scan_median", "count": 5, "cohort": "x"}
+        c = company(pe=None, raw_provider_fields={**BANK_TAXONOMY, "peer_pb_benchmark": bench})
+        pb = comparison_agent(c)
+        self.assertEqual(pb.vote, 0.25)  # direction still reported
+        self.assertEqual(pb.confidence, 0.0)
+        others = [AgentSignal("fundamental", 0.2, 0.6, "x"), AgentSignal("risk", 0.1, 0.5, "x")]
+        before = AgentSignal("comparison", 0.0, 0.0, "valid positive P/E unavailable")  # pre-fallback signal
+        self.assertEqual(_weighted_score([*others, pb]), _weighted_score([*others, before]))
+
     def test_pe_comparison_unchanged_when_available(self):
         c = industrial(sector_pe=40.0)
         self.assertEqual(comparison_agent(c).confidence, 0.65)
@@ -182,6 +193,20 @@ class InterimEvidenceTests(unittest.TestCase):
         self.assertEqual(out["balance"]["totalAssets"]["value"], 380.0)
         self.assertFalse(out["audited"])
         self.assertIn("unchanged", out["scoringUse"])
+
+    def test_discrete_quarter_row_is_not_taken_as_ytd(self):
+        g = gaap_fixture()
+        # Net income carries only the three-month Q2 fact (no cumulative six-month row) for the latest filing.
+        g["NetIncomeLoss"]["units"]["USD"] = [
+            r for r in g["NetIncomeLoss"]["units"]["USD"] if not (r["accn"] == "Q2" and r["start"] == "2026-01-01")
+        ]
+        out = build_interim_evidence(g, "2025-12-31", ANNUAL)
+        self.assertNotIn("netIncome", out["ytd"]["values"])
+        self.assertEqual(out["quarter"]["netIncome"], 33.0)
+        self.assertEqual(out["ytd"]["start"], "2026-01-01")  # not dragged to the quarter's 2026-04-01 start
+        self.assertEqual(out["ytd"]["values"]["revenue"], 220.0)
+        self.assertIn("netIncome", out["ttm"]["withheld"])
+        self.assertEqual(out["ttm"]["values"]["revenue"], 430.0)  # other metrics keep their TTM
 
     def test_non_adjacent_fiscal_periods_withhold_ttm(self):
         # Latest annual in companyfacts is FY2024; the 10-Q YTD belongs to FY2026.
