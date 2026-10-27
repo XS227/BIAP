@@ -13,6 +13,19 @@ DEFAULT_LISTED_COMPANY_DB = os.environ.get(
 )
 
 
+class ClosingConnection(sqlite3.Connection):
+    """``with conn:`` on a plain sqlite3 connection only commits/rolls back; it never closes it, so
+    every ``with self._connect() as conn`` left three open files (db, -wal, -shm) behind until
+    garbage collection. A bulk loop then exhausted the service's 1024 fd limit ("unable to open
+    database file"). Leaving the block now closes the connection too."""
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        try:
+            return super().__exit__(exc_type, exc_value, traceback)
+        finally:
+            self.close()
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -27,7 +40,7 @@ class ListedCompanyStore:
         self._init_db()
 
     def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path, timeout=30)
+        conn = sqlite3.connect(self.db_path, timeout=30, factory=ClosingConnection)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         return conn
