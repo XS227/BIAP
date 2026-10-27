@@ -1,0 +1,818 @@
+{
+ "schema": 1,
+ "kind": "ISIN map (the frozen snapshot is not modified)",
+ "snapshotFile": "paper_portfolio_2026-10-20.json",
+ "snapshotSha256": "0bd9066eb980d9293566c2cb682dce579f6d6fbf15e102eeb341e2e7e52621a1",
+ "snapshotDate": "2026-10-20",
+ "builtAt": "2026-10-22T00:31:51+00:00",
+ "source": "stage-one quote ISIN in the analysis ledgers at /home/ubuntu/backups/paper-portfolio-ledgers-20261020 (Deutsche Boerse post-trade join key)",
+ "countries": [
+  "DE"
+ ],
+ "entries": [
+  {
+   "market": "DE:XETRA",
+   "ticker": "1GBS",
+   "side": "BUY",
+   "isin": "DE000A3MQR99"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "EVAC",
+   "side": "BUY",
+   "isin": "DE000A420ZL4"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "SVE",
+   "side": "BUY",
+   "isin": "DE000A168205"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "KA8",
+   "side": "BUY",
+   "isin": "DE0007857476"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "AAG",
+   "side": "BUY",
+   "isin": "DE000A2DAM03"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "SHF",
+   "side": "BUY",
+   "isin": "DE0007203705"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "IXX",
+   "side": "BUY",
+   "isin": "DE0005759807"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "EUZ",
+   "side": "BUY",
+   "isin": "DE0005659700"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "BOSS",
+   "side": "BUY",
+   "isin": "DE000A1PHFF7"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "M12",
+   "side": "BUY",
+   "isin": "DE000A0STSQ8"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "DRW8",
+   "side": "BUY",
+   "isin": "DE0005550602"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "BOG",
+   "side": "BUY",
+   "isin": "DE000A0S9QZ8"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "IVU",
+   "side": "BUY",
+   "isin": "DE0007448508"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "KRN",
+   "side": "BUY",
+   "isin": "DE0006335003"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "DRW3",
+   "side": "BUY",
+   "isin": "DE0005550636"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "BEI",
+   "side": "BUY",
+   "isin": "DE0005200000"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "MA10",
+   "side": "BUY",
+   "isin": "DE000A3H2135"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "DLX",
+   "side": "BUY",
+   "isin": "DE000A0MZ4B0"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "B7E",
+   "side": "BUY",
+   "isin": "DE000A0JM2M1"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "SWA",
+   "side": "BUY",
+   "isin": "DE0007229007"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "LIK",
+   "side": "BUY",
+   "isin": "DE000A0JDBC7"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "TIMA",
+   "side": "BUY",
+   "isin": "DE000ZEAL241"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "SIE",
+   "side": "BUY",
+   "isin": "DE0007236101"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "V3V",
+   "side": "SELL",
+   "isin": "DE000A0BL849"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "H9W",
+   "side": "SELL",
+   "isin": "DE000A0LR4P1"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "BKHT",
+   "side": "SELL",
+   "isin": "DE000A2GSU42"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "PSM",
+   "side": "SELL",
+   "isin": "DE000PSM7770"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "MXHN",
+   "side": "SELL",
+   "isin": "DE000A2DA588"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "KSC",
+   "side": "SELL",
+   "isin": "DE000A1A6V48"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "MAK",
+   "side": "SELL",
+   "isin": "DE0006044001"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "SZG",
+   "side": "SELL",
+   "isin": "DE0006202005"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "ISHA",
+   "side": "SELL",
+   "isin": "DE000A254211"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "LXS",
+   "side": "SELL",
+   "isin": "DE0005470405"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "SYZ",
+   "side": "SELL",
+   "isin": "DE0005104806"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "AMI",
+   "side": "SELL",
+   "isin": "DE0008131350"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "PTP",
+   "side": "SELL",
+   "isin": "DE000A40AEG0"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "EVT",
+   "side": "SELL",
+   "isin": "DE0005664809"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "RCMN",
+   "side": "SELL",
+   "isin": "DE000A1RFMY4"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "YOC",
+   "side": "SELL",
+   "isin": "DE0005932735"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "SUR",
+   "side": "SELL",
+   "isin": "DE0005176903"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "ERW",
+   "side": "SELL",
+   "isin": "DE000A41YHC0"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "H2O",
+   "side": "SELL",
+   "isin": "DE000A255G02"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "SNG",
+   "side": "SELL",
+   "isin": "DE000A1681X5"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "AAD",
+   "side": "SELL",
+   "isin": "DE0005093108"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "AMM",
+   "side": "SELL",
+   "isin": "DE000A40KXL9"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "CEA",
+   "side": "SELL",
+   "isin": "DE0006201106"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "KTA",
+   "side": "SELL",
+   "isin": "DE000A2YN504"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "BNN",
+   "side": "SELL",
+   "isin": "DE0005203947"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "N4G0",
+   "side": "SELL",
+   "isin": "DE000A41YCM0"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "HGEA",
+   "side": "SELL",
+   "isin": "DE000A3CMGN3"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "TGTA",
+   "side": "SELL",
+   "isin": "DE000A41YFQ4"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "NC5A",
+   "side": "SELL",
+   "isin": "DE000A12UP37"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "BIG",
+   "side": "SELL",
+   "isin": "DE000BGAG0J3"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "DMRE",
+   "side": "SELL",
+   "isin": "DE000A0XFSF0"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "EXJ0",
+   "side": "SELL",
+   "isin": "DE000A0LE3J1"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "IUR",
+   "side": "SELL",
+   "isin": "DE0006208408"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "TUF",
+   "side": "SELL",
+   "isin": "DE000A161N22"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "TIW",
+   "side": "SELL",
+   "isin": "DE000A40ZTT8"
+  },
+  {
+   "market": "DE:XETRA",
+   "ticker": "IS7",
+   "side": "SELL",
+   "isin": "DE0005874846"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "RKB",
+   "side": "BUY",
+   "isin": "DE0008103102"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "1GBS",
+   "side": "BUY",
+   "isin": "DE000A3MQR99"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "KA8",
+   "side": "BUY",
+   "isin": "DE0007857476"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "SVE",
+   "side": "BUY",
+   "isin": "DE000A168205"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "EUK3",
+   "side": "BUY",
+   "isin": "DE0005706535"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "SHF",
+   "side": "BUY",
+   "isin": "DE0007203705"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "IXX",
+   "side": "BUY",
+   "isin": "DE0005759807"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "FPE",
+   "side": "BUY",
+   "isin": "DE000A3E5D56"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "PIT",
+   "side": "BUY",
+   "isin": "DE0006925001"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "PZS",
+   "side": "BUY",
+   "isin": "DE0006942808"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "AAG",
+   "side": "BUY",
+   "isin": "DE000A2DAM03"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "PFS0",
+   "side": "BUY",
+   "isin": "DE000PFSE253"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "EUZ",
+   "side": "BUY",
+   "isin": "DE0005659700"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "EVAC",
+   "side": "BUY",
+   "isin": "DE000A420ZL4"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "HBH",
+   "side": "BUY",
+   "isin": "DE0006083405"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "M12",
+   "side": "BUY",
+   "isin": "DE000A0STSQ8"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "FHW",
+   "side": "BUY",
+   "isin": "DE0005767909"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "TIMA",
+   "side": "BUY",
+   "isin": "DE000ZEAL241"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "IVU",
+   "side": "BUY",
+   "isin": "DE0007448508"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "DLX",
+   "side": "BUY",
+   "isin": "DE000A0MZ4B0"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "BOG",
+   "side": "BUY",
+   "isin": "DE000A0S9QZ8"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "NLM",
+   "side": "BUY",
+   "isin": "DE0006069008"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "DRW8",
+   "side": "BUY",
+   "isin": "DE0005550602"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "MTX",
+   "side": "BUY",
+   "isin": "DE000A0D9PT0"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "RHK",
+   "side": "BUY",
+   "isin": "DE0007042301"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "D77",
+   "side": "BUY",
+   "isin": "DE000A3DW408"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "S188",
+   "side": "BUY",
+   "isin": "DE000A3DRAE2"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "VRL",
+   "side": "BUY",
+   "isin": "DE000A2BPK34"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "FPE3",
+   "side": "BUY",
+   "isin": "DE000A3E5D64"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "DRW3",
+   "side": "BUY",
+   "isin": "DE0005550636"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "KRN",
+   "side": "BUY",
+   "isin": "DE0006335003"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "RGB",
+   "side": "SELL",
+   "isin": "DE0008009564"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "S92",
+   "side": "SELL",
+   "isin": "DE000A0DJ6J9"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "SYZ",
+   "side": "SELL",
+   "isin": "DE0005104806"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "KGX",
+   "side": "SELL",
+   "isin": "DE000KGX8881"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "ITN",
+   "side": "SELL",
+   "isin": "DE0006223605"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "PLEK",
+   "side": "SELL",
+   "isin": "DE000A161Z44"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "M3B0",
+   "side": "SELL",
+   "isin": "DE000A41YDL0"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "KTA",
+   "side": "SELL",
+   "isin": "DE000A2YN504"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "MAK",
+   "side": "SELL",
+   "isin": "DE0006044001"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "BIG",
+   "side": "SELL",
+   "isin": "DE000BGAG0J3"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "EOAN",
+   "side": "SELL",
+   "isin": "DE000ENAG999"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "GGS",
+   "side": "SELL",
+   "isin": "DE0005156004"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "AMM",
+   "side": "SELL",
+   "isin": "DE000A40KXL9"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "YOC",
+   "side": "SELL",
+   "isin": "DE0005932735"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "HGEA",
+   "side": "SELL",
+   "isin": "DE000A3CMGN3"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "CNW",
+   "side": "SELL",
+   "isin": "DE000A3E5C08"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "TGTA",
+   "side": "SELL",
+   "isin": "DE000A41YFQ4"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "CY1K",
+   "side": "SELL",
+   "isin": "DE000A2AAE22"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "TLIK",
+   "side": "SELL",
+   "isin": "DE000A289B07"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "V3V",
+   "side": "SELL",
+   "isin": "DE000A0BL849"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "SNG",
+   "side": "SELL",
+   "isin": "DE000A1681X5"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "EFF0",
+   "side": "SELL",
+   "isin": "DE000A41YCR9"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "BDT",
+   "side": "SELL",
+   "isin": "DE0005232805"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "EVT",
+   "side": "SELL",
+   "isin": "DE0005664809"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "AMI",
+   "side": "SELL",
+   "isin": "DE0008131350"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "KSC",
+   "side": "SELL",
+   "isin": "DE000A1A6V48"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "PNE3",
+   "side": "SELL",
+   "isin": "DE000A0JBPG2"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "BKHT",
+   "side": "SELL",
+   "isin": "DE000A2GSU42"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "H2O",
+   "side": "SELL",
+   "isin": "DE000A255G02"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "LXS",
+   "side": "SELL",
+   "isin": "DE0005470405"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "TUF",
+   "side": "SELL",
+   "isin": "DE000A161N22"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "NC5A",
+   "side": "SELL",
+   "isin": "DE000A12UP37"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "AAD",
+   "side": "SELL",
+   "isin": "DE0005093108"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "CEA",
+   "side": "SELL",
+   "isin": "DE0006201106"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "BNN",
+   "side": "SELL",
+   "isin": "DE0005203947"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "IS7",
+   "side": "SELL",
+   "isin": "DE0005874846"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "TIW",
+   "side": "SELL",
+   "isin": "DE000A40ZTT8"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "SGU",
+   "side": "SELL",
+   "isin": "DE000SGU8886"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "SZG",
+   "side": "SELL",
+   "isin": "DE0006202005"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "N4G0",
+   "side": "SELL",
+   "isin": "DE000A41YCM0"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "DMRE",
+   "side": "SELL",
+   "isin": "DE000A0XFSF0"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "S6P",
+   "side": "SELL",
+   "isin": "DE000A2TR919"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "PBB",
+   "side": "SELL",
+   "isin": "DE0008019001"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "ticker": "IUR",
+   "side": "SELL",
+   "isin": "DE0006208408"
+  }
+ ]
+}

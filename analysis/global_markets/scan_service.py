@@ -13,6 +13,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+from . import decision_overlay
+from . import investment_mode as im
 from .country_packs import COUNTRY_PACKS
 from .issuer import collapse_issuers
 from .models import GlobalCompany
@@ -310,6 +312,8 @@ def scan_global_top10(
 
     top_n = max(1, min(int(top_n), 25))
     markets = _global_top_markets()
+    if im.decision_mode() == im.INVESTMENT and im.scope_restricted():
+        markets = tuple(m for m in markets if im.in_scope(f"{m[0]}:{m[1]}", True))     # research scope only
     results: dict[tuple[str, str], dict] = {}
 
     # Global Top is a read path, never a full-market refresh path. Starting
@@ -413,9 +417,18 @@ def scan_global_top10(
         reverse=True,
     )
     recommendations = []
-    for index, row in enumerate(ranked[:top_n], start=1):
+    for row in ranked:
+        if len(recommendations) >= top_n:
+            break
         enriched = dict(row)
-        enriched["globalRank"] = index
+        view = decision_overlay.market_view(str(row.get("country") or ""), str(row.get("exchange") or ""))
+        tier = view.get(str(row.get("ticker") or ""))
+        if tier is not None:
+            tier = decision_overlay.cap_for_evidence(tier, (row.get("evidence") or {}).get("status"), row.get("confidence"))
+            if tier.get("insufficientEvidence"):
+                continue                    # Evidence BLOCK / low confidence is not a shortlist entry
+            enriched["investment"] = tier
+        enriched["globalRank"] = len(recommendations) + 1
         recommendations.append(enriched)
 
     errors = sum(1 for row in market_summary if row["status"] == "ERROR")
@@ -428,9 +441,16 @@ def scan_global_top10(
     deep_all_markets = sum(int(row.get("deepAnalyzed") or 0) for row in market_summary)
     connected_coverage = 0.0 if total_equities <= 0 else round(100.0 * screened_equities / total_equities, 2)
     eligible_coverage = 0.0 if eligible_equities <= 0 else round(100.0 * eligible_screened / eligible_equities, 2)
+    # A "market" is a country (US = NASDAQ + NYSE, DE = Xetra + Frankfurt); it is ready only when every exchange of
+    # it inside the scope is ready. Exchange-level counts stay available as ``exchangesScanned`` / ``exchangesEligible``.
+    by_country: dict[str, bool] = {}
+    for row in market_summary:
+        by_country[row["country"]] = by_country.get(row["country"], True) and bool(row.get("rankingEligible"))
+    country_total = len(by_country)
+    country_ready = sum(1 for ok in by_country.values() if ok)
     status = _global_scan_status(
-        eligible_markets=eligible_markets,
-        total_markets=len(markets),
+        eligible_markets=country_ready,
+        total_markets=country_total,
         recommendation_count=len(recommendations),
     )
     if eligible_markets == 0:
@@ -443,9 +463,11 @@ def scan_global_top10(
         "refreshPolicy": "SCHEDULED_CACHE_ONLY",
         "requestedRecommendations": top_n,
         "recommendationCount": len(recommendations),
-        "marketsScanned": len(markets),
-        "marketsEligible": eligible_markets,
-        "marketsExcluded": len(markets) - eligible_markets,
+        "marketsScanned": country_total,
+        "marketsEligible": country_ready,
+        "marketsExcluded": country_total - country_ready,
+        "exchangesScanned": len(markets),
+        "exchangesEligible": eligible_markets,
         "marketErrors": errors,
         "eligibleEquities": eligible_equities,
         "screenedEquities": eligible_screened,

@@ -1,0 +1,8 @@
+# Validation of paper_portfolio_2026-10-20.json (read-only checks, 2026-10-20)
+
+- SHA-256 `0bd9066eb980d9293566c2cb682dce579f6d6fbf15e102eeb341e2e7e52621a1` verified (`sha256sum -c`); file mode 444; unchanged since commit `1d88a14`; identical copy in `/home/ubuntu/backups/paper-portfolio-2026-10-20/`.
+- Tag `paper-portfolio-2026-10-20` -> freeze commit `e2d3289`. Engine commit recorded in the file: `7c0606e` (`analysis/` is byte-identical at the freeze commit and at the later research-only commits).
+- Decision rules: `DECISION_MODE=investment`, `BIAP_INVESTMENT_SCOPE=restricted`, config as in each daily `manifest.json` (`min_tier_confidence 0.35`, BUY top 10% / ACCUMULATE top 25%, `buy_min_agents 4`, ...). File hashes at `7c0606e`: investment_mode.py `e8f10aef…`, decision_overlay.py `ed69360e…`, scan_service.py `e3324c1c…`. The frozen JSON itself does not embed the config; the 2026-10-20 daily manifest does.
+- Reproducibility: tiers and scores of all 964 holdings were recomputed from the backed-up ledgers (`/home/ubuntu/backups/paper-portfolio-ledgers-20261020`) with the same code: 964 match, 0 differ.
+- BUY evidence gate (445 BUY): stored status PASS 445; BLOCK 0; WARN 0; confidence < 0.35: 0 (min 0.405); missing critical fields: 0; governance-blocked: 0.
+  One borderline case: SE `LUMI`. Its analysis (2026-10-20 00:04Z) used a 6.7-day-old price (limit 7). Under the price-only refresh the Nordic quote is dated by the sync (2026-10-20T22:57Z) and the vendor close that day (234.0) equals the ledger price, so it passes; a strict reading that ignores the refresh would age the analysis price to 7.7 days and mark it BLOCK. Not changed.

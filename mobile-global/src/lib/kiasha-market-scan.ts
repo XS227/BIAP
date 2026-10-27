@@ -31,11 +31,11 @@ export type KiashaMarketScan = {
 };
 
 function errorMessage(status?: number): string {
-  if (status === 401 || status === 403) return 'نشست کاربری معتبر نیست؛ دوباره وارد حساب شوید.';
-  if (status === 503) return 'موتور کیا‌شا یا داده بازار موقتاً در حال آماده‌سازی است.';
-  if (status && status >= 500) return 'سرور تحلیل فعلاً پاسخ کامل نمی‌دهد.';
-  if (status) return `خطای سرور (${status})`;
-  return 'ارتباط با سرور تحلیل برقرار نشد.';
+  if (status === 401 || status === 403) return 'Your session is no longer valid; please sign in again.';
+  if (status === 503) return 'The Kiasha engine or market data is temporarily being prepared.';
+  if (status && status >= 500) return 'The analysis server is not responding fully right now.';
+  if (status) return `Server error (${status})`;
+  return 'Could not reach the analysis server.';
 }
 
 export async function fetchKiashaMarketScan(force = false, timeoutMs = 20_000): Promise<KiashaMarketScan> {

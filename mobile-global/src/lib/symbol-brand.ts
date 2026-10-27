@@ -1,21 +1,11 @@
 export type SymbolBrand = { domain: string; label: string };
 
-// Verified official company domains for a small set of high-traffic symbols.
+// Verified official company domains per symbol (none configured for the Global markets yet).
 // We only show a remote favicon when the domain is known; otherwise the UI
 // falls back to a neutral ticker avatar instead of inventing a logo.
-export const SYMBOL_BRANDS: Record<string, SymbolBrand> = {
-  'فولاد': { domain: 'msc.ir', label: 'فولاد مبارکه اصفهان' },
-  'فملی': { domain: 'nicico.com', label: 'ملی صنایع مس ایران' },
-  'خودرو': { domain: 'ikco.ir', label: 'ایران خودرو' },
-  'وبملت': { domain: 'bankmellat.ir', label: 'بانک ملت' },
-  'شبندر': { domain: 'baorco.ir', label: 'پالایش نفت بندرعباس' },
-  'شستا': { domain: 'ssic.ir', label: 'سرمایه‌گذاری تامین اجتماعی' },
-};
+export const SYMBOL_BRANDS: Record<string, SymbolBrand> = {};
 
-export const VERIFIED_INSTRUMENT_SYMBOLS: Record<string, string> = {
-  '46348559193224090': 'فولاد',
-  '778253364357513': 'وبملت',
-};
+export const VERIFIED_INSTRUMENT_SYMBOLS: Record<string, string> = {};
 
 export function displaySymbol(code: string): string {
   return VERIFIED_INSTRUMENT_SYMBOLS[code] ?? code;

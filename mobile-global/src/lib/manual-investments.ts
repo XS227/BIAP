@@ -183,7 +183,7 @@ export async function confirmManualBuy(input: {
   buyPrice: number;
 }): Promise<ManualInvestment> {
   const quantity = Math.max(1, Math.floor(input.quantity));
-  if (!Number.isFinite(input.buyPrice) || input.buyPrice <= 0) throw new Error('قیمت خرید معتبر نیست.');
+  if (!Number.isFinite(input.buyPrice) || input.buyPrice <= 0) throw new Error('Buy price is not valid.');
   const code = input.code.trim().toUpperCase();
   const symbol = input.symbol || code;
 
@@ -210,7 +210,7 @@ export async function confirmManualBuy(input: {
 }
 
 export async function confirmManualSell(id: string, sellPrice: number): Promise<ManualInvestment | null> {
-  if (!Number.isFinite(sellPrice) || sellPrice <= 0) throw new Error('قیمت فروش معتبر نیست.');
+  if (!Number.isFinite(sellPrice) || sellPrice <= 0) throw new Error('Sell price is not valid.');
   const items = await listManualInvestments();
   const index = items.findIndex((x) => x.id === id && x.status === 'OPEN');
   if (index < 0) return null;

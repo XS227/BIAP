@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
-import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { BiapLogo, Brand, Colors, Fonts, Radius, Spacing, BottomTabInset, MaxContentWidth } from '@/constants/theme';
 import { fetchGlobalStatus, type GlobalInstrument } from '@/lib/global-api';

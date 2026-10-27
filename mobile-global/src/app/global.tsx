@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Brand, Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { fetchGlobalCountries, GlobalCountry, GlobalExchange } from '@/lib/global-api';
+import { pickerCountries } from '@/constants/market-picker';
 import { getGlobalMarketSelection, setGlobalMarketSelection } from '@/lib/global-market-selection';
 
-const PRIORITY = ['US', 'GB', 'DE', 'NO', 'SE', 'JP', 'AU', 'IR'];
 
 export default function GlobalScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
@@ -21,14 +22,15 @@ export default function GlobalScreen() {
       .then(([catalog, saved]) => {
         setCountries(catalog.countries);
         setCatalogLive(catalog.live);
-        const savedCountry = catalog.countries.find((item) => item.country === saved.country);
+        const visible = pickerCountries(catalog.countries);
+        const savedCountry = visible.find((item) => item.country === saved.country);
         const savedExchange = savedCountry?.exchanges.find((item) => item.code === saved.exchange);
         if (savedCountry && savedExchange) {
           setCountryCode(savedCountry.country);
           setExchangeCode(savedExchange.code);
           return;
         }
-        const first = catalog.countries[0];
+        const first = visible[0];
         if (first) {
           setCountryCode(first.country);
           setExchangeCode(first.exchanges.length === 1 ? first.exchanges[0]?.code || '' : '');
@@ -37,12 +39,9 @@ export default function GlobalScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  const priorityCountries = useMemo(() => {
-    const rank = new Map(PRIORITY.map((code, index) => [code, index]));
-    return [...countries].sort((a, b) => (rank.get(a.country) ?? 99) - (rank.get(b.country) ?? 99));
-  }, [countries]);
+  const priorityCountries = useMemo(() => pickerCountries(countries), [countries]);
 
-  const selectedCountry = countries.find((item) => item.country === countryCode) || priorityCountries[0];
+  const selectedCountry = priorityCountries.find((item) => item.country === countryCode) || priorityCountries[0];
   const selectedExchange = selectedCountry
     ? selectedCountry.exchanges.find((item) => item.code === exchangeCode)
       || (selectedCountry.exchanges.length === 1 ? selectedCountry.exchanges[0] : undefined)

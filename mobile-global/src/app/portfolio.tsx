@@ -1,16 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  useColorScheme,
-} from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, useColorScheme } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import {
@@ -22,6 +12,7 @@ import {
   GlobalPortfolioResponse,
   scanGlobalMarket,
 } from '@/lib/global-api';
+import { pickerCountries } from '@/constants/market-picker';
 import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-market-selection';
 import { evidenceCounts, rankCriterionLabel, topRanked } from '@/lib/scan-summary';
 
@@ -64,7 +55,7 @@ type ScanWithMode = Awaited<ReturnType<typeof scanGlobalMarket>> & {
   cachedMarketData?: boolean;
 };
 
-const PRIORITY = ['US', 'NO', 'SE', 'GB', 'JP', 'AU', 'DE', 'FR', 'NL', 'FI', 'DK', 'KR', 'IR'];
+const PRIORITY = ['US', 'GB', 'IT', 'SE', 'NO', 'DE', 'FR', 'NL', 'FI', 'ES'];
 const AGENTS = ['fundamental', 'risk', 'forecast', 'comparison', 'quality', 'liquidity'] as const;
 const MAX_INPUTS = 50;
 
@@ -211,7 +202,7 @@ export default function GlobalPortfolioScreen() {
 
   const options = useMemo(() => {
     const rows: Scope[] = [];
-    for (const country of countries) {
+    for (const country of pickerCountries(countries)) {
       for (const exchange of country.exchanges) {
         rows.push({
           country: country.country,

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { analyzeGlobalInstrument, GlobalAnalysis, GlobalAgentSignal, GlobalInstrument } from '@/lib/global-api';
 import { getGlobalMarketSelection } from '@/lib/global-market-selection';
-import { DISCLAIMER_FA, reasonLineFa, tierLabelFa, tierTone } from '@/lib/decision-tier';
+import { conservativeLine, DISCLAIMER, investmentBadge, reasonLine, tierLabel, tierTone } from '@/lib/decision-tier';
 import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
 import { dataLimitationLines, fundamentalFreshnessLines, governanceReasonLines } from '@/lib/freshness-labels';
 
@@ -154,6 +155,7 @@ export default function GlobalStockDetailScreen() {
   const signals = Array.isArray(analysis?.signals) ? analysis!.signals! : [];
   const sources = Array.isArray(company?.sources) ? company!.sources! : [];
   const callTone = decisionColor(analysis?.call, colors.textSecondary);
+  const badgeTone = decisionColor(analysis?.investment?.tier ?? analysis?.call, colors.textSecondary);
   const price = company?.price;
   const priceTimestamp = company?.price_observed_at;
   const lowPriceWarning = price != null && Number.isFinite(Number(price)) && Number(price) > 0 && Number(price) < 0.1;
@@ -210,7 +212,7 @@ export default function GlobalStockDetailScreen() {
   ].every((value) => value == null);
 
   const decisionRows = useMemo(() => [
-    ['Kiasha call', friendly(analysis?.call)],
+    ...(analysis?.investment ? [['Investment tier', tierLabel(analysis.investment.tier)], ['Conservative rule (reference)', friendly(analysis?.call)]] : [['Kiasha call', friendly(analysis?.call)]]),
     ['Decision confidence', analysis?.decisionConfidence == null ? (analysis?.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`) : `${Math.round(analysis.decisionConfidence * 100)}%`],
     ['Evidence confidence', analysis?.evidenceConfidence == null ? '—' : `${Math.round(analysis.evidenceConfidence * 100)}%`],
     ['Overall calibrated', analysis?.overallCalibratedConfidence == null ? (analysis?.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`) : `${Math.round(analysis.overallCalibratedConfidence * 100)}%`],
@@ -229,26 +231,28 @@ export default function GlobalStockDetailScreen() {
     ['Current ratio', dm?.currentRatio == null ? '—' : `${n(dm.currentRatio, 2)}x`],
     ['ROE', pct(dm?.roePct)],
     ['ROA', pct(dm?.roaPct)],
-    ['New position', friendly(decision?.kiasha?.newPositionAction || analysis?.call)],
-    ['If already owned', friendly(decision?.kiasha?.existingHolderAction)],
+    [analysis?.investment ? 'New position (conservative rule)' : 'New position', friendly(decision?.kiasha?.newPositionAction || analysis?.call)],
+    [analysis?.investment ? 'If already owned (conservative rule)' : 'If already owned', friendly(decision?.kiasha?.existingHolderAction)],
     ['Evidence', analysis?.evidence?.status || '—'],
-  ], [analysis?.call, analysis?.confidence, analysis?.decisionConfidence, analysis?.evidenceConfidence, analysis?.overallCalibratedConfidence, analysis?.evidence?.status, decision, dm]);
+  ], [analysis?.call, analysis?.investment?.tier, analysis?.confidence, analysis?.decisionConfidence, analysis?.evidenceConfidence, analysis?.overallCalibratedConfidence, analysis?.evidence?.status, decision, dm]);
 
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} tintColor={Brand.primary} />} contentContainerStyle={styles.content}>
     <View style={styles.maxWidth}>
       <View style={styles.header}><Pressable onPress={() => router.back()} style={[styles.back, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.backText, { color: colors.text }]}>← Back</Text></Pressable><Text style={[styles.headerMeta, { color: colors.textSecondary }]}>Global stock analysis</Text></View>
       {loading ? <View style={{ marginTop: 50, alignItems: 'center' }}><ActivityIndicator color={Brand.primary} /><Text style={[styles.body, { color: colors.textSecondary, marginTop: 12 }]}>Loading verified market, filing and decision data…</Text></View> : error ? <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Analysis unavailable</Text><Text style={[styles.body, { color: colors.textSecondary }]}>{error}</Text><Pressable onPress={() => { setLoading(true); void load(); }} style={[styles.action, { backgroundColor: Brand.primary }]}><Text style={styles.actionText}>Retry analysis</Text></Pressable></View> : analysis ? <>
         <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}>
-          <View style={styles.rowBetween}><View style={{ flex: 1 }}><Text style={[styles.ticker, { color: colors.text }]}>{analysis.ticker}</Text><Text style={[styles.companyName, { color: colors.textSecondary }]}>{analysis.name}</Text><Text style={[styles.identity, { color: colors.textSecondary }]}>{analysis.country} • {analysis.exchange} • {analysis.mic || 'MIC n/a'} • {analysis.currency}</Text></View><View style={[styles.callPill, { borderColor: callTone }]}><Text style={[styles.callText, { color: callTone }]}>{analysis.call}</Text></View></View>
+          <View style={styles.rowBetween}><View style={{ flex: 1 }}><Text style={[styles.ticker, { color: colors.text }]}>{analysis.ticker}</Text><Text style={[styles.companyName, { color: colors.textSecondary }]}>{analysis.name}</Text><Text style={[styles.identity, { color: colors.textSecondary }]}>{analysis.country} • {analysis.exchange} • {analysis.mic || 'MIC n/a'} • {analysis.currency}</Text></View><View style={[styles.callPill, { borderColor: badgeTone }]}><Text style={[styles.callText, { color: badgeTone }]}>{analysis.investment ? tierLabel(analysis.investment.tier) : analysis.call}</Text></View></View>
           <View style={styles.priceRow}><Text style={[styles.price, { color: colors.text }]}>{price == null ? '—' : priceN(price)}</Text><Text style={[styles.currency, { color: colors.textSecondary }]}>{analysis.currency}</Text></View>
           <Text style={[styles.timestamp, { color: colors.textSecondary }]}>{priceTimestamp ? `Price observed ${priceTimestamp}` : 'Verified price timestamp unavailable'}</Text>
         </View>
 
         {analysis.investment ? <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
-          <Text style={[styles.cardTitle, { color: decisionColor(analysis.investment.tier, colors.textSecondary), writingDirection: 'rtl', textAlign: 'right' }]}>{tierLabelFa(analysis.investment.tier, analysis.investment.labelFa)}</Text>
-          <Text style={[styles.body, { color: colors.textSecondary, writingDirection: 'rtl', textAlign: 'right' }]}>{`دلایل مثبت: ${reasonLineFa(analysis.investment.positive)}`}</Text>
-          <Text style={[styles.body, { color: colors.textSecondary, writingDirection: 'rtl', textAlign: 'right' }]}>{`دلایل منفی: ${reasonLineFa(analysis.investment.negative)}`}</Text>
-          <Text style={[styles.body, { color: colors.textSecondary, marginTop: 8, writingDirection: 'rtl', textAlign: 'right' }]}>{analysis.investment.disclaimerFa || DISCLAIMER_FA}</Text>
+          <Text style={[styles.cardTitle, { color: decisionColor(analysis.investment.tier, colors.textSecondary) }]}>{tierLabel(analysis.investment.tier)}</Text>
+          {investmentBadge(analysis.investment).notice ? <Text style={[styles.body, { color: Brand.warning, fontWeight: '700' }]}>{investmentBadge(analysis.investment).notice}</Text> : null}
+          <Text style={[styles.body, { color: colors.textSecondary }]}>{`Positive reasons: ${reasonLine(analysis.investment.positive)}`}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary }]}>{`Negative reasons: ${reasonLine(analysis.investment.negative)}`}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary, fontSize: 12, marginTop: 8 }]}>{conservativeLine(analysis.call)}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary, marginTop: 8 }]}>{DISCLAIMER}</Text>
         </View> : null}
 
         {(lowPriceWarning || extremeVolatilityWarning) ? <View style={[styles.caution, { backgroundColor: colors.backgroundElement, borderColor: Brand.warning }]}><Text style={[styles.cautionTitle, { color: Brand.warning }]}>Market-data caution</Text><Text style={[styles.body, { color: colors.textSecondary }]}>{lowPriceWarning ? 'This is a very low-priced instrument; BIAP preserves extra decimal precision instead of rounding it to zero. ' : ''}{extremeVolatilityWarning ? 'Observed volatility is extreme, so risk metrics should be interpreted with extra caution and remain subject to the Evidence gate.' : ''}</Text></View> : null}
@@ -256,7 +260,7 @@ export default function GlobalStockDetailScreen() {
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Price Intelligence</Text>
           <Text style={[styles.body, { color: colors.textSecondary }]}>{price == null ? 'A verified market price is unavailable. No price-based conclusion can be made.' : `Last observed price: ${priceN(price)} ${analysis.currency}. A low share price alone does not mean the company is undervalued.`}</Text>
-          <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{analysis.score == null ? 'Kiasha score unavailable.' : `Kiasha score ${n(analysis.score, 3)} (${analysis.score > 0 ? 'positive' : analysis.score < 0 ? 'negative' : 'neutral'}). `}{`Evidence ${analysis.evidence?.status || 'unavailable'} checks data quality, not whether the stock is a buy. Overall calibrated confidence ${analysis.confidence == null ? 'unavailable' : Math.round(analysis.confidence * 100) + '%'}; current decision: ${friendly(analysis.call)}.`}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{analysis.score == null ? 'Kiasha score unavailable.' : `Kiasha score ${n(analysis.score, 3)} (${analysis.score > 0 ? 'positive' : analysis.score < 0 ? 'negative' : 'neutral'}). `}{`Evidence ${analysis.evidence?.status || 'unavailable'} checks data quality, not whether the stock is a buy. Overall calibrated confidence ${analysis.confidence == null ? 'unavailable' : Math.round(analysis.confidence * 100) + '%'}; current decision: ${analysis.investment ? tierLabel(analysis.investment.tier) : friendly(analysis.call)}.`}</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{company?.pe != null && Number(company.pe) > 0 && company?.sector_pe != null && Number(company.sector_pe) > 0 ? `P/E ${n(company.pe)} versus peer benchmark ${n(company.sector_pe)} (${pct(dm.peVsSectorPct)} difference). This comparison alone is not a fair-value estimate.` : 'Peer-relative valuation: insufficient verified P/E and benchmark data.'}</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>Fair value / upside / downside: Insufficient Data — no verified valuation model estimate is available. Do not infer a price target from Kiasha score.</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{distress?.status ? `Financial distress assessment: ${friendly(distress.status)}. See Agent 9 for model inputs and limitations.` : 'Financial distress: insufficient verified inputs. See Agent 9 for details.'}</Text>
@@ -286,7 +290,7 @@ export default function GlobalStockDetailScreen() {
 
         <View style={[styles.agentCard, { backgroundColor: colors.backgroundElement, borderColor: governance?.action === 'ACCEPT' ? Brand.positive : governance?.action === 'REVIEW' ? Brand.warning : Brand.negative }]}>
           <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>Agent 8 · Decision Governance</Text><Text style={[styles.agentVote, { color: governance?.action === 'ACCEPT' ? Brand.positive : governance?.action === 'REVIEW' ? Brand.warning : Brand.negative }]}>{governance?.action || '—'}</Text></View>
-          <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Final call {friendly(governance?.final_call || analysis.call)} • {governance?.accepted ? 'accepted' : governance?.escalated ? 'human review' : governance?.abstained ? 'abstained' : 'pending'}</Text>
+          <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>{analysis.investment ? 'Governance final call (conservative rule)' : 'Final call'} {friendly(governance?.final_call || analysis.call)} • {governance?.accepted ? 'accepted' : governance?.escalated ? 'human review' : governance?.abstained ? 'abstained' : 'pending'}</Text>
           <Text style={[styles.agentReason, { color: colors.textSecondary }]}>{governance?.reasoning || 'Governance assessment unavailable.'}</Text>
           {governance?.hard_blocks?.length ? <Text style={[styles.warning, { color: Brand.negative }]}>Hard blocks: {governance.hard_blocks.join(' • ')}</Text> : null}
           {analysis.decisionReasons
