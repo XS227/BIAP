@@ -276,7 +276,13 @@ class LSEOfficialClient:
     ) -> tuple[list[dict], list[str], str]:
         if not self.supported(country, spec.code):
             raise GlobalProviderError(f"LSE official market source is not configured for {country}/{spec.code}")
-        observed, rows, _ = self.eligible_rows()
+        try:
+            observed, rows, _ = self.eligible_rows()
+        except GlobalProviderError as exc:
+            # The LSE API can answer 403 to this host. Only the price source changes: the universe is the stored
+            # official snapshot, quotes are labelled as a Yahoo Finance vendor price, filings stay official.
+            from .lse_vendor_quotes import yahoo_batch_quotes
+            return yahoo_batch_quotes(instruments, spec, reason=str(exc))
         by_key = {
             (_valid_isin(row.get("isin")), str(row.get("tidm") or "").strip().upper()): row
             for row in rows
