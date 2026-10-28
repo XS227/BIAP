@@ -1,0 +1,104 @@
+# Isolated test APK: DOES NOT publish or modify the installed BIAP Global app.
+name: BIAP Intelligence isolated preview APK
+
+on:
+  push:
+    branches:
+      - feat/biap-intelligence-mvp-20261028
+    paths:
+      - 'mobile-global/**'
+      - '.github/workflows/biap-intelligence-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: biap-intelligence-preview
+  cancel-in-progress: true
+
+jobs:
+  android-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: mobile-global
+    env:
+      CI: '1'
+      NODE_ENV: production
+      EXPO_PUBLIC_BIAP_GLOBAL_PREVIEW: '1'
+      EXPO_PUBLIC_BIAP_GLOBAL_API_BASE: 'https://biap.dadashi.no/global-api'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobile-global/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: npm ci
+      - name: Static typecheck
+        run: npx tsc --noEmit
+      - name: Existing and Intelligence unit tests
+        run: |
+          npm run test:api
+          node --experimental-strip-types --no-warnings --test tests/intelligence-summary.test.mjs
+      - name: Isolate preview Android app package (side-by-side install)
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const file = 'app.json';
+          const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+          data.expo.name = 'BIAP Intelligence Preview';
+          data.expo.slug = 'biap-intelligence-preview';
+          data.expo.scheme = 'biapintelligence';
+          data.expo.android.package = 'com.biap.global.intelpreview';
+          data.expo.android.versionCode = 1;
+          fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n');
+          NODE
+      - name: Generate Android native project
+        run: npx expo prebuild --platform android --clean --no-install
+      - name: Apply same Android compatibility patch as BIAP Global
+        run: python3 scripts/patch-android-network-compat.py
+      - name: Sign preview APK with separate test key
+        run: |
+          test -f android/app/debug.keystore
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('android/app/build.gradle')
+          text = path.read_text(encoding='utf-8')
+          head, tail = text.split('release {', 1)
+          block = tail.split('}', 1)[0]
+          if 'signingConfig signingConfigs.debug' not in block:
+              path.write_text(head + 'release {\n            signingConfig signingConfigs.debug' + tail, encoding='utf-8')
+          PY
+      - name: Build isolated universal APK
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew :app:assembleRelease --no-daemon --max-workers=3
+      - name: Verify package and APK signature
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          "$APKSIGNER" verify --verbose "$APK"
+          "$AAPT" dump badging "$APK" | grep "package: name='com.biap.global.intelpreview'"
+          cp "$APK" BIAP-Intelligence-0.3.23-preview.apk
+          sha256sum BIAP-Intelligence-0.3.23-preview.apk > BIAP-Intelligence-0.3.23-preview.apk.sha256
+      - name: Archive preview APK (never publish automatically)
+        uses: actions/upload-artifact@v4
+        with:
+          name: biap-intelligence-preview-${{ github.sha }}
+          path: |
+            mobile-global/BIAP-Intelligence-0.3.23-preview.apk
+            mobile-global/BIAP-Intelligence-0.3.23-preview.apk.sha256
+          if-no-files-found: error
+          retention-days: 14
