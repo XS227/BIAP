@@ -62,8 +62,6 @@ jobs:
           NODE
       - name: Generate Android project
         run: npx expo prebuild --platform android --clean --no-install
-      - name: Apply network compatibility patch
-        run: python3 scripts/patch-android-network-compat.py
       - name: Configure debug-key signed test release
         run: |
           python3 - <<'PY'
