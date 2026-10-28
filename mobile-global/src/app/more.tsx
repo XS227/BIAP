@@ -24,7 +24,7 @@ export default function MoreScreen(){
   useFocusEffect(useCallback(()=>{Promise.all([getGlobalMarketSelection(),getSelectedGlobalCompany()]).then(([m,c])=>{setMarket(m);setCompany(c)});},[]));
   const version=Constants.expoConfig?.version||'0.1.0';
   const items:Item[]=[
-    {icon:'🔎',title:'Company Intelligence',sub:'Read-only company dashboard and grounded FA/EN analyst for the selected stock.',onPress:()=>router.push('/intelligence' as never),accent:Brand.primary},
+    {icon:'🔎',title:'Company Intelligence',sub:'Read-only company dashboard and English-language analyst for the selected stock.',onPress:()=>router.push('/intelligence' as never),accent:Brand.primary},
     {icon:'🧩',title:'BIAP Modules',sub:'Data, KPI, business development and financial modeling on the same Global issuer schema.',onPress:()=>router.push('/modules'),accent:Brand.primary},
     {icon:'🌍',title:'Country & Exchange',sub:market?`${market.countryName} • ${market.exchangeLabel}`:'Choose the market context used across BIAP.',onPress:()=>router.push('/global'),accent:'#0ea5e9'},
     {icon:'📈',title:'Selected Company',sub:company?`${company.ticker} • ${company.name}`:'Open Market and select a listed company for cross-module analysis.',onPress:()=>router.push('/market'),accent:Brand.positive},
