@@ -77,7 +77,7 @@ export default function IranianIntelligenceScreen() {
           <Text style={[styles.label,{color:colors.text}]}>شرکت بورسی یا فرابورسی</Text>
           <Text style={[styles.muted,{color:colors.textSecondary}]}>{code ? `نماد انتخاب‌شده: ${name} • ${code}` : 'برای شروع یک شرکت را جستجو یا از صفحه بازار انتخاب کنید.'}</Text>
           <View style={styles.searchLine}>
-            <Pressable onPress={()=>{void search();}} disabled={searching || query.trim().length<2} style={[styles.action,{backgroundColor:Brand.primary,opacity:query.trim().length<2?.5:1}]}><Text style={styles.actionText}>جستجو</Text></Pressable>
+            <Pressable onPress={()=>{void search();}} disabled={searching || query.trim().length<2} style={[styles.action,{backgroundColor:Brand.primary,opacity:query.trim().length < 2 ? .5 : 1}]}><Text style={styles.actionText}>جستجو</Text></Pressable>
             <TextInput value={query} onChangeText={setQuery} onSubmitEditing={()=>{void search();}} placeholder="نام یا نماد شرکت..." placeholderTextColor={colors.textSecondary} textAlign="right" style={[styles.input,{flex:1,backgroundColor:colors.background,borderColor:colors.backgroundSelected,color:colors.text}]} />
           </View>
           {searching ? <ActivityIndicator color={Brand.primary}/> : null}
@@ -130,7 +130,7 @@ export default function IranianIntelligenceScreen() {
             <Text style={[styles.muted,{color:colors.textSecondary}]}>پاسخ‌ها فعلاً قاعده‌محور و مبتنی بر داده‌های دریافت‌شده‌اند؛ گفت‌وگوی آزاد هوش مصنوعی نیست.</Text>
             <View style={styles.prompts}>{PROMPTS.map(p=><Pressable key={p} onPress={()=>ask(p)} style={[styles.prompt,{borderColor:colors.backgroundSelected}]}><Text style={{color:colors.textSecondary,fontFamily:Fonts.sans,fontSize:11}}>{p}</Text></Pressable>)}</View>
             <TextInput value={question} onChangeText={setQuestion} onSubmitEditing={()=>ask()} placeholder="سؤال درباره این شرکت..." placeholderTextColor={colors.textSecondary} textAlign="right" style={[styles.input,{backgroundColor:colors.background,borderColor:colors.backgroundSelected,color:colors.text,marginTop:12}]} />
-            <Pressable onPress={()=>ask()} disabled={question.trim().length<3} style={[styles.action,{backgroundColor:Brand.primary,marginTop:10,opacity:question.trim().length<3?.5:1}]}><Text style={styles.actionText}>تحلیل پرسش</Text></Pressable>
+            <Pressable onPress={()=>ask()} disabled={question.trim().length<3} style={[styles.action,{backgroundColor:Brand.primary,marginTop:10,opacity:question.trim().length < 3 ? .5 : 1}]}><Text style={styles.actionText}>تحلیل پرسش</Text></Pressable>
             {answer ? <Text style={[styles.answer,{backgroundColor:colors.background,color:colors.text}]}>{answer}</Text> : null}
           </View>
           <Text style={[styles.muted,{color:colors.textSecondary,marginTop:18,textAlign:'center'}]}>فقط پژوهش و پشتیبانی تصمیم • بدون ارسال سفارش • بدون تغییر مدل کیاشا</Text>
