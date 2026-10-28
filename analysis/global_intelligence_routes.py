@@ -6,9 +6,11 @@ generated financial claim is introduced.
 """
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from global_routes import InstrumentRequest, _seed
@@ -44,3 +46,21 @@ def intelligence_ask(req: AnalystQuestion):
     """Grounded per-company Q&A, not unrestricted LLM chat or a stock screener."""
     dashboard = build_company_dashboard(_analysis(req.instrument))
     return answer_company_question(dashboard, req.question, req.language)
+
+
+@router.get("/preview")
+def intelligence_preview():
+    """Self-contained research UI; deliberately not published or indexed."""
+    return FileResponse(
+        Path(__file__).with_name("intelligence_preview.html"),
+        media_type="text/html",
+        headers={
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+            "Content-Security-Policy": (
+                "default-src 'self'; img-src 'self'; connect-src 'self'; "
+                "script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
+                "object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+            ),
+        },
+    )
