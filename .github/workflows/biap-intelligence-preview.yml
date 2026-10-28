@@ -91,14 +91,14 @@ jobs:
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
           "$APKSIGNER" verify --verbose "$APK"
           "$AAPT" dump badging "$APK" | grep "package: name='com.biap.global.intelpreview'"
-          cp "$APK" BIAP-Intelligence-0.3.23-preview.apk
-          sha256sum BIAP-Intelligence-0.3.23-preview.apk > BIAP-Intelligence-0.3.23-preview.apk.sha256
+          cp "$APK" BIAP-Intelligence-0.3.24-preview.apk
+          sha256sum BIAP-Intelligence-0.3.24-preview.apk > BIAP-Intelligence-0.3.24-preview.apk.sha256
       - name: Archive preview APK (never publish automatically)
         uses: actions/upload-artifact@v4
         with:
           name: biap-intelligence-preview-${{ github.sha }}
           path: |
-            mobile-global/BIAP-Intelligence-0.3.23-preview.apk
-            mobile-global/BIAP-Intelligence-0.3.23-preview.apk.sha256
+            mobile-global/BIAP-Intelligence-0.3.24-preview.apk
+            mobile-global/BIAP-Intelligence-0.3.24-preview.apk.sha256
           if-no-files-found: error
           retention-days: 14
