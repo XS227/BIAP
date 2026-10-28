@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 
 from codal_data import CodalFiling, CodalFundamentals, _TableRows, _normalize_text, _parse_number
+from codal_quality import balance_sheet_check
 
 
 def _canonical_label(value: str) -> str:
@@ -21,21 +22,11 @@ def _canonical_label(value: str) -> str:
 
 
 def _matches(cell: str, aliases: tuple[str, ...]) -> bool:
+    # Match complete accounting labels only. Prefix matching accidentally
+    # returned "current assets" / "noncurrent liabilities" instead of the
+    # total rows in actual CODAL spreadsheets (e.g. سپیدار 1404).
     label = _canonical_label(cell)
-    if not label:
-        return False
-    for alias in aliases:
-        wanted = _canonical_label(alias)
-        if label == wanted:
-            return True
-        # CODAL templates often append qualifiers such as «ادامه عملیات» or a
-        # note number. Require the canonical accounting label to be the leading
-        # phrase so unrelated rows are not matched accidentally.
-        if len(wanted) >= 6 and label.startswith(wanted):
-            suffix = label[len(wanted):]
-            if len(suffix) <= 18:
-                return True
-    return False
+    return bool(label) and any(label == _canonical_label(alias) for alias in aliases)
 
 
 def row_values(rows: list[list[str]], aliases: tuple[str, ...]) -> tuple[float, float] | None:
@@ -48,15 +39,19 @@ def row_values(rows: list[list[str]], aliases: tuple[str, ...]) -> tuple[float, 
             continue
         values = [_parse_number(cell) for cell in row[label_idx + 1:]]
         numbers = [value for value in values if value is not None]
-        # Some exports repeat a note/index number immediately after the label.
-        # Prefer the two largest-magnitude adjacent accounting values when more
-        # than two numeric cells are present, but preserve original order.
-        if len(numbers) >= 2:
-            if len(numbers) == 2:
-                return numbers[0], numbers[1]
-            pairs = [(i, abs(numbers[i]) + abs(numbers[i + 1])) for i in range(len(numbers) - 1)]
-            best = max(pairs, key=lambda item: item[1])[0]
-            return numbers[best], numbers[best + 1]
+        if len(numbers) == 2:
+            return numbers[0], numbers[1]
+        if len(numbers) == 3 or len(numbers) == 4:
+            # The real CODAL export uses current, prior, older/prior-to-prior,
+            # and percent-change columns. Never choose the largest adjacent
+            # values; those may belong to a different period.
+            if numbers[0].is_integer() and 0 <= numbers[0] <= 99:
+                if abs(numbers[1]) >= 100 and abs(numbers[2]) >= 100:
+                    continue  # note index vs small current value: ambiguous
+            if 1300 <= numbers[0] <= 2100 and all(abs(x) < 2000 for x in numbers[1:3]):
+                continue  # year-looking numeric cell; ambiguous layout
+            return numbers[0], numbers[1]
+        # More than four numeric columns: unknown template, fail closed.
     return None
 
 
@@ -91,6 +86,19 @@ def parse_fundamentals(symbol: str, filing: CodalFiling, report_html: str) -> Co
     net_profit_current, net_profit_prev = net_profit
     if revenue_current == 0 or revenue_prev == 0:
         return None
+    # Reject mixed balance-sheet rows before persisting them as CODAL evidence.
+    balance = {
+        "total_assets_current": total_assets[0] if total_assets else None,
+        "total_assets_prev": total_assets[1] if total_assets else None,
+        "total_liabilities_current": total_liabilities[0] if total_liabilities else None,
+        "total_liabilities_prev": total_liabilities[1] if total_liabilities else None,
+        "total_equity_current": total_equity[0] if total_equity else None,
+        "total_equity_prev": total_equity[1] if total_equity else None,
+    }
+    for period in ("current", "prev"):
+        status, _reason = balance_sheet_check(balance, period)
+        if status == "BLOCK":
+            return None
     return CodalFundamentals(
         symbol=symbol,
         revenue_current=revenue_current,

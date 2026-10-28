@@ -40,21 +40,24 @@ export function KiashaDecisionCard({ rec, colors, demo }: { rec: Recommendation;
     return () => { active = false; };
   }, [demo, rec.code]);
 
-  const decision = rec.call === 'BUY'
+  const evidenceBlocked = rec.evidenceReview?.actionable === false;
+  const decision = evidenceBlocked
+    ? { title: 'کیاشا: شواهد مالی کافی نیست', action: 'DATA HOLD', color: Brand.warning, detail: 'این امتیاز فقط توصیفی است. تا تأیید گزارش کدال، توصیه خرید یا فروش ارائه نمی‌شود.' }
+    : rec.call === 'BUY'
     ? { title: 'کیاشا: خرید قابل بررسی است', action: 'GO', color: Brand.stockGreen, detail: 'سیگنال فعلی BUY است؛ اندازه موقعیت باید با موجودی و کنترل ریسک محدود شود.' }
     : rec.call === 'SELL'
       ? { title: 'کیاشا: فعلاً نخر', action: 'NO-GO', color: Brand.negative, detail: 'سیگنال فعلی SELL است. برای موقعیت جدید خرید پیشنهاد نمی‌شود؛ اگر سهم را دارید، تحلیل فروش را بررسی کنید.' }
       : { title: 'کیاشا: فعلاً صبر کن', action: 'WAIT', color: Brand.dataViolet, detail: 'سیگنال فعلی HOLD است و ورود جدید پیشنهاد نمی‌شود.' };
 
   const sizing = useMemo(() => {
-    if (rec.call !== 'BUY' || cash === null || sizingCapital === null || cash <= 0 || sizingCapital <= 0) return null;
+    if (evidenceBlocked || rec.call !== 'BUY' || cash === null || sizingCapital === null || cash <= 0 || sizingCapital <= 0) return null;
     const strength = clamp((rec.score - 0.25) / 0.75, 0, 1);
     const targetFraction = 0.02 + 0.03 * strength;
     const symbolCap = sizingCapital * 0.05;
     const reserveCap = Math.max(0, cash - sizingCapital * 0.30);
     const suggested = Math.floor(Math.min(sizingCapital * targetFraction, symbolCap, reserveCap, cash));
     return suggested > 0 ? suggested : null;
-  }, [rec.call, rec.score, cash, sizingCapital]);
+  }, [evidenceBlocked, rec.call, rec.score, cash, sizingCapital]);
 
   return <View style={[styles.card, { backgroundColor: colors.backgroundElement, borderColor: `${decision.color}55` }]}>
     <View style={styles.head}>
@@ -63,7 +66,10 @@ export function KiashaDecisionCard({ rec, colors, demo }: { rec: Recommendation;
     </View>
     <Text style={[styles.score, { color: colors.textSecondary }]}>امتیاز کیا‌شا: {rec.score >= 0 ? '+' : ''}{rec.score.toFixed(3)}</Text>
     <Text style={[styles.detail, { color: colors.text }]}>{decision.detail}</Text>
-    {rec.call === 'BUY' ? <View style={[styles.sizingBox, { backgroundColor: colors.backgroundSelected }]}>
+    {rec.evidenceReview ? <Text style={[styles.quality, { color: evidenceBlocked ? Brand.warning : Brand.stockGreen }]}>
+      وضعیت شواهد کدال: {rec.evidenceReview.status} • {rec.evidenceReview.reasons.join('؛ ')}
+    </Text> : null}
+    {!evidenceBlocked && rec.call === 'BUY' ? <View style={[styles.sizingBox, { backgroundColor: colors.backgroundSelected }]}>
       {sizing ? <>
         <Text style={[styles.sizingTitle, { color: colors.text }]}>حد پیشنهادی کیا‌شا برای این موقعیت</Text>
         <Text style={[styles.amount, { color: Brand.stockGreen }]}>{sizing.toLocaleString('fa-IR')} ریال</Text>
@@ -88,5 +94,6 @@ const styles = StyleSheet.create({
   amount: { fontFamily: Fonts.mono, fontSize: 21, fontWeight: '900' },
   cash: { fontFamily: Fonts.mono, fontSize: 11, fontWeight: '700' },
   meta: { fontFamily: Fonts.sans, fontSize: 10.5, lineHeight: 18, textAlign: 'right' },
+  quality: { fontFamily: Fonts.sans, fontSize: 11, lineHeight: 20, textAlign: 'right', alignSelf: 'stretch' },
   note: { fontFamily: Fonts.sans, fontSize: 10, lineHeight: 17, textAlign: 'right' },
 });
