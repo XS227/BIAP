@@ -110,6 +110,7 @@ export default function MoreScreen() {
   };
 
   const items: MenuItem[] = [
+    { icon: '🔎', title: 'هوشمندی مالی شرکت‌ها', sub: 'تحلیل شرکت‌های ایرانی با کدال، TSETMC و کیاشا — پرسش‌وپاسخ فارسی', onPress: () => router.push('/intelligence' as never), accent: Brand.primary },
     { icon: '🔄', title: 'به‌روزرسانی BIAP', sub: `بررسی نسخه جدید و دانلود APK • نسخه فعلی ${currentVersion}`, onPress: () => { void checkForUpdate(); }, accent: Brand.primary },
     { icon: '📈', title: 'معاملات آنلاین فارابی', sub: 'ورود امن به سامانه رسمی فارابیکسو برای خرید و فروش واقعی', onPress: openFarabiTrading, accent: Brand.positive },
     { icon: '🤝', title: 'همکاری با فارابی (فارابیز پلاس)', sub: 'برنامه رسمی معرفی صندوق‌های ETF و درآمد مشارکتی فارابی', onPress: () => { void openUrl(FARABIZ_PARTNER_URL, 'فارابیز پلاس'); }, accent: '#0ea5e9' },
