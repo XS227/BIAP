@@ -116,7 +116,7 @@ class PersistentMarketProvider(MarketDataProvider):
         age = self._age_seconds(payload)
         return age is not None and age <= self.fresh_seconds
 
-    def _write(self, company: GlobalCompany) -> None:
+    def _write(self, company: GlobalCompany) -> dict:
         if self.upstream is None:
             raise GlobalProviderError("cache-only market provider cannot create snapshots")
         if company.price is None or company.price <= 0 or not company.price_observed_at:
@@ -138,6 +138,7 @@ class PersistentMarketProvider(MarketDataProvider):
             "sources": [asdict(source) for source in company.sources if any(token in source.source_type.lower() for token in ("market", "price", "quote", "history", "valuation", "profile"))],
         }
         write_bulk_text(path, json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
+        return payload
 
     def _decode(self, seed: GlobalCompany, payload: dict, *, fallback: bool) -> GlobalCompany:
         market = payload.get("market") if isinstance(payload.get("market"), dict) else {}
@@ -249,9 +250,10 @@ class PersistentMarketProvider(MarketDataProvider):
         if self.upstream is None:
             raise GlobalProviderError("market upstream is not configured; cache-only mode")
         enriched = self.upstream.enrich_market(company)
-        self._write(enriched)
-        payload = self._read(company)
-        return self._decode(company, payload, fallback=False) if payload else enriched
+        # Decode the payload just built, not a disk re-read: with BIAP_GLOBAL_ONLINE_FIRST the write is memoised only,
+        # so a re-read would return the OLD on-disk snapshot and silently discard the fresh upstream price.
+        payload = self._write(enriched)
+        return self._decode(company, payload, fallback=False)
 
     def enrich_market(self, company: GlobalCompany) -> GlobalCompany:
         cached = self._read(company)
