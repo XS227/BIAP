@@ -120,7 +120,7 @@ export default function IntelligenceScreen() {
                 <Text style={[styles.statusValue, { color: evidenceTone }]}>{evidence?.status || 'UNKNOWN'}</Text>
               </View>
               <View style={[styles.status, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
-                <Text style={[styles.tiny, { color: colors.textSecondary }]}>EXISTING KI ASHA CALL</Text>
+                <Text style={[styles.tiny, { color: colors.textSecondary }]}>EXISTING KIASHA CALL</Text>
                 <Text style={[styles.statusValue, { color: colors.text }]} numberOfLines={2}>{analysis.call || 'NO_RECOMMENDATION'}</Text>
               </View>
             </View>
