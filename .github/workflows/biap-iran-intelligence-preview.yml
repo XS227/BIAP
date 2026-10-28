@@ -1,0 +1,100 @@
+name: BIAP Iran Intelligence isolated APK
+
+on:
+  push:
+    branches: [feat/biap-iran-intelligence-preview-20261029]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/biap-iran-intelligence-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: biap-iran-intelligence-preview
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      CI: '1'
+      NODE_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install locked dependencies
+        run: npm ci
+      - name: TypeScript check
+        run: npx tsc --noEmit
+      - name: Iranian intelligence tests
+        run: node --experimental-strip-types --no-warnings --test tests/iran-intelligence.test.mjs
+      - name: Set independently installable test app
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const filename = 'app.json';
+          const conf = JSON.parse(fs.readFileSync(filename,'utf8'));
+          conf.expo.name = 'BIAP Iran Intelligence Preview';
+          conf.expo.slug = 'biap-iran-intelligence-preview';
+          conf.expo.scheme = 'biapiranintel';
+          conf.expo.version = '1.0.6';
+          conf.expo.android.package = 'com.biap.mobile.intelpreview';
+          conf.expo.android.versionCode = 1;
+          // Separate iOS identifier too; no build occurs for iOS here.
+          conf.expo.ios.bundleIdentifier = 'com.biap.mobile.intelpreview';
+          fs.writeFileSync(filename, JSON.stringify(conf,null,2)+'\n');
+          NODE
+      - name: Generate Android project
+        run: npx expo prebuild --platform android --clean --no-install
+      - name: Apply network compatibility patch
+        run: python3 scripts/patch-android-network-compat.py
+      - name: Configure debug-key signed test release
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          gradle = Path('android/app/build.gradle')
+          text = gradle.read_text()
+          head, tail = text.split('release {',1)
+          if 'signingConfig signingConfigs.debug' not in tail.split('}',1)[0]:
+              gradle.write_text(head + 'release {\n            signingConfig signingConfigs.debug' + tail)
+          PY
+      - name: Build isolated Android APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease --no-daemon --max-workers=3
+      - name: Validate isolated APK signature and application ID
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
+          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)
+          "$APKSIGNER" verify --verbose "$APK"
+          "$AAPT" dump badging "$APK" | grep "package: name='com.biap.mobile.intelpreview'"
+          cp "$APK" BIAP-Iran-Intelligence-1.0.6-preview.apk
+          sha256sum BIAP-Iran-Intelligence-1.0.6-preview.apk > BIAP-Iran-Intelligence-1.0.6-preview.apk.sha256
+      - name: Archive APK without public deployment
+        uses: actions/upload-artifact@v4
+        with:
+          name: biap-iran-intelligence-preview-${{ github.sha }}
+          path: |
+            mobile/BIAP-Iran-Intelligence-1.0.6-preview.apk
+            mobile/BIAP-Iran-Intelligence-1.0.6-preview.apk.sha256
+          retention-days: 14
+          if-no-files-found: error
