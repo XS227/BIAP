@@ -30,6 +30,7 @@ export default function AppTabs({ onLogout }: Props) {
             the normal BIAP modules. The route stays accessible from Home/Market. */}
         <Tabs.Screen name="global" options={{ href: null }} />
         <Tabs.Screen name="intelligence" options={{ href: null }} />
+        <Tabs.Screen name="credit-lab" options={{ href: null }} />
         <Tabs.Screen name="orders" options={{ href: null }} />
         <Tabs.Screen name="favorites" options={{ href: null }} />
         <Tabs.Screen name="data-connect" options={{ href: null }} />
