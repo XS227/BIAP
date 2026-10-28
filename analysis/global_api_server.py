@@ -11,6 +11,7 @@ import subprocess
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 
+from global_intelligence_routes import router as global_intelligence_router
 from global_release_routes import router as global_release_router
 from global_routes import router as global_router
 from global_source_routes import router as global_source_router
@@ -34,6 +35,7 @@ app = FastAPI(title="BIAP Global research service")
 # compress at the application to keep mobile transfers short and abort-resistant.
 app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=5)
 app.include_router(global_router)
+app.include_router(global_intelligence_router)
 app.include_router(global_source_router)
 app.include_router(global_release_router)
 
