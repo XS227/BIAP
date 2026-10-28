@@ -54,6 +54,7 @@ export type GlobalFundamentalEvidence = {
   officialStatus?: string;
   isOfficial?: boolean;
   sourceProvider?: string | null;
+  sourceUrl?: string | null;
   reportPeriod?: string | null;
   fundamentalPeriodAgeDays?: number | null;
   freshnessTier?: 'RECENT_ANNUAL_FILING' | 'LAST_ANNUAL_FILING' | 'PERIOD_UNKNOWN' | 'NOT_CURRENT' | string;
