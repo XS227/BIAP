@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, useColorScheme, SafeAreaView, Pressable, Alert, Linking } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, Radius, BottomTabInset, MaxContentWidth, ThemeColors } from '@/constants/theme';
@@ -56,6 +57,23 @@ async function openUrl(url: string, title: string) {
   }
 }
 
+/** APK installation requires the user's action in Android's downloads view.
+ * Show the server's download centre in an in-app browser instead of sending
+ * the user away from BIAP when the update button is tapped.
+ */
+async function openUpdateCentre() {
+  const url = 'https://biap.dadashi.no/app/downloads';
+  try {
+    await WebBrowser.openBrowserAsync(url);
+  } catch {
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('دریافت BIAP', 'صفحه دانلود باز نشد. نشانی https://biap.dadashi.no/app/downloads را در مرورگر باز کنید.');
+    }
+  }
+}
+
 export default function MoreScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light'; const colors = Colors[scheme]; const logout = useLogout();
   const currentVersion = Constants.expoConfig?.version || 'unknown';
@@ -64,37 +82,61 @@ export default function MoreScreen() {
   const handleLogout = () => { Alert.alert('خروج از حساب', 'آیا مطمئن هستید که می‌خواهید خارج شوید؟', [{ text: 'انصراف', style: 'cancel' }, { text: 'خروج', style: 'destructive', onPress: async () => { await logoutAndClearAuthSession(); logout(); } }]); };
 
   const checkForUpdate = async () => {
+    // The release service may respond slowly. Keep the app usable, and
+    // never launch an Android installer merely by checking for updates.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12_000);
     try {
-      const response = await fetch(`${API_BASE}/app/release`, { headers: { Accept: 'application/json' } });
+      const response = await fetch(`${API_BASE}/app/release`, {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const release = await response.json() as MobileRelease;
-      if (!release?.version) throw new Error('invalid release');
+      if (!release?.version || !/^\\d+(\\.\\d+){1,3}$/.test(release.version)) throw new Error('invalid release');
 
-      const releaseVersionCode = typeof release.versionCode === 'number' ? release.versionCode : null;
-      const currentByNativeBuild = typeof currentVersionCode === 'number' && releaseVersionCode !== null && currentVersionCode >= releaseVersionCode;
-      const currentBySemanticVersion = currentVersion !== 'unknown' && !isNewerVersion(release.version, currentVersion);
-      if (currentByNativeBuild || currentBySemanticVersion) {
-        const installedDisplay = currentByNativeBuild && currentVersion !== release.version ? release.version : currentVersion;
-        const buildDisplay = typeof currentVersionCode === 'number' ? `\nBuild نصب‌شده: ${currentVersionCode}` : '';
-        Alert.alert('BIAP به‌روز است', `نسخه نصب‌شده: ${installedDisplay}${buildDisplay}\nآخرین نسخه: ${release.version}`);
+      const releaseBuild = typeof release.versionCode === 'number' ? release.versionCode : null;
+      // Android's signed build number is authoritative when both sides
+      // provide one. A JS bundle version may otherwise hide a real update.
+      const isCurrent = typeof currentVersionCode === 'number' && releaseBuild !== null
+        ? currentVersionCode >= releaseBuild
+        : currentVersion !== 'unknown' && !isNewerVersion(release.version, currentVersion);
+      const buildDisplay = typeof currentVersionCode === 'number' ? ` (Build ${currentVersionCode})` : '';
+      if (isCurrent) {
+        Alert.alert(
+          'BIAP به‌روز است',
+          `نسخه نصب‌شده: ${currentVersion}${buildDisplay}\\nآخرین نسخه رسمی: ${release.version}\\n\\nنیازی به دانلود مجدد نیست.`,
+          [{ text: 'بستن' }],
+        );
         return;
       }
 
       const notes = Array.isArray(release.changes) && release.changes.length
-        ? `\n\nتغییرات:\n• ${release.changes.slice(0, 5).join('\n• ')}`
+        ? `\\n\\nتغییرات:\\n• ${release.changes.slice(0, 5).join('\\n• ')}`
         : '';
-      const unavailable = release.apkAvailable === false ? '\n\nفایل APK هنوز روی سرور انتشار قرار نگرفته است.' : '';
-      const currentBuild = typeof currentVersionCode === 'number' ? ` (build ${currentVersionCode})` : '';
+      if (release.apkAvailable === false) {
+        Alert.alert('به‌روزرسانی BIAP', `نسخه ${release.version} هنوز فایل نصب منتشرشده ندارد.`, [{text: 'باشه'}]);
+        return;
+      }
       Alert.alert(
         'نسخه جدید BIAP',
-        `نسخه نصب‌شده: ${currentVersion}${currentBuild}\nنسخه جدید: ${release.version}${notes}${unavailable}`,
+        `نصب‌شده: ${currentVersion}${buildDisplay}\\nجدید: ${release.version}${notes}\\n\\nصفحه دانلود داخل مرورگر برنامه باز می‌شود؛ نصب را خودتان تأیید می‌کنید.`,
         [
           { text: 'بعداً', style: 'cancel' },
-          ...(release.apkAvailable === false ? [] : [{ text: 'دانلود و نصب', onPress: () => { void openUrl(releaseDownloadUrl(release), 'به‌روزرسانی BIAP'); } }]),
+          { text: 'باز کردن دانلود', onPress: () => { void openUpdateCentre(); } },
         ],
       );
     } catch {
-      Alert.alert('بررسی به‌روزرسانی', 'در حال حاضر ارتباط با مرکز به‌روزرسانی برقرار نشد. کمی بعد دوباره امتحان کنید.');
+      Alert.alert(
+        'بررسی به‌روزرسانی',
+        'اتصال یا بررسی نسخه ناموفق بود. می‌توانید صفحه رسمی دانلود را باز کنید.',
+        [
+          { text: 'بستن', style: 'cancel' },
+          { text: 'مرکز دانلود', onPress: () => { void openUpdateCentre(); } },
+        ],
+      );
+    } finally {
+      clearTimeout(timeout);
     }
   };
 
