@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>BIAP — Intelligence Preview</title>
+<style>
+:root{color-scheme:dark;--bg:#0a0f18;--panel:#111b29;--line:#26364a;--ink:#eef3f9;--muted:#9eaec2;--gold:#edc67c;--aqua:#9de4d8;--warn:#f4b57c}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 78% -5%,#18364a 0%,transparent 44%),radial-gradient(ellipse at 0% 80%,#1d2436 0%,transparent 38%),var(--bg);font-family:Tahoma,Arial,sans-serif;color:var(--ink)}
+.wrap{width:min(1240px,calc(100% - 36px));margin:auto}
+header{border-bottom:1px solid var(--line);background:#09121bc9;position:sticky;top:0;z-index:2;backdrop-filter:blur(16px)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:19px 0}.logo{font-family:Arial,sans-serif;font-size:26px;font-weight:850;letter-spacing:2px;color:var(--gold)}.logo span{display:block;letter-spacing:1.7px;font-size:9px;color:var(--muted);font-weight:600;margin-top:3px}.topright{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.pill{font-size:11px;border:1px solid #426253;background:#14322d;color:#a3f0d5;padding:8px 12px;border-radius:99px}.lang{width:auto;padding:8px 10px}
+main{padding-bottom:56px}h1{font-size:clamp(29px,5vw,57px);line-height:1.22;margin:10px 0 14px;letter-spacing:-1.3px}.eyebrow{color:var(--gold);font-size:11px;letter-spacing:2.7px;font-family:Arial,sans-serif;font-weight:700}p{color:var(--muted);line-height:1.8}.intro{padding:50px 0 24px;max-width:800px}.intro p{font-size:15px}
+.panel{background:linear-gradient(155deg,#142030,#0f1825);border:1px solid var(--line);border-radius:20px;padding:21px;box-shadow:0 14px 45px #0002}
+.formrow{display:grid;grid-template-columns:1fr 1.2fr 1fr 1.7fr auto;gap:11px;align-items:end}.field label{font-size:12px;color:var(--muted);display:block;margin-bottom:8px}input,select,button{font:inherit}input,select{background:#0c1623;color:var(--ink);border:1px solid #35465a;border-radius:11px;padding:12px;outline:none;min-width:0;width:100%}input:focus,select:focus{border-color:var(--gold)}button{border:0;border-radius:11px;padding:13px 18px;cursor:pointer;font-weight:750}.primary{background:var(--gold);color:#11202a}.primary:hover{background:#f7d9a1}button:disabled{opacity:.55;cursor:progress}.helper{font-size:12px;color:var(--muted);margin:12px 0 0}.error{color:#ffb2b2}.result{display:none;padding-top:25px}.result.show{display:block}
+.sectionhead{display:flex;justify-content:space-between;align-items:end;gap:14px;margin:19px 0}.sectionhead h2{margin:0;font-size:24px}.small{font-size:12px;color:var(--muted)}.companyhead{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;margin-bottom:22px}.ticker{border-radius:13px;background:#1a2b39;border:1px solid #344756;padding:12px 16px;font:700 18px Arial;color:var(--gold)}
+.status{display:flex;flex-wrap:wrap;gap:8px}.status span{background:#172737;padding:8px 12px;border:1px solid #345063;border-radius:30px;font:12px Arial}.status .bad{border-color:#7b533f;color:#ffba8f}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.metric{border:1px solid var(--line);background:#111b29aa;border-radius:15px;padding:17px;min-width:0}.metric .k{font-size:12px;color:var(--muted);min-height:34px}.metric .v{font:700 clamp(16px,2vw,25px) Arial;direction:ltr;text-align:right;margin:9px 0;overflow-wrap:anywhere}.metric .meta{font-size:10px;color:#7896ad;word-break:break-word}.metric.unavailable .v{color:#748da3}.split{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;margin-top:15px}.panel h3{font-size:18px;margin:0 0 16px}.kv{display:flex;justify-content:space-between;align-items:start;gap:10px;border-bottom:1px solid #273648;padding:10px 0;font-size:12px}.kv:last-child{border-bottom:0}.kv span:first-child{color:var(--muted)}.kv span:last-child{max-width:70%;text-align:left;direction:ltr;overflow-wrap:anywhere}.notice{background:#221f1d;color:#f0c99e;border:1px solid #655036;border-radius:12px;padding:12px 16px;font-size:12px;line-height:1.9;margin-top:15px}
+.agent{margin:14px 0}.agenttop{display:flex;justify-content:space-between;font:13px Arial;margin-bottom:9px}.track{height:7px;background:#2a3d4e;border-radius:100px;overflow:hidden;direction:ltr}.bar{height:100%;background:linear-gradient(90deg,#73adba,#eed092);border-radius:100px}.agentreason{font-size:11px;color:var(--muted);line-height:1.7;margin-top:6px}
+.analyst{margin-top:28px}.chat{min-height:115px;background:#0b1522;border:1px solid var(--line);border-radius:14px;padding:16px;color:#b5c9d4;font-size:14px;line-height:2;white-space:pre-wrap;overflow-wrap:anywhere}.askrow{display:flex;gap:9px;margin-top:12px}.askrow input{flex:1}.prompts{display:flex;flex-wrap:wrap;gap:7px;margin:13px 0 0}.prompts button{background:#1b2e3c;color:var(--muted);border:1px solid #354758;font-size:12px;padding:8px 11px}
+footer{padding:20px 0;border-top:1px solid var(--line);color:#8799ad;font:11px Arial;line-height:1.8}
+@media(max-width:920px){.formrow{grid-template-columns:repeat(2,minmax(0,1fr))}.formrow button{grid-column:span 2}.cards{grid-template-columns:repeat(3,minmax(0,1fr))}.split{grid-template-columns:1fr}}
+@media(max-width:560px){.intro{padding:34px 0 18px}.formrow{grid-template-columns:1fr}.formrow button{grid-column:span 1}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.split{grid-template-columns:1fr}.panel{padding:15px}.askrow{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><div class="wrap top"><div class="logo">BIAP<span>INTELLIGENCE LAB</span></div><div class="topright"><div class="pill">● READ-ONLY PREVIEW</div><select class="lang" id="lang" aria-label="Language"><option value="fa">فارسی</option><option value="en">English</option></select></div></div></header>
+<main class="wrap">
+<section class="intro"><div class="eyebrow">COMPANY INTELLIGENCE / ANALYST</div><h1>هوشمندی مالی با شواهد واقعی</h1><p>اطلاعات یک شرکت بورسی را از موتور BIAP بررسی کنید، شاخص‌های مالی و وضعیت اعتبار داده‌ها را ببینید و درباره همین شرکت سؤال بپرسید. این نسخه آزمایشی فقط از داده‌های موجود پاسخ می‌دهد و معامله‌ای انجام نمی‌دهد.</p></section>
+<section class="panel"><form id="lookup" class="formrow">
+<div class="field"><label for="country">کشور / Country</label><select id="country"><option value="US">USA</option><option value="SE">Sweden</option><option value="NO">Norway</option><option value="DE">Germany</option><option value="IT">Italy</option><option value="GB">United Kingdom</option><option value="FR">France</option><option value="NL">Netherlands</option><option value="FI">Finland</option><option value="ES">Spain</option></select></div>
+<div class="field"><label for="exchange">بورس / Exchange</label><input id="exchange" required maxlength="64" value="NASDAQ"></div>
+<div class="field"><label for="ticker">نماد / Ticker</label><input id="ticker" required maxlength="64" value="AAPL"></div>
+<div class="field"><label for="name">نام شرکت (اختیاری)</label><input id="name" maxlength="200" placeholder="Company name"></div>
+<button class="primary" id="load" type="submit">تحلیل شرکت</button>
+</form><p class="helper" id="hint">نماد باید در فهرست معتبر بورس انتخاب‌شده وجود داشته باشد. بارگذاری ممکن است به منابع آنلاین وابسته باشد.</p></section>
+<section class="result" id="result">
+<div class="companyhead sectionhead"><div><div class="eyebrow">VERIFIED SOURCES · EXPLICIT LIMITATIONS</div><h2 id="companyName" style="margin-top:10px">—</h2><div class="small" id="identity">—</div></div><div class="ticker" id="tickerBadge">—</div></div>
+<div class="status" id="status"></div>
+<div class="sectionhead"><h2>شاخص‌های شرکت</h2><span class="small">فقط مقادیر موجود در خروجی BIAP</span></div>
+<div class="cards" id="metrics"></div>
+<div class="split">
+<div class="panel"><h3>اعتبار داده‌ها و منابع</h3><div id="evidenceFacts"></div><div id="sourceBlock"></div></div>
+<div class="panel"><h3>عوامل تحلیلی</h3><div id="agents"></div></div>
+</div>
+<div class="notice" id="limitations">اطلاعات رسمی در سطح گزارش ارزیابی می‌شود؛ این موضوع به معنی تأیید مستقل تک‌تک ارقام نیست.</div>
+<section class="panel analyst"><div class="eyebrow">GROUNDED ANALYST · NO LLM</div><h3 style="margin-top:10px">از BIAP بپرسید</h3><div class="chat" id="answer">پرسش درباره درآمد، سود، بدهی، جریان نقدی، ریسک، ارزش‌گذاری و منابع پشتیبانی می‌شود.</div><div class="askrow"><input id="question" maxlength="500" placeholder="مثلاً: درآمد و بدهی این شرکت چقدر است؟"><button class="primary" id="ask">پرسش</button></div><div class="prompts" id="prompts"><button type="button" data-q="درآمد این شرکت چقدر است؟">درآمد</button><button type="button" data-q="وضعیت بدهی چیست؟">بدهی</button><button type="button" data-q="ریسک این شرکت چیست؟">ریسک</button><button type="button" data-q="منبع داده چیست؟">منابع</button></div></section>
+</section>
+</main>
+<footer><div class="wrap">BIAP GLOBAL · Research preview only · Original agent decisions, frozen portfolios and Iran production remain unchanged. Financial figures may include provider supplements; inspect source and reporting dates.</div></footer>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const exchanges={US:"NASDAQ",SE:"NASDAQ_STOCKHOLM",NO:"OSLO_BORS",DE:"XETRA",IT:"BORSA_ITALIANA",GB:"LSE",FR:"EURONEXT_PARIS",NL:"EURONEXT_AMSTERDAM",FI:"NASDAQ_HELSINKI",ES:"BME"};
+let current=null, instrument=null, busy=false;
+const fmt=(n,u)=>n===null||n===undefined?"—":new Intl.NumberFormat("en-US",{maximumFractionDigits:3}).format(n)+(u?" "+u:"");
+function node(tag,text,cls){const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n}
+function clear(el){el.replaceChildren()}
+function line(parent,label,value){const div=node("div",undefined,"kv");div.append(node("span",label),node("span",value===undefined||value===null?"—":value));parent.appendChild(div)}
+function pill(parent,text,bad){const s=node("span",text,bad?"bad":"");parent.append(s)}
+function show(data){
+current=data;const id=data.identity||{}, ev=data.evidence||{}, dec=data.decision||{};
+$("result").classList.add("show");$("companyName").textContent=id.name||id.ticker||"—";
+$("identity").textContent=[id.country,id.exchange,id.isin].filter(Boolean).join(" / ");
+$("tickerBadge").textContent=id.ticker||"—";
+clear($("status"));pill($("status"),"Evidence: "+(ev.status||"UNKNOWN"),ev.status!=="PASS");pill($("status"),"Official: "+(ev.officialStatus||"UNKNOWN"),ev.officialStatus!=="OFFICIAL_CURRENT");pill($("status"),"BIAP: "+(dec.existingCall||"NO_RECOMMENDATION"),false);
+clear($("metrics"));
+for(const m of data.metrics||[]){const card=node("article",undefined,"metric"+(m.available?"":" unavailable"));card.append(node("div",m.labelFa+" / "+m.labelEn,"k"),node("div",fmt(m.value,m.unit),"v"),node("div",m.scope==="fundamental"?"Filing "+(m.asOf||"unknown"):"Market "+(m.asOf||"unknown"),"meta"));$("metrics").append(card)}
+clear($("evidenceFacts"));line($("evidenceFacts"),"دوره گزارش",ev.reportPeriod);line($("evidenceFacts"),"زمان قیمت",ev.priceObservedAt);line($("evidenceFacts"),"اعتبار گزارش",ev.officialStatus);line($("evidenceFacts"),"وضعیت حسابرسی",ev.auditStatus);line($("evidenceFacts"),"عامل منبع",ev.sourceProvider);line($("evidenceFacts"),"کمبودهای بحرانی",(ev.missingCritical||[]).join("، ")||"—");
+clear($("sourceBlock"));if(ev.sourceUrl&&/^https?:\/\//i.test(ev.sourceUrl)){const a=node("a","مشاهده منبع رسمی یا ارائه‌شده");a.href=ev.sourceUrl;a.target="_blank";a.rel="noopener noreferrer";a.style.cssText="display:inline-block;margin-top:13px;color:#edc67c;font-size:13px";$("sourceBlock").append(a)}
+clear($("agents"));const agents=(data.agentSignals||[]);if(!agents.length)$("agents").append(node("p","سیگنال عاملی موجود نیست"));
+for(const agent of agents){const section=node("div",undefined,"agent");const top=node("div",undefined,"agenttop");top.append(node("span",agent.agent||"Agent"),node("span",fmt(agent.vote,"vote")));section.append(top);const track=node("div",undefined,"track"),bar=node("div",undefined,"bar");bar.style.width=(Math.max(0,Math.min(1,(Number(agent.vote||0)+1)/2))*100)+"%";track.append(bar);section.append(track,node("div",agent.reasoning||"","agentreason"));$("agents").append(section)}
+$("limitations").textContent=[...(data.limitations||[]),...(ev.limitations||[])].join(" · ");
+$("answer").textContent="اکنون می‌توانید درباره شرکت انتخاب‌شده سؤال بپرسید.";
+}
+function getInstrument(){return {country:$("country").value,exchange:$("exchange").value.trim(),ticker:$("ticker").value.trim().toUpperCase(),...($("name").value.trim()?{name:$("name").value.trim()}:{})}}
+async function post(path,payload){const r=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});if(!r.ok){let err;try{err=await r.json()}catch{}throw Error(typeof err?.detail==="string"?err.detail:"HTTP "+r.status)}return r.json()}
+$("country").addEventListener("change",()=>{$("exchange").value=exchanges[$("country").value]||""});
+$("lookup").addEventListener("submit",async e=>{e.preventDefault();if(busy)return;busy=true;$("load").disabled=true;$("hint").classList.remove("error");$("hint").textContent="در حال دریافت تحلیل واقعی…";try{const input=getInstrument();const dashboard=await post("dashboard",input);instrument=input;show(dashboard);$("hint").textContent="تحلیل دریافت شد. دوره گزارش و وضعیت شواهد را بررسی کنید.";$("result").scrollIntoView({behavior:"smooth",block:"start"})}catch(err){$("hint").textContent="خطا: "+err.message;$("hint").classList.add("error")}finally{busy=false;$("load").disabled=false}});
+async function ask(){if(!instrument||busy)return;const q=$("question").value.trim();if(q.length<3){$("answer").textContent="سؤال باید حداقل سه حرف باشد.";return}busy=true;$("ask").disabled=true;$("answer").textContent="در حال بررسی داده‌های BIAP…";try{const result=await post("ask",{instrument,question:q,language:$("lang").value});$("answer").textContent=result.answer}catch(err){$("answer").textContent="خطا: "+err.message}finally{busy=false;$("ask").disabled=false}}
+$("ask").addEventListener("click",ask);$("question").addEventListener("keydown",e=>{if(e.key==="Enter")ask()});$("prompts").addEventListener("click",e=>{const q=e.target.closest("[data-q]")?.dataset.q;if(q){$("question").value=q;ask()}});
+})();
+</script>
+</body></html>
