@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, useColorScheme, SafeAreaView, Pressable, Alert, Linking } from 'react-native';
+import { useRef } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
@@ -76,12 +77,15 @@ async function openUpdateCentre() {
 
 export default function MoreScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light'; const colors = Colors[scheme]; const logout = useLogout();
+  const updateCheckBusy = useRef(false);
   const currentVersion = Constants.expoConfig?.version || 'unknown';
   const currentVersionCode = Constants.platform?.android?.versionCode ?? null;
   const openModules = () => router.push('/modules' as never);
   const handleLogout = () => { Alert.alert('خروج از حساب', 'آیا مطمئن هستید که می‌خواهید خارج شوید؟', [{ text: 'انصراف', style: 'cancel' }, { text: 'خروج', style: 'destructive', onPress: async () => { await logoutAndClearAuthSession(); logout(); } }]); };
 
   const checkForUpdate = async () => {
+    if (updateCheckBusy.current) return;
+    updateCheckBusy.current = true;
     // The release service may respond slowly. Keep the app usable, and
     // never launch an Android installer merely by checking for updates.
     const controller = new AbortController();
@@ -137,6 +141,7 @@ export default function MoreScreen() {
       );
     } finally {
       clearTimeout(timeout);
+      updateCheckBusy.current = false;
     }
   };
 
