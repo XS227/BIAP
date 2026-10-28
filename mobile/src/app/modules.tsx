@@ -6,7 +6,7 @@ import { getBusinessDataset } from '@/lib/business-data';
 import { getDemoMode, setDemoMode } from '@/lib/demo-mode';
 import { getSelectedListedCompany, ListedCompanySummary } from '@/lib/listed-company-selection';
 
-type ModuleItem = { key: string; title: string; subtitle: string; icon: string; href?: '/market' | '/portfolio' | '/kiasha' };
+type ModuleItem = { key: string; title: string; subtitle: string; icon: string; href?: '/market' | '/portfolio' | '/kiasha' | '/intelligence' };
 type ModuleGroup = { key: string; title: string; accent: string; items: ModuleItem[] };
 
 const GROUPS: ModuleGroup[] = [
@@ -27,6 +27,7 @@ const GROUPS: ModuleGroup[] = [
   { key: 'kpi', title: 'KPI و داشبورد', accent: Brand.primary, items: [
     { key: 'kpi-extract', title: 'استخراج KPI', subtitle: 'KPI عمومی از Tindex/TSETMC/CODAL', icon: '🎯' },
     { key: 'dashboard', title: 'BI Dashboard', subtitle: 'داشبورد مدیریتی', icon: '📊' },
+    { key: 'intelligence', title: 'هوشمندی مالی شرکت‌ها', subtitle: 'تحلیل KPI، کدال، بازار و پرسش از داده با کیا‌شا', icon: '🔎', href: '/intelligence' },
     { key: 'governance', title: 'KPI Governance', subtitle: 'مالک، هدف و چرخه شاخص', icon: '📏' },
     { key: 'report', title: 'گزارش تحلیلی', subtitle: 'خلاصه قابل ارائه', icon: '📋' },
   ]},
