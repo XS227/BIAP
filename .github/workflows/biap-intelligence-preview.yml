@@ -49,6 +49,7 @@ jobs:
         run: |
           npm run test:api
           node --experimental-strip-types --no-warnings --test tests/intelligence-summary.test.mjs
+          node --test tests/global-intelligence-english.test.mjs
       - name: Isolate preview Android app package (side-by-side install)
         run: |
           node <<'NODE'
