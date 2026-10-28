@@ -1,0 +1,37 @@
+name: Iran safe-update UI validation
+on:
+  push:
+    branches:
+      - fix/biap-iran-update-browser-20261029
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/biap-iran-update-ui-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - name: No changes to scoring or trading logic
+        run: |
+          git diff --name-only origin/main...HEAD | tee /tmp/changed
+          grep -Eq '^mobile/src/app/more.tsx$' /tmp/changed
+          if grep -E '^(analysis/|research/|mobile/src/lib/api.ts|mobile/src/lib/kiasha|mobile/src/lib/orders)' /tmp/changed; then
+            echo "Unexpected scoring or server file changed"
+            exit 1
+          fi
