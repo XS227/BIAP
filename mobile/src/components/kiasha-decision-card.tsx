@@ -40,7 +40,7 @@ export function KiashaDecisionCard({ rec, colors, demo }: { rec: Recommendation;
     return () => { active = false; };
   }, [demo, rec.code]);
 
-  const evidenceBlocked = rec.evidenceReview?.actionable === false;
+  const evidenceBlocked = rec.evidenceReview?.actionable !== true;
   const decision = evidenceBlocked
     ? { title: 'کیاشا: شواهد مالی کافی نیست', action: 'DATA HOLD', color: Brand.warning, detail: 'این امتیاز فقط توصیفی است. تا تأیید گزارش کدال، توصیه خرید یا فروش ارائه نمی‌شود.' }
     : rec.call === 'BUY'
