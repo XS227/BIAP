@@ -11,3 +11,14 @@ test('BIAP Global new Intelligence UI contains no Persian/Arabic text', () => {
   assert.equal(cta, '🔎 Open Company Intelligence');
   assert.doesNotMatch(cta, /[\u0600-\u06FF]/u);
 });
+
+test('Global More description and web navigation never offer Persian-language UI', () => {
+  const more = readFileSync(new URL('../src/app/more.tsx', import.meta.url), 'utf8');
+  const webNav = readFileSync(new URL('../src/components/app-tabs.web.tsx', import.meta.url), 'utf8');
+  assert.match(more, /English-language analyst for the selected stock/);
+  assert.doesNotMatch(more, /FA\\/EN|[\\u0600-\\u06FF]/u);
+  assert.doesNotMatch(webNav, /[\\u0600-\\u06FF]/u);
+  for (const label of ['Home', 'Market', 'Orders', 'Portfolio', 'Kiasha', 'More']) {
+    assert.ok(webNav.includes('>' + label + '</TabButton>'), 'Missing English tab ' + label);
+  }
+});
