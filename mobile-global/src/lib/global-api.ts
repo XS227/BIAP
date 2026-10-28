@@ -142,6 +142,7 @@ export type GlobalGovernance = {
 };
 
 export type GlobalCompanyData = GlobalInstrument & {
+  reporting_currency?: string | null;
   price?: number | null;
   price_observed_at?: string | null;
   previous_close?: number | null;
