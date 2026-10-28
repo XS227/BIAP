@@ -115,3 +115,24 @@ def test_market_cache_refuses_unverified_price_snapshot(tmp_path):
     provider = PersistentMarketProvider(BadMarket(), data_dir=str(tmp_path), fresh_hours=0)
     with pytest.raises(GlobalProviderError):
         provider.enrich_market(seed())
+
+
+def test_online_first_refresh_returns_fresh_price_not_stale_disk_snapshot(tmp_path, monkeypatch):
+    """Online-first memoises the write; the refresh must still return the new upstream price, not the old on-disk one."""
+    import json
+    from datetime import timedelta
+    provider = PersistentMarketProvider(FakeMarket(), data_dir=str(tmp_path), fresh_hours=6)
+    company = seed()
+    path = provider._path(company)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    old = (datetime.now(timezone.utc) - timedelta(days=9)).isoformat()
+    path.write_text(json.dumps({
+        "schemaVersion": 1, "identity": {"country": "US", "exchange": "NASDAQ", "mic_code": "XNAS", "ticker": "TEST"},
+        "provider": "fake-market", "fetchedAt": old,
+        "market": {"price": 1.0, "price_observed_at": old, "currency": "USD"}, "raw_provider_fields": {}, "sources": [],
+    }), encoding="utf-8")
+    monkeypatch.setenv("BIAP_GLOBAL_ONLINE_FIRST", "1")
+    result = provider.enrich_market(company)
+    assert result.price == 123.45
+    assert result.price_observed_at > old
+    assert json.loads(path.read_text())["market"]["price"] == 1.0  # nothing new written to disk
