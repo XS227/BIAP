@@ -29,6 +29,7 @@ export default function AppTabs({ onLogout }: Props) {
         <Tabs.Screen name="more" options={{ title: 'بیشتر', tabBarActiveTintColor: colors.text, tabBarIcon: ({ size }) => <TabIcon symbol="☰" size={size} /> }} />
 
         {/* Reachable by navigation, hidden from the footer */}
+        <Tabs.Screen name="intelligence" options={{ href: null }} />
         <Tabs.Screen name="orders" options={{ href: null }} />
         <Tabs.Screen name="portfolio" options={{ href: null }} />
         <Tabs.Screen name="favorites" options={{ href: null }} />
