@@ -14,11 +14,11 @@ import {
 } from '@/lib/intelligence-summary';
 
 const PROMPTS = [
-  { fa: 'درآمد شرکت', en: 'Revenue', question: 'درآمد شرکت چقدر است؟' },
-  { fa: 'سودآوری', en: 'Profit', question: 'سود خالص چقدر است؟' },
-  { fa: 'بدهی', en: 'Debt', question: 'بدهی شرکت چقدر است؟' },
-  { fa: 'ریسک', en: 'Risk', question: 'ریسک شرکت چقدر است؟' },
-  { fa: 'منابع', en: 'Sources', question: 'منابع گزارش چیست؟' },
+  { label: 'Revenue', question: 'What is the revenue?' },
+  { label: 'Profit', question: 'What is the net income?' },
+  { label: 'Debt', question: 'What is the debt?' },
+  { label: 'Risk', question: 'What is the risk?' },
+  { label: 'Sources', question: 'What is the evidence source?' },
 ];
 
 export default function IntelligenceScreen() {
@@ -29,7 +29,6 @@ export default function IntelligenceScreen() {
   const [error, setError] = useState('');
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState<IntelligenceAnswer | null>(null);
-  const [language, setLanguage] = useState<'fa' | 'en'>('fa');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,7 +69,7 @@ export default function IntelligenceScreen() {
     const q = String(value ?? question).trim().slice(0, 500);
     if (q.length < 3) return;
     setQuestion(q);
-    setAnswer(answerIntelligenceQuestion(analysis, q, language));
+    setAnswer(answerIntelligenceQuestion(analysis, q, 'en'));
   };
 
   const evidenceTone = evidence?.status === 'PASS' ? Brand.positive
@@ -84,34 +83,34 @@ export default function IntelligenceScreen() {
         <View style={styles.max}>
           <View style={styles.header}>
             <Text style={styles.kicker}>BIAP / COMPANY INTELLIGENCE</Text>
-            <Text style={[styles.title, { color: colors.text }]}>داشبورد هوشمند شرکت</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Company Intelligence Dashboard</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              تحلیل مستند با همان موتور BIAP Global — بدون تغییر در تصمیم‌های سرمایه‌گذاری
+              Evidence-aware company analysis powered by the existing BIAP Global engine. Original investment decisions remain unchanged.
             </Text>
           </View>
 
           <View style={[styles.hero, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
             <View style={styles.heroTop}>
-              <Text style={[styles.heroTitle, { color: colors.text }]}>{selected?.name || 'هنوز شرکتی انتخاب نشده'}</Text>
+              <Text style={[styles.heroTitle, { color: colors.text }]}>{selected?.name || 'No company selected'}</Text>
               {selected ? <Text style={styles.ticker}>{selected.ticker}</Text> : null}
             </View>
             <Text style={[styles.muted, { color: colors.textSecondary }]}>
-              {selected ? `${selected.country} • ${selected.exchange} • ${selected.currency}` : 'برای شروع، یک سهم از بخش Market انتخاب کنید.'}
+              {selected ? `${selected.country} • ${selected.exchange} • ${selected.currency}` : 'Select a listed company in Market to get started.'}
             </Text>
             <View style={styles.actions}>
               <Pressable onPress={() => router.push('/market')} style={[styles.button, { backgroundColor: Brand.primary }]}>
-                <Text style={styles.buttonText}>{selected ? 'تغییر شرکت' : 'انتخاب شرکت'}</Text>
+                <Text style={styles.buttonText}>{selected ? 'Change company' : 'Select company'}</Text>
               </Pressable>
               {selected ? <Pressable onPress={() => { void load(); }} disabled={loading} style={[styles.button, { borderColor: Brand.primary, borderWidth: 1 }]}>
-                <Text style={[styles.buttonText, { color: Brand.primary }]}>بروزرسانی تحلیل</Text>
+                <Text style={[styles.buttonText, { color: Brand.primary }]}>Refresh analysis</Text>
               </Pressable> : null}
             </View>
           </View>
 
           {loading ? <View style={styles.loading}><ActivityIndicator color={Brand.primary} size="large" />
-            <Text style={[styles.muted, { color: colors.textSecondary }]}>در حال بررسی داده‌ها و عوامل تحلیل BIAP…</Text>
+            <Text style={[styles.muted, { color: colors.textSecondary }]}>Loading BIAP market, filing and agent signals…</Text>
           </View> : null}
-          {error ? <View style={[styles.notice, { borderColor: Brand.negative }]}><Text style={{ color: Brand.negative, fontFamily: Fonts.sans }}>خطا در دریافت داده واقعی: {error}</Text></View> : null}
+          {error ? <View style={[styles.notice, { borderColor: Brand.negative }]}><Text style={{ color: Brand.negative, fontFamily: Fonts.sans }}>Data request failed: {error}</Text></View> : null}
 
           {analysis && !loading ? <>
             <View style={styles.statusRow}>
@@ -125,11 +124,11 @@ export default function IntelligenceScreen() {
               </View>
             </View>
 
-            <Text style={[styles.heading, { color: colors.text }]}>عملکرد مالی و بازار</Text>
+            <Text style={[styles.heading, { color: colors.text }]}>Company financials & market data</Text>
             <View style={styles.grid}>
               {metrics.map((metric) => (
                 <View key={metric.key} style={[styles.metric, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
-                  <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{language === 'fa' ? metric.fa : metric.en}</Text>
+                  <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{metric.en}</Text>
                   <Text style={[styles.metricValue, { color: metric.value === null ? colors.textSecondary : colors.text }]} adjustsFontSizeToFit numberOfLines={2}>
                     {formatIntelligenceMetric(metric)}
                   </Text>
@@ -141,22 +140,22 @@ export default function IntelligenceScreen() {
             </View>
 
             <View style={[styles.notice, { borderColor: Brand.warning }]}>
-              <Text style={[styles.noticeTitle, { color: Brand.warning }]}>توجه به کیفیت ارقام</Text>
+              <Text style={[styles.noticeTitle, { color: Brand.warning }]}>Data quality notice</Text>
               <Text style={[styles.noticeText, { color: colors.textSecondary }]}>
-                وجود یک گزارش رسمی، صحت مستقل تک‌تک فیلدها را ثابت نمی‌کند. داده‌های نرمال‌شده ممکن است شامل اطلاعات مکمل فروشنده باشند. خط تیره یعنی داده موجود نیست؛ صفر فرض نمی‌شود.
+                An official filing does not verify each displayed metric. Normalized data may include vendor-supplied fields. Missing values are not assumed to be zero.
               </Text>
             </View>
 
-            <Text style={[styles.heading, { color: colors.text }]}>اعتبار داده و منابع</Text>
+            <Text style={[styles.heading, { color: colors.text }]}>Evidence & source provenance</Text>
             <View style={[styles.panel, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
-              <Info label="وضعیت گزارش" value={filing?.officialStatus || 'UNKNOWN'} colors={colors} />
-              <Info label="پایان دوره مالی" value={filing?.reportPeriod || 'نامشخص'} colors={colors} />
-              <Info label="زمان ثبت قیمت" value={analysis.company?.price_observed_at || 'نامشخص'} colors={colors} />
-              <Info label="تازگی گزارش" value={filing?.freshnessTier || 'نامشخص'} colors={colors} />
-              <Info label="منبع" value={filing?.sourceProvider || 'نامشخص'} colors={colors} />
-              <Info label="کمبود داده" value={evidence?.missing_critical?.join('، ') || '—'} colors={colors} />
+              <Info label="Filing status" value={filing?.officialStatus || 'UNKNOWN'} colors={colors} />
+              <Info label="Financial period end" value={filing?.reportPeriod || 'Unknown'} colors={colors} />
+              <Info label="Price observed at" value={analysis.company?.price_observed_at || 'Unknown'} colors={colors} />
+              <Info label="Filing freshness" value={filing?.freshnessTier || 'Unknown'} colors={colors} />
+              <Info label="Provider" value={filing?.sourceProvider || 'Unknown'} colors={colors} />
+              <Info label="Missing critical fields" value={evidence?.missing_critical?.join(', ') || '—'} colors={colors} />
               {sourceUrl ? <Pressable onPress={() => { void Linking.openURL(sourceUrl); }} style={styles.sourceButton}>
-                <Text style={[styles.sourceText, { color: Brand.primary }]}>مشاهده سند منبع ↗</Text>
+                <Text style={[styles.sourceText, { color: Brand.primary }]}>Open source document ↗</Text>
               </Pressable> : null}
               {(filing?.limitations || []).slice(0, 3).map((text, index) =>
                 <Text key={index} style={[styles.limitation, { color: colors.textSecondary }]}>• {text}</Text>
@@ -176,35 +175,31 @@ export default function IntelligenceScreen() {
                   <Text style={[styles.muted, { color: colors.textSecondary }]}>{signal.reasoning || 'No verified signal explanation'}</Text>
                 </View>
               ))}
-              {!(analysis.signals || []).length ? <Text style={{ color: colors.textSecondary }}>سیگنال قابل نمایش موجود نیست.</Text> : null}
+              {!(analysis.signals || []).length ? <Text style={{ color: colors.textSecondary }}>No agent signals available.</Text> : null}
             </View>
 
             <View style={[styles.panel, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected, marginTop: 16 }]}>
               <Text style={styles.kicker}>BIAP ANALYST · GROUNDED PREVIEW</Text>
-              <Text style={[styles.heading, { color: colors.text, marginTop: 5 }]}>از اطلاعات همین شرکت بپرسید</Text>
-              <Text style={[styles.muted, { color: colors.textSecondary }]}>نسخه اولیه مبتنی بر قواعد است؛ هنوز گفت‌وگوی آزاد LLM نیست.</Text>
-              <View style={styles.languageRow}>
-                <Pressable onPress={() => { setLanguage('fa'); setAnswer(null); }} style={[styles.langPill, { backgroundColor: language === 'fa' ? Brand.primary : colors.backgroundSelected }]}><Text style={styles.langText}>فارسی</Text></Pressable>
-                <Pressable onPress={() => { setLanguage('en'); setAnswer(null); }} style={[styles.langPill, { backgroundColor: language === 'en' ? Brand.primary : colors.backgroundSelected }]}><Text style={styles.langText}>English</Text></Pressable>
-              </View>
+              <Text style={[styles.heading, { color: colors.text, marginTop: 5 }]}>Ask about this company</Text>
+              <Text style={[styles.muted, { color: colors.textSecondary }]}>This initial preview uses grounded rules over existing data. It is not unrestricted AI chat.</Text>
               <View style={styles.prompts}>
-                {PROMPTS.map((p) => <Pressable key={p.en} onPress={() => ask(language === 'en' ? p.en : p.question)} style={[styles.prompt, { borderColor: colors.backgroundSelected }]}>
-                  <Text style={[styles.promptText, { color: colors.textSecondary }]}>{language === 'fa' ? p.fa : p.en}</Text>
+                {PROMPTS.map((p) => <Pressable key={p.label} onPress={() => ask(p.question)} style={[styles.prompt, { borderColor: colors.backgroundSelected }]}>
+                  <Text style={[styles.promptText, { color: colors.textSecondary }]}>{p.label}</Text>
                 </Pressable>)}
               </View>
               <TextInput
                 value={question} onChangeText={setQuestion}
-                placeholder={language === 'fa' ? 'مثلاً: درآمد شرکت چقدر است؟' : 'e.g. What is the revenue?'}
+                placeholder="e.g. What is the revenue?"
                 placeholderTextColor={colors.textSecondary}
-                textAlign={language === 'fa' ? 'right' : 'left'} maxLength={500}
+                textAlign="left" maxLength={500}
                 style={[styles.input, { color: colors.text, borderColor: colors.backgroundSelected, backgroundColor: colors.background }]}
                 onSubmitEditing={() => ask()} returnKeyType="send"
               />
               <Pressable onPress={() => ask()} disabled={question.trim().length < 3} style={[styles.button, { backgroundColor: Brand.primary, marginTop: 10, opacity: question.trim().length < 3 ? .5 : 1 }]}>
-                <Text style={styles.buttonText}>تحلیل پرسش</Text>
+                <Text style={styles.buttonText}>Analyze question</Text>
               </Pressable>
               {answer ? <View style={[styles.answer, { backgroundColor: colors.background, borderColor: colors.backgroundSelected }]}>
-                <Text style={[styles.answerText, { color: colors.text, textAlign: language === 'fa' ? 'right' : 'left' }]}>{answer.answer}</Text>
+                <Text style={[styles.answerText, { color: colors.text, textAlign: 'left' }]}>{answer.answer}</Text>
               </View> : null}
             </View>
             <Text style={[styles.footer, { color: colors.textSecondary }]}>
