@@ -11,6 +11,7 @@ const shortcuts=[
   ['🧠','Kiasha','Evidence-gated ranked stock ideas','/kiasha'],
   ['💼','Portfolio','Compare markets and build a global paper portfolio','/portfolio'],
   ['🧩','Modules','KPI, data, business and financial modules','/modules'],
+  ['🔎','Intelligence','Company KPIs, evidence and grounded analyst','/intelligence'],
 ] as const;
 
 export default function HomeScreen(){
