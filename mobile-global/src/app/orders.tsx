@@ -66,6 +66,8 @@ export default function GlobalExecutionScreen(){
         <Text style={[styles.partnerName,{color:colors.text}]}>{broker.name}</Text>
         <Text style={[styles.partnerMeta,{color:Brand.warning}]}>NOT CONNECTED · APPLICATION / APPROVAL REQUIRED</Text>
         <Text style={[styles.body,{color:colors.textSecondary}]}>{broker.marketScope}</Text>
+        <Text style={[styles.body,{color:colors.textSecondary}]}>Norway resident: open the provider website to sign up or sign in. BIAP never asks for your brokerage password. Account access and trading permissions remain subject to provider approval.</Text>
+        <Pressable accessibilityRole="link" onPress={()=>void Linking.openURL(broker.accountUrl)} style={[styles.secondary,{borderColor:Brand.primary}]}><Text style={styles.secondaryText}>Open official brokerage website ↗</Text></Pressable>
         <Pressable accessibilityRole="link" onPress={()=>void Linking.openURL(broker.onboardingDocs)}><Text style={[styles.partnerLink,{color:Brand.primary}]}>Official API partnership requirements ↗</Text></Pressable>
       </View>)}
     </View>

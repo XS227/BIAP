@@ -31,6 +31,7 @@ export default function MoreScreen(){
     {icon:'🔌',title:'Private Data Connections',sub:'CSV/Excel and company data for CRM, pricing, journey, unit economics and internal KPIs.',onPress:()=>router.push('/data-connect' as never),accent:Brand.dataViolet},
     {icon:'💼',title:'Portfolio Agent',sub:'Capital, FX, cash reserve, risk tolerance and concentration-aware allocation.',onPress:()=>router.push('/portfolio'),accent:Brand.secondary},
     {icon:'🧠',title:'Kiasha',sub:'Evidence-gated market scan and ranked stock ideas for the selected market.',onPress:()=>router.push('/kiasha'),accent:'#7c3aed'},
+    {icon:'🏦',title:'International Brokerages',sub:'Open official Interactive Brokers, Saxo Bank and Alpaca websites. Account verification happens with each broker.',onPress:()=>router.push('/orders'),accent:Brand.positive},
     {icon:'🧾',title:'Orders / Execution',sub:'Paper-first execution area. Global live brokerage remains disabled until a broker adapter is approved.',onPress:()=>router.push('/orders'),accent:Brand.warning},
     {icon:'👤',title:'Profile & Settings',sub:'Account and app settings.',onPress:()=>router.push('/profile'),accent:'#64748b'},
     {icon:'🔄',title:'Check for updates',sub:`Installed version ${version}. Download the newest BIAP Global APK.`,onPress:()=>{void checkForUpdateInteractive();},accent:Brand.primary},
