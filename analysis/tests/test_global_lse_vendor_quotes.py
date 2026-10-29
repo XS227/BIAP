@@ -55,6 +55,7 @@ def test_yahoo_quotes_are_labelled_vendor_not_official_and_scaled_to_gbp():
     assert q["priceSource"] == VENDOR_LABEL == "vendor: Yahoo Finance"
     assert q["provider"] == "yahoo-public-chart" and "official" not in q["provider"]
     assert q["quoteDate"] == datetime.fromtimestamp(_ts(1), tz=timezone.utc).date().isoformat()
+    assert q["quoteDateBasis"] == "verified_completed_bar"
     assert label.startswith("vendor: Yahoo Finance") and "official" in label and "unavailable" in label
 
 
@@ -92,3 +93,50 @@ def test_freshness_cap_accepts_recent_vendor_close_and_rejects_old_one():
     stale_reason = "priceAgeDays=9.0; fundamentalPeriodAgeDays=100"      # analysis-time price age already > 7d
     assert effective_evidence_status("PASS", stale_reason, analysed, quote_observed=by["BA."]["quoteDate"]) == "PASS"
     assert effective_evidence_status("PASS", stale_reason, analysed, quote_observed=by["OLD"]["quoteDate"]) == "BLOCK"
+
+
+def test_verified_gb_daily_close_takes_priority_over_stale_market_cache(tmp_path):
+    from global_markets.cached_market import PersistentMarketProvider
+    from global_markets.scanner import GlobalMarketScanner
+
+    fake = FakeYahoo({"BA.L": _payload(_ts(1))})
+    quotes, _, _ = yahoo_batch_quotes([_company("BA.")], SPEC, reason="x", provider=fake)
+    seed = GlobalMarketScanner._seed_screening_quote(_company("BA."), quotes[0])
+    assert seed.raw_provider_fields["stage_one_quote_date_basis"] == "verified_completed_bar"
+    assert seed.price == pytest.approx(12.5)
+    cache = {"fetchedAt": (datetime.now(timezone.utc)-timedelta(days=2)).isoformat(),
+             "provider": "yahoo-public-chart-global",
+             "market": {"price": 11.0, "currency": "GBP",
+                        "price_observed_at": (datetime.now(timezone.utc)-timedelta(days=12)).isoformat(),
+                        "pe": 17.5}}
+    result = PersistentMarketProvider(None, data_dir=str(tmp_path))._decode(seed, cache, fallback=True)
+    assert result.price == pytest.approx(12.5)
+    assert result.price_observed_at[:10] == quotes[0]["quoteDate"]
+    assert result.pe == pytest.approx(17.5)
+
+
+def test_gb_vendor_quote_does_not_override_newer_market_cache(tmp_path):
+    from global_markets.cached_market import PersistentMarketProvider
+    from global_markets.scanner import GlobalMarketScanner
+
+    quote = {"price": 12.5, "quoteDate": "2026-10-20",
+             "quoteDateBasis": "verified_completed_bar", "provider": "yahoo-public-chart"}
+    seed = GlobalMarketScanner._seed_screening_quote(_company("BA."), quote)
+    cache = {"fetchedAt": "2026-10-22T15:00:00Z", "provider": "yahoo-public-chart-global",
+             "market": {"price": 13.7, "currency": "GBP",
+                        "price_observed_at": "2026-10-22T07:00:00Z"}}
+    result = PersistentMarketProvider(None, data_dir=str(tmp_path))._decode(seed, cache, fallback=False)
+    assert result.price == pytest.approx(13.7)
+
+
+def test_unverified_vendor_date_does_not_override_cache(tmp_path):
+    from global_markets.cached_market import PersistentMarketProvider
+    from global_markets.scanner import GlobalMarketScanner
+
+    quote = {"price": 12.5, "quoteDate": "2026-10-28", "provider": "yahoo-public-chart"}
+    seed = GlobalMarketScanner._seed_screening_quote(_company("BA."), quote)
+    cache = {"fetchedAt": "2026-10-22T15:00:00Z", "provider": "yahoo-public-chart-global",
+             "market": {"price": 11.0, "currency": "GBP",
+                        "price_observed_at": "2026-10-19T07:00:00Z"}}
+    result = PersistentMarketProvider(None, data_dir=str(tmp_path))._decode(seed, cache, fallback=False)
+    assert result.price == pytest.approx(11.0)

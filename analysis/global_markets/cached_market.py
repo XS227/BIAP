@@ -155,7 +155,17 @@ class PersistentMarketProvider(MarketDataProvider):
         # price: a stored snapshot (even one still inside the freshness window) must not roll the price back.
         # The session quote is stamped at midnight UTC, so compare calendar dates, not instants: a same-day
         # intraday cache timestamp (e.g. 07:00Z) is not newer than that day's completed-session quote.
-        if (seed.raw_provider_fields.get("stage_one_quote_date_basis") == "last_completed_session"
+        # A venue-completed session date OR a verified GB vendor close can be newer than a cached
+        # market snapshot. Undated Nordic screener rows and arbitrary vendor quotes are not eligible:
+        # neither a page fetch time nor a guessed trading session establishes a fresh transaction.
+        basis = seed.raw_provider_fields.get("stage_one_quote_date_basis")
+        verified_gb_vendor_close = (
+            basis == "verified_completed_bar"
+            and seed.country.upper() == "GB"
+            and seed.exchange.upper() == "LSE"
+            and seed.raw_provider_fields.get("stage_one_market_provider") == "yahoo-public-chart"
+        )
+        if ((basis == "last_completed_session" or verified_gb_vendor_close)
                 and seed.price and seed.price > 0 and seed.price_observed_at):
             seed_at, cached_at = _parse_iso(seed.price_observed_at), _parse_iso(updates.get("price_observed_at"))
             if seed_at is not None and (cached_at is None or seed_at.date() >= cached_at.date()):
