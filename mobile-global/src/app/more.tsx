@@ -25,6 +25,7 @@ export default function MoreScreen(){
   useFocusEffect(useCallback(()=>{Promise.all([getGlobalMarketSelection(),getSelectedGlobalCompany()]).then(([m,c])=>{setMarket(m);setCompany(c)});},[]));
   const version=Constants.expoConfig?.version||'0.1.0';
   const items:Item[]=[
+    ...(__DEV__ ? [{icon:'🧪',title:'Checkpoint 1 • Demo Preview',sub:'Synthetic financials, 6 agents, Kiasha, audit, AI layout and broker choices. No live orders.',onPress:()=>router.push('/checkpoint-demo' as never),accent:'#d97706'}] : []),
     {icon:'🧩',title:'BIAP Modules',sub:'Data, KPI, business development and financial modeling on the same Global issuer schema.',onPress:()=>router.push('/modules'),accent:Brand.primary},
     {icon:'🌍',title:'Country & Exchange',sub:market?`${market.countryName} • ${market.exchangeLabel}`:'Choose the market context used across BIAP.',onPress:()=>router.push('/global'),accent:'#0ea5e9'},
     {icon:'📈',title:'Selected Company',sub:company?`${company.ticker} • ${company.name}`:'Open Market and select a listed company for cross-module analysis.',onPress:()=>router.push('/market'),accent:Brand.positive},
