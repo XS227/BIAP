@@ -1,10 +1,9 @@
-import { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View, ViewStyle } from 'react-native';
-import { useColorScheme } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Animated, StyleSheet, View, type ViewStyle, useColorScheme } from 'react-native';
 import { Colors } from '@/constants/theme';
 
 export function SkeletonBox({ style }: { style?: ViewStyle }) {
-  const opacity = useRef(new Animated.Value(0.3)).current;
+  const [opacity] = useState(() => new Animated.Value(0.3));
 
   useEffect(() => {
     const anim = Animated.loop(
