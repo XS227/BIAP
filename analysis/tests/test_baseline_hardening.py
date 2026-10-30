@@ -377,3 +377,13 @@ def test_new_filings_gives_up_after_the_attempt_limit(monkeypatch):
     with pytest.raises(codal_data.CodalDataUnavailable):
         codal_data.symbols_with_new_financial_filings(datetime.date(2026, 10, 15), sleep=lambda s: None)
     assert len(calls) == 3
+
+
+def test_inbox_backlog_per_run_is_separate_from_live_codal_cap(monkeypatch):
+    import run_listed_company_baseline as runner
+    monkeypatch.setenv("BIAP_LISTED_COMPANY_BACKLOG_PER_RUN", "25")
+    monkeypatch.setenv("BIAP_LISTED_COMPANY_INBOX_BACKLOG_PER_RUN", "150")
+    assert runner._backlog_per_run(True) == 150
+    assert runner._backlog_per_run(False) == 25
+    monkeypatch.delenv("BIAP_LISTED_COMPANY_INBOX_BACKLOG_PER_RUN")
+    assert runner._backlog_per_run(True) == 25

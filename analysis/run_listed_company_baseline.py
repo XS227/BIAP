@@ -72,11 +72,19 @@ def _run_tindex() -> dict | None:
         return {"source": "TIndex", "succeeded": 0, "failed": 0, "rateLimited": 0, "stoppedEarly": f"TIndex unavailable: {reason}"}
 
 
+def _backlog_per_run(inbox_mode: bool) -> int:
+    """Live-CODAL fallback stays at 25 (rate limits); the inbox reads a local export, so it can take more."""
+    live = _env_int("BIAP_LISTED_COMPANY_BACKLOG_PER_RUN", 25, minimum=0, maximum=100)
+    if not inbox_mode:
+        return live
+    return _env_int("BIAP_LISTED_COMPANY_INBOX_BACKLOG_PER_RUN", live, minimum=0, maximum=500)
+
+
 def main() -> int:
     batch_size = _env_int("BIAP_LISTED_COMPANY_DAILY_BASELINE_BATCH", 300)
-    backlog_per_run = _env_int("BIAP_LISTED_COMPANY_BACKLOG_PER_RUN", 25, minimum=0, maximum=100)
     interval = _env_float("BIAP_LISTED_COMPANY_INTERVAL_SECONDS", 5.0)
     inbox_mode = codal_inbox.enabled()
+    backlog_per_run = _backlog_per_run(inbox_mode)
     if inbox_mode:
         interval = 0.0  # CODAL is read from the local Liara export; there is nothing to throttle
     store = ListedCompanyStore()
