@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo } from '../src/lib/checkpoint-demo.ts';
+import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios } from '../src/lib/checkpoint-demo.ts';
 
 test('Global checkpoint preview is explicitly synthetic and never recommends trades', () => {
   const d = GLOBAL_CHECKPOINT_DEMO;
@@ -22,4 +22,14 @@ test('Global audit reports missing financial fields deterministically', () => {
   const audit = auditCheckpointDemo(d);
   assert.deepEqual(audit.missing, ['revenue']);
   assert.equal(audit.checks.find(c => c.key === 'financial_lines')?.passed, false);
+});
+
+test('Global preview never invents agent confidence or verified financial sources', () => {
+  const d = GLOBAL_CHECKPOINT_DEMO;
+  assert.equal(d.financials.source, 'SYNTHETIC');
+  assert.equal(d.financials.lastUpdatedAt, null);
+  assert.ok(d.agents.every(a => a.confidence === null && a.dataStatus === 'SYNTHETIC'));
+  assert.equal(d.kiasha.confidence, null);
+  assert.deepEqual(demoFinancialRatios(d), { netMarginPct: 7, debtToAssetsPct: 40.91 });
+  assert.equal(auditCheckpointDemo(d).checks.find(c => c.key === 'verified_source_and_date')?.passed, false);
 });
