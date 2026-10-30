@@ -1,14 +1,16 @@
-import { ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
-import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios } from '@/lib/checkpoint-demo';
+import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario, type CheckpointScenario } from '@/lib/checkpoint-demo';
 
-const demo = GLOBAL_CHECKPOINT_DEMO;
-const audit = auditCheckpointDemo(demo);
-const ratios = demoFinancialRatios(demo);
 const format = (n: number | null) => n === null ? '—' : n.toLocaleString('en-US');
 
 export default function CheckpointDemoScreen() {
+  const [scenario, setScenario] = useState<CheckpointScenario>('complete');
+  const demo = createCheckpointScenario(GLOBAL_CHECKPOINT_DEMO, scenario);
+  const audit = auditCheckpointDemo(demo);
+  const ratios = demoFinancialRatios(demo);
   const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
   if (!__DEV__) return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, padding: 20 }}><Text style={{ color: colors.text }}>Development preview unavailable.</Text></SafeAreaView>;
   const f = demo.financials;
@@ -16,6 +18,18 @@ export default function CheckpointDemoScreen() {
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={[styles.title, { color: colors.text }]}>BIAP Global • Checkpoint 1 Preview</Text>
       <View style={styles.warning}><Text style={styles.warningText}>SYNTHETIC DEMO ONLY — no real prices, agent decisions or investment advice.</Text></View>
+      <Text style={[styles.caption, { color: colors.textSecondary }]}>Try financial-data failure states</Text>
+      <View style={styles.scenarioRow}>
+        {([
+          { key: 'complete', label: 'Complete sample' },
+          { key: 'missing', label: 'Missing figures' },
+          { key: 'invalid', label: 'Invalid balance' },
+        ] as const).map(option =>
+          <Pressable key={option.key} accessibilityRole="button" onPress={() => setScenario(option.key)}
+            style={[styles.scenarioButton, { borderColor: scenario === option.key ? '#d97706' : '#64748b66' }]}>
+            <Text style={[styles.scenarioLabel, { color: colors.text }]}>{option.label}</Text>
+          </Pressable>)}
+      </View>
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{demo.company} • {demo.symbol}</Text>
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Live data must come from verified sources via the approved proxy.</Text>
       <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
@@ -70,5 +84,8 @@ const styles = StyleSheet.create({
   caption: { fontSize: 12, lineHeight: 19 },
   agent: { paddingVertical: 7, gap: 4, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#64748b55' },
   agentName: { fontSize: 14, fontWeight: '700' },
+  scenarioRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  scenarioButton: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 },
+  scenarioLabel: { fontSize: 11, fontWeight: '700' },
   noTrade: { color: '#b45309', fontSize: 11, fontWeight: '700' },
 });
