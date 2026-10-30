@@ -23,6 +23,7 @@ import json
 import os
 import re
 import sqlite3
+import subprocess
 import threading
 import time
 import zlib
@@ -278,6 +279,24 @@ def compact_row(result: dict, *, status: str, reason: str, source: str, financia
     return row
 
 
+_ENGINE_COMMIT: Optional[str] = None
+
+
+def engine_commit() -> str:
+    """Short git commit of the running engine (BIAP_ENGINE_COMMIT overrides); cached per process."""
+    global _ENGINE_COMMIT
+    if _ENGINE_COMMIT is None:
+        value = os.environ.get("BIAP_ENGINE_COMMIT", "").strip()
+        if not value:
+            try:
+                value = subprocess.run(["git", "-C", str(Path(__file__).resolve().parent), "rev-parse", "--short", "HEAD"],
+                                       capture_output=True, text=True, timeout=5, check=True).stdout.strip()
+            except (OSError, subprocess.SubprocessError):
+                value = ""
+        _ENGINE_COMMIT = value or "unknown"
+    return _ENGINE_COMMIT
+
+
 class AnalysisLedger:
     """SQLite-backed queue/ledger for one (country, exchange) market."""
 
@@ -301,6 +320,18 @@ class AnalysisLedger:
                 );
                 CREATE INDEX IF NOT EXISTS ledger_status ON ledger(status, in_universe, priority DESC);
                 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
+                -- Append-only: every analysis ever recorded for a company.  `ledger` only holds the latest.
+                CREATE TABLE IF NOT EXISTS analysis_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ticker TEXT NOT NULL, analyzed_at TEXT NOT NULL, engine_commit TEXT,
+                    status TEXT, call TEXT, score REAL, confidence REAL,
+                    evidence_status TEXT, evidence TEXT, flags TEXT
+                );
+                CREATE INDEX IF NOT EXISTS analysis_history_ticker ON analysis_history(ticker, analyzed_at);
+                CREATE TRIGGER IF NOT EXISTS analysis_history_no_update BEFORE UPDATE ON analysis_history
+                    BEGIN SELECT RAISE(ABORT, 'analysis_history is append-only'); END;
+                CREATE TRIGGER IF NOT EXISTS analysis_history_no_delete BEFORE DELETE ON analysis_history
+                    BEGIN SELECT RAISE(ABORT, 'analysis_history is append-only'); END;
                 """
             )
 
@@ -544,16 +575,35 @@ class AnalysisLedger:
         financial = financial_completeness(result)
         summary = compact_row(result, status=status, reason=reason, source=source, financial=financial)
         evidence = result.get("evidence") if isinstance(result.get("evidence"), dict) else {}
-        self._conn().execute(
-            "UPDATE ledger SET status=?, reason=?, source=?, attempts=?, last_error=NULL, analyzed_at=?, started_at=NULL, "
-            "call=?, score=?, confidence=?, evidence_status=?, financial_complete=?, financial=?, summary=?, result=? WHERE ticker=?",
-            (
-                status, reason, source, attempts, _now(), result.get("call"), result.get("score"), result.get("confidence"),
-                evidence.get("status"), 1 if financial["complete"] else 0,
-                json.dumps(financial, ensure_ascii=False), json.dumps(summary, ensure_ascii=False, default=str),
-                zlib.compress(json.dumps(result, ensure_ascii=False, default=str).encode("utf-8"), 6), ticker,
-            ),
-        )
+        analyzed_at = _now()
+        conn = self._conn()
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            conn.execute(
+                "INSERT INTO analysis_history(ticker,analyzed_at,engine_commit,status,call,score,confidence,evidence_status,evidence,flags) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?)",
+                (
+                    ticker, analyzed_at, engine_commit(), status, result.get("call"), result.get("score"), result.get("confidence"),
+                    evidence.get("status"), json.dumps(summary.get("evidence"), ensure_ascii=False, default=str),
+                    json.dumps({"reason": reason, "source": source, "attempts": attempts,
+                                "financialComplete": bool(financial["complete"]), "missing": financial.get("missing")},
+                               ensure_ascii=False, default=str),
+                ),
+            )
+            conn.execute(
+                "UPDATE ledger SET status=?, reason=?, source=?, attempts=?, last_error=NULL, analyzed_at=?, started_at=NULL, "
+                "call=?, score=?, confidence=?, evidence_status=?, financial_complete=?, financial=?, summary=?, result=? WHERE ticker=?",
+                (
+                    status, reason, source, attempts, analyzed_at, result.get("call"), result.get("score"), result.get("confidence"),
+                    evidence.get("status"), 1 if financial["complete"] else 0,
+                    json.dumps(financial, ensure_ascii=False), json.dumps(summary, ensure_ascii=False, default=str),
+                    zlib.compress(json.dumps(result, ensure_ascii=False, default=str).encode("utf-8"), 6), ticker,
+                ),
+            )
+            conn.execute("COMMIT")
+        except Exception:
+            conn.execute("ROLLBACK")
+            raise
         return status
 
     def record_error(self, ticker: str, error: str) -> str:

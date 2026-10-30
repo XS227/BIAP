@@ -1,0 +1,11 @@
+[Unit]
+Description=BIAP Global nightly backup, 22:50 UTC (after the price refresh, before the 23:40 snapshot)
+
+[Timer]
+OnCalendar=*-*-* 22:50:00 UTC
+AccuracySec=1s
+Persistent=false
+Unit=biap-global-backup.service
+
+[Install]
+WantedBy=timers.target

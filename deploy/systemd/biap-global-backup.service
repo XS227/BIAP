@@ -1,0 +1,13 @@
+[Unit]
+Description=BIAP Global nightly backup (SQLite online backup + rsync, 7 daily / 4 weekly)
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+Environment=BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global
+ExecStart=/usr/local/bin/biap-global-backup
+SyslogIdentifier=biap-global-backup
+TimeoutStartSec=3000
+Nice=15
+IOSchedulingClass=idle
