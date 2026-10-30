@@ -39,6 +39,16 @@ jobs:
           find /var/www -maxdepth 6 -type f \( -path '*/key/index.html' -o -path '*/key/index.php' \) 2>/dev/null | head -25 || true
           echo "NGINX_ROUTE_HINTS:"
           sudo -n nginx -T 2>/dev/null | grep -E 'server_name|root |alias |location ' | grep -E -C 3 'setai\.no|/key|key/' | head -100 || true
+          echo "KEY_DIRECTORY_METADATA:"
+          ls -ld /var/www/setai/key /var/www/setai/key/research 2>&1 || true
+          echo "RESEARCH_ROUTE_FILES:"
+          if [ -d /var/www/setai/key/research ]; then
+            find /var/www/setai/key/research -maxdepth 2 -type f -printf '%P %s bytes\n' | head -40
+          else
+            echo "Research directory does not exist yet"
+          fi
+          echo "RESEARCH_PAGE_TITLE:"
+          curl -fLsS --max-time 15 https://setai.no/key/research/ | grep -o '<title>[^<]*</title>' | head -1 || true
           echo "COUNTER_API_HEALTH:"
           curl -sS -o /dev/null -w '%{http_code}\n' --max-time 15 'https://setai.no/key/api/latest' || true
           echo "RESEARCH_PUBLIC_HEALTH:"
