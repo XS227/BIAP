@@ -246,6 +246,10 @@ export default function GlobalStockDetailScreen() {
           <Text style={[styles.timestamp, { color: colors.textSecondary }]}>{priceTimestamp ? `Price observed ${priceTimestamp}` : 'Verified price timestamp unavailable'}</Text>
         </View>
 
+        <Pressable onPress={() => router.push({ pathname: '/trade-broker', params: { country: analysis.country, ticker: analysis.ticker } } as never)}
+          style={[styles.action, { backgroundColor: Brand.primary, alignSelf: 'flex-start', marginBottom: 12 }]}>
+          <Text style={styles.actionText}>Trade at a Broker ↗</Text>
+        </Pressable>
         {analysis.investment ? <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
           <Text style={[styles.cardTitle, { color: decisionColor(analysis.investment.tier, colors.textSecondary) }]}>{tierLabel(analysis.investment.tier)}</Text>
           {investmentBadge(analysis.investment).notice ? <Text style={[styles.body, { color: Brand.warning, fontWeight: '700' }]}>{investmentBadge(analysis.investment).notice}</Text> : null}
