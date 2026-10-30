@@ -2,16 +2,18 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
-import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario, explainDemoCompany, type CheckpointScenario } from '@/lib/checkpoint-demo';
+import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario, explainDemoCompany, selectDemoBroker, type CheckpointScenario } from '@/lib/checkpoint-demo';
 
 const format = (n: number | null) => n === null ? '—' : n.toLocaleString('en-US');
 
 export default function CheckpointDemoScreen() {
   const [scenario, setScenario] = useState<CheckpointScenario>('complete');
+  const [selectedBroker, setSelectedBroker] = useState<string | null>(null);
   const demo = createCheckpointScenario(GLOBAL_CHECKPOINT_DEMO, scenario);
   const audit = auditCheckpointDemo(demo);
   const ratios = demoFinancialRatios(demo);
   const explanation = explainDemoCompany(demo);
+  const brokerPreview = selectDemoBroker(demo, selectedBroker);
   const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
   if (!__DEV__) return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, padding: 20 }}><Text style={{ color: colors.text }}>Development preview unavailable.</Text></SafeAreaView>;
   const f = demo.financials;
@@ -69,8 +71,15 @@ export default function CheckpointDemoScreen() {
       </View>
       <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
         <Text style={[styles.heading, { color: colors.text }]}>Broker selection preview</Text>
-        {demo.brokerChoices.map(b => <View key={b.name} style={styles.line}><Text style={{ color: colors.text }}>{b.name}</Text><Text style={{ color: colors.textSecondary }}>Preview only • disabled</Text></View>)}
-        <Text style={[styles.caption, { color: colors.textSecondary }]}>No trading API, credentials, or order submission is connected.</Text>
+        {demo.brokerChoices.map(b =>
+          <Pressable key={b.name} accessibilityRole="radio" accessibilityState={{ selected: brokerPreview.selectedBroker === b.name }}
+            onPress={() => setSelectedBroker(b.name)}
+            style={[styles.line, { borderWidth: 1, borderRadius: 8, borderColor: brokerPreview.selectedBroker === b.name ? '#d97706' : '#64748b55', paddingHorizontal: 10 }]}>
+            <Text style={{ color: colors.text }}>{b.name}</Text>
+            <Text style={{ color: colors.textSecondary }}>{brokerPreview.selectedBroker === b.name ? 'Selected (demo)' : 'Select'}</Text>
+          </Pressable>)}
+        <Text style={[styles.caption, { color: colors.textSecondary }]}>Selected: {brokerPreview.selectedBroker ?? 'None'} • Country eligibility not verified</Text>
+        <Text style={[styles.caption, { color: colors.textSecondary }]}>Local preference only. No trading API, credentials, or order submission is connected.</Text>
       </View>
     </ScrollView>
   </SafeAreaView>;
