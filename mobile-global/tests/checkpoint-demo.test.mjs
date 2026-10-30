@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario } from '../src/lib/checkpoint-demo.ts';
+import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario, explainDemoCompany } from '../src/lib/checkpoint-demo.ts';
 
 test('Global checkpoint preview is explicitly synthetic and never recommends trades', () => {
   const d = GLOBAL_CHECKPOINT_DEMO;
@@ -46,4 +46,20 @@ test('Global demo scenarios exercise missing and invalid figures without mutatin
   assert.equal(auditCheckpointDemo(invalid).checks.find(c => c.key === 'liabilities_lte_assets')?.passed, false);
   assert.equal(auditCheckpointDemo(invalid).eligibleForInvestmentDecision, false);
   assert.equal(auditCheckpointDemo(missing).eligibleForInvestmentDecision, false);
+});
+
+test('local snapshot explanation reacts to invalid/missing figures and never calls the AI proxy', () => {
+  const complete = explainDemoCompany(GLOBAL_CHECKPOINT_DEMO);
+  const missing = explainDemoCompany(createCheckpointScenario(GLOBAL_CHECKPOINT_DEMO, 'missing'));
+  const invalid = explainDemoCompany(createCheckpointScenario(GLOBAL_CHECKPOINT_DEMO, 'invalid'));
+  for (const result of [complete, missing, invalid]) {
+    assert.equal(result.proxyCalled, false);
+    assert.equal(result.routeReserved, 'biap-ai-proxy');
+    assert.equal(result.generatedBy, 'DETERMINISTIC_FIXTURE');
+    assert.equal(result.eligibleForInvestmentDecision, false);
+  }
+  assert.notDeepEqual(complete.findings, missing.findings);
+  assert.notDeepEqual(complete.findings, invalid.findings);
+  assert.ok(missing.findings.some(f => /netIncome/.test(f)));
+  assert.ok(invalid.findings.some(f => /Balance-sheet inconsistency/.test(f)));
 });
