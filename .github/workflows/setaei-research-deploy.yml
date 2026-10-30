@@ -1,0 +1,117 @@
+name: Publish SETAEI Key Research (isolated)
+on:
+  push:
+    branches: [ops/key-research-audit-20261030]
+    paths: [.github/workflows/setaei-research-deploy.yml]
+permissions:
+  contents: read
+concurrency:
+  group: setaei-key-research-publication
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 12
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+      VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT || '22' }}
+      RELEASE: acf3bea7c9af10b362e9db5017aec0b2bd42c2a6
+    steps:
+      - name: Checkout exact reviewed source commit
+        uses: actions/checkout@v4
+        with:
+          repository: XS227/SETai
+          ref: acf3bea7c9af10b362e9db5017aec0b2bd42c2a6
+          path: source
+          persist-credentials: false
+      - name: Validate isolated static payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s source/key-research/index.html
+          test -s source/key-research/experiment-01/index.html
+          test -s source/key-research/experiment-02/index.html
+          test -s source/key-research/journal/index.html
+          test -s source/key-research/assets/multi-target.js
+          test -s source/key-research/assets/styles.css
+          grep -q 'legacy-ecdpl.html' source/key-research/index.html
+          node --check source/key-research/assets/multi-target.js
+      - name: Configure limited SSH session
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$VPS_SSH_KEY" || { echo "Missing VPS_SSH_KEY"; exit 7; }
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -T 10 -t ed25519 -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+      - name: Upload research assets into separate temporary directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          scp -q -r -o BatchMode=yes -o ConnectTimeout=18 -o ConnectionAttempts=3 -i ~/.ssh/id_ed25519 -P "$VPS_PORT" source/key-research "$VPS_USER@$VPS_HOST:/tmp/setaei-key-research-${{ github.run_id }}"
+      - name: Backup legacy and atomically publish research pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=18 -o ConnectionAttempts=3 -i ~/.ssh/id_ed25519 -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
+          set -Eeuo pipefail
+          umask 022
+          [[ $(hostname) == vps-5359843 ]] || { echo "Wrong host"; exit 3; }
+          ROOT=/var/www/setai/key
+          DOC=$ROOT/research
+          STAGE=/tmp/setaei-key-research-${{ github.run_id }}
+          RUN_ID=${{ github.run_id }}
+          test -f "$ROOT/index.html"
+          test -f "$DOC/index.html"
+          test -d "$STAGE"
+          test ! -L "$DOC"
+          sudo -n true
+          curl -fsS --max-time 18 https://setai.no/key/api/latest -o /dev/null
+          curl -fsS --max-time 18 https://setai.no/key/ -o /dev/null
+          BACK=/var/backups/setaei-key-research/$(date -u +%Y%m%dT%H%M%SZ)-$RUN_ID
+          sudo install -d -m 700 "$BACK"
+          sudo cp -a "$DOC/." "$BACK/"
+          sudo test -s "$BACK/index.html"
+          echo "BACKUP_VERIFIED: $BACK"
+          PUBLISHED=0
+          finish(){
+            rc=$?
+            if [[ "$rc" -ne 0 && "$PUBLISHED" -eq 1 ]]; then
+              sudo cp -p "$BACK/index.html" "$DOC/index.html"
+              echo "ROLLBACK_RESTORED_ORIGINAL_INDEX"
+            fi
+            rm -rf -- "$STAGE"
+            exit "$rc"
+          }
+          trap finish EXIT
+          if [[ ! -e "$DOC/legacy-ecdpl.html" ]]; then
+            sudo cp -p "$DOC/index.html" "$DOC/legacy-ecdpl.html"
+          fi
+          for f in assets/styles.css assets/multi-target.js experiment-01/index.html experiment-02/index.html journal/index.html; do
+            test -s "$STAGE/$f"
+            sudo install -d -o www-data -g www-data -m 755 "$DOC/$(dirname "$f")"
+            if [[ -e "$DOC/$f" ]]; then
+              echo "Refusing to overwrite unreviewed existing file: $f"
+              exit 4
+            fi
+            sudo install -o www-data -g www-data -m 644 "$STAGE/$f" "$DOC/$f"
+          done
+          sudo install -o www-data -g www-data -m 644 "$STAGE/index.html" "$DOC/.new-research-index-$RUN_ID"
+          sudo mv -f "$DOC/.new-research-index-$RUN_ID" "$DOC/index.html"
+          PUBLISHED=1
+          echo "SOURCE_COMMIT: acf3bea7c9af10b362e9db5017aec0b2bd42c2a6"
+          curl -fsS --max-time 20 https://setai.no/key/research/ | grep -q 'Cryptographic Randomness Research'
+          curl -fsS --max-time 20 https://setai.no/key/research/experiment-01/ | grep -q 'Randomness Research Lab'
+          curl -fsS --max-time 20 https://setai.no/key/research/experiment-02/ | grep -q 'Ten Targets'
+          curl -fsS --max-time 20 https://setai.no/key/research/journal/ | grep -q 'Research Note'
+          curl -fsS --max-time 20 https://setai.no/key/research/assets/multi-target.js | grep -q 'synthetic ten-target'
+          curl -fsS --max-time 20 https://setai.no/key/research/legacy-ecdpl.html | grep -q 'ECDLP'
+          curl -fsS --max-time 20 https://setai.no/key/api/latest -o /dev/null
+          curl -fsS --max-time 20 https://setai.no/key/ -o /dev/null
+          echo "PUBLISH_SUCCESS: new research, journal, ECDLP legacy preserved, live counter API healthy"
+          REMOTE
