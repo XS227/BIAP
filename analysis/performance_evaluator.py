@@ -19,6 +19,8 @@ from datetime import date, datetime, time, timezone
 import argparse
 import json
 import os
+import time as clock
+import urllib.error
 from typing import Callable, Optional
 
 from market_data import _read_json, _resolve_tsetmc_instrument_code, tsetmc_api_base
@@ -92,11 +94,19 @@ def fetch_daily_history(code: str, *, limit: int = 400, timeout: float = 12.0) -
     instrument_code = _resolve_tsetmc_instrument_code(code, timeout=timeout)
     if instrument_code is None:
         return []
-    payload = _read_json(
-        f"{tsetmc_api_base()}/ClosingPrice/GetClosingPriceDailyList/{instrument_code}/{limit}",
-        timeout=timeout,
-    )
-    return parse_daily_history(payload)
+    url = f"{tsetmc_api_base()}/ClosingPrice/GetClosingPriceDailyList/{instrument_code}/{limit}"
+    # Historical prices are externally hosted and the proxy occasionally responds
+    # with a transient 502 or socket timeout. Retry only transport failures; do
+    # not invent prices or suppress a permanently failing source.
+    for attempt in range(3):
+        try:
+            payload = _read_json(url, timeout=timeout)
+            return parse_daily_history(payload)
+        except (TimeoutError, urllib.error.URLError, ConnectionError) as exc:
+            if attempt == 2:
+                raise
+            clock.sleep(attempt + 1)
+    raise AssertionError("unreachable")
 
 
 def _generated_date(generated_at: str) -> date:

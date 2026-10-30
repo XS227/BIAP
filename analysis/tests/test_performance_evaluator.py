@@ -205,3 +205,43 @@ def test_same_code_history_fetched_once_for_multiple_pending_rows(tmp_path):
 
     evaluate_pending(store, history_fetcher=fetch)
     assert calls == ["123"]
+
+
+def test_fetch_daily_history_retries_temporary_502(monkeypatch):
+    import urllib.error
+    import performance_evaluator as module
+
+    attempts = []
+    monkeypatch.setattr(module, "_resolve_tsetmc_instrument_code", lambda code, timeout: "123456789012345")
+    monkeypatch.setattr(module, "tsetmc_api_base", lambda: "https://test.invalid/api")
+    monkeypatch.setattr(module.clock, "sleep", lambda seconds: None)
+
+    def fake_fetch(url, *, timeout):
+        attempts.append(url)
+        if len(attempts) < 3:
+            raise urllib.error.URLError("upstream temporary 502")
+        return {"closingPriceDaily": [{"dEven": 20261029, "pClosing": 1000}]}
+
+    monkeypatch.setattr(module, "_read_json", fake_fetch)
+    result = module.fetch_daily_history("123456789012345")
+    assert len(attempts) == 3
+    assert len(result) == 1 and result[0].closing_price == 1000
+
+
+def test_fetch_daily_history_persistent_timeout_fails_closed(monkeypatch):
+    import pytest
+    import performance_evaluator as module
+
+    attempts = []
+    monkeypatch.setattr(module, "_resolve_tsetmc_instrument_code", lambda code, timeout: "123456789012345")
+    monkeypatch.setattr(module, "tsetmc_api_base", lambda: "https://test.invalid/api")
+    monkeypatch.setattr(module.clock, "sleep", lambda seconds: None)
+
+    def always_timeout(url, *, timeout):
+        attempts.append(url)
+        raise TimeoutError("provider unavailable")
+
+    monkeypatch.setattr(module, "_read_json", always_timeout)
+    with pytest.raises(TimeoutError):
+        module.fetch_daily_history("123456789012345")
+    assert len(attempts) == 3
