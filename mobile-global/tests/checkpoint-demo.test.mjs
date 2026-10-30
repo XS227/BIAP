@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario, explainDemoCompany } from '../src/lib/checkpoint-demo.ts';
+import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario, explainDemoCompany, selectDemoBroker } from '../src/lib/checkpoint-demo.ts';
 
 test('Global checkpoint preview is explicitly synthetic and never recommends trades', () => {
   const d = GLOBAL_CHECKPOINT_DEMO;
@@ -62,4 +62,20 @@ test('local snapshot explanation reacts to invalid/missing figures and never cal
   assert.notDeepEqual(complete.findings, invalid.findings);
   assert.ok(missing.findings.some(f => /netIncome/.test(f)));
   assert.ok(invalid.findings.some(f => /Balance-sheet inconsistency/.test(f)));
+});
+
+test('Global broker selection is interactive but cannot trade or request credentials', () => {
+  const d = GLOBAL_CHECKPOINT_DEMO;
+  const initial = selectDemoBroker(d, null);
+  const chosen = selectDemoBroker(d, d.brokerChoices[0].name);
+  const unknown = selectDemoBroker(d, 'Unknown Broker');
+  assert.equal(initial.selectedBroker, null);
+  assert.equal(chosen.selectedBroker, d.brokerChoices[0].name);
+  assert.equal(chosen.status, 'DEMO_SELECTION_ONLY');
+  assert.equal(chosen.executionEnabled, false);
+  assert.equal(chosen.credentialsRequested, false);
+  assert.equal(chosen.orderSubmitted, false);
+  assert.equal(chosen.countryEligibilityVerified, false);
+  assert.equal(unknown.selectedBroker, null);
+  assert.ok(d.brokerChoices.every(b => b.enabled === false));
 });
