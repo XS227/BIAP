@@ -145,7 +145,7 @@ export default function GlobalStockDetailScreen() {
     }
   }, [params.code, params.country, params.exchange, params.currency, params.name, params.isin, params.lei]);
 
-  useEffect(() => { setLoading(true); void load(); }, [load]);
+  useEffect(() => { void Promise.resolve().then(() => { setLoading(true); return load(); }); }, [load]);
   const company = analysis?.company;
   const sourcePlan = analysis?.sourcePlan;
   const decision = analysis?.decisionTable;
