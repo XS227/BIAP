@@ -218,7 +218,7 @@ export default function CreditLabScreen() {
                 {credit?.indicated_rating_sp ? <>
                   <View style={styles.ratingRow}>
                     <View><Text style={[styles.ratingValue, { color: colors.text }]}>{credit.indicated_rating_sp}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>S&P equivalent</Text></View>
-                    <View><Text style={[styles.ratingValue, { color: colors.text }]}>{credit.indicated_rating_moodys || '—'}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Moody's grid</Text></View>
+                    <View><Text style={[styles.ratingValue, { color: colors.text }]}>{credit.indicated_rating_moodys || '—'}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Moody&apos;s grid</Text></View>
                   </View>
                   <View style={styles.ratingRow}>
                     <View style={{ flex: 1 }}><Text style={[styles.metricValue, { color: colors.text }]}>{credit.pd_1y == null ? '—' : pct(credit.pd_1y, 2)}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>1-year historical PD mapping</Text></View>
@@ -249,7 +249,7 @@ export default function CreditLabScreen() {
                 <View style={styles.dataRow}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>Distress status</Text><Text style={[styles.dataValue, { color: colors.text }]}>{friendly(distress?.status)}</Text></View>
                 <View style={styles.dataRow}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>Synthetic credit band</Text><Text style={[styles.dataValue, { color: colors.text }]}>{distress?.synthetic_credit_band || '—'}</Text></View>
                 <View style={styles.dataRow}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>Zmijewski P(distress)</Text><Text style={[styles.dataValue, { color: colors.text }]}>{distress?.distress_probability == null ? '—' : pct(distress.distress_probability, 1)}</Text></View>
-                <View style={styles.dataRow}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>Altman Z''</Text><Text style={[styles.dataValue, { color: colors.text }]}>{fmt(distress?.altman_z_double_prime, 2)}</Text></View>
+                <View style={styles.dataRow}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>Altman Z&apos;&apos;</Text><Text style={[styles.dataValue, { color: colors.text }]}>{fmt(distress?.altman_z_double_prime, 2)}</Text></View>
                 <View style={styles.dataRow}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>Interest coverage</Text><Text style={[styles.dataValue, { color: colors.text }]}>{distress?.interest_coverage == null ? '—' : `${fmt(distress.interest_coverage, 2)}x`}</Text></View>
               </View>
 
