@@ -387,3 +387,48 @@ def test_inbox_backlog_per_run_is_separate_from_live_codal_cap(monkeypatch):
     assert runner._backlog_per_run(False) == 25
     monkeypatch.delenv("BIAP_LISTED_COMPANY_INBOX_BACKLOG_PER_RUN")
     assert runner._backlog_per_run(True) == 25
+
+
+# --- funds: not-applicable marker stops retries, nothing is deleted ---------------------------
+
+import fund_classifier
+
+
+def test_fund_classifier_rules_and_overrides():
+    c = fund_classifier.classify
+    assert c("آگاه بازار", "اختصاصی بازارگردانی آگاه") == fund_classifier.FUND
+    assert c("ارزش کاوان ثابت", "ارزش کاوان ایرانیان") == fund_classifier.FUND
+    assert c("تصمیم", "با درآمد ثابت تصمیم") == fund_classifier.FUND
+    assert c("دماسنج سهام", "مشترک دماسنج") == fund_classifier.FUND
+    assert c("تمشک", "تمشک نماد رشد") == fund_classifier.FUND and c("رابین", "توسعه افق رابین") == fund_classifier.FUND
+    for sym in ("سخرم", "ستبرا", "ستوسعه شیمیائی"):
+        assert c(sym, "سیمان بازار ثابت") is None  # explicit keep-retrying list wins over any name pattern
+    assert c("صایند", "گنجینه آینده روشن") == fund_classifier.REVIEW
+    assert c("کامیاب", "کامیاب آشنا") == fund_classifier.REVIEW
+    assert c("دتهران", "دارو سازی تهران دارو") is None
+
+
+def test_failed_fund_is_marked_not_applicable_and_not_retried_but_companies_and_review_keep_retrying(tmp_path, monkeypatch):
+    codes = ["1", "2", "3", "4"]
+    store, reg = _backlog_setup(tmp_path, monkeypatch, codes, {})
+    inst = {"1": ("آگاه بازار", "اختصاصی بازارگردانی آگاه"), "2": ("سخرم", "سیمان خرم آباد"),
+            "3": ("صایند", "گنجینه آینده روشن"), "4": ("ثابت‌نو", "x")}
+    monkeypatch.setattr(reg, "get_instrument", lambda c: {"symbol": inst[c][0], "name": inst[c][1]})
+    store.save_enriched("1", {"ticker": "1", "name_fa": "old"}, provenance={})  # an existing fund keeps its data
+    built = []
+
+    def fail(code):
+        built.append(code)
+        raise ValueError("no verified company data available")
+
+    monkeypatch.setattr(ingestion, "_build_verified_company", fail)
+    r1 = ingestion.run_batch(store=store, registry=reg, batch_size=10, reset=True, backlog_per_run=10, new_filing_codes=["1"], sleep=lambda s: None)
+    assert set(r1["metadata"]["notApplicable"]) == {"1"} and r1["metadata"]["needsReview"] == {"3": "صایند"}
+    assert store.get("1")["company"]["name_fa"] == "old"  # data kept, only retries stop
+    # failed companies sit in the 7-day failed list; clear it to prove who would be retried tomorrow
+    state = store.get_state(ingestion.WORKER_NAME)
+    meta = state["metadata"]; meta["failedCodes"] = {}
+    store.save_state(ingestion.WORKER_NAME, status="completed", cursor=0, total=4, processed=0, succeeded=0, failed=0, started_at="2026-10-30T00:00:00+00:00", metadata=meta)
+    built.clear()
+    ingestion.run_batch(store=store, registry=reg, batch_size=10, reset=True, backlog_per_run=10, new_filing_codes=["1"], sleep=lambda s: None)
+    assert "1" not in built and {"2", "3"} <= set(built)

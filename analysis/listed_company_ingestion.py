@@ -18,6 +18,7 @@ import uuid
 
 import codal_data
 import codal_inbox
+import fund_classifier
 from codal_data import CodalDataUnavailable, list_companies
 from company_builder import build_company_from_quote, build_company_from_symbol
 from company_registry_store import CompanyRegistryStore, company_id_for
@@ -445,6 +446,8 @@ def run_batch(
     safe_batch_size = max(1, min(int(batch_size), DAILY_BATCH_SIZE))
     previous_state = target.get_state(WORKER_NAME) or {}
     failed_at: dict[str, str] = dict((previous_state.get("metadata") or {}).get("failedCodes") or {})
+    not_applicable: dict[str, dict] = dict((previous_state.get("metadata") or {}).get("notApplicable") or {})
+    needs_review: dict[str, str] = dict((previous_state.get("metadata") or {}).get("needsReview") or {})
     filing_codes: list[str] = []
     if backlog_per_run is None:
         codes = target.order_by_enrichment_priority(eligible_codes)[:safe_batch_size]
@@ -453,7 +456,7 @@ def run_batch(
         filing_codes = [c for c in dict.fromkeys(str(c) for c in (new_filing_codes or ())) if c in eligible_set][:safe_batch_size]
         cutoff = (datetime.now(timezone.utc) - timedelta(days=FAILED_RETRY_DAYS)).isoformat()
         never_enriched, _ = target._split_by_enrichment(eligible_codes)
-        backlog = [c for c in never_enriched if c not in set(filing_codes) and failed_at.get(c, "") < cutoff]
+        backlog = [c for c in never_enriched if c not in set(filing_codes) and failed_at.get(c, "") < cutoff and c not in not_applicable]
         if codal_inbox.enabled():
             # Do not spend the daily slots on companies the Liara export has not delivered.
             inbox = codal_inbox.current()
@@ -461,6 +464,7 @@ def run_batch(
             filing_codes = [c for c in filing_codes if has(c)]
             backlog = [c for c in backlog if has(c)]
         backlog.sort(key=lambda c: (-traded_value.get(c, 0.0), c))  # most-traded first; unknown volume last
+        filing_codes = [c for c in filing_codes if c not in not_applicable]
         codes = filing_codes + backlog[:max(0, int(backlog_per_run))]
 
     already_enriched_in_slice: set[str] = set()
@@ -588,6 +592,17 @@ def run_batch(
         succeeded += 1
         processed += 1
 
+    def _mark_if_fund(code: str, error: str) -> None:
+        """Funds have no standard statements: stop retrying them (existing data is untouched)."""
+        if "no verified company data" not in error:
+            return
+        inst = reg.get_instrument(code) or {}
+        verdict = fund_classifier.classify(inst.get("symbol"), inst.get("name"))
+        if verdict == fund_classifier.FUND:
+            not_applicable[code] = {"reason": "fund/market-maker: no standard statements", "symbol": inst.get("symbol"), "at": _now_iso()}
+        elif verdict == fund_classifier.REVIEW:
+            needs_review[code] = str(inst.get("symbol") or "")
+
     for index, code in enumerate(codes):
         last_code = code
         while True:  # retried only after a rate-limit backoff
@@ -607,6 +622,7 @@ def run_batch(
                     failed += 1
                     processed += 1
                     failed_at[code] = _now_iso()
+                    _mark_if_fund(code, last_error)
                     break
                 rate_limited = True
                 consecutive_rate_limits += 1
@@ -629,6 +645,8 @@ def run_batch(
             sleep(safe_interval)
 
     metadata["failedCodes"] = dict(sorted(failed_at.items(), key=lambda kv: kv[1])[-2000:])
+    metadata["notApplicable"] = not_applicable
+    metadata["needsReview"] = needs_review
     metadata["rateLimitedCount"] = total_rate_limits
     if codal_inbox.enabled():
         metadata["awaitingCodalInbox"] = awaiting_inbox
