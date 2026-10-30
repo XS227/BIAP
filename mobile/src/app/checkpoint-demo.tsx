@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
-import { IRAN_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario, type CheckpointScenario } from '@/lib/checkpoint-demo';
+import { IRAN_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario, explainDemoCompany, type CheckpointScenario } from '@/lib/checkpoint-demo';
 
 const format = (n: number | null) => n === null ? '—' : n.toLocaleString('fa-IR');
 
@@ -11,6 +11,7 @@ export default function CheckpointDemoScreen() {
   const demo = createCheckpointScenario(IRAN_CHECKPOINT_DEMO, scenario);
   const audit = auditCheckpointDemo(demo);
   const ratios = demoFinancialRatios(demo);
+  const explanation = explainDemoCompany(demo);
   const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
   if (!__DEV__) return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, padding: 20 }}><Text style={{ color: colors.text }}>Development preview unavailable.</Text></SafeAreaView>;
   const f = demo.financials;
@@ -59,6 +60,9 @@ export default function CheckpointDemoScreen() {
         <Text style={[styles.caption, { color: colors.textSecondary }]}>Eligible for investment decision: NO</Text>
       </View>
       <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
+        <Text style={[styles.heading, { color: colors.text }]}>توضیح قطعی از داده نمونه (نه خروجی هوش مصنوعی)</Text>
+        {explanation.findings.map((finding, i) => <Text key={i} style={[styles.caption, { color: colors.textSecondary }]}>{finding}</Text>)}
+        <Text style={[styles.caption, { color: colors.textSecondary }]}>تولید محلی؛ فراخوانی پروکسی: خیر</Text>
         <Text style={[styles.heading, { color: colors.text }]}>تحلیل AI شرکت (نمایش آزمایشی)</Text>
         <Text style={[styles.caption, { color: colors.textSecondary }]}>{demo.ai.summary}</Text>
         <Text style={[styles.caption, { color: colors.textSecondary }]}>Route reserved: {demo.ai.route} • {demo.ai.status}</Text>
