@@ -1,0 +1,41 @@
+name: BIAP mobile checkpoint validation
+
+on:
+  pull_request:
+    branches: [live/base-20261030]
+    paths:
+      - 'mobile/**'
+      - 'mobile-global/**'
+      - '.github/workflows/biap-mobile-checkpoint.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checkpoint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [mobile, mobile-global]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Synthetic checkpoint safeguards
+        run: npm run test:checkpoint
+      - name: Lint (non-interactive)
+        env:
+          CI: '1'
+        run: npm run lint
