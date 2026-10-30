@@ -79,3 +79,21 @@ test('Global broker selection is interactive but cannot trade or request credent
   assert.equal(unknown.selectedBroker, null);
   assert.ok(d.brokerChoices.every(b => b.enabled === false));
 });
+
+test('Global financial quality rejects NaN, Infinity and negative assets while allowing genuine losses', () => {
+  const base = GLOBAL_CHECKPOINT_DEMO;
+  for (const [field, value] of [['revenue', Number.NaN], ['assets', -1], ['liabilities', Infinity]]) {
+    const sample = structuredClone(base);
+    sample.financials[field] = value;
+    const audit = auditCheckpointDemo(sample);
+    assert.deepEqual(audit.invalidValues, [field]);
+    assert.equal(audit.checks.find(c => c.key === 'financial_values_valid')?.passed, false);
+    assert.equal(audit.eligibleForInvestmentDecision, false);
+  }
+  const loss = structuredClone(base);
+  loss.financials.netIncome = -500;
+  assert.deepEqual(auditCheckpointDemo(loss).invalidValues, []);
+  assert.ok(demoFinancialRatios(loss).netMarginPct < 0);
+  const impossible = createCheckpointScenario(base, 'invalid');
+  assert.equal(demoFinancialRatios(impossible).debtToAssetsPct, null);
+});
