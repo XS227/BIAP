@@ -8,4 +8,4 @@ Rule: every engine change is tested on a rehearsal copy (`deploy/rehearsal-copy.
 The `deploy-backend` GitHub workflow is manual only (`workflow_dispatch`, `production` environment); a merge to main never deploys.
 
 Backups: `biap-global-backup` nightly 22:50 UTC -> /home/ubuntu/backups/daily (7 daily + 4 weekly).
-Liara copy is a PULL: Liara's root crontab runs `deploy/liara-pull-crontab.txt` weekly (UniWeb has no route out to Liara on port 22).
+Liara copy is a PULL: Liara runs `/root/liara-pull.sh` (deploy/liara-pull.sh) from cron Mondays 02:00 UTC (UniWeb has no route out to Liara on port 22).
