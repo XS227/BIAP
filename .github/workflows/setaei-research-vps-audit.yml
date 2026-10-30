@@ -1,0 +1,47 @@
+name: SETAEI Key Research VPS read-only audit
+on:
+  push:
+    branches: [ops/key-research-audit-20261030]
+    paths: [.github/workflows/setaei-research-vps-audit.yml]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 8
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+      VPS_USER: ${{ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT || '22' }}
+    steps:
+      - name: Setup SSH with production credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$VPS_SSH_KEY" || { echo "No production VPS SSH key available"; exit 7; }
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -T 6 -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Read-only inspect production SETAEI path
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=12 -i ~/.ssh/id_ed25519 -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          echo "AUDIT_HOSTNAME: $(hostname)"
+          echo "AUDIT_USER: $(whoami)"
+          echo "WEBROOT_CANDIDATES:"
+          find /var/www -maxdepth 6 -type f \( -path '*/key/index.html' -o -path '*/key/index.php' \) 2>/dev/null | head -25 || true
+          echo "NGINX_ROUTE_HINTS:"
+          sudo -n nginx -T 2>/dev/null | grep -E 'server_name|root |alias |location ' | grep -E -C 3 'setai\.no|/key|key/' | head -100 || true
+          echo "COUNTER_API_HEALTH:"
+          curl -sS -o /dev/null -w '%{http_code}\n' --max-time 15 'https://setai.no/key/api/latest' || true
+          echo "RESEARCH_PUBLIC_HEALTH:"
+          curl -sS -o /dev/null -w '%{http_code}\n' --max-time 15 'https://setai.no/key/research/' || true
+          echo "AUDIT_COMPLETED_READ_ONLY"
+          REMOTE
