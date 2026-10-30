@@ -1,10 +1,11 @@
 import { ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
-import { IRAN_CHECKPOINT_DEMO, auditCheckpointDemo } from '@/lib/checkpoint-demo';
+import { IRAN_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios } from '@/lib/checkpoint-demo';
 
 const demo = IRAN_CHECKPOINT_DEMO;
 const audit = auditCheckpointDemo(demo);
+const ratios = demoFinancialRatios(demo);
 const format = (n: number | null) => n === null ? '—' : n.toLocaleString('fa-IR');
 
 export default function CheckpointDemoScreen() {
@@ -24,7 +25,8 @@ export default function CheckpointDemoScreen() {
           ['دارایی‌ها', f.assets], ['بدهی‌ها', f.liabilities],
         ] as [string, number | null][]).map(([label, value]) =>
           <View key={label} style={styles.line}><Text style={{ color: colors.textSecondary }}>{label}</Text><Text style={{ color: colors.text }}>{format(value)} {f.currency}</Text></View>)}
-        <Text style={[styles.caption, { color: colors.textSecondary }]}>{f.period}</Text>
+        <Text style={[styles.caption, { color: colors.textSecondary }]}>{f.period} • منبع: ساختگی • تاریخ تأیید: ناموجود</Text>
+        <Text style={[styles.caption, { color: colors.textSecondary }]}>حاشیه سود نمونه: {ratios.netMarginPct ?? '—'}٪ • بدهی به دارایی: {ratios.debtToAssetsPct ?? '—'}٪</Text>
       </View>
       <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
         <Text style={[styles.heading, { color: colors.text }]}>ایجنت‌ها و کیا‌شا</Text>
@@ -32,6 +34,7 @@ export default function CheckpointDemoScreen() {
           <View key={agent.name} style={styles.agent}>
             <Text style={[styles.agentName, { color: colors.text }]}>{agent.name}</Text>
             <Text style={styles.noTrade}>بدون توصیه معاملاتی</Text>
+            <Text style={[styles.caption, { color: colors.textSecondary }]}>اطمینان: ناموجود • وضعیت داده: ساختگی</Text>
             <Text style={[styles.caption, { color: colors.textSecondary }]}>{agent.reason}</Text>
           </View>)}
       </View>
