@@ -65,3 +65,18 @@ export function explainDemoCompany(d: CheckpointDemo) {
   return { status: 'LOCAL_DEMO_EXPLANATION' as const, generatedBy: 'DETERMINISTIC_FIXTURE' as const,
     proxyCalled: false as const, routeReserved: d.ai.route, findings, eligibleForInvestmentDecision: false as const };
 }
+
+
+// Broker choice is a local UI preference only. Never create an account,
+// request credentials, submit an order, or infer country availability.
+export function selectDemoBroker(d: CheckpointDemo, brokerName: string | null) {
+  const selected = d.brokerChoices.find(b => b.name === brokerName);
+  return {
+    status: 'DEMO_SELECTION_ONLY' as const,
+    selectedBroker: selected?.name ?? null,
+    countryEligibilityVerified: false as const,
+    credentialsRequested: false as const,
+    executionEnabled: false as const,
+    orderSubmitted: false as const,
+  };
+}
