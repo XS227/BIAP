@@ -1,0 +1,24 @@
+[Unit]
+Description=BIAP Global daily guard (BUY/SELL present in 12 main markets, BLOCK not up >20% vs yesterday)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/biap-global/BIAP/analysis
+EnvironmentFile=-/home/ubuntu/biap-global/BIAP/analysis/.env.global
+Environment=BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global
+Environment=BIAP_GLOBAL_ONLINE_FIRST=1
+Environment=PYTHONPATH=/home/ubuntu/biap-global/BIAP/analysis
+Environment=PYTHONUNBUFFERED=1
+# Exits 1 (unit shows failed) when a market has BUY=0 / SELL=0 or BLOCK jumped; WARNING lines are in the journal.
+ExecStart=/home/ubuntu/biap-global/BIAP/analysis/.venv-global/bin/python -m global_markets.daily_guard
+SyslogIdentifier=biap-global-daily-guard
+TimeoutStartSec=600
+Nice=15
+IOSchedulingClass=idle
+MemoryMax=768M
+TasksMax=32
+NoNewPrivileges=true
+PrivateTmp=true

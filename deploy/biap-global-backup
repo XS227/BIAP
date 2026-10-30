@@ -1,0 +1,80 @@
+#!/bin/bash
+# Nightly BIAP Global backup -> /home/ubuntu/backups/daily/YYYY-MM-DD  (keep 7 daily + 4 weekly (Sundays)).
+# SQLite DBs: online backup API + integrity_check on the copy.  Everything else: rsync (hardlinked against the previous day).
+# Skips: cache/ (6.5 GB rebuildable legacy cache), backup-* (already backups), playwright/.  Exit 1 if any DB fails its check.
+set -u
+SRC=${BIAP_GLOBAL_DATA_DIR:-/var/lib/biap-global}
+ROOT=${BIAP_BACKUP_ROOT:-/home/ubuntu/backups}
+PY=${BIAP_BACKUP_PYTHON:-/home/ubuntu/biap-global/BIAP/analysis/.venv-global/bin/python}
+DAILY_KEEP=7; WEEKLY_KEEP=4
+TODAY=$(date -u +%F)
+DEST=$ROOT/daily/$TODAY
+TMP=$ROOT/daily/.tmp-$TODAY
+mkdir -p "$ROOT/daily" "$ROOT/weekly"
+exec 9>"$ROOT/.backup.lock"
+flock -n 9 || { echo "SKIP: another backup is running"; exit 75; }
+log() { echo "$(date -u +%FT%TZ) $*"; }
+rc=0
+log "BACKUP start src=$SRC dest=$DEST"
+log "disk before: $(df -h --output=avail,pcent "$ROOT" | tail -1)"
+rm -rf "$TMP"; mkdir -p "$TMP"
+
+# 1) every SQLite DB via the online backup API (consistent even while the engine writes)
+"$PY" -I - "$SRC" "$TMP" <<'PYEOF' || rc=1
+import sqlite3, sys
+from pathlib import Path
+src, dst = Path(sys.argv[1]), Path(sys.argv[2])
+skip = ("cache", "playwright")
+bad = n = 0
+for db in sorted(p for p in src.rglob("*") if p.suffix in (".sqlite3", ".db", ".sqlite") and p.is_file()):
+    rel = db.relative_to(src)
+    if rel.parts[0] in skip or rel.parts[0].startswith("backup-"):
+        continue
+    out = dst / rel
+    out.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        s = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=60)
+        d = sqlite3.connect(str(out))
+        s.backup(d)
+        res = d.execute("PRAGMA integrity_check").fetchall()
+        s.close(); d.close()
+        ok = res == [("ok",)]
+    except Exception as exc:
+        ok, res = False, [str(exc)]
+    n += 1
+    if not ok:
+        bad += 1
+    print(f"{'DB-OK  ' if ok else 'DB-FAIL'} {rel} size={out.stat().st_size if out.exists() else 0}" + ("" if ok else f" {res[:2]}"))
+print(f"DBS total={n} failed={bad}")
+sys.exit(1 if bad else 0)
+PYEOF
+
+# 2) the rest, hardlinked against the newest previous daily to keep 7 days small
+PREV=$(ls -1d "$ROOT"/daily/????-??-?? 2>/dev/null | grep -v "/$TODAY$" | tail -1)
+LINK=(); [ -n "$PREV" ] && LINK=(--link-dest="$PREV")
+rsync -a --delete "${LINK[@]}" \
+  --exclude='/cache/' --exclude='/backup-*/' --exclude='/playwright/' \
+  --exclude='*.sqlite3' --exclude='*.sqlite3-wal' --exclude='*.sqlite3-shm' --exclude='*.db' --exclude='*.db-wal' --exclude='*.db-shm' \
+  --exclude='*.lock' \
+  "$SRC"/ "$TMP"/
+r=$?; if [ $r -ne 0 ] && [ $r -ne 24 ]; then log "RSYNC exit=$r (23 = unreadable files, see above)"; rc=1; fi
+
+[ $rc -eq 0 ] || { log "BACKUP FAILED, keeping $TMP for inspection, not rotating"; df -h "$ROOT" | tail -1; exit 1; }
+rm -rf "$DEST"; mv "$TMP" "$DEST"
+
+# 3) weekly = Sunday's daily, hardlink copy (no extra space)
+if [ "$(date -u +%u)" = 7 ]; then cp -al "$DEST" "$ROOT/weekly/$TODAY"; log "weekly copy $ROOT/weekly/$TODAY"; fi
+
+# 4) retention: only names matching YYYY-MM-DD directly under daily/ and weekly/
+prune() { # dir keep
+  ls -1d "$1"/????-??-?? 2>/dev/null | head -n -"$2" | while read -r d; do
+    [[ "$(basename "$d")" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] && { rm -rf -- "$d"; log "pruned $d"; }
+  done
+}
+prune "$ROOT/daily" $DAILY_KEEP; prune "$ROOT/weekly" $WEEKLY_KEEP
+find "$ROOT/daily" -maxdepth 1 -name '.tmp-*' -mtime +1 -exec rm -rf {} + 2>/dev/null
+
+log "disk after: $(df -h --output=avail,pcent "$ROOT" | tail -1)"
+log "usage: daily=$(du -sh "$ROOT/daily" | cut -f1) weekly=$(du -sh "$ROOT/weekly" | cut -f1) this_backup=$(du -sh "$DEST" | cut -f1)"
+log "BACKUP done $DEST"
+exit 0
