@@ -35,7 +35,7 @@ export function auditCheckpointDemo(d: CheckpointDemo) {
 export function demoFinancialRatios(d: CheckpointDemo) {
   const f = d.financials;
   return {
-    netMarginPct: f.revenue !== null && Number.isFinite(f.revenue) && f.revenue > 0 && f.netIncome !== null && Number.isFinite(f.netIncome) ? Number((100 * f.netIncome / f.revenue).toFixed(2)) : null,
+    netMarginPct: f.revenue !== null && Number.isFinite(f.revenue) && f.revenue > 0 && f.netIncome !== null && Number.isFinite(f.netIncome) ? Number((100 * f.netIncome / f.revenue).toFixed(6)) : null,
     debtToAssetsPct: f.assets !== null && Number.isFinite(f.assets) && f.assets > 0 && f.liabilities !== null && Number.isFinite(f.liabilities) && f.liabilities >= 0 && f.liabilities <= f.assets ? Number((100 * f.liabilities / f.assets).toFixed(2)) : null,
   };
 }
