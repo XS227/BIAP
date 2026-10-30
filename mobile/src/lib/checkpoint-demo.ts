@@ -46,3 +46,19 @@ export function createCheckpointScenario(base: CheckpointDemo, scenario: Checkpo
   if (scenario === 'invalid' && financials.assets !== null) financials.liabilities = financials.assets + 1;
   return { ...base, financials };
 }
+
+// توضیح قطعی از اطلاعات ذخیره‌شدهٔ ساختگی؛ خروجی مدل یا biap-ai-proxy نیست.
+export function explainDemoCompany(d: CheckpointDemo) {
+  const audit = auditCheckpointDemo(d);
+  const ratios = demoFinancialRatios(d);
+  const invalid = audit.checks.some(c => c.key === 'liabilities_lte_assets' && !c.passed);
+  const findings: string[] = [];
+  if (audit.missing.length) findings.push('فیلدهای مالی ناقص: ' + audit.missing.join('، ') + '.');
+  if (invalid) findings.push('ناسازگاری ترازنامه: بدهی‌ها از دارایی‌ها بیشتر است.');
+  if (!audit.missing.length && !invalid) findings.push('چهار قلم مالی نمونه موجود است و رابطه دارایی و بدهی سازگار است.');
+  if (ratios.netMarginPct !== null) findings.push('حاشیه سود فرضی: ' + ratios.netMarginPct + '٪.');
+  if (ratios.debtToAssetsPct !== null) findings.push('نسبت فرضی بدهی به دارایی: ' + ratios.debtToAssetsPct + '٪.');
+  findings.push('منبع و تاریخ داده تأیید نشده؛ هیچ رأی ایجنت، تحلیل مدل یا مجوز تصمیم معاملاتی وجود ندارد.');
+  return { status: 'LOCAL_DEMO_EXPLANATION' as const, generatedBy: 'DETERMINISTIC_FIXTURE' as const,
+    proxyCalled: false as const, routeReserved: d.ai.route, findings, eligibleForInvestmentDecision: false as const };
+}
