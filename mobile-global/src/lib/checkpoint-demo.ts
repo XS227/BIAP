@@ -21,11 +21,15 @@ export const GLOBAL_CHECKPOINT_DEMO: CheckpointDemo = {
 export function auditCheckpointDemo(d: CheckpointDemo) {
   const f = d.financials;
   const missing = (['revenue', 'netIncome', 'assets', 'liabilities'] as const).filter(k => f[k] === null);
+  const invalidValues = (['revenue', 'netIncome', 'assets', 'liabilities'] as const).filter(k => {
+    const value = f[k];
+    return value !== null && (!Number.isFinite(value) || (k !== 'netIncome' && value < 0));
+  });
   const invalidBalance = f.assets !== null && f.liabilities !== null && f.liabilities > f.assets;
   const synthetic = d.mode === 'DEMO' && d.provenance === 'SYNTHETIC_NOT_MARKET_DATA';
-  return { status: synthetic ? 'DEMO_ONLY' as const : 'UNVERIFIED' as const, missing,
+  return { status: synthetic ? 'DEMO_ONLY' as const : 'UNVERIFIED' as const, missing, invalidValues,
     checks: [{ key: 'provenance', passed: synthetic }, { key: 'financial_lines', passed: missing.length === 0 },
-      { key: 'liabilities_lte_assets', passed: !invalidBalance }, { key: 'verified_source_and_date', passed: false }, { key: 'no_trade_signal', passed: d.agents.every(a => a.verdict === 'NO_RECOMMENDATION' && a.confidence === null && a.dataStatus === 'SYNTHETIC') && d.kiasha.verdict === 'NO_RECOMMENDATION' && d.kiasha.confidence === null }],
+      { key: 'financial_values_valid', passed: invalidValues.length === 0 }, { key: 'liabilities_lte_assets', passed: !invalidBalance }, { key: 'verified_source_and_date', passed: false }, { key: 'no_trade_signal', passed: d.agents.every(a => a.verdict === 'NO_RECOMMENDATION' && a.confidence === null && a.dataStatus === 'SYNTHETIC') && d.kiasha.verdict === 'NO_RECOMMENDATION' && d.kiasha.confidence === null }],
     eligibleForInvestmentDecision: false as const };
 }
 
@@ -33,8 +37,8 @@ export function auditCheckpointDemo(d: CheckpointDemo) {
 export function demoFinancialRatios(d: CheckpointDemo) {
   const f = d.financials;
   return {
-    netMarginPct: f.revenue !== null && f.revenue > 0 && f.netIncome !== null ? Number((100 * f.netIncome / f.revenue).toFixed(2)) : null,
-    debtToAssetsPct: f.assets !== null && f.assets > 0 && f.liabilities !== null ? Number((100 * f.liabilities / f.assets).toFixed(2)) : null,
+    netMarginPct: f.revenue !== null && Number.isFinite(f.revenue) && f.revenue > 0 && f.netIncome !== null && Number.isFinite(f.netIncome) ? Number((100 * f.netIncome / f.revenue).toFixed(2)) : null,
+    debtToAssetsPct: f.assets !== null && Number.isFinite(f.assets) && f.assets > 0 && f.liabilities !== null && Number.isFinite(f.liabilities) && f.liabilities >= 0 && f.liabilities <= f.assets ? Number((100 * f.liabilities / f.assets).toFixed(2)) : null,
   };
 }
 
@@ -57,6 +61,7 @@ export function explainDemoCompany(d: CheckpointDemo) {
   const invalid = audit.checks.some(c => c.key === 'liabilities_lte_assets' && !c.passed);
   const findings: string[] = [];
   if (audit.missing.length) findings.push('Missing financial fields: ' + audit.missing.join(', ') + '.');
+  if (audit.invalidValues.length) findings.push('Invalid numeric financial fields: ' + audit.invalidValues.join(', ') + '.');
   if (invalid) findings.push('Balance-sheet inconsistency: liabilities exceed assets.');
   if (!audit.missing.length && !invalid) findings.push('Illustrative snapshot has all four required financial fields and a plausible balance-sheet relationship.');
   if (ratios.netMarginPct !== null) findings.push('Illustrative net margin: ' + ratios.netMarginPct + '%.');
