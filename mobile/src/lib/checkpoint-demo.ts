@@ -35,3 +35,14 @@ export function demoFinancialRatios(d: CheckpointDemo) {
     debtToAssetsPct: f.assets !== null && f.assets > 0 && f.liabilities !== null ? Number((100 * f.liabilities / f.assets).toFixed(2)) : null,
   };
 }
+
+export type CheckpointScenario = 'complete' | 'missing' | 'invalid';
+
+// Pure, development-only scenarios for exercising missing/invalid data states.
+// Never mutate the fixture, live data, or historical investment evidence.
+export function createCheckpointScenario(base: CheckpointDemo, scenario: CheckpointScenario): CheckpointDemo {
+  const financials = { ...base.financials };
+  if (scenario === 'missing') financials.netIncome = null;
+  if (scenario === 'invalid' && financials.assets !== null) financials.liabilities = financials.assets + 1;
+  return { ...base, financials };
+}
