@@ -48,3 +48,20 @@ export function createCheckpointScenario(base: CheckpointDemo, scenario: Checkpo
   if (scenario === 'invalid' && financials.assets !== null) financials.liabilities = financials.assets + 1;
   return { ...base, financials };
 }
+
+// Deterministic explanation of the stored synthetic snapshot. This is NOT an LLM
+// response and must never be labeled as a biap-ai-proxy result.
+export function explainDemoCompany(d: CheckpointDemo) {
+  const audit = auditCheckpointDemo(d);
+  const ratios = demoFinancialRatios(d);
+  const invalid = audit.checks.some(c => c.key === 'liabilities_lte_assets' && !c.passed);
+  const findings: string[] = [];
+  if (audit.missing.length) findings.push('Missing financial fields: ' + audit.missing.join(', ') + '.');
+  if (invalid) findings.push('Balance-sheet inconsistency: liabilities exceed assets.');
+  if (!audit.missing.length && !invalid) findings.push('Illustrative snapshot has all four required financial fields and a plausible balance-sheet relationship.');
+  if (ratios.netMarginPct !== null) findings.push('Illustrative net margin: ' + ratios.netMarginPct + '%.');
+  if (ratios.debtToAssetsPct !== null) findings.push('Illustrative liabilities/assets: ' + ratios.debtToAssetsPct + '%.');
+  findings.push('Source and observation date are unverified; no agent signal, model inference or investment eligibility.');
+  return { status: 'LOCAL_DEMO_EXPLANATION' as const, generatedBy: 'DETERMINISTIC_FIXTURE' as const,
+    proxyCalled: false as const, routeReserved: d.ai.route, findings, eligibleForInvestmentDecision: false as const };
+}
