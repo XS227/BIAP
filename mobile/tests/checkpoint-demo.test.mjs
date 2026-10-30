@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { IRAN_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios } from '../src/lib/checkpoint-demo.ts';
+import { IRAN_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario } from '../src/lib/checkpoint-demo.ts';
 
 test('Iran checkpoint preview is synthetic, seven agents plus Kiasha, without brokerage', () => {
   const d = IRAN_CHECKPOINT_DEMO;
@@ -29,4 +29,18 @@ test('Iran preview never invents agent confidence or verified financial sources'
   assert.equal(d.kiasha.confidence, null);
   assert.deepEqual(demoFinancialRatios(d), { netMarginPct: 7, debtToAssetsPct: 40.91 });
   assert.equal(auditCheckpointDemo(d).checks.find(c => c.key === 'verified_source_and_date')?.passed, false);
+});
+
+test('Iran demo scenarios exercise missing and invalid figures without mutating the fixture', () => {
+  const base = IRAN_CHECKPOINT_DEMO;
+  const original = structuredClone(base.financials);
+  const missing = createCheckpointScenario(base, 'missing');
+  const invalid = createCheckpointScenario(base, 'invalid');
+  assert.deepEqual(base.financials, original);
+  assert.equal(missing.financials.netIncome, null);
+  assert.deepEqual(auditCheckpointDemo(missing).missing, ['netIncome']);
+  assert.equal(demoFinancialRatios(missing).netMarginPct, null);
+  assert.equal(auditCheckpointDemo(invalid).checks.find(c => c.key === 'liabilities_lte_assets')?.passed, false);
+  assert.equal(auditCheckpointDemo(invalid).eligibleForInvestmentDecision, false);
+  assert.equal(auditCheckpointDemo(missing).eligibleForInvestmentDecision, false);
 });
