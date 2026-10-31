@@ -54,5 +54,5 @@ export function validateSavedGlobalCompany(
 
   if (ai.status !== 'NOT_REQUESTED' || ai.proxyCalled !== false ||
       ai.route !== 'biap-ai-proxy') fail();
-  return payload as SavedGlobalCompanyView;
+  return payload as unknown as SavedGlobalCompanyView;
 }
