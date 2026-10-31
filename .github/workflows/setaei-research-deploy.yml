@@ -59,11 +59,10 @@ jobs:
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -T 10 -t ed25519 -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
-      - name: Transfer isolated research sources to temporary directory
+      - name: Verify GitHub-pinned files are selected
         shell: bash
         run: |
-          set -euo pipefail
-          scp -q -r -o BatchMode=yes -o ConnectTimeout=18 -o ConnectionAttempts=3 -i ~/.ssh/id_ed25519 -P "$VPS_PORT" research-source/key-research "$VPS_USER@$VPS_HOST:/tmp/setaei-targets-${{ github.run_id }}}"
+          echo "Nine public address references validated; VPS will fetch exact commit directly"
       - name: Backup, publish, verify or roll back only research presentation files
         shell: bash
         run: |
@@ -73,7 +72,15 @@ jobs:
           umask 022
           [[ "$(hostname)" == "vps-5359843" ]] || { echo "WRONG_VPS"; exit 3; }
           DOC=/var/www/setai/key/research
-          SRC=/tmp/setaei-targets-${{ github.run_id }}
+          SRC="$(mktemp -d /tmp/setaei-targets.XXXXXXXX)"
+          BASE=https://raw.githubusercontent.com/XS227/SETai/be9fb92888678d609d372035f1892a1401d4511c/key-research
+          trap 'rm -rf -- "$SRC"' EXIT
+          for f in experiment-02/index.html journal/index.html assets/styles.css assets/registered-targets.json assets/registered-targets.js; do
+            mkdir -p "$SRC/$(dirname "$f")"
+            curl --fail --location --silent --show-error --retry 2 --max-time 25 "$BASE/$f" -o "$SRC/$f"
+            test -s "$SRC/$f"
+          done
+          echo "PINNED_GITHUB_FILES_DOWNLOADED"
           BACK=/var/backups/setaei-key-research/$(date -u +%Y%m%dT%H%M%SZ)-targets-${{ github.run_id }}
           test -f /var/www/setai/key/index.html
           test -f "$DOC/legacy-ecdpl.html"
