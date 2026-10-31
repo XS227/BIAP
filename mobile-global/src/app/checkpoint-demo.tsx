@@ -5,6 +5,7 @@ import { Colors } from '@/constants/theme';
 import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario, explainDemoCompany, selectDemoBroker, type CheckpointScenario } from '@/lib/checkpoint-demo';
 
 import { fetchSavedGlobalCompanyPreview, type SavedGlobalCompanyView } from '@/lib/global-api';
+import { assessSavedGlobalCoverage } from '@/lib/saved-company-contract';
 
 const format = (n: number | null) => n === null ? '—' : n.toLocaleString('en-US');
 
@@ -33,6 +34,7 @@ export default function CheckpointDemoScreen() {
   const ratios = demoFinancialRatios(demo);
   const explanation = explainDemoCompany(demo);
   const brokerPreview = selectDemoBroker(demo, selectedBroker);
+  const savedCoverage = savedResult ? assessSavedGlobalCoverage(savedResult) : null;
   const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
   if (!__DEV__) return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, padding: 20 }}><Text style={{ color: colors.text }}>Development preview unavailable.</Text></SafeAreaView>;
   const f = demo.financials;
@@ -109,6 +111,8 @@ export default function CheckpointDemoScreen() {
         <Text style={[styles.caption, { color: colors.textSecondary }]}>{savedStatus}</Text>
         {savedResult && <>
           <Text style={[styles.subtitle, { color: colors.text }]}>{savedResult.name ?? 'Unknown issuer'} • {savedResult.ticker} • {savedResult.ledger.status ?? 'Unknown status'}</Text>
+          <Text style={[styles.caption, { color: colors.textSecondary }]}>Stored display coverage: {savedCoverage?.complete ? 'All required fields present' : 'PARTIAL — missing or unverified fields'} • Not trade eligible</Text>
+          {savedCoverage && !savedCoverage.complete && <Text style={styles.noTrade}>Coverage gaps: {savedCoverage.missing.join(', ')}</Text>}
           <Text style={[styles.caption, { color: colors.textSecondary }]}>Source: {savedResult.ledger.source ?? 'Unknown'} • Analyzed: {savedResult.ledger.analyzedAt ?? 'Unknown'} • Evidence: {savedResult.evidence.status ?? 'Unknown'}</Text>
           <Text style={[styles.caption, { color: colors.textSecondary }]}>Report: {savedResult.evidence.reportPeriod ?? 'Unavailable'} • Provider: {savedResult.evidence.sourceProvider ?? 'Unavailable'}</Text>
           {Object.entries(savedResult.financials).map(([key, value]) => (
