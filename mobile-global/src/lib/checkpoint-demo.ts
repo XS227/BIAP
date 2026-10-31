@@ -63,7 +63,7 @@ export function explainDemoCompany(d: CheckpointDemo) {
   if (audit.missing.length) findings.push('Missing financial fields: ' + audit.missing.join(', ') + '.');
   if (audit.invalidValues.length) findings.push('Invalid numeric financial fields: ' + audit.invalidValues.join(', ') + '.');
   if (invalid) findings.push('Balance-sheet inconsistency: liabilities exceed assets.');
-  if (!audit.missing.length && !invalid) findings.push('Illustrative snapshot has all four required financial fields and a plausible balance-sheet relationship.');
+  if (!audit.missing.length && !audit.invalidValues.length && !invalid) findings.push('Illustrative snapshot has all four required financial fields and a plausible balance-sheet relationship.');
   if (ratios.netMarginPct !== null) findings.push('Illustrative net margin: ' + ratios.netMarginPct + '%.');
   if (ratios.debtToAssetsPct !== null) findings.push('Illustrative liabilities/assets: ' + ratios.debtToAssetsPct + '%.');
   findings.push('Source and observation date are unverified; no agent signal, model inference or investment eligibility.');
