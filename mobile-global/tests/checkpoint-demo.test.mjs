@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { validateSavedGlobalCompany } from '../src/lib/saved-company-contract.ts';
 import assert from 'node:assert/strict';
 import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario, explainDemoCompany, selectDemoBroker } from '../src/lib/checkpoint-demo.ts';
 
@@ -107,5 +108,40 @@ test('invalid numeric snapshots never receive a plausible-financial summary', ()
     assert.ok(!result.findings.some(f => f.includes('plausible balance-sheet relationship')));
     assert.equal(result.proxyCalled, false);
     assert.equal(result.eligibleForInvestmentDecision, false);
+  }
+});
+
+test('stored Global company API is accepted only with safe provenance and a valid bounded schema', () => {
+  const good = {
+    mode: 'SAVED_READ_ONLY', proxyCalled: false, eligibleForInvestmentDecision: false,
+    ticker: 'ABC', country: 'US', exchange: 'NASDAQ', name: 'Example', currency: 'USD',
+    ledger: { status: 'done', reason: null, source: 'LEDGER', analyzedAt: '2026-10-30' },
+    evidence: { status: 'WARN', sourceProvider: null, reportPeriod: null },
+    financials: { revenue: 100, net_income: null, total_assets: 200, total_liabilities: 70 },
+    financialQuality: { coreComplete: false, coveragePct: 60 },
+    audit: { method: 'DETERMINISTIC_STORED_CONSISTENCY', status: 'INCOMPLETE',
+      externallyVerified: false, eligibleForInvestmentDecision: false,
+      checks: [{ key: 'core', passed: false }, { key: 'balance', passed: null }, { key: 'source', passed: true }] },
+    agents: [{ name: 'Fundamental', vote: null, confidence: null, reason: null, dataStatus: 'WARN' }],
+    kiasha: { call: null, confidence: null, evidence: null },
+    ai: { status: 'NOT_REQUESTED', proxyCalled: false, route: 'biap-ai-proxy' },
+  };
+  assert.equal(validateSavedGlobalCompany(good, 'US', 'NASDAQ', 'ABC').mode, 'SAVED_READ_ONLY');
+  const mutate = (path, value) => {
+    const copy = structuredClone(good);
+    const keys = path.split('.');
+    let node = copy;
+    for (const key of keys.slice(0, -1)) node = node[key];
+    node[keys.at(-1)] = value;
+    return copy;
+  };
+  for (const [path, value] of [
+    ['mode', 'DEMO'], ['proxyCalled', true], ['eligibleForInvestmentDecision', true],
+    ['ticker', 'WRONG'], ['audit.externallyVerified', true],
+    ['audit.eligibleForInvestmentDecision', true], ['ai.proxyCalled', true],
+    ['financials.revenue', Infinity], ['financials.revenue', '100'],
+    ['kiasha.confidence', NaN], ['agents', [{}]], ['audit.checks', []],
+  ]) {
+    assert.throws(() => validateSavedGlobalCompany(mutate(path, value), 'US', 'NASDAQ', 'ABC'), /provenance\/schema/, path);
   }
 });
