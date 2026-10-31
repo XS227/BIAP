@@ -78,3 +78,15 @@ test('Iran financial quality rejects NaN, Infinity and negative assets while all
   const impossible = createCheckpointScenario(base, 'invalid');
   assert.equal(demoFinancialRatios(impossible).debtToAssetsPct, null);
 });
+
+test('invalid numeric snapshots never receive a plausible-financial summary', () => {
+  for (const [field, value] of [['revenue', Number.NaN], ['assets', -1], ['liabilities', Infinity]]) {
+    const sample = structuredClone(IRAN_CHECKPOINT_DEMO);
+    sample.financials[field] = value;
+    const result = explainDemoCompany(sample);
+    assert.ok(result.findings.some(f => f.includes('ارقام مالی نامعتبر')));
+    assert.ok(!result.findings.some(f => f.includes('چهار قلم مالی نمونه موجود')));
+    assert.equal(result.proxyCalled, false);
+    assert.equal(result.eligibleForInvestmentDecision, false);
+  }
+});
