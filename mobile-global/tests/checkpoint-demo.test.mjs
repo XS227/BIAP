@@ -1,5 +1,5 @@
 import test from 'node:test';
-import { validateSavedGlobalCompany, assertIsolatedCheckpointStagingBase } from '../src/lib/saved-company-contract.ts';
+import { validateSavedGlobalCompany, assertIsolatedCheckpointStagingBase, assessSavedGlobalCoverage } from '../src/lib/saved-company-contract.ts';
 import assert from 'node:assert/strict';
 import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario, explainDemoCompany, selectDemoBroker } from '../src/lib/checkpoint-demo.ts';
 
@@ -153,4 +153,49 @@ test('saved checkpoint reads require explicit non-production HTTPS staging host'
   }
   assert.equal(assertIsolatedCheckpointStagingBase('https://biap-staging.example.org/global-api/'),
     'https://biap-staging.example.org/global-api');
+});
+
+
+test('saved Global coverage is fail-closed, distinct from audit and trading eligibility', () => {
+  const incomplete = {
+    mode: 'SAVED_READ_ONLY', proxyCalled: false, eligibleForInvestmentDecision: false,
+    ticker: 'ABC', country: 'US', exchange: 'NASDAQ', name: 'Example', currency: 'USD',
+    ledger: { status: 'COMPLETE', reason: null, source: 'SAVED_LEDGER', analyzedAt: '2026-10-30' },
+    evidence: { status: 'WARN', sourceProvider: null, reportPeriod: null },
+    financials: { revenue: 100, net_income: null, total_assets: 200, total_liabilities: 70, total_equity: null },
+    financialQuality: { coreComplete: false, coveragePct: 60 },
+    audit: { method: 'DETERMINISTIC_STORED_CONSISTENCY', status: 'INCOMPLETE',
+      externallyVerified: false, eligibleForInvestmentDecision: false,
+      checks: [{ key: 'core', passed: false }, { key: 'balance', passed: null }, { key: 'source', passed: true }] },
+    agents: [{ name: 'Fundamental', vote: null, confidence: null, reason: null, dataStatus: 'WARN' }],
+    kiasha: { call: null, confidence: null, evidence: null },
+    ai: { status: 'NOT_REQUESTED', proxyCalled: false, route: 'biap-ai-proxy' },
+  };
+  const partial = assessSavedGlobalCoverage(validateSavedGlobalCompany(incomplete, 'US', 'NASDAQ', 'ABC'));
+  assert.equal(partial.complete, false);
+  assert.deepEqual(partial.missing, ['financialStatements', 'sourceAndDate', 'evidencePass',
+    'sixAgentVotes', 'kiasha', 'deterministicConsistency']);
+  assert.equal(partial.eligibleForInvestmentDecision, false);
+  const full = structuredClone(incomplete);
+  full.financials.net_income = -1;
+  full.financials.total_equity = 130;
+  full.financialQuality.coreComplete = true;
+  full.evidence.status = 'PASS';
+  full.evidence.sourceProvider = 'OFFICIAL';
+  full.evidence.reportPeriod = 'FY2025';
+  full.audit.status = 'UNVERIFIED';
+  full.audit.checks = full.audit.checks.map(c => ({ ...c, passed: true }));
+  full.agents = Array.from({ length: 6 }, (_, i) => ({
+    name: 'Agent' + i, vote: 0, confidence: 0.5, reason: 'Stored', dataStatus: 'PASS',
+  }));
+  full.kiasha = { call: 'HOLD', confidence: 0.6, evidence: 'Stored' };
+  const covered = assessSavedGlobalCoverage(validateSavedGlobalCompany(full, 'US', 'NASDAQ', 'ABC'));
+  assert.equal(covered.complete, true);
+  assert.deepEqual(covered.missing, []);
+  assert.equal(covered.eligibleForInvestmentDecision, false);
+  full.agents[5].name = 'Agent0';
+  assert.equal(assessSavedGlobalCoverage(full).checks.sixAgentVotes, false);
+  full.agents[5].name = 'Agent5';
+  full.audit.checks[0].passed = null;
+  assert.equal(assessSavedGlobalCoverage(full).checks.deterministicConsistency, false);
 });
