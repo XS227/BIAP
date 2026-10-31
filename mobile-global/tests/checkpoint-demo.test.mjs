@@ -97,3 +97,15 @@ test('Global financial quality rejects NaN, Infinity and negative assets while a
   const impossible = createCheckpointScenario(base, 'invalid');
   assert.equal(demoFinancialRatios(impossible).debtToAssetsPct, null);
 });
+
+test('invalid numeric snapshots never receive a plausible-financial summary', () => {
+  for (const [field, value] of [['revenue', Number.NaN], ['assets', -1], ['liabilities', Infinity]]) {
+    const sample = structuredClone(GLOBAL_CHECKPOINT_DEMO);
+    sample.financials[field] = value;
+    const result = explainDemoCompany(sample);
+    assert.ok(result.findings.some(f => f.includes('Invalid numeric financial fields')));
+    assert.ok(!result.findings.some(f => f.includes('plausible balance-sheet relationship')));
+    assert.equal(result.proxyCalled, false);
+    assert.equal(result.eligibleForInvestmentDecision, false);
+  }
+});
