@@ -58,7 +58,7 @@ def validate_saved_company(value, country, exchange, ticker):
         and audit.get("eligibleForInvestmentDecision") is False
         and audit.get("externallyVerified") is False
         and isinstance(audit.get("checks"), list) and len(audit["checks"]) >= 3
-        and all(isinstance(c, dict) and c.get("passed") in (True, False, None)
+        and all(isinstance(c, dict) and (c.get("passed") is None or type(c.get("passed")) is bool)
                 for c in audit["checks"])
     )
     agents = value.get("agents") if isinstance(value.get("agents"), list) else []
@@ -100,6 +100,8 @@ def self_test():
         ("proxyCalled", True), ("eligibleForInvestmentDecision", True),
         ("financials", {}), ("agents", good["agents"][:5]),
         ("kiasha", {}), ("audit", {}), ("ledger", {}),
+        ("audit", {**good["audit"], "checks": [{"key": "balance", "passed": 1}]}),
+        ("audit", {**good["audit"], "checks": [{"key": "balance", "passed": 0}]}),
     ):
         candidate = {**good, key: bad}
         assert not validate_saved_company(candidate, "US", "NASDAQ", "ABC")["ok"], key
