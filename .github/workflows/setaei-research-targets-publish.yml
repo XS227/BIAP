@@ -1,0 +1,124 @@
+name: Publish SETAEI registered public research targets
+on:
+  push:
+    branches: [ops/key-research-audit-20261030]
+    paths: [.github/workflows/setaei-research-targets-publish.yml]
+permissions:
+  contents: read
+concurrency:
+  group: setaei-key-research-publication
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 12
+    env:
+      VPS_HOST: ${ secrets.VPS_HOST || vars.VPS_HOST || '5.249.252.88' }}
+      VPS_USER: ${ secrets.VPS_USER || vars.VPS_USER || 'ubuntu' }}
+      VPS_SSH_KEY: ${ secrets.VPS_SSH_KEY }}
+      VPS_PORT: ${ secrets.VPS_PORT || vars.VPS_PORT || '22' }}
+    steps:
+      - name: Fetch pinned SETAEI research source
+        uses: actions/checkout@v4
+        with:
+          repository: XS227/SETai
+          ref: be9fb92888678d609d372035f1892a1401d4511c
+          path: research-source
+          persist-credentials: false
+      - name: Validate the nine public reference addresses and static assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,re
+          base=Path('research-source/key-research')
+          info=json.loads((base/'assets/registered-targets.json').read_text())
+          addrs=[r['address'] for r in info['registered_targets']]
+          assert len(addrs)==9 and len(set(a.lower() for a in addrs))==9
+          assert all(re.fullmatch(r'0x[0-9a-fA-F]{40}', a) for a in addrs)
+          assert info['reference_slot_10']['address'] is None
+          assert info['agent_status']=='not_modified'
+          html=(base/'experiment-02/index.html').read_text()
+          assert 'registered-targets.js' in html and 'registered-targets' in html
+          journal=(base/'journal/index.html').read_text()
+          assert 'Registered public address references' in journal
+          for f in ['assets/styles.css','assets/registered-targets.js','assets/registered-targets.json','experiment-02/index.html','journal/index.html']:
+              assert (base/f).stat().st_size>200
+          print('VALIDATED: 9 distinct public addresses, tenth unresolved, no agent changes')
+          PY
+          node --check research-source/key-research/assets/registered-targets.js
+      - name: Establish production SSH connection
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$VPS_SSH_KEY"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -T 10 -t ed25519 -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+      - name: Transfer isolated research sources to temporary directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          scp -q -r -o BatchMode=yes -o ConnectTimeout=18 -o ConnectionAttempts=3 -i ~/.ssh/id_ed25519 -P "$VPS_PORT" research-source/key-research "$VPS_USER@$VPS_HOST:/tmp/setaei-targets-${ github.run_id }}"
+      - name: Backup, publish, verify or roll back only research presentation files
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=18 -o ConnectionAttempts=3 -i ~/.ssh/id_ed25519 -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
+          set -Eeuo pipefail
+          umask 022
+          [[ "$(hostname)" == "vps-5359843" ]] || { echo "WRONG_VPS"; exit 3; }
+          DOC=/var/www/setai/key/research
+          SRC=/tmp/setaei-targets-${ github.run_id }
+          BACK=/var/backups/setaei-key-research/$(date -u +%Y%m%dT%H%M%SZ)-targets-${ github.run_id }
+          test -f /var/www/setai/key/index.html
+          test -f "$DOC/legacy-ecdpl.html"
+          test -f "$DOC/experiment-02/index.html"
+          test -f "$DOC/journal/index.html"
+          test -f "$DOC/assets/styles.css"
+          test -f "$SRC/assets/registered-targets.json"
+          test -f "$SRC/assets/registered-targets.js"
+          sudo -n true
+          curl -fsS --max-time 20 https://setai.no/key/api/latest -o /dev/null
+          curl -fsS --max-time 20 https://setai.no/key/ -o /dev/null
+          sudo install -d -m 700 "$BACK"
+          for f in experiment-02/index.html journal/index.html assets/styles.css; do
+            sudo install -D -m 600 "$DOC/$f" "$BACK/$f"
+          done
+          echo "BACKUP_OK: $BACK"
+          ROLLBACK=0
+          finish(){
+            rc=$?
+            if [[ "$rc" -ne 0 && "$ROLLBACK" -eq 1 ]]; then
+              for f in experiment-02/index.html journal/index.html assets/styles.css; do
+                sudo install -o www-data -g www-data -m 644 "$BACK/$f" "$DOC/$f"
+              done
+              sudo rm -f "$DOC/assets/registered-targets.json" "$DOC/assets/registered-targets.js"
+              echo "RESEARCH_UI_ROLLBACK_COMPLETED"
+            fi
+            rm -rf -- "$SRC"
+            exit "$rc"
+          }
+          trap finish EXIT
+          if [[ -e "$DOC/assets/registered-targets.json" || -e "$DOC/assets/registered-targets.js" ]]; then
+            echo "REFUSING_TO_OVERWRITE_PREEXISTING_REGISTERED_TARGET_ASSETS"
+            exit 4
+          fi
+          ROLLBACK=1
+          for f in experiment-02/index.html journal/index.html assets/styles.css assets/registered-targets.json assets/registered-targets.js; do
+            test -s "$SRC/$f"
+            sudo install -o www-data -g www-data -m 644 "$SRC/$f" "$DOC/$f"
+          done
+          curl -fsS --max-time 20 -H 'Cache-Control: no-cache' https://setai.no/key/research/assets/registered-targets.json | grep -q '"registered_targets"'
+          curl -fsS --max-time 20 -H 'Cache-Control: no-cache' https://setai.no/key/research/assets/registered-targets.js | grep -q 'registered-targets.json'
+          curl -fsS --max-time 20 -H 'Cache-Control: no-cache' https://setai.no/key/research/experiment-02/ | grep -q 'Registrerte offentlige referanseadresser'
+          curl -fsS --max-time 20 -H 'Cache-Control: no-cache' https://setai.no/key/research/journal/ | grep -q 'Registered public address references'
+          curl -fsS --max-time 20 https://setai.no/key/research/legacy-ecdpl.html -o /dev/null
+          curl -fsS --max-time 20 https://setai.no/key/api/latest -o /dev/null
+          curl -fsS --max-time 20 https://setai.no/key/ -o /dev/null
+          echo "PUBLISH_SUCCESS: 9 registered public targets, reference 10 unresolved, no private key or agent changes; live counter healthy."
+          REMOTE
