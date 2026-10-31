@@ -49,6 +49,48 @@ def _stored_json(blob):
     return result if isinstance(result, dict) else None
 
 
+
+def audit_saved_financials(financials: dict) -> dict:
+    """Deterministic consistency checks, NOT an external or statutory audit.
+
+    Missing amounts are not imputed; a valid-looking balance is never proof of
+    authenticity, and this projection cannot authorize investment decisions.
+    """
+    assets = financials.get("total_assets")
+    liabilities = financials.get("total_liabilities")
+    equity = financials.get("total_equity")
+    core = ("revenue", "net_income", "total_assets", "total_liabilities")
+    present = all(financials.get(key) is not None for key in core)
+    nonnegative = all(
+        financials.get(key) is None or financials[key] >= 0
+        for key in ("revenue", "total_assets", "total_liabilities")
+    )
+    liabilities_ok = (
+        None if assets is None or liabilities is None
+        else liabilities <= assets
+    )
+    identity_ok = (
+        None if assets is None or liabilities is None or equity is None
+        else abs(assets - liabilities - equity) <= max(1.0, abs(assets) * 0.01)
+    )
+    checks = [
+        {"key": "core_figures_present", "passed": present},
+        {"key": "nonnegative_balance_components", "passed": nonnegative},
+        {"key": "liabilities_not_above_assets", "passed": liabilities_ok},
+        {"key": "assets_equal_liabilities_plus_equity", "passed": identity_ok},
+    ]
+    inconsistent = any(item["passed"] is False for item in checks[1:])
+    return {
+        "method": "DETERMINISTIC_STORED_CONSISTENCY",
+        "status": "INCONSISTENT" if inconsistent else (
+            "INCOMPLETE" if not present or identity_ok is None else "UNVERIFIED"
+        ),
+        "checks": checks,
+        "externallyVerified": False,
+        "eligibleForInvestmentDecision": False,
+    }
+
+
 def saved_company_view(country: str, exchange: str, ticker: str, *, path: Path | None = None):
     """Return a deliberately narrow view of the existing compressed ledger row.
 
@@ -96,6 +138,7 @@ def saved_company_view(country: str, exchange: str, ticker: str, *, path: Path |
         except (ValueError, TypeError):
             pass
 
+    financials = {key: _number(company.get(key)) for key in FINANCIAL_KEYS}
     signals = result.get("signals") if isinstance(result.get("signals"), list) else []
     agents = []
     for item in signals[:12]:
@@ -124,12 +167,15 @@ def saved_company_view(country: str, exchange: str, ticker: str, *, path: Path |
             "source": _text(row["source"], 120),
             "analyzedAt": _text(row["analyzed_at"], 50),
         },
-        "financials": {key: _number(company.get(key)) for key in FINANCIAL_KEYS},
+        "financials": financials,
+        "audit": audit_saved_financials(financials),
         "financialQuality": financial_quality,
         "evidence": {
             "status": _text(evidence.get("status"), 30),
-            "missingCritical": evidence.get("missing_critical", [])[:30]
-            if isinstance(evidence.get("missing_critical"), list) else [],
+            "missingCritical": [
+                _text(value, 100) for value in evidence.get("missing_critical", [])[:30]
+                if isinstance(value, str)
+            ] if isinstance(evidence.get("missing_critical"), list) else [],
             "coverage": _number(evidence.get("coverage")),
             "sourceProvider": _text(fundamental.get("sourceProvider"), 120),
             "reportPeriod": _text(fundamental.get("reportPeriod"), 60),
