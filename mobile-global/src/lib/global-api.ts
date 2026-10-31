@@ -1,5 +1,5 @@
 import type { GlobalInvestmentDecision } from '@/lib/decision-tier';
-import { validateSavedGlobalCompany } from './saved-company-contract';
+import { validateSavedGlobalCompany, assertIsolatedCheckpointStagingBase } from './saved-company-contract';
 
 export const GLOBAL_API_BASE = (process.env.EXPO_PUBLIC_BIAP_GLOBAL_API_BASE || 'https://biap.dadashi.no/global-api').replace(/\/$/, '');
 
@@ -761,6 +761,7 @@ export type SavedGlobalCompanyView = {
 
 export async function fetchSavedGlobalCompanyPreview(country: string, exchange: string, ticker: string): Promise<SavedGlobalCompanyView> {
   if (!__DEV__) throw new Error('Development-only saved ledger preview is disabled.');
+  assertIsolatedCheckpointStagingBase(process.env.EXPO_PUBLIC_BIAP_GLOBAL_API_BASE);
   if (![country, exchange, ticker].every(value => value.trim().length > 0)) throw new Error('Country, exchange and ticker are required.');
   const query = new URLSearchParams({ country: country.trim().toUpperCase(), exchange: exchange.trim().toUpperCase(), ticker: ticker.trim() });
   const payload = await request<unknown>(`/global/checkpoint/saved-company?${query.toString()}`, { method: 'GET' }, 12_000);
