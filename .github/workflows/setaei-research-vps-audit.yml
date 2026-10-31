@@ -49,6 +49,12 @@ jobs:
           fi
           echo "RESEARCH_PAGE_TITLE:"
           curl -fLsS --max-time 15 https://setai.no/key/research/ | grep -o '<title>[^<]*</title>' | head -1 || true
+          echo "PUBLIC_RESEARCH_DEPLOY_PREFLIGHT:"
+          for p in /var/www/setai/key/index.html /var/www/setai/key/research/legacy-ecdpl.html /var/www/setai/key/research/experiment-02/index.html /var/www/setai/key/research/journal/index.html /var/www/setai/key/research/assets/styles.css /tmp/setaei-targets-41151402878/assets/registered-targets.json; do
+            if test -f "$p"; then echo "PRESENT: $p"; else echo "MISSING: $p"; fi
+          done
+          echo "SUDO_TEST:"
+          sudo -n true && echo SUDO_OK || echo SUDO_UNAVAILABLE
           echo "COUNTER_API_HEALTH:"
           curl -sS -o /dev/null -w '%{http_code}\n' --max-time 15 'https://setai.no/key/api/latest' || true
           echo "RESEARCH_PUBLIC_HEALTH:"
