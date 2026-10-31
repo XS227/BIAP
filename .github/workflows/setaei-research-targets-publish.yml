@@ -63,7 +63,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          scp -q -r -o BatchMode=yes -o ConnectTimeout=18 -o ConnectionAttempts=3 -i ~/.ssh/id_ed25519 -P "$VPS_PORT" research-source/key-research "$VPS_USER@$VPS_HOST:/tmp/setaei-targets-${{ github.run_id }}"
+          scp -q -r -o BatchMode=yes -o ConnectTimeout=18 -o ConnectionAttempts=3 -i ~/.ssh/id_ed25519 -P "$VPS_PORT" research-source/key-research "$VPS_USER@$VPS_HOST:/tmp/setaei-targets-${{ github.run_id }}}"
       - name: Backup, publish, verify or roll back only research presentation files
         shell: bash
         run: |
@@ -73,8 +73,8 @@ jobs:
           umask 022
           [[ "$(hostname)" == "vps-5359843" ]] || { echo "WRONG_VPS"; exit 3; }
           DOC=/var/www/setai/key/research
-          SRC=/tmp/setaei-targets-${{ github.run_id }
-          BACK=/var/backups/setaei-key-research/$(date -u +%Y%m%dT%H%M%SZ)-targets-${{ github.run_id }
+          SRC=/tmp/setaei-targets-${{ github.run_id }}
+          BACK=/var/backups/setaei-key-research/$(date -u +%Y%m%dT%H%M%SZ)-targets-${{ github.run_id }}
           test -f /var/www/setai/key/index.html
           test -f "$DOC/legacy-ecdpl.html"
           test -f "$DOC/experiment-02/index.html"
