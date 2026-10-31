@@ -56,3 +56,16 @@ export function validateSavedGlobalCompany(
       ai.route !== 'biap-ai-proxy') fail();
   return payload as unknown as SavedGlobalCompanyView;
 }
+
+/** The checkpoint must never accidentally query the default production API. */
+export function assertIsolatedCheckpointStagingBase(configured: string | undefined): string {
+  if (!configured || !/^https:\/\//i.test(configured)) {
+    throw new Error('Set an explicit HTTPS staging API base for saved checkpoint reads.');
+  }
+  const url = new URL(configured);
+  if (!url.hostname || url.username || url.password ||
+      ['biap.dadashi.no', 'setai.no', 'www.setai.no', 'localhost', '127.0.0.1'].includes(url.hostname.toLowerCase())) {
+    throw new Error('Saved checkpoint reads require an isolated staging host, not production.');
+  }
+  return configured.replace(/\/$/, '');
+}
