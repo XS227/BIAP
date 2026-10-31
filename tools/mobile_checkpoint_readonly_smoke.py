@@ -17,7 +17,7 @@ import json
 import os
 import sys
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote, urlencode
+from urllib.parse import quote, urlencode, urlsplit
 from urllib.request import Request, urlopen
 
 
@@ -87,6 +87,35 @@ def match_iran(payload, requested):
     return {"ok": False, "reason": "symbol_not_found", "symbol": requested}
 
 
+
+def is_isolated_staging_base(base):
+    """Refuse accidental production reads, even for GET-only API sampling.
+
+    A TLS URL alone is not proof of staging. Require an explicit dev/staging/
+    sandbox DNS label, no credentials, and no raw IP or known production host.
+    This is a safety guard, not proof that the remote server is isolated.
+    """
+    try:
+        url = urlsplit(base)
+        host = (url.hostname or "").lower().rstrip(".")
+        labels = host.split(".")
+        staging = any(
+            label in ("staging", "dev", "sandbox")
+            or label.startswith(("staging-", "dev-", "sandbox-"))
+            for label in labels[:-2]
+        )
+        return (
+            url.scheme == "https"
+            and not url.username and not url.password
+            and len(labels) >= 3
+            and staging
+            and host not in ("biap.dadashi.no", "setai.no", "www.setai.no")
+            and url.fragment == ""
+        )
+    except ValueError:
+        return False
+
+
 def get_json(base, path):
     token = os.environ.get("BIAP_READONLY_API_TOKEN", "").strip()
     headers = {"Accept": "application/json"}
@@ -109,6 +138,17 @@ def self_test():
     assert match_iran({"items": [{"symbol": "پكرمان", "code": "12", "name": "Test"}]}, "پکرمان")["ok"]
     assert match_iran({"items": [{"symbol": "پكرمان"}]}, "پکرمان")["reason"] == "incomplete_symbol_identity"
     assert not match_iran({"items": [{"symbol": "خودرو"}]}, "پکرمان")["ok"]
+    assert is_isolated_staging_base("https://staging.example.com/global-api")
+    assert is_isolated_staging_base("https://api.dev.example.com/api")
+    for unsafe in (
+        "https://biap.dadashi.no/global-api",
+        "https://5.249.252.88/global-api",
+        "https://setai.no/api",
+        "http://staging.example.com/api",
+        "https://example.com/api",
+        "https://user:pass@staging.example.com/api",
+    ):
+        assert not is_isolated_staging_base(unsafe), unsafe
     print("offline parser and provenance self-test: PASS")
 
 
@@ -125,8 +165,8 @@ def main():
         return 0
     if not args.global_base_url or not args.iran_base_url or not args.market or len(args.iran_symbol) != 3:
         p.error("Supply both API base URLs, at least one --market and exactly three --iran-symbol values")
-    if not all(base.startswith("https://") for base in (args.global_base_url, args.iran_base_url)):
-        p.error("HTTPS API bases are required")
+    if not all(is_isolated_staging_base(base) for base in (args.global_base_url, args.iran_base_url)):
+        p.error("Both API bases must use explicit isolated HTTPS staging/dev/sandbox DNS hosts; production/IP hosts are refused")
     if len({clean_symbol(symbol) for symbol in args.iran_symbol}) != 3:
         p.error("Three distinct Iran symbols are required")
     results = {"mode": "READ_ONLY", "global": {}, "iran": {}, "apiDirectorySamplingComplete": False, "apiCompanyChecksComplete": False}
