@@ -148,7 +148,10 @@ test('stored Global company API is accepted only with safe provenance and a vali
 
 test('saved checkpoint reads require explicit non-production HTTPS staging host', () => {
   for (const base of [undefined, '', 'http://staging.example.org', 'https://biap.dadashi.no/global-api',
-    'https://setai.no/global-api', 'https://localhost:3000', 'https://user:pass@staging.example.org']) {
+    'https://setai.no/global-api', 'https://localhost:3000', 'https://user:pass@staging.example.org',
+    'https://5.249.252.88/global-api', 'https://127.0.0.2:443', 'https://[::1]/global-api',
+    'https://0x7f000001/global-api', 'https://api.biap.dadashi.no/global-api',
+    'https://localhost./global-api', 'https://dev.local/global-api']) {
     assert.throws(() => assertIsolatedCheckpointStagingBase(base), /staging|production/);
   }
   assert.equal(assertIsolatedCheckpointStagingBase('https://biap-staging.example.org/global-api/'),
