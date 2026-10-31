@@ -69,8 +69,15 @@ export function assertIsolatedCheckpointStagingBase(configured: string | undefin
     throw new Error('Set an explicit HTTPS staging API base for saved checkpoint reads.');
   }
   const url = new URL(configured);
-  if (!url.hostname || url.username || url.password ||
-      ['biap.dadashi.no', 'setai.no', 'www.setai.no', 'localhost', '127.0.0.1'].includes(url.hostname.toLowerCase())) {
+  const host = url.hostname.toLowerCase().replace(/\\.$/, '');
+  // Never send saved financial records to a direct server IP, loopback,
+  // private hostname, or a subdomain of the known production API.
+  // URL canonicalizes alternate IPv4 spellings (e.g. 0x7f000001).
+  const directIp = /^\\d+\\.\\d+\\.\\d+\\.\\d+$/.test(host) || host.startsWith('[');
+  const forbiddenHost = host === 'localhost' || host.endsWith('.localhost') ||
+    host.endsWith('.local') || host === 'setai.no' || host === 'www.setai.no' ||
+    host === 'biap.dadashi.no' || host.endsWith('.biap.dadashi.no');
+  if (!host || url.username || url.password || directIp || forbiddenHost) {
     throw new Error('Saved checkpoint reads require an isolated staging host, not production.');
   }
   return configured.replace(/\/$/, '');
