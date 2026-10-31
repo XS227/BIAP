@@ -115,6 +115,14 @@ export default function CheckpointDemoScreen() {
             <View key={key} style={styles.line}><Text style={{ color: colors.textSecondary }}>{key}</Text><Text style={{ color: colors.text }}>{format(value)}</Text></View>
           ))}
           <Text style={[styles.caption, { color: colors.textSecondary }]}>Core financial completeness: {savedResult.financialQuality.coreComplete ? 'Yes' : 'Unverified / missing'} • Coverage: {savedResult.financialQuality.coveragePct ?? '—'}</Text>
+          <Text style={[styles.heading, { color: colors.text }]}>Saved financial consistency • deterministic</Text>
+          <Text style={[styles.caption, { color: colors.textSecondary }]}>Status: {savedResult.audit?.status ?? 'Unavailable'} • Not an external audit; never authorizes investment.</Text>
+          {savedResult.audit?.checks.map(check => (
+            <View key={check.key} style={styles.line}>
+              <Text style={{ color: colors.textSecondary, flex: 1 }}>{check.key}</Text>
+              <Text style={{ color: check.passed === true ? '#16a34a' : check.passed === false ? '#dc2626' : colors.textSecondary }}>{check.passed === null ? 'Not checked' : check.passed ? 'Consistent' : 'Failed'}</Text>
+            </View>
+          ))}
           {savedResult.agents.map((agent, index) => (
             <Text key={index} style={[styles.caption, { color: colors.textSecondary }]}>{agent.name ?? 'Agent'}: vote {agent.vote ?? '—'} • confidence {agent.confidence ?? '—'} • {agent.dataStatus ?? 'Unverified'}</Text>
           ))}
