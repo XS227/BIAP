@@ -1,5 +1,5 @@
 import test from 'node:test';
-import { validateSavedGlobalCompany } from '../src/lib/saved-company-contract.ts';
+import { validateSavedGlobalCompany, assertIsolatedCheckpointStagingBase } from '../src/lib/saved-company-contract.ts';
 import assert from 'node:assert/strict';
 import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario, explainDemoCompany, selectDemoBroker } from '../src/lib/checkpoint-demo.ts';
 
@@ -144,4 +144,13 @@ test('stored Global company API is accepted only with safe provenance and a vali
   ]) {
     assert.throws(() => validateSavedGlobalCompany(mutate(path, value), 'US', 'NASDAQ', 'ABC'), /provenance\/schema/, path);
   }
+});
+
+test('saved checkpoint reads require explicit non-production HTTPS staging host', () => {
+  for (const base of [undefined, '', 'http://staging.example.org', 'https://biap.dadashi.no/global-api',
+    'https://setai.no/global-api', 'https://localhost:3000', 'https://user:pass@staging.example.org']) {
+    assert.throws(() => assertIsolatedCheckpointStagingBase(base), /staging|production/);
+  }
+  assert.equal(assertIsolatedCheckpointStagingBase('https://biap-staging.example.org/global-api/'),
+    'https://biap-staging.example.org/global-api');
 });
