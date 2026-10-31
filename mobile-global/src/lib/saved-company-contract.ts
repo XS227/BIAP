@@ -75,3 +75,30 @@ export function assertIsolatedCheckpointStagingBase(configured: string | undefin
   }
   return configured.replace(/\/$/, '');
 }
+
+/**
+ * Display-coverage gate for already stored analysis only. This is NOT a
+ * financial audit, AI verification, trading approval, or Checkpoint 1 signoff.
+ * Partial saved records remain viewable, but their missing fields are explicit.
+ */
+export function assessSavedGlobalCoverage(view: SavedGlobalCompanyView) {
+  const required = ['revenue', 'net_income', 'total_assets', 'total_liabilities', 'total_equity'];
+  const agentNames = view.agents.map(agent => agent.name?.trim()).filter((name): name is string => Boolean(name));
+  const checks = {
+    financialStatements: view.financialQuality.coreComplete === true &&
+      required.every(key => typeof view.financials[key] === 'number' && Number.isFinite(view.financials[key])),
+    sourceAndDate: Boolean(view.ledger.source?.trim() && view.ledger.analyzedAt?.trim() &&
+      view.evidence.sourceProvider?.trim() && view.evidence.reportPeriod?.trim()),
+    evidencePass: view.evidence.status === 'PASS',
+    sixAgentVotes: new Set(agentNames).size >= 6 &&
+      view.agents.every(agent => Boolean(agent.name?.trim()) &&
+        typeof agent.vote === 'number' && Number.isFinite(agent.vote) &&
+        typeof agent.confidence === 'number' && Number.isFinite(agent.confidence)),
+    kiasha: Boolean(view.kiasha.call?.trim()) &&
+      typeof view.kiasha.confidence === 'number' && Number.isFinite(view.kiasha.confidence),
+    deterministicConsistency: view.audit.status === 'UNVERIFIED' &&
+      view.audit.checks.length >= 3 && view.audit.checks.every(check => check.passed === true),
+  };
+  const missing = Object.entries(checks).filter(([, passed]) => !passed).map(([key]) => key);
+  return { complete: missing.length === 0, checks, missing, eligibleForInvestmentDecision: false as const };
+}
