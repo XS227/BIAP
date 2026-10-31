@@ -2,7 +2,8 @@
 """Read-only Checkpoint 1 API sampler. Never triggers scans, analyses or writes.
 
 Examples:
-  python tools/mobile_checkpoint_readonly_smoke.py --base-url https://HOST/api \
+  python tools/mobile_checkpoint_readonly_smoke.py --global-base-url https://HOST/global-api \
+    --iran-base-url https://HOST/api \
     --market US:NASDAQ --market GB:LSE --iran-symbol پکرمان \
     --iran-symbol خودرو --iran-symbol خساپا
 
@@ -85,7 +86,8 @@ def self_test():
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--base-url", help="Approved API base URL ending in /api")
+    p.add_argument("--global-base-url", help="Approved Global API base, e.g. https://HOST/global-api")
+    p.add_argument("--iran-base-url", help="Approved Iran API base, e.g. https://HOST/api")
     p.add_argument("--market", action="append", default=[], metavar="COUNTRY:EXCHANGE")
     p.add_argument("--iran-symbol", action="append", default=[])
     p.add_argument("--self-test", action="store_true")
@@ -93,10 +95,12 @@ def main():
     if args.self_test:
         self_test()
         return 0
-    if not args.base_url or not args.market or len(args.iran_symbol) != 3:
-        p.error("Supply --base-url, at least one --market and exactly three --iran-symbol values")
-    if not args.base_url.startswith("https://"):
-        p.error("HTTPS API base is required")
+    if not args.global_base_url or not args.iran_base_url or not args.market or len(args.iran_symbol) != 3:
+        p.error("Supply both API base URLs, at least one --market and exactly three --iran-symbol values")
+    if not all(base.startswith("https://") for base in (args.global_base_url, args.iran_base_url)):
+        p.error("HTTPS API bases are required")
+    if len({clean_symbol(symbol) for symbol in args.iran_symbol}) != 3:
+        p.error("Three distinct Iran symbols are required")
     results = {"mode": "READ_ONLY", "global": {}, "iran": {}, "apiCompanyChecksComplete": False}
     success = True
     for market in args.market:
@@ -107,7 +111,7 @@ def main():
             p.error("invalid country or exchange")
         path = "/global/analysis-ledger?" + urlencode({"country": country, "exchange": exchange, "limit": 100})
         try:
-            result = sample_global(get_json(args.base_url, path))
+            result = sample_global(get_json(args.global_base_url, path))
         except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
             result = {"ok": False, "reason": type(exc).__name__}
         results["global"][market] = result
@@ -115,7 +119,7 @@ def main():
     for symbol in args.iran_symbol:
         path = "/stock/symbols?" + urlencode({"q": symbol, "limit": 30})
         try:
-            result = match_iran(get_json(args.base_url, path), symbol)
+            result = match_iran(get_json(args.iran_base_url, path), symbol)
         except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
             result = {"ok": False, "reason": type(exc).__name__, "symbol": symbol}
         results["iran"][symbol] = result
