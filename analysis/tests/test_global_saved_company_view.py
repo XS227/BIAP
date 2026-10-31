@@ -35,7 +35,7 @@ def test_saved_projection_is_narrow_and_read_only(tmp_path):
         "decisionTable": {"kiasha": {"call": "HOLD", "confidence": 0.5}},
         "providerDiagnostics": {"credential": "DO_NOT_EXPOSE"},
     }
-    _ledger(path, payload)
+    _ledger(path, payload, financial={"coreComplete": False, "missing": [{"credential": "DO_NOT_EXPOSE"}, "total_equity"]})
     before = path.read_bytes()
     view = saved_company_view("US", "NASDAQ", "ABC", path=path)
     assert view["mode"] == "SAVED_READ_ONLY"
@@ -46,6 +46,7 @@ def test_saved_projection_is_narrow_and_read_only(tmp_path):
     assert view["audit"]["externallyVerified"] is False
     assert view["audit"]["eligibleForInvestmentDecision"] is False
     assert view["evidence"]["missingCritical"] == ["revenue"]
+    assert view["financialQuality"]["missing"] == ["total_equity"]
     assert view["agents"][0]["name"] == "fundamental"
     assert view["kiasha"]["call"] == "HOLD"
     assert view["evidence"]["sourceProvider"] == "OFFICIAL"
