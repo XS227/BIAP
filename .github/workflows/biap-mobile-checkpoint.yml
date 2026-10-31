@@ -6,6 +6,7 @@ on:
     paths:
       - 'mobile/**'
       - 'mobile-global/**'
+      - 'tools/mobile_checkpoint_readonly_smoke.py'
       - '.github/workflows/biap-mobile-checkpoint.yml'
   workflow_dispatch:
 
@@ -31,6 +32,8 @@ jobs:
           cache-dependency-path: ${{ matrix.app }}/package-lock.json
       - name: Install dependencies
         run: npm ci
+      - name: Read-only API sampler offline self-test
+        run: python ../tools/mobile_checkpoint_readonly_smoke.py --self-test
       - name: TypeScript
         run: npx tsc --noEmit
       - name: Synthetic checkpoint safeguards
