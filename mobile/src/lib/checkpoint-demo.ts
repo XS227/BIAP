@@ -60,7 +60,7 @@ export function explainDemoCompany(d: CheckpointDemo) {
   if (audit.missing.length) findings.push('فیلدهای مالی ناقص: ' + audit.missing.join('، ') + '.');
   if (audit.invalidValues.length) findings.push('ارقام مالی نامعتبر: ' + audit.invalidValues.join('، ') + '.');
   if (invalid) findings.push('ناسازگاری ترازنامه: بدهی‌ها از دارایی‌ها بیشتر است.');
-  if (!audit.missing.length && !invalid) findings.push('چهار قلم مالی نمونه موجود است و رابطه دارایی و بدهی سازگار است.');
+  if (!audit.missing.length && !audit.invalidValues.length && !invalid) findings.push('چهار قلم مالی نمونه موجود است و رابطه دارایی و بدهی سازگار است.');
   if (ratios.netMarginPct !== null) findings.push('حاشیه سود فرضی: ' + ratios.netMarginPct + '٪.');
   if (ratios.debtToAssetsPct !== null) findings.push('نسبت فرضی بدهی به دارایی: ' + ratios.debtToAssetsPct + '٪.');
   findings.push('منبع و تاریخ داده تأیید نشده؛ هیچ رأی ایجنت، تحلیل مدل یا مجوز تصمیم معاملاتی وجود ندارد.');
