@@ -151,11 +151,16 @@ test('saved checkpoint reads require explicit non-production HTTPS staging host'
     'https://setai.no/global-api', 'https://localhost:3000', 'https://user:pass@staging.example.org',
     'https://5.249.252.88/global-api', 'https://127.0.0.2:443', 'https://[::1]/global-api',
     'https://0x7f000001/global-api', 'https://api.biap.dadashi.no/global-api',
-    'https://localhost./global-api', 'https://dev.local/global-api']) {
+    'https://localhost./global-api', 'https://dev.local/global-api',
+    'https://example.org/global-api', 'https://api.example.org/global-api',
+    'https://staging.example.org/global-api?redirect=prod',
+    'https://staging.example.org/global-api#fragment']) {
     assert.throws(() => assertIsolatedCheckpointStagingBase(base), /staging|production/);
   }
   assert.equal(assertIsolatedCheckpointStagingBase('https://biap-staging.example.org/global-api/'),
     'https://biap-staging.example.org/global-api');
+  assert.equal(assertIsolatedCheckpointStagingBase('https://api.dev.example.org/global-api'),
+    'https://api.dev.example.org/global-api');
 });
 
 
