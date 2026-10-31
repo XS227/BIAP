@@ -750,6 +750,7 @@ export type SavedGlobalCompanyView = {
   currency: string | null;
   ledger: { status: string | null; reason: string | null; source: string | null; analyzedAt: string | null };
   financials: Record<string, number | null>;
+  audit: { method: 'DETERMINISTIC_STORED_CONSISTENCY'; status: 'UNVERIFIED' | 'INCOMPLETE' | 'INCONSISTENT'; checks: Array<{ key: string; passed: boolean | null }>; externallyVerified: false; eligibleForInvestmentDecision: false };
   financialQuality: { complete?: boolean; coreComplete?: boolean; coveragePct?: number | null; missing?: string[] };
   evidence: { status: string | null; sourceProvider: string | null; reportPeriod: string | null };
   agents: Array<{ name: string | null; vote: number | null; confidence: number | null; reason: string | null; dataStatus: string | null }>;
