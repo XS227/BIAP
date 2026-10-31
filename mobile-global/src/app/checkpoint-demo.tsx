@@ -1,14 +1,33 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario, explainDemoCompany, selectDemoBroker, type CheckpointScenario } from '@/lib/checkpoint-demo';
+
+import { fetchSavedGlobalCompanyPreview, type SavedGlobalCompanyView } from '@/lib/global-api';
 
 const format = (n: number | null) => n === null ? '—' : n.toLocaleString('en-US');
 
 export default function CheckpointDemoScreen() {
   const [scenario, setScenario] = useState<CheckpointScenario>('complete');
   const [selectedBroker, setSelectedBroker] = useState<string | null>(null);
+  const [savedCountry, setSavedCountry] = useState('US');
+  const [savedExchange, setSavedExchange] = useState('NASDAQ');
+  const [savedTicker, setSavedTicker] = useState('AAPL');
+  const [savedResult, setSavedResult] = useState<SavedGlobalCompanyView | null>(null);
+  const [savedStatus, setSavedStatus] = useState('Not requested');
+  const loadSaved = async () => {
+    setSavedResult(null);
+    setSavedStatus('Loading stored result (GET only)…');
+    try {
+      const value = await fetchSavedGlobalCompanyPreview(savedCountry, savedExchange, savedTicker);
+      if (value.mode !== 'SAVED_READ_ONLY' || value.proxyCalled !== false) throw new Error('Unexpected provenance contract');
+      setSavedResult(value);
+      setSavedStatus('Stored result loaded; no AI proxy or trading call');
+    } catch (error) {
+      setSavedStatus(error instanceof Error ? error.message : 'Stored result unavailable');
+    }
+  };
   const demo = createCheckpointScenario(GLOBAL_CHECKPOINT_DEMO, scenario);
   const audit = auditCheckpointDemo(demo);
   const ratios = demoFinancialRatios(demo);
@@ -70,6 +89,40 @@ export default function CheckpointDemoScreen() {
         <Text style={[styles.caption, { color: colors.textSecondary }]}>Route reserved: {demo.ai.route} • {demo.ai.status}</Text>
       </View>
       <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
+        <Text style={[styles.heading, { color: colors.text }]}>Saved Global analysis • staging GET only</Text>
+        <Text style={[styles.caption, { color: colors.textSecondary }]}>Requires the off-by-default BIAP_CHECKPOINT_SAVED_READONLY=1 flag on an isolated development API. Never runs /global/analyze.</Text>
+        <View style={styles.scenarioRow}>
+          {([
+            { value: savedCountry, setter: setSavedCountry, hint: 'Country' },
+            { value: savedExchange, setter: setSavedExchange, hint: 'Exchange' },
+            { value: savedTicker, setter: setSavedTicker, hint: 'Ticker' },
+          ] as const).map(field => (
+            <TextInput key={field.hint} accessibilityLabel={field.hint} value={field.value}
+              onChangeText={field.setter} autoCapitalize="characters" autoCorrect={false}
+              placeholder={field.hint} placeholderTextColor={colors.textSecondary}
+              style={[styles.savedInput, { color: colors.text, borderColor: colors.textSecondary }]} />
+          ))}
+        </View>
+        <Pressable accessibilityRole="button" onPress={() => { void loadSaved(); }} style={styles.savedButton}>
+          <Text style={styles.savedButtonText}>Load saved result (read-only)</Text>
+        </Pressable>
+        <Text style={[styles.caption, { color: colors.textSecondary }]}>{savedStatus}</Text>
+        {savedResult && <>
+          <Text style={[styles.subtitle, { color: colors.text }]}>{savedResult.name ?? 'Unknown issuer'} • {savedResult.ticker} • {savedResult.ledger.status ?? 'Unknown status'}</Text>
+          <Text style={[styles.caption, { color: colors.textSecondary }]}>Source: {savedResult.ledger.source ?? 'Unknown'} • Analyzed: {savedResult.ledger.analyzedAt ?? 'Unknown'} • Evidence: {savedResult.evidence.status ?? 'Unknown'}</Text>
+          <Text style={[styles.caption, { color: colors.textSecondary }]}>Report: {savedResult.evidence.reportPeriod ?? 'Unavailable'} • Provider: {savedResult.evidence.sourceProvider ?? 'Unavailable'}</Text>
+          {Object.entries(savedResult.financials).map(([key, value]) => (
+            <View key={key} style={styles.line}><Text style={{ color: colors.textSecondary }}>{key}</Text><Text style={{ color: colors.text }}>{format(value)}</Text></View>
+          ))}
+          <Text style={[styles.caption, { color: colors.textSecondary }]}>Core financial completeness: {savedResult.financialQuality.coreComplete ? 'Yes' : 'Unverified / missing'} • Coverage: {savedResult.financialQuality.coveragePct ?? '—'}</Text>
+          {savedResult.agents.map((agent, index) => (
+            <Text key={index} style={[styles.caption, { color: colors.textSecondary }]}>{agent.name ?? 'Agent'}: vote {agent.vote ?? '—'} • confidence {agent.confidence ?? '—'} • {agent.dataStatus ?? 'Unverified'}</Text>
+          ))}
+          <Text style={[styles.caption, { color: colors.textSecondary }]}>Kiasha stored call: {savedResult.kiasha.call ?? 'Unavailable'} • Confidence: {savedResult.kiasha.confidence ?? '—'}</Text>
+          <Text style={styles.noTrade}>Saved evidence only. Proxy called: NO. Trading eligibility: NO.</Text>
+        </>}
+      </View>
+      <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
         <Text style={[styles.heading, { color: colors.text }]}>Broker selection preview</Text>
         {demo.brokerChoices.map(b =>
           <Pressable key={b.name} accessibilityRole="radio" accessibilityState={{ selected: brokerPreview.selectedBroker === b.name }}
@@ -101,4 +154,7 @@ const styles = StyleSheet.create({
   scenarioButton: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 },
   scenarioLabel: { fontSize: 11, fontWeight: '700' },
   noTrade: { color: '#b45309', fontSize: 11, fontWeight: '700' },
+  savedInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6, minWidth: 78, flexGrow: 1 },
+  savedButton: { backgroundColor: '#1d4ed8', padding: 10, borderRadius: 8, alignItems: 'center' },
+  savedButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 });
