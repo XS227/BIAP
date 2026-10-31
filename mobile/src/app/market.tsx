@@ -45,8 +45,8 @@ export default function MarketScreen(){
    }finally{setPricing(false)}
  },[mergeWatchlist]);
  const loadUniverse=useCallback(async()=>{try{setError(false);const items=await fetchMarketSymbols({limit:5000});if(!items.length)throw new Error('empty');setSymbols(items);setVisibleCount(PAGE_SIZE);refreshQuotes(items.slice(0,60))}catch{setError(true)}finally{setLoading(false);setRefreshing(false)}},[refreshQuotes]);
- useEffect(()=>{loadUniverse()},[loadUniverse]);
- useEffect(()=>{setVisibleCount(PAGE_SIZE);const timer=setTimeout(()=>{const source=category==='PRICED'?symbols.slice(0,72):filtered.slice(0,PAGE_SIZE);refreshQuotes(source)},150);return()=>clearTimeout(timer)},[query,category,favoriteCodes]);
+ useEffect(()=>{void Promise.resolve().then(loadUniverse)},[loadUniverse]);
+ useEffect(()=>{const timer=setTimeout(()=>{setVisibleCount(PAGE_SIZE);const source=category==='PRICED'?symbols.slice(0,72):filtered.slice(0,PAGE_SIZE);refreshQuotes(source)},150);return()=>clearTimeout(timer)},[query,category,favoriteCodes]);
  useEffect(()=>{const interval=setInterval(()=>{const target=category==='PRICED'?symbols.slice(0,48):visible;refreshQuotes(target);setCountdown(30)},30000),tick=setInterval(()=>setCountdown(c=>c>0?c-1:30),1000);return()=>{clearInterval(interval);clearInterval(tick)}},[refreshQuotes,visible,category,symbols]);
  const selectCategory=(key:Category)=>{setCategory(key);setFiltersOpen(false)};
  const loadMore=async()=>{if(loadingMore||visibleCount>=filtered.length)return;setLoadingMore(true);const n=Math.min(visibleCount+PAGE_SIZE,filtered.length),more=filtered.slice(visibleCount,n);setVisibleCount(n);refreshQuotes(more).finally(()=>setLoadingMore(false))};

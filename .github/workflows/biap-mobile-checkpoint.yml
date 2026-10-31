@@ -1,0 +1,67 @@
+name: BIAP mobile checkpoint validation
+
+on:
+  pull_request:
+    branches: [live/base-20261030]
+    paths:
+      - 'mobile/**'
+      - 'mobile-global/**'
+      - 'tools/mobile_checkpoint_readonly_smoke.py'
+      - 'tools/mobile_checkpoint_saved_company_smoke.py'
+      - 'analysis/global_markets/saved_company_view.py'
+      - 'analysis/tests/test_global_saved_company_view.py'
+      - 'analysis/global_routes.py'
+      - '.github/workflows/biap-mobile-checkpoint.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checkpoint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [mobile, mobile-global]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Read-only API sampler offline self-test
+        run: python ../tools/mobile_checkpoint_readonly_smoke.py --self-test
+      - name: Saved Global three-company contract offline self-test
+        run: python ../tools/mobile_checkpoint_saved_company_smoke.py --self-test
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Synthetic checkpoint safeguards
+        run: npm run test:checkpoint
+      - name: Lint (non-interactive)
+        env:
+          CI: '1'
+        run: npm run lint
+
+  saved-global-readonly:
+    # Isolated backend contract test; never connects to the live API or ledger.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install backend test dependencies
+        run: python -m pip install -r analysis/requirements.txt
+      - name: Verify saved Global projection is read-only and fails closed
+        env:
+          PYTHONPATH: analysis
+        run: python -m pytest -q analysis/tests/test_global_saved_company_view.py

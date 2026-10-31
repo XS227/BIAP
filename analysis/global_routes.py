@@ -492,6 +492,27 @@ def global_analysis_ledger(
             "decisionMode": "investment" if view else "conservative"}
 
 
+@router.get("/checkpoint/saved-company")
+def global_checkpoint_saved_company(
+    country: str = Query(min_length=2, max_length=2),
+    exchange: str = Query(min_length=2, max_length=64),
+    ticker: str = Query(min_length=1, max_length=64),
+):
+    """Opt-in development-only GET of one saved ledger result; never re-analyzes."""
+    if os.getenv("BIAP_CHECKPOINT_SAVED_READONLY", "").strip() != "1":
+        raise HTTPException(status_code=404, detail="Development-only route disabled")
+    country, exchange = country.strip().upper(), exchange.strip().upper()
+    try:
+        get_exchange(country, exchange)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    from global_markets.saved_company_view import saved_company_view
+    result = saved_company_view(country, exchange, ticker.strip())
+    if result is None:
+        raise HTTPException(status_code=404, detail="No stored company analysis")
+    return result
+
+
 @router.get("/recommendations")
 def global_recommendations(country: str, exchange: str, tier: Optional[str] = None, limit: int = 50, offset: int = 0):
     """Investment-mode tiers (BUY/ACCUMULATE/HOLD/REDUCE/SELL) for one exchange, best rank first."""

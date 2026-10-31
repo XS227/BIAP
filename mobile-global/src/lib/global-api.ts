@@ -1,4 +1,5 @@
 import type { GlobalInvestmentDecision } from '@/lib/decision-tier';
+import { validateSavedGlobalCompany, assertIsolatedCheckpointStagingBase } from './saved-company-contract';
 
 export const GLOBAL_API_BASE = (process.env.EXPO_PUBLIC_BIAP_GLOBAL_API_BASE || 'https://biap.dadashi.no/global-api').replace(/\/$/, '');
 
@@ -735,4 +736,34 @@ export async function fetchGlobalBrokerReadiness(): Promise<{
   } catch {
     return null;
   }
+}
+
+
+/** Development-only GET of an existing Global ledger result; never triggers analysis. */
+export type SavedGlobalCompanyView = {
+  mode: 'SAVED_READ_ONLY';
+  proxyCalled: false;
+  eligibleForInvestmentDecision: false;
+  ticker: string;
+  name: string | null;
+  country: string;
+  exchange: string;
+  currency: string | null;
+  ledger: { status: string | null; reason: string | null; source: string | null; analyzedAt: string | null };
+  financials: Record<string, number | null>;
+  audit: { method: 'DETERMINISTIC_STORED_CONSISTENCY'; status: 'UNVERIFIED' | 'INCOMPLETE' | 'INCONSISTENT'; checks: Array<{ key: string; passed: boolean | null }>; externallyVerified: false; eligibleForInvestmentDecision: false };
+  financialQuality: { complete?: boolean; coreComplete?: boolean; coveragePct?: number | null; missing?: string[] };
+  evidence: { status: string | null; sourceProvider: string | null; reportPeriod: string | null };
+  agents: Array<{ name: string | null; vote: number | null; confidence: number | null; reason: string | null; dataStatus: string | null }>;
+  kiasha: { call: string | null; confidence: number | null; evidence: string | null };
+  ai: { status: 'NOT_REQUESTED'; proxyCalled: false; route: 'biap-ai-proxy' };
+};
+
+export async function fetchSavedGlobalCompanyPreview(country: string, exchange: string, ticker: string): Promise<SavedGlobalCompanyView> {
+  if (!__DEV__) throw new Error('Development-only saved ledger preview is disabled.');
+  assertIsolatedCheckpointStagingBase(process.env.EXPO_PUBLIC_BIAP_GLOBAL_API_BASE);
+  if (![country, exchange, ticker].every(value => value.trim().length > 0)) throw new Error('Country, exchange and ticker are required.');
+  const query = new URLSearchParams({ country: country.trim().toUpperCase(), exchange: exchange.trim().toUpperCase(), ticker: ticker.trim() });
+  const payload = await request<unknown>(`/global/checkpoint/saved-company?${query.toString()}`, { method: 'GET' }, 12_000);
+  return validateSavedGlobalCompany(payload, country, exchange, ticker);
 }
