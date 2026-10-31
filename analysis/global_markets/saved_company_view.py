@@ -48,8 +48,6 @@ def _stored_json(blob):
         return None
     return result if isinstance(result, dict) else None
 
-
-
 def audit_saved_financials(financials: dict) -> dict:
     """Deterministic consistency checks, NOT an external or statutory audit.
 
@@ -132,7 +130,8 @@ def saved_company_view(country: str, exchange: str, ticker: str, *, path: Path |
                     "complete": candidate.get("complete") is True,
                     "coreComplete": candidate.get("coreComplete") is True,
                     "coveragePct": _number(candidate.get("coveragePct")),
-                    "missing": [str(v)[:60] for v in candidate.get("missing", [])[:30]]
+                    "missing": [_text(v, 60) for v in candidate.get("missing", [])[:30]
+                                if isinstance(v, str)]
                     if isinstance(candidate.get("missing"), list) else [],
                 }
         except (ValueError, TypeError):
