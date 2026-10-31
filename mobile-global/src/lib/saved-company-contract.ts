@@ -69,11 +69,11 @@ export function assertIsolatedCheckpointStagingBase(configured: string | undefin
     throw new Error('Set an explicit HTTPS staging API base for saved checkpoint reads.');
   }
   const url = new URL(configured);
-  const host = url.hostname.toLowerCase().replace(/\\.$/, '');
+  const host = url.hostname.toLowerCase().replace(/\.$/, '');
   // Never send saved financial records to a direct server IP, loopback,
   // private hostname, or a subdomain of the known production API.
   // URL canonicalizes alternate IPv4 spellings (e.g. 0x7f000001).
-  const directIp = /^\\d+\\.\\d+\\.\\d+\\.\\d+$/.test(host) || host.startsWith('[');
+  const directIp = /^\d+\.\d+\.\d+\.\d+$/.test(host) || host.startsWith('[');
   const forbiddenHost = host === 'localhost' || host.endsWith('.localhost') ||
     host.endsWith('.local') || host === 'setai.no' || host === 'www.setai.no' ||
     host === 'biap.dadashi.no' || host.endsWith('.biap.dadashi.no');
