@@ -77,7 +77,17 @@ export function assertIsolatedCheckpointStagingBase(configured: string | undefin
   const forbiddenHost = host === 'localhost' || host.endsWith('.localhost') ||
     host.endsWith('.local') || host === 'setai.no' || host === 'www.setai.no' ||
     host === 'biap.dadashi.no' || host.endsWith('.biap.dadashi.no');
-  if (!host || url.username || url.password || directIp || forbiddenHost) {
+  // An arbitrary HTTPS domain is not evidence of isolation. Require an
+  // explicit staging/dev/sandbox DNS label, as the read-only API sampler does.
+  // This is a naming guard, not a substitute for verifying deployment isolation.
+  const labels = host.split('.');
+  const hasStagingLabel = labels.length >= 3 && labels.slice(0, -2).some(label =>
+    ['staging', 'dev', 'sandbox'].includes(label) ||
+    ['staging-', 'dev-', 'sandbox-'].some(prefix => label.startsWith(prefix)) ||
+    ['-staging', '-dev', '-sandbox'].some(suffix => label.endsWith(suffix))
+  );
+  if (!host || url.username || url.password || directIp || forbiddenHost ||
+      !hasStagingLabel || url.hash || url.search) {
     throw new Error('Saved checkpoint reads require an isolated staging host, not production.');
   }
   return configured.replace(/\/$/, '');
