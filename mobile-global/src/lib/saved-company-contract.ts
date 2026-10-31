@@ -12,7 +12,8 @@ const fail = (): never => { throw new Error('Stored analysis response failed rea
 export function validateSavedGlobalCompany(
   payload: unknown, country: string, exchange: string, ticker: string,
 ): SavedGlobalCompanyView {
-  if (!record(payload) || payload.mode !== 'SAVED_READ_ONLY' ||
+  if (!record(payload)) return fail();
+  if (payload.mode !== 'SAVED_READ_ONLY' ||
       payload.proxyCalled !== false || payload.eligibleForInvestmentDecision !== false ||
       payload.country !== country.trim().toUpperCase() ||
       payload.exchange !== exchange.trim().toUpperCase() ||
@@ -26,9 +27,14 @@ export function validateSavedGlobalCompany(
   const agents = payload.agents;
   const kiasha = payload.kiasha;
   const ai = payload.ai;
-  if (!record(ledger) || !record(evidence) || !record(financials) ||
-      !record(quality) || !record(audit) || !Array.isArray(agents) ||
-      !record(kiasha) || !record(ai)) fail();
+  if (!record(ledger)) return fail();
+  if (!record(evidence)) return fail();
+  if (!record(financials)) return fail();
+  if (!record(quality)) return fail();
+  if (!record(audit)) return fail();
+  if (!Array.isArray(agents)) return fail();
+  if (!record(kiasha)) return fail();
+  if (!record(ai)) return fail();
 
   if (!textOrNull(payload.name) || !textOrNull(payload.currency) ||
       !['status', 'reason', 'source', 'analyzedAt'].every(k => textOrNull(ledger[k])) ||
@@ -43,10 +49,10 @@ export function validateSavedGlobalCompany(
       audit.externallyVerified !== false ||
       audit.eligibleForInvestmentDecision !== false ||
       !Array.isArray(audit.checks) || audit.checks.length < 3 || audit.checks.length > 30 ||
-      !audit.checks.every(c => record(c) && typeof c.key === 'string' &&
+      !audit.checks.every((c: unknown) => record(c) && typeof c.key === 'string' &&
         (c.passed === true || c.passed === false || c.passed === null))) fail();
 
-  if (agents.length > 12 || !agents.every(a => record(a) &&
+  if (agents.length > 12 || !agents.every((a: unknown) => record(a) &&
       textOrNull(a.name) && numberOrNull(a.vote) && numberOrNull(a.confidence) &&
       textOrNull(a.reason) && textOrNull(a.dataStatus)) ||
       !textOrNull(kiasha.call) || !numberOrNull(kiasha.confidence) ||
