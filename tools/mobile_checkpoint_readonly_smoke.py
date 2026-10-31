@@ -9,7 +9,7 @@ Examples:
 
 Global checks three distinct saved ledger rows per requested market (one GET).
 Iran checks three explicit symbols via read-only symbol search (one GET each).
-This does NOT validate the AI proxy, live price reconciliation or full analysis.
+This does NOT validate per-company financial statements, agent votes, the AI proxy, live price reconciliation or full analysis.
 No credentials or raw financial payloads are printed.
 """
 import argparse
@@ -26,6 +26,7 @@ def clean_symbol(value):
 
 
 def sample_global(payload):
+    """Fail closed when three distinct issuers lack traceable ledger provenance."""
     rows = payload.get("rows") if isinstance(payload, dict) else None
     if not isinstance(rows, list):
         return {"ok": False, "reason": "missing_rows", "sample": []}
@@ -39,16 +40,29 @@ def sample_global(payload):
             continue
         seen.add(key)
         ledger = row.get("ledger") if isinstance(row.get("ledger"), dict) else {}
+        evidence = row.get("evidence") if isinstance(row.get("evidence"), dict) else {}
+        source_present = bool(ledger.get("source") or row.get("source"))
+        evidence_status = evidence.get("status")
         sample.append({
             "ticker": ticker,
             "status": ledger.get("status"),
-            "sourcePresent": bool(ledger.get("source") or row.get("source")),
-            "evidenceStatus": (row.get("evidence") or {}).get("status")
-                if isinstance(row.get("evidence"), dict) else None,
+            "sourcePresent": source_present,
+            "evidenceStatus": evidence_status,
+            "provenanceComplete": source_present and bool(evidence_status),
         })
         if len(sample) == 3:
             break
-    return {"ok": len(sample) == 3, "reason": None if len(sample) == 3 else "fewer_than_three_distinct_issuers", "sample": sample}
+    count_ok = len(sample) == 3
+    provenance_ok = count_ok and all(row["provenanceComplete"] for row in sample)
+    return {
+        "ok": provenance_ok,
+        "reason": None if provenance_ok else (
+            "fewer_than_three_distinct_issuers" if not count_ok else "missing_source_or_evidence"
+        ),
+        "threeDistinctIssuers": count_ok,
+        "provenanceComplete": provenance_ok,
+        "sample": sample,
+    }
 
 
 def match_iran(payload, requested):
@@ -60,8 +74,16 @@ def match_iran(payload, requested):
         if not isinstance(row, dict):
             continue
         if key in (clean_symbol(row.get("symbol")), clean_symbol(row.get("code"))):
-            return {"ok": True, "symbol": requested, "codePresent": bool(row.get("code")),
-                    "namePresent": bool(row.get("name")), "market": row.get("market")}
+            code_present = bool(str(row.get("code") or "").strip())
+            name_present = bool(str(row.get("name") or "").strip())
+            return {
+                "ok": code_present and name_present,
+                "reason": None if code_present and name_present else "incomplete_symbol_identity",
+                "symbol": requested,
+                "codePresent": code_present,
+                "namePresent": name_present,
+                "market": row.get("market"),
+            }
     return {"ok": False, "reason": "symbol_not_found", "symbol": requested}
 
 
@@ -76,12 +98,18 @@ def get_json(base, path):
 
 
 def self_test():
-    assert sample_global({"rows": [{"ticker": "A"}, {"ticker": "A"}, {"ticker": "B"}, {"ticker": "C"}]})["ok"]
+    good = {"rows": [
+        {"ticker": ticker, "ledger": {"source": "SAVED_LEDGER"},
+         "evidence": {"status": "WARN"}} for ticker in ("A", "B", "C")
+    ]}
+    assert sample_global(good)["ok"]
     assert not sample_global({"rows": [{"ticker": "A"}]})["ok"]
+    assert sample_global({"rows": [{"ticker": "A"}, {"ticker": "B"}, {"ticker": "C"}]})["reason"] == "missing_source_or_evidence"
     assert not sample_global({"rows": None})["ok"]
     assert match_iran({"items": [{"symbol": "پكرمان", "code": "12", "name": "Test"}]}, "پکرمان")["ok"]
+    assert match_iran({"items": [{"symbol": "پكرمان"}]}, "پکرمان")["reason"] == "incomplete_symbol_identity"
     assert not match_iran({"items": [{"symbol": "خودرو"}]}, "پکرمان")["ok"]
-    print("offline parser self-test: PASS")
+    print("offline parser and provenance self-test: PASS")
 
 
 def main():
@@ -101,7 +129,7 @@ def main():
         p.error("HTTPS API bases are required")
     if len({clean_symbol(symbol) for symbol in args.iran_symbol}) != 3:
         p.error("Three distinct Iran symbols are required")
-    results = {"mode": "READ_ONLY", "global": {}, "iran": {}, "apiCompanyChecksComplete": False}
+    results = {"mode": "READ_ONLY", "global": {}, "iran": {}, "apiDirectorySamplingComplete": False, "apiCompanyChecksComplete": False}
     success = True
     for market in args.market:
         if ":" not in market:
@@ -125,7 +153,10 @@ def main():
         results["iran"][symbol] = result
         success = success and result["ok"]
     # This sampler cannot prove the proxy, price correctness or decision quality.
-    results["apiCompanyChecksComplete"] = success
+    # These GETs check saved-ledger directory provenance and symbol identity only.
+    # They do NOT read each issuer's financial statements, agent votes or proxy output.
+    results["apiDirectorySamplingComplete"] = success
+    results["apiCompanyChecksComplete"] = False
     results["fullCheckpointReady"] = False
     print(json.dumps(results, ensure_ascii=False, indent=2))
     return 0 if success else 1
