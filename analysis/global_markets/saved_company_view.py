@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import math
+from contextlib import closing
 import sqlite3
 import zlib
 from pathlib import Path
@@ -61,7 +62,7 @@ def saved_company_view(country: str, exchange: str, ticker: str, *, path: Path |
         return None
     uri = "file:" + quote(str(file_path.resolve()), safe="/") + "?mode=ro"
     try:
-        with sqlite3.connect(uri, uri=True, timeout=2) as conn:
+        with closing(sqlite3.connect(uri, uri=True, timeout=2)) as conn:
             conn.row_factory = sqlite3.Row
             conn.execute("PRAGMA query_only=ON")
             row = conn.execute(
