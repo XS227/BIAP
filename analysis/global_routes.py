@@ -14,6 +14,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from global_markets import decision_overlay
+from global_markets.broker_catalog import broker_readiness
 from global_markets.country_packs import country_catalog, get_exchange
 from global_markets.credit_scoring import score_individual_credit
 from global_markets.models import InvestorProfile
@@ -375,6 +376,12 @@ def global_instruments(
 @router.get("/requirements")
 def global_requirements():
     return {"requirements": requirements_payload(), "sources": SOURCE_PLANS}
+
+
+@router.get("/brokers")
+def global_brokers():
+    """Public metadata only; never returns broker secrets or account data."""
+    return broker_readiness()
 
 
 @router.get("/status")

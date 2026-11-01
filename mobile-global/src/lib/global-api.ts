@@ -696,3 +696,43 @@ export async function fetchGlobalStatus(): Promise<Record<string, unknown> | nul
   try { return await request<Record<string, unknown>>('/global/status', undefined, 8_000); }
   catch { return null; }
 }
+
+
+export type GlobalBrokerIntegration = {
+  id: 'ibkr' | 'saxo' | 'alpaca';
+  name: string;
+  integrationStage: string;
+  connectionStatus: 'NOT_CONNECTED';
+  marketScope: string;
+  usEquitiesOnly: boolean;
+  apiDocs: string;
+  onboardingDocs: string;
+};
+
+export async function fetchGlobalBrokerReadiness(): Promise<{
+  mode: string;
+  liveTrading: boolean;
+  paperBrokerConnected: boolean;
+  orderSubmissionEnabled: boolean;
+  providers: GlobalBrokerIntegration[];
+} | null> {
+  try {
+    const response = await fetch(`${GLOBAL_API_BASE}/global/brokers`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) return null;
+    const body: unknown = await response.json();
+    if (!body || typeof body !== 'object') return null;
+    const data = body as Record<string, unknown>;
+    if (!Array.isArray(data.providers)) return null;
+    return data as {
+      mode: string;
+      liveTrading: boolean;
+      paperBrokerConnected: boolean;
+      orderSubmissionEnabled: boolean;
+      providers: GlobalBrokerIntegration[];
+    };
+  } catch {
+    return null;
+  }
+}

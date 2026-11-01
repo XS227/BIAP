@@ -10,6 +10,7 @@ import { SymbolLogo } from '@/components/symbol-logo';
 import { StockRowSkeleton } from '@/components/skeleton';
 import { marketStatusLabel } from '@/lib/market-hours';
 
+const normalizeSearch=(value:string)=>value.trim().replace(/ي/g,'ی').replace(/ك/g,'ک').toLowerCase();
 const PAGE_SIZE=40;
 type Category='ALL'|'FAVORITES'|'TOP'|'LOSERS'|'PRICED'|'TSE'|'IFB'|'IFB_BASE';
 const CATEGORIES:{key:Category;label:string}[]=[{key:'ALL',label:'همه نمادها'},{key:'FAVORITES',label:'علاقه‌مندی‌ها'},{key:'PRICED',label:'دارای قیمت'},{key:'TOP',label:'برترین‌ها'},{key:'LOSERS',label:'بیشترین افت'},{key:'TSE',label:'بورس'},{key:'IFB',label:'فرابورس'},{key:'IFB_BASE',label:'بازار پایه'}];
@@ -26,7 +27,7 @@ export default function MarketScreen(){
  useFocusEffect(useCallback(()=>{let active=true;listFavorites().then(items=>{if(active)setFavoriteCodes(items.map(x=>x.code))});return()=>{active=false}},[]));
 
  const filtered=useMemo(()=>{
-   const q=query.trim();let items=q?symbols.filter(s=>s.symbol.includes(q)||s.name.includes(q)||s.code.includes(q)):symbols;
+   const q=normalizeSearch(query);let items=q?symbols.filter(s=>normalizeSearch(s.symbol).includes(q)||normalizeSearch(s.name).includes(q)||normalizeSearch(s.code).includes(q)):symbols;
    if(category==='FAVORITES'){const fav=new Set(favoriteCodes);items=items.filter(s=>fav.has(s.code)||fav.has(s.symbol));}
    if(category==='TSE'||category==='IFB'||category==='IFB_BASE')items=items.filter(s=>(s.market??'').toUpperCase()===category);
    if(category==='PRICED')items=items.filter(s=>{const x=quotes[s.code];return Boolean(x&&!x.error&&(x.lastPrice!=null||x.closingPrice!=null))});

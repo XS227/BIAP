@@ -25,12 +25,14 @@ export default function MoreScreen(){
   useFocusEffect(useCallback(()=>{Promise.all([getGlobalMarketSelection(),getSelectedGlobalCompany()]).then(([m,c])=>{setMarket(m);setCompany(c)});},[]));
   const version=Constants.expoConfig?.version||'0.1.0';
   const items:Item[]=[
+    {icon: "🧮", title: "Financial & Audit Intelligence", sub: "ERP analysis, audit risk signals and evidence-based decision support.", onPress:()=>router.push("/enterprise-intelligence" as never), accent:Brand.dataViolet},
     {icon:'🧩',title:'BIAP Modules',sub:'Data, KPI, business development and financial modeling on the same Global issuer schema.',onPress:()=>router.push('/modules'),accent:Brand.primary},
     {icon:'🌍',title:'Country & Exchange',sub:market?`${market.countryName} • ${market.exchangeLabel}`:'Choose the market context used across BIAP.',onPress:()=>router.push('/global'),accent:'#0ea5e9'},
     {icon:'📈',title:'Selected Company',sub:company?`${company.ticker} • ${company.name}`:'Open Market and select a listed company for cross-module analysis.',onPress:()=>router.push('/market'),accent:Brand.positive},
     {icon:'🔌',title:'Private Data Connections',sub:'CSV/Excel and company data for CRM, pricing, journey, unit economics and internal KPIs.',onPress:()=>router.push('/data-connect' as never),accent:Brand.dataViolet},
     {icon:'💼',title:'Portfolio Agent',sub:'Capital, FX, cash reserve, risk tolerance and concentration-aware allocation.',onPress:()=>router.push('/portfolio'),accent:Brand.secondary},
     {icon:'🧠',title:'Kiasha',sub:'Evidence-gated market scan and ranked stock ideas for the selected market.',onPress:()=>router.push('/kiasha'),accent:'#7c3aed'},
+    {icon:'🏦',title:'International Brokerages',sub:'Open official Interactive Brokers, Saxo Bank and Alpaca websites. Account verification happens with each broker.',onPress:()=>router.push('/orders'),accent:Brand.positive},
     {icon:'🧾',title:'Orders / Execution',sub:'Paper-first execution area. Global live brokerage remains disabled until a broker adapter is approved.',onPress:()=>router.push('/orders'),accent:Brand.warning},
     {icon:'👤',title:'Profile & Settings',sub:'Account and app settings.',onPress:()=>router.push('/profile'),accent:'#64748b'},
     {icon:'🔄',title:'Check for updates',sub:`Installed version ${version}. Download the newest BIAP Global APK.`,onPress:()=>{void checkForUpdateInteractive();},accent:Brand.primary},
