@@ -1,5 +1,5 @@
 import type { GlobalInvestmentDecision } from '@/lib/decision-tier';
-import { validateSavedGlobalCompany, assertIsolatedCheckpointStagingBase } from './saved-company-contract';
+import { validateSavedGlobalCompany, assertIsolatedCheckpointStagingBase } from './saved-company-contract.ts';
 
 export const GLOBAL_API_BASE = (process.env.EXPO_PUBLIC_BIAP_GLOBAL_API_BASE || 'https://biap.dadashi.no/global-api').replace(/\/$/, '');
 
