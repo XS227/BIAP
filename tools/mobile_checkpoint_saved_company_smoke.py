@@ -109,7 +109,24 @@ def validate_saved_company(value, country, exchange, ticker):
         "financialFields": financials_ok, "financialQuality": quality_ok,
         "deterministicAudit": audit_ok, "sixAgentVotes": agents_ok, "kiasha": kiasha_ok,
     }
-    return {"ok": all(checks.values()), "checks": checks, "agentCount": len(set(names)),
+    # API schema readability is NOT Checkpoint 1 completeness. A record can be
+    # safely displayed while missing source dates, six votes or a consistent
+    # balance sheet. Never count that partial record as a passed company test.
+    coverage = {
+        "financialStatements": financials_ok and quality.get("coreComplete") is True
+        and all(is_number(financials.get(k)) for k in required),
+        "sourceAndDate": bool(source_ok)
+        and all(isinstance(evidence.get(k), str) and evidence[k].strip()
+                for k in ("sourceProvider", "reportPeriod")),
+        "evidencePass": evidence.get("status") == "PASS",
+        "sixAgentVotes": agents_ok,
+        "kiasha": kiasha_ok,
+        "deterministicConsistency": audit_ok and audit.get("status") == "UNVERIFIED"
+        and all(c.get("passed") is True for c in audit.get("checks", [])),
+    }
+    valid = all(checks.values())
+    return {"ok": valid, "checkpointComplete": valid and all(coverage.values()),
+            "checks": checks, "coverage": coverage, "agentCount": len(set(names)),
             "evidenceStatus": evidence.get("status") if isinstance(evidence.get("status"), str) else None,
             "auditStatus": audit.get("status") if isinstance(audit.get("status"), str) else None}
 
@@ -130,7 +147,15 @@ def self_test():
         "agents": [{"name": "Agent" + str(i), "vote": 0, "confidence": 0.6} for i in range(6)],
         "kiasha": {"call": "HOLD", "confidence": 0.5},
     }
-    assert validate_saved_company(good, "US", "NASDAQ", "ABC")["ok"]
+    partial = validate_saved_company(good, "US", "NASDAQ", "ABC")
+    assert partial["ok"] and not partial["checkpointComplete"]
+    assert not partial["coverage"]["financialStatements"]
+    full = json.loads(json.dumps(good))
+    full["financials"]["net_income"] = -1
+    full["financials"]["total_equity"] = 130
+    full["evidence"].update({"status": "PASS", "sourceProvider": "OFFICIAL", "reportPeriod": "FY2025"})
+    full["audit"]["checks"] = [{"key": c["key"], "passed": True} for c in full["audit"]["checks"]]
+    assert validate_saved_company(full, "US", "NASDAQ", "ABC")["checkpointComplete"]
     for key, bad in (
         ("proxyCalled", True), ("eligibleForInvestmentDecision", True),
         ("financials", {}), ("agents", good["agents"][:5]),
@@ -197,7 +222,7 @@ def main():
             except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
                 result = {"ok": False, "reason": type(exc).__name__}
             results[market][ticker] = result
-            complete = complete and result["ok"]
+            complete = complete and result.get("checkpointComplete") is True
     print(json.dumps({"mode": "STAGING_SAVED_READ_ONLY", "globalSavedCompanyChecksComplete": complete,
                       "iranCompanyChecksComplete": False, "proxyChecked": False,
                       "fullCheckpointReady": False, "markets": results}, ensure_ascii=False, indent=2))
