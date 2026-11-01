@@ -9,6 +9,7 @@ on:
       - 'tools/mobile_checkpoint_readonly_smoke.py'
       - 'tools/mobile_checkpoint_saved_company_smoke.py'
       - 'tools/mobile_checkpoint_iran_inbox_smoke.py'
+      - 'tools/mobile_checkpoint_liara_financial_probe.py'
       - 'analysis/global_markets/saved_company_view.py'
       - 'analysis/global_markets/saved_company_ai.py'
       - 'analysis/iran_company_view.py'
@@ -49,6 +50,8 @@ jobs:
         run: python ../tools/mobile_checkpoint_saved_company_smoke.py --self-test
       - name: Verified Liara inbox Pekerman diagnostic offline self-test
         run: python ../tools/mobile_checkpoint_iran_inbox_smoke.py --self-test
+      - name: Liara-only statement reconciliation offline self-test
+        run: python ../tools/mobile_checkpoint_liara_financial_probe.py --self-test
       - name: TypeScript
         run: npx tsc --noEmit
       - name: Synthetic checkpoint safeguards
