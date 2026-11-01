@@ -1,0 +1,41 @@
+# Decision-logic changelog (protocol deviations from OSF osf.io/6p8y7)
+
+Every change to gates, thresholds, weights or the decision flow made after the OSF registration (2026-10-22) is
+recorded here with date, reason, files and whether it is a **protocol deviation**. Data-source or refresh changes
+that do not alter a gate or threshold are listed separately as "not a deviation" with the reasoning, so the
+paper can show the difference.
+
+Format: `YYYY-MM-DD | Pn.n | what changed | why | files | deviation: yes/no | approved by`
+
+## Changes
+
+_None yet. Phase 0 changed no code, gate or threshold._
+
+## Investigated, not a logic change
+
+### 2026-11-02 — BLOCK count fell from 4,454 to 1,228 between 28 and 29 Oct (Phase 0)
+
+- Measured from `/var/lib/biap-global/daily-snapshots` (23:40Z snapshots, 12 markets): BLOCK 7,530 (27 Oct) → 4,454 (28 Oct)
+  → 1,228 (29 Oct) → 1,227 (30 Oct). The plan's "~4,750" does not match any snapshot (4,454 is the 28 Oct figure); it was probably
+  read from a live ledger at another moment. PASS rose 3,087 → 6,314.
+- 28→29 Oct, BLOCK→PASS per market: US:NASDAQ 2,523→756, US:NYSE 1,076→187, GB:LSE 454→95, SE:Stockholm 185→28,
+  ES:Madrid 46→6, IT:Milan 35→22. FI, FR, NL, NO and DE:XETRA did not change.
+- Cause: the first production run of the new price-refresh timers (EU 2026-10-29 17:00Z, US 21:15Z; both `head=6c8ada1`, exit 0)
+  fully re-analysed every market. The rows that flipped were last analysed on 28 Oct (≈11:36Z–12:06Z) and were re-analysed
+  on 29 Oct (17:34Z–21:34Z) with the **same** fundamental source (e.g. 1,675 US rows `sec-edgar-xbrl-cached`, 345 GB rows
+  `official-oam-gb-fca-nsm`). Only price/date/analysis time changed. The earlier BLOCKs were the `fresh_price` evidence gate
+  (company price older than 7 days while the screener quote was current; see `claude-us-se-block-investigation-20261029.md` and the
+  live-stability notes of 2026-10-30), which a fresh price clears.
+- Also in that window (data-source fixes, no gate change): `2b6864c` GB Yahoo vendor close (28 Oct), `2599b91` online-first refresh returns the
+  fresh upstream price (28 Oct), `31eec5a` verified LSE vendor close over stale cache (29 Oct 01:05Z). I did not establish
+  which of these were running in the live service at which minute.
+- No change to `agents.py`, `governance.py`, `service.py::_call` or `investment_mode.py` thresholds is visible in that window
+  (the `git log` for 27–30 Oct shows only data-source, mobile and docs commits). The snapshot manifests record the same
+  `decisionConfig` on all four days. Note: their `engine.commit` field is the constant `c3d3bc7` (a 20 Oct commit), so it cannot be used as proof
+  of the running engine version.
+- Conclusion: **not a gate or threshold change, therefore not a protocol deviation**, but a data-pipeline effect that moved ~3,200 stocks
+  out of BLOCK. Any before/after funnel in the paper must state that the 28 Oct figures were taken before the first full
+  refresh. Owner to confirm this classification.
+- Limits: the old per-row BLOCK reason was overwritten by the re-analysis (snapshots keep only "evidence BLOCK"), so `fresh_price` as the
+  reason for every flipped row is inferred from the investigation notes and the unchanged fundamentals, not read from stored data.
+  Remaining BLOCKs are mostly `missing:fundamental_source` (US) per the 29 Oct note.
