@@ -71,9 +71,14 @@ def balance_diagnostic(fundamentals) -> dict:
     assets, liabilities, equity = fields
     if assets <= 0:
         return {"status": "INVALID_ASSETS", "differencePctOfAssets": None}
-    gap = abs(assets - liabilities - equity) / assets * 100
-    return {"status": "REVIEW_SCOPE_OR_PARSER" if gap > 1 else "ARITHMETIC_ONLY_PASS",
-            "differencePctOfAssets": round(gap, 3)}
+    # A 1% gap is too large to label an accounting identity as passing.
+    # Permit only floating-point/rounding noise (1 ppm of assets, plus
+    # a tiny absolute epsilon); this is still an arithmetic-only check.
+    gap_amount = abs(assets - liabilities - equity)
+    tolerance = assets * 1e-6 + 1e-9
+    gap_pct = gap_amount / assets * 100
+    return {"status": "REVIEW_SCOPE_OR_PARSER" if gap_amount > tolerance else "ARITHMETIC_ONLY_PASS",
+            "differencePctOfAssets": round(gap_pct, 6)}
 
 
 
@@ -173,6 +178,12 @@ def self_test():
         total_assets_current=100, total_liabilities_current=60,
         total_equity_current=30))
     assert mismatch["status"] == "REVIEW_SCOPE_OR_PARSER" and mismatch["differencePctOfAssets"] == 10
+    # A nontrivial 0.5% mismatch must not be presented as an arithmetic pass.
+    small_mismatch = balance_diagnostic(SimpleNamespace(
+        total_assets_current=100, total_liabilities_current=60,
+        total_equity_current=39.5))
+    assert small_mismatch["status"] == "REVIEW_SCOPE_OR_PARSER"
+    assert small_mismatch["differencePctOfAssets"] == 0.5
     assert balance_diagnostic(SimpleNamespace(
         total_assets_current=None, total_liabilities_current=60,
         total_equity_current=40))["status"] == "INCOMPLETE"
