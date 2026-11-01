@@ -119,3 +119,54 @@ export function assessSavedGlobalCoverage(view: SavedGlobalCompanyView) {
   const missing = Object.entries(checks).filter(([, passed]) => !passed).map(([key]) => key);
   return { complete: missing.length === 0, checks, missing, eligibleForInvestmentDecision: false as const };
 }
+
+
+/**
+ * Explain an already stored Global snapshot using transparent arithmetic only.
+ * This never invokes biap-ai-proxy, recomputes agent decisions or turns
+ * incomplete evidence into a BUY/SELL recommendation.
+ */
+export function summarizeSavedGlobalCompany(view: SavedGlobalCompanyView) {
+  const coverage = assessSavedGlobalCoverage(view);
+  const findings: string[] = [];
+  const f = view.financials;
+  const revenue = f.revenue;
+  const netIncome = f.net_income;
+  const assets = f.total_assets;
+  const liabilities = f.total_liabilities;
+
+  if (view.audit.status === 'INCONSISTENT') {
+    findings.push('Stored financial figures fail one or more deterministic consistency checks.');
+  } else if (view.audit.status === 'INCOMPLETE') {
+    findings.push('Stored financial statements are incomplete; missing amounts were not estimated.');
+  } else {
+    findings.push('Stored figures passed local consistency checks; this is not external verification.');
+  }
+  if (typeof revenue === 'number' && Number.isFinite(revenue) && revenue > 0 &&
+      typeof netIncome === 'number' && Number.isFinite(netIncome)) {
+    findings.push('Net margin from stored figures: ' + (100 * netIncome / revenue).toFixed(2) + '%.');
+  } else {
+    findings.push('Net margin unavailable: verified revenue and net income figures are required.');
+  }
+  if (typeof assets === 'number' && Number.isFinite(assets) && assets > 0 &&
+      typeof liabilities === 'number' && Number.isFinite(liabilities) && liabilities >= 0 &&
+      liabilities <= assets) {
+    findings.push('Liabilities/assets from stored figures: ' + (100 * liabilities / assets).toFixed(2) + '%.');
+  } else {
+    findings.push('Liabilities/assets unavailable or inconsistent.');
+  }
+  findings.push('Stored source: ' + (view.ledger.source || 'unavailable') +
+    '; analyzed: ' + (view.ledger.analyzedAt || 'unavailable') +
+    '; evidence: ' + (view.evidence.status || 'unverified') + '.');
+  if (!coverage.complete) {
+    findings.push('Missing or unverified display coverage: ' + coverage.missing.join(', ') + '.');
+  }
+  findings.push('No new agent run, AI proxy call, market quote verification or trade authorization.');
+  return {
+    status: 'DETERMINISTIC_SAVED_SUMMARY' as const,
+    generatedBy: 'LOCAL_RULES_ON_STORED_DATA' as const,
+    proxyCalled: false as const,
+    findings,
+    eligibleForInvestmentDecision: false as const,
+  };
+}
