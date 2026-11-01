@@ -18,7 +18,42 @@ import math
 from collections import Counter
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
+
+
+
+class NoRedirect(HTTPRedirectHandler):
+    """A staging endpoint must not redirect GETs to production."""
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def is_isolated_staging_base(base):
+    """Require an explicit staging DNS label, never an IP or production host.
+
+    This guard does not itself prove that the deployment is isolated.
+    """
+    try:
+        url = urlsplit(base)
+        host = (url.hostname or "").lower().rstrip(".")
+        labels = host.split(".")
+        staging = any(
+            label in ("staging", "dev", "sandbox")
+            or label.startswith(("staging-", "dev-", "sandbox-"))
+            or label.endswith(("-staging", "-dev", "-sandbox"))
+            for label in labels[:-2]
+        )
+        return (
+            url.scheme == "https"
+            and len(labels) >= 3 and staging
+            and not url.username and not url.password
+            and host not in ("setai.no", "www.setai.no", "biap.dadashi.no")
+            and not host.endswith(".biap.dadashi.no")
+            and not host.endswith(".localhost") and not host.endswith(".local")
+            and url.query == "" and url.fragment == ""
+        )
+    except ValueError:
+        return False
 
 
 def is_number(value):
@@ -106,6 +141,19 @@ def self_test():
         candidate = {**good, key: bad}
         assert not validate_saved_company(candidate, "US", "NASDAQ", "ABC")["ok"], key
     assert not validate_saved_company(good, "US", "NASDAQ", "OTHER")["ok"]
+    assert is_isolated_staging_base("https://api.dev.example.org/global-api")
+    assert is_isolated_staging_base("https://biap-staging.example.org/global-api")
+    for unsafe in (
+        "https://biap.dadashi.no/global-api",
+        "https://api.biap.dadashi.no/global-api",
+        "https://5.249.252.88/global-api",
+        "https://example.org/global-api",
+        "https://localhost/global-api",
+        "https://staging.example.org/global-api?redirect=prod",
+        "http://staging.example.org/global-api",
+        "https://user:pass@staging.example.org/global-api",
+    ):
+        assert not is_isolated_staging_base(unsafe), unsafe
     print("stored-company contract self-test: PASS")
 
 
@@ -120,10 +168,8 @@ def main():
         return 0
     if not args.base_url or not args.company:
         parser.error("Provide staging --base-url and three --company entries per market")
-    url = urlsplit(args.base_url)
-    if (url.scheme != "https" or not url.hostname or url.username or url.password
-            or url.hostname in ("biap.dadashi.no", "setai.no", "www.setai.no")):
-        parser.error("Only an explicitly designated isolated HTTPS staging host is allowed")
+    if not is_isolated_staging_base(args.base_url):
+        parser.error("Require an explicit HTTPS staging/dev/sandbox DNS host; production and IP hosts are refused")
     groups = {}
     for raw in args.company:
         parts = raw.split(":", 2)
@@ -146,7 +192,7 @@ def main():
             req = Request(args.base_url.rstrip("/") + "/global/checkpoint/saved-company?" + query,
                           headers={"Accept": "application/json"}, method="GET")
             try:
-                with urlopen(req, timeout=12) as response:
+                with build_opener(NoRedirect()).open(req, timeout=12) as response:
                     result = validate_saved_company(json.load(response), country, exchange, ticker)
             except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
                 result = {"ok": False, "reason": type(exc).__name__}
