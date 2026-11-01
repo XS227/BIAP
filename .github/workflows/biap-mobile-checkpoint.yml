@@ -18,6 +18,7 @@ on:
       - 'analysis/tests/test_iran_company_view.py'
       - 'analysis/tests/test_mobile_checkpoint_proxy_loopback.py'
       - 'tools/mobile_checkpoint_inprocess_api_smoke.py'
+      - 'tools/mobile_checkpoint_https_staging_smoke.py'
       - 'analysis/tests/test_global_saved_company_view.py'
       - 'analysis/global_routes.py'
       - '.github/workflows/biap-mobile-checkpoint.yml'
