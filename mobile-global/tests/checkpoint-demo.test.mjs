@@ -1,5 +1,5 @@
 import test from 'node:test';
-import { validateSavedGlobalCompany, assertIsolatedCheckpointStagingBase, assessSavedGlobalCoverage } from '../src/lib/saved-company-contract.ts';
+import { validateSavedGlobalCompany, assertIsolatedCheckpointStagingBase, assessSavedGlobalCoverage, summarizeSavedGlobalCompany } from '../src/lib/saved-company-contract.ts';
 import assert from 'node:assert/strict';
 import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario, explainDemoCompany, selectDemoBroker } from '../src/lib/checkpoint-demo.ts';
 
@@ -206,4 +206,41 @@ test('saved Global coverage is fail-closed, distinct from audit and trading elig
   full.agents[5].name = 'Agent5';
   full.audit.checks[0].passed = null;
   assert.equal(assessSavedGlobalCoverage(full).checks.deterministicConsistency, false);
+});
+
+
+test('stored Global explanation uses saved figures only, fails closed on missing and inconsistent data', () => {
+  const base = {
+    financials: { revenue: 100, net_income: -5, total_assets: 200, total_liabilities: 80, total_equity: 120 },
+    ledger: { source: 'SAVED_LEDGER', analyzedAt: '2026-10-30T12:00:00Z' },
+    evidence: { status: 'WARN', sourceProvider: null, reportPeriod: null },
+    financialQuality: { coreComplete: true },
+    audit: { status: 'UNVERIFIED', checks: [{ key: 'balance', passed: true }, { key: 'core', passed: true }, { key: 'source', passed: true }] },
+    agents: [], kiasha: { call: null, confidence: null },
+  };
+  const saved = summarizeSavedGlobalCompany(base);
+  assert.equal(saved.status, 'DETERMINISTIC_SAVED_SUMMARY');
+  assert.equal(saved.generatedBy, 'LOCAL_RULES_ON_STORED_DATA');
+  assert.equal(saved.proxyCalled, false);
+  assert.equal(saved.eligibleForInvestmentDecision, false);
+  assert.ok(saved.findings.some(f => f.includes('Net margin from stored figures: -5.00%')));
+  assert.ok(saved.findings.some(f => f.includes('Liabilities/assets from stored figures: 40.00%')));
+  assert.ok(saved.findings.some(f => f.includes('Missing or unverified display coverage')));
+
+  const incomplete = structuredClone(base);
+  incomplete.financials.net_income = null;
+  incomplete.financials.revenue = 0;
+  incomplete.audit.status = 'INCOMPLETE';
+  const missing = summarizeSavedGlobalCompany(incomplete);
+  assert.ok(missing.findings.some(f => f.includes('Net margin unavailable')));
+  assert.ok(!missing.findings.some(f => f.includes('Net margin from stored figures')));
+
+  const inconsistent = structuredClone(base);
+  inconsistent.financials.total_liabilities = 250;
+  inconsistent.audit.status = 'INCONSISTENT';
+  const invalid = summarizeSavedGlobalCompany(inconsistent);
+  assert.ok(invalid.findings.some(f => f.includes('fail one or more')));
+  assert.ok(invalid.findings.some(f => f.includes('Liabilities/assets unavailable or inconsistent')));
+  assert.equal(invalid.proxyCalled, false);
+  assert.equal(invalid.eligibleForInvestmentDecision, false);
 });
