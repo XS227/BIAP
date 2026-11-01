@@ -1,5 +1,5 @@
 import { authFetch, authHeaders } from '@/lib/auth-session';
-import { KIASHA_API_BASE } from '@/lib/api';
+import { assertIranCheckpointStagingBase } from '@/lib/iran-staging-guard';
 
 export type IranAgent = {
   agent: string; vote: number | null; confidence: number | null;
@@ -47,11 +47,13 @@ export class IranApiError extends Error {
 }
 
 async function call<T>(path: string, init: RequestInit = {}, timeoutMs = 25_000): Promise<T> {
+  if (!__DEV__) throw new IranApiError('Iran checkpoint is disabled outside development.', null);
+  const stagingBase = assertIranCheckpointStagingBase(process.env.EXPO_PUBLIC_BIAP_IRAN_CHECKPOINT_API_BASE);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const headers = await authHeaders({ Accept: 'application/json' });
-    const res = await authFetch(`${KIASHA_API_BASE}${path}`, { ...init, headers: { ...headers, ...(init.headers as Record<string, string> | undefined) }, signal: controller.signal });
+    const res = await authFetch(`${stagingBase}${path}`, { ...init, headers: { ...headers, ...(init.headers as Record<string, string> | undefined) }, signal: controller.signal });
     if (!res.ok) {
       const body = await res.text().catch(() => '');
       let detail = body.slice(0, 240);

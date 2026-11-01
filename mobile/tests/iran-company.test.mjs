@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const status = await import('../src/lib/data-status.ts');
+const { assertIranCheckpointStagingBase } = await import('../src/lib/iran-staging-guard.ts');
 
 test('price statuses never show unknown-age or stale data as verified', () => {
   assert.equal(status.priceStatus('VERIFIED'), 'verified');
@@ -60,4 +61,16 @@ test('stale Pekerman BUY is explicitly non-actionable when financials and agent 
   });
   assert.equal(complete.evidenceComplete, true);
   assert.equal(complete.tradeEnabled, false);
+});
+
+
+test('Iran checkpoint cannot contact production or direct IP; staging URL is explicit', () => {
+  assert.equal(assertIranCheckpointStagingBase('https://staging.biap.example.com/iran-api/'),
+               'https://staging.biap.example.com/iran-api');
+  for (const bad of [undefined, '', 'https://biap.dadashi.no', 'https://api.biap.example.com',
+                     'http://staging.biap.example.com', 'https://5.249.252.88',
+                     'https://user:pass@staging.biap.example.com',
+                     'https://staging.biap.example.com/?token=secret']) {
+    assert.throws(() => assertIranCheckpointStagingBase(bad));
+  }
 });
