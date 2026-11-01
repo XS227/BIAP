@@ -74,6 +74,7 @@ def test_no_statements_means_insufficient_data_everywhere_and_no_invented_number
     assert v["financials"]["available"] is False and all(s["value"] is None for s in v["financials"]["statements"])
     assert all(r["value"] is None for r in v["financials"]["ratios"].values())
     a = iv.audit_checks(CODE)
+    assert a["financialsAvailable"] is False
     assert {c["status"] for c in a["checks"]} == {iv.INSUFFICIENT}
     assert all(c["missing"] for c in a["checks"])
 
@@ -86,6 +87,7 @@ def test_codal_metadata_only_does_not_claim_financials_available(env):
     assert view["financials"]["available"] is False
     assert all(row["value"] is None for row in view["financials"]["statements"])
     assert view["financials"]["missingReason"]
+    assert iv.audit_checks(CODE)["financialsAvailable"] is False
     assert any("فراداده" in warning for warning in view["dataQualityWarnings"])
 
 def test_audit_runs_when_statements_exist(env):
@@ -93,7 +95,9 @@ def test_audit_runs_when_statements_exist(env):
              "net_profit_current": 100.0, "revenue_current": 1000.0, "revenue_prev": 800.0, "total_assets_current": 1000.0,
              "total_liabilities_current": 400.0, "total_equity_current": 600.0, "operating_cash_flow_current": 30.0}
     env.save_enriched(CODE, _company(codal=codal, data_available={"codal": True}), provenance={})
-    a = {c["id"]: c for c in iv.audit_checks(CODE)["checks"]}
+    audit = iv.audit_checks(CODE)
+    assert audit["financialsAvailable"] is True
+    a = {c["id"]: c for c in audit["checks"]}
     assert a["accruals"]["status"] == "WATCH" and a["accruals"]["value"] == 0.07
     assert a["cash_divergence"]["status"] == "RED_FLAG"          # ocf/net income = 0.3
     assert a["auditor_opinion"]["status"] == "PASS" and a["auditor_opinion"]["period"] == "1404/12/29"

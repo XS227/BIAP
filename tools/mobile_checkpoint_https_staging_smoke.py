@@ -146,6 +146,8 @@ def check(args) -> dict:
                                     and data.get("eligibleForInvestmentDecision") is False):
                                 sample.append({"ticker": ticker, "https": status,
                                                "agents": len(data.get("agents", [])),
+                                               "kiashaPresent": bool((data.get("kiasha") or {}).get("call")),
+                                               "financialQualityPresent": isinstance(data.get("financialQuality"), dict),
                                                "audit": data.get("audit", {}).get("status")})
                                 if len(sample) == 3:
                                     break
@@ -160,7 +162,9 @@ def check(args) -> dict:
                     iran_results[symbol] = {
                         "companyHttps": company_status, "auditHttps": audit_status,
                         "agents": len(company.get("agents", [])),
+                        "kiashaPresent": bool((company.get("kiasha") or {}).get("call")),
                         "financialsAvailable": company.get("financials", {}).get("available"),
+                        "auditFinancialsAvailable": audit.get("financialsAvailable"),
                         "auditChecks": len(audit.get("checks", [])),
                     }
 
@@ -172,8 +176,16 @@ def check(args) -> dict:
                     post_denied = False
                 except HTTPError as error:
                     post_denied = error.code == 405
-                ok = (all(len(v) == 3 for v in global_results.values())
+                ok = (all(len(v) == 3 and all(
+                          row["agents"] >= 6 and row["kiashaPresent"]
+                          and row["financialQualityPresent"]
+                          and row["audit"] in ("UNVERIFIED", "INCOMPLETE", "INCONSISTENT")
+                          for row in v) for v in global_results.values())
                       and all(v["companyHttps"] == 200 and v["auditHttps"] == 200
+                              and v["agents"] == 7 and v["kiashaPresent"]
+                              and v["auditChecks"] == 6
+                              and type(v["financialsAvailable"]) is bool
+                              and v["financialsAvailable"] == v["auditFinancialsAvailable"]
                               for v in iran_results.values())
                       and denied == 404 and post_denied)
                 return {

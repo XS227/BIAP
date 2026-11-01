@@ -369,7 +369,7 @@ def audit_checks(query: str) -> dict:
                              detail="اظهارنظر حسابرس در داده‌ی ذخیره‌شده نیست."))
     return {"source": "stored-company-db",
             "identity": {"code": row["code"], "symbol": row["symbol"], "nameFa": row["name_fa"]},
-            "reportPeriod": period, "provider": src, "lastUpdate": row["enriched_at"], "financialsAvailable": bool(codal),
+            "reportPeriod": period, "provider": src, "lastUpdate": row["enriched_at"], "financialsAvailable": any(value is not None for value in s.values()),
             "checks": checks,
             "summary": {"redFlags": [c["id"] for c in checks if c["status"] == "RED_FLAG"],
                         "insufficient": [c["id"] for c in checks if c["status"] == INSUFFICIENT],
