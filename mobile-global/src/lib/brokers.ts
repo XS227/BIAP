@@ -9,6 +9,17 @@ export const BROKERS: readonly Broker[] = [
   { id: 'degiro', name: 'DEGIRO', url: 'https://www.degiro.com/', countries: ['US','GB','DE','FR','NL','IT','ES','FI','SE','DK'] },
   { id: 'trading212', name: 'Trading 212', url: 'https://www.trading212.com/', countries: ['US','GB','DE','FR','NL','ES'] },
 ];
+// Local preference only. Never implies KYC, execution permission or an order.
+export function brokerPreferenceKey(country: string): string | null {
+  const code = String(country || '').trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(code) && brokersForMarket(code).length
+    ? `biap-global:broker-preference:v1:${code}` : null;
+}
+
+export function resolveBrokerPreference(country: string, id: string | null | undefined): Broker | null {
+  return brokersForMarket(country).find(broker => broker.id === id) ?? null;
+}
+
 export function brokersForMarket(country: string): Broker[] {
   const code = String(country || '').trim().toUpperCase();
   return BROKERS.filter(broker => broker.countries.includes(code));
