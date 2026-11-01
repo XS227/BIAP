@@ -1,5 +1,5 @@
 import test from 'node:test';
-import { validateSavedGlobalCompany, assertIsolatedCheckpointStagingBase, assessSavedGlobalCoverage, summarizeSavedGlobalCompany } from '../src/lib/saved-company-contract.ts';
+import { validateSavedGlobalCompany, validateSavedGlobalAiReport, assertIsolatedCheckpointStagingBase, assessSavedGlobalCoverage, summarizeSavedGlobalCompany } from '../src/lib/saved-company-contract.ts';
 import assert from 'node:assert/strict';
 import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario, explainDemoCompany, selectDemoBroker } from '../src/lib/checkpoint-demo.ts';
 
@@ -243,4 +243,23 @@ test('stored Global explanation uses saved figures only, fails closed on missing
   assert.ok(invalid.findings.some(f => f.includes('Liabilities/assets unavailable or inconsistent')));
   assert.equal(invalid.proxyCalled, false);
   assert.equal(invalid.eligibleForInvestmentDecision, false);
+});
+
+
+test('Global AI explanation requires verified proxy provenance and never enables trading', () => {
+  const good = {
+    mode: 'SAVED_AI_EXPLANATION', route: 'biap-ai-proxy', proxyCalled: true,
+    eligibleForInvestmentDecision: false, country: 'US', exchange: 'NASDAQ', ticker: 'ABC',
+    dataAnalyzedAt: '2026-10-30T12:00:00Z', generatedAt: '2026-11-01T10:00:00Z',
+    model: 'proxy-test', report: 'Missing financial evidence is explicit.',
+    disclaimer: 'Not an audit or investment recommendation.',
+  };
+  assert.equal(validateSavedGlobalAiReport(good, 'US', 'NASDAQ', 'ABC').proxyCalled, true);
+  for (const [key, value] of [
+    ['mode', 'DEMO'], ['route', 'external-vendor'], ['proxyCalled', false],
+    ['eligibleForInvestmentDecision', true], ['ticker', 'OTHER'],
+    ['report', ''], ['report', 'x'.repeat(12001)], ['model', ''],
+  ]) {
+    assert.throws(() => validateSavedGlobalAiReport({ ...good, [key]: value }, 'US', 'NASDAQ', 'ABC'));
+  }
 });

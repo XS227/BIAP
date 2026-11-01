@@ -208,7 +208,7 @@ def query_symbols(*,market:Optional[str]=None,q:Optional[str]=None,limit:int=500
     # Route through the public wrapper, then filter locally. This keeps search
     # behavior consistent for callers/tests that replace fetch_symbol_universe,
     # while the wrapper itself still owns cache policy and upstream fallback.
-    items=fetch_symbol_universe();market_key=market.upper() if market else None;needle=(q or "").strip().replace("ي","ی").replace("ك","ک").lower();result=[]
+    items=fetch_symbol_universe();market_key=market.upper() if market else None;needle=(q or "").strip().translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩","01234567890123456789")).replace("ي","ی").replace("ك","ک").lower();result=[]
     for item in items:
         if market_key and item.market!=market_key:continue
         if needle:

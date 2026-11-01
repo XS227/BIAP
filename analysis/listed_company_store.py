@@ -68,6 +68,19 @@ class ListedCompanyStore:
                 CREATE INDEX IF NOT EXISTS idx_listed_companies_market ON listed_companies(market);
                 CREATE INDEX IF NOT EXISTS idx_listed_companies_updated ON listed_companies(updated_at);
 
+                -- Append-only price history: one row per distinct (code, observed_at, source). Never updated or deleted.
+                CREATE TABLE IF NOT EXISTS price_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    code TEXT NOT NULL,
+                    price REAL,
+                    observed_at TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    origin TEXT NOT NULL,
+                    recorded_at TEXT NOT NULL,
+                    UNIQUE (code, observed_at, source)
+                );
+                CREATE INDEX IF NOT EXISTS idx_price_history_code ON price_history(code, observed_at);
+
                 CREATE TABLE IF NOT EXISTS listed_company_ingestion_state (
                     worker TEXT PRIMARY KEY,
                     status TEXT NOT NULL,
@@ -130,9 +143,45 @@ class ListedCompanyStore:
             )
         return len(rows)
 
+    @staticmethod
+    def append_price(conn: sqlite3.Connection, code: str, market: Any, *, origin: str, fallback_observed_at: str | None = None) -> bool:
+        """Record a market snapshot's price with its own timestamp and source. Idempotent; never overwrites history."""
+        if not isinstance(market, dict):
+            return False
+        price = market.get("price") if market.get("price") is not None else market.get("last_price")
+        if price is None:
+            return False
+        fetched = market.get("quote_fetched_at")
+        observed = market.get("price_observed_at")
+        if not observed and isinstance(fetched, (int, float)) and fetched > 0:
+            observed = datetime.fromtimestamp(float(fetched), timezone.utc).isoformat()
+        observed = observed or fallback_observed_at
+        if not observed:
+            return False
+        source = str(market.get("price_source") or market.get("valuation_source") or "unknown")
+        cur = conn.execute(
+            "INSERT OR IGNORE INTO price_history(code, price, observed_at, source, origin, recorded_at) VALUES (?,?,?,?,?,?)",
+            (code, float(price), observed, source, origin, _now_iso()))
+        return cur.rowcount > 0
+
+    def price_history(self, code: str, limit: int = 50) -> list[dict[str, Any]]:
+        with self._connect() as conn:
+            rows = conn.execute("SELECT price, observed_at, source, origin, recorded_at FROM price_history WHERE code=? ORDER BY observed_at DESC LIMIT ?",
+                                (_normalize(code).upper(), max(1, min(int(limit), 500)))).fetchall()
+        return [dict(r) for r in rows]
+
     def save_enriched(self, code: str, company: dict[str, Any], *, provenance: dict[str, Any], error: str | None = None) -> None:
         now = _now_iso()
         canonical = _normalize(code).upper()
+        with self._connect() as conn:  # keep the snapshot we are about to replace, then the new one
+            prior = conn.execute("SELECT company_json, enriched_at FROM listed_companies WHERE code=?", (canonical,)).fetchone()
+            if prior and prior["company_json"]:
+                try:
+                    self.append_price(conn, canonical, (json.loads(prior["company_json"]) or {}).get("market"),
+                                      origin="preserved-before-enrichment", fallback_observed_at=prior["enriched_at"])
+                except (TypeError, ValueError):
+                    pass
+            self.append_price(conn, canonical, company.get("market"), origin="enrichment", fallback_observed_at=now)
         symbol = _normalize(str(company.get("ticker") or canonical)) or canonical
         name = _normalize(company.get("name_fa") or symbol) or None
         with self._connect() as conn:
@@ -239,6 +288,22 @@ class ListedCompanyStore:
         """
         never_enriched, enriched = self._split_by_enrichment(codes)
         return never_enriched + [code for _, code in enriched]
+
+    def enriched_without_codal(self, codes: Iterable[str]) -> list[str]:
+        """Enriched codes whose stored record has no CODAL statements (candidates once a Liara inbox record arrives)."""
+        wanted = {str(c) for c in codes if str(c)}
+        out: list[str] = []
+        with self._connect() as conn:
+            for row in conn.execute("SELECT code, company_json FROM listed_companies WHERE company_json IS NOT NULL"):
+                if row["code"] not in wanted:
+                    continue
+                try:
+                    company = json.loads(row["company_json"]) or {}
+                except ValueError:
+                    continue
+                if not company.get("codal"):
+                    out.append(str(row["code"]))
+        return sorted(out)
 
     def never_enriched_count(self, codes: Iterable[str]) -> int:
         never_enriched, _ = self._split_by_enrichment(codes)

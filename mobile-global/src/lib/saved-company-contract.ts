@@ -1,6 +1,6 @@
 // Fail-closed validation for the development-only saved Global ledger view.
 // A TypeScript cast is not a runtime check: staging responses may be partial or stale.
-import type { SavedGlobalCompanyView } from './global-api';
+import type { SavedGlobalCompanyView, SavedGlobalAiReport } from './global-api';
 
 const record = (v: unknown): v is Record<string, unknown> =>
   v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -169,4 +169,25 @@ export function summarizeSavedGlobalCompany(view: SavedGlobalCompanyView) {
     findings,
     eligibleForInvestmentDecision: false as const,
   };
+}
+
+
+/** An AI report is never an investment decision and cannot be confused with a fixture. */
+export function validateSavedGlobalAiReport(
+  payload: unknown, country: string, exchange: string, ticker: string,
+): SavedGlobalAiReport {
+  if (!record(payload) ||
+      payload.mode !== 'SAVED_AI_EXPLANATION' || payload.route !== 'biap-ai-proxy' ||
+      payload.proxyCalled !== true || payload.eligibleForInvestmentDecision !== false ||
+      payload.country !== country.trim().toUpperCase() ||
+      payload.exchange !== exchange.trim().toUpperCase() ||
+      payload.ticker !== ticker.trim().toUpperCase() ||
+      typeof payload.report !== 'string' || !payload.report.trim() || payload.report.length > 12000 ||
+      typeof payload.model !== 'string' || !payload.model.trim() || payload.model.length > 120 ||
+      typeof payload.generatedAt !== 'string' || !payload.generatedAt.trim() ||
+      !textOrNull(payload.dataAnalyzedAt) ||
+      typeof payload.disclaimer !== 'string' || !payload.disclaimer.trim()) {
+    throw new Error('AI proxy explanation failed provenance/schema validation.');
+  }
+  return payload as unknown as SavedGlobalAiReport;
 }

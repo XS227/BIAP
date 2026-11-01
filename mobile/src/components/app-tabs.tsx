@@ -43,6 +43,8 @@ export default function AppTabs({ onLogout }: Props) {
         <Tabs.Screen name="module" options={{ href: null }} />
         <Tabs.Screen name="profile" options={{ href: null }} />
         <Tabs.Screen name="search" options={{ href: null }} />
+        <Tabs.Screen name="ai-analysis" options={{ href: null }} />
+        <Tabs.Screen name="audit-analysis" options={{ href: null }} />
       </Tabs>
     </LogoutContext.Provider>
   );

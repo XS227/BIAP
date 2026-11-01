@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario, explainDemoCompany, selectDemoBroker, type CheckpointScenario } from '@/lib/checkpoint-demo';
 
-import { fetchSavedGlobalCompanyPreview, type SavedGlobalCompanyView } from '@/lib/global-api';
+import { fetchSavedGlobalCompanyPreview, requestSavedGlobalAiPreview, type SavedGlobalCompanyView, type SavedGlobalAiReport } from '@/lib/global-api';
 import { assessSavedGlobalCoverage, summarizeSavedGlobalCompany } from '@/lib/saved-company-contract';
 
 const format = (n: number | null) => n === null ? '—' : n.toLocaleString('en-US');
@@ -17,8 +17,13 @@ export default function CheckpointDemoScreen() {
   const [savedTicker, setSavedTicker] = useState('AAPL');
   const [savedResult, setSavedResult] = useState<SavedGlobalCompanyView | null>(null);
   const [savedStatus, setSavedStatus] = useState('Not requested');
+  const [savedAiResult, setSavedAiResult] = useState<SavedGlobalAiReport | null>(null);
+  const [savedAiStatus, setSavedAiStatus] = useState('AI proxy not requested');
+
   const loadSaved = async () => {
     setSavedResult(null);
+    setSavedAiResult(null);
+    setSavedAiStatus('AI proxy not requested');
     setSavedStatus('Loading stored result (GET only)…');
     try {
       const value = await fetchSavedGlobalCompanyPreview(savedCountry, savedExchange, savedTicker);
@@ -27,6 +32,18 @@ export default function CheckpointDemoScreen() {
       setSavedStatus('Stored result loaded; no AI proxy or trading call');
     } catch (error) {
       setSavedStatus(error instanceof Error ? error.message : 'Stored result unavailable');
+    }
+  };
+  const runSavedAi = async () => {
+    if (!savedResult) return;
+    setSavedAiResult(null);
+    setSavedAiStatus('Requesting explanation from BIAP AI proxy (stored snapshot only)…');
+    try {
+      const result = await requestSavedGlobalAiPreview(savedResult.country, savedResult.exchange, savedResult.ticker);
+      setSavedAiResult(result);
+      setSavedAiStatus('BIAP AI proxy returned an explanation; not an audit or trading advice');
+    } catch (error) {
+      setSavedAiStatus(error instanceof Error ? error.message : 'AI proxy unavailable');
     }
   };
   const demo = createCheckpointScenario(GLOBAL_CHECKPOINT_DEMO, scenario);
@@ -136,7 +153,18 @@ export default function CheckpointDemoScreen() {
           {savedSummary?.findings.map((finding, index) => (
             <Text key={index} style={[styles.caption, { color: colors.textSecondary }]}>{finding}</Text>
           ))}
-          <Text style={styles.noTrade}>Saved evidence only. Proxy called: NO. Trading eligibility: NO.</Text>
+          <Text style={styles.noTrade}>Saved evidence only. Trading eligibility: NO.</Text>
+          <Text style={[styles.heading, { color: colors.text }]}>AI Company Analysis • saved data only</Text>
+          <Text style={[styles.caption, { color: colors.textSecondary }]}>Explicit staging POST via biap-ai-proxy. No fresh market scan, trading or financial-history changes.</Text>
+          <Pressable accessibilityRole="button" onPress={() => { void runSavedAi(); }} style={styles.savedButton}>
+            <Text style={styles.savedButtonText}>Explain stored company with AI proxy</Text>
+          </Pressable>
+          <Text style={[styles.caption, { color: colors.textSecondary }]}>{savedAiStatus}</Text>
+          {savedAiResult && <>
+            <Text style={[styles.caption, { color: colors.textSecondary }]}>Model: {savedAiResult.model} • Generated: {savedAiResult.generatedAt} • Stored analysis: {savedAiResult.dataAnalyzedAt ?? 'Unavailable'}</Text>
+            <Text style={[styles.caption, { color: colors.textSecondary }]}>{savedAiResult.report}</Text>
+            <Text style={styles.noTrade}>{savedAiResult.disclaimer}</Text>
+          </>}
         </>}
       </View>
       <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>

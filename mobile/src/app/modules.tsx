@@ -65,7 +65,7 @@ function ModuleCard({ item, colors, accent, state, selected }: { item: ModuleIte
       <View style={[styles.moduleIcon, { backgroundColor: `${accent}22` }]}><Text style={styles.moduleEmoji}>{item.icon}</Text></View>
       <Text style={[styles.moduleTitle, { color: colors.text }]}>{item.title}</Text>
       <Text style={[styles.moduleSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
-      <Text style={[styles.state, { color: state === 'LIVE' || state.startsWith('LISTED') ? Brand.stockGreen : state === 'DEMO' ? '#a78bfa' : colors.textSecondary }]}>{state}</Text>
+      <Text style={[styles.state, { color: state.startsWith('انتخاب‌شده') ? Brand.stockGreen : state.startsWith('نمونه') ? '#a78bfa' : colors.textSecondary }]}>{state}</Text>
     </Pressable>
   );
 }
@@ -87,11 +87,11 @@ export default function ModulesScreen() {
   const toggle = async () => { const next = !demo; await setDemoMode(next); setDemo(next); };
 
   const stateFor = (group: string) => {
-    if (group === 'investment') return 'LIVE';
-    if (demo) return 'DEMO';
-    if (selected) return `LISTED • ${selected.symbol}`;
-    if (companyConnected) return 'PRIVATE DATA';
-    return 'SELECT LISTED COMPANY';
+    if (group === 'investment') return 'منبع: بازار و کیاشا';
+    if (demo) return 'نمونه (ساختگی)';
+    if (selected) return `انتخاب‌شده • ${selected.symbol}`;
+    if (companyConnected) return 'داده‌ی خصوصی';
+    return 'شرکت انتخاب نشده';
   };
 
   // Listed-company selection is the primary path. Private CSV/Excel remains

@@ -28,6 +28,7 @@ from execution import (
     reject_order_intent,
     submit_order_intent,
 )
+from iran_company_routes import router as iran_company_router
 from kiasha import decide
 from local_auth import router as auth_router
 from market_data import MarketDataUnavailable, base_url as market_base_url, find_quote
@@ -91,6 +92,7 @@ async def _lifespan(_app: FastAPI):
 
 app = FastAPI(title="BIAP Kiasha recommendation service", lifespan=_lifespan)
 app.include_router(performance_router)
+app.include_router(iran_company_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(release_router)

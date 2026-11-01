@@ -458,6 +458,10 @@ def run_batch(
             # Do not spend the daily slots on companies the Liara export has not delivered.
             inbox = codal_inbox.current()
             has = lambda c: inbox.has_record(str((reg.get_instrument(c) or {}).get("symbol") or ""))  # noqa: E731
+            # An already-enriched company that still has no CODAL statements is re-enriched as soon as the inbox
+            # holds a usable record for it (otherwise it is never revisited and its snapshot stays frozen).
+            arrived = [c for c in target.enriched_without_codal(eligible_codes) if has(c) and c not in set(filing_codes)]
+            filing_codes = (filing_codes + arrived)[:safe_batch_size]
             filing_codes = [c for c in filing_codes if has(c)]
             backlog = [c for c in backlog if has(c)]
         backlog.sort(key=lambda c: (-traded_value.get(c, 0.0), c))  # most-traded first; unknown volume last

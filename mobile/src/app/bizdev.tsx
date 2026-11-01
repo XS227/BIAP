@@ -69,11 +69,11 @@ export default function BizDevScreen() {
   } as never);
 
   const stateFor = (key: string) => {
-    if (demoMode) return 'DEMO';
-    if (selectedCompany && !INTERNAL_ONLY.has(key)) return `LISTED • ${selectedCompany.symbol}`;
-    if (companyConnected) return 'PRIVATE DATA LIVE';
-    if (selectedCompany && INTERNAL_ONLY.has(key)) return 'NEEDS INTERNAL DATA';
-    return 'SELECT COMPANY';
+    if (demoMode) return 'نمونه (ساختگی)';
+    if (selectedCompany && !INTERNAL_ONLY.has(key)) return `انتخاب‌شده • ${selectedCompany.symbol}`;
+    if (companyConnected) return 'داده‌ی خصوصی متصل';
+    if (selectedCompany && INTERNAL_ONLY.has(key)) return 'نیازمند داده‌ی داخلی';
+    return 'شرکت انتخاب نشده';
   };
 
   return (
@@ -104,7 +104,7 @@ export default function BizDevScreen() {
 
           <View style={styles.statusRow}>
             <View style={[styles.statusCard, { backgroundColor: colors.backgroundElement }]}>
-              <Text style={{ fontFamily: Fonts.mono, fontSize: 9, fontWeight: '900', color: selectedCompany ? Brand.stockGreen : '#f59e0b' }}>{selectedCompany ? 'LISTED ACTIVE' : 'SELECT'}</Text>
+              <Text style={{ fontFamily: Fonts.mono, fontSize: 9, fontWeight: '900', color: selectedCompany ? Brand.stockGreen : '#f59e0b' }}>{selectedCompany ? 'انتخاب‌شده' : 'انتخاب کنید'}</Text>
               <Text style={[styles.statusTitle, { color: colors.text }]}>شرکت بورسی</Text>
               <Text style={[styles.statusText, { color: colors.textSecondary }]}>{selectedCompany ? `${selectedCompany.symbol} • Tindex/TSETMC/CODAL` : 'یک نماد انتخاب کنید'}</Text>
             </View>
@@ -120,7 +120,7 @@ export default function BizDevScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>۸ ماژول توسعه کسب‌وکار</Text>
           <View style={styles.grid}>{BUSINESS_MODULES.map(m => {
             const state = stateFor(m.key);
-            const stateColor = state.startsWith('LISTED') || state === 'PRIVATE DATA LIVE' ? Brand.stockGreen : state === 'DEMO' ? '#a78bfa' : colors.textSecondary;
+            const stateColor = state.startsWith('انتخاب‌شده') || state === 'داده‌ی خصوصی متصل' ? Brand.stockGreen : state.startsWith('نمونه') ? '#a78bfa' : colors.textSecondary;
             return (
               <Pressable key={m.key} onPress={() => openModule(m.key)} style={[styles.module, { backgroundColor: colors.backgroundElement }]}>
                 <Text style={styles.icon}>{m.icon}</Text>

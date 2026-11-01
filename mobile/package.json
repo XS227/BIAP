@@ -34,6 +34,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.4",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~57.0.2",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -43,7 +45,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test:checkpoint": "node --experimental-strip-types --no-warnings --test tests/checkpoint-demo.test.mjs"
+    "test:checkpoint": "node --experimental-strip-types --no-warnings --test tests/checkpoint-demo.test.mjs",
+    "test:api": "node --experimental-strip-types --no-warnings --test tests/iran-company.test.mjs"
   },
   "expo": {
     "install": {

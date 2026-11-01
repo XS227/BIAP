@@ -10,6 +10,12 @@ on:
       - 'tools/mobile_checkpoint_saved_company_smoke.py'
       - 'tools/mobile_checkpoint_iran_inbox_smoke.py'
       - 'analysis/global_markets/saved_company_view.py'
+      - 'analysis/global_markets/saved_company_ai.py'
+      - 'analysis/iran_company_view.py'
+      - 'analysis/iran_company_routes.py'
+      - 'analysis/tests/test_global_saved_company_ai.py'
+      - 'analysis/tests/test_iran_company_view.py'
+      - 'tools/mobile_checkpoint_inprocess_api_smoke.py'
       - 'analysis/tests/test_global_saved_company_view.py'
       - 'analysis/global_routes.py'
       - '.github/workflows/biap-mobile-checkpoint.yml'
@@ -64,7 +70,7 @@ jobs:
           python-version: '3.12'
       - name: Install backend test dependencies
         run: python -m pip install -r analysis/requirements.txt
-      - name: Verify saved Global projection is read-only and fails closed
+      - name: Verify Global and Iran saved views, proxy guards and audit contracts
         env:
           PYTHONPATH: analysis
-        run: python -m pytest -q analysis/tests/test_global_saved_company_view.py
+        run: python -m pytest -q analysis/tests/test_global_saved_company_view.py analysis/tests/test_global_saved_company_ai.py analysis/tests/test_iran_company_view.py

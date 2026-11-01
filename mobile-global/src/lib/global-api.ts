@@ -1,5 +1,5 @@
 import type { GlobalInvestmentDecision } from '@/lib/decision-tier';
-import { validateSavedGlobalCompany, assertIsolatedCheckpointStagingBase } from './saved-company-contract.ts';
+import { validateSavedGlobalCompany, validateSavedGlobalAiReport, assertIsolatedCheckpointStagingBase } from './saved-company-contract.ts';
 
 export const GLOBAL_API_BASE = (process.env.EXPO_PUBLIC_BIAP_GLOBAL_API_BASE || 'https://biap.dadashi.no/global-api').replace(/\/$/, '');
 
@@ -766,4 +766,30 @@ export async function fetchSavedGlobalCompanyPreview(country: string, exchange: 
   const query = new URLSearchParams({ country: country.trim().toUpperCase(), exchange: exchange.trim().toUpperCase(), ticker: ticker.trim() });
   const payload = await request<unknown>(`/global/checkpoint/saved-company?${query.toString()}`, { method: 'GET' }, 12_000);
   return validateSavedGlobalCompany(payload, country, exchange, ticker);
+}
+
+
+/** Explicit opt-in staging POST: the server sends only an existing saved projection to BIAP AI proxy. */
+export type SavedGlobalAiReport = {
+  mode: 'SAVED_AI_EXPLANATION';
+  route: 'biap-ai-proxy';
+  proxyCalled: true;
+  eligibleForInvestmentDecision: false;
+  country: string;
+  exchange: string;
+  ticker: string;
+  dataAnalyzedAt: string | null;
+  generatedAt: string;
+  model: string;
+  report: string;
+  disclaimer: string;
+};
+
+export async function requestSavedGlobalAiPreview(country: string, exchange: string, ticker: string): Promise<SavedGlobalAiReport> {
+  if (!__DEV__) throw new Error('Development-only AI analysis is disabled.');
+  assertIsolatedCheckpointStagingBase(process.env.EXPO_PUBLIC_BIAP_GLOBAL_API_BASE);
+  if (![country, exchange, ticker].every(value => value.trim().length > 0)) throw new Error('Country, exchange and ticker are required.');
+  const query = new URLSearchParams({ country: country.trim().toUpperCase(), exchange: exchange.trim().toUpperCase(), ticker: ticker.trim() });
+  const payload = await request<unknown>('/global/checkpoint/ai-company?' + query.toString(), { method: 'POST' }, 55_000);
+  return validateSavedGlobalAiReport(payload, country, exchange, ticker);
 }
