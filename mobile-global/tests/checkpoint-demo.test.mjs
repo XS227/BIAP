@@ -1,3 +1,4 @@
+import { createCheckpointRequestGuard } from '../src/lib/checkpoint-request-guard.ts';
 import test from 'node:test';
 import { validateSavedGlobalCompany, validateSavedGlobalAiReport, assertIsolatedCheckpointStagingBase, assessSavedGlobalCoverage, summarizeSavedGlobalCompany } from '../src/lib/saved-company-contract.ts';
 import assert from 'node:assert/strict';
@@ -262,4 +263,36 @@ test('Global AI explanation requires verified proxy provenance and never enables
   ]) {
     assert.throws(() => validateSavedGlobalAiReport({ ...good, [key]: value }, 'US', 'NASDAQ', 'ABC'));
   }
+});
+
+
+test('Global saved-company and AI responses from prior selections cannot overwrite current data', async () => {
+  const saved = createCheckpointRequestGuard();
+  const ai = createCheckpointRequestGuard();
+  let finishOld;
+  let finishNew;
+  const oldResponse = new Promise(resolve => { finishOld = resolve; });
+  const newResponse = new Promise(resolve => { finishNew = resolve; });
+  const applied = [];
+  const apply = async (guard, promise) => {
+    const version = guard.begin();
+    const result = await promise;
+    if (guard.isCurrent(version)) applied.push(result);
+  };
+  const oldPending = apply(saved, oldResponse);
+  saved.invalidate(); // User changes the country, exchange or ticker.
+  ai.invalidate(); // Any pending AI explanation must also be discarded.
+  const newPending = apply(saved, newResponse);
+  finishNew('new issuer');
+  await newPending;
+  finishOld('old issuer');
+  await oldPending;
+  assert.deepEqual(applied, ['new issuer']);
+  let finishAi;
+  const pendingAi = new Promise(resolve => { finishAi = resolve; });
+  const aiPending = apply(ai, pendingAi);
+  ai.invalidate(); // User changes issuer while the proxy is processing.
+  finishAi('old issuer AI');
+  await aiPending;
+  assert.deepEqual(applied, ['new issuer']);
 });

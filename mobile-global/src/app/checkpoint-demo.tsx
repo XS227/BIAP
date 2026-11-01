@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
@@ -6,6 +6,7 @@ import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, creat
 
 import { fetchSavedGlobalCompanyPreview, requestSavedGlobalAiPreview, type SavedGlobalCompanyView, type SavedGlobalAiReport } from '@/lib/global-api';
 import { assessSavedGlobalCoverage, summarizeSavedGlobalCompany } from '@/lib/saved-company-contract';
+import { createCheckpointRequestGuard } from '@/lib/checkpoint-request-guard';
 
 const format = (n: number | null) => n === null ? '—' : n.toLocaleString('en-US');
 
@@ -20,7 +21,25 @@ export default function CheckpointDemoScreen() {
   const [savedAiResult, setSavedAiResult] = useState<SavedGlobalAiReport | null>(null);
   const [savedAiStatus, setSavedAiStatus] = useState('AI proxy not requested');
 
+  // Keep responses for older issuers from being displayed under a new selection.
+  const savedRequest = useRef(createCheckpointRequestGuard());
+  const aiRequest = useRef(createCheckpointRequestGuard());
+  useEffect(() => () => {
+    savedRequest.current.invalidate();
+    aiRequest.current.invalidate();
+  }, []);
+  const changeSavedField = (setter: (value: string) => void, value: string) => {
+    savedRequest.current.invalidate();
+    aiRequest.current.invalidate();
+    setter(value);
+    setSavedResult(null);
+    setSavedAiResult(null);
+    setSavedStatus('Selection changed; load a saved result');
+    setSavedAiStatus('AI proxy not requested');
+  };
   const loadSaved = async () => {
+    const version = savedRequest.current.begin();
+    aiRequest.current.invalidate();
     setSavedResult(null);
     setSavedAiResult(null);
     setSavedAiStatus('AI proxy not requested');
@@ -28,22 +47,27 @@ export default function CheckpointDemoScreen() {
     try {
       const value = await fetchSavedGlobalCompanyPreview(savedCountry, savedExchange, savedTicker);
       if (value.mode !== 'SAVED_READ_ONLY' || value.proxyCalled !== false) throw new Error('Unexpected provenance contract');
+      if (!savedRequest.current.isCurrent(version)) return;
       setSavedResult(value);
       setSavedStatus('Stored result loaded; no AI proxy or trading call');
     } catch (error) {
-      setSavedStatus(error instanceof Error ? error.message : 'Stored result unavailable');
+      if (savedRequest.current.isCurrent(version))
+        setSavedStatus(error instanceof Error ? error.message : 'Stored result unavailable');
     }
   };
   const runSavedAi = async () => {
     if (!savedResult) return;
+    const version = aiRequest.current.begin();
     setSavedAiResult(null);
     setSavedAiStatus('Requesting explanation from BIAP AI proxy (stored snapshot only)…');
     try {
       const result = await requestSavedGlobalAiPreview(savedResult.country, savedResult.exchange, savedResult.ticker);
+      if (!aiRequest.current.isCurrent(version)) return;
       setSavedAiResult(result);
       setSavedAiStatus('BIAP AI proxy returned an explanation; not an audit or trading advice');
     } catch (error) {
-      setSavedAiStatus(error instanceof Error ? error.message : 'AI proxy unavailable');
+      if (aiRequest.current.isCurrent(version))
+        setSavedAiStatus(error instanceof Error ? error.message : 'AI proxy unavailable');
     }
   };
   const demo = createCheckpointScenario(GLOBAL_CHECKPOINT_DEMO, scenario);
@@ -118,7 +142,7 @@ export default function CheckpointDemoScreen() {
             { value: savedTicker, setter: setSavedTicker, hint: 'Ticker' },
           ] as const).map(field => (
             <TextInput key={field.hint} accessibilityLabel={field.hint} value={field.value}
-              onChangeText={field.setter} autoCapitalize="characters" autoCorrect={false}
+              onChangeText={value => changeSavedField(field.setter, value)} autoCapitalize="characters" autoCorrect={false}
               placeholder={field.hint} placeholderTextColor={colors.textSecondary}
               style={[styles.savedInput, { color: colors.text, borderColor: colors.textSecondary }]} />
           ))}
