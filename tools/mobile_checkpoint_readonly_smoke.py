@@ -18,7 +18,14 @@ import os
 import sys
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode, urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
+
+
+
+class NoRedirect(HTTPRedirectHandler):
+    """Never follow a staging GET redirect to an unknown/production host."""
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
 
 
 def clean_symbol(value):
@@ -102,6 +109,7 @@ def is_isolated_staging_base(base):
         staging = any(
             label in ("staging", "dev", "sandbox")
             or label.startswith(("staging-", "dev-", "sandbox-"))
+            or label.endswith(("-staging", "-dev", "-sandbox"))
             for label in labels[:-2]
         )
         return (
@@ -110,7 +118,9 @@ def is_isolated_staging_base(base):
             and len(labels) >= 3
             and staging
             and host not in ("biap.dadashi.no", "setai.no", "www.setai.no")
-            and url.fragment == ""
+            and not host.endswith(".biap.dadashi.no")
+            and not host.endswith(".localhost") and not host.endswith(".local")
+            and url.query == "" and url.fragment == ""
         )
     except ValueError:
         return False
@@ -122,7 +132,7 @@ def get_json(base, path):
     if token:
         headers["Authorization"] = "Bearer " + token
     req = Request(base.rstrip("/") + path, headers=headers, method="GET")
-    with urlopen(req, timeout=12) as response:
+    with build_opener(NoRedirect()).open(req, timeout=12) as response:
         return json.load(response)
 
 
@@ -147,6 +157,9 @@ def self_test():
         "http://staging.example.com/api",
         "https://example.com/api",
         "https://user:pass@staging.example.com/api",
+        "https://api.biap.dadashi.no/api",
+        "https://staging.example.com/api?redirect=production",
+        "https://dev.local/api",
     ):
         assert not is_isolated_staging_base(unsafe), unsafe
     print("offline parser and provenance self-test: PASS")
