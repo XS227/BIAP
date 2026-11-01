@@ -123,6 +123,29 @@ def test_ai_report_cache_rate_limit_and_unconfigured(env, monkeypatch):
         iv._call_llm("x")
 
 
+def test_failed_ai_proxy_does_not_consume_staging_quota(env, monkeypatch):
+    monkeypatch.setattr(iv, "USER_DAILY_LIMIT", 1)
+
+    def unavailable(_prompt):
+        raise iv.AIUnavailable("test-only proxy failure")
+
+    with pytest.raises(iv.AIUnavailable):
+        iv.ai_report(CODE, "retry-user", llm=unavailable)
+    conn = iv._ai_db()
+    try:
+        row = conn.execute("SELECT n FROM usage WHERE client=?", ("retry-user",)).fetchone()
+        assert row is None or row[0] == 0
+    finally:
+        conn.close()
+    retry = iv.ai_report(CODE, "retry-user", llm=lambda _: ("Stored-only report", "stub"))
+    assert retry["cached"] is False and retry["report"] == "Stored-only report"
+    with env._connect() as conn:
+        conn.execute("INSERT INTO listed_companies(code,symbol,name_fa,provenance_json,created_at,updated_at) VALUES(?,?,?,?,?,?)",
+                     ("998", "ابتد", "x", "{}", "a", "b"))
+    with pytest.raises(iv.RateLimited):
+        iv.ai_report("998", "retry-user", llm=lambda _: ("x", "stub"))
+
+
 def test_ai_proxy_never_falls_back_to_direct_vendor(env, monkeypatch):
     monkeypatch.delenv("BIAP_AI_PROXY_URL", raising=False)
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-only-do-not-send")

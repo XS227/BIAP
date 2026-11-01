@@ -470,13 +470,26 @@ def ai_report(query: str, user_id: str, *, llm: Callable[[str], tuple[str, str]]
             conn.commit()
         finally:
             conn.close()
-    text, model = llm(_prompt(view, audit, day))
-    created = datetime.now(timezone.utc).isoformat()
-    with _lock:
-        conn = _ai_db()
-        try:
-            conn.execute("INSERT OR REPLACE INTO report(key, day, body, model, created_at) VALUES(?,?,?,?,?)", (key, day, text, model, created))
-            conn.commit()
-        finally:
-            conn.close()
+    try:
+        text, model = llm(_prompt(view, audit, day))
+        created = datetime.now(timezone.utc).isoformat()
+        with _lock:
+            conn = _ai_db()
+            try:
+                conn.execute("INSERT OR REPLACE INTO report(key, day, body, model, created_at) VALUES(?,?,?,?,?)", (key, day, text, model, created))
+                conn.commit()
+            finally:
+                conn.close()
+    except Exception:
+        # A failed proxy call (or failed report save) must not consume the
+        # user's staging AI quota. Only the isolated development cache is
+        # changed; stored issuer data and financial history remain untouched.
+        with _lock:
+            conn = _ai_db()
+            try:
+                conn.execute("UPDATE usage SET n = MAX(0, n - 1) WHERE client=? AND day=?", (user_id, day))
+                conn.commit()
+            finally:
+                conn.close()
+        raise
     return {**meta, "report": text, "model": model, "generatedAt": created, "cached": False}
