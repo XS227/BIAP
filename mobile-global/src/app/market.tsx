@@ -313,7 +313,7 @@ export default function MarketScreen() {
     </> : null}
     {error ? <View style={[styles.errorBox, { borderColor: Brand.warning }]}><Text style={[styles.errorText, { color: colors.textSecondary }]}>{error}</Text></View> : null}
 
-    {submittedQuery.trim() && !loadingSearch && !error ? <Text style={[styles.empty, { color: colors.textSecondary, paddingHorizontal: Spacing.three }]}>{filtered.length} result{filtered.length === 1 ? '' : 's'} for "{submittedQuery.trim()}" on {selection?.exchangeLabel || 'this exchange'}</Text> : null}
+    {submittedQuery.trim() && !loadingSearch && !error ? <Text style={[styles.empty, { color: colors.textSecondary, paddingHorizontal: Spacing.three }]}>{filtered.length} result{filtered.length === 1 ? '' : 's'} for &quot;{submittedQuery.trim()}&quot; on {selection?.exchangeLabel || 'this exchange'}</Text> : null}
     <FlatList
       data={filtered}
       keyExtractor={(item) => `${item.country}:${item.exchange}:${item.ticker}:${item.isin || ''}`}

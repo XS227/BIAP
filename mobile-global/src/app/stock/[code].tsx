@@ -145,7 +145,7 @@ export default function GlobalStockDetailScreen() {
     }
   }, [params.code, params.country, params.exchange, params.currency, params.name, params.isin, params.lei]);
 
-  useEffect(() => { setLoading(true); void load(); }, [load]);
+  useEffect(() => { void Promise.resolve().then(() => { setLoading(true); return load(); }); }, [load]);
   const company = analysis?.company;
   const sourcePlan = analysis?.sourcePlan;
   const decision = analysis?.decisionTable;
@@ -303,7 +303,7 @@ export default function GlobalStockDetailScreen() {
 
         <View style={[styles.agentCard, { backgroundColor: colors.backgroundElement, borderColor: distress?.status === 'HIGH_RISK' ? Brand.negative : distress?.status === 'ELEVATED_RISK' ? Brand.warning : distress?.status === 'LOW_RISK' ? Brand.positive : colors.backgroundSelected }]}>
           <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>Agent 9 · Distress & Credit</Text><Text style={[styles.agentVote, { color: distress?.status === 'HIGH_RISK' ? Brand.negative : distress?.status === 'ELEVATED_RISK' ? Brand.warning : distress?.status === 'LOW_RISK' ? Brand.positive : colors.textSecondary }]}>{friendly(distress?.status)}</Text></View>
-          <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Zmijewski {distress?.distress_probability == null ? '—' : `${(distress.distress_probability * 100).toFixed(1)}%`} • Altman Z'' {distress?.altman_z_double_prime == null ? '—' : n(distress.altman_z_double_prime, 2)} • ICR {distress?.interest_coverage == null ? '—' : `${n(distress.interest_coverage, 2)}x`}</Text>
+          <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Zmijewski {distress?.distress_probability == null ? '—' : `${(distress.distress_probability * 100).toFixed(1)}%`} • Altman Z&apos;&apos; {distress?.altman_z_double_prime == null ? '—' : n(distress.altman_z_double_prime, 2)} • ICR {distress?.interest_coverage == null ? '—' : `${n(distress.interest_coverage, 2)}x`}</Text>
           <Text style={[styles.agentReason, { color: colors.textSecondary }]}>{distress?.reasoning || 'Insufficient verified inputs for distress models.'}</Text>
           {distress?.synthetic_credit_band ? <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Credit band: {friendly(distress.synthetic_credit_band)}</Text> : null}
           {distress?.positive_block ? <Text style={[styles.warning, { color: Brand.negative }]}>Positive-decision safety gate active.</Text> : null}

@@ -110,6 +110,7 @@ export default function MoreScreen() {
   };
 
   const items: MenuItem[] = [
+    ...(__DEV__ ? [{ icon: '🧪', title: 'پیش‌نمایش مرحله اول (نمونه)', sub: 'داده ساختگی، هفت ایجنت، کیا‌شا، صورت‌های مالی و حسابرسی؛ بدون سیگنال واقعی', onPress: () => router.push('/checkpoint-demo' as never), accent: '#d97706' }] : []),
     { icon: '🔄', title: 'به‌روزرسانی BIAP', sub: `بررسی نسخه جدید و دانلود APK • نسخه فعلی ${currentVersion}`, onPress: () => { void checkForUpdate(); }, accent: Brand.primary },
     { icon: '📈', title: 'معاملات آنلاین فارابی', sub: 'ورود امن به سامانه رسمی فارابیکسو برای خرید و فروش واقعی', onPress: openFarabiTrading, accent: Brand.positive },
     { icon: '🤝', title: 'همکاری با فارابی (فارابیز پلاس)', sub: 'برنامه رسمی معرفی صندوق‌های ETF و درآمد مشارکتی فارابی', onPress: () => { void openUrl(FARABIZ_PARTNER_URL, 'فارابیز پلاس'); }, accent: '#0ea5e9' },
