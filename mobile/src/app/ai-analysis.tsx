@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { router } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -12,12 +12,26 @@ export default function AiAnalysisScreen() {
   const [report, setReport] = useState<IranAiReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const requestVersion = useRef(0);
+  useEffect(() => () => { requestVersion.current += 1; }, []);
   useInitialPickedCompany(useCallback((c: PickedCompany | null) => setCompany((prev) => prev ?? c), []));
-  const choose = (c: PickedCompany) => { setCompany(c); setReport(null); setError(''); };
+  const choose = (c: PickedCompany) => {
+    // A response for the previously selected company must never appear under this one.
+    requestVersion.current += 1;
+    setCompany(c); setReport(null); setError(''); setLoading(false);
+  };
   const run = async () => {
-    if (!company) return;
+    if (!company || loading) return;
+    const version = ++requestVersion.current;
     setLoading(true); setError(''); setReport(null);
-    try { setReport(await requestIranAiReport(company.code)); } catch (e) { setError(describeIranError(e)); } finally { setLoading(false); }
+    try {
+      const next = await requestIranAiReport(company.code);
+      if (version === requestVersion.current) setReport(next);
+    } catch (e) {
+      if (version === requestVersion.current) setError(describeIranError(e));
+    } finally {
+      if (version === requestVersion.current) setLoading(false);
+    }
   };
   const lines = report ? report.report.split('\n') : [];
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView contentContainerStyle={styles.content}><View style={styles.max}>
