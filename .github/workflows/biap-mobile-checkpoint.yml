@@ -16,6 +16,7 @@ on:
       - 'analysis/iran_company_routes.py'
       - 'analysis/tests/test_global_saved_company_ai.py'
       - 'analysis/tests/test_iran_company_view.py'
+      - 'analysis/tests/test_mobile_checkpoint_proxy_loopback.py'
       - 'tools/mobile_checkpoint_inprocess_api_smoke.py'
       - 'analysis/tests/test_global_saved_company_view.py'
       - 'analysis/global_routes.py'
@@ -78,4 +79,4 @@ jobs:
       - name: Verify Global and Iran saved views, proxy guards and audit contracts
         env:
           PYTHONPATH: analysis
-        run: python -m pytest -q analysis/tests/test_global_saved_company_view.py analysis/tests/test_global_saved_company_ai.py analysis/tests/test_iran_company_view.py
+        run: python -m pytest -q analysis/tests/test_global_saved_company_view.py analysis/tests/test_global_saved_company_ai.py analysis/tests/test_iran_company_view.py analysis/tests/test_mobile_checkpoint_proxy_loopback.py
