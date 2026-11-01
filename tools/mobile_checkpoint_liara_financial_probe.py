@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -17,6 +18,48 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "analysis"))
 from codal_inbox import Inbox, InboxError  # noqa: E402
 from codal_data import CodalFiling  # noqa: E402
 from codal_parser_v2 import parse_fundamentals  # noqa: E402
+
+
+
+_DIGITS = str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789")
+_UNIT_NAMES = {"میلیون": "MILLION_IRR", "هزار": "THOUSAND_IRR", "میلیارد": "BILLION_IRR"}
+
+
+def filing_metadata(title: str | None, html: str) -> dict:
+    """Extract *declared* report metadata; never certify accounting provenance.
+
+    The financial title is the scope/period source. Currency units must come
+    from an explicit document-wide declaration, not incidental note text.
+    """
+    title = str(title or "").translate(_DIGITS).replace("\u200c", " ")
+    period = re.search(r"(?<!\d)(1[34]\d{2})/(\d{2})/(\d{2})(?!\d)", title)
+    period_text = period.group(0) if period else None
+    if "حسابرسی نشده" in title:
+        audited = False
+    elif "حسابرسی شده" in title:
+        audited = True
+    else:
+        audited = None
+    scope = "CONSOLIDATED" if "تلفیقی" in title else "UNVERIFIED_SCOPE"
+    declared = re.search(
+        r"کلیه\s+مبالغ\s+درج\s+شده\s+به\s+(میلیون|هزار|میلیارد)\s+ریال",
+        html.replace("\u200c", " "),
+    )
+    unit = _UNIT_NAMES[declared.group(1)] if declared else None
+    missing = [key for key, value in (
+        ("reportPeriod", period_text), ("scope", scope if scope == "CONSOLIDATED" else None),
+        ("auditStatus", audited), ("declaredUnit", unit),
+    ) if value is None]
+    return {
+        "reportPeriodJalali": period_text,
+        "scopeFromTitle": scope,
+        "auditedFromTitle": audited,
+        "unitDeclaredInHtml": unit,
+        "metadataCompleteness": "DECLARED_METADATA_PRESENT" if not missing else "REVIEW_MISSING_METADATA",
+        "missingMetadata": missing,
+        "unitIndependentlyVerified": False,
+        "scopeIndependentlyVerified": False,
+    }
 
 
 def balance_diagnostic(fundamentals) -> dict:
@@ -81,7 +124,7 @@ def inspect(root: Path, symbol: str) -> dict:
         if parsed is None:
             result["unparseableReports"] += 1
             continue
-        result["parsedReports"].append({"tracingNo": trace, **balance_diagnostic(parsed)})
+        result["parsedReports"].append({"tracingNo": trace, **filing_metadata(item.get("title"), html), **balance_diagnostic(parsed)})
     result["status"] = "PARSABLE_BUT_REQUIRES_RECONCILIATION" if result["parsedReports"] else "NO_PARSED_STATEMENTS"
     return result
 
@@ -98,7 +141,20 @@ def self_test():
     assert balance_diagnostic(SimpleNamespace(
         total_assets_current=None, total_liabilities_current=60,
         total_equity_current=40))["status"] == "INCOMPLETE"
-    print("Liara-only financial reconciliation self-test: PASS")
+    sample = filing_metadata(
+        "صورت‌های مالی تلفیقی سال مالی منتهی به ۱۴۰۴/۱۲/۲۹ (حسابرسی نشده)",
+        "<div>کلیه مبالغ درج شده به میلیون ریال می باشد</div>",
+    )
+    assert sample["reportPeriodJalali"] == "1404/12/29"
+    assert sample["scopeFromTitle"] == "CONSOLIDATED"
+    assert sample["auditedFromTitle"] is False
+    assert sample["unitDeclaredInHtml"] == "MILLION_IRR"
+    assert sample["metadataCompleteness"] == "DECLARED_METADATA_PRESENT"
+    assert not sample["unitIndependentlyVerified"]
+    missing = filing_metadata("گزارش شرکت فرعی", "<p>تسهیلات میلیارد ریال</p>")
+    assert missing["unitDeclaredInHtml"] is None
+    assert missing["metadataCompleteness"] == "REVIEW_MISSING_METADATA"
+    print("Liara-only financial reconciliation and metadata self-test: PASS")
 
 
 def main():
