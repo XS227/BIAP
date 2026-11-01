@@ -249,10 +249,14 @@ def company_view(query: str, *, now: Optional[datetime] = None) -> dict:
     s = _stmt(codal)
     kiasha = _latest_kiasha(row["code"], row["symbol"])
     agents = _agents(kiasha)
-    have_fund = bool(codal)
+    # CODAL metadata alone is not a verified numeric financial statement.
+    have_fund = any(value is not None for value in s.values())
     warnings: list[str] = []
     if not have_fund:
-        warnings.append("صورت‌های مالی کدال برای این شرکت ذخیره نشده است؛ تحلیل بنیادی کامل نیست.")
+        if codal:
+            warnings.append("فراداده گزارش کدال موجود است، اما ارقام صورت‌های مالی قابل اتکا ذخیره نشده‌اند.")
+        else:
+            warnings.append("صورت‌های مالی کدال برای این شرکت ذخیره نشده است؛ تحلیل بنیادی کامل نیست.")
     fund_agent = next(a for a in agents if a["agent"] == "fundamental")
     if fund_agent["dataStatus"] in ("NO_DATA", "MISSING"):
         warnings.append("عامل بنیادی داده‌ی معتبر نداشته است؛ رأی آن شاهد محسوب نمی‌شود.")
@@ -282,7 +286,7 @@ def company_view(query: str, *, now: Optional[datetime] = None) -> dict:
             "source": codal.get("source"), "auditOpinion": codal.get("audit_opinion"),
             "statements": [{"key": k, "label": label, "value": s.get(k)} for k, label in STATEMENT_LABELS],
             "ratios": _ratios(s),
-            "missingReason": None if have_fund else (diag.get("fundamentalsReason") or diag.get("metadataError") or "no CODAL statements stored"),
+            "missingReason": None if have_fund else (diag.get("fundamentalsReason") or diag.get("metadataError") or ("CODAL metadata present, but no numeric statements verified" if codal else "no CODAL statements stored")),
             "lastUpdate": row["enriched_at"],
         },
         "distress": company.get("distress"),

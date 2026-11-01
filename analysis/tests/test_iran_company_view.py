@@ -78,6 +78,16 @@ def test_no_statements_means_insufficient_data_everywhere_and_no_invented_number
     assert all(c["missing"] for c in a["checks"])
 
 
+def test_codal_metadata_only_does_not_claim_financials_available(env):
+    env.save_enriched(CODE, _company(
+        codal={"report_title": "صورت‌های مالی", "source": "liara_verified_inbox"},
+        data_available={"codal": True}), provenance={})
+    view = iv.company_view(CODE)
+    assert view["financials"]["available"] is False
+    assert all(row["value"] is None for row in view["financials"]["statements"])
+    assert view["financials"]["missingReason"]
+    assert any("فراداده" in warning for warning in view["dataQualityWarnings"])
+
 def test_audit_runs_when_statements_exist(env):
     codal = {"report_title": "صورت‌های مالی سال مالی منتهی به ۱۴۰۴/۱۲/۲۹", "source": "codal_financial_statement_html_v2", "audit_opinion": "مقبول",
              "net_profit_current": 100.0, "revenue_current": 1000.0, "revenue_prev": 800.0, "total_assets_current": 1000.0,
