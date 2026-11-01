@@ -5,7 +5,7 @@ import { Colors } from '@/constants/theme';
 import { GLOBAL_CHECKPOINT_DEMO, auditCheckpointDemo, demoFinancialRatios, createCheckpointScenario, explainDemoCompany, selectDemoBroker, type CheckpointScenario } from '@/lib/checkpoint-demo';
 
 import { fetchSavedGlobalCompanyPreview, type SavedGlobalCompanyView } from '@/lib/global-api';
-import { assessSavedGlobalCoverage } from '@/lib/saved-company-contract';
+import { assessSavedGlobalCoverage, summarizeSavedGlobalCompany } from '@/lib/saved-company-contract';
 
 const format = (n: number | null) => n === null ? '—' : n.toLocaleString('en-US');
 
@@ -35,6 +35,7 @@ export default function CheckpointDemoScreen() {
   const explanation = explainDemoCompany(demo);
   const brokerPreview = selectDemoBroker(demo, selectedBroker);
   const savedCoverage = savedResult ? assessSavedGlobalCoverage(savedResult) : null;
+  const savedSummary = savedResult ? summarizeSavedGlobalCompany(savedResult) : null;
   const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
   if (!__DEV__) return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, padding: 20 }}><Text style={{ color: colors.text }}>Development preview unavailable.</Text></SafeAreaView>;
   const f = demo.financials;
@@ -131,6 +132,10 @@ export default function CheckpointDemoScreen() {
             <Text key={index} style={[styles.caption, { color: colors.textSecondary }]}>{agent.name ?? 'Agent'}: vote {agent.vote ?? '—'} • confidence {agent.confidence ?? '—'} • {agent.dataStatus ?? 'Unverified'}</Text>
           ))}
           <Text style={[styles.caption, { color: colors.textSecondary }]}>Kiasha stored call: {savedResult.kiasha.call ?? 'Unavailable'} • Confidence: {savedResult.kiasha.confidence ?? '—'}</Text>
+          <Text style={[styles.heading, { color: colors.text }]}>Stored company explanation • deterministic, not AI</Text>
+          {savedSummary?.findings.map((finding, index) => (
+            <Text key={index} style={[styles.caption, { color: colors.textSecondary }]}>{finding}</Text>
+          ))}
           <Text style={styles.noTrade}>Saved evidence only. Proxy called: NO. Trading eligibility: NO.</Text>
         </>}
       </View>
