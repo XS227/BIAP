@@ -76,6 +76,40 @@ def balance_diagnostic(fundamentals) -> dict:
             "differencePctOfAssets": round(gap, 3)}
 
 
+
+def compare_declared_metadata(reports: list[dict]) -> dict:
+    """Compare declarations across parsed Liara reports; NOT independent validation.
+
+    Audited and unaudited reports may legitimately differ in amounts or audit
+    status. Compare only declared period, scope and unit, never infer a price.
+    """
+    result = {
+        "parsedReportCount": len(reports),
+        "status": "INSUFFICIENT_PARSED_REPORTS",
+        "matchingFields": [],
+        "conflictingFields": [],
+        "missingFields": [],
+        "independentlyVerified": False,
+        "financialsImportApproved": False,
+    }
+    if len(reports) < 2:
+        return result
+    for field in ("reportPeriodJalali", "scopeFromTitle", "unitDeclaredInHtml"):
+        values = [report.get(field) for report in reports]
+        if any(value is None or value == "UNVERIFIED_SCOPE" for value in values):
+            result["missingFields"].append(field)
+        elif len(set(values)) != 1:
+            result["conflictingFields"].append(field)
+        else:
+            result["matchingFields"].append(field)
+    if result["conflictingFields"]:
+        result["status"] = "CONFLICTING_DECLARATIONS"
+    elif result["missingFields"]:
+        result["status"] = "INCOMPLETE_DECLARATIONS"
+    else:
+        result["status"] = "DECLARATIONS_MATCH_ONLY"
+    return result
+
 def inspect(root: Path, symbol: str) -> dict:
     inbox = Inbox(str(root))
     summary = inbox.summary()
@@ -125,6 +159,7 @@ def inspect(root: Path, symbol: str) -> dict:
             result["unparseableReports"] += 1
             continue
         result["parsedReports"].append({"tracingNo": trace, **filing_metadata(item.get("title"), html), **balance_diagnostic(parsed)})
+    result["declaredMetadataCrossReport"] = compare_declared_metadata(result["parsedReports"])
     result["status"] = "PARSABLE_BUT_REQUIRES_RECONCILIATION" if result["parsedReports"] else "NO_PARSED_STATEMENTS"
     return result
 
@@ -154,6 +189,24 @@ def self_test():
     missing = filing_metadata("گزارش شرکت فرعی", "<p>تسهیلات میلیارد ریال</p>")
     assert missing["unitDeclaredInHtml"] is None
     assert missing["metadataCompleteness"] == "REVIEW_MISSING_METADATA"
+    pair = [{
+        "reportPeriodJalali": "1404/12/29",
+        "scopeFromTitle": "CONSOLIDATED",
+        "unitDeclaredInHtml": "MILLION_IRR",
+        "auditedFromTitle": True,
+    }, {
+        "reportPeriodJalali": "1404/12/29",
+        "scopeFromTitle": "CONSOLIDATED",
+        "unitDeclaredInHtml": "MILLION_IRR",
+        "auditedFromTitle": False,
+    }]
+    assert compare_declared_metadata(pair)["status"] == "DECLARATIONS_MATCH_ONLY"
+    assert compare_declared_metadata(pair)["independentlyVerified"] is False
+    conflicting = [pair[0], {**pair[1], "unitDeclaredInHtml": "THOUSAND_IRR"}]
+    assert compare_declared_metadata(conflicting)["conflictingFields"] == ["unitDeclaredInHtml"]
+    incomplete = [pair[0], {**pair[1], "unitDeclaredInHtml": None}]
+    assert compare_declared_metadata(incomplete)["status"] == "INCOMPLETE_DECLARATIONS"
+    assert compare_declared_metadata([pair[0]])["status"] == "INSUFFICIENT_PARSED_REPORTS"
     print("Liara-only financial reconciliation and metadata self-test: PASS")
 
 
