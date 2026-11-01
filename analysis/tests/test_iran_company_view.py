@@ -139,6 +139,32 @@ def test_ai_proxy_never_falls_back_to_direct_vendor(env, monkeypatch):
 
 
 
+def test_iran_proxy_bearer_and_invalid_payload_fail_closed(env, monkeypatch):
+    import httpx
+    monkeypatch.setenv("BIAP_AI_PROXY_URL", "http://127.0.0.1:9876")
+    monkeypatch.setenv("BIAP_AI_PROXY_TOKEN", "test-proxy-token")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "never-forward-provider-key")
+    calls = []
+
+    def fake_post(url, *, headers, timeout, json):
+        calls.append((url, headers.copy(), json.copy()))
+        return httpx.Response(200, json={"content": [{"type": "text", "text": "Stored evidence only"}]})
+
+    monkeypatch.setattr(httpx, "post", fake_post)
+    report, model = iv._call_llm("STORED_TEST_ONLY")
+    assert report == "Stored evidence only" and model
+    assert calls[0][0] == "http://127.0.0.1:9876/messages"
+    assert calls[0][1]["Authorization"] == "Bearer test-proxy-token"
+    assert "never-forward-provider-key" not in json.dumps(calls)
+
+    monkeypatch.setattr(httpx, "post", lambda *a, **k: httpx.Response(200, content=b"not-json"))
+    with pytest.raises(iv.AIUnavailable):
+        iv._call_llm("STORED_TEST_ONLY")
+    monkeypatch.setattr(httpx, "post", lambda *a, **k: httpx.Response(200, json={"content": [{"text": "x" * 12001}]}))
+    with pytest.raises(iv.AIUnavailable):
+        iv._call_llm("STORED_TEST_ONLY")
+
+
 def test_routes_require_auth_and_map_errors(env, monkeypatch):
     from fastapi import FastAPI
     from fastapi.testclient import TestClient

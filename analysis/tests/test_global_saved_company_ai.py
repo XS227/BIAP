@@ -47,6 +47,32 @@ def test_proxy_must_be_explicit_and_never_falls_back_to_vendor(monkeypatch):
             ai.call_biap_proxy("x")
 
 
+def test_global_proxy_bearer_and_malformed_response_fail_closed(monkeypatch):
+    import httpx
+    monkeypatch.setenv("BIAP_AI_PROXY_URL", "http://127.0.0.1:9876")
+    monkeypatch.setenv("BIAP_AI_PROXY_TOKEN", "test-proxy-token")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "never-forward-provider-key")
+    calls = []
+
+    def fake_post(url, *, headers, timeout, json):
+        calls.append((url, headers.copy(), json.copy()))
+        return httpx.Response(200, json={"content": [{"type": "text", "text": "Only stored facts"}]})
+
+    monkeypatch.setattr(httpx, "post", fake_post)
+    text, model = ai.call_biap_proxy(ai.prompt_from_saved(sample()))
+    assert text == "Only stored facts" and model
+    assert calls[0][0] == "http://127.0.0.1:9876/messages"
+    assert calls[0][1]["Authorization"] == "Bearer test-proxy-token"
+    assert "never-forward-provider-key" not in json.dumps(calls)
+
+    monkeypatch.setattr(httpx, "post", lambda *a, **k: httpx.Response(200, content=b"not-json"))
+    with pytest.raises(ai.ProxyUnavailable):
+        ai.call_biap_proxy("STORED_TEST_ONLY")
+    monkeypatch.setattr(httpx, "post", lambda *a, **k: httpx.Response(200, json={"content": [{"text": "x" * 12001}]}))
+    with pytest.raises(ai.ProxyUnavailable):
+        ai.call_biap_proxy("STORED_TEST_ONLY")
+
+
 def test_explanation_from_saved_stub_never_authorizes_trade():
     view = sample()
     seen = []

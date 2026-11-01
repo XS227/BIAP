@@ -426,6 +426,10 @@ def _call_llm(prompt: str) -> tuple[str, str]:
     if not valid:
         raise AIUnavailable("BIAP AI proxy is not configured with an approved HTTPS or loopback URL.")
     headers = {"content-type": "application/json", "anthropic-version": os.environ.get("ANTHROPIC_VERSION", "2023-06-01")}
+    # Proxy-specific authentication only; never forward provider API keys.
+    token = os.environ.get("BIAP_AI_PROXY_TOKEN", "").strip()
+    if token:
+        headers["Authorization"] = "Bearer " + token
     try:
         resp = httpx.post(f"{proxy}/messages", headers=headers, timeout=45,
                           json={"model": model, "max_tokens": 900, "messages": [{"role": "user", "content": prompt}]})
@@ -433,9 +437,14 @@ def _call_llm(prompt: str) -> tuple[str, str]:
         raise AIUnavailable(f"سرویس هوش مصنوعی در دسترس نیست ({type(exc).__name__})") from exc
     if resp.status_code != 200:
         raise AIUnavailable(f"سرویس هوش مصنوعی خطای HTTP {resp.status_code} داد")
-    text = "".join(p.get("text", "") for p in (resp.json().get("content") or []) if isinstance(p, dict)).strip()
-    if not text:
-        raise AIUnavailable("سرویس هوش مصنوعی گزارش خالی برگرداند")
+    try:
+        payload = resp.json()
+        blocks = payload.get("content") if isinstance(payload, dict) else None
+        text = "".join(p.get("text", "") for p in (blocks or []) if isinstance(p, dict) and isinstance(p.get("text"), str)).strip()
+    except (ValueError, TypeError, AttributeError):
+        text = ""
+    if not text or len(text) > 12000:
+        raise AIUnavailable("سرویس هوش مصنوعی گزارش نامعتبر یا خالی برگرداند")
     return text, model
 
 
