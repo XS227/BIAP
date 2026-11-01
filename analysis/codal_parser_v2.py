@@ -33,30 +33,43 @@ def _matches(cell: str, aliases: tuple[str, ...]) -> bool:
         # phrase so unrelated rows are not matched accidentally.
         if len(wanted) >= 6 and label.startswith(wanted):
             suffix = label[len(wanted):]
+            # Balance-sheet totals must not match current/non-current
+            # subtotals or "equity AND liabilities" combined totals.
+            # Only allow known annotation suffixes on aggregate rows.
+            if wanted.startswith("جمع") and suffix and not suffix.startswith(
+                ("ادامه", "اصلاح", "تجدیدارائه", "یادداشت")
+            ):
+                continue
             if len(suffix) <= 18:
                 return True
     return False
 
 
 def row_values(rows: list[list[str]], aliases: tuple[str, ...]) -> tuple[float, float] | None:
-    for row in rows:
-        if not row:
-            continue
-        normalized = [_normalize_text(cell) for cell in row]
-        label_idx = next((idx for idx, cell in enumerate(normalized) if _matches(cell, aliases)), None)
-        if label_idx is None:
-            continue
-        values = [_parse_number(cell) for cell in row[label_idx + 1:]]
-        numbers = [value for value in values if value is not None]
-        # Some exports repeat a note/index number immediately after the label.
-        # Prefer the two largest-magnitude adjacent accounting values when more
-        # than two numeric cells are present, but preserve original order.
-        if len(numbers) >= 2:
-            if len(numbers) == 2:
-                return numbers[0], numbers[1]
-            pairs = [(i, abs(numbers[i]) + abs(numbers[i + 1])) for i in range(len(numbers) - 1)]
-            best = max(pairs, key=lambda item: item[1])[0]
-            return numbers[best], numbers[best + 1]
+    canonical_aliases = {_canonical_label(alias) for alias in aliases}
+    # Scan all rows for exact totals first: a non-current assets subtotal
+    # often precedes the real total in CODAL's balance-sheet table.
+    for exact_only in (True, False):
+        for row in rows:
+            if not row:
+                continue
+            normalized = [_normalize_text(cell) for cell in row]
+            label_idx = next((idx for idx, cell in enumerate(normalized)
+                              if (_canonical_label(cell) in canonical_aliases if exact_only
+                                  else _matches(cell, aliases))), None)
+            if label_idx is None:
+                continue
+            values = [_parse_number(cell) for cell in row[label_idx + 1:]]
+            numbers = [value for value in values if value is not None]
+            # Some exports repeat a note/index number immediately after the label.
+            # Prefer the two largest-magnitude adjacent accounting values when more
+            # than two numeric cells are present, but preserve original order.
+            if len(numbers) >= 2:
+                if len(numbers) == 2:
+                    return numbers[0], numbers[1]
+                pairs = [(i, abs(numbers[i]) + abs(numbers[i + 1])) for i in range(len(numbers) - 1)]
+                best = max(pairs, key=lambda item: item[1])[0]
+                return numbers[best], numbers[best + 1]
     return None
 
 
