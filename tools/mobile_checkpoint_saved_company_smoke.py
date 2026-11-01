@@ -149,7 +149,7 @@ def self_test():
     }
     partial = validate_saved_company(good, "US", "NASDAQ", "ABC")
     assert partial["ok"] and not partial["checkpointComplete"]
-    assert not partial["coverage"]["financialStatements"]
+    assert not partial["coverage"]["evidencePass"]
     full = json.loads(json.dumps(good))
     full["financials"]["net_income"] = -1
     full["financials"]["total_equity"] = 130
