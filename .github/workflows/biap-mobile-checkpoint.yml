@@ -53,6 +53,8 @@ jobs:
         run: npx tsc --noEmit
       - name: Synthetic checkpoint safeguards
         run: npm run test:checkpoint
+      - name: API contracts and broker/read-only data guards
+        run: npm run test:api --if-present
       - name: Lint (non-interactive)
         env:
           CI: '1'
