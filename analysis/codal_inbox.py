@@ -224,6 +224,29 @@ def summary() -> Optional[dict]:
 
 # --- request list for the fetcher --------------------------------------------------------------
 
+def priority_symbols(root: str) -> list[str]:
+    """Symbols listed in <inbox>/request/priority.txt (one per line, '#' comments). They head every request list."""
+    path = os.path.join(root, "request", "priority.txt")
+    try:
+        with open(path, encoding="utf-8") as handle:
+            lines = [ln.strip() for ln in handle]
+    except OSError:
+        return []
+    return [ln for ln in lines if ln and not ln.startswith("#")]
+
+
+def with_priority(root: str, symbols: list[str]) -> list[str]:
+    """Priority symbols first, then the rest, de-duplicated by the inbox's own symbol key."""
+    seen: set[str] = set()
+    out: list[str] = []
+    for sym in priority_symbols(root) + list(symbols):
+        key = symbol_key(sym)
+        if key and key not in seen:
+            seen.add(key)
+            out.append(sym)
+    return out
+
+
 def write_request(root: str, symbols: list[str]) -> str:
     folder = os.path.join(root, "request")
     os.makedirs(folder, exist_ok=True)
@@ -266,7 +289,7 @@ def main(argv: list[str]) -> int:
         return 1 if current().rejected else 0
     if argv[:1] == ["request"]:
         limit = int(argv[argv.index("--limit") + 1]) if "--limit" in argv else 400
-        symbols = backlog_symbols(limit)
+        symbols = with_priority(root, backlog_symbols(limit))
         print(f"wrote {len(symbols)} symbols to {write_request(root, symbols)}")
         return 0
     print(__doc__, file=sys.stderr)

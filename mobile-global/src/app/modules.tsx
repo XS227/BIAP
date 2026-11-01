@@ -95,7 +95,7 @@ export default function ModulesScreen() {
 
     {GROUPS.map((group) => <View key={group.key} style={styles.group}><View style={styles.groupHead}><View style={[styles.dot, { backgroundColor: group.accent }]} /><Text style={[styles.groupTitle, { color: colors.text }]}>{group.title}</Text></View><View style={styles.grid}>{group.items.map((item) => <ModuleCard key={item.key} item={item} colors={colors} accent={group.accent} state={stateFor(item, group.key)} />)}</View></View>)}
 
-    <View style={[styles.info, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.infoTitle, { color: colors.text }]}>No fake fill-ins</Text><Text style={[styles.infoText, { color: colors.textSecondary }]}>If a country's filing adapter does not provide a field, the module shows it as unavailable. BIAP does not replace missing official data with an estimate unless a future model explicitly labels that estimate.</Text></View>
+    <View style={[styles.info, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.infoTitle, { color: colors.text }]}>No fake fill-ins</Text><Text style={[styles.infoText, { color: colors.textSecondary }]}>If a country&apos;s filing adapter does not provide a field, the module shows it as unavailable. BIAP does not replace missing official data with an estimate unless a future model explicitly labels that estimate.</Text></View>
   </View></ScrollView></SafeAreaView>;
 }
 

@@ -60,7 +60,7 @@ export default function ModuleDetailScreen() {
   const renderBullets = (title: string, bullets: string[]) => <View style={[styles.insightCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.insightTitle, { color: colors.text }]}>{title}</Text>{bullets.map((bullet) => <View key={bullet} style={styles.bulletRow}><Text style={[styles.bulletText, { color: colors.textSecondary }]}>{bullet}</Text><View style={styles.bulletDot} /></View>)}</View>;
 
   const requirementCard = requirement ? <View style={[styles.requirementCard,{backgroundColor:colors.backgroundElement,borderColor:companyMode==='listed'?'#16653444':colors.backgroundSelected}]}> 
-    <View style={styles.requirementHead}><View style={[styles.reqBadge,{backgroundColor:companyMode==='listed'?'#14532d':'#1e3a8a'}]}><Text style={styles.reqBadgeText}>{companyMode==='listed'?'بورسی • AUTO':'شرکتی • INPUT'}</Text></View><Text style={[styles.requirementTitle,{color:colors.text}]}>داده لازم برای این ماژول</Text></View>
+    <View style={styles.requirementHead}><View style={[styles.reqBadge,{backgroundColor:companyMode==='listed'?'#14532d':'#1e3a8a'}]}><Text style={styles.reqBadgeText}>{companyMode==='listed'?'بورسی • داده‌ی خودکار در صورت وجود':'شرکتی • ورودی دستی'}</Text></View><Text style={[styles.requirementTitle,{color:colors.text}]}>داده لازم برای این ماژول</Text></View>
     {code ? <Text style={[styles.selectedCompany,{color:Brand.positive}]}>نماد انتخاب‌شده: {code}</Text> : null}
     <Text style={[styles.requirementText,{color:colors.textSecondary}]}>{requirement.description}</Text>
     {companyMode==='listed' ? <>
@@ -88,14 +88,14 @@ export default function ModuleDetailScreen() {
     <View style={[styles.modeCard, { backgroundColor: colors.backgroundElement }]}><View style={{ flex: 1, alignItems: 'flex-end' }}><Text style={[styles.modeTitle, { color: colors.text }]}>{demoMode ? 'Demo Mode' : 'Real Mode'}</Text><Text style={[styles.modeText, { color: colors.textSecondary }]}>{demoMode ? 'داده نمونه کاملاً برچسب‌خورده نمایش داده می‌شود و به داده واقعی نوشته نمی‌شود.' : 'فقط داده واقعی متصل نمایش داده می‌شود؛ مقدار ناموجود ساخته نمی‌شود.'}</Text></View><Pressable onPress={toggleDemo} style={[styles.toggle, { backgroundColor: demoMode ? '#7048e8' : Brand.stockGreen }]}><Text style={styles.toggleText}>{demoMode ? 'Demo' : 'واقعی'}</Text></Pressable></View>
 
     {!module ? <View style={[styles.empty, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.emptyTitle, { color: colors.text }]}>ماژول پیدا نشد</Text></View> : demoMode ? <>
-      <View style={styles.demoBadge}><Text style={styles.demoBadgeText}>DEMO • داده نمونه</Text></View>
+      <View style={styles.demoBadge}><Text style={styles.demoBadgeText}>نمونه • داده‌ی ساختگی</Text></View>
       <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.heroText, { color: colors.textSecondary }]}>{module.summary}</Text></View>
       {renderMetrics(module.metrics)}
       {renderBullets('خلاصه Demo', module.bullets)}
       <View style={[styles.disclaimer, { borderColor: '#7c5cff66' }]}><Text style={styles.disclaimerText}>این مقادیر ساختگی و فقط برای نمایش Demo هستند؛ در حساب واقعی جایگزین داده ناموجود نمی‌شوند.</Text></View>
       <Pressable onPress={openDataConnect} style={[styles.secondaryButton,{borderColor:'#7048e8'}]}><Text style={[styles.secondaryButtonText,{color:'#a78bfa'}]}>اتصال داده و رفتن به Real Mode</Text></Pressable>
     </> : loadingReal ? <View style={styles.loading}><ActivityIndicator color={Brand.primary} /><Text style={[styles.emptyBody, { color: colors.textSecondary }]}>در حال خواندن منابع واقعی BIAP...</Text></View> : real?.available ? <>
-      <View style={styles.realBadge}><Text style={styles.realBadgeText}>LIVE • {real.sourceLabel}</Text></View>
+      <View style={styles.realBadge}><Text style={styles.realBadgeText}>داده‌ی ذخیره‌شده • {real.sourceLabel}</Text></View>
       <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.heroText, { color: colors.textSecondary }]}>{real.summary}</Text></View>
       {renderMetrics(real.metrics)}
       {renderBullets('خلاصه داده واقعی', real.bullets)}

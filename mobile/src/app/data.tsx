@@ -75,7 +75,7 @@ export default function DataScreen() {
 
           <View style={[styles.card, { backgroundColor: colors.backgroundElement, borderColor: selectedCompany ? '#16a34a66' : colors.backgroundSelected }]}>
             <View style={styles.cardHead}>
-              <View style={[styles.badge, { backgroundColor: selectedCompany ? '#14532d' : '#374151' }]}><Text style={styles.badgeText}>{selectedCompany ? 'LISTED LIVE' : 'SELECT'}</Text></View>
+              <View style={[styles.badge, { backgroundColor: selectedCompany ? '#14532d' : '#374151' }]}><Text style={styles.badgeText}>{selectedCompany ? 'انتخاب‌شده؛ داده بررسی نشده' : 'انتخاب کنید'}</Text></View>
               <Text style={[styles.cardTitle, { color: colors.text }]}>داده عمومی شرکت بورسی</Text>
             </View>
             {selectedCompany ? (

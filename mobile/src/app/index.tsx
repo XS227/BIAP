@@ -22,7 +22,7 @@ export default function HomeScreen() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light'; const colors = Colors[scheme];
   const [data, setData] = useState<StockItem[]>([]); const [loading, setLoading] = useState(true); const [refreshing, setRefreshing] = useState(false); const [error, setError] = useState(false); const marketStatus = marketStatusLabel();
   const load = useCallback(async () => { try { setError(false); const rows = await fetchLiveMarketPreview(); setData(rows); setError(rows.length === 0); } catch { setError(true); } finally { setLoading(false); setRefreshing(false); } }, []);
-  useEffect(() => { load(); const interval = setInterval(load, 45_000); return () => clearInterval(interval); }, [load]);
+  useEffect(() => { void Promise.resolve().then(load); const interval = setInterval(load, 45_000); return () => clearInterval(interval); }, [load]);
   const summary = useMemo(() => computeMarketSummary(data), [data]);
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={Brand.primary} />}><View style={styles.maxWidth}>
     <View style={styles.header}><Pressable onPress={() => router.push('/more')} style={[styles.avatar, { backgroundColor: Brand.primary }]}><Text style={styles.avatarText}>؟</Text></Pressable><Image source={BiapLogo} style={styles.logo} resizeMode="contain" /><Pressable onPress={() => router.push('/search')} style={[styles.search, { backgroundColor: colors.backgroundElement }]}><Text>🔍</Text></Pressable></View>

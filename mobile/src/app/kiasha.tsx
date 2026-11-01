@@ -66,7 +66,7 @@ export default function KiashaScreen(){
   const loadBase=useCallback(async()=>{const[p,a]=await Promise.all([fetchKiashaPerformanceSummary(8000),fetchPaperPortfolio()]);setPerformance(p);setPortfolio(a);setLoading(false)},[]);
   const loadPicks=useCallback(async(force=false)=>{setPicks(await fetchKiashaTopPicks(horizon,{force,scanLimit:72}))},[horizon]);
   useFocusEffect(useCallback(()=>{loadBase()},[loadBase]));
-  useEffect(()=>{loadPicks(false)},[loadPicks]);
+  useEffect(()=>{void Promise.resolve().then(() => loadPicks(false))},[loadPicks]);
   const refresh=async()=>{setRefreshing(true);await Promise.all([loadBase(),loadPicks(true)]);setRefreshing(false)};
 
   const agents=performance?.agents??[];

@@ -9,12 +9,21 @@ from global_release_routes import published_version, release_manifest
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_manifest_matches_global_app_version():
+def test_published_manifest_never_claims_a_newer_version_than_unreleased_app():
+    """A development app may advance before an APK is approved and published.
+
+    The public release manifest must remain pinned to the LAST published
+    release, rather than being bumped merely to make a dev test green.
+    """
     manifest = json.loads((ROOT / "analysis" / "global_mobile_release.json").read_text(encoding="utf-8"))
     app = json.loads((ROOT / "mobile-global" / "app.json").read_text(encoding="utf-8"))["expo"]
     assert app["android"]["package"] == "com.biap.global"
-    assert manifest["version"] == app["version"]
-    assert manifest["versionCode"] == app["android"]["versionCode"]
+    published = tuple(int(part) for part in manifest["version"].split("."))
+    developing = tuple(int(part) for part in app["version"].split("."))
+    assert published <= developing
+    assert manifest["versionCode"] <= app["android"]["versionCode"]
+    if published < developing:
+        assert manifest["versionCode"] < app["android"]["versionCode"]
     assert manifest["changes"]
 
 

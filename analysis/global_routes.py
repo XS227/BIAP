@@ -492,6 +492,55 @@ def global_analysis_ledger(
             "decisionMode": "investment" if view else "conservative"}
 
 
+@router.get("/checkpoint/saved-company")
+def global_checkpoint_saved_company(
+    country: str = Query(min_length=2, max_length=2),
+    exchange: str = Query(min_length=2, max_length=64),
+    ticker: str = Query(min_length=1, max_length=64),
+):
+    """Opt-in development-only GET of one saved ledger result; never re-analyzes."""
+    if os.getenv("BIAP_CHECKPOINT_SAVED_READONLY", "").strip() != "1":
+        raise HTTPException(status_code=404, detail="Development-only route disabled")
+    country, exchange = country.strip().upper(), exchange.strip().upper()
+    try:
+        get_exchange(country, exchange)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    from global_markets.saved_company_view import saved_company_view
+    result = saved_company_view(country, exchange, ticker.strip())
+    if result is None:
+        raise HTTPException(status_code=404, detail="No stored company analysis")
+    return result
+
+
+@router.post("/checkpoint/ai-company")
+def global_checkpoint_ai_company(
+    country: str = Query(min_length=2, max_length=2),
+    exchange: str = Query(min_length=2, max_length=64),
+    ticker: str = Query(min_length=1, max_length=64),
+):
+    """Explicit staging-only proxy explanation of an existing saved record."""
+    if (os.getenv("BIAP_CHECKPOINT_SAVED_READONLY", "").strip() != "1"
+            or os.getenv("BIAP_CHECKPOINT_GLOBAL_AI", "").strip() != "1"):
+        raise HTTPException(status_code=404, detail="Development-only AI route disabled")
+    country, exchange = country.strip().upper(), exchange.strip().upper()
+    try:
+        get_exchange(country, exchange)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    from global_markets.saved_company_view import saved_company_view
+    from global_markets.saved_company_ai import ProxyUnavailable, explain_saved_company
+    view = saved_company_view(country, exchange, ticker.strip())
+    if view is None:
+        raise HTTPException(status_code=404, detail="No stored company analysis")
+    try:
+        return explain_saved_company(view)
+    except ProxyUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 @router.get("/recommendations")
 def global_recommendations(country: str, exchange: str, tier: Optional[str] = None, limit: int = 50, offset: int = 0):
     """Investment-mode tiers (BUY/ACCUMULATE/HOLD/REDUCE/SELL) for one exchange, best rank first."""
