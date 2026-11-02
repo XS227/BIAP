@@ -66,7 +66,10 @@ def audit_symbol(inbox: Inbox, symbol: str) -> dict:
         html_available = False
         if tracing_no:
             try:
-                html_available = bool(inbox.report_html(tracing_no).strip())
+                report_html = inbox.report_html(tracing_no)
+                # Missing/malformed inbox content must fail closed, not abort
+                # the whole read-only audit or be treated as financial evidence.
+                html_available = isinstance(report_html, str) and bool(report_html.strip())
             except (ValueError, KeyError, OSError, RuntimeError):
                 pass
         items.append({

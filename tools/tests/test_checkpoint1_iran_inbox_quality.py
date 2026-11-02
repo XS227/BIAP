@@ -53,6 +53,35 @@ class TestIssuerEvidence(unittest.TestCase):
         self.assertFalse(result["filing_evidence"][0]["financial_ai_eligible"])
         self.assertEqual(result["filing_evidence"][0]["quality_gate"], "BLOCKED_HTML_MISSING")
 
+    def test_none_report_html_fails_closed(self):
+        class InboxStub:
+            def record(self, symbol):
+                return {"status": "ok", "company": {"n": "ایران خودرو"},
+                        "financial_filings": [{"tracing_no": "123",
+                                               "title": "صورت‌های مالی (شرکت ایران خودرو)"}]}
+            def report_html(self, tracing_no):
+                return None
+        result = audit_symbol(InboxStub(), "خودرو")
+        self.assertEqual(result["html_missing"], 1)
+        self.assertFalse(result["financial_ai_eligible"])
+        self.assertEqual(result["filing_evidence"][0]["quality_gate"], "BLOCKED_HTML_MISSING")
+
+    def test_named_issuer_and_html_still_need_accounting_reconciliation(self):
+        class InboxStub:
+            def record(self, symbol):
+                return {"status": "ok", "company": {"n": "ایران خودرو"},
+                        "financial_filings": [{"tracing_no": "123",
+                                               "title": "صورت‌های مالی تلفیقی (شرکت ایران خودرو) (حسابرسی شده)"}]}
+            def report_html(self, tracing_no):
+                return "<table><tr><td>sample</td></tr></table>"
+        result = audit_symbol(InboxStub(), "خودرو")
+        self.assertEqual(result["html_available"], 1)
+        self.assertEqual(result["audited_consolidated_html_unvalidated"], 1)
+        self.assertEqual(result["filing_evidence"][0]["issuer_evidence"], "EXPLICIT_ISSUER_MATCH")
+        self.assertFalse(result["financial_ai_eligible"])
+        self.assertEqual(result["filing_evidence"][0]["quality_gate"],
+                         "BLOCKED_ISSUER_SCOPE_AND_ACCOUNTING_NOT_RECONCILED")
+
 
 if __name__ == "__main__":
     unittest.main()
