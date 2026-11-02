@@ -17,6 +17,8 @@ from audit_store import AuditStore
 from auth import require_approver, require_user_id
 from business_dataset_store import delete_dataset, get_dataset, save_dataset
 from codal_data import base_url as codal_base_url
+from codal_inbox import InboxError, current as current_codal_inbox
+from financial_inbox_audit import audit_symbol
 from company_builder import availability, build_company_from_quote, build_company_from_symbol
 from data_sample import SAMPLE_COMPANY
 from deadline import DeadlineExceeded, run_with_deadline
@@ -178,6 +180,35 @@ def _reference_price(company: dict) -> Optional[float]:
 
 def _quote_fetched_at(company: dict) -> Optional[float]:
     return company.get("market", {}).get("quote_fetched_at")
+
+
+@app.get("/audit/financial-inbox/{symbol}")
+def financial_inbox_audit(symbol: str, _user_id: str = Depends(require_user_id)):
+    """Authenticated, read-only CODAL evidence from verified Liara exports only.
+
+    No CODAL/TSETMC request, price-history mutation, AI inference or trade.
+    The response is explicitly NOT a validated financial statement.
+    """
+    symbol = symbol.strip()
+    if not symbol or len(symbol) > 64:
+        raise HTTPException(status_code=400, detail="invalid symbol")
+    try:
+        inbox = current_codal_inbox()
+        summary = inbox.summary()
+        if not summary.get("exports"):
+            raise HTTPException(status_code=503, detail="No verified Liara inbox exports")
+        company = audit_symbol(inbox, symbol)
+    except InboxError as exc:
+        # Never fall back to direct CODAL or a fabricated financial statement.
+        status = 503 if "not set" in str(exc) else 404
+        raise HTTPException(status_code=status, detail="Verified Liara inbox unavailable for this symbol") from exc
+    return {
+        "source": "verified_liara_codal_inbox_only",
+        "verifiedExports": summary.get("exports", 0),
+        "newestExport": summary.get("newestExport"),
+        "rejectedExports": len(summary.get("rejected") or []),
+        "company": company,
+    }
 
 
 @app.get("/stock/symbols")

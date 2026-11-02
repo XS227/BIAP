@@ -113,6 +113,7 @@ export default function MoreScreen() {
     { icon: '🔄', title: 'به‌روزرسانی BIAP', sub: `بررسی نسخه جدید و دانلود APK • نسخه فعلی ${currentVersion}`, onPress: () => { void checkForUpdate(); }, accent: Brand.primary },
     { icon: '📈', title: 'معاملات آنلاین فارابی', sub: 'ورود امن به سامانه رسمی فارابیکسو برای خرید و فروش واقعی', onPress: openFarabiTrading, accent: Brand.positive },
     { icon: '🤝', title: 'همکاری با فارابی (فارابیز پلاس)', sub: 'برنامه رسمی معرفی صندوق‌های ETF و درآمد مشارکتی فارابی', onPress: () => { void openUrl(FARABIZ_PARTNER_URL, 'فارابیز پلاس'); }, accent: '#0ea5e9' },
+    { icon: '🛡️', title: 'Audit Analysis · CODAL', sub: 'شواهد ذخیره‌شده Liara، کیفیت گزارش و محدودیت‌های حسابرسی؛ فقط خواندنی', onPress: () => router.push('/audit-analysis' as never), accent: Brand.warning },
     { icon: '🧾', title: 'سفارش‌ها', sub: 'سفارش‌های Paper و تاریخچه اجرای کیا‌شا', onPress: () => router.push('/orders'), accent: Brand.warning },
     { icon: '💼', title: 'پرتفوی', sub: 'موقعیت‌ها، تخصیص سرمایه و بازده Paper', onPress: () => router.push('/portfolio'), accent: Brand.secondary },
     { icon: '⭐', title: 'علاقه‌مندی‌ها', sub: 'نمادهایی که برای بررسی بعدی ذخیره کرده‌اید', onPress: () => router.push('/favorites' as never), accent: '#f59e0b' },

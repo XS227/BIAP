@@ -1,6 +1,8 @@
 import { authFetch, authHeaders } from '@/lib/auth-session';
+import { parseIranFinancialInboxAudit, type IranFinancialInboxAudit } from '@/lib/iran-financial-inbox';
 
 export const API_BASE = 'https://biap.dadashi.no/api';
+export type { IranFinancialInboxAudit } from '@/lib/iran-financial-inbox';
 export const KIASHA_API_BASE = process.env.EXPO_PUBLIC_KIASHA_API_BASE || API_BASE;
 export type StockItem={name:string;code:string;lastPrice?:number;closingPrice?:number;yesterdayPrice?:number;change?:number;changePercent?:string|number;error?:boolean};export type WatchlistResponse={symbols:StockItem[]};
 async function getHeaders():Promise<Record<string,string>>{return authHeaders()}
@@ -19,3 +21,25 @@ async function fetchKiashaJson<T>(path:string,timeoutMs=10_000):Promise<T|null>{
 export async function fetchKiashaPerformanceSummary(timeoutMs=10_000){return fetchKiashaJson<KiashaPerformanceSummary>('/performance/summary',timeoutMs)}export async function fetchKiashaPerformanceAgents(timeoutMs=10_000){return fetchKiashaJson<KiashaPerformanceAgentsResponse>('/performance/agents',timeoutMs)}
 export type PaperEquitySnapshot={userId:string;snapshotDate:string;cashBalance:number;positionsValue:number;totalEquity:number;initialCash:number;createdAt:string};export type PaperEquityHistoryResponse={items:PaperEquitySnapshot[];count:number};export async function fetchPaperEquityHistory(limit=400,timeoutMs=10_000){return fetchKiashaJson<PaperEquityHistoryResponse>(`/performance/ai/paper-equity-history?limit=${limit}`,timeoutMs)}
 export type KiashaEquitySnapshot={mandateId:string;userId:string;snapshotDate:string;mandateCash:number;positionsValue:number;totalEquity:number;allocatedCash:number;realizedPnL:number;createdAt:string};export type KiashaEquityHistoryResponse={items:KiashaEquitySnapshot[];count:number;valuation:string};export async function fetchKiashaEquityHistory(limit=400,timeoutMs=10_000){return fetchKiashaJson<KiashaEquityHistoryResponse>(`/performance/ai/kiasha-equity-history?limit=${limit}`,timeoutMs)}
+
+
+/** Verified Liara inbox metadata only; GET never starts a scan or queries CODAL. */
+export async function fetchIranFinancialInboxAudit(symbol: string, timeoutMs = 15_000): Promise<IranFinancialInboxAudit> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const headers = await getHeaders();
+    const response = await authFetch(
+      `${KIASHA_API_BASE}/audit/financial-inbox/${encodeURIComponent(symbol)}`,
+      { headers, signal: controller.signal },
+    );
+    if (!response.ok) throw new Error(
+      response.status === 404 ? 'گزارش تأییدشده این نماد در Liara موجود نیست.' :
+      response.status === 503 ? 'مسیر تأییدشده Liara هنوز در دسترس نیست.' :
+      `Liara audit HTTP ${response.status}`,
+    );
+    return parseIranFinancialInboxAudit(await response.json() as unknown, symbol);
+  } finally {
+    clearTimeout(timer);
+  }
+}
