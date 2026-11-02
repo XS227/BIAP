@@ -134,22 +134,64 @@ DISAGREE_POSITIVE = 0.35
 DISAGREE_NEGATIVE = -0.35
 
 
+def _items(signals):
+    """(agent, vote, confidence) triples from AgentSignal objects or from an ``agent -> (vote, confidence)`` mapping."""
+    if hasattr(signals, "items"):
+        return [(agent, float(v), float(c)) for agent, (v, c) in signals.items()]
+    return [(s.agent, float(s.vote), float(s.confidence)) for s in signals]
+
+
+def _confident_sides(items):
+    pos, neg = [], []
+    for agent, vote, confidence in items:
+        if confidence < DISAGREE_CONFIDENCE:
+            continue
+        if vote >= DISAGREE_POSITIVE:
+            pos.append((agent, vote))
+        elif vote <= DISAGREE_NEGATIVE:
+            neg.append((agent, vote))
+    return pos, neg
+
+
 def disagreement_v2(signals) -> list:
     """Contradiction messages, one per dimension in which a confident positive and a confident negative agent meet."""
     groups: dict = {}
-    for signal in signals:
-        if signal.confidence < DISAGREE_CONFIDENCE:
+    for agent, vote, confidence in _items(signals):
+        if confidence < DISAGREE_CONFIDENCE:
             continue
-        dimension = AGENT_DIMENSION.get(signal.agent, signal.agent)
+        dimension = AGENT_DIMENSION.get(agent, agent)
         positive, negative = groups.setdefault(dimension, ([], []))
-        if signal.vote >= DISAGREE_POSITIVE:
-            positive.append(signal.agent)
-        elif signal.vote <= DISAGREE_NEGATIVE:
-            negative.append(signal.agent)
+        if vote >= DISAGREE_POSITIVE:
+            positive.append(agent)
+        elif vote <= DISAGREE_NEGATIVE:
+            negative.append(agent)
     return [
         f"high-confidence disagreement ({dimension}): positive={','.join(sorted(pos))} negative={','.join(sorted(neg))}"
         for dimension, (pos, neg) in sorted(groups.items()) if pos and neg
     ]
+
+
+def cross_dimension_notes(signals, limit: int = 3) -> list:
+    """Informational notes for confident opposite votes in *different* dimensions (never blocks a decision, shown in the UI)."""
+    pos, neg = _confident_sides(_items(signals))
+    notes = []
+    for p_agent, p_vote in pos:
+        for n_agent, n_vote in neg:
+            if AGENT_DIMENSION.get(p_agent, p_agent) != AGENT_DIMENSION.get(n_agent, n_agent):
+                notes.append(f"{p_agent} is positive ({p_vote:+.2f}) while {n_agent} is negative ({n_vote:+.2f}); "
+                             f"they measure different things, so this is informational and does not block the decision")
+    return notes[:limit]
+
+
+# Owner decision 2026-11-02: a strongly negative risk agent (vote <= -0.7 with high confidence) caps the tier at ACCUMULATE
+# (investment mode) / HOLD_OR_WATCH (conservative engine has no ACCUMULATE) instead of sending the stock to REVIEW.
+SEVERE_RISK_VOTE = -0.7
+SEVERE_RISK_CONFIDENCE = 0.65     # "high confidence"; the core risk agent emits 0.23 .. 0.82
+
+
+def severe_risk(signals) -> bool:
+    return any(agent == "risk" and vote <= SEVERE_RISK_VOTE and confidence >= SEVERE_RISK_CONFIDENCE
+               for agent, vote, confidence in _items(signals))
 
 
 # --- P1.7/P1.1 display (v2): confidence is shown with 3 decimals, more when rounding would hide the comparison -------------

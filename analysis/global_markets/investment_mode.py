@@ -35,6 +35,8 @@ from dataclasses import dataclass, field, fields, replace
 from statistics import median
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
+from . import decision_logic
+
 CONSERVATIVE = "conservative"
 INVESTMENT = "investment"
 VALID_MODES = (CONSERVATIVE, INVESTMENT)
@@ -557,7 +559,16 @@ def _decide_core(
             tier = _tier(idx, total, score, cfg, n)
             base_tier = tier
             flags: List[str] = []
-            if has_disagreement(signals, cfg):
+            if decision_logic.is_v2():
+                # v2: only same-dimension opposition is a disagreement; cross-dimension opposition is an informational note;
+                # a severe confident risk vote caps the tier at ACCUMULATE (no REVIEW-like block).
+                if decision_logic.disagreement_v2(signals):
+                    flags.append("agents_disagree")
+                if decision_logic.cross_dimension_notes(signals):
+                    flags.append("dimension_note")
+                if decision_logic.severe_risk(signals):
+                    flags.append("risk_cap")
+            elif has_disagreement(signals, cfg):
                 flags.append("agents_disagree")
             if n < cfg.min_agents_full_confidence:
                 flags.append("few_agents")
@@ -582,7 +593,7 @@ def _decide_core(
             soft = [f for f in flags if f in cfg.soft_downgrade_flags]
             if tier == "SELL" and "agents_disagree" in flags:
                 tier = "REDUCE"
-            elif tier == "BUY" and soft:
+            elif tier == "BUY" and (soft or "risk_cap" in flags):
                 tier = "ACCUMULATE"
             if c.positive_block and tier in ("BUY", "ACCUMULATE"):
                 decisions[key] = _blocked(key, "distress positive_block", n, scope, tuple(flags))

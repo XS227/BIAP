@@ -754,6 +754,17 @@ def _analysis_payload(
     confidence: float,
 ) -> dict:
     preliminary_call = _call(score, confidence, evidence.status)
+    v2_extras: dict = {}
+    if decision_logic.is_v2():
+        # v2: cross-dimension disagreement is informational; a severely negative, confident risk agent caps a BUY_CANDIDATE
+        # (the conservative vocabulary has no ACCUMULATE) instead of the v1 REVIEW.
+        notes = decision_logic.cross_dimension_notes(signals)
+        if notes:
+            v2_extras["agentNotes"] = notes
+        if preliminary_call == "BUY_CANDIDATE" and decision_logic.severe_risk(signals):
+            preliminary_call = "HOLD_OR_WATCH"
+            v2_extras["riskCap"] = {"capped": "BUY_CANDIDATE", "to": "HOLD_OR_WATCH",
+                                    "reason": "risk agent vote <= -0.70 at confidence >= 0.65"}
     fundamental_evidence = fundamental_evidence_contract(enriched)
     critical_gaps = _critical_data_gaps(enriched, signals)
     governance = decision_governance_agent(
@@ -828,6 +839,7 @@ def _analysis_payload(
             "governanceAbstained": governance.abstained,
             "notes": "Agent 8 governs whether the analysis may be accepted/reviewed/abstained. Agent 9 is an independent distress/credit sidecar. Agent 10 is report-only credit scoring for the selected legal entity and never creates or changes BUY/SELL decisions.",
         },
+        **v2_extras,
         "signals": [asdict(signal) for signal in signals],
         "decisionTable": build_decision_table(
             enriched,
@@ -882,6 +894,27 @@ def resolve_fx_rates(currencies, base: str) -> tuple[dict[str, float], dict[str,
     return rates, errors, sources
 
 
+def _portfolio_investment_input(enriched, payload: dict, evidence) -> dict:
+    """v2 portfolio: the investment ranking supplies tier, score and confidence; the conservative engine is a risk filter.
+
+    A stock is vetoed when its evidence is not PASS or the conservative preliminary call is AVOID_OR_REVIEW (SELL-like).
+    Distress positive_block is rejected by ``portfolio_agent`` itself. No ranking row (``tier`` None) means not eligible.
+    """
+    from . import decision_overlay
+
+    view = decision_overlay.market_view(enriched.country, enriched.exchange) or {}
+    decision = view.get(enriched.ticker)
+    if decision is not None:
+        decision = decision_overlay.cap_for_evidence(decision, evidence.status, payload.get("confidence"))
+    veto = None
+    if evidence.status != "PASS":
+        veto = f"evidence is {evidence.status}, not PASS"
+    elif (payload.get("decisionIntegrity") or {}).get("preliminaryCall") == "AVOID_OR_REVIEW":
+        veto = "the conservative engine calls AVOID_OR_REVIEW"
+    return {"tier": (decision or {}).get("tier"), "score": (decision or {}).get("score"),
+            "confidence": (decision or {}).get("confidence"), "veto": veto}
+
+
 def portfolio_from_instruments(
     profile: InvestorProfile,
     instruments: Iterable[GlobalCompany],
@@ -912,6 +945,8 @@ def portfolio_from_instruments(
 
     candidates: list[PortfolioCandidate] = []
     analyses: list[dict] = []
+    v2 = decision_logic.is_v2()
+    investment_inputs: dict[str, dict] = {}
     for (
         enriched,
         diagnostics,
@@ -963,8 +998,10 @@ def portfolio_from_instruments(
             payload["fxError"] = fx_errors[currency]
         analyses.append(payload)
         candidates.append(PortfolioCandidate(enriched, signals, portfolio_evidence, distress))
+        if v2:
+            investment_inputs[enriched.identity()] = _portfolio_investment_input(enriched, payload, evidence)
 
-    proposal = portfolio_agent(profile, candidates, fx_to_base=rates)
+    proposal = portfolio_agent(profile, candidates, fx_to_base=rates, investment=investment_inputs if v2 else None)
     return {
         "proposal": asdict(proposal),
         "profileAssessment": profile_assessment(profile),

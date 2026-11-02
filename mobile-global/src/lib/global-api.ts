@@ -278,6 +278,9 @@ export type GlobalAnalysis = {
   /** Present only in investment mode (BUY/ACCUMULATE/HOLD/REDUCE/SELL); old rows and conservative mode omit it. */
   investment?: GlobalInvestmentDecision;
   engines?: EngineBlocks;
+  /** Decision logic v2 only: informational notes (cross-dimension disagreement) and the severe-risk cap. */
+  agentNotes?: string[];
+  riskCap?: { capped?: string; to?: string; reason?: string };
   score?: number;
   confidence?: number;
   decisionConfidence?: number;

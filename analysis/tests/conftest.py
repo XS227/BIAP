@@ -129,3 +129,9 @@ def _never_touch_production_global_data(tmp_path, monkeypatch):
     value = os.environ.get("BIAP_GLOBAL_DATA_DIR")
     assert not _points_at_production(value), (
         f"test left BIAP_GLOBAL_DATA_DIR={value!r}: tests must not read or write /var/lib/biap-global")
+
+
+@pytest.fixture(autouse=True)
+def _decision_logic_v1_by_default(monkeypatch):
+    """Every test starts on the frozen v1 decision logic whatever the shell exports; v2 tests opt in with monkeypatch.setenv."""
+    monkeypatch.setenv("DECISION_LOGIC_VERSION", "v1")

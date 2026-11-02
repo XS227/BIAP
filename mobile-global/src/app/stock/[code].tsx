@@ -252,6 +252,10 @@ export default function GlobalStockDetailScreen() {
           <Text style={[styles.body, { color: colors.textSecondary }]}>{`Positive reasons: ${reasonLine(analysis.investment.positive)}`}</Text>
           <Text style={[styles.body, { color: colors.textSecondary }]}>{`Negative reasons: ${reasonLine(analysis.investment.negative)}`}</Text>
           {engineScoreLines(analysis.engines).length ? engineScoreLines(analysis.engines).map((line) => <Text key={line} style={[styles.body, { color: colors.textSecondary, fontSize: 12, marginTop: 6 }]}>{line}</Text>) : <Text style={[styles.body, { color: colors.textSecondary, fontSize: 12, marginTop: 8 }]}>{conservativeLine(analysis.call)}</Text>}
+          {(analysis.agentNotes || []).map((note) => <Text key={note} style={[styles.body, { color: colors.textSecondary, fontSize: 12, marginTop: 6 }]}>{`Note: ${note}.`}</Text>)}
+          {analysis.riskCap ? <Text style={[styles.body, { color: Brand.warning, fontSize: 12, marginTop: 6 }]}>{`Risk cap: ${analysis.riskCap.reason || 'strongly negative risk signal'}; the rating is capped instead of being sent to review.`}</Text> : null}
+          {(analysis.investment?.flags || []).includes('risk_cap') ? <Text style={[styles.body, { color: Brand.warning, fontSize: 12, marginTop: 6 }]}>Risk cap: a strongly negative risk signal limits this rating to ACCUMULATE.</Text> : null}
+          {(analysis.investment?.flags || []).includes('dimension_note') && !(analysis.agentNotes || []).length ? <Text style={[styles.body, { color: colors.textSecondary, fontSize: 12, marginTop: 6 }]}>Note: two agents measuring different things point in opposite directions; this is informational and does not block the rating.</Text> : null}
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 8 }]}>{DISCLAIMER}</Text>
         </View> : null}
 

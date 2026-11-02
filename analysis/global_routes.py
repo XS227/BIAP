@@ -623,10 +623,16 @@ def global_portfolio(req: PortfolioRequest):
     try:
         proposal = portfolio_from_instruments(profile, instruments, fx_to_base=fx)
         if isinstance(proposal, dict):
-            proposal = {**proposal, "engine": {
-                "engine": decision_logic.ENGINE_CONSERVATIVE, "label": decision_logic.ENGINE_LABEL[decision_logic.ENGINE_CONSERVATIVE],
-                "description": "Built from the conservative engine's absolute score and confidence floors, not from the investment tiers.",
-                "logicVersion": decision_logic.logic_version()}}
+            if decision_logic.is_v2():
+                engine = {"engine": decision_logic.ENGINE_INVESTMENT, "label": decision_logic.ENGINE_LABEL[decision_logic.ENGINE_INVESTMENT],
+                          "description": "Built from the investment ranking (BUY and ACCUMULATE); the conservative check only excludes stocks "
+                                         "without PASS evidence, with a distress block or with an AVOID call.",
+                          "riskFilter": decision_logic.ENGINE_CONSERVATIVE, "logicVersion": decision_logic.logic_version()}
+            else:
+                engine = {"engine": decision_logic.ENGINE_CONSERVATIVE, "label": decision_logic.ENGINE_LABEL[decision_logic.ENGINE_CONSERVATIVE],
+                          "description": "Built from the conservative engine's absolute score and confidence floors, not from the investment tiers.",
+                          "logicVersion": decision_logic.logic_version()}
+            proposal = {**proposal, "engine": engine}
         return proposal
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc

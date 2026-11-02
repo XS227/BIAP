@@ -423,12 +423,18 @@ def portfolio_agent(
     fx_to_base: Optional[Mapping[str, float]] = None,
     min_score: float = 0.15,
     min_confidence: float = 0.35,
+    investment: Optional[Mapping[str, Mapping]] = None,
 ) -> PortfolioProposal:
     """Build a capped, diversified paper portfolio proposal.
 
     `fx_to_base` maps one unit of an instrument quote currency to the investor
     base currency. A cross-currency candidate without verified FX is excluded.
     Lot sizes are respected when known. No order is sent to a broker.
+
+    ``investment`` (decision logic v2 only; ``None`` = v1 behaviour): ``identity -> {tier, score, confidence, veto}`` from the
+    investment ranking. Only BUY / ACCUMULATE candidates without a conservative-engine ``veto`` are eligible, they are ranked
+    by their investment score and confidence, and the conservative 0.15 score floor is not applied (the tier already
+    requires a positive investment score). The evidence, distress, scope, FX and price gates above are unchanged.
     """
 
     if profile.capital <= 0:
@@ -476,11 +482,24 @@ def portfolio_agent(
             reject(identity, "price_unavailable", "verified positive price unavailable")
             continue
 
-        score, confidence = _candidate_score(candidate)
+        if investment is None:
+            score, confidence = _candidate_score(candidate)
+        else:
+            info = investment.get(identity)
+            if info is None:
+                reject(identity, "investment_tier", "not ranked by the investment ranking")
+                continue
+            if info.get("veto"):
+                reject(identity, "conservative_risk_filter", f"conservative risk filter: {info['veto']}", tier=info.get("tier"))
+                continue
+            if info.get("tier") not in ("BUY", "ACCUMULATE"):
+                reject(identity, "investment_tier", f"investment tier {info.get('tier')} is not BUY or ACCUMULATE", tier=info.get("tier"))
+                continue
+            score, confidence = float(info.get("score") or 0.0), float(info.get("confidence") or 0.0)
         score -= _risk_penalty(company, profile.risk_tolerance)
         suitability_adjustment = preference_adjustment(company, profile)
         score += suitability_adjustment
-        if score < min_score or confidence < min_confidence:
+        if score < (min_score if investment is None else 0.0) or confidence < min_confidence:
             reject(
                 identity, "decision_threshold",
                 f"below decision threshold score={score:.3f} (min {min_score}) "
