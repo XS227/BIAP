@@ -25,6 +25,7 @@ def sig(f=0.0, r=0.0, fc=0.0, c=0.0, q=0.0, l=0.0, conf=0.6, **conf_over):
 
 def cand(key, signals, **kw):
     kw.setdefault("distress_status", "LOW_RISK")
+    kw.setdefault("daily_value_usd", 5_000_000.0)      # P1.12: liquid by default so these tests isolate their own gate
     return Candidate(key=key, exchange="X", sector=None, signals=signals, **kw)
 
 
@@ -61,9 +62,10 @@ def test_v2_same_dimension_opposition_still_downgrades_buy(monkeypatch):
 def test_v2_sell_with_cross_dimension_opposition_is_not_softened(monkeypatch):
     monkeypatch.setenv("DECISION_LOGIC_VERSION", "v2")
     items = ladder(20)
-    items[19] = cand("s19", sig(f=-0.9, fc=-0.9, q=-0.9, l=0.6, conf=0.7))
+    items[19] = cand("s19", sig(f=-0.9, fc=-0.9, q=0.6, conf=0.7))
     d = decide_market(items)
-    assert d["s19"].call == "REDUCE" and "agents_disagree" in d["s19"].flags      # forecast (-) vs liquidity (+): same dimension "market"
+    # P1.12: liquidity no longer votes in v2, so the same-dimension opposition is fundamental (-) vs quality (+): dimension "business"
+    assert d["s19"].call == "REDUCE" and "agents_disagree" in d["s19"].flags
 
 
 def _risky_best(risk_conf):

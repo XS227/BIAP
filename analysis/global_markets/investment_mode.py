@@ -178,6 +178,7 @@ class Candidate:
     peer_count: Optional[int] = None            # native comparison-agent peer group
     risk_metrics: Mapping[str, Optional[float]] = field(default_factory=dict)
     statement_coverage: Optional[float] = None  # evidence coverage 0..1; None = unknown (no flag, no penalty)
+    daily_value_usd: Optional[float] = None     # P1.12 (v2): 30d average traded value in USD (ECB rate); None = unknown
 
 
 @dataclass(frozen=True)
@@ -529,6 +530,8 @@ def _decide_core(
             decisions[c.key] = _blocked(c.key, "evidence BLOCK", scope=scope)
             continue
         signals: Dict[str, Tuple[float, float]] = dict(c.signals)
+        if decision_logic.is_v2() and "liquidity" in signals:
+            signals["liquidity"] = (0.0, 0.0)               # P1.12: no directional liquidity vote (tradability is a gate)
         if c.key in risk_votes:
             signals["risk"] = (risk_votes[c.key], signals["risk"][1])
         elif "risk" in signals:
@@ -598,13 +601,22 @@ def _decide_core(
             if tier == "SELL" and decision_logic.is_v2():
                 # v2 SELL gate (mirror of BUY): decision confidence >= 0.45, and besides a negative risk vote at least two non-risk agents
                 # (fundamental, quality, forecast, comparison) with data must also vote negative; otherwise REDUCE with a label.
-                neg_other = sum(1 for a in decision_logic.SELL_CONFIRMING_AGENTS if used.get(a, 0.0) < 0.0)
-                if used.get("risk", 0.0) >= 0.0 or neg_other < decision_logic.SELL_MIN_NEGATIVE_AGENTS:
+                m = decision_logic.SELL_NEGATIVE_MARGIN
+                neg_other = sum(1 for a in decision_logic.SELL_CONFIRMING_AGENTS if used.get(a, 0.0) < -m)
+                if used.get("risk", 0.0) >= -m or neg_other < decision_logic.SELL_MIN_NEGATIVE_AGENTS:
                     flags.append("negative_multifactor_unconfirmed")
                     tier = "REDUCE"
                 elif confidence < decision_logic.SELL_MIN_CONFIDENCE:
                     flags.append("sell_low_confidence")
                     tier = "REDUCE"
+            if tier in ("BUY", "ACCUMULATE") and decision_logic.liquidity_gate_active(c.exchange):
+                if c.daily_value_usd is None:                # unknown liquidity: labelled, not rejected; BUY limited to ACCUMULATE
+                    flags.append("liquidity_unconfirmed")
+                    if tier == "BUY":
+                        tier = "ACCUMULATE"
+                elif c.daily_value_usd < decision_logic.LIQUIDITY_MIN_USD:
+                    flags.append("low_liquidity")
+                    tier = "HOLD"
             if c.positive_block and tier in ("BUY", "ACCUMULATE"):
                 decisions[key] = _blocked(key, "distress positive_block", n, scope, tuple(flags))
                 continue
@@ -658,6 +670,11 @@ def _native_peer_count(company: Mapping[str, Any]) -> Optional[int]:
     return None
 
 
+def _fx_provider():
+    from .fx_history import default_provider
+    return default_provider()
+
+
 def candidate_from_result(result: Mapping[str, Any], *, key: Optional[str] = None, sector_override: Optional[str] = None
                           ) -> Optional[Candidate]:
     """Build a Candidate from a stored full analysis result (``AnalysisLedger.full_results`` row)."""
@@ -670,6 +687,11 @@ def candidate_from_result(result: Mapping[str, Any], *, key: Optional[str] = Non
     company = result.get("company") or {}
     ev = result.get("evidence") or {}
     dist = result.get("distress") or {}
+    value_usd = None
+    if decision_logic.is_v2():
+        value_usd = decision_logic.daily_value_usd(
+            price=company.get("price"), avg_volume=company.get("avg_volume_30d"), currency=company.get("currency"),
+            on=company.get("price_observed_at") or result.get("analyzed_at"), fx=_fx_provider())
     exchange = str(result.get("exchange") or company.get("exchange") or "")
     country = str(result.get("country") or company.get("country") or "")
     if country and ":" not in exchange:
@@ -677,7 +699,7 @@ def candidate_from_result(result: Mapping[str, Any], *, key: Optional[str] = Non
     ticker = str(result.get("ticker") or company.get("ticker") or "")
     mult = _num(ev.get("confidence_multiplier"))
     return Candidate(
-        statement_coverage=_num(ev.get("coverage")),
+        statement_coverage=_num(ev.get("coverage")), daily_value_usd=value_usd,
         key=key or f"{exchange}:{ticker}", exchange=exchange,
         sector=sector_override or company.get("sector") or None, signals=signals,
         evidence_status=str(ev.get("status") or "PASS"),

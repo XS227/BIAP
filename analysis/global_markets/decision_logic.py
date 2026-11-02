@@ -274,6 +274,7 @@ def comparison_only_review(review_reasons) -> bool:
 SELL_MIN_CONFIDENCE = 0.45
 SELL_CONFIRMING_AGENTS = ("fundamental", "quality", "forecast", "comparison")
 SELL_MIN_NEGATIVE_AGENTS = 2
+SELL_NEGATIVE_MARGIN = 0.0         # a vote counts as negative below -margin; 0.0 = "vote < 0" (production). 0.10 is only measured (tools/p1_12_*), not enabled
 SELL_UNVERIFIED_QUALIFIER = {
     "qualifier": "NEGATIVE_MULTIFACTOR_UNCONFIRMED",
     "label": "Negative; multi-factor confirmation insufficient",
@@ -299,6 +300,8 @@ BLOCKING_GATES = {
     "COMPARISON_ABSTAINED": ("Peer comparison abstained", "مقایسه با رقبا ممتنع بود"),
     "AGENT8_GOVERNANCE": ("Agent 8 governance review", "بازبینی حاکمیتی عامل ۸"),
     "DISTRESS_GATE": ("Distress safety gate", "دروازه ایمنی ریسک ورشکستگی"),
+    "LOW_LIQUIDITY": ("Low liquidity", "نقدشوندگی کم"),
+    "LIQUIDITY_UNCONFIRMED": ("Liquidity unconfirmed", "نقدشوندگی تأیید نشده"),
 }
 
 
@@ -316,6 +319,12 @@ def investment_blocking_gate(call, blocked_by, flags, tier_before, score, soft_f
     if blocked_by:
         code = next((c for p, c in _BLOCKED_PREFIX if str(blocked_by).startswith(p)), "EVIDENCE_BLOCK")
         return make_gate(code, str(blocked_by))
+    if "low_liquidity" in flags:                                    # P1.12 (v2): tradability gate, BUY / ACCUMULATE -> HOLD
+        return make_gate("LOW_LIQUIDITY", f"median-proxy daily traded value below USD {LIQUIDITY_MIN_USD:,.0f}; capped at HOLD",
+                         **{"from": tier_before or "BUY", "to": call})
+    if "liquidity_unconfirmed" in flags and tier_before == "BUY" and call == "ACCUMULATE":
+        return make_gate("LIQUIDITY_UNCONFIRMED", "no usable volume/price/FX to confirm tradability; BUY limited to ACCUMULATE",
+                         **{"from": "BUY", "to": "ACCUMULATE"})
     if "insufficient_evidence" in flags:
         return make_gate("CONFIDENCE_FLOOR", "decision confidence is below the BUY / ACCUMULATE floor; capped at HOLD",
                          **{"from": tier_before or "BUY", "to": call})
@@ -357,3 +366,37 @@ def conservative_blocking_gate(result) -> Optional[dict]:
     if call in ("HOLD_OR_WATCH", "NO_RECOMMENDATION", None):
         return make_gate("BUY_THRESHOLD", "score or confidence below the BUY candidate floor")
     return None
+
+
+# ---- P1.12 (v2): liquidity is a tradability gate, not a directional vote -------------------------------------------------------
+LIQUIDITY_MIN_USD = 100_000.0                   # daily traded value (USD, ECB rate) under this caps BUY / ACCUMULATE at HOLD
+LIQUIDITY_GATE_EXEMPT_COUNTRIES = frozenset({"DE"})     # off until the Xetra volume field is verified (P2.1)
+_MINOR_UNITS = {"GBX": ("GBP", 100.0), "GBPX": ("GBP", 100.0)}
+
+
+def liquidity_gate_active(exchange: str) -> bool:
+    """The gate runs under v2 for every market except those still awaiting a verified volume field."""
+    country = str(exchange or "").split(":", 1)[0].upper()
+    return is_v2() and country not in LIQUIDITY_GATE_EXEMPT_COUNTRIES
+
+
+def daily_value_usd(*, price, avg_volume, currency, on, fx) -> Optional[float]:
+    """Average 30-day daily traded value (price x average volume) in USD at the ECB reference rate of ``on``; ``None`` = unknown.
+
+    The stored company carries only the 30-day *average* volume, not a daily series, so this is a mean-based proxy for the
+    median value (a mean is >= the median for the usual right-skewed volume, so the gate is on the lenient side).
+    """
+    try:
+        price, avg_volume = float(price), float(avg_volume)
+        if not (price > 0 and avg_volume > 0):
+            return None
+        from datetime import date
+        day = date.fromisoformat(str(on)[:10])
+        code = str(currency or "").strip().upper()
+        divisor = 1.0
+        if code in _MINOR_UNITS:
+            code, divisor = _MINOR_UNITS[code][0], _MINOR_UNITS[code][1]
+        rate = float(fx.rate(code, "USD", day).rate)
+        return price * avg_volume / divisor * rate
+    except Exception:                                      # noqa: BLE001 - any missing input / rate means "unknown", never a guess
+        return None

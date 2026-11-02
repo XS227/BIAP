@@ -22,6 +22,7 @@ def main() -> int:
     ap.add_argument("--variant", required=True, choices=("asis", "abstain"))
     ap.add_argument("--markets", required=True)
     ap.add_argument("--workdir", required=True)
+    ap.add_argument("--sell-margin", type=float, default=0.0, help="measure only: a vote counts as negative below -margin in the v2 SELL gate")
     ap.add_argument("--out", required=True)
     ap.add_argument("--source-ledger-dir", default="/var/lib/biap-global/analysis-ledger")
     ap.add_argument("--template-data-dir", default="/home/ubuntu/biap-staging-funnel-all-v1")
@@ -40,6 +41,8 @@ def main() -> int:
         shutil.copy2(src, data / "analysis-ledger" / src.name)
     os.environ.update(BIAP_GLOBAL_DATA_DIR=str(data), DECISION_LOGIC_VERSION="v2", DECISION_MODE="investment")
 
+    from global_markets import decision_logic as _dl
+    _dl.SELL_NEGATIVE_MARGIN = a.sell_margin
     from global_markets.models import GlobalCompany, SourceEvidence, AgentSignal
     from global_markets import service as sv, decision_overlay as ov, advanced_agents as aa
     from global_markets.providers import ProviderDiagnostics
@@ -88,7 +91,7 @@ def main() -> int:
         view = ov.market_view(cc, ex)
         tick = {}
         for t, v in view.items():
-            tick[t] = {"tier": v.get("tier"), "score": v.get("score"), "rank": v.get("rank"), "conf": v.get("confidence"),
+            tick[t] = {"tier": v.get("tier"), "score": v.get("score"), "rank": v.get("rank"), "conf": v.get("confidence"), "flags": v.get("flags"),
                        **raw_info.get(t, {})}
         out["markets"][f"{cc}:{ex}"] = {"replayed": len(rows) - err, "errors": err, "tierCounts": ov.tier_counts(view), "tickers": tick}
         print(a.variant, cc, ex, len(rows) - err, err, ov.tier_counts(view), flush=True)

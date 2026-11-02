@@ -96,3 +96,25 @@ If the gate caps BUY/ACCUMULATE at HOLD for names failing (turnover < 0.02% OR v
 3. DE: first verify the volume field, then choose a threshold (as measured, the gate would cut 58 % of DE BUY).
 4. NO: volume/market cap are mostly missing; the gate cannot judge those names. Treat "unknown liquidity" as pass with a label, or as fail?
 5. Then P1.12 implementation (v2 only, tests first) and the −0.10 SELL-margin re-check you scheduled for after it.
+
+## 4. Implementation result (2026-11-02, v2 only; same ledger copies, `tools/p1_12_liquidity_measure.py --variant asis`)
+
+Decisions applied: vote removed; gate USD 100k (ECB), BUY/ACC -> HOLD; DE gate off; unknown liquidity -> label, BUY -> ACCUMULATE. "Before" = v2 at 9f0f0a3, "after" = this branch.
+
+| Market | BUY | ACCUMULATE | HOLD | REDUCE | SELL | NO_REC |
+|---|---|---|---|---|---|---|
+| US:NASDAQ | 182 -> 175 | 279 -> 277 | 1127 -> 1134 | 341 -> 348 | 221 -> 214 | 857 -> 859 |
+| US:NYSE | 133 -> 134 | 232 -> 228 | 797 -> 801 | 246 -> 247 | 152 -> 151 | 220 -> 219 |
+| DE:XETRA (gate off, vote removal only) | 31 -> 31 | 60 -> 59 | 202 -> 204 | 63 -> 63 | 35 -> 35 | 16 -> 15 |
+| NO:EURONEXT_OSLO | 9 -> **0** | 20 -> 29 | 68 -> 68 | 20 -> 20 | 13 -> 13 | 14 -> 14 |
+
+Gate hits: NASDAQ 6 names capped to HOLD (`low_liquidity`), NYSE 3, DE 0 (inactive). **Norway: 33 names `liquidity_unconfirmed`; every Oslo BUY/ACCUMULATE (29) lacks usable volume, so all 9 BUYs become ACCUMULATE and Norway has no BUY until volume data exists.** That is the rule as decided (4), but it removes Oslo's BUY tier entirely; the fix is data (Euronext/Oslo volume), not the rule.
+The US/DE tier movements besides the gate come from removing the vote (as in section 2).
+
+### SELL margin -0.10 (measured only, NOT implemented)
+Counting a vote as negative only at <= -0.10 in the v2 SELL gate (risk check and the two-non-risk-agents check), on top of the numbers above: NASDAQ SELL 214 -> 213 (1 SELL -> REDUCE), NYSE 151 -> 147 (4 SELL -> REDUCE), DE 0, NO 0. Total 5 of 399 SELLs (1.3 %); no other tier moves. Production value stays 0.0 (`decision_logic.SELL_NEGATIVE_MARGIN`).
+
+### Caveats
+- Mean-based value, not median (only the 30-day average volume is stored).
+- If the ECB cache is missing, every value is "unknown" and every BUY becomes ACCUMULATE (fail-safe, visible as `liquidity_unconfirmed`).
+- Value uses the price-date ECB fixing (<= 7 days old), so replays are reproducible.

@@ -122,3 +122,13 @@ Investment engine (`decision_logic.investment_blocking_gate`, in the `investment
 HOLD / ACCUMULATE / REDUCE rows that simply did not reach the next cut-off. The evidence cap (`cap_for_evidence`) sets its own gate. Conservative engine
 (`conservative_blocking_gate`, `/analyze` when no tier is shown): `COMPARISON_ABSTAINED`, `RISK_CAP`, `DISTRESS_GATE`, `AGENT8_GOVERNANCE` (with Agent 8's review reasons), `BUY_THRESHOLD`.
 Not a protocol deviation: no gate, threshold or tier changed. Tests: `analysis/tests/test_blocking_gate.py`, `mobile-global/tests/blocking-gate.test.mjs`.
+
+## 2026-11-02 — P1.12 liquidity: tradability gate instead of a vote (v2 only; v1 frozen)
+Owner decisions: (1) the directional liquidity vote is removed (v2 zeroes it in `_decide_core`; stored votes stay for display; v1 unchanged). (2) Gate: 30-day average daily
+traded value (price x average volume) in USD at the ECB reference rate of the price date below **USD 100,000** caps **BUY and ACCUMULATE at HOLD**, flag `low_liquidity`,
+`blockingGate.code = LOW_LIQUIDITY` ("نقدشوندگی کم"); SELL / REDUCE untouched. (3) **DE is exempt** (`LIQUIDITY_GATE_EXEMPT_COUNTRIES`) until the Xetra volume field is verified (P2.1).
+(4) Unknown liquidity (no volume, price or ECB rate) is not rejected: flag `liquidity_unconfirmed`, BUY is limited to ACCUMULATE (`LIQUIDITY_UNCONFIRMED`, "نقدشوندگی تأیید نشده"), ACCUMULATE stays.
+Deviation to know: the owner asked for the *median* daily value; the stored company carries only the 30-day *average* volume, so the gate uses the mean-based value (>= median for skewed volume, so it is lenient). A median needs the daily volume series (new data field).
+Consequence of (1): no `market`-dimension disagreement is possible any more (forecast vs liquidity); one v2 test was moved to the `business` dimension. Fewer agents with data: liquidity counts as no data, so names that had exactly 4 agents including liquidity lose BUY/SELL eligibility (measured below).
+Also added `SELL_NEGATIVE_MARGIN = 0.0` (production behaviour identical); the owner's -0.10 margin is measured only (tools/p1_12_liquidity_measure.py --sell-margin 0.10), not enabled.
+Tests: `analysis/tests/test_liquidity_gate.py` (13), full suite 1976 passed.
