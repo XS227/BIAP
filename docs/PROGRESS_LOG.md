@@ -46,3 +46,8 @@
 - US trading calendar: `us_holidays`, XNAS/XNYS in `session_calendar`; Nasdaq screener quotes stamped with the last completed session (`tests/test_us_session_date.py`, 1915 pass excl. TestClient files). Not deployed; takes effect at the next US refresh after deploy.
 - Isolated EU jobs: already implemented in the production runner (per-market lines); the 30 Oct failure was Milan DEADLINE only. Remaining work (status file, one retry, versioning the runner) listed in the plan.
 - Not started: official-close timestamps (Yahoo daily bar is stamped at the session open, 08:00 UTC for DE/NO, 13:30 UTC for US), analysis-stale flag, sync-derived dates, Global Top 10.
+
+## 2026-11-02 (P2.4 continued)
+- FX timer installed by owner (next run 16:32:58 UTC); first-run check scheduled after 16:35 UTC.
+- Official-close stamp: `yahoo_chart._session_close_at` replaces the daily-bar stamp (session OPEN, 08:00 UTC DE/NO, 13:30 UTC US) with the venue's regular-session close on the bar's local date (time-of-day from `currentTradingPeriod.regular`; early-close days are stated at the nominal close). A session still open keeps `regularMarketTime`. Basis recorded in `raw_provider_fields.price_time_basis`. Date part unchanged, so no freshness-by-date effect. Tests: `tests/test_yahoo_session_close_stamp.py`. Not deployed.
+

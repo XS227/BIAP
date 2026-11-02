@@ -20,6 +20,7 @@ from dataclasses import replace
 from datetime import datetime, timezone
 import math
 import statistics
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from typing import Any, Optional
 from urllib.parse import quote
 
@@ -118,6 +119,39 @@ class YahooChartMarketProvider(MarketDataProvider):
         except (KeyError, TypeError, ValueError):
             return False
         return start <= bar < end and start <= now < end
+
+    @staticmethod
+    def _session_close_at(meta: dict, bar_timestamp: Any, partial: bool) -> tuple[Optional[str], str]:
+        """Timestamp of the price, stated as the session close instead of Yahoo's daily-bar stamp (the session OPEN).
+
+        Yahoo stamps a daily bar at the open (08:00 UTC for Xetra/Oslo, 13:30 UTC for US), although the value is the close.
+        For a completed session the stamp becomes the venue's regular-session close time on that bar's local date (the
+        close time-of-day is taken from ``currentTradingPeriod.regular``; an early-close day is therefore stated at the
+        nominal close, which is later than the real one). A session still open keeps the provider's last-trade time.
+        Returns ``(iso_utc, basis)``; the basis is ``None``-safe: ``bar_open_timestamp`` means no close could be derived.
+        """
+        try:
+            bar = int(bar_timestamp)
+        except (TypeError, ValueError):
+            return None, "bar_open_timestamp"
+        if partial:
+            try:
+                last = int(meta.get("regularMarketTime") or 0)
+            except (TypeError, ValueError):
+                last = 0
+            if last > 0:
+                return datetime.fromtimestamp(last, tz=timezone.utc).isoformat(), "last_trade_time_session_open"
+            return None, "bar_open_timestamp"
+        try:
+            regular = meta["currentTradingPeriod"]["regular"]
+            tz = ZoneInfo(str(meta.get("exchangeTimezoneName") or regular.get("timezone")))
+            close_tod = datetime.fromtimestamp(int(regular["end"]), tz=tz).time()
+        except (KeyError, TypeError, ValueError, ZoneInfoNotFoundError, AttributeError):
+            return None, "bar_open_timestamp"
+        local_day = datetime.fromtimestamp(bar, tz=tz).date()
+        closed = datetime.combine(local_day, close_tod, tzinfo=tz).astimezone(timezone.utc)
+        now = datetime.now(timezone.utc)
+        return min(closed, now).isoformat(), "session_close_nominal"
 
     @staticmethod
     def _float(value: Any) -> Optional[float]:
@@ -251,6 +285,9 @@ class YahooChartMarketProvider(MarketDataProvider):
         latest = bars[-1]
         partial_session = self._latest_bar_is_partial(meta, latest.get("timestamp"))
         observed_at = self._observed_at(latest["timestamp"])
+        close_at, price_time_basis = self._session_close_at(meta, latest["timestamp"], partial_session)
+        if close_at:
+            observed_at = close_at
         if not observed_at:
             raise GlobalProviderError(f"Yahoo returned no valid price timestamp for {company.identity()}")
         adjusted_closes = [bar["adjusted"] for bar in bars if isinstance(bar.get("adjusted"), (int, float)) and bar["adjusted"] > 0]
@@ -305,6 +342,7 @@ class YahooChartMarketProvider(MarketDataProvider):
                 "public_market_exchange": meta.get("exchangeName") or meta.get("fullExchangeName"),
                 "public_market_price_scale": price_scale,
                 "latest_bar_partial_session": partial_session,
+                "price_time_basis": price_time_basis,
             },
         )
         return append_source(enriched, SourceEvidence(
