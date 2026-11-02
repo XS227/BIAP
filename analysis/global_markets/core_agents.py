@@ -332,7 +332,9 @@ def comparison_agent(company: GlobalCompany) -> AgentSignal:
 
     discount_pct = (sector_pe - pe) / sector_pe * 100.0
     vote = 0.0
-    if discount_pct >= 30:
+    if decision_logic.is_v2():
+        vote = decision_logic.comparison_vote_v2(discount_pct)
+    elif discount_pct >= 30:
         vote = 0.6
     elif discount_pct >= 15:
         vote = 0.35

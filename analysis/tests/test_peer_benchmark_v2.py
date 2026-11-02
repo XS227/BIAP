@@ -129,3 +129,30 @@ def test_v2_keeps_the_original_message_when_there_really_are_fewer_than_three_pe
     company = _company(country="NO", exchange="EURONEXT_OSLO", currency="NOK", ticker="EQNR", name="Equinor", sector="Rare Sector", pe=22.2)
     signal = comparison_agent(_derive_metrics(company))
     assert signal.vote == 0.0 and "fewer than 3 same-sector peers" in signal.reasoning
+
+
+# ---- P1.4b: linear comparison vote (v2) ----------------------------------------------------------------------------------
+
+def _vote(discount_pct, monkeypatch, version):
+    from global_markets.core_agents import comparison_agent
+    monkeypatch.setenv("DECISION_LOGIC_VERSION", version)
+    company = _company(country="DE", exchange="XETRA", currency="EUR", ticker="X", name="X", sector="Tech", pe=100.0 - discount_pct)
+    company.sector_pe = 100.0
+    return comparison_agent(company).vote
+
+
+@pytest.mark.parametrize("d,expected", [(10, 0.2), (-10, -0.2), (20, 0.4), (-20, -0.4), (30, 0.6), (60, 0.6),
+                                        (-25, -0.5), (-40, -0.5), (-60, -0.5), (0, 0.0)])
+def test_v2_comparison_vote_is_linear_with_v1_caps(d, expected, monkeypatch):
+    assert _vote(d, monkeypatch, "v2") == pytest.approx(expected)
+
+
+def test_v2_comparison_vote_is_monotonic_and_has_no_jump(monkeypatch):
+    votes = [_vote(d / 2, monkeypatch, "v2") for d in range(-140, 141)]
+    assert all(b >= a for a, b in zip(votes, votes[1:]))
+    assert max(abs(b - a) for a, b in zip(votes, votes[1:])) <= 0.0101   # step of 0.5 pp x 0.02
+
+
+def test_v1_comparison_vote_ladder_is_unchanged(monkeypatch):
+    assert [_vote(d, monkeypatch, "v1") for d in (10, 14.9, 15, 20, 30, 60, -10, -15, -20, -30, -60)] == \
+           [0.0, 0.0, 0.35, 0.35, 0.6, 0.6, 0.0, -0.3, -0.3, -0.5, -0.5]

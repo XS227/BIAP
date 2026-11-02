@@ -237,3 +237,16 @@ def graded_price_freshness(age_days: float) -> float:
 # multiplies its confidence by it. Hard exclusions (peer explicitly excluded, inputs older than the ceiling) still count
 # towards the 15 % limit. PEER_DISCOUNT_MAX = 0.30 is my choice; owner to confirm.
 PEER_DISCOUNT_MAX = 0.30
+
+
+# --- P1.4b (v2): the comparison vote is linear in the P/E discount instead of a five-step ladder ---------------------------
+# v1 gives 0 up to 15 % and then jumps to +-0.3/0.35, and cannot tell 30 % from 60 %. v2: vote = COMPARISON_SLOPE x discount
+# (percent, positive = cheaper than the peer median), clamped to [COMPARISON_VOTE_MIN, COMPARISON_VOTE_MAX]. Slope 0.02 reaches
+# the v1 cap +0.6 at a 30 % discount; the v1 premium cap -0.5 is reached at a 25 % premium. Owner-approved 2026-11-02.
+COMPARISON_SLOPE = 0.02
+COMPARISON_VOTE_MAX = 0.6
+COMPARISON_VOTE_MIN = -0.5
+
+
+def comparison_vote_v2(discount_pct: float) -> float:
+    return round(max(COMPARISON_VOTE_MIN, min(COMPARISON_VOTE_MAX, COMPARISON_SLOPE * float(discount_pct))), 6)
