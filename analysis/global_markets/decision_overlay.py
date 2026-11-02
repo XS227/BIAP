@@ -152,6 +152,27 @@ def effective_evidence_status(status: Optional[str], reasoning: Optional[str], a
     return str(status or "PASS").upper()
 
 
+def analysis_staleness(analyzed_at: Optional[str], quote_observed: Optional[str]) -> Optional[dict]:
+    """P2.4 "analysis stale": the price was observed on a later calendar day than the analysis that produced the stored call.
+
+    Label only: tier, score and confidence are untouched. Compared by UTC calendar date, because many quotes carry a date
+    without a time; a same-day refresh is therefore never flagged. ``None`` when either side cannot be dated.
+    """
+    def day(value):
+        try:
+            then = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            return None
+        return (then.astimezone(timezone.utc) if then.tzinfo else then).date()
+
+    analysed, priced = day(analyzed_at), day(quote_observed)
+    if analysed is None or priced is None or priced <= analysed:
+        return None
+    return {"analysisStale": True, "analysisAsOf": str(analyzed_at), "priceAsOf": str(quote_observed),
+            "analysisStaleDays": (priced - analysed).days,
+            "analysisStaleNotice": "Price is newer than this analysis; the call below was made on the older price."}
+
+
 def market_view(country: str, exchange: str) -> Dict[str, dict]:
     """{ticker: display payload} for one exchange ledger; ``{}`` when investment mode is off / out of scope / no ledger."""
     code = f"{country.upper()}:{exchange.upper()}"
@@ -178,8 +199,10 @@ def market_view(country: str, exchange: str) -> Dict[str, dict]:
     view = {k[len(prefix):] if k.startswith(prefix) else k: payload(d) for k, d in decisions.items()}
     for ticker, item in view.items():
         analyzed_at, status, why, quote_date = evidence.get(ticker, (None, None, None, None))
-        view[ticker] = cap_for_evidence(
+        capped = cap_for_evidence(
             item, effective_evidence_status(status, why, analyzed_at, quote_observed=quote_date or stage1), item.get("confidence"))
+        stale = analysis_staleness(analyzed_at, quote_date)       # only a dated stage-1 quote; the sync time is not a trade date
+        view[ticker] = {**capped, **stale} if stale else capped
     with _LOCK:
         for old in [k for k in _CACHE if k[0] == stamp[0]]:
             _CACHE.pop(old, None)

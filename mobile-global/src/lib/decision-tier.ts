@@ -23,7 +23,14 @@ export type GlobalInvestmentDecision = {
   insufficientEvidence?: boolean;
   tierBeforeEvidenceCap?: string;
   blockingGate?: BlockingGate | null;
+  /** P2.4: the price was observed on a later day than the analysis behind this call (label only; the call is unchanged). */
+  analysisStale?: boolean;
+  analysisStaleDays?: number;
+  analysisAsOf?: string | null;
+  priceAsOf?: string | null;
 };
+
+export const ANALYSIS_STALE = 'Outdated analysis - price is newer';
 
 export const TIER_LABEL: Record<string, string> = {
   BUY: 'BUY',
@@ -88,7 +95,9 @@ export function gateText(gate: BlockingGate | null | undefined) {
 export function investmentBadge(inv: GlobalInvestmentDecision | null | undefined, rowGate?: BlockingGate | null) {
   if (!inv) return { label: 'Not ranked', tier: undefined as string | undefined, notice: '', gate: '' };
   const weak = inv.insufficientEvidence || Boolean(inv.notice) || (inv.flags || []).includes('insufficient_evidence');
-  return { label: tierLabel(inv.tier), tier: inv.tier as string, notice: weak ? inv.notice || INSUFFICIENT_EVIDENCE : '', gate: gateText(inv.blockingGate ?? rowGate) };
+  const weakText = weak ? inv.notice || INSUFFICIENT_EVIDENCE : '';
+  const staleText = inv.analysisStale ? `${ANALYSIS_STALE}${inv.analysisStaleDays ? ` (${inv.analysisStaleDays} d)` : ''}` : '';
+  return { label: tierLabel(inv.tier), tier: inv.tier as string, notice: [weakText, staleText].filter(Boolean).join(' · '), gate: gateText(inv.blockingGate ?? rowGate) };
 }
 
 // ---- Engine labels (P1.11). The app has two engines; every screen names the one a number or label comes from. ----
