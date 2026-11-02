@@ -278,6 +278,11 @@ def compact_row(result: dict, *, status: str, reason: str, source: str, financia
     return row
 
 
+def _v2() -> bool:
+    from . import decision_logic
+    return decision_logic.is_v2()
+
+
 class AnalysisLedger:
     """SQLite-backed queue/ledger for one (country, exchange) market."""
 
@@ -632,7 +637,7 @@ class AnalysisLedger:
         }
 
     def summaries(self, *, status: Optional[str] = None, limit: int = 100, offset: int = 0) -> list[dict]:
-        sql = "SELECT ticker, name, status, reason, source, summary, priority FROM ledger WHERE in_universe=1"
+        sql = "SELECT ticker, name, status, reason, source, summary, priority, analyzed_at FROM ledger WHERE in_universe=1"
         args: list[Any] = []
         if status:
             sql += " AND status=?"
@@ -644,6 +649,8 @@ class AnalysisLedger:
             if r["summary"]:
                 item = json.loads(r["summary"])
                 item["ledger"] = {**item.get("ledger", {}), "status": r["status"]}
+                if r["analyzed_at"] and _v2():
+                    item["analyzedAt"] = r["analyzed_at"]          # P3 (v2): the scan snapshot time of this row's score
             else:
                 item = {"ticker": r["ticker"], "name": r["name"], "ledger": {"status": r["status"], "reason": r["reason"], "source": r["source"]}}
             rows.append(item)

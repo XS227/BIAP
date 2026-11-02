@@ -205,6 +205,8 @@ def market_view(country: str, exchange: str) -> Dict[str, dict]:
             item, effective_evidence_status(status, why, analyzed_at, quote_observed=quote_date or stage1), item.get("confidence"))
         stale = analysis_staleness(analyzed_at, quote_date) if flag_enabled("BIAP_ANALYSIS_STALE_LABEL") else None       # only a dated stage-1 quote; the sync time is not a trade date
         view[ticker] = {**capped, **stale} if stale else capped
+        if analyzed_at and decision_logic.is_v2():
+            view[ticker] = {**view[ticker], "analyzedAt": str(analyzed_at)}      # P3 (v2): scan snapshot time of the tier/score
     with _LOCK:
         for old in [k for k in _CACHE if k[0] == stamp[0]]:
             _CACHE.pop(old, None)

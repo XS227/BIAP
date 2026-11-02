@@ -28,6 +28,8 @@ export type GlobalInvestmentDecision = {
   analysisStaleDays?: number;
   analysisAsOf?: string | null;
   priceAsOf?: string | null;
+  /** P3 (v2): when the scan snapshot behind this score was computed (ISO); absent in v1. */
+  analyzedAt?: string | null;
 };
 
 export const ANALYSIS_STALE = 'Outdated analysis - price is newer';

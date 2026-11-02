@@ -267,6 +267,8 @@ export type GlobalDecisionTable = {
 };
 
 export type GlobalAnalysis = {
+  /** P3 (v2): when this score was computed (live analysis = now, scan row = ledger snapshot time). */
+  analyzedAt?: string;
   fundamentalEvidence?: GlobalFundamentalEvidence;
   decisionReasons?: GlobalDecisionReasons;
   identity?: string;

@@ -774,6 +774,8 @@ def _analysis_payload(
     preliminary_call = _call(score, confidence, evidence.status)
     v2_extras: dict = {}
     if decision_logic.is_v2():
+        v2_extras["analyzedAt"] = datetime.now(timezone.utc).isoformat()      # P3: when THIS number was computed (live analysis)
+    if decision_logic.is_v2():
         # v2: cross-dimension disagreement is informational; a severely negative, confident risk agent caps a BUY_CANDIDATE
         # (the conservative vocabulary has no ACCUMULATE) instead of the v1 REVIEW.
         notes = decision_logic.cross_dimension_notes(signals)
