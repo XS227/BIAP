@@ -175,6 +175,12 @@ def _scan_peer_state(company: GlobalCompany) -> tuple[Optional[list], str]:
     return None, "scan_cache_invalid"
 
 
+def _peer_freshness_factor(info: Optional[dict]) -> Optional[float]:
+    """v2: 1 - 0.30 x (share of peers kept with a possibly-newer or undated report); None when not known."""
+    factor = (((info or {}).get("dimensions") or {}).get("filing") or {}).get("freshnessFactor")
+    return float(factor) if isinstance(factor, (int, float)) and not isinstance(factor, bool) else None
+
+
 def _peer_benchmark_meta(company: GlobalCompany) -> Optional[dict]:
     country = "".join(ch for ch in company.country.upper() if ch.isalnum() or ch in {"-", "_"})
     exchange = "".join(ch for ch in company.exchange.upper() if ch.isalnum() or ch in {"-", "_"})
@@ -588,6 +594,8 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
             } if peer_scope else {}),
             "peer_scan_cache_state": peer_scan_state,
             **({"peer_benchmark_freshness": peer_bench} if peer_bench else {}),
+            **({"peer_benchmark_freshness_factor": _peer_freshness_factor(peer_bench)}
+               if decision_logic.is_v2() and _peer_freshness_factor(peer_bench) is not None else {}),
             "price_state": price_state,
             **({"peer_pb_benchmark": peer_pb} if peer_pb is not None else {}),
             **({"fx_conversion": fx_info} if fx_info else {}),

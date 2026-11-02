@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from . import decision_logic
 from .financial_signals import financial_fundamental_vote, financial_metrics
 from .models import AgentSignal, GlobalCompany, taxonomy_financial_institution
 
@@ -295,6 +296,18 @@ def _financial_pb_signal(company: GlobalCompany) -> Optional[AgentSignal]:
     )
 
 
+def _peer_unavailable_reason(raw: dict) -> Optional[str]:
+    """v2: say why there is no peer benchmark; "fewer than 3 same-sector peers" is only printed when that is the cause."""
+    state = raw.get("peer_scan_cache_state")
+    if state in (None, "ok"):
+        return None
+    fresh = raw.get("peer_benchmark_freshness") or {}
+    detail = fresh.get("reason") or ((fresh.get("dimensions") or {}).get("filing") or {}).get("reason")
+    text = {"scan_cache_missing": "no peer scan available", "scan_cache_invalid": "peer scan unreadable"}.get(
+        state, "peer benchmark not trusted (stale or unvalidated)")
+    return f"{text}{': ' + str(detail) if detail else ''}"
+
+
 def comparison_agent(company: GlobalCompany) -> AgentSignal:
     pe = company.pe
     sector_pe = company.sector_pe
@@ -312,6 +325,8 @@ def comparison_agent(company: GlobalCompany) -> AgentSignal:
             if not company.sector
             else "fewer than 3 same-sector peers with a valid P/E"
         )
+        if decision_logic.is_v2() and company.sector:
+            why = _peer_unavailable_reason(raw) or why
         note = " (exchange-wide median shown as context only, not used)" if raw.get("exchange_pe_median_informational") else ""
         return AgentSignal("comparison", 0.0, 0.25, f"P/E {pe:.2f}; sector peer P/E unavailable: {why}; abstaining{note}")
 
@@ -327,13 +342,20 @@ def comparison_agent(company: GlobalCompany) -> AgentSignal:
         vote = -0.3
 
     relationship = "discount" if discount_pct >= 0 else "premium"
+    confidence = 0.65
+    discount_note = ""
+    factor = (company.raw_provider_fields or {}).get("peer_benchmark_freshness_factor") if decision_logic.is_v2() else None
+    if isinstance(factor, (int, float)) and not isinstance(factor, bool) and 0.0 < factor < 1.0:
+        confidence = 0.65 * float(factor)
+        discount_note = f" (peer reports not yet confirmed current: confidence x{factor:.2f})"
     return AgentSignal(
         agent="comparison",
         vote=vote,
-        confidence=0.65,
+        confidence=confidence,
         reasoning=(
             f"P/E {pe:.2f} vs peer/sector {sector_pe:.2f} ({abs(discount_pct):.0f}% {relationship})"
             + _cohort_note(company)
+            + discount_note
         ),
     )
 

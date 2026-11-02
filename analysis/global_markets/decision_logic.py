@@ -227,3 +227,13 @@ def graded_price_freshness(age_days: float) -> float:
         if age_days <= x1:
             return y0 + (y1 - y0) * (age_days - x0) / (x1 - x0)
     return anchors[-1][1]
+
+
+# --- P1.4 (v2): peer benchmark keeps peers with a possibly-newer or undated report, at a partial discount ----------------------
+# v1 (freshness.filing_dimension) excludes such peers and drops the whole benchmark when more than 15 % are excluded; in
+# the Norwegian quarterly window that is 100 % of peers (Equinor, Aker BP) and for Germany 73 % undated peers (SAP), so the
+# comparison agent abstained although a usable sector median existed. v2 keeps those peers with their latest available
+# report; the benchmark's freshness factor is 1 - PEER_DISCOUNT_MAX * (share of discounted peers), and the comparison agent
+# multiplies its confidence by it. Hard exclusions (peer explicitly excluded, inputs older than the ceiling) still count
+# towards the 15 % limit. PEER_DISCOUNT_MAX = 0.30 is my choice; owner to confirm.
+PEER_DISCOUNT_MAX = 0.30
