@@ -65,6 +65,7 @@ export type GlobalFundamentalEvidence = {
     periodAgeDays?: number | null;
     filingDate?: string | null;
     priceObservedAt?: string | null;
+    priceDateBasis?: string | null;
     priceAgeDays?: number | null;
     statement?: string;
   };

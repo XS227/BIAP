@@ -40,6 +40,20 @@ def copenhagen_holidays(year: int) -> frozenset[date]:
     return frozenset(days)
 
 
+def oslo_holidays(year: int) -> frozenset[date]:
+    """Euronext Oslo Børs closing days. 2026 matches Euronext's published holiday table (1 Jan, 2/3/6 Apr, 1 May, 14 May,
+    25 May, 24/25/31 Dec). Other years, including 2027 (not yet in the published table at the time of writing), are derived by
+    the same rule. 17 May (Constitution Day) and 26 Dec are added as a safe superset: an extra closure only makes the stamp
+    one trading day older, a missed one would make a stale price look current."""
+    easter = easter_sunday(year)
+    ascension = easter + timedelta(days=39)
+    return frozenset({
+        date(year, 1, 1), easter - timedelta(days=3), easter - timedelta(days=2), easter + timedelta(days=1),
+        date(year, 5, 1), ascension, easter + timedelta(days=50), date(year, 5, 17),
+        date(year, 12, 24), date(year, 12, 25), date(year, 12, 26), date(year, 12, 31),
+    })
+
+
 @dataclass(frozen=True)
 class VenueCalendar:
     tz: str
@@ -50,6 +64,8 @@ class VenueCalendar:
 
 _VENUES: dict[str, VenueCalendar] = {
     "XCSE": VenueCalendar("Europe/Copenhagen", time(17, 0), 30, copenhagen_holidays),
+    # Oslo: continuous trading to 16:20, closing auction to about 16:25 (the Euronext file shows last trades 16:25-16:29).
+    "XOSL": VenueCalendar("Europe/Oslo", time(16, 30), 30, oslo_holidays),
 }
 
 

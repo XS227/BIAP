@@ -77,6 +77,7 @@ Evidence: Norway's data is healthy (only 23 of 134 rejected at the ranking stand
   - `auditStatus=unknown` is shown for audited annual reports. Set it from the source.
 - [ ] **P2.4 Price pipeline** (from ChatGPT's 1 Nov report and the app):
   - **Euronext Oslo peer quote date (found 2026-11-02):** all 144 rows of the Oslo scan cache have `screening.quoteDate = null` and no `price_observed_at`, so the benchmark block's `quotesAsOf` is null and `freshness.evaluate` can never mark the quote dimension VALID. Equinor and Aker BP therefore stay without a peer benchmark even after P1.4 (v2). Needs a verified, dated quote source for Euronext Oslo (do not stamp a session date without proof). Check the other Euronext markets the same way (DE has `quotesAsOf` 2026-10-29).
+  - **Code fix done (2026-11-02, option 1, Oslo only):** the Euronext CSV has no per-row trade date (`Closing Price DateTime` empty; the date on line 3 is the download date). `euronext_live.batch_quotes` now stamps `NO:EURONEXT_OSLO` with the last completed Oslo session (calendar `XOSL`, holidays 2026 from Euronext's table, 2027 rule-derived) and `quoteDateBasis=last_completed_session`; other Euronext markets stay undated (env `BIAP_EURONEXT_SESSION_DATE_MARKETS`). The API exposes `priceDateBasis` and the app shows "date derived from the trading calendar". **Still open:** the existing Oslo scan cache has no dates until a refresh runs (separate owner approval; back up the cache first, refresh Oslo only).
   - The EU refresh service failed on 30 Oct because Milan hit its deadline after 12 of 193 companies, yet 10 of 11 markets had completed. Run each market as an isolated job (or record per-market status), and give Milan more time or batching.
   - 3,001 NASDAQ records are dated Saturday 31 Oct with unchanged prices. Use an exchange trading calendar and stamp the last trading day.
   - Prices are stamped `08:00 UTC` (opening snapshot) in DE and NO. Use the official close.
@@ -85,6 +86,7 @@ Evidence: Norway's data is healthy (only 23 of 134 rejected at the ranking stand
   - "Global Top 10" shows "Partial global scan • 1/9 markets ready", so the global shortlist is effectively unavailable. Fix after the EU refresh is fixed.
 - [ ] **P2.5 Currency labels.** Aker BP and Equinor report in USD while prices are in NOK. Label the fundamentals table and EPS with the reporting currency (P/E conversion is already correct).
 - [ ] **P2.6 Data licensing.** The price source is "Yahoo · Public market history" (quality 0.72), which is not licensed for commercial use. Plan a licensed market-data provider before selling subscriptions, and add its cost to the business plan.
+  - **Future (owner request 2026-11-02): licensed data source with real timestamps.** Evaluate a licensed market-data provider that returns the actual trade/close timestamp per quote, to replace the calendar-derived session date for Euronext (Oslo first, then Paris/Amsterdam/etc.). Until then the derived date is labelled as such in the app.
 
 ---
 

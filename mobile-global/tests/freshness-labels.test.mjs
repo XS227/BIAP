@@ -40,3 +40,11 @@ test('missing decisionReasons yields empty lists (older API payloads)', () => {
   assert.deepEqual(governanceReasonLines(undefined), []);
   assert.deepEqual(dataLimitationLines(null), []);
 });
+
+test('a calendar-derived price date is labelled as derived from the trading calendar', () => {
+  const base = { isOfficial: true, freshnessTier: 'LAST_ANNUAL_FILING' };
+  const derived = fundamentalFreshnessLines({ ...base, freshnessDetail: { priceObservedAt: '2026-10-30T00:00:00Z', priceAgeDays: 3, priceDateBasis: 'last_completed_session' } });
+  assert.equal(derived[2], 'Price observed: 2026-10-30 (3 days ago) - date derived from the trading calendar');
+  const plain = fundamentalFreshnessLines({ ...base, freshnessDetail: { priceObservedAt: '2026-10-30T00:00:00Z', priceAgeDays: 3 } });
+  assert.equal(plain[2], 'Price observed: 2026-10-30 (3 days ago)');
+});
