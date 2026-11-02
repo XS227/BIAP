@@ -66,7 +66,26 @@ def test_v2_without_the_cap_reproduces_the_regression(ticker, oslo, monkeypatch)
     assert cmp_.vote > 0 and cmp_.confidence == pytest.approx(0.455)                          # votes, but below the 0.5 evidence bar
     assert payload["decisionIntegrity"]["preliminaryCall"] == "BUY_CANDIDATE" and payload["score"] >= 0.25
     assert payload["call"] == "NO_RECOMMENDATION" and payload["governance"]["action"] == "REVIEW"
-    assert payload["governance"]["review_reasons"][0].startswith("valuation benchmark unavailable")
+    # v2 names the real cause: the benchmark exists, the comparison confidence (0.455) is below the 0.5 bar
+    reason = payload["governance"]["review_reasons"][0]
+    assert reason.startswith("peer benchmark available, but the comparison confidence is 0.455 (below 0.5)")
+    assert "quarterly report window" in reason and "valuation benchmark unavailable" not in reason
+
+
+def test_v2_message_keeps_the_old_wording_when_there_is_really_no_benchmark(tmp_path, monkeypatch):
+    monkeypatch.setenv("DECISION_LOGIC_VERSION", "v2")
+    monkeypatch.setenv("BIAP_GLOBAL_DATA_DIR", str(tmp_path))                 # no scan cache at all
+    payload, _, _ = _analyse("BONHR")
+    reasons = list(payload["governance"]["review_reasons"]) + list((payload.get("abstentionCap") or {}).get("reasons", []))
+    assert all("peer benchmark available" not in r for r in reasons)
+
+
+def test_v1_message_is_unchanged(oslo):
+    from global_markets.service import _critical_data_gaps
+    e = sv._derive_metrics(_company("BONHR"))
+    sig = run_core_agents(e)
+    gaps = _critical_data_gaps(e, sig)
+    assert not gaps or gaps[0].startswith("valuation benchmark unavailable")
 
 
 @pytest.mark.parametrize("ticker", ["BONHR", "EPR"])

@@ -259,7 +259,7 @@ ABSTENTION_QUALIFIER = {
     "label": "Positive; relative valuation not confirmed",
     "labelFa": "مثبت، ارزش‌گذاری نسبی تأیید نشده",
 }
-_COMPARISON_REVIEW_PREFIXES = ("valuation benchmark unavailable", "sector peer group")
+_COMPARISON_REVIEW_PREFIXES = ("valuation benchmark unavailable", "peer benchmark available, but the comparison confidence", "sector peer group")
 
 
 def comparison_only_review(review_reasons) -> bool:

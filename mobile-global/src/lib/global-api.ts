@@ -256,6 +256,8 @@ export type GlobalDecisionTable = {
     call?: string;
     newPositionAction?: string;
     existingHolderAction?: string;
+    /** Decision logic v2 (P1.6): why an owner of a stock without a recommendation is told to hold and monitor. */
+    existingHolderNote?: string;
     score?: number;
     confidence?: number;
     evidence?: string;

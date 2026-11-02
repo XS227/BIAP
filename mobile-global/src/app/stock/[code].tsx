@@ -233,6 +233,7 @@ export default function GlobalStockDetailScreen() {
     ['ROA', pct(dm?.roaPct)],
     [analysis?.investment ? 'New position (conservative rule)' : 'New position', friendly(decision?.kiasha?.newPositionAction || analysis?.call)],
     [analysis?.investment ? 'If already owned (conservative rule)' : 'If already owned', friendly(decision?.kiasha?.existingHolderAction)],
+    ...(decision?.kiasha?.existingHolderNote ? [['', decision.kiasha.existingHolderNote] as [string, string]] : []),
     ['Evidence', analysis?.evidence?.status || '—'],
   ], [analysis?.call, analysis?.investment?.tier, analysis?.confidence, analysis?.decisionConfidence, analysis?.evidenceConfidence, analysis?.overallCalibratedConfidence, analysis?.evidence?.status, decision, dm]);
 

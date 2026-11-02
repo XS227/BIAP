@@ -723,6 +723,13 @@ def _critical_data_gaps(enriched, signals) -> tuple[str, ...]:
     if comparison is not None and comparison.confidence >= 0.5:
         return ()
     state = (enriched.raw_provider_fields or {}).get("peer_scan_cache_state") or "unknown"
+    if decision_logic.is_v2() and state == "ok" and enriched.sector_pe:
+        # v2: the benchmark exists; what is missing is confidence in it (peer reports possibly superseded or undated, P1.4 discount).
+        return (
+            f"peer benchmark available, but the comparison confidence is {comparison.confidence:.3f} (below 0.5) because the peers' "
+            "latest reports may be superseded (open quarterly report window) or are undated; a BUY is suspended until the peers' new "
+            "reports are read",
+        )
     return (
         "valuation benchmark unavailable (peer scan state: "
         f"{state}); a BUY requires verified comparison evidence",
