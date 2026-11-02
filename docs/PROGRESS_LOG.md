@@ -72,3 +72,4 @@
 
 ## 2026-11-02 (owner: continue phases 2 and 3, no production)
 - P2.5 done (label only): reporting-currency suffix on EPS, book value/share and filing rows; note when reporting currency differs from listing currency. No value or decision logic changed. tsc clean, test:api 30 pass. Not deployed.
+- Phase 3: screened-vs-deep-analyzed wording and D/E vs liabilities/equity labels (wording only; tsc clean, test:api 30 pass). Open in phase 3: sort-key display, SAP 0.191/0.193, three scores, Portfolio Agent empty with 0 BUY, Global Top 10 (needs EU refresh). P2.8 (daily volume series) not started: it changes stored data and decision logic.

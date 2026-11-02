@@ -252,9 +252,9 @@ export default function MarketScreen() {
       if (!globallyReady) {
         setScanStatus(`Global ranking blocked • ${readyMarkets}/${scannedMarkets} markets ready • ${result.marketsExcluded ?? scannedMarkets} excluded`);
       } else if (!completeGlobalScope) {
-        setScanStatus(`Partial global scan • ${readyMarkets}/${scannedMarkets} markets ready • ${qualifiedLabel} in ready markets • ${result.screenedEquities ?? 0}/${result.eligibleEquities ?? 0} screened (price data only) • ${result.deepAnalyzed ?? 0} deep-analyzed • ${coverage} screening coverage`);
+        setScanStatus(`Partial global scan • ${readyMarkets}/${scannedMarkets} markets ready • ${qualifiedLabel} in ready markets • ${result.screenedEquities ?? 0}/${result.eligibleEquities ?? 0} price-screened (quote data, no fundamentals) • ${result.deepAnalyzed ?? 0} with full fundamentals analysis • ${coverage} screening coverage`);
       } else {
-        setScanStatus(`Global Top 10 • ${qualifiedLabel} • all ${scannedMarkets} markets ready • ${result.screenedEquities ?? 0}/${result.eligibleEquities ?? 0} screened (price data only) • ${result.deepAnalyzed ?? 0} deep-analyzed • ${coverage} screening coverage`);
+        setScanStatus(`Global Top 10 • ${qualifiedLabel} • all ${scannedMarkets} markets ready • ${result.screenedEquities ?? 0}/${result.eligibleEquities ?? 0} price-screened (quote data, no fundamentals) • ${result.deepAnalyzed ?? 0} with full fundamentals analysis • ${coverage} screening coverage`);
       }
     } catch (err) {
       setScanMode('');

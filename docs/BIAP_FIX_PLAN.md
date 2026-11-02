@@ -111,8 +111,8 @@ Evidence: Norway's data is healthy (only 23 of 134 rejected at the ranking stand
 - [ ] SAP shows 0.191 on the detail page and 0.193 in the list. Use one scan, or show the scan time.
 - [ ] **Three different scores for one stock (0.191 / 0.193 / 0.213).** Detail page = fresh `POST /global/analyze` (conservative score), list = stored ledger score (0.192688), investment ranking = 0.212994. Show one primary score per screen, name the engine and show the analysis time (see P1.11).
 - [ ] Score displays "-0" (Aker BP). Format as 0.00x.
-- [ ] Label "144/145 screened (price data only)" conflicts with "144 deep-analyzed".
-- [ ] Clarify D/E (financial debt) vs liabilities/equity (total liabilities) labels.
+- [x] Label "144/145 screened (price data only)" conflicts with "144 deep-analyzed". *(2026-11-02: now "price-screened (quote data, no fundamentals)" and "with full fundamentals analysis"; not deployed.)*
+- [x] Clarify D/E (financial debt) vs liabilities/equity (total liabilities) labels. *(2026-11-02: "Financial debt / equity (D/E)" and a separate "Total liabilities / equity" row; not deployed.)*
 - [ ] Portfolio Agent returns empty when there are 0 BUYs. Allow ACCUMULATE/HOLD or show the nearest candidates.
 
 ---
