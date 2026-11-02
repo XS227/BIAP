@@ -370,7 +370,7 @@ def conservative_blocking_gate(result) -> Optional[dict]:
 
 # ---- P1.12 (v2): liquidity is a tradability gate, not a directional vote -------------------------------------------------------
 LIQUIDITY_MIN_USD = 100_000.0                   # daily traded value (USD, ECB rate) under this caps BUY / ACCUMULATE at HOLD
-LIQUIDITY_GATE_EXEMPT_COUNTRIES = frozenset({"DE"})     # off until the Xetra volume field is verified (P2.1)
+LIQUIDITY_GATE_EXEMPT_COUNTRIES: frozenset = frozenset()     # DE enabled 2026-11-02 after the Xetra volume check (P2.1); empty = every market
 _MINOR_UNITS = {"GBX": ("GBP", 100.0), "GBPX": ("GBP", 100.0)}
 
 

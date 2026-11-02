@@ -4,7 +4,8 @@ Owner decisions 2026-11-02:
 1. The directional liquidity vote is removed (v2 only; v1 untouched).
 2. Gate: daily traded value in USD (ECB rate) below 100k -> BUY / ACCUMULATE capped at HOLD, label "low liquidity".
    SELL / REDUCE are left alone.
-3. DE: the gate is NOT active until the Xetra volume field is verified (P2.1).
+3. DE: gate was off until the Xetra volume field was verified; verified 2026-11-02 (P2.1) against Deutsche Boerse's
+   official post-trade file, so it is active like every other market.
 4. Unknown liquidity (e.g. Norway) is not rejected: label "liquidity unconfirmed", BUY capped at ACCUMULATE.
 """
 import pytest
@@ -95,12 +96,13 @@ def test_unknown_value_leaves_sell_and_hold_alone():
     assert d[worst].call == base[worst].call and "liquidity_unconfirmed" not in d[worst].flags
 
 
-def test_germany_gate_is_inactive():
+def test_germany_gate_is_active_after_xetra_volume_verification():
     base = decide_market(ladder(exchange="DE:XETRA"))
     low = decide_market(with_value(ladder(exchange="DE:XETRA"), "s00", 1.0))
     unknown = decide_market(with_value(ladder(exchange="DE:XETRA"), "s00", None))
-    assert base["s00"].call == low["s00"].call == unknown["s00"].call == "BUY"
-    assert not any(f in low["s00"].flags + unknown["s00"].flags for f in ("low_liquidity", "liquidity_unconfirmed"))
+    assert base["s00"].call == "BUY"
+    assert low["s00"].call == "HOLD" and "low_liquidity" in low["s00"].flags
+    assert unknown["s00"].call == "ACCUMULATE" and "liquidity_unconfirmed" in unknown["s00"].flags
 
 
 def test_v1_has_no_gate(monkeypatch):
