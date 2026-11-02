@@ -191,6 +191,25 @@ class YahooChartMarketProvider(MarketDataProvider):
         return (current / previous - 1.0) * 100.0 if previous > 0 and current > 0 else None
 
     @staticmethod
+    def _daily_volume_series(bars: list, meta: dict) -> Optional[list]:
+        """P2.8: [[trading date (exchange-local), volume], ...] for the last 30 completed sessions; None when nothing usable."""
+        try:
+            tz = ZoneInfo(str(meta.get("exchangeTimezoneName")))
+        except (TypeError, ValueError, ZoneInfoNotFoundError):
+            tz = timezone.utc
+        out = []
+        for bar in bars[-30:]:
+            vol = bar.get("volume")
+            if not isinstance(vol, (int, float)) or vol < 0:
+                continue
+            try:
+                day = datetime.fromtimestamp(int(bar["timestamp"]), tz=tz).date().isoformat()
+            except (TypeError, ValueError, KeyError, OSError):
+                continue
+            out.append([day, float(vol)])
+        return out or None
+
+    @staticmethod
     def _observed_at(timestamp: Any) -> Optional[str]:
         try:
             raw = int(timestamp)
@@ -302,6 +321,7 @@ class YahooChartMarketProvider(MarketDataProvider):
         volume_bars = bars[:-1] if partial_session and len(bars) > 1 else bars
         recent_volumes = [bar["volume"] for bar in volume_bars[-30:] if isinstance(bar.get("volume"), (int, float)) and bar["volume"] >= 0]
         volume_today = volume_bars[-1].get("volume") if volume_bars else latest.get("volume")
+        daily_volume_30d = self._daily_volume_series(volume_bars, meta)
 
         persist_daily_history(
             replace(company, currency=currency),
@@ -331,6 +351,7 @@ class YahooChartMarketProvider(MarketDataProvider):
             price_observed_at=observed_at,
             volume_today=volume_today,
             avg_volume_30d=(sum(recent_volumes) / len(recent_volumes) if recent_volumes else None),
+            daily_volume_30d=daily_volume_30d,
             price_52w_high=max(valid_highs) if valid_highs else None,
             price_52w_low=min(valid_lows) if valid_lows else None,
             volatility_annualized_pct=self._annualized_volatility(adjusted_closes),

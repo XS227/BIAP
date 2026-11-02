@@ -152,3 +152,38 @@ def test_candidate_from_result_fills_daily_value_usd(monkeypatch):
 
 def test_sell_margin_default_is_zero_so_production_sell_gate_is_unchanged():
     assert dl.SELL_NEGATIVE_MARGIN == 0.0
+
+
+# ---- P2.8: median of the stored daily series (v2); mean stays when there is no usable series ------------------------------------
+def test_median_volume_needs_enough_sessions_and_ignores_garbage():
+    assert dl.median_volume(None) is None
+    assert dl.median_volume([["2026-10-01", 5]] * 9) is None
+    assert dl.median_volume([["d", v] for v in (1, 2, 3, 4, 5, 6, 7, 8, 9, 100)]) == 5.5
+    assert dl.median_volume([["d", v] for v in (1, 2, 3, 4, 5, 6, 7, 8, 9)] + [["d", None]]) is None   # 9 usable < 10
+
+
+def test_daily_value_usd_uses_median_when_series_given_else_mean():
+    series = [[f"2026-10-{i:02d}", v] for i, v in enumerate([100] * 14 + [10_000], start=1)]   # mean 760, median 100
+    with_series = dl.daily_value_usd(price=10.0, avg_volume=760.0, currency="USD", on="2026-10-30", fx=FakeFX(), daily_volumes=series)
+    without = dl.daily_value_usd(price=10.0, avg_volume=760.0, currency="USD", on="2026-10-30", fx=FakeFX())
+    assert with_series == pytest.approx(10.0 * 100)
+    assert without == pytest.approx(10.0 * 760)
+
+
+def test_candidate_reads_series_only_under_v2(monkeypatch):
+    series = [[f"2026-10-{i:02d}", v] for i, v in enumerate([100] * 14 + [10_000], start=1)]
+    res = {"signals": [{"agent": "a", "vote": 0.1, "confidence": 0.5}], "exchange": "NO:EURONEXT_OSLO",
+           "company": {"price": 10.0, "avg_volume_30d": 760.0, "currency": "USD", "price_observed_at": "2026-10-30",
+                       "daily_volume_30d": series}}
+    from global_markets import investment_mode as im
+    monkeypatch.setattr(im, "_fx_provider", lambda: FakeFX())
+    monkeypatch.setattr(dl, "is_v2", lambda value=None: True)
+    assert im.candidate_from_result(res, key="k").daily_value_usd == pytest.approx(1000.0)
+
+
+def test_yahoo_daily_volume_series_uses_exchange_local_dates():
+    from global_markets.yahoo_chart import YahooChartMarketProvider as Y
+    bars = [{"timestamp": 1761804000 + 86400 * i, "volume": 1000.0 + i} for i in range(40)] + [{"timestamp": 1, "volume": None}]
+    out = Y._daily_volume_series(bars, {"exchangeTimezoneName": "Europe/Oslo"})
+    assert len(out) <= 30 and all(len(r) == 2 and len(r[0]) == 10 for r in out)
+    assert Y._daily_volume_series([], {}) is None

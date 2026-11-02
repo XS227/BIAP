@@ -390,13 +390,33 @@ def liquidity_gate_active(exchange: str) -> bool:
     return is_v2() and country not in LIQUIDITY_GATE_EXEMPT_COUNTRIES
 
 
-def daily_value_usd(*, price, avg_volume, currency, on, fx) -> Optional[float]:
+MEDIAN_MIN_SESSIONS = 10                       # fewer usable sessions than this: keep the mean (a short series is not a median)
+
+
+def median_volume(series) -> Optional[float]:
+    """Median of the positive volumes in a stored daily series; None when the series is missing or too short."""
+    try:
+        vols = sorted(float(row[1]) for row in series or () if row and row[1] is not None and float(row[1]) >= 0)
+    except (TypeError, ValueError, IndexError):
+        return None
+    if len(vols) < MEDIAN_MIN_SESSIONS:
+        return None
+    mid = len(vols) // 2
+    return vols[mid] if len(vols) % 2 else (vols[mid - 1] + vols[mid]) / 2.0
+
+
+def daily_value_usd(*, price, avg_volume, currency, on, fx, daily_volumes=None) -> Optional[float]:
     """Average 30-day daily traded value (price x average volume) in USD at the ECB reference rate of ``on``; ``None`` = unknown.
 
     The stored company carries only the 30-day *average* volume, not a daily series, so this is a mean-based proxy for the
     median value (a mean is >= the median for the usual right-skewed volume, so the gate is on the lenient side).
+    P2.8 (v2 only): when a stored daily series (``[[date, volume], ...]``) with >= ``MEDIAN_MIN_SESSIONS`` usable sessions is
+    passed, its median replaces the mean. v1 never passes it and keeps reading the mean.
     """
     try:
+        med = median_volume(daily_volumes)
+        if med is not None:
+            avg_volume = med
         price, avg_volume = float(price), float(avg_volume)
         if not (price > 0 and avg_volume > 0):
             return None

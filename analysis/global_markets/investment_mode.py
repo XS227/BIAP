@@ -708,7 +708,8 @@ def candidate_from_result(result: Mapping[str, Any], *, key: Optional[str] = Non
     if decision_logic.is_v2():
         value_usd = decision_logic.daily_value_usd(
             price=company.get("price"), avg_volume=company.get("avg_volume_30d"), currency=company.get("currency"),
-            on=company.get("price_observed_at") or result.get("analyzed_at"), fx=_fx_provider())
+            on=company.get("price_observed_at") or result.get("analyzed_at"), fx=_fx_provider(),
+            daily_volumes=company.get("daily_volume_30d"))
     exchange = str(result.get("exchange") or company.get("exchange") or "")
     country = str(result.get("country") or company.get("country") or "")
     if country and ":" not in exchange:
