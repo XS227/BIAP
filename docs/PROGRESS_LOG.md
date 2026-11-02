@@ -37,3 +37,7 @@
 - P1.1 closed (v2 evidence in changelog). P2.2: ESEF dividend/current-subtotal fallbacks + DE reviewed schema (tests: tests/test_p22_esef_current_dividend.py; 1943 pass). SAP reviewed values and index beta not done.
 - Phase 3: five wording/format fixes in mobile-global (tsc clean, test:api 26 pass).
 - P2.4 not started this round: its six items (isolated EU jobs, trading-calendar stamping for NASDAQ, official-close timestamps, analysis-stale flag, sync-derived dates, Global Top 10) each need production data/pipeline work; the per-market isolated runner already exists in /usr/local/bin/biap-global-price-refresh (one market per driver call). Next candidate: analysis-stale flag.
+
+## 2026-11-02 (owner round 4)
+- Pushed 2d6bb20 and a0e22b8. Standing rule: push the fix branch after each commit.
+- ECB timer units + installer moved to `deploy/systemd/` and `deploy/install-fx-refresh-timer.sh`; owner runs it with sudo after reading it. Changelog row now states v1 was unaffected (period-end-date rates).
