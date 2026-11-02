@@ -28,6 +28,33 @@ Setting: `DECISION_LOGIC_VERSION` (`v1` default, `v2` opt-in; unknown values mea
 
 ## Investigated, not a logic change
 
+### 2026-11-02 — Oslo quote date (P2.4): data-line correction, not a decision-logic change (staging run)
+
+- **Classification:** data-line correction. No threshold, rule or weight changed. It **also affects v1 inputs** (the paper's engine): the Oslo scan
+  cache gets `screening.quoteDate`/`benchmark.quotesAsOf`, and the API shows `priceDateBasis`. Measured effect on v1 output: see below (none for Equinor / Aker BP).
+- **How it was run (production untouched):** backup of `scan-cache/NO/EURONEXT_OSLO.json` (sha256 `1920e4b0…7337`) to
+  `~/biap-backups/oslo-cache-20261102T012550Z/`; copy in `~/biap-staging-oslo-20261102/`; `reprice_benchmark` (incremental refresh, Oslo only) run
+  from the fix-branch worktree with `BIAP_GLOBAL_DATA_DIR` pointing at the copy and `DECISION_LOGIC_VERSION=v2`. Result OK: 95 of 144 rows repriced
+  (49 have no price-dependent multiple), coverage 100 %, `quotesAsOf` 2026-10-30, `quoteDateBasisRetrieved` 0. The production file's hash was unchanged afterwards; no service or timer touched.
+- **Re-analysis** (stored company rows from the ledger, `_derive_metrics` onward, same code on all four runs; the v1/before run reproduces the stored 0.0433 / 0.5518 and −0.0004 / 0.5677):
+
+| Stock | Run | Peer benchmark | Comparison vote / conf | Score | Confidence | Call (Agent 8) |
+|---|---|---|---|---:|---:|---|
+| Equinor | v1, before | stale, abstains ("fewer than 3 peers") | 0 / 0.25 | 0.0433 | 0.5518 | HOLD_OR_WATCH (ACCEPT) |
+| Equinor | v1, after | **still stale** (quarterly window drops all 95 peers), abstains | 0 / 0.25 | 0.0433 | 0.5518 | HOLD_OR_WATCH (ACCEPT) |
+| Equinor | v2, before | not trusted: quote date missing, abstains | 0 / 0.25 | 0.0467 | 0.6144 | HOLD_OR_WATCH (ACCEPT) |
+| Equinor | v2, after | **valid**, 12 same-sector peers, sector P/E 18.01 | −0.465 / 0.455 | −0.0141 | 0.5844 | HOLD_OR_WATCH (ACCEPT) |
+| Aker BP | v1, before | stale, abstains | 0 / 0.25 | −0.0004 | 0.5677 | HOLD_OR_WATCH (ACCEPT) |
+| Aker BP | v1, after | still stale, abstains | 0 / 0.25 | −0.0004 | 0.5677 | HOLD_OR_WATCH (ACCEPT) |
+| Aker BP | v2, before | not trusted, abstains | 0 / 0.25 | −0.0004 | 0.6335 | HOLD_OR_WATCH (ACCEPT) |
+| Aker BP | v2, after | valid, sector P/E 18.01 | −0.5 / 0.455 | −0.0579 | 0.6003 | HOLD_OR_WATCH (ACCEPT) |
+
+- **Reading:** under v1 the data fix changes nothing for these two stocks, because v1 still discards every peer in the open quarterly window (P1.4 v2 is what
+  keeps them). Under v2 the benchmark becomes usable and the comparison agent votes. The v2 confidence difference between "before" columns and v1 comes from the graded
+  price freshness (an earlier v2 change), not from this fix. Aker BP's P/E of 179.8 (898 % premium) looks like the USD-reporting / NOK-price mismatch (plan P2.5) and should not
+  be trusted until P2.5 is done; Equinor's 22.2 may be affected too.
+- **Not recomputed:** the investment-mode tier (own peer logic, unchanged by P1.4/P2.4; stored tier HOLD for both on every snapshot day).
+
 ### 2026-11-02 — BLOCK count fell from 4,454 to 1,228 between 28 and 29 Oct (Phase 0)
 
 - Measured from `/var/lib/biap-global/daily-snapshots` (23:40Z snapshots, 12 markets): BLOCK 7,530 (27 Oct) → 4,454 (28 Oct)
