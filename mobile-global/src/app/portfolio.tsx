@@ -61,7 +61,7 @@ const AGENTS = ['fundamental', 'risk', 'forecast', 'comparison', 'quality', 'liq
 const MAX_INPUTS = 50;
 
 const n = (v: number | null | undefined, d = 2) =>
-  v == null || !Number.isFinite(Number(v)) ? '—' : Number(v).toLocaleString('en-US', { maximumFractionDigits: d });
+  v == null || !Number.isFinite(Number(v)) ? '—' : Number(v).toLocaleString('en-US', { maximumFractionDigits: d }).replace(/^-(0(?:\.0+)?)$/, '$1');
 const pc = (v: number | null | undefined) =>
   v == null || !Number.isFinite(Number(v)) ? '—' : `${Math.round(Number(v) * 100)}%`;
 const scopeKey = (m: Scope) => `${m.country}:${m.exchange}`;
@@ -546,8 +546,8 @@ export default function GlobalPortfolioScreen() {
                     <Text style={[s.marketLine, { color: market.coverage < 80 ? Brand.warning : colors.textSecondary }]}>Screened coverage {n(market.coverage, 1)}%{market.coverage < 80 ? ' • limited sample' : ''}</Text>
                     <Text style={[s.marketLine, { color: colors.textSecondary }]}>{market.rankingBlocked ? 'Ranking blocked (coverage/evidence gates not met)' : `Analyzed: ${market.qualified} qualified BUY${market.qualified === 1 ? '' : 's'}`} • Deep analyses {market.deep}</Text>
                     <Text style={[s.marketLine, { color: colors.textSecondary }]}>Average score {n(market.avgScore, 3)} • confidence {pc(market.avgConfidence)}</Text>
-                    <Text style={[s.marketLine, { color: colors.textSecondary }]}>Evidence {market.pass} pass • {market.warn} review • {market.block} blocked</Text>
-                    <Text style={[s.marketTop, { color: colors.text }]}>Highest-ranked in this scan ({market.rankCriterion || 'server order'}): {market.top}</Text>
+                    <Text style={[s.marketLine, { color: colors.textSecondary }]}>Data evidence gate: {market.pass} pass • {market.warn} review • {market.block} blocked</Text>
+                    <Text style={[s.marketTop, { color: colors.text }]}>Highest-ranked in this scan ({market.rankCriterion || 'server order'}): {market.top || 'none ranked (ranking not released, or no company meets the statement-completeness standard)'}</Text>
                   </>}
                 </View>
               ))}

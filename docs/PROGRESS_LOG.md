@@ -32,3 +32,8 @@
 - Pushed d17a968.
 - ECB file: backed up (sha256 prefix c8c7794c...), refreshed in place via `python -m global_markets.fx_history refresh` (prod venv, prod data dir); nothing restarted. History: no timer/cron existed (checked `systemctl list-timers`, user crontab, /etc/systemd, deploy scripts); the file came from one manual refresh on 2026-10-14. Timer unit pair written to `/home/ubuntu/claude-tmpdir/claude-1000/-home-ubuntu/a3d4cac7-9880-4554-a3f9-f76270cd2cd4/scratchpad/install-ecb-timer.sh`; **owner must run it with sudo** (`! sudo bash <that path>`). Changelog row written with the verified counts; the proposed wording "affected v1 inputs" was NOT used because the count shows none (0 of 537 conversion rows have a period end in the stale window).
 - Germany and P2.3: current rule stays (core cash-flow field required; BF key-data source has none; interim reports not read). Documented in `docs/P2_1_DE_STATEMENTS_DIAGNOSIS.md` and `docs/DATA_VENDOR_OPTIONS.md`. Waiting for the vendor choice.
+
+## 2026-11-02 (round 3, continued)
+- P1.1 closed (v2 evidence in changelog). P2.2: ESEF dividend/current-subtotal fallbacks + DE reviewed schema (tests: tests/test_p22_esef_current_dividend.py; 1943 pass). SAP reviewed values and index beta not done.
+- Phase 3: five wording/format fixes in mobile-global (tsc clean, test:api 26 pass).
+- P2.4 not started this round: its six items (isolated EU jobs, trading-calendar stamping for NASDAQ, official-close timestamps, analysis-stale flag, sync-derived dates, Global Top 10) each need production data/pipeline work; the per-market isolated runner already exists in /usr/local/bin/biap-global-price-refresh (one market per driver call). Next candidate: analysis-stale flag.

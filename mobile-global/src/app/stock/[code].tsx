@@ -11,7 +11,8 @@ import { dataLimitationLines, fundamentalFreshnessLines, governanceReasonLines }
 
 function n(value: number | null | undefined, digits = 2) {
   if (value == null || !Number.isFinite(Number(value))) return '—';
-  return Number(value).toLocaleString('en-US', { maximumFractionDigits: digits });
+  // "-0" / "-0.000" (a tiny negative rounded to zero) is shown as plain zero
+  return Number(value).toLocaleString('en-US', { maximumFractionDigits: digits }).replace(/^-(0(?:\.0+)?)$/, '$1');
 }
 
 function priceN(value: number | null | undefined) {
@@ -268,9 +269,9 @@ export default function GlobalStockDetailScreen() {
 
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Price Intelligence</Text>
-          <Text style={[styles.body, { color: colors.textSecondary }]}>{price == null ? 'A verified market price is unavailable. No price-based conclusion can be made.' : `Last observed price: ${priceN(price)} ${analysis.currency}. A low share price alone does not mean the company is undervalued.`}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary }]}>{price == null ? 'A verified market price is unavailable. No price-based conclusion can be made.' : `Last observed price: ${priceN(price)} ${analysis.currency}.${Number(price) < 10 ? ' A low share price alone does not mean the company is undervalued.' : ''}`}</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{analysis.score == null ? `${ENGINE_LABEL.conservative} score unavailable.` : `${ENGINE_LABEL.conservative} score ${n(analysis.score, 3)} (${analysis.score > 0 ? 'positive' : analysis.score < 0 ? 'negative' : 'neutral'}). `}{`Evidence ${analysis.evidence?.status || 'unavailable'} checks data quality, not whether the stock is a buy. Overall calibrated confidence ${analysis.confidence == null ? 'unavailable' : analysis.confidence.toFixed(3)}; current decision: ${analysis.investment ? tierLabel(analysis.investment.tier) : friendly(analysis.call)}.`}</Text>
-          <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{company?.pe != null && Number(company.pe) > 0 && company?.sector_pe != null && Number(company.sector_pe) > 0 ? `P/E ${n(company.pe)} versus peer benchmark ${n(company.sector_pe)} (${pct(dm.peVsSectorPct)} difference). This comparison alone is not a fair-value estimate.` : 'Peer-relative valuation: insufficient verified P/E and benchmark data.'}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{company?.pe != null && Number(company.pe) > 0 && company?.sector_pe != null && Number(company.sector_pe) > 0 ? `P/E ${n(company.pe)} versus peer benchmark ${n(company.sector_pe)} (${pct(dm.peVsSectorPct)} difference). This comparison alone is not a fair-value estimate.` : (company?.pe != null && Number(company.pe) > 0 ? 'Peer-relative valuation: peer benchmark unavailable.' : 'Peer-relative valuation: company P/E is not verified (peer benchmark unavailable).')}</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>Fair value / upside / downside: Insufficient Data — no verified valuation model estimate is available. Do not infer a price target from Kiasha score.</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{distress?.status ? `Financial distress assessment: ${friendly(distress.status)}. See Agent 9 for model inputs and limitations.` : 'Financial distress: insufficient verified inputs. See Agent 9 for details.'}</Text>
         </View>

@@ -77,6 +77,16 @@ _CONCEPTS = {
     "retained_earnings": ("ifrs-full:RetainedEarnings",),
     "current_assets": ("ifrs-full:CurrentAssets",),
     "current_liabilities": ("ifrs-full:CurrentLiabilities",),
+    # P2.2: subtotals that exclude a held-for-sale group (Equinor); used only when the plain total is absent AND no
+    # held-for-sale group is tagged for the period (otherwise the subtotal would not be the current total).
+    "current_assets_ex_hfs": ("ifrs-full:CurrentAssetsOtherThanAssetsOrDisposalGroupsClassifiedAsHeldForSaleOrAsHeldForDistributionToOwners",),
+    "current_liabilities_ex_hfs": ("ifrs-full:CurrentLiabilitiesOtherThanLiabilitiesIncludedInDisposalGroupsClassifiedAsHeldForSale",),
+    "hfs_assets": ("ifrs-full:NoncurrentAssetsOrDisposalGroupsClassifiedAsHeldForSaleOrAsHeldForDistributionToOwners",),
+    "hfs_liabilities": ("ifrs-full:LiabilitiesIncludedInDisposalGroupsClassifiedAsHeldForSale",),
+    "dividend_per_share_recognised": ("ifrs-full:DividendsRecognisedAsDistributionsToOwnersPerShare",),
+    "dividend_per_share_declared": (
+        "ifrs-full:DividendsProposedOrDeclaredBeforeFinancialStatementsAuthorisedForIssueButNotRecognisedAsDistributionToOwnersPerShare",
+    ),
     "cash": ("ifrs-full:CashAndCashEquivalents",),
     "ocf": ("ifrs-full:CashFlowsFromUsedInOperatingActivities",),
     # Pure D&A add-backs from the cash-flow statement (impairment-inclusive
@@ -1104,6 +1114,24 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         if eps is None and not self._duration_value(concept_facts["discontinued_profit"], period_end):
             eps = self._duration_value(concept_facts["eps_continuing"], period_end)
 
+        current_assets = self._instant_value(concept_facts["current_assets"], period_end)
+        current_assets_method = "direct_current_assets_tag" if current_assets is not None else None
+        if current_assets is None and not self._instant_value(concept_facts["hfs_assets"], period_end):
+            current_assets = self._instant_value(concept_facts["current_assets_ex_hfs"], period_end)
+            if current_assets is not None:
+                current_assets_method = "subtotal_other_than_held_for_sale_no_group_tagged"
+        current_liabilities = self._instant_value(concept_facts["current_liabilities"], period_end)
+        current_liabilities_method = "direct_current_liabilities_tag" if current_liabilities is not None else None
+        if current_liabilities is None and not self._instant_value(concept_facts["hfs_liabilities"], period_end):
+            current_liabilities = self._instant_value(concept_facts["current_liabilities_ex_hfs"], period_end)
+            if current_liabilities is not None:
+                current_liabilities_method = "subtotal_other_than_held_for_sale_no_group_tagged"
+        dps = self._duration_value(concept_facts["dividend_per_share_recognised"], period_end)
+        dps_basis = "recognised_in_year" if dps is not None else None
+        if dps is None:
+            dps = self._duration_value(concept_facts["dividend_per_share_declared"], period_end)
+            dps_basis = "declared_not_recognised" if dps is not None else None
+
         shares_outstanding = self._instant_value(concept_facts["shares_outstanding"], period_end)
         if shares_outstanding is not None and shares_outstanding <= 0:
             shares_outstanding = None
@@ -1136,8 +1164,8 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             "total_liabilities": total_liabilities,
             "total_equity": total_equity,
             "retained_earnings": retained_earnings,
-            "current_assets": self._instant_value(concept_facts["current_assets"], period_end),
-            "current_liabilities": self._instant_value(concept_facts["current_liabilities"], period_end),
+            "current_assets": current_assets,
+            "current_liabilities": current_liabilities,
             "cash_and_equivalents": self._instant_value(concept_facts["cash"], period_end),
             "operating_cash_flow": ocf,
             "free_cash_flow": fcf,
@@ -1147,7 +1175,11 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             # absent key (not None) when the filing carries no plain share count,
             # so an existing provider value is never overwritten with a gap
             **({"shares_outstanding": shares_outstanding} if shares_outstanding is not None else {}),
+            **({"dividend_per_share": dps} if dps is not None else {}),
             "__normalization_meta__": {
+                "current_assets_method": current_assets_method,
+                "current_liabilities_method": current_liabilities_method,
+                **({"dividend_per_share_basis": dps_basis} if dps_basis else {}),
                 **({"shares_outstanding_basis": shares_basis} if shares_basis else {}),
                 "field_status": self._field_status(
                     facts, period_end,
