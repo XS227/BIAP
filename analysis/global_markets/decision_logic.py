@@ -266,3 +266,15 @@ def comparison_only_review(review_reasons) -> bool:
     """True when every review reason of a BUY is about missing / too small comparison evidence (and there is at least one)."""
     reasons = [str(r) for r in (review_reasons or ())]
     return bool(reasons) and all(r.startswith(_COMPARISON_REVIEW_PREFIXES) for r in reasons)
+
+
+# --- P1.12-adjacent SELL gate (v2, investment mode): SELL needs the same evidence as BUY (mirror of P1.5) -----------------------------
+# Owner decision 2026-11-02: SELL needs decision confidence >= 0.45 and a comparison agent that voted with confidence >= 0.5;
+# otherwise the tier is REDUCE with the qualifier below. (BUY in the conservative engine uses the same 0.45 / 0.5 bars.)
+SELL_MIN_CONFIDENCE = 0.45
+SELL_MIN_COMPARISON_CONFIDENCE = 0.5
+SELL_UNVERIFIED_QUALIFIER = {
+    "qualifier": "NEGATIVE_RELATIVE_VALUATION_UNVERIFIED",
+    "label": "Negative; comparison with peers not confirmed",
+    "labelFa": "منفی، مقایسه با رقبا تأیید نشده",
+}

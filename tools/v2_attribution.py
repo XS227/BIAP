@@ -12,6 +12,7 @@ Fix groups (``decision_logic.is_v2()`` call sites, see CALLSITES; unknown call s
   graded  graded price freshness instead of steps                                 agents.py _freshness
   p14a    peer benchmark keeps discounted peers (factor, messages)                core_agents/freshness/service peer items
   p14b    linear comparison vote instead of step ladder                           core_agents.comparison_agent
+  sellgate SELL needs comparison confidence >= 0.5 and decision confidence >= 0.45 (else REDUCE)  investment_mode._decide_core
   other   P1.2 neutral gate, P1.5, P1.6, governance, decision table, portfolio ...
 ``--off`` lists groups reverted to v1 behaviour (leave-one-out); ``--on`` lists the only groups kept at v2 (add-one-in).
 ``--version v1`` is the pure v1 baseline. The production data dir is never written (assertion below).
@@ -31,12 +32,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "analysis"))
 
-GROUPS = ("p110", "p13", "graded", "p14a", "p14b", "other")
+GROUPS = ("p110", "p13", "graded", "p14a", "p14b", "sellgate", "other")
 # (file, line of the is_v2() call) -> group.  Pinned to the engine at the commit named in docs/V2_US_ATTRIBUTION.md.
 CALLSITES = {
     ("service.py", 78): "p110",
     ("agents.py", 273): "p13", ("investment_mode.py", 562): "p13",
     ("agents.py", 126): "graded",
+    ("investment_mode.py", 598): "sellgate",
     ("core_agents.py", 335): "p14b",
     ("core_agents.py", 328): "p14a", ("core_agents.py", 349): "p14a", ("freshness.py", 153): "p14a",
     ("service.py", 598): "p14a", ("service.py", 726): "p14a",
@@ -130,7 +132,11 @@ def main() -> int:
         view = ov.market_view(cc, ex)
         tiers = {k: v.get("tier") for k, v in view.items()}
         result["markets"][f"{cc}:{ex}"] = {"replayed": len(rows) - err, "errors": err,
-                                           "tierCounts": ov.tier_counts(view), "tiers": tiers}
+                                           "tierCounts": ov.tier_counts(view), "tiers": tiers,
+                                           "sellGateFlags": dict(collections.Counter(
+                                               f for v in view.values() for f in v.get("flags", ())
+                                               if f in ("negative_comparison_unverified", "sell_low_confidence"))),
+                                           "peerScope": dict(collections.Counter(v.get("peerScope") for v in view.values()))}
         print(f"{args.name} {cc}:{ex} replayed={len(rows)-err} err={err} {ov.tier_counts(view)}", flush=True)
     result["unknownCallsites"] = dict(unknown)
     Path(args.out).write_text(json.dumps(result))

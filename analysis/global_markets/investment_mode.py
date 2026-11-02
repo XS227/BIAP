@@ -595,6 +595,15 @@ def _decide_core(
                 tier = "REDUCE"
             elif tier == "BUY" and (soft or "risk_cap" in flags):
                 tier = "ACCUMULATE"
+            if tier == "SELL" and decision_logic.is_v2():
+                # v2 SELL gate: SELL needs the evidence a BUY needs (comparison agent voted with confidence >= 0.5, decision confidence >= 0.45);
+                # otherwise REDUCE with a label (mirror of P1.5). The direction (negative) is kept, only the strength of the call is capped.
+                if signals.get("comparison", (0.0, 0.0))[1] < decision_logic.SELL_MIN_COMPARISON_CONFIDENCE:
+                    flags.append("negative_comparison_unverified")
+                    tier = "REDUCE"
+                elif confidence < decision_logic.SELL_MIN_CONFIDENCE:
+                    flags.append("sell_low_confidence")
+                    tier = "REDUCE"
             if c.positive_block and tier in ("BUY", "ACCUMULATE"):
                 decisions[key] = _blocked(key, "distress positive_block", n, scope, tuple(flags))
                 continue

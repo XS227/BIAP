@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from threading import Lock
 from typing import Any, Dict, Optional
 
+from . import decision_logic
 from . import investment_mode as im
 from .analysis_ledger import AnalysisLedger, ledger_path
 
@@ -74,6 +75,8 @@ def payload(decision: im.InvestmentDecision) -> dict:
         "blockedBy": decision.blocked_by,
         "disclaimer": DISCLAIMER,
     }
+    if "negative_comparison_unverified" in decision.flags:
+        out["qualifier"] = dict(decision_logic.SELL_UNVERIFIED_QUALIFIER)      # v2: REDUCE instead of SELL, labelled
     if "insufficient_evidence" in decision.flags or decision.blocked_by:
         out["insufficientEvidence"] = True
         out["notice"] = INSUFFICIENT_NOTICE
