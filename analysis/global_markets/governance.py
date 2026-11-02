@@ -144,6 +144,19 @@ def decision_governance_agent(
             reasoning=f"Accepted draft decision at calibrated confidence {decision_logic.fmt_conf(conf, accept_threshold)}.",
         )
 
+    if decision_logic.is_v2() and proposed_call == "HOLD_OR_WATCH":
+        # v2 (P1.2): confidence gates only active calls (BUY / AVOID). A neutral HOLD is accepted at any confidence; evidence BLOCK
+        # and WARN, scope blocks and agent contradictions were handled above and still apply. The low confidence stays on the record.
+        return GovernanceAssessment(
+            action="ACCEPT",
+            final_call=proposed_call,
+            accepted=True,
+            escalated=False,
+            abstained=False,
+            reasoning=(f"Accepted neutral HOLD_OR_WATCH at calibrated confidence {decision_logic.fmt_conf(conf, accept_threshold)}: "
+                       "confidence gates only active calls (BUY / AVOID), not a neutral call."),
+        )
+
     if conf >= escalate_threshold:
         reviews.append(
             f"calibrated confidence {decision_logic.fmt_conf(conf, accept_threshold)} below accept threshold {decision_logic.fmt_threshold(accept_threshold)}"

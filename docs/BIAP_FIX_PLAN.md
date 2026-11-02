@@ -30,7 +30,7 @@ Evidence: Norway's data is healthy (only 23 of 134 rejected at the ranking stand
   - Compare unrounded values with a consistent operator.
   - Display 3 decimals. *(Done 2026-11-02: 3-decimal confidence in messages (v2) and in the app; the comparison itself was already on unrounded values, see `docs/reference_NO_before.md`.)*
   - Many Norwegian stocks sit at 0.50–0.57 confidence, so this likely explains a large share of the 94 NO_RECs.
-- [ ] **P1.2 Do not confidence-gate neutral calls.** Low confidence should block only active calls (BUY/SELL). Score ≈ 0 must still map to HOLD (example: Equinor at 0.043 → HOLD, not NO_REC).
+- [x] **P1.2 Do not confidence-gate neutral calls** *(v2, 2026-11-02; awaiting owner approval)*. Low confidence should block only active calls (BUY/SELL). Score ≈ 0 must still map to HOLD (example: Equinor at 0.043 → HOLD, not NO_REC).
 - [x] **P1.3 Agent 8 disagreement rule** *(v2, 2026-11-02: same-dimension rule implemented behind `DECISION_LOGIC_VERSION=v2`; the reviewer workflow for REVIEW is still open)*. SAP was escalated to REVIEW for "high-confidence disagreement": Quality +1 vs Risk −0.5. These agents measure different dimensions, and a quality company can also be volatile.
   - Fire the rule only between agents on the *same* dimension (e.g. Fundamental vs Forecast direction), or only when the signed contributions straddle a decision boundary.
   - REVIEW must have a real reviewer workflow. Otherwise stocks stay stuck forever.

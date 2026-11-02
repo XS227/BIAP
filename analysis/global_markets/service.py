@@ -651,8 +651,11 @@ def _call(
 ) -> str:
     # New BUY candidates are held to the strictest evidence state. WARN can
     # still show analysis, but cannot be promoted into a fresh buy idea.
-    if evidence_status == "BLOCK" or confidence < 0.35:
+    if evidence_status == "BLOCK":
         return "NO_RECOMMENDATION"
+    if confidence < 0.35:
+        # v2 (P1.2): low confidence blocks only active calls. A score inside (-0.25, 0.25) is a neutral HOLD whatever the confidence.
+        return "HOLD_OR_WATCH" if decision_logic.is_v2() and abs(score) < 0.25 else "NO_RECOMMENDATION"
     if score >= 0.25 and confidence >= 0.45 and evidence_status == "PASS":
         if distress is not None and distress.positive_block:
             return "NO_RECOMMENDATION"

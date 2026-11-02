@@ -228,6 +228,7 @@ def test_v2_never_prints_a_value_below_the_threshold_as_equal_to_it(monkeypatch)
     assert shown != dl.fmt_threshold(0.55) and float(shown) < 0.55
 
 
+# P1.2: a neutral HOLD is no longer confidence-gated in v2, so the "below accept threshold" message is exercised with an active call.
 def test_governance_message_shows_the_real_number_in_v2(monkeypatch):
     from global_markets.governance import decision_governance_agent
     from global_markets.models import DistressAssessment, EvidenceAssessment
@@ -236,7 +237,7 @@ def test_governance_message_shows_the_real_number_in_v2(monkeypatch):
     dist = DistressAssessment(status="LOW_RISK", positive_block=False)
 
     def msg():
-        return decision_governance_agent(proposed_call="HOLD_OR_WATCH", score=0.0, overall_confidence=0.54996, decision_confidence=0.6,
+        return decision_governance_agent(proposed_call="BUY_CANDIDATE", score=0.4, overall_confidence=0.54996, decision_confidence=0.6,
                                          evidence=ev, distress=dist).reasoning
 
     assert "0.55 below accept threshold 0.55" in msg()                       # v1: the confusing message, documented
