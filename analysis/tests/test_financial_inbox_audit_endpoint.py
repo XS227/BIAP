@@ -65,3 +65,13 @@ def test_no_verified_exports_is_503(monkeypatch):
     with pytest.raises(HTTPException) as exc:
         api_server.financial_inbox_audit("پکرمان", "test-user")
     assert exc.value.status_code == 503
+
+
+def test_unreadable_inbox_is_503_not_false_symbol_miss(monkeypatch):
+    class UnreadableInbox(StubInbox):
+        def record(self, symbol):
+            raise InboxError("verified Liara report index unreadable")
+    monkeypatch.setattr(api_server, "current_codal_inbox", UnreadableInbox)
+    with pytest.raises(HTTPException) as exc:
+        api_server.financial_inbox_audit("پکرمان", "test-user")
+    assert exc.value.status_code == 503

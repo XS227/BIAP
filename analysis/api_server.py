@@ -17,7 +17,7 @@ from audit_store import AuditStore
 from auth import require_approver, require_user_id
 from business_dataset_store import delete_dataset, get_dataset, save_dataset
 from codal_data import base_url as codal_base_url
-from codal_inbox import InboxError, current as current_codal_inbox
+from codal_inbox import MISS_MARKER, InboxError, current as current_codal_inbox
 from financial_inbox_audit import audit_symbol
 from company_builder import availability, build_company_from_quote, build_company_from_symbol
 from data_sample import SAMPLE_COMPANY
@@ -200,7 +200,9 @@ def financial_inbox_audit(symbol: str, _user_id: str = Depends(require_user_id))
         company = audit_symbol(inbox, symbol)
     except InboxError as exc:
         # Never fall back to direct CODAL or a fabricated financial statement.
-        status = 503 if "not set" in str(exc) else 404
+        # Only a verified symbol/report miss is a 404. A corrupt or unreadable
+        # inbox is a service failure, not evidence that the company is absent.
+        status = 404 if str(exc).startswith(MISS_MARKER) else 503
         raise HTTPException(status_code=status, detail="Verified Liara inbox unavailable for this symbol") from exc
     return {
         "source": "verified_liara_codal_inbox_only",
