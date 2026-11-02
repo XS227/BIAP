@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Optional
 
 from .models import DistressAssessment, EvidenceAssessment, GovernanceAssessment
+from . import decision_logic
 
 
 MIN_BUY_PEER_GROUP = 8
@@ -140,12 +141,12 @@ def decision_governance_agent(
             accepted=True,
             escalated=False,
             abstained=False,
-            reasoning=f"Accepted draft decision at calibrated confidence {conf:.2f}.",
+            reasoning=f"Accepted draft decision at calibrated confidence {decision_logic.fmt_conf(conf, accept_threshold)}.",
         )
 
     if conf >= escalate_threshold:
         reviews.append(
-            f"calibrated confidence {conf:.2f} below accept threshold {accept_threshold:.2f}"
+            f"calibrated confidence {decision_logic.fmt_conf(conf, accept_threshold)} below accept threshold {decision_logic.fmt_threshold(accept_threshold)}"
         )
         if evidence.status == "WARN":
             reviews.append("evidence gate returned WARN")
@@ -172,7 +173,7 @@ def decision_governance_agent(
         abstained=True,
         hard_blocks=(),
         review_reasons=(
-            f"calibrated confidence {conf:.2f} below escalation threshold {escalate_threshold:.2f}",
+            f"calibrated confidence {decision_logic.fmt_conf(conf, escalate_threshold)} below escalation threshold {decision_logic.fmt_threshold(escalate_threshold)}",
         ),
-        reasoning=f"Abstained: calibrated confidence {conf:.2f} too low to act on.",
+        reasoning=f"Abstained: calibrated confidence {decision_logic.fmt_conf(conf, escalate_threshold)} too low to act on.",
     )

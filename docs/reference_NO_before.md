@@ -122,3 +122,13 @@ side of the title) appears only as the stored `conservativeCall` and in the clas
 in the repository; this reading is from the Chapter 4 draft only, so please confirm that the paper text matches. Any change to P1.x logic in the
 **investment** mode changes what the paper measures (protocol deviation); changes limited to the conservative engine do not alter the frozen paper portfolio
 but do alter what users see.
+
+## 6. Addendum 2026-11-02: Equinor ESEF package inspected (public download, temp folder, read-only, deleted afterwards)
+
+Package: `oam_package_url` of the stored row (Oslo NewsWeb, `eqnr-2025-12-31-1-nb.xhtml`, 25 MB zip / 65 MB report).
+Concept names found with `grep` over the inline-XBRL facts:
+
+- Current assets: **no** `ifrs-full:CurrentAssets`. Present: `ifrs-full:CurrentAssetsOtherThanAssetsOrDisposalGroupsClassifiedAsHeldForSaleOrAsHeldForDistributionToOwners` (3 facts, contexts c-4/c-5/c-6, USD millions: 38,034 / 45,967 / 60,990). I did not map the context ids to dates, so which of them is 2025-12-31 is not verified.
+- Current liabilities: **no** `ifrs-full:CurrentLiabilities`. Present: `ifrs-full:CurrentLiabilitiesOtherThanLiabilitiesIncludedInDisposalGroupsClassifiedAsHeldForSale` (3 facts: 30,601 / 35,023 / 35,719).
+- Dividend per share: present as `ifrs-full:DividendsRecognisedAsDistributionsToOwnersPerShare` (2 facts: 1.48 and 2.80 USD) and `ifrs-full:DividendsProposedOrDeclaredBeforeFinancialStatementsAuthorisedForIssueButNotRecognisedAsDistributionToOwnersPerShare` (0.39 USD). Also `ifrs-full:DividendsPaid` (9 facts).
+- This confirms the inference in §3: the missing current items are a tagging difference (subtotal concept names), not absent data; dividend data exists but nothing in `esef.py` reads it.

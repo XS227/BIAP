@@ -213,9 +213,9 @@ export default function GlobalStockDetailScreen() {
 
   const decisionRows = useMemo(() => [
     ...(analysis?.investment ? [['Investment tier', tierLabel(analysis.investment.tier)], ['Conservative rule (reference)', friendly(analysis?.call)]] : [['Kiasha call', friendly(analysis?.call)]]),
-    ['Decision confidence', analysis?.decisionConfidence == null ? (analysis?.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`) : `${Math.round(analysis.decisionConfidence * 100)}%`],
-    ['Evidence confidence', analysis?.evidenceConfidence == null ? '—' : `${Math.round(analysis.evidenceConfidence * 100)}%`],
-    ['Overall calibrated', analysis?.overallCalibratedConfidence == null ? (analysis?.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`) : `${Math.round(analysis.overallCalibratedConfidence * 100)}%`],
+    ['Decision confidence', analysis?.decisionConfidence == null ? (analysis?.confidence == null ? '—' : `${analysis.confidence.toFixed(3)}`) : `${analysis.decisionConfidence.toFixed(3)}`],
+    ['Evidence confidence', analysis?.evidenceConfidence == null ? '—' : `${analysis.evidenceConfidence.toFixed(3)}`],
+    ['Overall calibrated', analysis?.overallCalibratedConfidence == null ? (analysis?.confidence == null ? '—' : `${analysis.confidence.toFixed(3)}`) : `${analysis.overallCalibratedConfidence.toFixed(3)}`],
     ['Short-term outlook', friendly(decision?.shortTermOutlook)],
     ['Long-term outlook', friendly(decision?.longTermOutlook)],
     ['Momentum', friendly(decision?.momentum)],
@@ -260,13 +260,13 @@ export default function GlobalStockDetailScreen() {
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Price Intelligence</Text>
           <Text style={[styles.body, { color: colors.textSecondary }]}>{price == null ? 'A verified market price is unavailable. No price-based conclusion can be made.' : `Last observed price: ${priceN(price)} ${analysis.currency}. A low share price alone does not mean the company is undervalued.`}</Text>
-          <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{analysis.score == null ? `${ENGINE_LABEL.conservative} score unavailable.` : `${ENGINE_LABEL.conservative} score ${n(analysis.score, 3)} (${analysis.score > 0 ? 'positive' : analysis.score < 0 ? 'negative' : 'neutral'}). `}{`Evidence ${analysis.evidence?.status || 'unavailable'} checks data quality, not whether the stock is a buy. Overall calibrated confidence ${analysis.confidence == null ? 'unavailable' : Math.round(analysis.confidence * 100) + '%'}; current decision: ${analysis.investment ? tierLabel(analysis.investment.tier) : friendly(analysis.call)}.`}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{analysis.score == null ? `${ENGINE_LABEL.conservative} score unavailable.` : `${ENGINE_LABEL.conservative} score ${n(analysis.score, 3)} (${analysis.score > 0 ? 'positive' : analysis.score < 0 ? 'negative' : 'neutral'}). `}{`Evidence ${analysis.evidence?.status || 'unavailable'} checks data quality, not whether the stock is a buy. Overall calibrated confidence ${analysis.confidence == null ? 'unavailable' : analysis.confidence.toFixed(3)}; current decision: ${analysis.investment ? tierLabel(analysis.investment.tier) : friendly(analysis.call)}.`}</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{company?.pe != null && Number(company.pe) > 0 && company?.sector_pe != null && Number(company.sector_pe) > 0 ? `P/E ${n(company.pe)} versus peer benchmark ${n(company.sector_pe)} (${pct(dm.peVsSectorPct)} difference). This comparison alone is not a fair-value estimate.` : 'Peer-relative valuation: insufficient verified P/E and benchmark data.'}</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>Fair value / upside / downside: Insufficient Data — no verified valuation model estimate is available. Do not infer a price target from Kiasha score.</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{distress?.status ? `Financial distress assessment: ${friendly(distress.status)}. See Agent 9 for model inputs and limitations.` : 'Financial distress: insufficient verified inputs. See Agent 9 for details.'}</Text>
         </View>
 
-        <View style={styles.metrics}><Metric label="Conservative score" value={analysis.score == null ? '—' : n(analysis.score, 3)} colors={colors}/><Metric label="Overall calibrated" value={analysis.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`} colors={colors}/><Metric label="Evidence" value={analysis.evidence?.status || '—'} colors={colors}/></View>
+        <View style={styles.metrics}><Metric label="Conservative score" value={analysis.score == null ? '—' : n(analysis.score, 3)} colors={colors}/><Metric label="Overall calibrated" value={analysis.confidence == null ? '—' : `${analysis.confidence.toFixed(3)}`} colors={colors}/><Metric label="Evidence" value={analysis.evidence?.status || '—'} colors={colors}/></View>
 
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Kiasha decision</Text><Text style={[styles.body, { color: colors.textSecondary }]}>Kiasha combines the six scoring agent signals after provider normalization, then applies the Evidence/Verification gate. Evidence PASS means the data is sufficiently verified; it is not itself a BUY signal. A new BUY candidate also needs a positive score and enough decision confidence.</Text></View>
 

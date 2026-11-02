@@ -11,15 +11,15 @@ test('SAP: each engine line carries its own decision, 3-decimal score and confid
     conservative: { call: 'NO_RECOMMENDATION', score: 0.191, confidence: 0.606933 },
   });
   assert.deepEqual(lines, [
-    'Investment ranking: ACCUMULATE · score 0.213 · confidence 67% · rank 39',
-    'Conservative check: No Recommendation · score 0.191 · confidence 61% (fresh analysis)',
+    'Investment ranking: ACCUMULATE · score 0.213 · confidence 0.672 · rank 39',
+    'Conservative check: No Recommendation · score 0.191 · confidence 0.607 (fresh analysis)',
   ]);
 });
 
 test('without a ranking only the conservative line is shown', () => {
   const lines = engineScoreLines({ displayed: 'conservative', investment: null, conservative: { call: 'HOLD_OR_WATCH', score: -0.000401, confidence: 0.567667 } });
   assert.equal(lines.length, 1);
-  assert.match(lines[0], /^Conservative check: Hold Or Watch · score -0\.000 · confidence 57%/);
+  assert.match(lines[0], /^Conservative check: Hold Or Watch · score -0\.000 · confidence 0.568/);
 });
 
 test('missing numbers render as a dash and old servers without engines give no lines', () => {

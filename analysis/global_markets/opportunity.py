@@ -19,6 +19,7 @@ INSUFFICIENT_DATA investment state.
 from __future__ import annotations
 
 from typing import Optional
+from . import decision_logic
 
 BUY = "BUY"
 WATCH = "WATCH"
@@ -76,11 +77,11 @@ def abstention_reasons(governance: dict, evidence: dict, distress: dict, *, prel
                         "detail": "Agent 9 reports elevated independent distress risk"})
     if preliminary_call == "HOLD_OR_WATCH" and not reasons:
         reasons.append({"code": "NON_DIRECTIONAL_BELOW_ACCEPT_THRESHOLD", "kind": GOVERNANCE,
-                        "detail": f"Draft call HOLD_OR_WATCH is non-actionable; confidence {confidence:.2f} is below the "
+                        "detail": f"Draft call HOLD_OR_WATCH is non-actionable; confidence {decision_logic.fmt_conf(confidence, 0.55)} is below the "
                                   "0.55 accept threshold so Agent 8 reports NO_RECOMMENDATION"})
     elif confidence < 0.55 and not any(r["code"] == "HARD_BLOCK" for r in reasons):
         reasons.append({"code": "LOW_CONFIDENCE", "kind": GOVERNANCE,
-                        "detail": f"Calibrated confidence {confidence:.2f} is below the 0.55 accept threshold"})
+                        "detail": f"Calibrated confidence {decision_logic.fmt_conf(confidence, 0.55)} is below the 0.55 accept threshold"})
     if not reasons:
         reasons.append({"code": "GOVERNANCE_ABSTAIN", "kind": GOVERNANCE,
                         "detail": str(governance.get("reasoning") or "Agent 8 abstained")})

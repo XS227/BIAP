@@ -104,7 +104,8 @@ function fixed(value: number | null | undefined, digits: number) {
   return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '—';
 }
 function percent(value: number | null | undefined) {
-  return typeof value === 'number' && Number.isFinite(value) ? `${Math.round(value * 100)}%` : '—';
+  // Three decimals, not a rounded percentage: "55%" can hide 0.5496 (below the 0.55 accept threshold).
+  return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(3) : '—';
 }
 function callText(call: string | null | undefined) {
   return call ? call.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '—';

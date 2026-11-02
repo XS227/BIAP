@@ -123,6 +123,8 @@ def _freshness(company: GlobalCompany, *, now: Optional[datetime] = None) -> tup
         return 0.25, None
     now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     age_days = max(0.0, (now - observed).total_seconds() / 86400.0)
+    if decision_logic.is_v2():
+        return decision_logic.graded_price_freshness(age_days), age_days
     if age_days <= 3:
         return 1.0, age_days
     if age_days <= 7:

@@ -150,3 +150,38 @@ def disagreement_v2(signals) -> list:
         f"high-confidence disagreement ({dimension}): positive={','.join(sorted(pos))} negative={','.join(sorted(neg))}"
         for dimension, (pos, neg) in sorted(groups.items()) if pos and neg
     ]
+
+
+# --- P1.7/P1.1 display (v2): confidence is shown with 3 decimals, more when rounding would hide the comparison -------------
+def fmt_conf(value: float, reference: Optional[float] = None) -> str:
+    """v1: 2 decimals (unchanged). v2: 3 decimals, and enough extra decimals that a value below ``reference`` never prints
+    as equal to it ("0.55 below 0.55" was a display-rounding artefact, see docs/reference_NO_before.md)."""
+    if not is_v2():
+        return f"{value:.2f}"
+    digits = 3
+    if reference is not None and value != reference:
+        while digits < 6 and f"{value:.{digits}f}" == f"{reference:.{digits}f}":
+            digits += 1
+    return f"{value:.{digits}f}"
+
+
+def fmt_threshold(value: float) -> str:
+    return f"{value:.3f}" if is_v2() else f"{value:.2f}"
+
+
+# --- graded (not stepped) price freshness (v2) -----------------------------------------------------------------------------
+# v1 (agents._freshness): age <= 3 d -> 1.0, <= 7 d -> 0.65, <= 30 d -> 0.25, else 0.05. A price that turns 3.01 days old
+# costs 0.35 of freshness at once, i.e. 0.105 of the evidence multiplier (Equinor: confidence 0.552 -> 0.49). v2 keeps the
+# same values at the old anchors and interpolates linearly between them. The separate hard gate (price older than 7 days
+# = ``fresh_price`` missing = Evidence BLOCK) is NOT changed.
+PRICE_FRESHNESS_ANCHORS = ((3.0, 1.0), (7.0, 0.65), (30.0, 0.25), (90.0, 0.05))
+
+
+def graded_price_freshness(age_days: float) -> float:
+    anchors = PRICE_FRESHNESS_ANCHORS
+    if age_days <= anchors[0][0]:
+        return anchors[0][1]
+    for (x0, y0), (x1, y1) in zip(anchors, anchors[1:]):
+        if age_days <= x1:
+            return y0 + (y1 - y0) * (age_days - x0) / (x1 - x0)
+    return anchors[-1][1]

@@ -160,3 +160,85 @@ def test_v2_disagreement_flows_through_evidence_agent_and_governance(monkeypatch
     ev2, gov2 = run()
     assert ev2.contradictions == () or list(ev2.contradictions) == []
     assert gov2.final_call == "HOLD_OR_WATCH" and gov2.accepted
+
+
+# ---- graded price freshness and 3-decimal confidence ------------------------------------------------------------------------
+
+from datetime import datetime, timedelta, timezone
+
+from global_markets import agents
+from global_markets.models import GlobalCompany
+
+_NOW = datetime(2026, 11, 2, 12, 0, tzinfo=timezone.utc)
+
+
+def _age(days):
+    c = GlobalCompany(country="NO", exchange="EURONEXT_OSLO", ticker="EQNR", name="Equinor", currency="NOK",
+                      price_observed_at=(_NOW - timedelta(days=days)).isoformat())
+    return agents._freshness(c, now=_NOW)[0]
+
+
+@pytest.mark.parametrize("days,expected", [(0, 1.0), (3, 1.0), (3.01, 0.65), (7, 0.65), (7.01, 0.25), (30, 0.25), (30.01, 0.05), (400, 0.05)])
+def test_v1_price_freshness_is_a_step_function(days, expected):
+    assert _age(days) == expected
+
+
+def test_v1_step_cliff_costs_equinor_its_accept_decision():
+    """Documented v1 cliff: at 3.01 days the multiplier falls by 0.105 and Equinor's confidence from 0.552 to ~0.49."""
+    stored = STOCKS["EQNR"]
+    dc, mult = stored["stored"]["decisionConfidence"], stored["evidence"]["confidence_multiplier"]
+    cliff = mult - 0.30 * (1.0 - 0.65)
+    assert dc * mult >= 0.55 > dc * cliff and dc * cliff == pytest.approx(0.4915, abs=1e-3)
+
+
+def test_v2_price_freshness_is_continuous_and_matches_v1_at_the_anchors(monkeypatch):
+    monkeypatch.setenv("DECISION_LOGIC_VERSION", "v2")
+    for days, expected in [(0, 1.0), (3, 1.0), (7, 0.65), (30, 0.25), (90, 0.05), (400, 0.05)]:
+        assert _age(days) == pytest.approx(expected)
+    assert _age(3.01) == pytest.approx(1.0, abs=0.001)           # no cliff
+    assert _age(5) == pytest.approx(0.825)
+    previous = 1.0
+    for tenth in range(0, 1200):
+        value = _age(tenth / 10)
+        assert value <= previous + 1e-12                        # monotone
+        assert abs(value - previous) < 0.02                      # no step larger than 0.02 per 0.1 day
+        previous = value
+
+
+def test_v2_does_not_change_the_hard_price_gate(monkeypatch):
+    monkeypatch.setenv("DECISION_LOGIC_VERSION", "v2")
+    from global_markets.agents import evidence_agent
+    c = GlobalCompany(country="NO", exchange="EURONEXT_OSLO", ticker="EQNR", name="Equinor", currency="NOK", price=447.5,
+                      price_observed_at=(_NOW - timedelta(days=7.5)).isoformat(), revenue=1.0, net_income=1.0, total_assets=1.0,
+                      total_liabilities=1.0, total_equity=1.0, filing_period_end="2025-12-31")
+    assert "fresh_price" in evidence_agent(c, [], now=_NOW).missing_critical
+
+
+def test_confidence_display_v1_two_decimals_v2_three(monkeypatch):
+    assert dl.fmt_conf(0.551766, 0.55) == "0.55" and dl.fmt_threshold(0.55) == "0.55"
+    monkeypatch.setenv("DECISION_LOGIC_VERSION", "v2")
+    assert dl.fmt_conf(0.551766, 0.55) == "0.552" and dl.fmt_threshold(0.55) == "0.550"
+
+
+def test_v2_never_prints_a_value_below_the_threshold_as_equal_to_it(monkeypatch):
+    monkeypatch.setenv("DECISION_LOGIC_VERSION", "v2")
+    assert dl.fmt_conf(0.54996, 0.55) == "0.54996"
+    assert dl.fmt_conf(0.5496, 0.55) == "0.5496"
+    shown = dl.fmt_conf(0.5496, 0.55)
+    assert shown != dl.fmt_threshold(0.55) and float(shown) < 0.55
+
+
+def test_governance_message_shows_the_real_number_in_v2(monkeypatch):
+    from global_markets.governance import decision_governance_agent
+    from global_markets.models import DistressAssessment, EvidenceAssessment
+    ev = EvidenceAssessment(status="PASS", confidence_multiplier=1.0, coverage=1.0, freshness_score=1.0, contradictions=(),
+                            missing_critical=(), source_quality_score=1.0, provenance_status="x", audit_status="x", reasoning="")
+    dist = DistressAssessment(status="LOW_RISK", positive_block=False)
+
+    def msg():
+        return decision_governance_agent(proposed_call="HOLD_OR_WATCH", score=0.0, overall_confidence=0.54996, decision_confidence=0.6,
+                                         evidence=ev, distress=dist).reasoning
+
+    assert "0.55 below accept threshold 0.55" in msg()                       # v1: the confusing message, documented
+    monkeypatch.setenv("DECISION_LOGIC_VERSION", "v2")
+    assert "0.54996 below accept threshold 0.550" in msg()
