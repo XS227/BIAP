@@ -1,6 +1,6 @@
 # Decision-logic changelog (protocol deviations from OSF osf.io/6p8y7)
 
-Every change to gates, thresholds, weights or the decision flow made after the OSF registration (2026-10-22) is
+Every change to gates, thresholds, weights or the decision flow made after the OSF registration (2026-10-23) is
 recorded here with date, reason, files and whether it is a **protocol deviation**. Data-source or refresh changes
 that do not alter a gate or threshold are listed separately as "not a deviation" with the reasoning, so the
 paper can show the difference.
@@ -45,10 +45,10 @@ Setting: `DECISION_LOGIC_VERSION` (`v1` default, `v2` opt-in; unknown values mea
 ### 2026-11-02 — Currency review (P2.5), read-only: no calculation error; paper limitation recorded
 
 - Across the 34 ledgers (latest analysis per stock): 565 stocks report in a currency different from the price currency; 445 are converted with
-  date-aligned ECB rates (live since 2026-10-14, `b790055`, i.e. before the paper period of 22 Oct), 17 have no verifiable rate (P/E and per-share ratios withheld),
+  date-aligned ECB rates (live since 2026-10-14, `b790055`, i.e. before the paper test period, 23 Oct – 19 Nov 2026), 17 have no verifiable rate (P/E and per-share ratios withheld),
   103 have no P/E for other reasons. **No stock carries a P/E computed across mismatched currencies.** Peer medians are built from peers converted by the same code.
   Only the currency *label* in the fundamentals table / EPS is open (plan P2.5).
-- **Paper limitation (Limitations section of the paper):** 36 stock-days with an investment-mode BUY or SELL tier during the paper period (22 Oct – 1 Nov, 11 daily snapshots)
+- **Paper limitation (Limitations section of the paper):** 33 stock-days (2 BUY + 1 SELL on 23–26 Oct, 1 SELL on 27 Oct, none on 28 Oct, 3 BUY + 2 SELL on each of 29 Oct – 1 Nov) with an investment-mode BUY or SELL tier during the paper test period so far (23 Oct – 1 Nov, 10 daily snapshots; the period runs to 19 Nov, so the count is still open). Earlier wording counted 36 stock-days over 22 Oct – 1 Nov; the 22 Oct snapshot is outside the prospective period and is no longer counted
   were issued without a P/E because no ECB reference rate exists for the reporting currency (GEL, PEN, TWD, KES, NGN, ARS, KRW, MXN; one CAD case without a fixing),
   on 17 tickers in GB:LSE, US:NYSE and US:NASDAQ (examples SEPL, TSM, CHT, AUNA, TEO). The conservative v1 call for these was NO_RECOMMENDATION (one AVOID_OR_REVIEW),
   i.e. fail-closed. The count is an estimate: the ledger keeps only the latest analysis, so earlier days may have had a different FX state.

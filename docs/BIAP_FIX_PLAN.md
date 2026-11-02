@@ -17,7 +17,7 @@ Current markets: US, UK, IT, SE, NO, DE, FR, NL, FI, ES (+ DK, PT being added).
 
 - [~] **Finish PR #74 first.** *(2026-11-02: reviewed, all tests pass, mergeable; NOT merged, awaiting owner approval)* ChatGPT is working on branch `feat/mobile-checkpoint-staging-20261101` (PR #74: per-market broker selection, Checkpoint 1). Merge or close it before starting, so the two tools don't conflict on the same code.
 - [x] Work on a new branch (`fix/biap-fix-plan-20261102`). Write a short changelog entry for every change to the decision logic.
-- [~] **OSF protocol (osf.io/6p8y7, registered 22 Oct 2026).** Any change to gates or thresholds made after 22 Oct must be logged as a *protocol deviation*, with date and reason. This is required for the "From Abstention to Action" paper.
+- [~] **OSF protocol (osf.io/6p8y7, registered 23 Oct 2026; paper test period 23 Oct – 19 Nov 2026).** Any change to gates or thresholds made after 23 Oct must be logged as a *protocol deviation*, with date and reason. This is required for the "From Abstention to Action" paper.
 - [x] **Explain the BLOCK drop.** *(2026-11-02: cause = first full price-refresh run, not a gate change; see docs/CHANGELOG_DECISION_LOGIC.md)* BLOCK fell from ~4,750 to ~1,228 between 28 and 29 Oct. Find the cause and document it. If it came from a code or gate change, it is a protocol deviation (see previous item).
 
 ---

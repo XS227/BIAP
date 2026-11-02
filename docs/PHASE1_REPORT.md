@@ -130,7 +130,7 @@ Not behind v2 (all versions)
 
 **Facts this plan rests on** (checked 2026-11-02): production runs from `/home/ubuntu/biap-global/BIAP` on `main` (`6c8ada1`), `biap-global.service` + `biap-global-analysis-worker.service`, data in `/var/lib/biap-global`, price-refresh timers EU 17:00Z / US 21:15Z, daily snapshots 23:40Z. The decision version is a **process-level environment variable** (`DECISION_LOGIC_VERSION`), and analysis **writes results into the ledger**: a v2 process pointed at the production data dir would overwrite the v1 history. That drives the whole plan. Test suite: `tests/conftest.py` pins every test to v1 unless a test opts in.
 
-**What "end of the paper period" means here is an assumption:** from my notes the paper portfolio was frozen on 2026-10-20 with returns due **2026-11-19**. Please confirm the end date; the plan treats v2-in-production as not before then.
+**Paper test period (owner, 2026-11-02): OSF registration 23 Oct 2026; statistics are taken until 19 Nov 2026, so the period is 23 Oct – 19 Nov. Rows dated 22 Oct are not part of the prospective period. The owner will confirm the exact end date from the OSF record; treat 19 Nov as the working date, not as final.** v1 stays untouched on production until then (v2 in production not before the period ends).
 
 ### Stage 0 — decisions needed before anything moves (owner)
 - Approve/reject each v2 item (§3) and the two constants I chose (0.30 peer discount, 0.65 "high" risk confidence).
