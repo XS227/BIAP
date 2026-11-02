@@ -28,6 +28,17 @@ Setting: `DECISION_LOGIC_VERSION` (`v1` default, `v2` opt-in; unknown values mea
 
 ## Investigated, not a logic change
 
+### 2026-11-02 — Currency review (P2.5), read-only: no calculation error; paper limitation recorded
+
+- Across the 34 ledgers (latest analysis per stock): 565 stocks report in a currency different from the price currency; 445 are converted with
+  date-aligned ECB rates (live since 2026-10-14, `b790055`, i.e. before the paper period of 22 Oct), 17 have no verifiable rate (P/E and per-share ratios withheld),
+  103 have no P/E for other reasons. **No stock carries a P/E computed across mismatched currencies.** Peer medians are built from peers converted by the same code.
+  Only the currency *label* in the fundamentals table / EPS is open (plan P2.5).
+- **Paper limitation (Limitations section of the paper):** 36 stock-days with an investment-mode BUY or SELL tier during the paper period (22 Oct – 1 Nov, 11 daily snapshots)
+  were issued without a P/E because no ECB reference rate exists for the reporting currency (GEL, PEN, TWD, KES, NGN, ARS, KRW, MXN; one CAD case without a fixing),
+  on 17 tickers in GB:LSE, US:NYSE and US:NASDAQ (examples SEPL, TSM, CHT, AUNA, TEO). The conservative v1 call for these was NO_RECOMMENDATION (one AVOID_OR_REVIEW),
+  i.e. fail-closed. The count is an estimate: the ledger keeps only the latest analysis, so earlier days may have had a different FX state.
+
 ### 2026-11-02 — Oslo quote date (P2.4): data-line correction, not a decision-logic change (staging run)
 
 - **Classification:** data-line correction. No threshold, rule or weight changed. It **also affects v1 inputs** (the paper's engine): the Oslo scan
@@ -51,8 +62,7 @@ Setting: `DECISION_LOGIC_VERSION` (`v1` default, `v2` opt-in; unknown values mea
 
 - **Reading:** under v1 the data fix changes nothing for these two stocks, because v1 still discards every peer in the open quarterly window (P1.4 v2 is what
   keeps them). Under v2 the benchmark becomes usable and the comparison agent votes. The v2 confidence difference between "before" columns and v1 comes from the graded
-  price freshness (an earlier v2 change), not from this fix. Aker BP's P/E of 179.8 (898 % premium) looks like the USD-reporting / NOK-price mismatch (plan P2.5) and should not
-  be trusted until P2.5 is done; Equinor's 22.2 may be affected too.
+  price freshness (an earlier v2 change), not from this fix. Aker BP's P/E of 179.8 (898 % premium) is **not** an FX error (correction 2026-11-02: an earlier version of this note said it was): EPS USD 0.21 x 10.3883 (ECB FY2025 mean USD->NOK) = NOK 2.18, price 392.3 / 2.18 = 179.8. It comes from very low reported net income (USD 132 m). Equinor's 22.2 is converted the same way and correct.
 - **Not recomputed:** the investment-mode tier (own peer logic, unchanged by P1.4/P2.4; stored tier HOLD for both on every snapshot day).
 
 ### 2026-11-02 — BLOCK count fell from 4,454 to 1,228 between 28 and 29 Oct (Phase 0)

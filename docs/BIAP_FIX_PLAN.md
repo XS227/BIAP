@@ -84,7 +84,8 @@ Evidence: Norway's data is healthy (only 23 of 134 rejected at the ranking stand
   - 345 Xetra prices changed (30→31 Oct) without re-analysis. If the price is newer than the analysis, re-run it or flag it "analysis stale".
   - 1,273 records use sync-derived dates instead of verified trading dates.
   - "Global Top 10" shows "Partial global scan • 1/9 markets ready", so the global shortlist is effectively unavailable. Fix after the EU refresh is fixed.
-- [ ] **P2.5 Currency labels.** Aker BP and Equinor report in USD while prices are in NOK. Label the fundamentals table and EPS with the reporting currency (P/E conversion is already correct).
+- [ ] **P2.5 Currency labels.** Aker BP and Equinor report in USD while prices are in NOK. Label the fundamentals table and EPS with the reporting currency (P/E conversion is already correct; verified read-only 2026-11-02 over 34 ledgers: 445 converted, 17 withheld for lack of a rate, none mismatched; label only).
+- [ ] **P2.7 (low priority) FX rate source for currencies ECB does not publish** (GEL, PEN, TWD, KES, NGN, ARS, KRW, MXN; CAD in one case without a fixing before the period end). Today the 17 affected stocks get no P/E and a fail-closed conservative call; a second dated, licensed rate source would fix it. Not scheduled; see changelog 2026-11-02 (paper limitation: 36 BUY/SELL stock-days).
 - [ ] **P2.6 Data licensing.** The price source is "Yahoo · Public market history" (quality 0.72), which is not licensed for commercial use. Plan a licensed market-data provider before selling subscriptions, and add its cost to the business plan.
   - **Future (owner request 2026-11-02): licensed data source with real timestamps.** Evaluate a licensed market-data provider that returns the actual trade/close timestamp per quote, to replace the calendar-derived session date for Euronext (Oslo first, then Paris/Amsterdam/etc.). Until then the derived date is labelled as such in the app.
 
