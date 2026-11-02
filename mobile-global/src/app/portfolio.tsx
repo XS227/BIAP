@@ -6,6 +6,7 @@ import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing 
 import {
   buildGlobalPortfolio,
   fetchGlobalCountries,
+  fetchGlobalTiers,
   GlobalAnalysis,
   GlobalCountry,
   GlobalInstrument,
@@ -13,6 +14,7 @@ import {
   scanGlobalMarket,
 } from '@/lib/global-api';
 import { PORTFOLIO_ENGINE_NOTE } from '@/lib/decision-tier';
+import { NEAR_CANDIDATE_LABEL, NearCandidate, nearestCandidates, SORT_KEY_NOTE, scoreScanSuffix } from '@/lib/scan-display';
 import { pickerCountries } from '@/constants/market-picker';
 import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-market-selection';
 import { evidenceCounts, rankCriterionLabel, topRanked } from '@/lib/scan-summary';
@@ -184,6 +186,7 @@ export default function GlobalPortfolioScreen() {
   const [result, setResult] = useState<GlobalPortfolioResponse | null>(null);
   const [candidateCount, setCandidateCount] = useState(0);
   const [selectionNotice, setSelectionNotice] = useState('');
+  const [nearCandidates, setNearCandidates] = useState<NearCandidate[]>([]);
 
   useFocusEffect(
     useCallback(() => {
@@ -269,6 +272,7 @@ export default function GlobalPortfolioScreen() {
     setLoading(true);
     setError('');
     setResult(null);
+    setNearCandidates([]);
     setNotes([]);
     setStats([]);
     setCandidateCount(0);
@@ -284,6 +288,7 @@ export default function GlobalPortfolioScreen() {
       const nextStats: MarketStat[] = [];
       const nextNotes: string[] = [];
       let usableMarkets = 0;
+      const usableScopes: Scope[] = [];
       let catalogOnlyMarkets = 0;
       let limitedCoverageMarkets = 0;
       const failedMarkets: string[] = [];
@@ -314,6 +319,7 @@ export default function GlobalPortfolioScreen() {
         }
 
         usableMarkets += 1;
+        usableScopes.push(scope);
         if (marketStat.coverage < 80) limitedCoverageMarkets += 1;
         const sourceLabel = marketStat.mode === 'CACHED' ? 'cached verified market data' : 'live market data';
         const coverageLabel = `${n(marketStat.coverage, 1)}% screening coverage`;
@@ -350,6 +356,11 @@ export default function GlobalPortfolioScreen() {
       }
 
       if (!unique.length) {
+        // No BUY: show the closest names (highest ACCUMULATE) instead of an empty page; label only, nothing is promoted.
+        try {
+          const tiers = await Promise.all(usableScopes.map(async (scope) => ({ country: scope.country, exchange: scope.exchange, rows: (await fetchGlobalTiers(scope.country, scope.exchange))?.rows || [] })));
+          setNearCandidates(nearestCandidates(tiers, 5));
+        } catch { setNearCandidates([]); }
         if (failedMarkets.length && usableMarkets === 0 && catalogOnlyMarkets === 0) {
           setError(`Portfolio not generated: ${failedMarkets.join(', ')} could not be scanned (see market cards for the reason). No market was analyzed, so this is NOT a "no qualified BUY" result — pull down to retry.`);
         } else if (failedMarkets.length) {
@@ -530,6 +541,12 @@ export default function GlobalPortfolioScreen() {
           </View> : null}
           {notes.length ? <View style={[s.card, { backgroundColor: colors.backgroundElement, marginTop: 8 }]}>{notes.map((note) => <Text key={note} style={[s.tiny, { color: colors.textSecondary }]}>• {note}</Text>)}</View> : null}
           {error ? <Text style={[s.error, { color: Brand.warning }]}>{error}</Text> : null}
+          {nearCandidates.length ? <View style={[s.card, { backgroundColor: colors.backgroundElement }]}>
+            <Text style={[s.title, { color: colors.text }]}>{NEAR_CANDIDATE_LABEL}</Text>
+            <Text style={[s.tiny, { color: colors.textSecondary }]}>{SORT_KEY_NOTE}</Text>
+            {nearCandidates.map((c) => <Text key={`${c.country}:${c.exchange}:${c.ticker}`} style={[s.body, { color: colors.text }]}>{`${c.ticker} · ${c.name} (${c.country}/${c.exchange}) · ACCUMULATE · score ${c.score == null ? '—' : c.score.toFixed(3)} · confidence ${c.confidence == null ? '—' : c.confidence.toFixed(2)}${scoreScanSuffix(c.investment.analyzedAt)}`}</Text>)}
+            <Text style={[s.tiny, { color: colors.textSecondary }]}>These are not BUY candidates and are not part of any portfolio.</Text>
+          </View> : null}
 
           {stats.length ? <>
             <Text style={[s.section, { color: colors.text }]}>Market comparison</Text>
