@@ -73,6 +73,9 @@ def payload(decision: im.InvestmentDecision) -> dict:
         "flags": list(decision.flags),
         "peerScope": decision.peer_scope,
         "blockedBy": decision.blocked_by,
+        "blockingGate": decision_logic.investment_blocking_gate(              # P1.9: which gate held the call back (None = none)
+            decision.call, decision.blocked_by, decision.flags, decision.tier_before_flags, decision.score,
+            im.DEFAULT_CONFIG.soft_downgrade_flags),
         "disclaimer": DISCLAIMER,
     }
     if "negative_multifactor_unconfirmed" in decision.flags:
@@ -100,7 +103,9 @@ def cap_for_evidence(item: Optional[dict], evidence_status: Optional[str], confi
     flags = list(item.get("flags") or [])
     if "insufficient_evidence" not in flags:
         flags.append("insufficient_evidence")
-    return {**item, "tier": "HOLD", "label": TIER_LABEL["HOLD"], "tierBeforeEvidenceCap": item["tier"],
+    code = "EVIDENCE_BLOCK" if str(evidence_status or "").upper() == "BLOCK" else "CONFIDENCE_FLOOR"
+    gate = decision_logic.make_gate(code, f"capped at HOLD (confidence {confidence}, floor {floor})", **{"from": item["tier"], "to": "HOLD"})
+    return {**item, "tier": "HOLD", "label": TIER_LABEL["HOLD"], "tierBeforeEvidenceCap": item["tier"], "blockingGate": gate,
             "positionSizeHint": None, "flags": flags, "insufficientEvidence": True, "notice": INSUFFICIENT_NOTICE}
 
 

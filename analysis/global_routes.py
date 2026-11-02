@@ -488,6 +488,7 @@ def global_analysis_ledger(
             decision = view.get(str(row.get("ticker") or ""))
             if decision is not None:
                 row["investment"] = decision      # additive: the stored conservative ``call`` is unchanged
+                row["blockingGate"] = decision.get("blockingGate")
     return {"country": country, "exchange": exchange, "counts": counts, "rows": rows,
             "decisionMode": "investment" if view else "conservative"}
 
@@ -567,6 +568,9 @@ def global_analyze(req: InstrumentRequest):
                 decision = decision_overlay.cap_for_evidence(decision, evidence.get("status"), result.get("confidence"))
                 result = {**result, "investment": decision}     # additive; ``call`` stays the conservative value
             result = {**result, "engines": decision_logic.engines_block(result, decision)}   # additive, P1.11 labels
+            # P1.9: the gate of the engine whose label is displayed (investment tier when present, else the conservative call)
+            result["blockingGate"] = (decision.get("blockingGate") if decision is not None
+                                      else decision_logic.conservative_blocking_gate(result))
         return result
     except HTTPException:
         raise

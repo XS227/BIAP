@@ -5,7 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { analyzeGlobalInstrument, GlobalAnalysis, GlobalAgentSignal, GlobalInstrument } from '@/lib/global-api';
 import { getGlobalMarketSelection } from '@/lib/global-market-selection';
-import { conservativeLine, DISCLAIMER, engineScoreLines, ENGINE_LABEL, investmentBadge, reasonLine, tierLabel, tierTone } from '@/lib/decision-tier';
+import { conservativeLine, DISCLAIMER, gateText, engineScoreLines, ENGINE_LABEL, investmentBadge, reasonLine, tierLabel, tierTone } from '@/lib/decision-tier';
 import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
 import { dataLimitationLines, fundamentalFreshnessLines, governanceReasonLines } from '@/lib/freshness-labels';
 
@@ -247,9 +247,11 @@ export default function GlobalStockDetailScreen() {
           <Text style={[styles.timestamp, { color: colors.textSecondary }]}>{priceTimestamp ? `Price observed ${priceTimestamp}` : 'Verified price timestamp unavailable'}</Text>
         </View>
 
+        {!analysis.investment && gateText(analysis.blockingGate) ? <Text style={[styles.body, { color: Brand.warning, fontWeight: '700' }]}>{gateText(analysis.blockingGate)}</Text> : null}
         {analysis.investment ? <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
           <Text style={[styles.cardTitle, { color: decisionColor(analysis.investment.tier, colors.textSecondary) }]}>{tierLabel(analysis.investment.tier)}</Text>
           {investmentBadge(analysis.investment).notice ? <Text style={[styles.body, { color: Brand.warning, fontWeight: '700' }]}>{investmentBadge(analysis.investment).notice}</Text> : null}
+          {gateText(analysis.blockingGate ?? analysis.investment.blockingGate) ? <Text style={[styles.body, { color: Brand.warning, fontWeight: '700' }]}>{gateText(analysis.blockingGate ?? analysis.investment.blockingGate)}</Text> : null}
           <Text style={[styles.body, { color: colors.textSecondary }]}>{`Positive reasons: ${reasonLine(analysis.investment.positive)}`}</Text>
           <Text style={[styles.body, { color: colors.textSecondary }]}>{`Negative reasons: ${reasonLine(analysis.investment.negative)}`}</Text>
           {engineScoreLines(analysis.engines).length ? engineScoreLines(analysis.engines).map((line) => <Text key={line} style={[styles.body, { color: colors.textSecondary, fontSize: 12, marginTop: 6 }]}>{line}</Text>) : <Text style={[styles.body, { color: colors.textSecondary, fontSize: 12, marginTop: 8 }]}>{conservativeLine(analysis.call)}</Text>}

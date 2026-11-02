@@ -279,3 +279,81 @@ SELL_UNVERIFIED_QUALIFIER = {
     "label": "Negative; multi-factor confirmation insufficient",
     "labelFa": "منفی، تأیید چندعاملی ناکافی",
 }
+
+
+# --- P1.9: name the gate that decided (or capped) a call -----------------------------------------------------------------------------
+# Additive API field ``blockingGate`` = {code, label, labelFa, detail[, from, to]} or None when the call is the ranking's own top/bottom
+# tier and nothing held it back. Pure presentation: it never changes a tier. Used by both engines (investment payload, conservative result).
+BLOCKING_GATES = {
+    "EVIDENCE_BLOCK": ("Evidence check failed (BLOCK)", "بررسی شواهد رد شد (BLOCK)"),
+    "MIN_AGENTS": ("Too few agents with data", "تعداد عامل‌های دارای داده کافی نیست"),
+    "DISTRESS_POSITIVE_BLOCK": ("Distress gate blocks a positive call", "دروازه ریسک ورشکستگی توصیه مثبت را مسدود کرد"),
+    "CONFIDENCE_FLOOR": ("Confidence below the tier floor", "اطمینان زیر کف مجاز رتبه"),
+    "AGENTS_DISAGREE": ("Agents in the same dimension disagree", "عامل‌های هم‌بُعد با هم مخالفند"),
+    "RISK_CAP": ("Severe risk vote caps the call", "رأی ریسک شدید رتبه را محدود کرد"),
+    "BUY_DOWNGRADE": ("A caution flag lowers BUY to ACCUMULATE", "یک پرچم احتیاط BUY را به ACCUMULATE کاهش داد"),
+    "SELL_MULTIFACTOR": ("SELL needs risk plus two other negative agents", "SELL به ریسک و دست‌کم دو عامل منفی دیگر نیاز دارد"),
+    "SELL_LOW_CONFIDENCE": ("SELL needs confidence of at least 0.45", "SELL به اطمینان دست‌کم ۰٫۴۵ نیاز دارد"),
+    "BUY_THRESHOLD": ("Did not reach the BUY threshold", "به آستانه BUY نرسید"),
+    "SELL_THRESHOLD": ("Did not reach the SELL threshold", "به آستانه SELL نرسید"),
+    "COMPARISON_ABSTAINED": ("Peer comparison abstained", "مقایسه با رقبا ممتنع بود"),
+    "AGENT8_GOVERNANCE": ("Agent 8 governance review", "بازبینی حاکمیتی عامل ۸"),
+    "DISTRESS_GATE": ("Distress safety gate", "دروازه ایمنی ریسک ورشکستگی"),
+}
+
+
+def make_gate(code: str, detail: str = "", **extra) -> dict:
+    label, label_fa = BLOCKING_GATES[code]
+    return {"code": code, "label": label, "labelFa": label_fa, "detail": detail, **extra}
+
+
+_BLOCKED_PREFIX = (("evidence", "EVIDENCE_BLOCK"), ("only ", "MIN_AGENTS"), ("distress", "DISTRESS_POSITIVE_BLOCK"))
+
+
+def investment_blocking_gate(call, blocked_by, flags, tier_before, score, soft_flags=()) -> Optional[dict]:
+    """Gate for one investment-mode decision (fields of ``InvestmentDecision``)."""
+    flags = list(flags or ())
+    if blocked_by:
+        code = next((c for p, c in _BLOCKED_PREFIX if str(blocked_by).startswith(p)), "EVIDENCE_BLOCK")
+        return make_gate(code, str(blocked_by))
+    if "insufficient_evidence" in flags:
+        return make_gate("CONFIDENCE_FLOOR", "decision confidence is below the BUY / ACCUMULATE floor; capped at HOLD",
+                         **{"from": tier_before or "BUY", "to": call})
+    if tier_before == "SELL" and call == "REDUCE":
+        for flag, code in (("negative_multifactor_unconfirmed", "SELL_MULTIFACTOR"), ("sell_low_confidence", "SELL_LOW_CONFIDENCE"),
+                           ("agents_disagree", "AGENTS_DISAGREE")):
+            if flag in flags:
+                return make_gate(code, flag, **{"from": "SELL", "to": "REDUCE"})
+    if tier_before == "BUY" and call == "ACCUMULATE":
+        if "risk_cap" in flags:
+            return make_gate("RISK_CAP", "risk_cap", **{"from": "BUY", "to": "ACCUMULATE"})
+        flag = next((f for f in flags if f in soft_flags), None)
+        if flag == "agents_disagree":
+            return make_gate("AGENTS_DISAGREE", flag, **{"from": "BUY", "to": "ACCUMULATE"})
+        return make_gate("BUY_DOWNGRADE", flag or "", **{"from": "BUY", "to": "ACCUMULATE"})
+    if call in ("HOLD", "ACCUMULATE"):
+        return make_gate("BUY_THRESHOLD", "rank or score below the BUY cut-off")
+    if call == "REDUCE":
+        return make_gate("SELL_THRESHOLD", "rank or score above the SELL cut-off")
+    return None
+
+
+def conservative_blocking_gate(result) -> Optional[dict]:
+    """Gate for a conservative-engine result dict (``analyze_company`` output)."""
+    call = result.get("call")
+    if call == "BUY_CANDIDATE":
+        return None
+    integrity = result.get("decisionIntegrity") or {}
+    if result.get("abstentionCap"):
+        return make_gate("COMPARISON_ABSTAINED", "; ".join(map(str, result["abstentionCap"].get("reasons") or ())),
+                         **{"from": "BUY_CANDIDATE", "to": call})
+    if result.get("riskCap"):
+        return make_gate("RISK_CAP", str(result["riskCap"].get("reason") or ""), **{"from": "BUY_CANDIDATE", "to": call})
+    if integrity.get("distressGateApplied"):
+        return make_gate("DISTRESS_GATE", "Agent 9 distress positive_block")
+    gov = result.get("governance") or {}
+    if integrity.get("governanceAction") not in (None, "ACCEPT") or gov.get("review_reasons"):
+        return make_gate("AGENT8_GOVERNANCE", "; ".join(map(str, gov.get("review_reasons") or ())) or str(integrity.get("governanceAction")))
+    if call in ("HOLD_OR_WATCH", "NO_RECOMMENDATION", None):
+        return make_gate("BUY_THRESHOLD", "score or confidence below the BUY candidate floor")
+    return None

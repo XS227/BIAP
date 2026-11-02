@@ -114,3 +114,11 @@ disagreement rule. Owner decision: they stay as they are (v1) and v2 versions ar
 `tests/test_decision_logic_v2_portfolio.py`. `tests/conftest.py` pins every test to v1 unless it opts in, so the suite no longer depends on the shell environment.
 Consequence worth knowing: under v2 the AAPL-like case (comparison −0.5 premium vs fundamental +0.55) is no longer a contradiction, so a BUY_CANDIDATE is accepted
 when the fresh peer benchmark exists (`test_v2_premium_valuation_against_strong_fundamentals…`); the BUY rules in the live path (peer group ≥ 8, distress, independent signal) remain. `test_global_mobile_release::test_manifest_matches_global_app_version` fails on the base as well (known, unrelated).
+
+## 2026-11-02 — P1.9 `blockingGate` (presentation only; no decision changes)
+New additive API field `blockingGate` = `{code, label, labelFa, detail[, from, to]}` or `null` (nothing held the call back: untouched BUY / SELL).
+Investment engine (`decision_logic.investment_blocking_gate`, in the `investment` payload, on `analysis-ledger` rows and `/analyze`): `EVIDENCE_BLOCK`, `MIN_AGENTS`,
+`DISTRESS_POSITIVE_BLOCK`, `CONFIDENCE_FLOOR`, `AGENTS_DISAGREE`, `RISK_CAP`, `BUY_DOWNGRADE`, `SELL_MULTIFACTOR`, `SELL_LOW_CONFIDENCE`, and `BUY_THRESHOLD` / `SELL_THRESHOLD` for
+HOLD / ACCUMULATE / REDUCE rows that simply did not reach the next cut-off. The evidence cap (`cap_for_evidence`) sets its own gate. Conservative engine
+(`conservative_blocking_gate`, `/analyze` when no tier is shown): `COMPARISON_ABSTAINED`, `RISK_CAP`, `DISTRESS_GATE`, `AGENT8_GOVERNANCE` (with Agent 8's review reasons), `BUY_THRESHOLD`.
+Not a protocol deviation: no gate, threshold or tier changed. Tests: `analysis/tests/test_blocking_gate.py`, `mobile-global/tests/blocking-gate.test.mjs`.

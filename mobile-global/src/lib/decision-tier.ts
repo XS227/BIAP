@@ -5,6 +5,9 @@ export type DecisionTier = 'BUY' | 'ACCUMULATE' | 'HOLD' | 'REDUCE' | 'SELL' | '
 
 export type InvestmentAgentReason = { agent: string; vote: number };
 
+/** P1.9: the gate that held a call back (API field `blockingGate`); null / absent when nothing did. */
+export type BlockingGate = { code: string; label: string; labelFa?: string; detail?: string; from?: string; to?: string };
+
 export type GlobalInvestmentDecision = {
   mode: 'investment';
   tier: DecisionTier | string;
@@ -19,6 +22,7 @@ export type GlobalInvestmentDecision = {
   notice?: string | null;
   insufficientEvidence?: boolean;
   tierBeforeEvidenceCap?: string;
+  blockingGate?: BlockingGate | null;
 };
 
 export const TIER_LABEL: Record<string, string> = {
@@ -73,11 +77,18 @@ export function tierCounts(counts: Record<string, number> | null | undefined) {
 
 export const INSUFFICIENT_EVIDENCE = 'Insufficient evidence';
 
+/** "Held by: SELL needs risk plus two other negative agents (SELL → REDUCE)"; empty when no gate. */
+export function gateText(gate: BlockingGate | null | undefined) {
+  if (!gate || !gate.label) return '';
+  const move = gate.from && gate.to ? ` (${gate.from} → ${gate.to})` : '';
+  return `Held by: ${gate.label}${move}`;
+}
+
 /** Badge text for any row that may carry an investment decision; rows without one are shown as "Not ranked", never as a raw engine call. */
-export function investmentBadge(inv: GlobalInvestmentDecision | null | undefined) {
-  if (!inv) return { label: 'Not ranked', tier: undefined as string | undefined, notice: '' };
+export function investmentBadge(inv: GlobalInvestmentDecision | null | undefined, rowGate?: BlockingGate | null) {
+  if (!inv) return { label: 'Not ranked', tier: undefined as string | undefined, notice: '', gate: '' };
   const weak = inv.insufficientEvidence || Boolean(inv.notice) || (inv.flags || []).includes('insufficient_evidence');
-  return { label: tierLabel(inv.tier), tier: inv.tier as string, notice: weak ? inv.notice || INSUFFICIENT_EVIDENCE : '' };
+  return { label: tierLabel(inv.tier), tier: inv.tier as string, notice: weak ? inv.notice || INSUFFICIENT_EVIDENCE : '', gate: gateText(inv.blockingGate ?? rowGate) };
 }
 
 // ---- Engine labels (P1.11). The app has two engines; every screen names the one a number or label comes from. ----

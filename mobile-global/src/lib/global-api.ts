@@ -1,4 +1,4 @@
-import type { EngineBlocks, GlobalInvestmentDecision } from '@/lib/decision-tier';
+import type { BlockingGate, EngineBlocks, GlobalInvestmentDecision } from '@/lib/decision-tier';
 
 export const GLOBAL_API_BASE = (process.env.EXPO_PUBLIC_BIAP_GLOBAL_API_BASE || 'https://biap.dadashi.no/global-api').replace(/\/$/, '');
 
@@ -281,6 +281,8 @@ export type GlobalAnalysis = {
   /** Present only in investment mode (BUY/ACCUMULATE/HOLD/REDUCE/SELL); old rows and conservative mode omit it. */
   investment?: GlobalInvestmentDecision;
   engines?: EngineBlocks;
+  /** P1.9: which gate held the displayed call back (investment gate when a tier is shown, else the conservative one). */
+  blockingGate?: BlockingGate | null;
   /** Decision logic v2 only: informational notes (cross-dimension disagreement) and the severe-risk cap. */
   agentNotes?: string[];
   riskCap?: { capped?: string; to?: string; reason?: string };
