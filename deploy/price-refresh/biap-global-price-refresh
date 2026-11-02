@@ -1,0 +1,104 @@
+#!/bin/bash
+# BIAP Global price refresh + full re-analysis, one exchange at a time.  usage: biap-global-price-refresh EU|US
+# Per market: market_driver.py fetches fresh prices, then re-analyses every due row until none is left or the deadline passes.
+# P2.4 (2026-11-02): (1) every market's outcome is also written to $STATUS_DIR/<GROUP>.json (one record per market),
+# (2) a market that ended DEADLINE / NO_PROGRESS / NO_RESULT is retried ONCE at the end of the run if >= RETRY_MIN_S of budget remain
+# (a retry continues from the ledger, so it only analyses what is still due).
+# Exit 1 if any market is still ERROR / skipped / cut off after the retry; exit 75 if skipped because another job holds the lock.
+set -u
+GROUP=${1:-}
+APP=${BIAP_APP_DIR:-/home/ubuntu/biap-global/BIAP}
+PY=${BIAP_PY:-$APP/analysis/.venv-global/bin/python}
+DRIVER=${BIAP_DRIVER:-/usr/local/lib/biap-global-price-refresh/market_driver.py}
+DATA_DIR=${BIAP_GLOBAL_DATA_DIR:-/var/lib/biap-global}
+STATUS_DIR=${BIAP_PRICE_REFRESH_STATUS_DIR:-$DATA_DIR/price-refresh-status}
+RETRY_MIN_S=${BIAP_PRICE_REFRESH_RETRY_MIN_S:-600}
+case "$GROUP" in
+  EU) MARKETS="NL:EURONEXT_AMSTERDAM DK:NASDAQ_COPENHAGEN FI:NASDAQ_HELSINKI NO:EURONEXT_OSLO IT:EURONEXT_MILAN FR:EURONEXT_PARIS SE:NASDAQ_STOCKHOLM DE:XETRA DE:FRANKFURT ES:BME_MADRID GB:LSE"
+      BUDGET_DEFAULT=14100 ;;   # stop starting markets 20:55 UTC; unit hard-stops 21:10, before the US timer
+  US) MARKETS="US:NASDAQ US:NYSE"
+      BUDGET_DEFAULT=5100 ;;    # stop starting markets 22:40 UTC; unit hard-stops 22:45
+  *) echo "usage: $0 EU|US"; exit 2 ;;
+esac
+BUDGET_S=${BIAP_PRICE_REFRESH_BUDGET_S:-$BUDGET_DEFAULT}
+PER_MARKET_S=${BIAP_PRICE_REFRESH_MARKET_MAX_S:-2700}
+
+cd "$APP/analysis" || { echo "FATAL: cannot cd to $APP/analysis"; exit 2; }
+export PYTHONPATH="$APP/analysis" BIAP_GLOBAL_DATA_DIR="$DATA_DIR"
+if systemctl is-active --quiet biap-global-de-benchmark.service 2>/dev/null; then
+  echo "SKIP-ALL: biap-global-de-benchmark.service is running"; exit 75
+fi
+
+t_all=$(date +%s)
+RESULTS=$(mktemp); trap 'rm -f "$RESULTS"' EXIT      # one tab-separated line per market: market<TAB>attempt<TAB>status<TAB>json
+declare -A FINAL=()                                  # market -> last status
+
+# run_market MARKET ATTEMPT  -> prints the MARKET line, records the result, returns 0 when status=DONE
+run_market() {
+  local m=$1 attempt=$2 c x t0 left dl line took
+  c=${m%%:*}; x=${m##*:}; t0=$(date +%s)
+  left=$(( BUDGET_S - (t0 - t_all) ))
+  if (( left < 180 )); then
+    echo "MARKET $m status=SKIPPED reason=time-budget elapsed_total=$((t0 - t_all))s attempt=$attempt"
+    printf '%s\t%s\t%s\t%s\n' "$m" "$attempt" SKIPPED '{"reason":"time-budget"}' >>"$RESULTS"; FINAL[$m]=SKIPPED; return 1
+  fi
+  dl=$(( left < PER_MARKET_S ? left : PER_MARKET_S ))
+  line=$(timeout $((dl + 120)) "$PY" "$DRIVER" "$c" "$x" "$dl" 2>/dev/null | grep 'BIAP_DRIVER_RESULT=' | tail -1); line=${line#*BIAP_DRIVER_RESULT=}
+  took=$(( $(date +%s) - t0 ))
+  if [ -z "$line" ]; then
+    echo "MARKET $m status=NO_RESULT elapsed=${took}s attempt=$attempt"
+    printf '%s\t%s\t%s\t%s\n' "$m" "$attempt" NO_RESULT "{\"elapsed\":$took}" >>"$RESULTS"; FINAL[$m]=NO_RESULT; return 1
+  fi
+  local st
+  "$PY" -I - "$m" "$line" "$attempt" <<'PYEOF'
+import json, sys
+m, r, attempt = sys.argv[1], json.loads(sys.argv[2]), sys.argv[3]
+st = r.get("status")
+tag = "OK" if st == "DONE" else "ERROR" if st == "ERROR" else "WARN"
+print(f"MARKET {m} {tag} status={st} analysed={r.get('analysed')} left={r.get('left')} calls={r.get('calls')} "
+      f"seconds={r.get('seconds')} cov={r.get('marketCoveragePct')} eligible={r.get('rankingEligible')} recs={r.get('recs')} "
+      f"peakRssMb={r.get('peakRssMb')} attempt={attempt}" + (f" error={r.get('error')}" if r.get("error") else ""))
+PYEOF
+  st=$("$PY" -I -c 'import json,sys; print(json.loads(sys.argv[1]).get("status",""))' "$line")
+  printf '%s\t%s\t%s\t%s\n' "$m" "$attempt" "$st" "$line" >>"$RESULTS"; FINAL[$m]=$st
+  [ "$st" = DONE ]
+}
+
+echo "PRICE-REFRESH $GROUP start $(date -u +%FT%TZ) head=$(git -C "$APP" rev-parse --short HEAD) markets=$(wc -w <<<"$MARKETS") budget=${BUDGET_S}s"
+for m in $MARKETS; do run_market "$m" 1 || true; done
+
+# One retry for markets cut off by a deadline / that made no progress / returned nothing; a retry only works on what is still due.
+for m in $MARKETS; do
+  case "${FINAL[$m]:-}" in DEADLINE|NO_PROGRESS|NO_RESULT)
+    left=$(( BUDGET_S - ($(date +%s) - t_all) ))
+    if (( left >= RETRY_MIN_S )); then
+      echo "RETRY $m after ${FINAL[$m]} (budget left ${left}s)"; run_market "$m" 2 || true
+    else
+      echo "RETRY-SKIPPED $m after ${FINAL[$m]}: only ${left}s budget left (< ${RETRY_MIN_S}s)"
+    fi ;;
+  esac
+done
+
+ok=0; bad=0
+for m in $MARKETS; do [ "${FINAL[$m]:-}" = DONE ] && ok=$((ok+1)) || bad=$((bad+1)); done
+rc=$(( bad > 0 ? 1 : 0 ))
+mkdir -p "$STATUS_DIR" 2>/dev/null && "$PY" -I - "$GROUP" "$RESULTS" "$STATUS_DIR/$GROUP.json" "$rc" <<'PYEOF' || echo "WARN: could not write status file in $STATUS_DIR"
+import json, sys, os, datetime
+group, results, out, rc = sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4])
+markets = {}
+for line in open(results):
+    m, attempt, status, blob = line.rstrip("\n").split("\t", 3)
+    try:
+        detail = json.loads(blob)
+    except ValueError:
+        detail = {}
+    markets[m] = {"status": status, "attempts": int(attempt), "detail": detail}          # last attempt wins
+doc = {"group": group, "finishedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+       "exit": rc, "ok": sum(1 for v in markets.values() if v["status"] == "DONE"), "markets": markets}
+tmp = out + ".tmp"
+with open(tmp, "w") as fh:
+    json.dump(doc, fh, indent=1, sort_keys=True)
+os.replace(tmp, out)
+PYEOF
+echo "PRICE-REFRESH $GROUP done $(date -u +%FT%TZ) ok=$ok failed=$bad total=$(( $(date +%s) - t_all ))s exit=$rc status_file=$STATUS_DIR/$GROUP.json"
+exit $rc
