@@ -153,40 +153,46 @@ def test_v2_payload_without_severe_risk_keeps_the_buy_candidate(monkeypatch):
     assert "riskCap" not in payload and payload["decisionIntegrity"]["preliminaryCall"] == "BUY_CANDIDATE"
 
 
-# ---- v2 SELL gate (comparison confirmed + confidence >= 0.45, else labelled REDUCE) --------------------------------------------
+# ---- v2 SELL gate (risk + >= 2 non-risk agents negative, confidence >= 0.45, else labelled REDUCE) ---------------------------------
 
-def _sell_market(comparison_conf=0.6, conf=0.7, extra=None):
+def _sell_market(conf=0.7, f=-0.9, fc=-0.4, q=-0.5, c=-0.3):
     items = [cand(f"s{i:02d}", sig(f=0.5 - 0.05 * i, fc=0.2, q=0.1, r=0.2, conf=0.7)) for i in range(18)]
-    weak = sig(f=-0.9, r=-0.8, fc=-0.4, q=-0.5, l=0.0, c=-0.3, conf=conf)
-    weak["comparison"] = (-0.3 if comparison_conf else 0.0, comparison_conf)
+    weak = sig(f=f, r=-0.8, fc=fc, q=q, l=0.0, c=c, conf=conf)
     items += [cand("w1", weak), cand("w2", dict(weak))]
     return decide_market(items)
 
 
-def test_v1_sell_does_not_need_the_comparison_agent():
-    d = _sell_market(comparison_conf=0.0)
+def test_v1_sell_needs_no_multifactor_confirmation():
+    d = _sell_market(fc=0.1, q=0.1, c=0.0)
     assert d["w1"].call == "SELL" or d["w2"].call == "SELL"
 
 
-def test_v2_sell_with_abstaining_comparison_is_a_labelled_reduce(monkeypatch):
+def test_v2_sell_with_one_negative_non_risk_agent_is_a_labelled_reduce(monkeypatch):
     monkeypatch.setenv("DECISION_LOGIC_VERSION", "v2")
-    d = _sell_market(comparison_conf=0.0)
+    d = _sell_market(fc=0.1, q=0.1, c=0.0)          # only fundamental (besides risk) is negative
     for k in ("w1", "w2"):
-        assert d[k].call == "REDUCE" and "negative_comparison_unverified" in d[k].flags and d[k].tier_before_flags == "SELL"
+        assert d[k].call == "REDUCE" and "negative_multifactor_unconfirmed" in d[k].flags and d[k].tier_before_flags == "SELL"
     from global_markets import decision_overlay as ov
-    assert ov.payload(d["w1"])["qualifier"]["qualifier"] == "NEGATIVE_RELATIVE_VALUATION_UNVERIFIED"
+    pl = ov.payload(d["w1"])["qualifier"]
+    assert pl["qualifier"] == "NEGATIVE_MULTIFACTOR_UNCONFIRMED" and pl["labelFa"] == "منفی، تأیید چندعاملی ناکافی"
 
 
-def test_v2_sell_with_confirmed_comparison_and_enough_confidence_stays_sell(monkeypatch):
+def test_v2_sell_with_two_negative_non_risk_agents_stays_sell(monkeypatch):
     monkeypatch.setenv("DECISION_LOGIC_VERSION", "v2")
-    d = _sell_market(comparison_conf=0.65, conf=0.7)
+    d = _sell_market(fc=-0.4, q=-0.5, c=0.0)         # fundamental, forecast, quality negative; comparison not
     assert any(d[k].call == "SELL" for k in ("w1", "w2"))
-    assert all("negative_comparison_unverified" not in d[k].flags for k in ("w1", "w2"))
+    assert all("negative_multifactor_unconfirmed" not in d[k].flags for k in ("w1", "w2"))
 
 
-def test_v2_sell_below_confidence_045_is_reduce_without_the_comparison_label(monkeypatch):
+def test_v2_sell_gate_ignores_comparison_confidence(monkeypatch):
     monkeypatch.setenv("DECISION_LOGIC_VERSION", "v2")
-    d = _sell_market(comparison_conf=0.65, conf=0.3)
+    d = _sell_market(c=0.0)                          # comparison abstains, three other agents negative
+    assert any(d[k].call == "SELL" for k in ("w1", "w2"))
+
+
+def test_v2_sell_below_confidence_045_is_reduce_without_the_multifactor_label(monkeypatch):
+    monkeypatch.setenv("DECISION_LOGIC_VERSION", "v2")
+    d = _sell_market(conf=0.3)
     for k in ("w1", "w2"):
         assert d[k].call != "SELL"
     assert any("sell_low_confidence" in d[k].flags for k in ("w1", "w2"))

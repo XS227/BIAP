@@ -268,13 +268,14 @@ def comparison_only_review(review_reasons) -> bool:
     return bool(reasons) and all(r.startswith(_COMPARISON_REVIEW_PREFIXES) for r in reasons)
 
 
-# --- P1.12-adjacent SELL gate (v2, investment mode): SELL needs the same evidence as BUY (mirror of P1.5) -----------------------------
-# Owner decision 2026-11-02: SELL needs decision confidence >= 0.45 and a comparison agent that voted with confidence >= 0.5;
-# otherwise the tier is REDUCE with the qualifier below. (BUY in the conservative engine uses the same 0.45 / 0.5 bars.)
+# --- v2 SELL gate (investment mode): SELL needs the evidence a BUY needs ---------------------------------------------------------------
+# Owner decision 2026-11-02 (revised): decision confidence >= 0.45, a negative risk vote and at least two non-risk agents with a negative
+# vote; otherwise the tier is REDUCE with the qualifier below. (No bar on the comparison agent's confidence.)
 SELL_MIN_CONFIDENCE = 0.45
-SELL_MIN_COMPARISON_CONFIDENCE = 0.5
+SELL_CONFIRMING_AGENTS = ("fundamental", "quality", "forecast", "comparison")
+SELL_MIN_NEGATIVE_AGENTS = 2
 SELL_UNVERIFIED_QUALIFIER = {
-    "qualifier": "NEGATIVE_RELATIVE_VALUATION_UNVERIFIED",
-    "label": "Negative; comparison with peers not confirmed",
-    "labelFa": "منفی، مقایسه با رقبا تأیید نشده",
+    "qualifier": "NEGATIVE_MULTIFACTOR_UNCONFIRMED",
+    "label": "Negative; multi-factor confirmation insufficient",
+    "labelFa": "منفی، تأیید چندعاملی ناکافی",
 }

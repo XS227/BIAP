@@ -12,7 +12,7 @@ Fix groups (``decision_logic.is_v2()`` call sites, see CALLSITES; unknown call s
   graded  graded price freshness instead of steps                                 agents.py _freshness
   p14a    peer benchmark keeps discounted peers (factor, messages)                core_agents/freshness/service peer items
   p14b    linear comparison vote instead of step ladder                           core_agents.comparison_agent
-  sellgate SELL needs comparison confidence >= 0.5 and decision confidence >= 0.45 (else REDUCE)  investment_mode._decide_core
+  sellgate SELL needs risk + 2 non-risk agents negative and decision confidence >= 0.45 (else REDUCE)  investment_mode._decide_core
   other   P1.2 neutral gate, P1.5, P1.6, governance, decision table, portfolio ...
 ``--off`` lists groups reverted to v1 behaviour (leave-one-out); ``--on`` lists the only groups kept at v2 (add-one-in).
 ``--version v1`` is the pure v1 baseline. The production data dir is never written (assertion below).
@@ -135,7 +135,7 @@ def main() -> int:
                                            "tierCounts": ov.tier_counts(view), "tiers": tiers,
                                            "sellGateFlags": dict(collections.Counter(
                                                f for v in view.values() for f in v.get("flags", ())
-                                               if f in ("negative_comparison_unverified", "sell_low_confidence"))),
+                                               if f in ("negative_multifactor_unconfirmed", "sell_low_confidence"))),
                                            "peerScope": dict(collections.Counter(v.get("peerScope") for v in view.values()))}
         print(f"{args.name} {cc}:{ex} replayed={len(rows)-err} err={err} {ov.tier_counts(view)}", flush=True)
     result["unknownCallsites"] = dict(unknown)

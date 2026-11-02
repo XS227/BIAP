@@ -596,10 +596,11 @@ def _decide_core(
             elif tier == "BUY" and (soft or "risk_cap" in flags):
                 tier = "ACCUMULATE"
             if tier == "SELL" and decision_logic.is_v2():
-                # v2 SELL gate: SELL needs the evidence a BUY needs (comparison agent voted with confidence >= 0.5, decision confidence >= 0.45);
-                # otherwise REDUCE with a label (mirror of P1.5). The direction (negative) is kept, only the strength of the call is capped.
-                if signals.get("comparison", (0.0, 0.0))[1] < decision_logic.SELL_MIN_COMPARISON_CONFIDENCE:
-                    flags.append("negative_comparison_unverified")
+                # v2 SELL gate (mirror of BUY): decision confidence >= 0.45, and besides a negative risk vote at least two non-risk agents
+                # (fundamental, quality, forecast, comparison) with data must also vote negative; otherwise REDUCE with a label.
+                neg_other = sum(1 for a in decision_logic.SELL_CONFIRMING_AGENTS if used.get(a, 0.0) < 0.0)
+                if used.get("risk", 0.0) >= 0.0 or neg_other < decision_logic.SELL_MIN_NEGATIVE_AGENTS:
+                    flags.append("negative_multifactor_unconfirmed")
                     tier = "REDUCE"
                 elif confidence < decision_logic.SELL_MIN_CONFIDENCE:
                     flags.append("sell_low_confidence")

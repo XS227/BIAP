@@ -75,7 +75,7 @@ def payload(decision: im.InvestmentDecision) -> dict:
         "blockedBy": decision.blocked_by,
         "disclaimer": DISCLAIMER,
     }
-    if "negative_comparison_unverified" in decision.flags:
+    if "negative_multifactor_unconfirmed" in decision.flags:
         out["qualifier"] = dict(decision_logic.SELL_UNVERIFIED_QUALIFIER)      # v2: REDUCE instead of SELL, labelled
     if "insufficient_evidence" in decision.flags or decision.blocked_by:
         out["insufficientEvidence"] = True
