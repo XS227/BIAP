@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View, useColorScheme } from 'react-native';
 import { router } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { fetchIranFinancialInboxAudit, type IranFinancialInboxAudit } from '@/lib/api';
+import { validateIranAuditSymbol } from '@/lib/iran-audit-symbol';
 
 const SYMBOLS = ['پکرمان', 'فولاد', 'خودرو'] as const;
 
 export default function AuditAnalysisScreen() {
   const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
   const [symbol, setSymbol] = useState<string>('پکرمان');
+  const [draftSymbol, setDraftSymbol] = useState('');
+  const [inputError, setInputError] = useState('');
   const [refresh, setRefresh] = useState(0);
   const [result, setResult] = useState<IranFinancialInboxAudit | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,6 +32,13 @@ export default function AuditAnalysisScreen() {
     setResult(null);
     setError('');
     setSymbol(next);
+    setInputError('');
+  };
+  const searchSymbol = () => {
+    const next = validateIranAuditSymbol(draftSymbol);
+    if (!next) { setInputError('نماد باید بین ۱ تا ۶۴ نویسه معتبر باشد.'); return; }
+    setInputError('');
+    selectSymbol(next);
   };
   const reload = () => {
     setLoading(true);
@@ -49,6 +59,23 @@ export default function AuditAnalysisScreen() {
           style={[styles.choice, { backgroundColor: item === symbol ? Brand.primary : colors.backgroundElement }]}>
           <Text style={{ color: item === symbol ? '#fff' : colors.text, fontWeight: '800' }}>{item}</Text>
         </Pressable>)}</View>
+      <View style={styles.searchRow}>
+        <TextInput
+          value={draftSymbol}
+          onChangeText={setDraftSymbol}
+          placeholder="نماد دیگر (فقط داده تأییدشده Liara)"
+          placeholderTextColor={colors.textSecondary}
+          accessibilityLabel="نماد برای بررسی مالی Liara"
+          autoCorrect={false}
+          maxLength={64}
+          onSubmitEditing={searchSymbol}
+          style={[styles.searchInput, { backgroundColor: colors.backgroundElement, color: colors.text }]}
+        />
+        <Pressable onPress={searchSymbol} style={[styles.searchButton, { backgroundColor: Brand.primary }]}>
+          <Text style={{ color: '#fff', fontWeight: '800' }}>بررسی نماد</Text>
+        </Pressable>
+      </View>
+      {inputError ? <Text style={[styles.error, { color: Brand.negative }]}>{inputError}</Text> : null}
       <Pressable onPress={reload} style={[styles.refresh, { backgroundColor: colors.backgroundElement }]}>
         <Text style={{ color: colors.text }}>بررسی دوباره داده ذخیره‌شده</Text>
       </Pressable>
@@ -82,6 +109,9 @@ const styles = StyleSheet.create({
   title: { fontFamily: Fonts.sans, fontSize: 23, fontWeight: '900', textAlign: 'right' },
   notice: { fontFamily: Fonts.sans, fontSize: 12, lineHeight: 21, textAlign: 'right', marginVertical: Spacing.three },
   picker: { flexDirection: 'row-reverse', gap: Spacing.two },
+  searchRow: { flexDirection: 'row-reverse', gap: Spacing.two, marginTop: Spacing.three },
+  searchInput: { flex: 1, minWidth: 0, borderRadius: Radius.md, paddingHorizontal: Spacing.three, textAlign: 'right' },
+  searchButton: { padding: Spacing.three, borderRadius: Radius.md, justifyContent: 'center' },
   choice: { flex: 1, paddingVertical: Spacing.three, alignItems: 'center', borderRadius: Radius.md },
   refresh: { padding: Spacing.three, borderRadius: Radius.md, marginVertical: Spacing.three, alignItems: 'center' },
   error: { fontFamily: Fonts.sans, fontSize: 12, textAlign: 'right', lineHeight: 20 },
