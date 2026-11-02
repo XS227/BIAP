@@ -79,3 +79,49 @@ export function investmentBadge(inv: GlobalInvestmentDecision | null | undefined
   const weak = inv.insufficientEvidence || Boolean(inv.notice) || (inv.flags || []).includes('insufficient_evidence');
   return { label: tierLabel(inv.tier), tier: inv.tier as string, notice: weak ? inv.notice || INSUFFICIENT_EVIDENCE : '' };
 }
+
+// ---- Engine labels (P1.11). The app has two engines; every screen names the one a number or label comes from. ----
+export type EngineName = 'conservative' | 'investment';
+
+export type EngineBlocks = {
+  displayed?: EngineName;
+  conservative?: { call?: string | null; score?: number | null; confidence?: number | null; logicVersion?: string | null } | null;
+  investment?: { tier?: string | null; score?: number | null; confidence?: number | null; rank?: number | null } | null;
+};
+
+export const ENGINE_LABEL: Record<EngineName, string> = {
+  conservative: 'Conservative check',
+  investment: 'Investment ranking',
+};
+export const ENGINE_HINT: Record<EngineName, string> = {
+  conservative: 'absolute thresholds; may leave a stock without a recommendation',
+  investment: 'relative ranking within this exchange',
+};
+export const KIASHA_PICKS_ENGINE_NOTE = `${ENGINE_LABEL.conservative}: ${ENGINE_HINT.conservative}. Only stocks that pass every conservative gate appear here; the ${ENGINE_LABEL.investment.toLowerCase()} below ranks the whole exchange.`;
+export const PORTFOLIO_ENGINE_NOTE = `Engine: ${ENGINE_LABEL.conservative} (absolute score and confidence floors). This portfolio is not built from the ${ENGINE_LABEL.investment.toLowerCase()} tiers.`;
+
+function fixed(value: number | null | undefined, digits: number) {
+  return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '—';
+}
+function percent(value: number | null | undefined) {
+  return typeof value === 'number' && Number.isFinite(value) ? `${Math.round(value * 100)}%` : '—';
+}
+function callText(call: string | null | undefined) {
+  return call ? call.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '—';
+}
+
+/** One line per engine with its own decision, score (3 decimals) and confidence; never mixes the two engines' numbers. */
+export function engineScoreLines(engines: EngineBlocks | null | undefined): string[] {
+  if (!engines) return [];
+  const lines: string[] = [];
+  const inv = engines.investment;
+  if (inv) {
+    const rank = inv.rank == null ? '' : ` · rank ${inv.rank}`;
+    lines.push(`${ENGINE_LABEL.investment}: ${tierLabel(inv.tier || undefined)} · score ${fixed(inv.score, 3)} · confidence ${percent(inv.confidence)}${rank}`);
+  }
+  const con = engines.conservative;
+  if (con) {
+    lines.push(`${ENGINE_LABEL.conservative}: ${callText(con.call)} · score ${fixed(con.score, 3)} · confidence ${percent(con.confidence)} (fresh analysis)`);
+  }
+  return lines;
+}

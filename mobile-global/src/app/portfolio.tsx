@@ -12,6 +12,7 @@ import {
   GlobalPortfolioResponse,
   scanGlobalMarket,
 } from '@/lib/global-api';
+import { PORTFOLIO_ENGINE_NOTE } from '@/lib/decision-tier';
 import { pickerCountries } from '@/constants/market-picker';
 import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-market-selection';
 import { evidenceCounts, rankCriterionLabel, topRanked } from '@/lib/scan-summary';
@@ -560,6 +561,7 @@ export default function GlobalPortfolioScreen() {
                 <View style={{ alignItems: 'flex-end' }}><Text style={[s.label, { color: colors.textSecondary }]}>PORTFOLIO INPUTS</Text><Text style={[s.big, { color: colors.text }]}>{candidateCount}</Text></View>
               </View>
               <Text style={[s.body, { color: colors.textSecondary }]}>Invested {n(proposal.invested_pct, 1)}% • Cash {n(proposal.cash_pct, 1)}% • Positions {allocations.length}</Text>
+              <Text style={[s.body, { color: colors.textSecondary, fontSize: 12, marginTop: 6 }]}>{result?.engine?.description ? `Engine: ${result.engine.label || 'Conservative check'}. ${result.engine.description}` : PORTFOLIO_ENGINE_NOTE}</Text>
             </View>
 
             {proposal.status === 'NO_RECOMMENDATION' ? <View style={[s.card, { backgroundColor: colors.backgroundElement, marginTop: 10, borderWidth: 1, borderColor: Brand.warning }]}>

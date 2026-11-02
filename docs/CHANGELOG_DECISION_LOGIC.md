@@ -9,7 +9,13 @@ Format: `YYYY-MM-DD | Pn.n | what changed | why | files | deviation: yes/no | ap
 
 ## Changes
 
-_None yet. Phase 0 changed no code, gate or threshold._
+Setting: `DECISION_LOGIC_VERSION` (`v1` default, `v2` opt-in; unknown values mean `v1`; `analysis/global_markets/decision_logic.py`).
+`v1` is the logic live on 2026-10-30 and is what the frozen paper portfolio and Chapter 4 measure; the investment mode
+(`investment_mode.py`) is never switched by this setting and is not modified by any v2 change.
+
+| Date | Item | Change | Why | Deviation | Version |
+|---|---|---|---|---|---|
+| 2026-11-02 | P1.11 | Additive API field `engines` on `POST /global/analyze` (both engines' decision, score, confidence, logic version) and `engine` on `POST /global/portfolio`; UI labels "Conservative check" / "Investment ranking" on stock detail, Kiasha and Portfolio. No score, gate, threshold or tier changed. | The app showed three scores (0.191 / 0.193 / 0.213) and two decisions for one stock without naming the engine. | no (display and API metadata only) | v1 and v2 |
 
 ## Investigated, not a logic change
 

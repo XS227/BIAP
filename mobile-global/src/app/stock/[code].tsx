@@ -5,7 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { analyzeGlobalInstrument, GlobalAnalysis, GlobalAgentSignal, GlobalInstrument } from '@/lib/global-api';
 import { getGlobalMarketSelection } from '@/lib/global-market-selection';
-import { conservativeLine, DISCLAIMER, investmentBadge, reasonLine, tierLabel, tierTone } from '@/lib/decision-tier';
+import { conservativeLine, DISCLAIMER, engineScoreLines, ENGINE_LABEL, investmentBadge, reasonLine, tierLabel, tierTone } from '@/lib/decision-tier';
 import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
 import { dataLimitationLines, fundamentalFreshnessLines, governanceReasonLines } from '@/lib/freshness-labels';
 
@@ -251,7 +251,7 @@ export default function GlobalStockDetailScreen() {
           {investmentBadge(analysis.investment).notice ? <Text style={[styles.body, { color: Brand.warning, fontWeight: '700' }]}>{investmentBadge(analysis.investment).notice}</Text> : null}
           <Text style={[styles.body, { color: colors.textSecondary }]}>{`Positive reasons: ${reasonLine(analysis.investment.positive)}`}</Text>
           <Text style={[styles.body, { color: colors.textSecondary }]}>{`Negative reasons: ${reasonLine(analysis.investment.negative)}`}</Text>
-          <Text style={[styles.body, { color: colors.textSecondary, fontSize: 12, marginTop: 8 }]}>{conservativeLine(analysis.call)}</Text>
+          {engineScoreLines(analysis.engines).length ? engineScoreLines(analysis.engines).map((line) => <Text key={line} style={[styles.body, { color: colors.textSecondary, fontSize: 12, marginTop: 6 }]}>{line}</Text>) : <Text style={[styles.body, { color: colors.textSecondary, fontSize: 12, marginTop: 8 }]}>{conservativeLine(analysis.call)}</Text>}
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 8 }]}>{DISCLAIMER}</Text>
         </View> : null}
 
@@ -260,13 +260,13 @@ export default function GlobalStockDetailScreen() {
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Price Intelligence</Text>
           <Text style={[styles.body, { color: colors.textSecondary }]}>{price == null ? 'A verified market price is unavailable. No price-based conclusion can be made.' : `Last observed price: ${priceN(price)} ${analysis.currency}. A low share price alone does not mean the company is undervalued.`}</Text>
-          <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{analysis.score == null ? 'Kiasha score unavailable.' : `Kiasha score ${n(analysis.score, 3)} (${analysis.score > 0 ? 'positive' : analysis.score < 0 ? 'negative' : 'neutral'}). `}{`Evidence ${analysis.evidence?.status || 'unavailable'} checks data quality, not whether the stock is a buy. Overall calibrated confidence ${analysis.confidence == null ? 'unavailable' : Math.round(analysis.confidence * 100) + '%'}; current decision: ${analysis.investment ? tierLabel(analysis.investment.tier) : friendly(analysis.call)}.`}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{analysis.score == null ? `${ENGINE_LABEL.conservative} score unavailable.` : `${ENGINE_LABEL.conservative} score ${n(analysis.score, 3)} (${analysis.score > 0 ? 'positive' : analysis.score < 0 ? 'negative' : 'neutral'}). `}{`Evidence ${analysis.evidence?.status || 'unavailable'} checks data quality, not whether the stock is a buy. Overall calibrated confidence ${analysis.confidence == null ? 'unavailable' : Math.round(analysis.confidence * 100) + '%'}; current decision: ${analysis.investment ? tierLabel(analysis.investment.tier) : friendly(analysis.call)}.`}</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{company?.pe != null && Number(company.pe) > 0 && company?.sector_pe != null && Number(company.sector_pe) > 0 ? `P/E ${n(company.pe)} versus peer benchmark ${n(company.sector_pe)} (${pct(dm.peVsSectorPct)} difference). This comparison alone is not a fair-value estimate.` : 'Peer-relative valuation: insufficient verified P/E and benchmark data.'}</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>Fair value / upside / downside: Insufficient Data — no verified valuation model estimate is available. Do not infer a price target from Kiasha score.</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{distress?.status ? `Financial distress assessment: ${friendly(distress.status)}. See Agent 9 for model inputs and limitations.` : 'Financial distress: insufficient verified inputs. See Agent 9 for details.'}</Text>
         </View>
 
-        <View style={styles.metrics}><Metric label="Kiasha score" value={analysis.score == null ? '—' : n(analysis.score, 3)} colors={colors}/><Metric label="Overall calibrated" value={analysis.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`} colors={colors}/><Metric label="Evidence" value={analysis.evidence?.status || '—'} colors={colors}/></View>
+        <View style={styles.metrics}><Metric label="Conservative score" value={analysis.score == null ? '—' : n(analysis.score, 3)} colors={colors}/><Metric label="Overall calibrated" value={analysis.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`} colors={colors}/><Metric label="Evidence" value={analysis.evidence?.status || '—'} colors={colors}/></View>
 
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Kiasha decision</Text><Text style={[styles.body, { color: colors.textSecondary }]}>Kiasha combines the six scoring agent signals after provider normalization, then applies the Evidence/Verification gate. Evidence PASS means the data is sufficiently verified; it is not itself a BUY signal. A new BUY candidate also needs a positive score and enough decision confidence.</Text></View>
 

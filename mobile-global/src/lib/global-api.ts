@@ -1,4 +1,4 @@
-import type { GlobalInvestmentDecision } from '@/lib/decision-tier';
+import type { EngineBlocks, GlobalInvestmentDecision } from '@/lib/decision-tier';
 
 export const GLOBAL_API_BASE = (process.env.EXPO_PUBLIC_BIAP_GLOBAL_API_BASE || 'https://biap.dadashi.no/global-api').replace(/\/$/, '');
 
@@ -277,6 +277,7 @@ export type GlobalAnalysis = {
   call?: 'BUY_CANDIDATE' | 'HOLD_OR_WATCH' | 'AVOID_OR_REVIEW' | 'NO_RECOMMENDATION' | string;
   /** Present only in investment mode (BUY/ACCUMULATE/HOLD/REDUCE/SELL); old rows and conservative mode omit it. */
   investment?: GlobalInvestmentDecision;
+  engines?: EngineBlocks;
   score?: number;
   confidence?: number;
   decisionConfidence?: number;
@@ -431,6 +432,7 @@ export type IndividualCreditScoringResponse = {
 };
 
 export type GlobalPortfolioResponse = {
+  engine?: { engine?: string; label?: string; description?: string; logicVersion?: string };
   profileAssessment?: {
     label?: string;
     riskTolerance?: string;

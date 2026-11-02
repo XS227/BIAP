@@ -13,7 +13,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from global_markets import decision_overlay
+from global_markets import decision_logic, decision_overlay
 from global_markets.broker_catalog import broker_readiness
 from global_markets.country_packs import country_catalog, get_exchange
 from global_markets.credit_scoring import score_individual_credit
@@ -566,6 +566,7 @@ def global_analyze(req: InstrumentRequest):
                 evidence = result.get("evidence") if isinstance(result.get("evidence"), dict) else {}
                 decision = decision_overlay.cap_for_evidence(decision, evidence.get("status"), result.get("confidence"))
                 result = {**result, "investment": decision}     # additive; ``call`` stays the conservative value
+            result = {**result, "engines": decision_logic.engines_block(result, decision)}   # additive, P1.11 labels
         return result
     except HTTPException:
         raise
@@ -620,6 +621,12 @@ def global_portfolio(req: PortfolioRequest):
     instruments = [_seed(item) for item in req.instruments]
     fx = {currency.upper(): float(rate) for currency, rate in req.fxToBase.items() if float(rate) > 0}
     try:
-        return portfolio_from_instruments(profile, instruments, fx_to_base=fx)
+        proposal = portfolio_from_instruments(profile, instruments, fx_to_base=fx)
+        if isinstance(proposal, dict):
+            proposal = {**proposal, "engine": {
+                "engine": decision_logic.ENGINE_CONSERVATIVE, "label": decision_logic.ENGINE_LABEL[decision_logic.ENGINE_CONSERVATIVE],
+                "description": "Built from the conservative engine's absolute score and confidence floors, not from the investment tiers.",
+                "logicVersion": decision_logic.logic_version()}}
+        return proposal
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc

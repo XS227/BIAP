@@ -8,7 +8,7 @@ import { getGlobalMarketSelection, GlobalMarketSelection } from '@/lib/global-ma
 import { EvidenceCounts, evidenceCounts } from '@/lib/scan-summary';
 import { setSelectedGlobalCompany } from '@/lib/global-company-selection';
 import type { GlobalInvestmentDecision } from '@/lib/decision-tier';
-import { DISCLAIMER, investmentBadge, tierCounts, tierLabel, tierTone } from '@/lib/decision-tier';
+import { DISCLAIMER, ENGINE_LABEL, investmentBadge, KIASHA_PICKS_ENGINE_NOTE, tierCounts, tierLabel, tierTone } from '@/lib/decision-tier';
 
 type DataMode = '' | 'live' | 'cached' | 'catalog';
 
@@ -139,7 +139,7 @@ export default function KiashaGlobalScreen() {
           {dataMode !== 'catalog' ? <View style={[styles.evidenceStrip, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.stripTitle, { color: colors.text }]}>Evidence gate</Text><Text style={[styles.stripText, { color: Brand.positive }]}>PASS {passed}</Text><Text style={[styles.stripText, { color: Brand.warning }]}>WARN {warned}</Text><Text style={[styles.stripText, { color: Brand.negative }]}>BLOCK {blocked}</Text><Text style={[styles.stripText, { color: colors.textSecondary }]}>of {evidence.denominator}{evidence.basis === 'payload_sample' ? ' shown' : ' analyzed'}</Text></View> : null}
 
           {tiers ? <View style={[styles.tierCard, { backgroundColor: colors.backgroundElement }]}>
-            <Text style={[styles.stripTitle, { color: colors.text, flex: 0 }]}>Investment ranking</Text>
+            <Text style={[styles.stripTitle, { color: colors.text, flex: 0 }]}>{ENGINE_LABEL.investment}</Text>
             <Text style={[styles.pickMeta, { color: colors.textSecondary }]}>{tierCounts(tiers.counts)}</Text>
             {tiers.rows.slice(0, 10).map((row, index) => <Pressable key={`tier-${row.ticker}-${index}`} onPress={() => { void open({ ticker: row.ticker, name: row.name || row.ticker } as GlobalAnalysis); }} style={styles.reviewed}>
               <View style={{ flex: 1 }}><Text style={[styles.ticker, { color: colors.text }]}>#{index + 1} {row.ticker}</Text><Text numberOfLines={1} style={[styles.name, { color: colors.textSecondary }]}>{row.name}</Text></View>
@@ -147,7 +147,8 @@ export default function KiashaGlobalScreen() {
             </Pressable>)}
             <Text style={[styles.pickMeta, { color: colors.textSecondary }]}>{DISCLAIMER}</Text>
           </View> : null}
-          <View style={styles.sectionRow}><Text style={[styles.sectionTitle, { color: colors.text }]}>Kiasha picks</Text><Text style={[styles.sectionMeta, { color: colors.textSecondary }]}>{status || 'scan complete'}</Text></View>
+          <View style={styles.sectionRow}><Text style={[styles.sectionTitle, { color: colors.text }]}>{`Kiasha picks · ${ENGINE_LABEL.conservative}`}</Text><Text style={[styles.sectionMeta, { color: colors.textSecondary }]}>{status || 'scan complete'}</Text></View>
+          <Text style={[styles.sectionMeta, { color: colors.textSecondary, marginBottom: 6 }]}>{KIASHA_PICKS_ENGINE_NOTE}</Text>
           {dataMode === 'catalog' ? <View style={[styles.empty, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.emptyTitle, { color: colors.text }]}>Ranking pending verified market data</Text><Text style={[styles.emptyText, { color: colors.textSecondary }]}>The exchange universe is available, but Kiasha will not rank stocks or manufacture a Top 10 from reference metadata alone. Once verified price/history is seeded, the same six agents and Evidence gate run automatically.</Text></View> : picks.length ? picks.map((pick, index) => {
             const badge = investmentBadge(pick.investment ?? tierByTicker.get(pick.ticker));
             const c = tone(badge.tier, colors.textSecondary);

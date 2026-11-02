@@ -34,6 +34,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.4",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~57.0.2",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -43,7 +45,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test:api": "node --experimental-strip-types --no-warnings --test tests/global-api.test.mjs tests/freshness-labels.test.mjs tests/scan-summary.test.mjs"
+    "test:api": "node --experimental-strip-types --no-warnings --test tests/global-api.test.mjs tests/freshness-labels.test.mjs tests/scan-summary.test.mjs tests/engine-labels.test.mjs"
   },
   "expo": {
     "install": {
