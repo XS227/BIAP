@@ -41,3 +41,8 @@
 ## 2026-11-02 (owner round 4)
 - Pushed 2d6bb20 and a0e22b8. Standing rule: push the fix branch after each commit.
 - ECB timer units + installer moved to `deploy/systemd/` and `deploy/install-fx-refresh-timer.sh`; owner runs it with sudo after reading it. Changelog row now states v1 was unaffected (period-end-date rates).
+
+## 2026-11-02 (P2.4 start)
+- US trading calendar: `us_holidays`, XNAS/XNYS in `session_calendar`; Nasdaq screener quotes stamped with the last completed session (`tests/test_us_session_date.py`, 1915 pass excl. TestClient files). Not deployed; takes effect at the next US refresh after deploy.
+- Isolated EU jobs: already implemented in the production runner (per-market lines); the 30 Oct failure was Milan DEADLINE only. Remaining work (status file, one retry, versioning the runner) listed in the plan.
+- Not started: official-close timestamps (Yahoo daily bar is stamped at the session open, 08:00 UTC for DE/NO, 13:30 UTC for US), analysis-stale flag, sync-derived dates, Global Top 10.

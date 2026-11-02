@@ -54,6 +54,38 @@ def oslo_holidays(year: int) -> frozenset[date]:
     })
 
 
+def _nth_weekday(year: int, month: int, weekday: int, n: int) -> date:
+    first = date(year, month, 1)
+    return first + timedelta(days=(weekday - first.weekday()) % 7 + 7 * (n - 1))
+
+
+def _last_weekday(year: int, month: int, weekday: int) -> date:
+    nxt = date(year + (month == 12), month % 12 + 1, 1)
+    last = nxt - timedelta(days=1)
+    return last - timedelta(days=(last.weekday() - weekday) % 7)
+
+
+def us_holidays(year: int) -> frozenset[date]:
+    """NYSE / Nasdaq regular-session closures (same calendar). Fixed-date holidays are added on the day and, as a safe
+    superset, on both the Friday before and the Monday after when they fall on a weekend (an extra closure only makes
+    the stamp one trading day older)."""
+    easter = easter_sunday(year)
+    days = {
+        _nth_weekday(year, 1, 0, 3), _nth_weekday(year, 2, 0, 3), easter - timedelta(days=2),
+        _last_weekday(year, 5, 0), _nth_weekday(year, 9, 0, 1), _nth_weekday(year, 11, 3, 4),
+    }
+    for m, d in ((1, 1), (6, 19), (7, 4), (12, 25)):
+        h = date(year, m, d)
+        days.add(h)
+        if h.weekday() == 5:
+            days.add(h - timedelta(days=1))
+        elif h.weekday() == 6:
+            days.add(h + timedelta(days=1))
+    if date(year + 1, 1, 1).weekday() == 5:   # 1 Jan next year on a Saturday: superset closure on 31 Dec
+        days.add(date(year, 12, 31))
+    return frozenset(days)
+
+
 @dataclass(frozen=True)
 class VenueCalendar:
     tz: str
@@ -66,6 +98,9 @@ _VENUES: dict[str, VenueCalendar] = {
     "XCSE": VenueCalendar("Europe/Copenhagen", time(17, 0), 30, copenhagen_holidays),
     # Oslo: continuous trading to 16:20, closing auction to about 16:25 (the Euronext file shows last trades 16:25-16:29).
     "XOSL": VenueCalendar("Europe/Oslo", time(16, 30), 30, oslo_holidays),
+    # US regular session closes 16:00 ET; the screener is counted as published 30 minutes later.
+    "XNAS": VenueCalendar("America/New_York", time(16, 0), 30, us_holidays),
+    "XNYS": VenueCalendar("America/New_York", time(16, 0), 30, us_holidays),
 }
 
 
