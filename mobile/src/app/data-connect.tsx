@@ -48,9 +48,14 @@ export default function DataConnectScreen() {
     }
   };
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => { void Promise.resolve().then(refresh); }, []);
   useEffect(() => {
-    if (requirement && !raw.trim()) setRaw(requirement.csvTemplate);
+    if (!requirement) return;
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (active) setRaw(current => current.trim() ? current : requirement.csvTemplate);
+    });
+    return () => { active = false; };
   }, [requirement]);
   useEffect(() => {
     if (companyMode !== 'listed') return;

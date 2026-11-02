@@ -22,8 +22,19 @@ export default function DataConnectScreen(){
   const colors=useColorScheme()==='dark'?Colors.dark:Colors.light;
   const[company,setCompany]=useState<GlobalInstrument|null>(null);const[marketLabel,setMarketLabel]=useState('');const[dataset,setDataset]=useState<BusinessDataset|null>(null);const[name,setName]=useState('Company data');const[raw,setRaw]=useState(EXAMPLE);const[status,setStatus]=useState('');const[busy,setBusy]=useState(false);
 
-  const refresh=async()=>{const[d,c,m]=await Promise.all([getBusinessDataset(),getSelectedGlobalCompany(),getGlobalMarketSelection()]);setDataset(d);setCompany(c);setMarketLabel(`${m.countryName} • ${m.exchangeLabel}`);if(c&&!name.trim())setName(`${c.ticker} private data`)};
-  useEffect(()=>{void refresh()},[]);
+  useEffect(() => {
+    let active = true;
+    void Promise.all([getBusinessDataset(), getSelectedGlobalCompany(), getGlobalMarketSelection()])
+      .then(([d, c, m]) => {
+        if (!active) return;
+        setDataset(d);
+        setCompany(c);
+        setMarketLabel(`${m.countryName} • ${m.exchangeLabel}`);
+        if (c) setName(current => current.trim() ? current : `${c.ticker} private data`);
+      })
+      .catch(() => { if (active) setStatus('Saved company data could not be loaded.'); });
+    return () => { active = false; };
+  }, []);
 
   const savePaste=async()=>{setBusy(true);setStatus('');try{const d=parseBusinessData(raw,name.trim()||'Company data');await saveBusinessDataset(d);setDataset(d);setStatus(`Connected ${d.rows.length} rows × ${d.columns.length} columns.`)}catch(e){setStatus(e instanceof Error?e.message:'Could not parse or sync the dataset.')}finally{setBusy(false)}};
   const importExcel=async()=>{setBusy(true);setStatus('');try{const result=await DocumentPicker.getDocumentAsync({type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',copyToCacheDirectory:true,multiple:false});if(result.canceled)return;const asset=result.assets[0];if(!asset.name.toLowerCase().endsWith('.xlsx'))throw new Error('Only a real .xlsx file is supported by this importer.');const base64Data=await FileSystem.readAsStringAsync(asset.uri,{encoding:FileSystem.EncodingType.Base64});const d=await importExcelBusinessDataset({filename:asset.name,name:name.trim()||asset.name.replace(/\.xlsx$/i,''),base64Data});setDataset(d);setStatus(`Excel connected: ${d.rows.length} rows × ${d.columns.length} columns.`)}catch(e){setStatus(e instanceof Error?e.message:'Excel import failed.')}finally{setBusy(false)}};

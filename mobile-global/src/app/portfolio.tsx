@@ -514,7 +514,7 @@ export default function GlobalPortfolioScreen() {
               <Field label="Max positions" value={maxPositions} onChange={setMaxPositions} colors={colors} />
             </View>
             <Field label="Minimum cash reserve (%)" value={cashReserve} onChange={setCashReserve} colors={colors} />
-            <Text style={[s.body, { color: colors.textSecondary }]}>These answers do not change a stock's objective Kiasha score. They only change whether that stock fits your portfolio.</Text>
+            <Text style={[s.body, { color: colors.textSecondary }]}>These answers do not change a stock&apos;s objective Kiasha score. They only change whether that stock fits your portfolio.</Text>
           </View>
 
           <Pressable disabled={loading || !scopes.length} onPress={() => { void build(); }} style={[s.primary, { backgroundColor: Brand.primary, opacity: loading ? 0.65 : 1 }]}>
