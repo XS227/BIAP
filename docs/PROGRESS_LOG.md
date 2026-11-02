@@ -27,3 +27,8 @@
 - P2.3: Newsweb parser not built; `docs/DATA_VENDOR_OPTIONS.md` written (figures unverified, from web search only).
 - P2.1: stock screen label "Xetra only"; DE statement diagnosis written (source has no cash-flow data); no parser code, needs owner option.
 - Committed locally, not pushed; nothing deployed.
+
+## 2026-11-02 (owner round 3)
+- Pushed d17a968.
+- ECB file: backed up (sha256 prefix c8c7794c...), refreshed in place via `python -m global_markets.fx_history refresh` (prod venv, prod data dir); nothing restarted. History: no timer/cron existed (checked `systemctl list-timers`, user crontab, /etc/systemd, deploy scripts); the file came from one manual refresh on 2026-10-14. Timer unit pair written to `/home/ubuntu/claude-tmpdir/claude-1000/-home-ubuntu/a3d4cac7-9880-4554-a3f9-f76270cd2cd4/scratchpad/install-ecb-timer.sh`; **owner must run it with sudo** (`! sudo bash <that path>`). Changelog row written with the verified counts; the proposed wording "affected v1 inputs" was NOT used because the count shows none (0 of 537 conversion rows have a period end in the stale window).
+- Germany and P2.3: current rule stays (core cash-flow field required; BF key-data source has none; interim reports not read). Documented in `docs/P2_1_DE_STATEMENTS_DIAGNOSIS.md` and `docs/DATA_VENDOR_OPTIONS.md`. Waiting for the vendor choice.
