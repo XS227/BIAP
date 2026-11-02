@@ -60,3 +60,7 @@
 - Fix is operational, in this order: (1) install the versioned runner from `deploy/price-refresh/` (needs sudo + owner OK), (2) let the scheduled EU refresh complete once, (3) re-check the Top 10 status. No production refresh was started by me.
 - Still open in P2.4: sync-derived dates (1,273 records) and enabling Euronext stamping beyond Oslo (owner decision); SE/FI calendars unverified.
 - ECB timer first run: 16:32:58 UTC; result check after 16:35 UTC.
+
+## 2026-11-02 (P2.4 wrap-up)
+- All coded P2.4 items are committed and pushed (stamp at close, stale-analysis flag, EU calendars, versioned runner). Global Top 10 stays operational: needs the new runner installed, then one full EU refresh. Installer: `deploy/install-price-refresh-runner.sh` (owner runs with sudo: `! sudo bash <repo>/deploy/install-price-refresh-runner.sh`). Next EU timer: 17:00 UTC.
+- ECB file before first timer run: fetchedAt 11:43Z, lastDate 2026-10-30. Check after 16:35 UTC.
