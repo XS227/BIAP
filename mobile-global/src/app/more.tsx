@@ -30,6 +30,7 @@ export default function MoreScreen(){
     {icon:'📈',title:'Selected Company',sub:company?`${company.ticker} • ${company.name}`:'Open Market and select a listed company for cross-module analysis.',onPress:()=>router.push('/market'),accent:Brand.positive},
     {icon:'🔌',title:'Private Data Connections',sub:'CSV/Excel and company data for CRM, pricing, journey, unit economics and internal KPIs.',onPress:()=>router.push('/data-connect' as never),accent:Brand.dataViolet},
     {icon:'💼',title:'Portfolio Agent',sub:'Capital, FX, cash reserve, risk tolerance and concentration-aware allocation.',onPress:()=>router.push('/portfolio'),accent:Brand.secondary},
+    {icon:'🛡️',title:'Audit Decisions',sub:'Read-only stored evidence, financial completeness and missing-data gates; no scan or order.',onPress:()=>router.push('/audit-decisions' as never),accent:Brand.warning},
     {icon:'🧠',title:'Kiasha',sub:'Evidence-gated market scan and ranked stock ideas for the selected market.',onPress:()=>router.push('/kiasha'),accent:'#7c3aed'},
     {icon:'🧾',title:'Orders / Execution',sub:'Paper-first execution area. Global live brokerage remains disabled until a broker adapter is approved.',onPress:()=>router.push('/orders'),accent:Brand.warning},
     {icon:'👤',title:'Profile & Settings',sub:'Account and app settings.',onPress:()=>router.push('/profile'),accent:'#64748b'},

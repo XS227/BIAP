@@ -667,6 +667,51 @@ export async function fetchGlobalTiers(country: string, exchange: string, limit 
   } catch { return null; }
 }
 
+export type GlobalAuditLedgerRow = {
+  ticker: string;
+  name?: string | null;
+  call?: string | null;
+  evidence?: GlobalEvidence | null;
+  ledger?: {
+    status?: string;
+    reason?: string | null;
+    source?: string | null;
+    financial?: {
+      complete?: boolean;
+      coreComplete?: boolean;
+      valuationComplete?: boolean;
+      creditComplete?: boolean;
+      coveragePct?: number;
+      missing?: string[];
+      missingReasons?: Record<string, string>;
+    } | null;
+  } | null;
+};
+export type GlobalAuditLedgerResponse = {
+  country: string;
+  exchange: string;
+  counts: Record<string, number> | null;
+  rows: GlobalAuditLedgerRow[];
+  decisionMode?: string;
+  note?: string;
+};
+
+/** Stored analysis only. GET does not start a scan, call upstream feeds or place orders. */
+export async function fetchGlobalAuditLedger(country: string, exchange: string, limit = 20): Promise<GlobalAuditLedgerResponse> {
+  const normalizedCountry = country.trim().toUpperCase();
+  const normalizedExchange = exchange.trim().toUpperCase();
+  const q = new URLSearchParams({
+    country: normalizedCountry,
+    exchange: normalizedExchange,
+    limit: String(Math.max(1, Math.min(50, Math.trunc(limit) || 20))),
+  });
+  const data = await request<GlobalAuditLedgerResponse>('/global/analysis-ledger?' + q.toString(), undefined, 25_000);
+  if (!data || data.country !== normalizedCountry || data.exchange !== normalizedExchange || !Array.isArray(data.rows)) {
+    throw new Error('Stored audit response is missing or does not match the selected market.');
+  }
+  return data;
+}
+
 export async function scanGlobalTop10(topN = 10, maxAgeHours = 30): Promise<GlobalTop10Response> {
   return request<GlobalTop10Response>('/global/scan-global', {
     method: 'POST',

@@ -74,3 +74,30 @@ test('parseGlobalApiError tolerates non-JSON proxy bodies', () => {
   assert.equal(err.code, 'HTTP_504');
   assert.equal(err.retryable, true);
 });
+
+
+test('stored audit ledger is GET-only and preserves evidence/financial fields', async () => {
+  let calls = 0;
+  globalThis.fetch = async (url, init) => {
+    calls += 1;
+    assert.match(String(url), /\/global\/analysis-ledger\?country=US&exchange=NASDAQ&limit=3/);
+    assert.equal(init.method, undefined);
+    return jsonResponse(200, {
+      country: 'US', exchange: 'NASDAQ', counts: { COMPLETE: 1 },
+      rows: [{ ticker: 'INVA', evidence: { status: 'PASS' },
+        ledger: { status: 'COMPLETE', source: 'sec-edgar-xbrl-cached',
+          financial: { complete: false, coreComplete: true, missing: ['ebitda'] } } }],
+    });
+  };
+  const result = await api.fetchGlobalAuditLedger('us', 'nasdaq', 3);
+  assert.equal(calls, 1);
+  assert.equal(result.rows[0].ledger.financial.complete, false);
+  assert.deepEqual(result.rows[0].ledger.financial.missing, ['ebitda']);
+});
+
+test('stored audit ledger fails closed on wrong market or malformed payload', async () => {
+  globalThis.fetch = async () => jsonResponse(200, { country: 'GB', exchange: 'LSE', rows: [] });
+  await assert.rejects(() => api.fetchGlobalAuditLedger('US', 'NASDAQ'), /does not match/);
+  globalThis.fetch = async () => jsonResponse(200, { country: 'US', exchange: 'NASDAQ' });
+  await assert.rejects(() => api.fetchGlobalAuditLedger('US', 'NASDAQ'), /missing/);
+});
