@@ -73,7 +73,7 @@ Germany: none (0). Norway: 25 (23 that were already blocked in v1 plus BONHR and
 |---|---:|---|
 | Confidence gate on an **active** call (BUY or AVOID candidate, confidence < 0.55) | 10 | HYPRO, TECH, NOM, NAVA |
 | BUY rule: distress not LOW_RISK, peer group < 8, or comparison-only | 7 | MEDI, DOFG, EPR, BNOR |
-| High-confidence agent disagreement (still any-vs-any in the evidence gate) | 5 | PNOR, WSTEP, MPCC, BOUV |
+| High-confidence agent disagreement (v2 same-dimension rule; these are genuine same-dimension conflicts) | 5 | PNOR, WSTEP, MPCC, BOUV |
 | Critical data gap (valuation benchmark unavailable) | 2 | ABG, BONHR |
 | Agent 9 distress hard block | 1 | MORLD |
 
@@ -82,5 +82,5 @@ Not counted here (they are not "ranked" and never reach this list): the 33 Norwe
 ## Open points for the owner
 
 1. BONHR / EPR regression → decide P1.5 (capped ACCUMULATE-type outcome vs. HOLD) before v2 is activated.
-2. The 5 "agreement" cases still use the any-vs-any contradiction test in `evidence_agent`; P1.3 only changed the dimension rule — check whether the evidence gate should use the same-dimension rule too.
+2. The 5 remaining disagreement cases use the v2 same-dimension rule (`evidence_agent` calls `disagreement_v2`), so they are genuine same-dimension conflicts; the REVIEW-for-disagreement workflow itself is still open (P1.3).
 3. Germany needs the statement-standard work (P2.x / data), not more decision-logic changes, to rank more than 33 names.
