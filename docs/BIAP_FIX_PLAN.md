@@ -34,11 +34,12 @@ Evidence: Norway's data is healthy (only 23 of 134 rejected at the ranking stand
 - [ ] **P1.3 Agent 8 disagreement rule.** SAP was escalated to REVIEW for "high-confidence disagreement": Quality +1 vs Risk −0.5. These agents measure different dimensions, and a quality company can also be volatile.
   - Fire the rule only between agents on the *same* dimension (e.g. Fundamental vs Forecast direction), or only when the signed contributions straddle a decision boundary.
   - REVIEW must have a real reviewer workflow. Otherwise stocks stay stuck forever.
-- [ ] **P1.4 Comparison Agent sector mapping (confirmed bug).** "Fewer than 3 same-sector peers with a valid P/E" appears for SAP, Aker BP and Equinor.
-  - Equinor (P/E 22.2) and Aker BP (P/E 179.8) are both Oslo oil & gas but are not treated as peers.
-  - Fix the sector classification (e.g. GICS/ICB mapping).
-  - If there are still fewer than 3 domestic peers, widen to European / all-market same-sector peers, then fall back to the sector-index median P/E.
-  - Exclude P/E outliers (e.g. >100) from peer medians rather than from the peer count.
+- [ ] **P1.4 Comparison Agent: peer-benchmark validity and misleading message** *(revised 2026-11-02 after the SAP and Norway reference reads; the original "sector mapping bug" diagnosis was wrong for these three stocks)*.
+  - Sector classification is correct: Equinor and Aker BP are both ICB "Energy / Oil, Gas and Coal" (60101000 / 60101010); 11 other Oslo energy names have a valid P/E; SAP has 12 Technology peers with valid P/E.
+  - Real cause: `freshness.evaluate` marks the whole peer benchmark unusable (`peer_scan_cache_state = scan_cache_stale`, so `sector_pe` stays empty). DE/SAP: 73 % of peers are `filing_undated` (limit 15 %). NO: 100 % of peers are `filing_may_have_changed` because the quarterly reporting-calendar window (period end + 20 d … + 60 d) is open, although BIAP only ingests annual reports.
+  - Fix the validity model, not the sector map: (a) give peer rows a filing date (DE reviewed/Börse Frankfurt rows), (b) stop invalidating annual-based peer rows when an interim report window opens unless an interim report is actually ingested, or lower the penalty; log any change to the 15 % limit as a protocol deviation.
+  - Fix the message in `core_agents.py` (`comparison_agent`): "fewer than 3 same-sector peers" must only appear when that is true. Otherwise say why (e.g. "peer benchmark not trusted: 73 % of peer filings undated" / "…filing window open").
+  - If the benchmark is genuinely unusable, widen peers (European/all-market same sector), then sector-index median; exclude P/E outliers (> 100) from the median rather than from the peer count.
 - [ ] **P1.5 Abstention fallback.** When only the Comparison agent abstains and the score is positive with PASS evidence, issue a capped tier (e.g. ACCUMULATE, "relative valuation unverified") instead of NO_RECOMMENDATION.
 - [ ] **P1.6 "If already owned" must never be "No Action".** Give a hold-type tier.
 - [ ] **P1.7 BUY threshold calibration.**
@@ -51,6 +52,9 @@ Evidence: Norway's data is healthy (only 23 of 134 rejected at the ranking stand
   - When the models disagree, show which result governs and why.
 - [ ] **P1.9 Show the blocking gate.** Each stock's detail page *and* list row should state which gate blocked the call (e.g. "Agent 8 confidence", "comparison abstained", "BUY threshold").
 
+- [ ] **P1.10 Abstaining agents get no weight.** An agent that abstains (no vote; today confidence 0.25 or 0.0 with vote 0) must not take part in the weighting of the final score. Re-normalise the weights over the active agents only. Reference: SAP's abstaining comparison agent holds 6.7 % of the weight and pulls 0.2105 down to 0.1927. Log as a decision-logic change and protocol deviation (changes score and confidence for every stock); check the effect on the investment-mode `data_min_confidence` (0.30) rule, which already drops such agents there.
+- [ ] **P1.11 Two engines: make it explicit on every screen.** The system has a conservative engine (absolute thresholds, Agent 8 governance, `call`) and the investment mode (rank-based tiers). Document which engine each screen shows (see `docs/reference_NO_before.md`, section "Engines per screen") and label it in the UI (e.g. "Conservative check" vs "Investment ranking"), including which score/confidence number is shown. State in the methodology which engine the paper (From Abstention to Action) measures.
+
 ---
 
 ## Phase 2 — BIAP Global: data layer
@@ -60,7 +64,7 @@ Evidence: Norway's data is healthy (only 23 of 134 rejected at the ranking stand
   - Norway loses only 17% at the same gate.
   - Fix statement parsing for German issuers.
 - [ ] **P2.2 Parser gaps (even for large caps).**
-  - SAP: interest expense, FFO and dividend are missing.
+  - SAP: interest expense, FFO and dividend are missing. **Interest expense: use "interest paid" from the cash-flow statement or the notes instead of the face "Finance costs" line** (the DE reviewed record rejects Finance costs because it mixes non-interest items; `esef.py` already reads `interest_paid` for FFO). Add FFO and dividend per share to the DE reviewed-record schema (`_ALLOWED_FIELDS`).
   - Equinor: EBITDA, FFO, current assets/liabilities, market cap, P/B, EV/EBITDA and dividend are missing. The same Oslo source parses these fine for Aker BP, so the Equinor report parser is at fault.
   - Compute what can be derived: book value/share, P/B, market cap (shares × price), beta (vs DAX / OBX / local index).
 - [ ] **P2.3 Fundamentals freshness.**
@@ -88,6 +92,7 @@ Evidence: Norway's data is healthy (only 23 of 134 rejected at the ranking stand
 - [ ] "Highest-ranked in this scan: —" is blank in DE and NO although #1 exists.
 - [ ] Lists are sorted by score × confidence (correct). Show the sort key.
 - [ ] SAP shows 0.191 on the detail page and 0.193 in the list. Use one scan, or show the scan time.
+- [ ] **Three different scores for one stock (0.191 / 0.193 / 0.213).** Detail page = fresh `POST /global/analyze` (conservative score), list = stored ledger score (0.192688), investment ranking = 0.212994. Show one primary score per screen, name the engine and show the analysis time (see P1.11).
 - [ ] Score displays "-0" (Aker BP). Format as 0.00x.
 - [ ] Label "144/145 screened (price data only)" conflicts with "144 deep-analyzed".
 - [ ] Clarify D/E (financial debt) vs liabilities/equity (total liabilities) labels.
