@@ -790,6 +790,17 @@ def _analysis_payload(
         peer_group_size=_peer_group_size(enriched),
         positive_signal_agents=_positive_signal_agents(signals),
     )
+    if (decision_logic.is_v2() and preliminary_call == "BUY_CANDIDATE" and governance.action == "REVIEW"
+            and decision_logic.comparison_only_review(governance.review_reasons)
+            and evidence.status == "PASS" and distress.status in {"LOW_RISK", "NOT_APPLICABLE"} and not distress.positive_block):
+        # v2 (P1.5): the only thing between a positive score and a BUY is the comparison evidence (no usable peer benchmark / peer group
+        # too small). Issue a capped HOLD_OR_WATCH with an explicit qualifier instead of NO_RECOMMENDATION. No new call category.
+        v2_extras["abstentionCap"] = {"capped": "BUY_CANDIDATE", "to": "HOLD_OR_WATCH", "reasons": list(governance.review_reasons),
+                                      **decision_logic.ABSTENTION_QUALIFIER}
+        governance = decision_governance_agent(
+            proposed_call="HOLD_OR_WATCH", score=score, overall_confidence=confidence, decision_confidence=decision_confidence,
+            evidence=evidence, distress=distress, critical_data_gaps=critical_gaps, buy_review_rules=True,
+            peer_group_size=_peer_group_size(enriched), positive_signal_agents=_positive_signal_agents(signals))
     call = governance.final_call
     distress_gate_applied = (
         preliminary_call == "BUY_CANDIDATE"

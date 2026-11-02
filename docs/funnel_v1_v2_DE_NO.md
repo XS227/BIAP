@@ -39,7 +39,7 @@ Investment-mode tiers (the badges on the Market list; ledger-wide, evidence-capp
 | NO_RECOMMENDATION | 16 | 16 | 13 | 14 |
 
 - Germany's real bottleneck is the **ranking-evidence standard**, not the decision logic: only 33 of 373 evidence-PASS stocks have complete core statements, so 340 sit in "Insufficient evidence" in both versions.
-- **The investment tiers also move under v2** (DE BUY 25→31; NO BUY 12→9). The changelog says the investment mode is unchanged by P1.4; the movement comes from the shared v2 changes (P1.10 abstaining agents carry no weight, P1.3, graded freshness). If v2 were ever switched on for the investment mode, that is a protocol-relevant change for the paper (frozen portfolio 2026-10-20).
+- **The investment tiers also move under v2** (DE BUY 25→31; NO BUY 12→9). Earlier changelog wording said the investment mode is unchanged; that is true for v1 only (corrected 2026-11-02, see the changelog note "Investment mode under v2"). The movement comes from the shared v2 changes (P1.10 abstaining agents carry no weight, P1.3, graded freshness). If v2 were ever switched on for the investment mode, that is a protocol-relevant change for the paper (frozen portfolio 2026-10-20).
 
 ## 2. The 94 (Norway) and 25 (Germany) "no recommendation"
 

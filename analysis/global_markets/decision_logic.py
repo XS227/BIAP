@@ -250,3 +250,19 @@ COMPARISON_VOTE_MIN = -0.5
 
 def comparison_vote_v2(discount_pct: float) -> float:
     return round(max(COMPARISON_VOTE_MIN, min(COMPARISON_VOTE_MAX, COMPARISON_SLOPE * float(discount_pct))), 6)
+
+
+# --- P1.5 (v2): a positive score blocked only by missing comparison evidence becomes a labelled HOLD_OR_WATCH ----------------
+# Owner decision 2026-11-02: output HOLD_OR_WATCH (conservative engine only), with this qualifier; no new call category.
+ABSTENTION_QUALIFIER = {
+    "qualifier": "POSITIVE_RELATIVE_VALUATION_UNVERIFIED",
+    "label": "Positive; relative valuation not confirmed",
+    "labelFa": "مثبت، ارزش‌گذاری نسبی تأیید نشده",
+}
+_COMPARISON_REVIEW_PREFIXES = ("valuation benchmark unavailable", "sector peer group")
+
+
+def comparison_only_review(review_reasons) -> bool:
+    """True when every review reason of a BUY is about missing / too small comparison evidence (and there is at least one)."""
+    reasons = [str(r) for r in (review_reasons or ())]
+    return bool(reasons) and all(r.startswith(_COMPARISON_REVIEW_PREFIXES) for r in reasons)

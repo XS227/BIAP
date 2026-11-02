@@ -42,7 +42,7 @@ Evidence: Norway's data is healthy (only 23 of 134 rejected at the ranking stand
   - If the benchmark is genuinely unusable, widen peers (European/all-market same sector), then sector-index median; exclude P/E outliers (> 100) from the median rather than from the peer count.
 - [x] **P1.4b Linear comparison vote** *(v2, 2026-11-02)*: `clamp(0.02 × discount%, −0.5, +0.6)` replaces the step ladder; see changelog.
 - [ ] **P3.x (future, not implemented) Growth-adjusted comparison:** for growth stocks compare on PEG or a P/E adjusted for earnings growth instead of the raw sector P/E, so a high P/E backed by high earnings growth is not read as plain "expensive". Needs a verified earnings-growth input per market, a sector-appropriate growth horizon and a rule for negative or tiny growth. Owner request 2026-11-02; design first, no code yet.
-- [ ] **P1.5 Abstention fallback.** When only the Comparison agent abstains and the score is positive with PASS evidence, issue a capped tier (e.g. ACCUMULATE, "relative valuation unverified") instead of NO_RECOMMENDATION.
+- [x] **P1.5 Abstention fallback.** When only the Comparison agent abstains and the score is positive with PASS evidence, issue a capped tier (e.g. ACCUMULATE, "relative valuation unverified") instead of NO_RECOMMENDATION. *(v2, 2026-11-02, owner decision: conservative engine outputs HOLD_OR_WATCH with the label "Positive; relative valuation not confirmed", no new category; awaiting owner approval)*
 - [ ] **P1.6 "If already owned" must never be "No Action".** Give a hold-type tier.
 - [ ] **P1.7 BUY threshold calibration.**
   - Scores are compressed: Germany's maximum is 0.250 and its average 0.039. The Iranian app shows the same ±0.27 clustering.
