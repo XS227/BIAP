@@ -67,7 +67,14 @@ def _quotes(monkeypatch, csv_text, country, exchange, mic, isin, now=None, env=N
     return quotes[0]
 
 
+def test_oslo_quote_is_undated_by_default(monkeypatch):
+    monkeypatch.delenv("BIAP_EURONEXT_SESSION_DATE_MARKETS", raising=False)
+    q = _quotes(monkeypatch, OSLO_CSV, "NO", "EURONEXT_OSLO", "XOSL", "NO0003080608", now=utc(2026, 11, 2, 1, 15))
+    assert q["quoteDate"] is None and "quoteDateBasis" not in q
+
+
 def test_oslo_quote_is_stamped_with_the_session_and_its_basis(monkeypatch):
+    monkeypatch.setenv("BIAP_EURONEXT_SESSION_DATE_MARKETS", "NO:EURONEXT_OSLO")
     q = _quotes(monkeypatch, OSLO_CSV, "NO", "EURONEXT_OSLO", "XOSL", "NO0003080608", now=utc(2026, 11, 2, 1, 15))
     assert q["quoteDate"] == "2026-10-30" and q["quoteDateBasis"] == "last_completed_session"
 

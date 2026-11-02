@@ -15,3 +15,11 @@ def test_undated_side_is_not_flagged():
     assert analysis_staleness(None, "2026-11-02") is None
     assert analysis_staleness("2026-10-30T20:00:00Z", None) is None
     assert analysis_staleness("garbage", "2026-11-02") is None
+
+
+def test_stale_label_flag_defaults_off(monkeypatch):
+    from global_markets.session_calendar import flag_enabled
+    monkeypatch.delenv("BIAP_ANALYSIS_STALE_LABEL", raising=False)
+    assert flag_enabled("BIAP_ANALYSIS_STALE_LABEL") is False
+    monkeypatch.setenv("BIAP_ANALYSIS_STALE_LABEL", "1")
+    assert flag_enabled("BIAP_ANALYSIS_STALE_LABEL") is True

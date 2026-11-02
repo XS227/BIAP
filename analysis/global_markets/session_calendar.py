@@ -13,6 +13,12 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Callable, Optional
 from zoneinfo import ZoneInfo
+import os
+
+
+def flag_enabled(name: str) -> bool:
+    """Price-stamping switches (P2.4). All default OFF until the owner enables them (planned after 2026-11-19)."""
+    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def easter_sunday(year: int) -> date:

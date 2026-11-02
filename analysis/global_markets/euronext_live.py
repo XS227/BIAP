@@ -47,9 +47,9 @@ _MARKETS: dict[tuple[str, str], str] = {
 
 # The Euronext regulated-stocks CSV has no per-row trade date ("Closing Price DateTime" is empty; the date on line 3 is the
 # download date). Markets listed here are stamped with the last completed session on their venue calendar and
-# quoteDateBasis="last_completed_session"; every other Euronext market keeps quoteDate=None. Only Oslo is enabled by default
-# (owner decision 2026-11-02); extend with env BIAP_EURONEXT_SESSION_DATE_MARKETS="NO:EURONEXT_OSLO,FR:EURONEXT_PARIS".
-_DEFAULT_SESSION_DATE_MARKETS = "NO:EURONEXT_OSLO"
+# quoteDateBasis="last_completed_session"; every other Euronext market keeps quoteDate=None. No market is enabled by default
+# (owner decision 2026-11-02: off until after 2026-11-19); extend with env BIAP_EURONEXT_SESSION_DATE_MARKETS="NO:EURONEXT_OSLO,FR:EURONEXT_PARIS".
+_DEFAULT_SESSION_DATE_MARKETS = ""   # owner 2026-11-02: all off until after 2026-11-19
 
 
 def _session_date_markets() -> set[tuple[str, str]]:

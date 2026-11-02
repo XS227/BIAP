@@ -11,6 +11,8 @@ import re
 import time
 from datetime import datetime, timezone
 from threading import Lock
+
+from .session_calendar import flag_enabled
 from typing import Any, Dict, Optional
 
 from . import decision_logic
@@ -201,7 +203,7 @@ def market_view(country: str, exchange: str) -> Dict[str, dict]:
         analyzed_at, status, why, quote_date = evidence.get(ticker, (None, None, None, None))
         capped = cap_for_evidence(
             item, effective_evidence_status(status, why, analyzed_at, quote_observed=quote_date or stage1), item.get("confidence"))
-        stale = analysis_staleness(analyzed_at, quote_date)       # only a dated stage-1 quote; the sync time is not a trade date
+        stale = analysis_staleness(analyzed_at, quote_date) if flag_enabled("BIAP_ANALYSIS_STALE_LABEL") else None       # only a dated stage-1 quote; the sync time is not a trade date
         view[ticker] = {**capped, **stale} if stale else capped
     with _LOCK:
         for old in [k for k in _CACHE if k[0] == stamp[0]]:

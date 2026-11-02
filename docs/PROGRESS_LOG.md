@@ -64,3 +64,8 @@
 ## 2026-11-02 (P2.4 wrap-up)
 - All coded P2.4 items are committed and pushed (stamp at close, stale-analysis flag, EU calendars, versioned runner). Global Top 10 stays operational: needs the new runner installed, then one full EU refresh. Installer: `deploy/install-price-refresh-runner.sh` (owner runs with sudo: `! sudo bash <repo>/deploy/install-price-refresh-runner.sh`). Next EU timer: 17:00 UTC.
 - ECB file before first timer run: fetchedAt 11:43Z, lastDate 2026-10-30. Check after 16:35 UTC.
+
+## 2026-11-02 (P2.4 flags, owner decision)
+- Owner: all stamping changes OFF until after 19 Nov 2026. Four default-off flags added (`BIAP_YAHOO_CLOSE_STAMP`, `BIAP_US_SESSION_DATE`, `BIAP_EURONEXT_SESSION_DATE_MARKETS` default empty, `BIAP_ANALYSIS_STALE_LABEL`); with all off the code path equals v1 (incl. no `price_time_basis` key). Tests: flag-off cases added, 2018 pass. Changelog row written. Calendars themselves stay in the code (inert without the flags). Nordic (`nasdaq_nordic`) session dating is older code, untouched.
+- Runner installer (`deploy/install-price-refresh-runner.sh`) awaiting the owner's sudo run; the runner calls the PRODUCTION checkout (`/home/ubuntu/biap-global/BIAP`, main 6c8ada1), not the fix branch.
+- ECB timer first-run check still pending (after 16:35 UTC).

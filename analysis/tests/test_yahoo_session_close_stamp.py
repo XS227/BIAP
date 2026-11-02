@@ -23,7 +23,11 @@ def _payload(*, partial=False, regular=True):
     }]}}
 
 
-def _enrich(monkeypatch, payload):
+def _enrich(monkeypatch, payload, flag=True):
+    if flag:
+        monkeypatch.setenv("BIAP_YAHOO_CLOSE_STAMP", "1")
+    else:
+        monkeypatch.delenv("BIAP_YAHOO_CLOSE_STAMP", raising=False)
     provider = YahooChartMarketProvider()
     monkeypatch.setattr(provider, "_get", lambda symbol: payload)
     company = GlobalCompany(country="NO", exchange="EURONEXT_OSLO", mic_code="XOSL", currency="NOK", ticker="EQNR", name="Equinor")
@@ -47,3 +51,9 @@ def test_missing_trading_period_falls_back_to_bar_stamp(monkeypatch):
     out = _enrich(monkeypatch, _payload(regular=False))
     assert datetime.fromisoformat(out.price_observed_at) == datetime.fromtimestamp(OPEN_BAR, tz=timezone.utc)
     assert out.raw_provider_fields["price_time_basis"] == "bar_open_timestamp"
+
+
+def test_flag_off_keeps_the_v1_bar_stamp_and_no_basis_key(monkeypatch):
+    out = _enrich(monkeypatch, _payload(), flag=False)
+    assert datetime.fromisoformat(out.price_observed_at) == datetime.fromtimestamp(OPEN_BAR, tz=timezone.utc)
+    assert "price_time_basis" not in out.raw_provider_fields

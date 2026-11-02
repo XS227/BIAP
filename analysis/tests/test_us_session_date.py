@@ -39,6 +39,7 @@ def test_has_us_calendar():
 
 
 def test_screener_quotes_stamped_with_session_not_fetch_date(monkeypatch):
+    monkeypatch.setenv("BIAP_US_SESSION_DATE", "1")
     client = NasdaqUSFullScreenerClient()
     rows = [{"symbol": "AAPL", "lastsale": "$200.00", "volume": "1000", "marketCap": "1", "sector": "Tech"}]
     monkeypatch.setattr(client, "_rows", lambda: ("2026-10-31", rows))   # fetched on a Saturday
@@ -49,3 +50,14 @@ def test_screener_quotes_stamped_with_session_not_fetch_date(monkeypatch):
     assert quotes[0]["quoteDate"] == "2026-10-30"
     assert quotes[0]["quoteDateBasis"] == "trading_calendar_session"
     assert quotes[0]["fetchedOn"] == "2026-10-31"
+
+
+def test_flag_off_keeps_the_fetch_date(monkeypatch):
+    monkeypatch.delenv("BIAP_US_SESSION_DATE", raising=False)
+    client = NasdaqUSFullScreenerClient()
+    rows = [{"symbol": "AAPL", "lastsale": "$200.00", "volume": "1000", "marketCap": "1", "sector": "Tech"}]
+    monkeypatch.setattr(client, "_rows", lambda: ("2026-10-31", rows))
+    monkeypatch.setattr("global_markets.us_official._utc_now", lambda: utc(2026, 10, 31, 21, 0))
+    company = GlobalCompany(country="US", exchange="NASDAQ", currency="USD", ticker="AAPL", name="Apple", mic_code="XNAS")
+    quotes, _, _ = client.batch_quotes([company], "US", get_exchange("US", "NASDAQ"))
+    assert quotes[0]["quoteDate"] == "2026-10-31" and "quoteDateBasis" not in quotes[0]

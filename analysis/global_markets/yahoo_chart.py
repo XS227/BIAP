@@ -30,6 +30,7 @@ from .country_packs import get_exchange
 from .history_store import persist_daily_history
 from .http_governor import YAHOO_GOVERNOR
 from .models import GlobalCompany, SourceEvidence
+from .session_calendar import flag_enabled
 from .providers import GlobalProviderError, MarketDataProvider, append_source
 
 DEFAULT_BASE_URL = "https://query1.finance.yahoo.com/v8/finance/chart"
@@ -285,7 +286,9 @@ class YahooChartMarketProvider(MarketDataProvider):
         latest = bars[-1]
         partial_session = self._latest_bar_is_partial(meta, latest.get("timestamp"))
         observed_at = self._observed_at(latest["timestamp"])
-        close_at, price_time_basis = self._session_close_at(meta, latest["timestamp"], partial_session)
+        close_at, price_time_basis = (
+            self._session_close_at(meta, latest["timestamp"], partial_session)
+            if flag_enabled("BIAP_YAHOO_CLOSE_STAMP") else (None, "bar_open_timestamp"))
         if close_at:
             observed_at = close_at
         if not observed_at:
@@ -342,7 +345,7 @@ class YahooChartMarketProvider(MarketDataProvider):
                 "public_market_exchange": meta.get("exchangeName") or meta.get("fullExchangeName"),
                 "public_market_price_scale": price_scale,
                 "latest_bar_partial_session": partial_session,
-                "price_time_basis": price_time_basis,
+                **({"price_time_basis": price_time_basis} if flag_enabled("BIAP_YAHOO_CLOSE_STAMP") else {}),
             },
         )
         return append_source(enriched, SourceEvidence(

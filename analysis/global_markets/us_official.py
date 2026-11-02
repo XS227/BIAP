@@ -22,7 +22,7 @@ import requests
 from .country_packs import ExchangeSpec
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
-from .session_calendar import has_calendar, last_completed_session
+from .session_calendar import flag_enabled, has_calendar, last_completed_session
 
 
 def _utc_now() -> datetime:
@@ -257,7 +257,7 @@ class NasdaqUSFullScreenerClient:
         # The screener has no per-row trade date and the fetch date can be a weekend/holiday (3,001 records were dated
         # Saturday 31 Oct). Stamp the last completed regular session on the exchange calendar instead.
         mic = spec.mic or "XNAS"
-        session = last_completed_session(mic, _utc_now()) if has_calendar(mic) else None
+        session = last_completed_session(mic, _utc_now()) if (flag_enabled("BIAP_US_SESSION_DATE") and has_calendar(mic)) else None
         session_date = session.isoformat() if session else None
         by_symbol = {
             str(row.get("symbol") or "").strip().upper(): row
