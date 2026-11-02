@@ -19,6 +19,7 @@ from typing import Iterable, Mapping, Optional
 from .decision_support import preference_adjustment
 from .issuer import resolve_issuer_identities
 from .evidence_contract import freshness_tier, official_fundamental_sources, official_fundamental_status
+from . import decision_logic
 from .models import (
     AgentSignal,
     DistressAssessment,
@@ -267,7 +268,9 @@ def evidence_agent(
             confident_positive.append(signal.agent)
         elif signal.vote <= -0.35:
             confident_negative.append(signal.agent)
-    if confident_positive and confident_negative:
+    if decision_logic.is_v2():
+        contradictions.extend(decision_logic.disagreement_v2(signals))
+    elif confident_positive and confident_negative:
         contradictions.append(
             "high-confidence disagreement: positive="
             + ",".join(sorted(confident_positive))

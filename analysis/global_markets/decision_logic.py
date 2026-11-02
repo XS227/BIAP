@@ -83,3 +83,70 @@ def engines_block(result: Mapping[str, Any], investment: Optional[Mapping[str, A
         }
         block["displayed"] = ENGINE_INVESTMENT
     return block
+
+
+# --- P1.10 (v2): abstaining agents carry no weight -----------------------------------------------------------------------
+# Same rule as the investment mode (``InvestmentConfig.data_min_confidence`` / ``min_agents_full_confidence``): an agent
+# whose confidence is below 0.30 has no usable data (the core agents emit 0.0 = unavailable and 0.25 = abstaining), so it
+# is left out of both the score and the confidence mean; confidence is scaled down only when fewer than 4 agents remain.
+DATA_MIN_CONFIDENCE = 0.30
+MIN_AGENTS_FULL_CONFIDENCE = 4
+
+
+def active_signals(signals) -> list:
+    return [s for s in signals if float(s.confidence) >= DATA_MIN_CONFIDENCE]
+
+
+def weighted_score_v2(signals) -> tuple[float, float]:
+    """(score, decision confidence) over the active agents only; weights are the active agents' confidence shares."""
+    active = active_signals(signals)
+    weighted = 0.0
+    total = 0.0
+    for signal in active:
+        confidence = max(0.0, min(1.0, float(signal.confidence)))
+        weighted += max(-1.0, min(1.0, float(signal.vote))) * confidence
+        total += confidence
+    if total <= 0:
+        return 0.0, 0.0
+    mean_confidence = total / len(active)
+    if len(active) < MIN_AGENTS_FULL_CONFIDENCE:
+        mean_confidence *= len(active) / MIN_AGENTS_FULL_CONFIDENCE
+    return weighted / total, mean_confidence
+
+
+# --- P1.3 (v2): Agent 8 disagreement only between agents measuring the same dimension -------------------------------------
+# v1 treats any confident positive agent (vote >= +0.35, confidence >= 0.55) against any confident negative agent
+# (vote <= -0.35) as a contradiction, so "high-quality company" (quality) against "volatile share price" (risk) sends a
+# decision to REVIEW (SAP, 2026-10-30). Those agents measure different things. v2 keeps the same numeric limits but
+# compares agents only inside one dimension:
+#   business   fundamental, quality   (what the company earns and owes)
+#   market     forecast, liquidity    (what the share price and trading do)
+#   risk       risk                   (alone: nothing to contradict)
+#   valuation  comparison             (alone)
+AGENT_DIMENSION = {
+    "fundamental": "business", "quality": "business",
+    "forecast": "market", "liquidity": "market",
+    "risk": "risk",
+    "comparison": "valuation",
+}
+DISAGREE_CONFIDENCE = 0.55
+DISAGREE_POSITIVE = 0.35
+DISAGREE_NEGATIVE = -0.35
+
+
+def disagreement_v2(signals) -> list:
+    """Contradiction messages, one per dimension in which a confident positive and a confident negative agent meet."""
+    groups: dict = {}
+    for signal in signals:
+        if signal.confidence < DISAGREE_CONFIDENCE:
+            continue
+        dimension = AGENT_DIMENSION.get(signal.agent, signal.agent)
+        positive, negative = groups.setdefault(dimension, ([], []))
+        if signal.vote >= DISAGREE_POSITIVE:
+            positive.append(signal.agent)
+        elif signal.vote <= DISAGREE_NEGATIVE:
+            negative.append(signal.agent)
+    return [
+        f"high-confidence disagreement ({dimension}): positive={','.join(sorted(pos))} negative={','.join(sorted(neg))}"
+        for dimension, (pos, neg) in sorted(groups.items()) if pos and neg
+    ]

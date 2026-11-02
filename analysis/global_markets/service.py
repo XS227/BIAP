@@ -16,6 +16,7 @@ import re
 from statistics import median
 from typing import Iterable, Optional
 
+from . import decision_logic
 from .advanced_agents import run_advanced_agents
 from .agents import PortfolioCandidate, evidence_agent, portfolio_agent
 from .evidence_contract import fundamental_evidence_contract
@@ -74,6 +75,8 @@ def instrument_seed(
 
 
 def _weighted_score(signals) -> tuple[float, float]:
+    if decision_logic.is_v2():
+        return decision_logic.weighted_score_v2(signals)
     weighted = 0.0
     confidence_total = 0.0
     for signal in signals:
