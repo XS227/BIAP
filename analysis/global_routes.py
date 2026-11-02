@@ -493,6 +493,34 @@ def global_analysis_ledger(
             "decisionMode": "investment" if view else "conservative"}
 
 
+@router.get("/review-list")
+def global_review_list(country: str, exchange: str, limit: int = 200):
+    """Simple management list (P1.3, v2): stocks whose governance result was REVIEW and is shown as a labelled HOLD_OR_WATCH."""
+    from global_markets.analysis_ledger import AnalysisLedger, ledger_path
+
+    country, exchange = country.strip().upper(), exchange.strip().upper()
+    try:
+        get_exchange(country, exchange)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not ledger_path(country, exchange).exists():
+        return {"country": country, "exchange": exchange, "count": 0, "rows": []}
+    ledger = AnalysisLedger(country, exchange)
+    rows = []
+    try:
+        for result in ledger.full_results():
+            nr = result.get("needsReview")
+            if not nr:
+                continue
+            rows.append({"ticker": result.get("ticker"), "name": result.get("name"), "call": result.get("call"),
+                         "score": result.get("score"), "confidence": result.get("confidence"),
+                         "wouldHaveBeen": nr.get("capped"), "reasons": nr.get("reasons") or [], "labelFa": nr.get("labelFa")})
+    finally:
+        ledger.close()
+    rows.sort(key=lambda r: -(abs(r.get("score") or 0) * (r.get("confidence") or 0)))
+    return {"country": country, "exchange": exchange, "count": len(rows), "rows": rows[:max(1, min(int(limit), 1000))]}
+
+
 @router.get("/recommendations")
 def global_recommendations(country: str, exchange: str, tier: Optional[str] = None, limit: int = 50, offset: int = 0):
     """Investment-mode tiers (BUY/ACCUMULATE/HOLD/REDUCE/SELL) for one exchange, best rank first."""

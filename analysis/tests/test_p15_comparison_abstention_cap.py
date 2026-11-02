@@ -65,7 +65,9 @@ def test_v2_without_the_cap_reproduces_the_regression(ticker, oslo, monkeypatch)
     cmp_ = next(s for s in signals if s.agent == "comparison")
     assert cmp_.vote > 0 and cmp_.confidence == pytest.approx(0.455)                          # votes, but below the 0.5 evidence bar
     assert payload["decisionIntegrity"]["preliminaryCall"] == "BUY_CANDIDATE" and payload["score"] >= 0.25
-    assert payload["call"] == "NO_RECOMMENDATION" and payload["governance"]["action"] == "REVIEW"
+    # P1.3 (v2): the REVIEW is shown as a labelled HOLD_OR_WATCH instead of NO_RECOMMENDATION
+    assert payload["call"] == "HOLD_OR_WATCH" and payload["governance"]["action"] == "REVIEW"
+    assert payload["needsReview"]["labelFa"] == "نیاز به بررسی"
     # v2 names the real cause: the benchmark exists, the comparison confidence (0.455) is below the 0.5 bar
     reason = payload["governance"]["review_reasons"][0]
     assert reason.startswith("peer benchmark available, but the comparison confidence is 0.455 (below 0.5)")

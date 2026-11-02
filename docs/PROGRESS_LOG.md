@@ -17,3 +17,13 @@
 - P2.1 Xetra volume check done (`docs/P2_1_XETRA_VOLUME_CHECK.md`): Yahoo-based volume matches the official Deutsche Boerse post-trade file (median ratio 0.89, SAP 431M vs 411M EUR); ~50 % of Xetra names really trade under EUR 100k/day on the venue (median mcap 46M). Venue-only caveat noted. DE removed from the gate exemption (v2), test updated. DE statement-parsing fix (the 91 % rejection) is NOT done.
 - P2.3 not started: `oam_esef.py:1422` skips interim statements on purpose and Norwegian interim reports are not ESEF-tagged, so this needs a new source (Oslo Newsweb PDFs / vendor) and a parser for trailing-12-month figures; scope and source need an owner decision before code.
 - P1.1 tail / P1.3 reviewer workflow still open. Tests: 1931 pass (excluding the 4 known TestClient-hanging files). Committed locally, not pushed; nothing deployed.
+
+## 2026-11-02 (owner round 2)
+- Pushed 3654e59 to origin/fix/biap-fix-plan-20261102.
+- P1.8: Real Estate/REIT added to the guard (test-covered). Banks/insurers: Agent 9 returns NOT_APPLICABLE (generic models suppressed); only negative equity or a going-concern warning block; unchanged.
+- P1.7 implemented in v2 (pool PASS + conf >= 0.45; BUY top 10 % & score >= 0.10; ACCUMULATE top 25 % & >= 0.05). Before/after: NASDAQ BUY 175->159, NYSE 134->126, DE 13->14, NO 5->5; none over 30 %.
+- Found: production ECB rate file ends 2026-10-13, so under v2 every non-USD market would have unknown liquidity (no BUY). Not touched in production; needs `fx_history` refresh + a timer. This also corrects P2.4 (Oslo volume exists).
+- P1.3: REVIEW -> HOLD_OR_WATCH "needs review" in v2, `/global/review-list`, app line; tests added, P1.5/P1.6 tests adjusted.
+- P2.3: Newsweb parser not built; `docs/DATA_VENDOR_OPTIONS.md` written (figures unverified, from web search only).
+- P2.1: stock screen label "Xetra only"; DE statement diagnosis written (source has no cash-flow data); no parser code, needs owner option.
+- Committed locally, not pushed; nothing deployed.

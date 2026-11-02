@@ -114,6 +114,12 @@ def weighted_score_v2(signals) -> tuple[float, float]:
     return weighted / total, mean_confidence
 
 
+# --- P1.7 (v2, owner 2026-11-02): percentile BUY / ACCUMULATE inside the pool of Evidence-PASS, confidence >= 0.45 stocks ----------
+BUY_POOL_MIN_CONFIDENCE_V2 = 0.45
+BUY_MIN_SCORE_V2 = 0.10
+ACCUMULATE_MIN_SCORE_V2 = 0.05
+
+
 # --- P1.3 (v2): Agent 8 disagreement only between agents measuring the same dimension -------------------------------------
 # v1 treats any confident positive agent (vote >= +0.35, confidence >= 0.55) against any confident negative agent
 # (vote <= -0.35) as a contradiction, so "high-quality company" (quality) against "volatile share price" (risk) sends a
@@ -298,6 +304,7 @@ BLOCKING_GATES = {
     "BUY_THRESHOLD": ("Did not reach the BUY threshold", "به آستانه BUY نرسید"),
     "SELL_THRESHOLD": ("Did not reach the SELL threshold", "به آستانه SELL نرسید"),
     "COMPARISON_ABSTAINED": ("Peer comparison abstained", "مقایسه با رقبا ممتنع بود"),
+    "NEEDS_REVIEW": ("Needs review", "نیاز به بررسی"),
     "AGENT8_GOVERNANCE": ("Agent 8 governance review", "بازبینی حاکمیتی عامل ۸"),
     "DISTRESS_GATE": ("Distress safety gate", "دروازه ایمنی ریسک ورشکستگی"),
     "LOW_LIQUIDITY": ("Low liquidity", "نقدشوندگی کم"),
@@ -356,6 +363,9 @@ def conservative_blocking_gate(result) -> Optional[dict]:
     if result.get("abstentionCap"):
         return make_gate("COMPARISON_ABSTAINED", "; ".join(map(str, result["abstentionCap"].get("reasons") or ())),
                          **{"from": "BUY_CANDIDATE", "to": call})
+    if result.get("needsReview"):
+        return make_gate("NEEDS_REVIEW", "; ".join(map(str, result["needsReview"].get("reasons") or ())),
+                         **{"from": result["needsReview"].get("capped"), "to": call})
     if result.get("riskCap"):
         return make_gate("RISK_CAP", str(result["riskCap"].get("reason") or ""), **{"from": "BUY_CANDIDATE", "to": call})
     if integrity.get("distressGateApplied"):
@@ -400,3 +410,5 @@ def daily_value_usd(*, price, avg_volume, currency, on, fx) -> Optional[float]:
         return price * avg_volume / divisor * rate
     except Exception:                                      # noqa: BLE001 - any missing input / rate means "unknown", never a guess
         return None
+
+NEEDS_REVIEW_LABEL = {"qualifier": "NEEDS_REVIEW", "label": "Needs review", "labelFa": "نیاز به بررسی"}

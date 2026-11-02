@@ -65,10 +65,11 @@ def synthetic_credit_rating(icr: float) -> tuple[str, float]:
     return "D", 0.350
 
 
-_CAPITAL_INTENSIVE_SECTORS = frozenset({"energy", "utilities"})
+_CAPITAL_INTENSIVE_SECTORS = frozenset({"energy", "utilities", "real estate"})
 _CAPITAL_INTENSIVE_TOKENS = (
     "oil", "gas", "coal", "pipeline", "utilit", "electric", "power", "water", "shipping", "marine",
     "tanker", "offshore",
+    "real estate", "reit", "property", "properties",
 )
 
 

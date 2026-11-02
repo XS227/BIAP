@@ -24,12 +24,14 @@ def test_v1_no_recommendation_reads_no_action_reproducer():
 
 def test_v2_no_recommendation_gives_a_hold_type_answer(monkeypatch):
     monkeypatch.setenv("DECISION_LOGIC_VERSION", "v2")
-    for status in ("BLOCK", "WARN"):
-        payload, kiasha = _holder(status, 0.04, 0.6)
-        assert payload["call"] == "NO_RECOMMENDATION"
-        assert kiasha["existingHolderAction"] == "HOLD_AND_MONITOR"
-        assert "neither a sell nor an add signal" in kiasha["existingHolderNote"]
-        assert kiasha["newPositionAction"] == "NO_RECOMMENDATION"            # the new-position answer is unchanged
+    payload, kiasha = _holder("BLOCK", 0.04, 0.6)                     # evidence BLOCK stays NO_RECOMMENDATION
+    assert payload["call"] == "NO_RECOMMENDATION"
+    assert kiasha["existingHolderAction"] == "HOLD_AND_MONITOR"
+    assert "neither a sell nor an add signal" in kiasha["existingHolderNote"]
+    assert kiasha["newPositionAction"] == "NO_RECOMMENDATION"            # the new-position answer is unchanged
+    payload, kiasha = _holder("WARN", 0.04, 0.6)                      # P1.3: a REVIEW is a labelled HOLD_OR_WATCH, never "no action"
+    assert payload["call"] == "HOLD_OR_WATCH" and payload["needsReview"]["label"] == "Needs review"
+    assert kiasha["existingHolderAction"] == "HOLD_AND_MONITOR"
 
 
 @pytest.mark.parametrize("status,score,conf,call,holder", [

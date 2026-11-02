@@ -808,6 +808,13 @@ def _analysis_payload(
             proposed_call="HOLD_OR_WATCH", score=score, overall_confidence=confidence, decision_confidence=decision_confidence,
             evidence=evidence, distress=distress, critical_data_gaps=critical_gaps, buy_review_rules=True,
             peer_group_size=_peer_group_size(enriched), positive_signal_agents=_positive_signal_agents(signals))
+    if decision_logic.is_v2() and governance.action == "REVIEW":
+        # v2 (P1.3, owner 2026-11-02): no human review queue. A REVIEW becomes a neutral HOLD_OR_WATCH labelled "needs review";
+        # the reasons stay on the record and the stock appears in the simple management list (GET /global/review-list).
+        v2_extras["needsReview"] = {"capped": preliminary_call, "to": "HOLD_OR_WATCH", "reasons": list(governance.review_reasons),
+                                    **decision_logic.NEEDS_REVIEW_LABEL}
+        governance = replace(governance, final_call="HOLD_OR_WATCH", abstained=False,
+                             reasoning="Needs review (shown as Hold Or Watch): " + "; ".join(governance.review_reasons))
     call = governance.final_call
     distress_gate_applied = (
         preliminary_call == "BUY_CANDIDATE"

@@ -288,6 +288,7 @@ export type GlobalAnalysis = {
   riskCap?: { capped?: string; to?: string; reason?: string };
   /** Decision logic v2 (P1.5): a positive score held at HOLD_OR_WATCH only because the relative valuation could not be verified. */
   abstentionCap?: { capped?: string; to?: string; qualifier?: string; label?: string; labelFa?: string; reasons?: string[] };
+  needsReview?: { capped?: string; to?: string; qualifier?: string; label?: string; labelFa?: string; reasons?: string[] };
   score?: number;
   confidence?: number;
   decisionConfidence?: number;

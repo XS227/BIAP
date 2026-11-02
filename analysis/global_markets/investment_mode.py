@@ -470,6 +470,20 @@ def _tier(rank_index: int, total: int, score: float, cfg: InvestmentConfig, n_ag
     return "HOLD"
 
 
+def _tier_v2(idx: int, total: int, pool_idx: Optional[int], pool_total: int, score: float, cfg: InvestmentConfig, n_agents: int) -> str:
+    """v2 (P1.7, owner 2026-11-02): BUY / ACCUMULATE are the top 10 % / 25 % of the *pool* (Evidence PASS and confidence >= 0.45)
+    of one market, with score floors 0.10 / 0.05. SELL / REDUCE are unchanged (rank in the whole market, v1 rule)."""
+    if score > 0:
+        if pool_idx is not None and pool_total > 0:
+            pos = (pool_idx + 1) / pool_total
+            if pos <= cfg.buy_top_fraction and score >= decision_logic.BUY_MIN_SCORE_V2 and n_agents >= cfg.buy_min_agents:
+                return "BUY"
+            if pos <= cfg.accumulate_top_fraction and score >= decision_logic.ACCUMULATE_MIN_SCORE_V2:
+                return "ACCUMULATE"
+        return "HOLD"
+    return _tier(idx, total, score, cfg, n_agents)
+
+
 def _collapse_listings(candidates: Sequence[Candidate], cfg: InvestmentConfig):
     """One candidate per (market, ISIN) for grouped venues (Xetra + Frankfurt = ``DE``); returns (batch, dup map).
 
@@ -557,9 +571,12 @@ def _decide_core(
     for keys in per_exchange.values():
         ordered = sorted(keys, key=lambda k: (-detail[k][2], -detail[k][3], k))
         total = len(ordered)
+        v2 = decision_logic.is_v2()
+        pool = [k for k in ordered if detail[k][0].evidence_status == "PASS" and detail[k][3] >= decision_logic.BUY_POOL_MIN_CONFIDENCE_V2]
+        pool_index = {k: i for i, k in enumerate(pool)}
         for idx, key in enumerate(ordered):
             c, signals, score, confidence, n, used, scope = detail[key]
-            tier = _tier(idx, total, score, cfg, n)
+            tier = (_tier_v2(idx, total, pool_index.get(key), len(pool), score, cfg, n) if v2 else _tier(idx, total, score, cfg, n))
             base_tier = tier
             flags: List[str] = []
             if decision_logic.is_v2():

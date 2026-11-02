@@ -21,3 +21,19 @@ Options (decision needed; any change is a protocol deviation)
 2. v2: BUY_CANDIDATE when score >= max(0.15, p90 of the exchange's PASS, sufficient-confidence stocks); AVOID symmetric at the p10 side. Needs the exchange percentile at decision time (the investment mode already computes it).
 3. Rescale scores to the -1..+1 range (cosmetic; thresholds move with it).
 Recommendation: option 2, behind v2, after the owner confirms the floor of 0.15.
+
+## Implemented 2026-11-02 (owner decision, v2 only) and before/after
+
+Rule: per market, pool = Evidence PASS and decision confidence >= 0.45; BUY = top 10 % of the pool with score >= 0.10 (and >= 4 agents with data); ACCUMULATE = top 25 % with score >= 0.05. All other v2 rules (flags, downgrades, liquidity gate, SELL gate) unchanged; v1 untouched.
+Method: replay of stored ledger companies in v2 investment mode on copies (`tools/p1_12_liquidity_measure.py --pool-tiers off|on`), same data both times. "Before" = v2 with the previous rank rule (top 10 % / 25 % of all analysed stocks, score > 0).
+
+| Market | BUY before | BUY after | change | ACCUMULATE before | after |
+|---|---|---|---|---|---|
+| US NASDAQ | 175 | 159 | -9.1 % | 280 | 244 |
+| US NYSE | 134 | 126 | -6.0 % | 230 | 219 |
+| DE (Xetra) | 13 | 14 | +7.7 % | 40 | 39 |
+| NO (Oslo) | 5 | 5 | 0 % | 19 | 19 |
+
+No market changed its BUY count by more than 30 %, so nothing to report under that rule. (DE and NO were replayed with a refreshed ECB rate file, see below; US needs no FX.)
+
+Side finding (important): the production ECB history file `/var/lib/biap-global/fx/ecb-hist.json` ends on 2026-10-13. The liquidity gate looks up the rate within 7 days, so with that file **every non-USD market has unknown liquidity** (DE and NO showed BUY = 0 and all ACCUMULATE "liquidity unconfirmed" in the first replay). Refreshing the file (`python -m global_markets.fx_history`, public ECB download) fixes it; I only refreshed a copy and did not touch production. This also corrects the earlier P2.4 note: Oslo names DO have `avg_volume_30d` (144 of 146 rows); the gate could not value them because the rate was missing, not because the volume is.
