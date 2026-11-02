@@ -132,3 +132,7 @@ Deviation to know: the owner asked for the *median* daily value; the stored comp
 Consequence of (1): no `market`-dimension disagreement is possible any more (forecast vs liquidity); one v2 test was moved to the `business` dimension. Fewer agents with data: liquidity counts as no data, so names that had exactly 4 agents including liquidity lose BUY/SELL eligibility (measured below).
 Also added `SELL_NEGATIVE_MARGIN = 0.0` (production behaviour identical); the owner's -0.10 margin is measured only (tools/p1_12_liquidity_measure.py --sell-margin 0.10), not enabled.
 Tests: `analysis/tests/test_liquidity_gate.py` (13), full suite 1976 passed.
+
+### 2026-11-02 — owner decisions on P1.12 (after push of 05f4ed6)
+- SELL margin -0.10: **not implemented, value stays 0.0.** Measured effect: 5 of 399 SELLs (1.3 %) would become REDUCE (NASDAQ 1 of 214, NYSE 4 of 151, DE 0, NO 0); no other tier moves.
+- Norway: current behaviour stays (BUY -> ACCUMULATE labelled "نقدشوندگی تأیید نشده") until Oslo volume data exists (P2.4).
