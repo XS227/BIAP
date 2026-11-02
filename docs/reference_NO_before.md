@@ -36,7 +36,7 @@ showed must have come from a fresh analysis (the detail page calls `POST /global
 ## 1. "Confidence 0.55 below accept threshold 0.55": rounding in the display, not in the comparison
 
 - Exact stored number for Equinor: **0.551766** (≥ 0.55 → accepted). Aker BP: 0.567667, accepted at "0.57".
-- Every comparison is on the **unrounded** float: `governance.py:137` `if conf >= accept_threshold` (REVIEW branch at `:146`
+- Every comparison is on the **unrounded** float: `governance.py:136` `if conf >= accept_threshold` (REVIEW branch at `:146`
   `conf >= escalate_threshold`), `decision_reasons.py` `confidence < accept_threshold`, `opportunity.py` `confidence < 0.55`.
   Only the message text is formatted with `:.2f` (`governance.py:148`, `decision_reasons.py:61`, `opportunity.py:83`).
   So "0.55 below 0.55" means the real value was in **[0.545, 0.55)** and is a **display-rounding** problem. The comparison operator is correct.
