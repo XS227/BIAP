@@ -16,6 +16,29 @@ from analysis.codal_inbox import Inbox
 
 NAMED_ISSUER = re.compile(r"\(\s*شرکت\s+([^()]+)\)")
 
+JALALI_PERIOD = re.compile(
+    r"(?:سال|دوره) مالی منتهی به\s+([۰-۹٠-٩0-9]{4}/[۰-۹٠-٩0-9]{2}/[۰-۹٠-٩0-9]{2})"
+)
+DIGIT_TRANSLATION = str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789")
+
+
+def filing_metadata(title: str) -> dict:
+    """Extract title claims, never independently verified accounting facts."""
+    title = title or ""
+    period = JALALI_PERIOD.search(title)
+    if re.search(r"حسابرسی\s*نشده", title):
+        assurance = "UNAUDITED"
+    elif re.search(r"حسابرسی\s*شده", title):
+        assurance = "AUDITED"
+    else:
+        assurance = "NOT_STATED"
+    return {
+        "scope_claim": "CONSOLIDATED" if "تلفیقی" in title else "NOT_EXPLICITLY_CONSOLIDATED",
+        "assurance_claim": assurance,
+        "period_end_jalali": period.group(1).translate(DIGIT_TRANSLATION) if period else None,
+    }
+
+
 
 def normalized_name(name: str) -> str:
     name = name.translate(str.maketrans({"ك": "ک", "ي": "ی", "ة": "ه"}))
@@ -50,6 +73,12 @@ def audit_symbol(inbox: Inbox, symbol: str) -> dict:
             "tracing_no": tracing_no,
             "issuer_evidence": classification,
             "html_available": html_available,
+            **filing_metadata(str(filing.get("title") or "")),
+            "financial_ai_eligible": False,
+            "quality_gate": (
+                "BLOCKED_HTML_MISSING" if not html_available
+                else "BLOCKED_ISSUER_SCOPE_AND_ACCOUNTING_NOT_RECONCILED"
+            ),
         })
     return {
         "symbol": symbol,
@@ -59,6 +88,11 @@ def audit_symbol(inbox: Inbox, symbol: str) -> dict:
         "explicit_issuer_review": sum(x["issuer_evidence"] == "EXPLICIT_ISSUER_REVIEW" for x in items),
         "html_available": sum(x["html_available"] for x in items),
         "html_missing": sum(not x["html_available"] for x in items),
+        "audited_consolidated_html_unvalidated": sum(
+            x["html_available"] and x["scope_claim"] == "CONSOLIDATED"
+            and x["assurance_claim"] == "AUDITED" for x in items
+        ),
+        "financial_ai_eligible": False,
         "audit_status": "BLOCKED_PENDING_ISSUER_AND_STATEMENT_VALIDATION",
         "market_price_reconciliation": "NOT_POSSIBLE_FROM_CODAL_INBOX_ALONE",
         "filing_evidence": items,

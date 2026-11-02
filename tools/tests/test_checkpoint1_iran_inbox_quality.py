@@ -2,7 +2,7 @@ import sys
 import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from tools.checkpoint1_iran_inbox_quality import issuer_evidence, normalized_name, audit_symbol
+from tools.checkpoint1_iran_inbox_quality import issuer_evidence, normalized_name, audit_symbol, filing_metadata
 
 
 class TestIssuerEvidence(unittest.TestCase):
@@ -21,6 +21,23 @@ class TestIssuerEvidence(unittest.TestCase):
         self.assertEqual(issuer_evidence("صورت‌های مالی تلفیقی حسابرسی شده", "ایران خودرو"),
                          "ISSUER_NOT_EXPLICIT")
 
+    def test_filing_metadata_audited_consolidated_jalali(self):
+        result = filing_metadata("صورت‌های مالی تلفیقی سال مالی منتهی به ۱۴۰۴/۱۲/۲۹ (حسابرسی شده)")
+        self.assertEqual(result, {
+            "scope_claim": "CONSOLIDATED",
+            "assurance_claim": "AUDITED",
+            "period_end_jalali": "1404/12/29",
+        })
+
+    def test_unaudited_must_not_be_classified_audited(self):
+        result = filing_metadata("صورت‌های مالی تلفیقی سال مالی منتهی به ۱۴۰۴/۱۲/۲۹ (حسابرسی نشده)")
+        self.assertEqual(result["assurance_claim"], "UNAUDITED")
+
+    def test_non_consolidated_not_assumed_standalone(self):
+        result = filing_metadata("صورت‌های مالی (شرکت دیگر)")
+        self.assertEqual(result["scope_claim"], "NOT_EXPLICITLY_CONSOLIDATED")
+        self.assertIsNone(result["period_end_jalali"])
+
     def test_no_report_html_is_not_pass(self):
         class InboxStub:
             def record(self, symbol):
@@ -32,6 +49,9 @@ class TestIssuerEvidence(unittest.TestCase):
         self.assertEqual(result["explicit_issuer_review"], 1)
         self.assertEqual(result["html_missing"], 1)
         self.assertTrue(result["audit_status"].startswith("BLOCKED"))
+        self.assertFalse(result["financial_ai_eligible"])
+        self.assertFalse(result["filing_evidence"][0]["financial_ai_eligible"])
+        self.assertEqual(result["filing_evidence"][0]["quality_gate"], "BLOCKED_HTML_MISSING")
 
 
 if __name__ == "__main__":
