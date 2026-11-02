@@ -69,3 +69,6 @@
 - Owner: all stamping changes OFF until after 19 Nov 2026. Four default-off flags added (`BIAP_YAHOO_CLOSE_STAMP`, `BIAP_US_SESSION_DATE`, `BIAP_EURONEXT_SESSION_DATE_MARKETS` default empty, `BIAP_ANALYSIS_STALE_LABEL`); with all off the code path equals v1 (incl. no `price_time_basis` key). Tests: flag-off cases added, 2018 pass. Changelog row written. Calendars themselves stay in the code (inert without the flags). Nordic (`nasdaq_nordic`) session dating is older code, untouched.
 - Runner installer (`deploy/install-price-refresh-runner.sh`) awaiting the owner's sudo run; the runner calls the PRODUCTION checkout (`/home/ubuntu/biap-global/BIAP`, main 6c8ada1), not the fix branch.
 - ECB timer first-run check still pending (after 16:35 UTC).
+
+## 2026-11-02 (owner: continue phases 2 and 3, no production)
+- P2.5 done (label only): reporting-currency suffix on EPS, book value/share and filing rows; note when reporting currency differs from listing currency. No value or decision logic changed. tsc clean, test:api 30 pass. Not deployed.
