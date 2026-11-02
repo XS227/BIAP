@@ -38,3 +38,6 @@ export function nearestCandidates(markets: { country: string; exchange: string; 
   }
   return out.sort((a, b) => b.key - a.key || a.ticker.localeCompare(b.ticker)).slice(0, Math.max(1, limit));
 }
+
+export const LIVE_ANALYSIS_LABEL = 'Live analysis · تحلیل لحظه‌ای';
+export const LIVE_MAY_DIFFER = 'May differ from the official tier · ممکن است با رده رسمی متفاوت باشد';

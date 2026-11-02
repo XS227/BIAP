@@ -269,6 +269,10 @@ export type GlobalDecisionTable = {
 export type GlobalAnalysis = {
   /** P3 (v2): when this score was computed (live analysis = now, scan row = ledger snapshot time). */
   analyzedAt?: string;
+  /** v2: score/confidence/call are the stored scan snapshot (same as list and Kiasha); the agent tables still come from the live run. */
+  officialSnapshot?: boolean;
+  detailsFromLive?: boolean;
+  live?: { analyzedAt?: string | null; score?: number | null; confidence?: number | null; call?: string | null; note?: string };
   fundamentalEvidence?: GlobalFundamentalEvidence;
   decisionReasons?: GlobalDecisionReasons;
   identity?: string;

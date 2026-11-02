@@ -584,11 +584,37 @@ def global_scan_top10(req: GlobalTop10Request):
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
 
 
+def _official_snapshot_view(result: dict) -> dict:
+    """v2: score / confidence / call come from the stored scan snapshot (same as the list and Kiasha), with its scan time.
+
+    The live analysis is kept under ``live`` with its own time; the agent tables below still come from that live run
+    (``detailsFromLive``). v1, or a ticker without a stored snapshot, is returned unchanged.
+    """
+    if not decision_logic.is_v2():
+        return result
+    from global_markets.analysis_ledger import AnalysisLedger, ledger_path
+    country, exchange = str(result.get("country") or "").upper(), str(result.get("exchange") or "").upper()
+    if not (country and exchange and ledger_path(country, exchange).exists()):
+        return result
+    ledger = AnalysisLedger(country, exchange)
+    try:
+        snap = ledger.snapshot(str(result.get("ticker") or ""))
+    finally:
+        ledger.close()
+    if not snap:
+        return result
+    live = {"analyzedAt": result.get("analyzedAt"), "score": result.get("score"), "confidence": result.get("confidence"),
+            "call": result.get("call"), "note": "May differ from the official tier: computed now on current inputs."}
+    return {**result, "score": snap["score"], "confidence": snap["confidence"], "call": snap["call"] or result.get("call"),
+            "analyzedAt": snap["analyzed_at"], "officialSnapshot": True, "detailsFromLive": True, "live": live}
+
+
 @router.post("/analyze")
 def global_analyze(req: InstrumentRequest):
     try:
         result = analyze_company(_seed(req))
         if isinstance(result, dict):
+            result = _official_snapshot_view(result)          # v2: headline numbers = the stored scan snapshot, live kept apart
             view = decision_overlay.market_view(str(result.get("country") or ""), str(result.get("exchange") or ""))
             decision = view.get(str(result.get("ticker") or ""))
             if decision is not None:

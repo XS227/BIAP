@@ -1,4 +1,4 @@
-import { scoreScanSuffix } from '@/lib/scan-display';
+import { LIVE_ANALYSIS_LABEL, LIVE_MAY_DIFFER, scoreScanSuffix } from '@/lib/scan-display';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -279,7 +279,10 @@ export default function GlobalStockDetailScreen() {
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{distress?.status ? `Financial distress assessment: ${friendly(distress.status)}. See Agent 9 for model inputs and limitations.` : 'Financial distress: insufficient verified inputs. See Agent 9 for details.'}</Text>
         </View>
 
-        {analysis.analyzedAt || analysis.investment?.analyzedAt ? <Text style={[styles.body, { color: colors.textSecondary, marginBottom: 6 }]}>{`This page: live analysis${scoreScanSuffix(analysis.analyzedAt)}. Market list and Kiasha scores come from the stored scan${scoreScanSuffix(analysis.investment?.analyzedAt) || ' (time unavailable)'}; the numbers can differ because the price and inputs may have changed in between.`}</Text> : null}
+        {analysis.officialSnapshot ? <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
+          <Text style={[styles.body, { color: colors.textSecondary }]}>{`Official score, confidence and tier: stored scan${scoreScanSuffix(analysis.analyzedAt)} - the same numbers as the market list and Kiasha.`}</Text>
+          {analysis.live ? <Text style={[styles.body, { color: colors.textSecondary }]}>{`${LIVE_ANALYSIS_LABEL}${scoreScanSuffix(analysis.live.analyzedAt)}: score ${analysis.live.score == null ? '—' : n(analysis.live.score, 3)}, confidence ${analysis.live.confidence == null ? '—' : n(analysis.live.confidence, 3)}. ${LIVE_MAY_DIFFER}. The agent tables below are from this live run.`}</Text> : null}
+        </View> : analysis.analyzedAt ? <Text style={[styles.body, { color: colors.textSecondary }]}>{`Analysis${scoreScanSuffix(analysis.analyzedAt)}`}</Text> : null}
         <View style={styles.metrics}><Metric label="Conservative score" value={analysis.score == null ? '—' : n(analysis.score, 3)} colors={colors}/>{analysis.investment?.score != null ? <Metric label="Scan-list score" value={n(analysis.investment.score, 3)} colors={colors}/> : null}<Metric label="Overall calibrated" value={analysis.confidence == null ? '—' : `${analysis.confidence.toFixed(3)}`} colors={colors}/><Metric label="Evidence" value={analysis.evidence?.status || '—'} colors={colors}/></View>
 
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Kiasha decision</Text><Text style={[styles.body, { color: colors.textSecondary }]}>Kiasha combines the six scoring agent signals after provider normalization, then applies the Evidence/Verification gate. Evidence PASS means the data is sufficiently verified; it is not itself a BUY signal. A new BUY candidate also needs a positive score and enough decision confidence.</Text></View>

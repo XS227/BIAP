@@ -734,6 +734,13 @@ class AnalysisLedger:
                "FROM ledger WHERE in_universe=1 AND result IS NOT NULL")
         return {r["ticker"]: (r["analyzed_at"], r["st"], r["why"], r["qd"]) for r in self._conn().execute(sql)}
 
+    def snapshot(self, ticker: str) -> Optional[dict]:
+        """Stored scan numbers of one ticker (call, score, confidence, analyzed_at); None when never analysed."""
+        r = self._conn().execute(
+            "SELECT call, score, confidence, analyzed_at FROM ledger WHERE ticker=? AND in_universe=1 AND analyzed_at IS NOT NULL "
+            "AND score IS NOT NULL", (ticker,)).fetchone()
+        return dict(r) if r else None
+
     def full_results(self, *, buys_only: bool = False) -> Iterator[dict]:
         sql = "SELECT result FROM ledger WHERE in_universe=1 AND result IS NOT NULL"
         if buys_only:
