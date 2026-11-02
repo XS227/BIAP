@@ -11,3 +11,4 @@ codal_pdf_text_cache.json.tmp
 *.sqlite3.bak-*
 .runtime/
 analysis/logs/
+analysis/accounting/saft/reference/
