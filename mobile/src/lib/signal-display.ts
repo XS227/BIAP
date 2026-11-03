@@ -47,3 +47,11 @@ export function queueBadge(m: { dayLow?: number | null; dayHigh?: number | null;
   if (!atBand) return null;
   return { side: c > 0 ? 'BUY' : 'SELL', label: c > 0 ? 'صف خرید (احتمالی)' : 'صف فروش (احتمالی)' };
 }
+
+/** An agent's confidence is its own estimate; show how many graded past calls back it so a high % on a tiny record is not read as proven. */
+export function confidenceNote(samples?: number | null, maturity?: string | null): string {
+  if (samples == null) return '';
+  if (samples <= 0) return ' (بدون سابقه‌ی ارزیابی‌شده)';
+  if (samples < 10) return ` (سابقه‌ی کم: ${samples} نمونه${maturity ? ` • ${maturity}` : ''})`;
+  return ` (${samples} نمونه‌ی ارزیابی‌شده)`;
+}

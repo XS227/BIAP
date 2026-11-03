@@ -1,4 +1,4 @@
-import { callBadge, normalizedWeightPercents, trackButtonLabel } from '@/lib/signal-display';
+import { callBadge, normalizedWeightPercents, trackButtonLabel, confidenceNote } from '@/lib/signal-display';
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
 import { Brand, Fonts, Spacing, ThemeColors } from '@/constants/theme';
@@ -152,7 +152,7 @@ export function RecommendationCard({ rec, colors }: { rec: Recommendation; color
     {scenarioEntry?.scenario ? <ScenarioPanel scenario={scenarioEntry.scenario} colors={colors} /> : null}
     {top ? <Text style={[styles.reasoning, { color: colors.textSecondary }]} numberOfLines={expanded ? undefined : 2}>{top.reasoning}</Text> : null}
     {agentBreakdown.length ? <Pressable onPress={() => setExpanded(e => !e)}><Text style={[styles.toggle, { color: accent }]}>{expanded ? 'بستن جزئیات' : 'جزئیات رأی عامل‌ها'}</Text></Pressable> : null}
-    {expanded ? <View style={styles.breakdown}>{agentBreakdown.map(b => <View key={b.agent} style={styles.breakdownRow}><Text style={[styles.breakdownAgent, { color: colors.text }]}>{AGENT_LABEL[b.agent] ?? b.agent}</Text><Text style={[styles.breakdownDetail, { color: colors.textSecondary }]}>رأی {b.vote >= 0 ? '+' : ''}{b.vote.toFixed(2)} · اطمینان {(b.confidence * 100).toFixed(0)}٪ · وزن {((b.weight_normalized ?? 0) * 100).toFixed(0)}٪</Text><Text style={[styles.breakdownDetail, { color: colors.textSecondary }]}>{b.reasoning}</Text></View>)}</View> : null}
+    {expanded ? <View style={styles.breakdown}>{agentBreakdown.map(b => <View key={b.agent} style={styles.breakdownRow}><Text style={[styles.breakdownAgent, { color: colors.text }]}>{AGENT_LABEL[b.agent] ?? b.agent}</Text><Text style={[styles.breakdownDetail, { color: colors.textSecondary }]}>رأی {b.vote >= 0 ? '+' : ''}{b.vote.toFixed(2)} · اطمینان {(b.confidence * 100).toFixed(0)}٪{confidenceNote(b.observed_samples, b.maturity)} · وزن {((b.weight_normalized ?? 0) * 100).toFixed(0)}٪</Text><Text style={[styles.breakdownDetail, { color: colors.textSecondary }]}>{b.reasoning}</Text></View>)}</View> : null}
     <FundamentalChart rec={rec} colors={colors} />
     <FundamentalDetails rec={rec} colors={colors} />
 

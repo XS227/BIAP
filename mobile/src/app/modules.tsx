@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { displaySymbol } from '@/lib/data-status';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing, ThemeColors } from '@/constants/theme';
@@ -65,7 +66,7 @@ function ModuleCard({ item, colors, accent, state, selected }: { item: ModuleIte
       <View style={[styles.moduleIcon, { backgroundColor: `${accent}22` }]}><Text style={styles.moduleEmoji}>{item.icon}</Text></View>
       <Text style={[styles.moduleTitle, { color: colors.text }]}>{item.title}</Text>
       <Text style={[styles.moduleSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
-      <Text style={[styles.state, { color: state === 'LIVE' || state.startsWith('LISTED') ? Brand.stockGreen : state === 'DEMO' ? '#a78bfa' : colors.textSecondary }]}>{state}</Text>
+      <Text style={[styles.state, { color: state === 'داده‌ی BIAP' || state.startsWith('بورسی') ? Brand.stockGreen : state === 'نمایشی' ? '#a78bfa' : colors.textSecondary }]}>{state}</Text>
     </Pressable>
   );
 }
@@ -87,11 +88,11 @@ export default function ModulesScreen() {
   const toggle = async () => { const next = !demo; await setDemoMode(next); setDemo(next); };
 
   const stateFor = (group: string) => {
-    if (group === 'investment') return 'LIVE';
-    if (demo) return 'DEMO';
-    if (selected) return `LISTED • ${selected.symbol}`;
-    if (companyConnected) return 'PRIVATE DATA';
-    return 'SELECT LISTED COMPANY';
+    if (group === 'investment') return 'داده‌ی BIAP';
+    if (demo) return 'نمایشی';
+    if (selected) return `بورسی • ${displaySymbol(selected.symbol, selected.name)}`;
+    if (companyConnected) return 'داده‌ی شرکتی';
+    return 'شرکتی انتخاب نشده';
   };
 
   // Listed-company selection is the primary path. Private CSV/Excel remains
@@ -119,13 +120,13 @@ export default function ModulesScreen() {
           <View style={[styles.controlCard, { backgroundColor: colors.backgroundElement }]}>
             <View style={{ flex: 1, alignItems: 'flex-end' }}>
               <Text style={[styles.controlTitle, { color: colors.text }]}>حالت ماژول‌ها: {demo ? 'Demo' : 'Real'}</Text>
-              <Text style={[styles.controlSub, { color: colors.textSecondary }]}>{selected ? `شرکت بورسی انتخاب‌شده: ${selected.symbol}${selected.name ? ` • ${selected.name}` : ''}` : companyConnected ? 'داده خصوصی متصل است؛ برای مسیر بورسی یک شرکت انتخاب کنید.' : 'هنوز شرکت بورسی انتخاب نشده است.'}</Text>
+              <Text style={[styles.controlSub, { color: colors.textSecondary }]}>{selected ? `شرکت بورسی انتخاب‌شده: ${displaySymbol(selected.symbol, selected.name)}${selected.name ? ` • ${selected.name}` : ''}` : companyConnected ? 'داده خصوصی متصل است؛ برای مسیر بورسی یک شرکت انتخاب کنید.' : 'هنوز شرکت بورسی انتخاب نشده است.'}</Text>
             </View>
             <Pressable onPress={toggle} style={[styles.modeButton, { backgroundColor: demo ? '#7048e8' : Brand.stockGreen }]}><Text style={styles.modeButtonText}>{demo ? 'DEMO' : 'REAL'}</Text></Pressable>
           </View>
 
           <Pressable onPress={openDataConnections} style={[styles.connect, { borderColor: selected ? Brand.stockGreen : Brand.primary }]}>
-            <Text style={[styles.connectText, { color: selected ? Brand.stockGreen : Brand.primary }]}>{selected ? `تغییر شرکت بورسی • ${selected.symbol}` : 'انتخاب شرکت بورسی / فرابورسی'}</Text>
+            <Text style={[styles.connectText, { color: selected ? Brand.stockGreen : Brand.primary }]}>{selected ? `تغییر شرکت بورسی • ${displaySymbol(selected.symbol, selected.name)}` : 'انتخاب شرکت بورسی / فرابورسی'}</Text>
           </Pressable>
 
           {GROUPS.map(group => (

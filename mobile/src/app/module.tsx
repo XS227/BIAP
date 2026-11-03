@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { displaySymbol, realSourceBadge } from '@/lib/data-status';
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -60,8 +61,8 @@ export default function ModuleDetailScreen() {
   const renderBullets = (title: string, bullets: string[]) => <View style={[styles.insightCard, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.insightTitle, { color: colors.text }]}>{title}</Text>{bullets.map((bullet) => <View key={bullet} style={styles.bulletRow}><Text style={[styles.bulletText, { color: colors.textSecondary }]}>{bullet}</Text><View style={styles.bulletDot} /></View>)}</View>;
 
   const requirementCard = requirement ? <View style={[styles.requirementCard,{backgroundColor:colors.backgroundElement,borderColor:companyMode==='listed'?'#16653444':colors.backgroundSelected}]}> 
-    <View style={styles.requirementHead}><View style={[styles.reqBadge,{backgroundColor:companyMode==='listed'?'#14532d':'#1e3a8a'}]}><Text style={styles.reqBadgeText}>{companyMode==='listed'?'بورسی • AUTO':'شرکتی • INPUT'}</Text></View><Text style={[styles.requirementTitle,{color:colors.text}]}>داده لازم برای این ماژول</Text></View>
-    {code ? <Text style={[styles.selectedCompany,{color:Brand.positive}]}>نماد انتخاب‌شده: {code}</Text> : null}
+    <View style={styles.requirementHead}><View style={[styles.reqBadge,{backgroundColor:companyMode==='listed'?'#14532d':'#1e3a8a'}]}><Text style={styles.reqBadgeText}>{companyMode==='listed'?'بورسی • منبع خودکار':'شرکتی • ورود دستی'}</Text></View><Text style={[styles.requirementTitle,{color:colors.text}]}>داده لازم برای این ماژول</Text></View>
+    {code ? <Text style={[styles.selectedCompany,{color:Brand.positive}]}>نماد انتخاب‌شده: {displaySymbol(code)}</Text> : null}
     <Text style={[styles.requirementText,{color:colors.textSecondary}]}>{requirement.description}</Text>
     {companyMode==='listed' ? <>
       <Text style={[styles.reqSection,{color:colors.text}]}>منابع خودکار BIAP</Text>
@@ -74,7 +75,7 @@ export default function ModuleDetailScreen() {
     {requirement.fields.map(field=>{
       const matched=readiness.matched.includes(field);
       const auto=companyMode==='listed' && Boolean(field.autoSources?.length);
-      return <View key={field.key} style={styles.fieldRow}><Text style={[styles.fieldState,{color:matched||auto?Brand.positive:field.required?Brand.warning:colors.textSecondary}]}>{matched?'✓ موجود':auto?'AUTO':field.required?'لازم':'اختیاری'}</Text><Text style={[styles.fieldLabel,{color:colors.text}]}>{field.label}</Text></View>;
+      return <View key={field.key} style={styles.fieldRow}><Text style={[styles.fieldState,{color:matched?Brand.positive:field.required?Brand.warning:colors.textSecondary}]}>{matched?'✓ موجود':auto?'منبع خودکار دارد':field.required?'لازم':'اختیاری'}</Text><Text style={[styles.fieldLabel,{color:colors.text}]}>{field.label}</Text></View>;
     })}
     {companyMode!=='listed' && datasetColumns.length>0 ? <Text style={[styles.coverage,{color:readiness.missing.length?Brand.warning:Brand.positive}]}>{readiness.missing.length ? `${readiness.missing.length} فیلد اجباری هنوز در dataset پیدا نشد.` : '✓ همه فیلدهای اجباری در dataset شناسایی شدند.'}</Text> : null}
     <Pressable onPress={openDataConnect} style={[styles.requirementButton,{borderColor:companyMode==='listed'?Brand.positive:Brand.primary}]}><Text style={[styles.requirementButtonText,{color:companyMode==='listed'?Brand.positive:Brand.primary}]}>{companyMode==='listed'?'بررسی / تکمیل داده این نماد':'باز کردن قالب داده این ماژول'}</Text></Pressable>
@@ -95,7 +96,7 @@ export default function ModuleDetailScreen() {
       <View style={[styles.disclaimer, { borderColor: '#7c5cff66' }]}><Text style={styles.disclaimerText}>این مقادیر ساختگی و فقط برای نمایش Demo هستند؛ در حساب واقعی جایگزین داده ناموجود نمی‌شوند.</Text></View>
       <Pressable onPress={openDataConnect} style={[styles.secondaryButton,{borderColor:'#7048e8'}]}><Text style={[styles.secondaryButtonText,{color:'#a78bfa'}]}>اتصال داده و رفتن به Real Mode</Text></Pressable>
     </> : loadingReal ? <View style={styles.loading}><ActivityIndicator color={Brand.primary} /><Text style={[styles.emptyBody, { color: colors.textSecondary }]}>در حال خواندن منابع واقعی BIAP...</Text></View> : real?.available ? <>
-      <View style={styles.realBadge}><Text style={styles.realBadgeText}>LIVE • {real.sourceLabel}</Text></View>
+      <View style={styles.realBadge}><Text style={styles.realBadgeText}>{realSourceBadge(real.sourceLabel)} • {real.sourceLabel.replace(/\s*•\s*LIVE( FALLBACK)?/i,'')}</Text></View>
       <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.heroText, { color: colors.textSecondary }]}>{real.summary}</Text></View>
       {renderMetrics(real.metrics)}
       {renderBullets('خلاصه داده واقعی', real.bullets)}

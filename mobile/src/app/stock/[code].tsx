@@ -1,4 +1,5 @@
 import { queueBadge } from '@/lib/signal-display';
+import { DATA_STATUS_FA, dataStatus } from '@/lib/data-status';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -32,6 +33,8 @@ function ExtendedMarketPanel({rec,colors}:{rec:Recommendation;colors:ThemeColors
   const m=rec.dataSource==='live'?rec.extendedMarket:null;
   if(!m)return null;
   const rows:[string,string][]=[
+    ['صورت‌های مالی (کدال)',DATA_STATUS_FA[dataStatus({present:Boolean(rec.dataAvailability?.codal)})]],
+    ['داده‌ی تکمیلی بازار',DATA_STATUS_FA[dataStatus({present:Boolean(rec.dataAvailability?.market_extended)})]],
     m.dayLow!=null&&m.dayHigh!=null?['بازه امروز',`${formatPrice(m.dayLow)} - ${formatPrice(m.dayHigh)}`]:null,
     queueBadge({dayLow:m.dayLow,dayHigh:m.dayHigh,changePercent:rec.livePrice?.changePercent,volumeToday:m.volumeToday})?['وضعیت صف',queueBadge({dayLow:m.dayLow,dayHigh:m.dayHigh,changePercent:rec.livePrice?.changePercent,volumeToday:m.volumeToday})!.label]:null,
     m.price52wLow!=null&&m.price52wHigh!=null?['بازه ۵۲ هفته',`${formatPrice(m.price52wLow)} - ${formatPrice(m.price52wHigh)}`]:null,

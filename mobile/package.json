@@ -43,7 +43,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test:ui": "node --experimental-strip-types --no-warnings --test tests/signal-display.test.mjs tests/audit-analysis.test.mjs"
+    "test:ui": "node --experimental-strip-types --no-warnings --test tests/signal-display.test.mjs tests/audit-analysis.test.mjs tests/data-status.test.mjs"
   },
   "expo": {
     "install": {

@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { displaySymbol } from '@/lib/data-status';
 import { Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -75,12 +76,12 @@ export default function DataScreen() {
 
           <View style={[styles.card, { backgroundColor: colors.backgroundElement, borderColor: selectedCompany ? '#16a34a66' : colors.backgroundSelected }]}>
             <View style={styles.cardHead}>
-              <View style={[styles.badge, { backgroundColor: selectedCompany ? '#14532d' : '#374151' }]}><Text style={styles.badgeText}>{selectedCompany ? 'LISTED LIVE' : 'SELECT'}</Text></View>
+              <View style={[styles.badge, { backgroundColor: selectedCompany ? '#14532d' : '#374151' }]}><Text style={styles.badgeText}>{selectedCompany ? 'بورسی • داده‌ی ذخیره‌شده' : 'انتخاب شرکت'}</Text></View>
               <Text style={[styles.cardTitle, { color: colors.text }]}>داده عمومی شرکت بورسی</Text>
             </View>
             {selectedCompany ? (
               <>
-                <Text style={[styles.companyName, { color: colors.text }]}>{selectedCompany.symbol} • {selectedCompany.name || selectedCompany.code}</Text>
+                <Text style={[styles.companyName, { color: colors.text }]}>{displaySymbol(selectedCompany.symbol, selectedCompany.name)} • {selectedCompany.name && !/^\d{5,}$/.test(selectedCompany.name) ? selectedCompany.name : ''}</Text>
                 <Text style={[styles.source, { color: colors.textSecondary }]}>
                   {selectedCompany.market || 'TSE / IFB'} • دیتابیس پایدار BIAP • حداقل روزانه از Tindex، baseline دوره‌ای از TSETMC/CODAL
                 </Text>

@@ -31,3 +31,11 @@ test('queue badge: single price at the 3% limit with volume -> buy queue; normal
   assert.equal(queueBadge({ dayLow: 10270, dayHigh: 10270, changePercent: 2.9, volumeToday: 0 }), null);
   assert.equal(queueBadge(null), null);
 });
+
+import { confidenceNote } from '../src/lib/signal-display.ts';
+test('confidence note flags thin track records', () => {
+  assert.match(confidenceNote(0), /بدون سابقه/);
+  assert.match(confidenceNote(3), /سابقه‌ی کم/);
+  assert.equal(confidenceNote(null), '');
+  assert.match(confidenceNote(50), /50|۵۰/);
+});

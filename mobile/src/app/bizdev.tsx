@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { displaySymbol } from '@/lib/data-status';
 import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -69,11 +70,11 @@ export default function BizDevScreen() {
   } as never);
 
   const stateFor = (key: string) => {
-    if (demoMode) return 'DEMO';
-    if (selectedCompany && !INTERNAL_ONLY.has(key)) return `LISTED • ${selectedCompany.symbol}`;
-    if (companyConnected) return 'PRIVATE DATA LIVE';
-    if (selectedCompany && INTERNAL_ONLY.has(key)) return 'NEEDS INTERNAL DATA';
-    return 'SELECT COMPANY';
+    if (demoMode) return 'نمایشی';
+    if (selectedCompany && !INTERNAL_ONLY.has(key)) return `بورسی • ${displaySymbol(selectedCompany.symbol, selectedCompany.name)}`;
+    if (companyConnected) return 'داده‌ی شرکتی متصل';
+    if (selectedCompany && INTERNAL_ONLY.has(key)) return 'نیازمند داده‌ی داخلی';
+    return 'شرکتی انتخاب نشده';
   };
 
   return (
@@ -90,7 +91,7 @@ export default function BizDevScreen() {
             <Text style={[styles.heroTitle, { color: colors.text }]}>اول شرکت را انتخاب کنید؛ داده بورسی را BIAP خودش می‌آورد</Text>
             {selectedCompany ? (
               <>
-                <Text style={[styles.selectedCompany, { color: colors.text }]}>{selectedCompany.symbol} • {selectedCompany.name || selectedCompany.code}</Text>
+                <Text style={[styles.selectedCompany, { color: colors.text }]}>{displaySymbol(selectedCompany.symbol, selectedCompany.name)} • {selectedCompany.name || selectedCompany.code}</Text>
                 <Text style={[styles.heroBody, { color: colors.textSecondary }]}>KPI، SWOT/رقبا، فرصت بازار، گزارش مدیریتی و مدل‌های عمومی از دیتابیس پایدار BIAP و منابع Tindex / TSETMC / CODAL شروع می‌شوند. فقط بخش‌هایی مثل CRM، قیمت محصول و Pipeline به داده داخلی نیاز دارند.</Text>
               </>
             ) : (
@@ -104,9 +105,9 @@ export default function BizDevScreen() {
 
           <View style={styles.statusRow}>
             <View style={[styles.statusCard, { backgroundColor: colors.backgroundElement }]}>
-              <Text style={{ fontFamily: Fonts.mono, fontSize: 9, fontWeight: '900', color: selectedCompany ? Brand.stockGreen : '#f59e0b' }}>{selectedCompany ? 'LISTED ACTIVE' : 'SELECT'}</Text>
+              <Text style={{ fontFamily: Fonts.mono, fontSize: 9, fontWeight: '900', color: selectedCompany ? Brand.stockGreen : '#f59e0b' }}>{selectedCompany ? 'بورسی فعال' : 'SELECT'}</Text>
               <Text style={[styles.statusTitle, { color: colors.text }]}>شرکت بورسی</Text>
-              <Text style={[styles.statusText, { color: colors.textSecondary }]}>{selectedCompany ? `${selectedCompany.symbol} • Tindex/TSETMC/CODAL` : 'یک نماد انتخاب کنید'}</Text>
+              <Text style={[styles.statusText, { color: colors.textSecondary }]}>{selectedCompany ? `${displaySymbol(selectedCompany.symbol, selectedCompany.name)} • TSETMC/CODAL` : 'یک نماد انتخاب کنید'}</Text>
             </View>
             <View style={[styles.statusCard, { backgroundColor: colors.backgroundElement }]}>
               <Text style={{ fontFamily: Fonts.mono, fontSize: 9, fontWeight: '900', color: companyConnected ? Brand.stockGreen : colors.textSecondary }}>{companyConnected ? 'CONNECTED' : 'OPTIONAL'}</Text>
@@ -120,7 +121,7 @@ export default function BizDevScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>۸ ماژول توسعه کسب‌وکار</Text>
           <View style={styles.grid}>{BUSINESS_MODULES.map(m => {
             const state = stateFor(m.key);
-            const stateColor = state.startsWith('LISTED') || state === 'PRIVATE DATA LIVE' ? Brand.stockGreen : state === 'DEMO' ? '#a78bfa' : colors.textSecondary;
+            const stateColor = state.startsWith('بورسی') || state === 'داده‌ی شرکتی متصل' ? Brand.stockGreen : state === 'نمایشی' ? '#a78bfa' : colors.textSecondary;
             return (
               <Pressable key={m.key} onPress={() => openModule(m.key)} style={[styles.module, { backgroundColor: colors.backgroundElement }]}>
                 <Text style={styles.icon}>{m.icon}</Text>
