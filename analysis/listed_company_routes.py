@@ -23,6 +23,29 @@ STORE = ListedCompanyStore()
 DAILY_MEMORY_MAX_AGE = timedelta(hours=26)
 
 
+def _inbox_codal(item: dict, company: dict) -> tuple[dict | None, dict | None]:
+    """Verified CODAL fundamentals from the Liara inbox when the stored baseline record has none.
+
+    Additive and fail-soft: only used when the inbox is enabled (never a direct CODAL call), bounded by a deadline,
+    and only the scoped/balance-checked parser output is returned. Nothing is written to the stored record.
+    """
+    if company.get("codal"):
+        return None, None
+    try:
+        import codal_inbox
+        if not codal_inbox.enabled():
+            return None, None
+        from company_builder import _codal_parts
+        from deadline import run_with_deadline
+        symbol = str(item.get("symbol") or "").strip()
+        if not symbol:
+            return None, None
+        meta, fundamentals, _diag = run_with_deadline(_codal_parts, symbol, timeout=18.0, lightweight=True)
+        return meta, fundamentals
+    except Exception:
+        return None, None
+
+
 def _ensure_universe() -> None:
     if STORE.count() == 0:
         refresh_universe(STORE)
@@ -145,13 +168,17 @@ def listed_company_detail(code: str, _user_id: str = Depends(require_user_id)):
     company = item.get("company") or {}
     memory = _daily_memory_for(item)
     market, tindex, data_availability = _merge_daily_memory(company, memory)
+    inbox_meta, inbox_codal = _inbox_codal(item, company)
+    if inbox_codal:
+        data_availability = {**data_availability, "codal": True}
     return {
         **item,
         "dataAvailability": data_availability,
         "dataDiagnostics": company.get("data_diagnostics") or {},
         "marketData": market or None,
-        "codalMetadata": company.get("codal_metadata") if company else None,
-        "codalFundamentals": company.get("codal") if company else None,
+        "codalMetadata": company.get("codal_metadata") or inbox_meta,
+        "codalFundamentals": company.get("codal") if company and company.get("codal") else inbox_codal,
+        "codalSource": "stored" if company and company.get("codal") else ("inbox" if inbox_codal else None),
         "tindex": tindex or None,
         "marketMemory": {
             "source": memory.get("source"),

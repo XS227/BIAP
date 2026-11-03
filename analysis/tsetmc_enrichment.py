@@ -36,6 +36,9 @@ def _history_performance(rows: list[dict]) -> dict[str, float | None]:
         price = _num(row, "pClosing", "pDrCotVal", "priceYesterday")
         if price is None or price <= 0:
             continue
+        first = _num(row, "priceFirst")
+        if first is not None and first <= 0:
+            continue  # no trade that day: the "close" is the exchange's reference/base price (e.g. 1,000 before listing)
         try:
             day = int(row.get("dEven") or 0)
         except (TypeError, ValueError):
@@ -43,6 +46,13 @@ def _history_performance(rows: list[dict]) -> dict[str, float | None]:
         ordered.append((day, price))
     ordered.sort(key=lambda item: item[0])
     closes = [price for _, price in ordered]
+    # A single-session move beyond +/-25% is impossible under Tehran's daily price limits, so it is a
+    # discontinuity (listing, unadjusted capital increase/split), not a return. Use only the data after
+    # the last one; otherwise a pre-listing base price turns into "+2175% in 60 days".
+    for i in range(len(closes) - 1, 0, -1):
+        if closes[i - 1] > 0 and abs(closes[i] / closes[i - 1] - 1.0) > 0.25:
+            closes = closes[i:]
+            break
     if not closes:
         return {}
 
