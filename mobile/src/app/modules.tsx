@@ -59,7 +59,7 @@ function ModuleCard({ item, colors, accent, state, selected }: { item: ModuleIte
       router.push({ pathname: '/data-connect', params: { key: item.key, companyMode: 'listed' } } as never);
       return;
     }
-    router.push({ pathname: '/module', params: { key: item.key, companyMode: 'listed', code: selected.code } } as never);
+    router.push({ pathname: '/module', params: { key: item.key, companyMode: 'listed', code: selected.code, name: selected.symbol } } as never);
   };
   return (
     <Pressable onPress={open} style={({ pressed }) => [styles.moduleCard, { backgroundColor: colors.backgroundElement, opacity: pressed ? 0.75 : 1 }]}>

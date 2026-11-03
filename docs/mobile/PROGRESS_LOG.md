@@ -46,3 +46,10 @@ Tests: mobile test:ui 12/12, tsc clean; analysis 50 passed (enrichment, CODAL ev
 - Checked: SMTP login to the configured server works (465/TLS). The reset-email send result is discarded by the backend (no sent/failed log), so sending of an individual mail cannot be proven from logs.
 - Tests: tsc clean; test:ui 18 pass. Version 1.0.9 / versionCode 10. Update manifest NOT changed.
 - 1.0.9 build OK (EAS run 41669508157, commit 21e8004): BIAP-1.0.9-Expo-EAS.apk sha256 3beaa7d6e159e197422ef08da8d2e3031b5297929db7ea8c0d3c7f774f1d6350, served temporarily at https://biap.dadashi.no/dl/f98syxug/iran109.apk (delete with the other /dl files after install). Backend item 3 = draft PR #75 (not merged, not deployed). Update manifest untouched.
+
+## 2026-11-03 — Iran 1.0.10 (app branch only; no backend merge/deploy)
+- Picker/EDA «تابان25»: data-connect list (backend listed-companies, unfiltered) now ranks ordinary shares first, shows instrument type, and a stored bond/fund selection is dropped. InsCode + symbol name passed to modules from data-connect, modules, bizdev (fixes «نماد نامشخص»).
+- AI Company Analysis HTTP 404 (endpoint not on production main): shows «این بخش به‌زودی فعال می‌شود.»
+- Audit: no risk score when fewer than 6/10 checks evaluated; coverage shown; missing checks grouped in one card (removes the contradictory duplicate leverage-style cards).
+- Operating cash flow for Pekarman: the CODAL HTML in the inbox (tracing 1541525) DOES contain the consolidated cash-flow statement (CFO 41,497,665 vs 28,042,248, million-rial units as filed), but analysis/codal_parser_v2.py only extracts revenue, net profit, gross profit, assets, liabilities, equity — no cash-flow/receivables/PP&E/depreciation/current-items aliases, and CodalFundamentals has no such fields. Fix is backend (parser + dataclass + API); not done (held).
+- Tests: test:ui 20 pass, tsc clean. app.json 1.0.10 / versionCode 11.

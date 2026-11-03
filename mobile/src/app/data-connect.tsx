@@ -6,7 +6,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { clearBusinessDataset, getBusinessDataset, importExcelBusinessDataset, parseBusinessData, saveBusinessDataset } from '@/lib/business-data';
 import { requirementFor, sourceLabel } from '@/lib/module-data-requirements';
-import { fetchListedCompanyStatus, getSelectedListedCompany, ListedCompanyStatus, ListedCompanySummary, searchListedCompanies, setSelectedListedCompany } from '@/lib/listed-company-selection';
+import { listingTypeFa, fetchListedCompanyStatus, getSelectedListedCompany, ListedCompanyStatus, ListedCompanySummary, searchListedCompanies, setSelectedListedCompany } from '@/lib/listed-company-selection';
 
 const SOURCES = [
   { key: 'sql', icon: '🗄️', title: 'SQL / Database', body: 'کانکتور Read-only سمت سرور؛ رمز دیتابیس داخل موبایل ذخیره نمی‌شود.', state: 'نیازمند مشخصات دیتابیس' },
@@ -77,7 +77,7 @@ export default function DataConnectScreen() {
     // When a module sent the user here only to choose a listed company, continue
     // directly to that module. Do not make the user pass through CSV/Excel first.
     if (moduleKey) {
-      router.replace({ pathname: '/module', params: { key: moduleKey, companyMode: 'listed', code: company.code } } as never);
+      router.replace({ pathname: '/module', params: { key: moduleKey, companyMode: 'listed', code: company.code, name: company.symbol } } as never);
       return;
     }
     router.setParams({ code: company.code, companyMode: 'listed' } as never);
@@ -146,7 +146,7 @@ export default function DataConnectScreen() {
             <TextInput value={companyQuery} onChangeText={setCompanyQuery} onSubmitEditing={() => refreshListedCompanies()} placeholder="نماد یا نام شرکت" placeholderTextColor={colors.textSecondary} style={[styles.companySearch, { color: colors.text, borderColor: colors.backgroundSelected }]} />
           </View>
           {companyStoreStatus ? <Text style={[styles.storeStatus, { color: colors.textSecondary }]}>ثبت‌شده: {companyStoreStatus.total.toLocaleString('fa-IR')} • غنی‌شده: {companyStoreStatus.enriched.toLocaleString('fa-IR')}</Text> : null}
-          <View style={styles.companyResults}>{companyResults.slice(0, 20).map(item => <Pressable key={item.code} onPress={() => selectCompany(item)} style={[styles.companyRow, { borderBottomColor: colors.backgroundSelected }]}><View style={{ flex: 1, alignItems: 'flex-end' }}><Text style={[styles.companyName, { color: colors.text }]}>{item.symbol} • {item.name || item.code}</Text><Text style={[styles.companyMeta, { color: colors.textSecondary }]}>{item.market || 'بازار نامشخص'} • {item.sourceUniverse || 'منبع نامشخص'}{item.enrichedAt ? ' • داده تکمیلی موجود' : ''}</Text></View><Text style={[styles.pickText, { color: Brand.positive }]}>{selectedCompany?.code === item.code ? '✓' : 'انتخاب'}</Text></Pressable>)}</View>
+          <View style={styles.companyResults}>{companyResults.slice(0, 20).map(item => <Pressable key={item.code} onPress={() => selectCompany(item)} style={[styles.companyRow, { borderBottomColor: colors.backgroundSelected }]}><View style={{ flex: 1, alignItems: 'flex-end' }}><Text style={[styles.companyName, { color: colors.text }]}>{item.symbol} • {item.name || item.code}</Text><Text style={[styles.companyMeta, { color: colors.textSecondary }]}>{listingTypeFa(item)} • {item.market || 'بازار نامشخص'} • {item.sourceUniverse || 'منبع نامشخص'}{item.enrichedAt ? ' • داده تکمیلی موجود' : ''}</Text></View><Text style={[styles.pickText, { color: Brand.positive }]}>{selectedCompany?.code === item.code ? '✓' : 'انتخاب'}</Text></Pressable>)}</View>
           {!companyLoading && companyResults.length === 0 ? <Text style={[styles.helpText, { color: colors.textSecondary }]}>نتیجه‌ای در دیتابیس فعلی پیدا نشد. اگر ingestion هنوز کامل نشده باشد، وضعیت سرور اینجا نمایش داده می‌شود.</Text> : null}
         </View> : null}
 

@@ -12,7 +12,9 @@ export type AuditCheck = {
   /** counts toward the risk score (data-quality checks do not) */
   scored: boolean;
 };
-export type AuditReport = { checks: AuditCheck[]; evaluated: number; riskScore: number | null; note: string };
+export type AuditReport = { checks: AuditCheck[]; evaluated: number; total: number; minCoverage: number; riskScore: number | null; note: string };
+/** A risk score is shown only when at least this many of the checks could actually be evaluated. */
+export const MIN_AUDIT_COVERAGE = 6;
 export type IranFundamentals = {
   revenue_current?: number | null; revenue_prev?: number | null;
   net_profit_current?: number | null; net_profit_prev?: number | null;
@@ -72,7 +74,7 @@ export function runIranAudit(f: IranFundamentals | null | undefined): AuditRepor
   checks.push(missing('cfo', 'اختلاف سود و جریان نقدی عملیاتی', 'جریان نقدی عملیاتی'));
   checks.push(missing('beneish', 'امتیاز بنیش (Beneish M-Score)', 'حساب‌های دریافتنی، دارایی ثابت و هزینه‌ی استهلاک دو سال'));
   checks.push(missing('altman', 'امتیاز آلتمن (Z″)', 'سرمایه در گردش و سود انباشته'));
-  checks.push(missing('zmijewski', 'امتیاز زمیجفسکی', 'دارایی/بدهی جاری'));
+  checks.push(missing('zmijewski', 'امتیاز زمیجفسکی', 'دارایی‌های جاری و بدهی‌های جاری (نسبت جاری)'));
   const op = (f?.audit_opinion ?? '').trim();
   checks.push(op
     ? mk('opinion', 'نظر حسابرس', true, /مردود|عدم اظهار|مشروط/.test(op) ? 'FLAG' : /مقبول/.test(op) ? 'OK' : 'WATCH', `نظر حسابرس: ${op.slice(0, 160)}`, [{ label: 'متن', value: op.slice(0, 160) }])
@@ -80,6 +82,7 @@ export function runIranAudit(f: IranFundamentals | null | undefined): AuditRepor
 
   const scored = checks.filter((c) => c.scored && c.status !== 'INSUFFICIENT_DATA');
   const pts = { OK: 0, WATCH: 50, FLAG: 100, INSUFFICIENT_DATA: 0 } as const;
-  const riskScore = scored.length >= 2 ? Math.round(scored.reduce((a, c) => a + pts[c.status], 0) / scored.length) : null;
-  return { checks, evaluated: checks.filter((c) => c.status !== 'INSUFFICIENT_DATA').length, riskScore, note: AUDIT_NOTE };
+  const evaluated = checks.filter((c) => c.status !== 'INSUFFICIENT_DATA').length;
+  const riskScore = evaluated >= MIN_AUDIT_COVERAGE && scored.length >= 2 ? Math.round(scored.reduce((a, c) => a + pts[c.status], 0) / scored.length) : null;
+  return { checks, evaluated, total: checks.length, minCoverage: MIN_AUDIT_COVERAGE, riskScore, note: AUDIT_NOTE };
 }

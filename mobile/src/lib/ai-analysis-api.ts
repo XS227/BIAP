@@ -17,6 +17,7 @@ export async function fetchAiCompanyAnalysis(code: string, timeoutMs = 60_000): 
   try {
     const r = await authFetch(`${KIASHA_API_BASE}/ai/company-analysis/${encodeURIComponent(code)}?lang=fa`, { headers: await authHeaders(), signal: c.signal });
     if (r.status === 401) return { error: 'برای استفاده وارد حساب خود شوید.' };
+    if (r.status === 404) return { error: 'این بخش به‌زودی فعال می‌شود.' };
     if (!r.ok) return { error: `پاسخ سرور نامعتبر بود (HTTP ${r.status}).` };
     return (await r.json()) as AiAnalysis;
   } catch { return { error: 'اتصال به سرور برقرار نشد.' }; } finally { clearTimeout(t); }

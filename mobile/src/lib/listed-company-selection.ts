@@ -36,6 +36,9 @@ export type ListedCompanyStatus = {
   workers?: Record<string, unknown>[];
 };
 
+import { isNonShareListing, rankListedCompanies } from '@/lib/listed-company-rank';
+export { isNonShareListing, listingTypeFa, rankListedCompanies } from '@/lib/listed-company-rank';
+
 async function storageKey(): Promise<string> {
   const raw = await AsyncStorage.getItem('user');
   if (!raw) return 'biap:selected-listed-company:v1:device';
@@ -53,7 +56,10 @@ export async function getSelectedListedCompany(): Promise<ListedCompanySummary |
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as ListedCompanySummary;
-    return parsed?.code && parsed?.symbol ? parsed : null;
+    if (!(parsed?.code && parsed?.symbol)) return null;
+    // A bond/fund/right saved by an older version (e.g. «تابان25») is dropped so the main stock can be picked again.
+    if (isNonShareListing(parsed)) { await AsyncStorage.removeItem(await storageKey()); return null; }
+    return parsed;
   } catch {
     return null;
   }
@@ -81,7 +87,7 @@ export async function searchListedCompanies(q = '', limit = 80): Promise<ListedC
     const response = await authFetch(`${KIASHA_API_BASE}/performance/ai/listed-companies?${params.toString()}`);
     if (!response.ok) return [];
     const body = await response.json();
-    return Array.isArray(body?.items) ? body.items : [];
+    return Array.isArray(body?.items) ? rankListedCompanies(body.items as ListedCompanySummary[], q) : [];
   } catch {
     return [];
   }

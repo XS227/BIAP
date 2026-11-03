@@ -47,11 +47,11 @@ export default function AuditScreen() {
               <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
                 <Text style={[styles.cardTitle, { color: colors.text }]}>{state.title}</Text>
                 <Text style={[styles.score, { color: state.report.riskScore == null ? '#64748b' : state.report.riskScore >= 50 ? Brand.negative : state.report.riskScore >= 25 ? Brand.warning : Brand.positive }]}>
-                  {state.report.riskScore == null ? 'داده کافی نیست' : `امتیاز ریسک ${state.report.riskScore.toLocaleString('fa-IR')} از ۱۰۰`}
+                  {state.report.riskScore == null ? `امتیاز ریسک نمایش داده نمی‌شود (پوشش کمتر از ${state.report.minCoverage.toLocaleString('fa-IR')} از ${state.report.total.toLocaleString('fa-IR')})` : `امتیاز ریسک ${state.report.riskScore.toLocaleString('fa-IR')} از ۱۰۰`}
                 </Text>
-                <Text style={[styles.body, { color: colors.textSecondary }]}>{state.report.evaluated.toLocaleString('fa-IR')} بررسی از {state.report.checks.length.toLocaleString('fa-IR')} بررسی قابل انجام بود. {state.report.note}</Text>
+                <Text style={[styles.body, { color: colors.textSecondary }]}>پوشش بررسی‌ها: {state.report.evaluated.toLocaleString('fa-IR')} از {state.report.total.toLocaleString('fa-IR')}. {state.report.riskScore == null ? 'برای نمایش امتیاز حداقل ۶ بررسی لازم است؛ فقط بررسی‌های انجام‌شده زیر معتبرند.' : ''} {state.report.note}</Text>
               </View>
-              {state.report.checks.map((c) => (
+              {state.report.checks.filter((c) => c.status !== 'INSUFFICIENT_DATA').map((c) => (
                 <View key={c.id} style={[styles.card, { backgroundColor: colors.backgroundElement, borderRightWidth: 3, borderRightColor: TONE[c.status] }]}>
                   <View style={styles.rowBetween}><Text style={[styles.status, { color: TONE[c.status] }]}>{LABEL[c.status]}</Text><Text style={[styles.cardTitle, { color: colors.text, flex: 1 }]}>{c.title}</Text></View>
                   <Text style={[styles.body, { color: colors.textSecondary }]}>{c.summary}</Text>
@@ -59,6 +59,12 @@ export default function AuditScreen() {
                   {c.status !== 'INSUFFICIENT_DATA' ? <Text style={[styles.meta, { color: colors.textSecondary }]}>دوره: {c.period || '—'} · منبع: {c.source || '—'}</Text> : null}
                 </View>
               ))}
+              {state.report.checks.some((c) => c.status === 'INSUFFICIENT_DATA') ? (
+                <View style={[styles.card, { backgroundColor: colors.backgroundElement, borderRightWidth: 3, borderRightColor: '#64748b' }]}>
+                  <Text style={[styles.cardTitle, { color: colors.text }]}>بررسی‌های انجام‌نشده (داده کافی نیست)</Text>
+                  {state.report.checks.filter((c) => c.status === 'INSUFFICIENT_DATA').map((c) => <Text key={c.id} style={[styles.meta, { color: colors.textSecondary }]}>• {c.title}</Text>)}
+                </View>
+              ) : null}
             </>
           ) : null}
           <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>غربالگری ساده است؛ نظر حسابرس، رتبه‌ی اعتباری یا توصیه‌ی سرمایه‌گذاری نیست.</Text>

@@ -65,7 +65,7 @@ export default function BizDevScreen() {
   const openModule = (key: string) => router.push({
     pathname: '/module',
     params: selectedCompany
-      ? { key, companyMode: 'listed', code: selectedCompany.code }
+      ? { key, companyMode: 'listed', code: selectedCompany.code, name: selectedCompany.symbol }
       : { key, companyMode: 'private' },
   } as never);
 
