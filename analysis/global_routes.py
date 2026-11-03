@@ -10,7 +10,7 @@ import os
 import re
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from global_markets import decision_overlay
@@ -571,6 +571,16 @@ def global_analyze(req: InstrumentRequest):
         raise
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+
+
+@router.post("/ai-analysis")
+def global_ai_analysis(req: InstrumentRequest, request: Request, lang: str = "en"):
+    """Additive: AI narrative from the stored Global analysis only; cached per company per day,
+    rate-limited per device (no user accounts in Global)."""
+    import ai_company_analysis as aca
+    res = global_analyze(req)
+    device = request.headers.get("x-biap-device") or (request.client.host if request.client else "unknown")
+    return aca.run("global", "%s:%s" % (res.get("exchange"), res.get("ticker")), aca.global_facts(res), "global:" + device[:64], lang)
 
 
 @router.post("/credit/individual")

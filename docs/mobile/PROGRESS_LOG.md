@@ -16,3 +16,9 @@ Sample: docs/mobile/samples/iran_pekarman_prod_after_inbox_20261103.json
 - New additive `analysis/price_provenance.py` + `priceProvenance` field on `GET /listed-companies/{code}`: stored price (7,170 / 2026-09-12 for Pekarman) and the newest market-memory observation are each labelled with source, observedAt, ageHours, status (fresh/stale/missing/unknown_time); disagreement is shown; the append-only 90-day market-memory history is listed. Nothing is overwritten or deleted. Fail-soft.
 - Tests: tests/test_price_provenance.py (3) + existing listed-company tests, 15 passed (service venv).
 - Not deployed: prod biap-fin runs the main checkout; deploying this branch needs a merge (held to 19 Nov unless owner approves). App does not read the field yet.
+
+## 2026-11-03 — AI company analysis backend (1b), additive, NOT deployed
+- `analysis/ai_company_analysis.py` + `GET /ai/company-analysis/{code}` (biap-fin, auth required) and `POST /global/ai-analysis` (Global; rate-limited per device — Global has no accounts; cannot be live before 19 Nov).
+- Facts = stored analyses only; model told to use nothing else; INSUFFICIENT_DATA never calls the model; cache per (kind, symbol, UTC day, lang) in sqlite (BIAP_AI_CACHE_DB, default /var/lib/biap/ai-company-analysis.sqlite3); BIAP_AI_DAILY_LIMIT (default 10 fresh reports/user/day); BIAP_AI_BASE_URL configurable; probe request (cached 5 min) before use; key only from server env.
+- Tests: tests/test_ai_company_analysis.py 5 passed.
+- **Probe result today: the key in biap-fin's environment (and in .env.ai) is rejected by Anthropic with `authentication_error: invalid x-api-key`** (not a credit message). Reports can therefore not be generated until a valid key is put in the EnvironmentFile (mode 600). The app will show "AI unavailable".

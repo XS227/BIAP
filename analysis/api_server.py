@@ -192,6 +192,14 @@ def symbols(market: Optional[str] = Query(default=None, description="TSE, IFB or
     return {"count": len(items), "source": sources[0] if len(sources) == 1 else "mixed", "sources": sources, "markets": ["TSE", "IFB", "IFB_BASE"], "degraded": bool(items) and all(item.source == "codal" for item in items), "items": [item.to_dict() for item in items]}
 
 
+@app.get("/ai/company-analysis/{code}")
+def ai_company_analysis(code: str, lang: str = "fa", user_id: str = Depends(require_user_id)):
+    """Additive: AI narrative built only from the stored recommendation facts (cached per day, rate-limited)."""
+    import ai_company_analysis as aca
+    rec = recommendation(code)
+    return aca.run("iran", str(rec.get("code") or code), aca.iran_facts(rec), "iran:" + str(user_id), lang)
+
+
 @app.get("/stock/recommendation/{code}")
 def recommendation(code: str):
     _require_warm_ready()
