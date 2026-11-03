@@ -31,6 +31,7 @@ export default function MoreScreen(){
     {icon:'🔌',title:'Private Data Connections',sub:'CSV/Excel and company data for CRM, pricing, journey, unit economics and internal KPIs.',onPress:()=>router.push('/data-connect' as never),accent:Brand.dataViolet},
     {icon:'💼',title:'Portfolio Agent',sub:'Capital, FX, cash reserve, risk tolerance and concentration-aware allocation.',onPress:()=>router.push('/portfolio'),accent:Brand.secondary},
     {icon:'🧠',title:'Kiasha',sub:'Evidence-gated market scan and ranked stock ideas for the selected market.',onPress:()=>router.push('/kiasha'),accent:'#7c3aed'},
+    {icon:'✨',title:'AI Company Analysis',sub:'Strengths, weaknesses, risks and missing data written from stored BIAP results. AI-generated, not investment advice.',onPress:()=>router.push('/ai-analysis' as never),accent:'#7c3aed'},
     {icon:'🔎',title:'Audit Analysis',sub:'Accruals, cash-flow divergence, Beneish, Altman and Zmijewski checks on stored data, with inputs and sources.',onPress:()=>router.push('/audit' as never),accent:Brand.warning},
     {icon:'🏦',title:'Trade at a Broker',sub:'Open a licensed broker’s official platform. BIAP never receives orders, passwords or funds.',onPress:()=>router.push('/broker' as never),accent:Brand.positive},
     {icon:'🧾',title:'Orders / Execution',sub:'Paper-first execution area. Global live brokerage remains disabled until a broker adapter is approved.',onPress:()=>router.push('/orders'),accent:Brand.warning},

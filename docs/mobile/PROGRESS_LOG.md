@@ -15,3 +15,7 @@ Rules: branches from live/base-20261030 in separate worktrees; no merge of backe
 - Only markets confirmed on each broker's own page stay in `brokers.ts`; each has `coverageSource` + `coverageNote`. Unconfirmed markets are not offered. Screen shows "Availability may vary; check the broker's site."
 - Nordnet: NO/SE/DK/FI (nordnet.no trading-venues page). DEGIRO: all 12 (products-and-markets). Trading 212: US, GB, DE, FR, IT, NL, ES, PT (help-centre hours article; varies by entity). Saxo: US, FR, NL, PT only (page names main US + Euronext Amsterdam/Lisbon/Paris; "25+ countries" unlisted). Interactive Brokers: only FR — official pages return HTTP 403 to automated fetch; the rest is NOT confirmed. Owner: open the IBKR exchange list in a browser and add markets.
 - Tests: test:api 38/38, tsc clean.
+
+## 2026-11-03 — Global app: "AI Company Analysis" screen (1b)
+- More → AI Company Analysis; calls `POST /global/ai-analysis` (additive backend route on feat/mobile-iran-20261103, not deployed; Global services cannot be restarted before 19 Nov, so the app shows "not available on this server yet" on HTTP 404). Shows INSUFFICIENT_DATA / unavailable / rate-limit states honestly and the label "AI-generated, not investment advice". No key in the app.
+- tsc clean.
