@@ -168,6 +168,11 @@ Do this first for the 10–12 current markets, then for each remaining country a
   - Archive of past ratings.
   - Links to licensed brokers (no order execution).
   - Reduce Portfolio personalisation (avoid personal investment advice).
+- [ ] **Audit Analysis / Agent 9–10 follow-ups from the 0.3.24 phone test (owner, 2026-11-03; v2, after 19 Nov 2026; NOT applied to production now).** Global 0.3.24 was installed and tested on a phone; the new features work. Four corrections:
+  1. **Beneish INSUFFICIENT_DATA list shows only truly missing fields.** `total_assets`, `net_income` and `operating_cash_flow` are present and must not be listed as missing.
+  2. **One Zmijewski label across Agent 9 and Audit.** Do not print 48.8 % as "distress-unlikely"; use the same watch band as 20-50 % in both places (one shared band function, one wording).
+  3. **Audit risk score: lower the Altman Z'' weight for capital-intensive sectors**, using the same sector list as P1.8 (oil & gas, utilities, shipping, Real Estate/REIT). Show that the weight was reduced and why.
+  4. **Agent 10: replace "Moody's grid" and "S&P equivalent" wording with "internal risk band (illustrative)"**; no agency names. Also change "credit rating" to "risk score" in the Agent 10 card (next app version).
 - [ ] Companies section: three sustainability agents (**MIA, PTA, ECA/ESG**) plus the **risk-assessment agent**, for business users.
 - [ ] Broker API connection stays "SOON" and only via licensed brokers. Never send orders from BIAP.
 
