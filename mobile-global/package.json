@@ -43,7 +43,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test:api": "node --experimental-strip-types --no-warnings --test tests/global-api.test.mjs tests/freshness-labels.test.mjs tests/scan-summary.test.mjs tests/broker-handoff.test.mjs tests/audit-analysis.test.mjs"
+    "test:api": "node --experimental-strip-types --no-warnings --test tests/global-api.test.mjs tests/freshness-labels.test.mjs tests/scan-summary.test.mjs tests/broker-handoff.test.mjs tests/audit-analysis.test.mjs tests/statement-status.test.mjs"
   },
   "expo": {
     "install": {
