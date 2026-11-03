@@ -1,3 +1,4 @@
+import { queueBadge } from '@/lib/signal-display';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -32,6 +33,7 @@ function ExtendedMarketPanel({rec,colors}:{rec:Recommendation;colors:ThemeColors
   if(!m)return null;
   const rows:[string,string][]=[
     m.dayLow!=null&&m.dayHigh!=null?['بازه امروز',`${formatPrice(m.dayLow)} - ${formatPrice(m.dayHigh)}`]:null,
+    queueBadge({dayLow:m.dayLow,dayHigh:m.dayHigh,changePercent:rec.livePrice?.changePercent,volumeToday:m.volumeToday})?['وضعیت صف',queueBadge({dayLow:m.dayLow,dayHigh:m.dayHigh,changePercent:rec.livePrice?.changePercent,volumeToday:m.volumeToday})!.label]:null,
     m.price52wLow!=null&&m.price52wHigh!=null?['بازه ۵۲ هفته',`${formatPrice(m.price52wLow)} - ${formatPrice(m.price52wHigh)}`]:null,
     m.volumeToday!=null?['حجم معاملات امروز',m.volumeToday.toLocaleString('fa-IR')]:null,
     m.avgVolume30d!=null?['میانگین حجم ۳۰ روز',Math.round(m.avgVolume30d).toLocaleString('fa-IR')]:null,
