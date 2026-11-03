@@ -16,7 +16,8 @@ from auth import require_user_id
 from listed_company_ingestion import refresh_universe, status as ingestion_status
 from listed_company_store import ListedCompanyStore
 from manual_paper_routes import router
-from market_memory import latest_symbol_snapshot, save_symbol_snapshot
+from market_memory import latest_symbol_snapshot, recent_symbol_history, save_symbol_snapshot
+from price_provenance import build_price_provenance
 from tindex_data import fetch_symbol_overview
 
 STORE = ListedCompanyStore()
@@ -145,8 +146,13 @@ def listed_company_detail(code: str, _user_id: str = Depends(require_user_id)):
     company = item.get("company") or {}
     memory = _daily_memory_for(item)
     market, tindex, data_availability = _merge_daily_memory(company, memory)
+    try:
+        provenance = build_price_provenance(company.get("market"), memory, recent_symbol_history(str(item.get("symbol") or ""), days=90))
+    except Exception:  # additive label only; never break the detail response
+        provenance = None
     return {
         **item,
+        "priceProvenance": provenance,
         "dataAvailability": data_availability,
         "dataDiagnostics": company.get("data_diagnostics") or {},
         "marketData": market or None,

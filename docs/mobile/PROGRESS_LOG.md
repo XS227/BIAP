@@ -11,3 +11,8 @@
 - Public API after: پکرمان call HOLD 0.122, dataSource=codal, fundamental vote +0.20 / conf 0.65 (before: BUY 0.273, fundamental weight 0). فولاد BUY 0.33 (codal=True); شپنا HOLD 0.023 (codal=False, no statements).
 - Open: the first request after each nightly manifest change (~02:18 UTC) is cold again (~80 s) until a background rebuild is coded (needs deploy of code; held).
 Sample: docs/mobile/samples/iran_pekarman_prod_after_inbox_20261103.json
+
+## 2026-11-03 — Price provenance (Iran item e) built, NOT deployed
+- New additive `analysis/price_provenance.py` + `priceProvenance` field on `GET /listed-companies/{code}`: stored price (7,170 / 2026-09-12 for Pekarman) and the newest market-memory observation are each labelled with source, observedAt, ageHours, status (fresh/stale/missing/unknown_time); disagreement is shown; the append-only 90-day market-memory history is listed. Nothing is overwritten or deleted. Fail-soft.
+- Tests: tests/test_price_provenance.py (3) + existing listed-company tests, 15 passed (service venv).
+- Not deployed: prod biap-fin runs the main checkout; deploying this branch needs a merge (held to 19 Nov unless owner approves). App does not read the field yet.
