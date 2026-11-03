@@ -31,6 +31,7 @@ export default function AppTabs({ onLogout }: Props) {
         <Tabs.Screen name="global" options={{ href: null }} />
         <Tabs.Screen name="orders" options={{ href: null }} />
         <Tabs.Screen name="broker" options={{ href: null }} />
+        <Tabs.Screen name="audit" options={{ href: null }} />
         <Tabs.Screen name="favorites" options={{ href: null }} />
         <Tabs.Screen name="data-connect" options={{ href: null }} />
         <Tabs.Screen name="how-to" options={{ href: null }} />
