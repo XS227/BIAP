@@ -3,7 +3,7 @@ import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View, useColor
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
-import { BROKER_ASSET_CLASSES } from '@/config/brokers';
+import { AVAILABILITY_NOTE, BROKER_ASSET_CLASSES } from '@/config/brokers';
 import { brokersForMarket, buildHandoff, LEAVE_NOTICE, type HandoffInstrument } from '@/lib/broker-handoff';
 import { getSelectedGlobalCompany } from '@/lib/global-company-selection';
 import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
@@ -75,7 +75,7 @@ export default function BrokerHandoffScreen() {
               ))}
             </>
           )}
-          <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>Not investment advice. Availability depends on your account and the broker’s permissions.</Text>
+          <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>{AVAILABILITY_NOTE} Not investment advice.</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

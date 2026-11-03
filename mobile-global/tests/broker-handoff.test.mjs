@@ -39,3 +39,9 @@ test('config holds no credentials/affiliate params and the notice is exact', () 
   assert.ok(JSON.stringify(BROKERS).indexOf('?') < 0);
   assert.match(LEAVE_NOTICE, /never receives your orders, passwords or funds/);
 });
+test('only verified markets: every broker has a source and unverified markets are absent', () => {
+  for (const b of BROKERS) { assert.match(b.coverageSource, /^https:\/\//); assert.ok(b.coverageNote.length > 10); }
+  assert.ok(!ids('DE').includes('saxo'));
+  assert.ok(!ids('SE').includes('saxo'));
+  assert.ok(ids('FR').includes('saxo'));
+});
