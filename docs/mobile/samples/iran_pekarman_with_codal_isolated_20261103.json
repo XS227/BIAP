@@ -1,0 +1,113 @@
+{
+ "code": "23214828924506640",
+ "name": "پكرمان",
+ "call": "HOLD",
+ "score": 0.183,
+ "generatedAt": "2026-11-03T02:25:55.112452+00:00",
+ "dataSource": "live",
+ "dataAvailability": {
+  "codal": true,
+  "codal_metadata": true,
+  "market_extended": true,
+  "tindex": false,
+  "market_memory": false
+ },
+ "evidenceReview": {
+  "status": "PASS",
+  "actionable": true,
+  "reasons": [
+   "Both periods balance; CODAL provenance and core P&L present"
+  ]
+ },
+ "codalFundamentals": {
+  "symbol": "پکرمان",
+  "revenue_current": 269826442.0,
+  "revenue_prev": 194546655.0,
+  "net_profit_current": 2676167.0,
+  "net_profit_prev": 31089222.0,
+  "revenue_yoy_pct": 38.69497884710482,
+  "net_margin_pct": 0.9918105061030305,
+  "net_margin_prev_pct": 15.980342607278445,
+  "gross_profit_current": 54330990.0,
+  "gross_profit_prev": 52604006.0,
+  "total_assets_current": 340995803.0,
+  "total_assets_prev": 201439750.0,
+  "total_liabilities_current": 302162874.0,
+  "total_liabilities_prev": 147879863.0,
+  "total_equity_current": 38832929.0,
+  "total_equity_prev": 53559887.0,
+  "audit_opinion": null,
+  "related_party_flags": null,
+  "guidance_note": null,
+  "tracing_no": "1550679",
+  "report_title": "صورت‌های مالی تلفیقی سال مالی منتهی به ۱۴۰۴/۱۲/۲۹ (حسابرسی شده)",
+  "report_url": "https://excel.codal.ir/service/Excel/GetAll/w64zqG3fv5gfvQQQaQQQVQXQQQaQQQoY4A%3d%3d/0",
+  "source": "codal_financial_statement_html_v2",
+  "report_scope": "consolidated"
+ },
+ "livePrice": {
+  "lastPrice": 10270.0,
+  "closingPrice": 10270.0,
+  "yesterdayPrice": 9980.0,
+  "changePercent": 2.905811623246493
+ },
+ "agents": [
+  {
+   "agent": "fundamental",
+   "vote": 0.2,
+   "confidence": 0.65,
+   "observed_samples": 0,
+   "weight_normalized": 0.167,
+   "reasoning": "revenue +38.7% YoY; margin declining (-15.0pp)"
+  },
+  {
+   "agent": "risk",
+   "vote": -0.3,
+   "confidence": 0.65,
+   "observed_samples": 0,
+   "weight_normalized": 0.167,
+   "reasoning": "related-party parser not yet connected; CODAL financials connected; audit opinion unavailable; only 0% off 52w high; max drawdown -82.2%; high annualized volatility 64.4%"
+  },
+  {
+   "agent": "forecast",
+   "vote": 0.1,
+   "confidence": 0.75,
+   "observed_samples": 0,
+   "weight_normalized": 0.167,
+   "reasoning": "positive 1m/3m momentum (+27.3%, +65.6%); 6m return +52.1%; upper 100% of 52w range"
+  },
+  {
+   "agent": "comparison",
+   "vote": -0.39,
+   "confidence": 0.65,
+   "observed_samples": 0,
+   "weight_normalized": 0.167,
+   "reasoning": "P/E 8.13 vs sector 7.27 (-12% premium)"
+  },
+  {
+   "agent": "technical",
+   "vote": 0.87,
+   "confidence": 0.75,
+   "observed_samples": 0,
+   "weight_normalized": 0.167,
+   "reasoning": "1w +15.7%; 1m +27.3%; 3m +65.6%; 1y +31.7%; 100% through 52w range"
+  },
+  {
+   "agent": "flow",
+   "vote": 0.65,
+   "confidence": 0.65,
+   "observed_samples": 0,
+   "weight_normalized": 0.167,
+   "reasoning": "net retail inflow; buy/sell per-capita 5.85x"
+  },
+  {
+   "agent": "scenario",
+   "vote": 0.154,
+   "confidence": 0.54,
+   "observed_samples": 6,
+   "weight_normalized": 0.135,
+   "reasoning": "سناریو بر پایه داده‌های معتبر موجود ساخته شده و قیمت آینده دقیق جعل نمی‌شود."
+  }
+ ],
+ "_how": "Isolated local run of the fix-branch backend: BIAP_CODAL_INBOX=/home/ubuntu/codal-inbox, copies of market-memory and listed-company DBs in the scratchpad (nothing written to production), TSETMC read-only. Production API currently returns BUY 0.273 with codal=false for the same company."
+}

@@ -1,0 +1,197 @@
+{
+ "AAPL": {
+  "country": "US",
+  "exchange": "NASDAQ",
+  "ticker": "AAPL",
+  "name": "Apple Inc.",
+  "isin": null,
+  "currency": "USD",
+  "call": "HOLD_OR_WATCH",
+  "score": 0.226439,
+  "confidence": 0.558785,
+  "signals": [
+   {
+    "agent": "fundamental",
+    "vote": 0.35000000000000003,
+    "confidence": 0.71,
+    "reasoning": "revenue +6.4% YoY; margin improving (+2.9pp); positive operating cash flow; positive free cash flow"
+   },
+   {
+    "agent": "risk",
+    "vote": -0.09999999999999996,
+    "confidence": 0.78,
+    "reasoning": "max drawdown -13.8%; annualized volatility 24.2%; liabilities/equity 3.87x; debt/operating cash flow 0.81x; current ratio 0.89x"
+   },
+   {
+    "agent": "forecast",
+    "vote": 0.19999999999999998,
+    "confidence": 0.69,
+    "reasoning": "volume 1.8x 30d average; returns 1m=+4.3%, 3m=+13.7%, 6m=+23.2%; 52w range position 93%"
+   },
+   {
+    "agent": "comparison",
+    "vote": 0.0,
+    "confidence": 0.25,
+    "reasoning": "P/E 46.20; sector peer P/E unavailable: fewer than 3 same-sector peers with a valid P/E; abstaining"
+   },
+   {
+    "agent": "quality",
+    "vote": 0.55,
+    "confidence": 0.74,
+    "reasoning": "net margin 26.9%; operating cash/net income 1.00x; free cash/net income 0.88x; ROA 31.2%; cash/debt balance moderate"
+   },
+   {
+    "agent": "liquidity",
+    "vote": 0.42,
+    "confidence": 0.68,
+    "reasoning": "30d average turnover 0.262% of market cap/day; minimum lot 0.000% of 30d average volume; today volume 1.75x 30d average"
+   }
+  ],
+  "fundamentalEvidence": {
+   "reportPeriod": "2025-09-27",
+   "filingDate": "2025-10-31",
+   "retrievedAt": "2025-10-31",
+   "sourceProvider": "sec-edgar-xbrl-cached",
+   "isOfficial": true,
+   "fundamentalPeriodAgeDays": 402,
+   "freshness": "last_annual",
+   "auditStatus": null
+  },
+  "evidence": {
+   "status": "PASS",
+   "coverage": 1.0,
+   "freshness_score": 0.65,
+   "audit_status": "unknown"
+  }
+ },
+ "SAP": {
+  "country": "DE",
+  "exchange": "XETRA",
+  "ticker": "SAP",
+  "name": "SAP SE O.N.",
+  "isin": "DE0007164600",
+  "currency": "EUR",
+  "call": "NO_RECOMMENDATION",
+  "score": 0.170378,
+  "confidence": 0.536662,
+  "signals": [
+   {
+    "agent": "fundamental",
+    "vote": 0.15000000000000002,
+    "confidence": 0.71,
+    "reasoning": "revenue +7.7% YoY; positive operating cash flow; positive free cash flow"
+   },
+   {
+    "agent": "risk",
+    "vote": -0.5,
+    "confidence": 0.78,
+    "reasoning": "max drawdown -43.0%; annualized volatility 41.4%; liabilities/equity 0.56x; debt/operating cash flow 0.88x; current ratio 1.16x"
+   },
+   {
+    "agent": "forecast",
+    "vote": 0.3,
+    "confidence": 0.69,
+    "reasoning": "volume 1.0x 30d average; returns 1m=+13.1%, 3m=+26.2%, 6m=+39.5%; 52w range position 81%"
+   },
+   {
+    "agent": "comparison",
+    "vote": 0.0,
+    "confidence": 0.25,
+    "reasoning": "P/E 34.41; sector peer P/E unavailable: fewer than 3 same-sector peers with a valid P/E; abstaining"
+   },
+   {
+    "agent": "quality",
+    "vote": 1.0,
+    "confidence": 0.74,
+    "reasoning": "net margin 19.9%; operating cash/net income 1.25x; free cash/net income 1.12x; ROA 10.4%; cash covers total debt"
+   },
+   {
+    "agent": "liquidity",
+    "vote": 0.12,
+    "confidence": 0.54,
+    "reasoning": "30d average turnover 0.158% of market cap/day; today volume 1.04x 30d average"
+   }
+  ],
+  "fundamentalEvidence": {
+   "reportPeriod": "2025-12-31",
+   "filingDate": "2026-01-29T00:00:00+00:00",
+   "retrievedAt": "2026-01-29T00:00:00+00:00",
+   "sourceProvider": "de-reviewed-issuer-annual-report",
+   "isOfficial": true,
+   "fundamentalPeriodAgeDays": 307,
+   "freshness": "last_annual",
+   "auditStatus": "audited"
+  },
+  "evidence": {
+   "status": "PASS",
+   "coverage": 1.0,
+   "freshness_score": 0.65,
+   "audit_status": "audited"
+  }
+ },
+ "HSBA": {
+  "country": "GB",
+  "exchange": "LSE",
+  "ticker": "HSBA",
+  "name": "HSBC HOLDINGS PLC",
+  "isin": "GB0005405286",
+  "currency": "GBP",
+  "call": "NO_RECOMMENDATION",
+  "score": -0.126788,
+  "confidence": 0.458141,
+  "signals": [
+   {
+    "agent": "fundamental",
+    "vote": -0.2,
+    "confidence": 0.47,
+    "reasoning": "revenue +3.7% YoY; margin declining (-4.1pp)"
+   },
+   {
+    "agent": "risk",
+    "vote": 0.05,
+    "confidence": 0.48000000000000004,
+    "reasoning": "max drawdown -20.1%; annualized volatility 27.4%; generic leverage/cash-flow penalties suppressed for financial-sector issuer"
+   },
+   {
+    "agent": "forecast",
+    "vote": -0.3,
+    "confidence": 0.69,
+    "reasoning": "volume 0.9x 30d average; returns 1m=-11.1%, 3m=-20.1%, 6m=-0.2%; 52w range position 43%"
+   },
+   {
+    "agent": "comparison",
+    "vote": -0.5,
+    "confidence": 0.65,
+    "reasoning": "P/E 13.90 vs peer/sector 9.11 (53% premium); cohort: 5 same-sector (Financials) deep-analyzed peers, sector source scan cache, median of daily scan sample"
+   },
+   {
+    "agent": "quality",
+    "vote": 0.1,
+    "confidence": 0.44,
+    "reasoning": "net margin 33.9%; ROA 0.7%; generic cash-conversion/debt heuristics suppressed for financial-sector issuer"
+   },
+   {
+    "agent": "liquidity",
+    "vote": 0.12,
+    "confidence": 0.54,
+    "reasoning": "30d average turnover 0.111% of market cap/day; today volume 0.89x 30d average"
+   }
+  ],
+  "fundamentalEvidence": {
+   "reportPeriod": "2025-12-31",
+   "filingDate": "2026-02-25",
+   "retrievedAt": "2026-10-11T07:27:44.818396+00:00",
+   "sourceProvider": "official-oam-gb-fca-nsm",
+   "isOfficial": true,
+   "fundamentalPeriodAgeDays": 307,
+   "freshness": "last_annual",
+   "auditStatus": null
+  },
+  "evidence": {
+   "status": "PASS",
+   "coverage": 0.9375,
+   "freshness_score": 0.65,
+   "audit_status": "unknown"
+  }
+ }
+}
