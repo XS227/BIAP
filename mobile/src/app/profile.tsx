@@ -81,7 +81,7 @@ export default function ProfileScreen() {
       setConfirmPassword('');
       setPasswordMessage('رمز عبور با موفقیت تغییر کرد و نشست‌های قدیمی بسته شدند.');
     } catch {
-      setPasswordError('اتصال به سرور برقرار نشد');
+      setPasswordError('اتصال به سرور برقرار نشد. اگر فیلترشکن روشن است، آن را خاموش کنید.');
     } finally {
       setChanging(false);
     }

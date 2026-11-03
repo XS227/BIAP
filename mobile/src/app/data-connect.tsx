@@ -139,13 +139,13 @@ export default function DataConnectScreen() {
 
         {companyMode === 'listed' ? <View style={[styles.companyCard, { backgroundColor: colors.backgroundElement, borderColor: '#16a34a66' }]}>
           <View style={styles.activeHead}><View style={styles.liveBadge}><Text style={styles.liveBadgeText}>LISTED</Text></View><Text style={[styles.activeTitle, { color: colors.text }]}>انتخاب شرکت بورسی / فرابورسی</Text></View>
-          <Text style={[styles.body, { color: colors.textSecondary }]}>شرکت انتخاب‌شده برای ماژول‌های تحلیل و توسعه کسب‌وکار ذخیره می‌شود. داده عمومی آن از دیتابیس پایدار BIAP و Tindex/TSETMC/CODAL خوانده می‌شود.</Text>
+          <Text style={[styles.body, { color: colors.textSecondary }]}>شرکت انتخاب‌شده برای ماژول‌های تحلیل و توسعه کسب‌وکار ذخیره می‌شود. داده عمومی آن از دیتابیس پایدار BIAP و TSETMC/CODAL خوانده می‌شود.</Text>
           {selectedCompany ? <View style={[styles.selectedBox, { borderColor: Brand.positive }]}><Text style={[styles.selectedName, { color: colors.text }]}>{selectedCompany.symbol} • {selectedCompany.name || selectedCompany.code}</Text><Text style={[styles.selectedMeta, { color: colors.textSecondary }]}>{selectedCompany.market || 'بازار نامشخص'} • {selectedCompany.sourceUniverse || 'منبع ثبت نشده'}</Text></View> : null}
           <View style={styles.searchRow}>
             <Pressable onPress={() => refreshListedCompanies()} style={styles.searchButton}><Text style={styles.searchButtonText}>{companyLoading ? '…' : 'جست‌وجو'}</Text></Pressable>
             <TextInput value={companyQuery} onChangeText={setCompanyQuery} onSubmitEditing={() => refreshListedCompanies()} placeholder="نماد یا نام شرکت" placeholderTextColor={colors.textSecondary} style={[styles.companySearch, { color: colors.text, borderColor: colors.backgroundSelected }]} />
           </View>
-          {companyStoreStatus ? <Text style={[styles.storeStatus, { color: colors.textSecondary }]}>ثبت‌شده: {companyStoreStatus.total.toLocaleString('fa-IR')} • غنی‌شده: {companyStoreStatus.enriched.toLocaleString('fa-IR')}{companyStoreStatus.tindexConfigured === false ? ' • Tindex: توکن production موجود نیست' : ''}</Text> : null}
+          {companyStoreStatus ? <Text style={[styles.storeStatus, { color: colors.textSecondary }]}>ثبت‌شده: {companyStoreStatus.total.toLocaleString('fa-IR')} • غنی‌شده: {companyStoreStatus.enriched.toLocaleString('fa-IR')}</Text> : null}
           <View style={styles.companyResults}>{companyResults.slice(0, 20).map(item => <Pressable key={item.code} onPress={() => selectCompany(item)} style={[styles.companyRow, { borderBottomColor: colors.backgroundSelected }]}><View style={{ flex: 1, alignItems: 'flex-end' }}><Text style={[styles.companyName, { color: colors.text }]}>{item.symbol} • {item.name || item.code}</Text><Text style={[styles.companyMeta, { color: colors.textSecondary }]}>{item.market || 'بازار نامشخص'} • {item.sourceUniverse || 'منبع نامشخص'}{item.enrichedAt ? ' • داده تکمیلی موجود' : ''}</Text></View><Text style={[styles.pickText, { color: Brand.positive }]}>{selectedCompany?.code === item.code ? '✓' : 'انتخاب'}</Text></Pressable>)}</View>
           {!companyLoading && companyResults.length === 0 ? <Text style={[styles.helpText, { color: colors.textSecondary }]}>نتیجه‌ای در دیتابیس فعلی پیدا نشد. اگر ingestion هنوز کامل نشده باشد، وضعیت سرور اینجا نمایش داده می‌شود.</Text> : null}
         </View> : null}
@@ -160,13 +160,13 @@ export default function DataConnectScreen() {
           </> : <Text style={[styles.reqTitle,{color:colors.text}]}>قالب زیر دقیقاً برای همین ماژول آماده شده است.</Text>}
           <Text style={[styles.reqTitle,{color:colors.text}]}>فیلدهای مورد نیاز</Text>
           {requirement.fields.map(field=><View key={field.key} style={styles.fieldRow}><Text style={[styles.fieldState,{color:field.required?Brand.warning:colors.textSecondary}]}>{field.required?'لازم':'اختیاری'}</Text><Text style={[styles.fieldName,{color:colors.text}]}>{field.label}</Text></View>)}
-          {companyMode==='listed' ? <Text style={[styles.helpText,{color:colors.textSecondary}]}>BIAP داده‌های قابل دریافت از TSETMC/Tindex/CODAL را خودش می‌گیرد. فقط فیلدهایی که در منابع عمومی وجود ندارند باید با Excel/CSV/CRM تکمیل شوند.</Text> : null}
+          {companyMode==='listed' ? <Text style={[styles.helpText,{color:colors.textSecondary}]}>BIAP داده‌های قابل دریافت از TSETMC/CODAL را خودش می‌گیرد. فقط فیلدهایی که در منابع عمومی وجود ندارند باید با Excel/CSV/CRM تکمیل شوند.</Text> : null}
         </View> : null}
 
         <View style={[styles.activeCard, { backgroundColor: colors.backgroundElement }]}>
           <View style={styles.activeHead}><View style={styles.liveBadge}><Text style={styles.liveBadgeText}>SYNC</Text></View><Text style={[styles.activeTitle, { color: colors.text }]}>منابع فعال BIAP</Text></View>
           <Text style={[styles.body, { color: colors.textSecondary }]}>Market/CODAL/Kiasha فعال هستند. داده عمومی شرکت بورسی از backend خوانده می‌شود؛ dataset اختصاصی فقط مکمل فیلدهای داخلی است.</Text>
-          <View style={styles.liveRow}><Text style={[styles.liveItem, { color: Brand.positive }]}>● Listed Company DB</Text><Text style={[styles.liveItem, { color: Brand.positive }]}>● Tindex / TSETMC / CODAL</Text></View>
+          <View style={styles.liveRow}><Text style={[styles.liveItem, { color: Brand.positive }]}>● Listed Company DB</Text><Text style={[styles.liveItem, { color: Brand.positive }]}>● TSETMC / CODAL</Text></View>
         </View>
 
         <View style={[styles.importCard, { backgroundColor: colors.backgroundElement }]}>

@@ -26,7 +26,7 @@ const GROUPS: ModuleGroup[] = [
     { key: 'behavior', title: 'رفتار کاربر', subtitle: 'Funnel، Churn و الگوی استفاده', icon: '🧭' },
   ]},
   { key: 'kpi', title: 'KPI و داشبورد', accent: Brand.primary, items: [
-    { key: 'kpi-extract', title: 'استخراج KPI', subtitle: 'KPI عمومی از Tindex/TSETMC/CODAL', icon: '🎯' },
+    { key: 'kpi-extract', title: 'استخراج KPI', subtitle: 'KPI عمومی از TSETMC/CODAL', icon: '🎯' },
     { key: 'dashboard', title: 'BI Dashboard', subtitle: 'داشبورد مدیریتی', icon: '📊' },
     { key: 'governance', title: 'KPI Governance', subtitle: 'مالک، هدف و چرخه شاخص', icon: '📏' },
     { key: 'report', title: 'گزارش تحلیلی', subtitle: 'خلاصه قابل ارائه', icon: '📋' },
@@ -114,7 +114,7 @@ export default function ModulesScreen() {
           <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}>
             <Text style={styles.heroMark}>BIAP V2</Text>
             <Text style={[styles.heroTitle, { color: colors.text }]}>شرکت بورسی را انتخاب کنید؛ داده عمومی را BIAP خودش می‌آورد</Text>
-            <Text style={[styles.heroBody, { color: colors.textSecondary }]}>در Real Mode، KPI، SQL، Financial Model و تحلیل‌های عمومی از داده پایدار Tindex / TSETMC / CODAL استفاده می‌کنند. Excel/CSV فقط برای فیلدهای داخلی لازم است.</Text>
+            <Text style={[styles.heroBody, { color: colors.textSecondary }]}>در Real Mode، KPI، SQL، Financial Model و تحلیل‌های عمومی از داده پایدار TSETMC / CODAL استفاده می‌کنند. Excel/CSV فقط برای فیلدهای داخلی لازم است.</Text>
           </View>
 
           <View style={[styles.controlCard, { backgroundColor: colors.backgroundElement }]}>

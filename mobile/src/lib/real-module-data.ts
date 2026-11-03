@@ -39,9 +39,8 @@ async function listedCompanyPayload(key:string,code:string):Promise<RealModulePa
  const stored=await fetchListedCompanyDetail(code);
  const market=(stored?.marketData??{}) as Record<string,unknown>;
  const fundamentals=(stored?.codalFundamentals??{}) as Record<string,unknown>;
- const tindex=(stored?.tindex??{}) as Record<string,unknown>;
- let last=num(market.last_price??market.price??market.closing_price??tindex.price);
- let change=num(market.change_percent??tindex.change_percent);
+ let last=num(market.last_price??market.price??market.closing_price);
+ let change=num(market.change_percent);
  let revenueYoy=num(fundamentals.revenue_yoy_pct);
  let margin=num(fundamentals.net_margin_pct);
  let prevMargin=num(fundamentals.net_margin_prev_pct);
@@ -49,24 +48,28 @@ async function listedCompanyPayload(key:string,code:string):Promise<RealModulePa
  let name=stored?.name||stored?.symbol||code;
  let liveAvailable=Boolean(Object.keys(market).length);
  let codalAvailable=Boolean(stored?.dataAvailability?.codal||Object.keys(fundamentals).length);
- let tindexAvailable=Boolean(stored?.dataAvailability?.tindex||Object.keys(tindex).length);
 
  // Persistent DB is authoritative for the three listed-company data modules.
  // A live recommendation is only a freshness fallback when the DB record is not enriched yet.
+ if(storedAvailable&&!Object.keys(fundamentals).length){
+  // The stored listed record is only a baseline enrichment (may hold no CODAL). The recommendation reads the verified CODAL inbox.
+  const rec=await fetchRecommendation(code,20_000);
+  if(rec?.dataAvailability?.codal&&rec.codalFundamentals){revenueYoy=num(rec.codalFundamentals.revenue_yoy_pct);margin=num(rec.codalFundamentals.net_margin_pct);prevMargin=num(rec.codalFundamentals.net_margin_prev_pct);codalAvailable=true;}
+ }
  if(!storedAvailable){
   const rec=await fetchRecommendation(code,20_000);
   if(!rec)return{available:false,sourceLabel:'Listed Company DB',summary:'',metrics:[],bullets:[],note:`برای نماد ${code} هنوز رکورد غنی‌شده در دیتابیس BIAP موجود نیست.`};
-  name=rec.name||rec.code;last=num(rec.livePrice?.lastPrice??rec.livePrice?.closingPrice);change=num(rec.livePrice?.changePercent);revenueYoy=num(rec.codalFundamentals?.revenue_yoy_pct);margin=num(rec.codalFundamentals?.net_margin_pct);prevMargin=num(rec.codalFundamentals?.net_margin_prev_pct);liveAvailable=Boolean(rec.livePrice);codalAvailable=Boolean(rec.dataAvailability?.codal);tindexAvailable=false;
+  name=rec.name||rec.code;last=num(rec.livePrice?.lastPrice??rec.livePrice?.closingPrice);change=num(rec.livePrice?.changePercent);revenueYoy=num(rec.codalFundamentals?.revenue_yoy_pct);margin=num(rec.codalFundamentals?.net_margin_pct);prevMargin=num(rec.codalFundamentals?.net_margin_prev_pct);liveAvailable=Boolean(rec.livePrice);codalAvailable=Boolean(rec.dataAvailability?.codal);
  }
- const coverage=[liveAvailable,codalAvailable,tindexAvailable].filter(Boolean).length;
- const baseMetrics:DemoMetric[]=[{label:'قیمت بازار',value:last===null?'—':fa(last,0)},{label:'تغییر روز',value:change===null?'—':`${change>=0?'+':''}${fa(change,2)}٪`,tone:change===null?'neutral':change>=0?'positive':'negative'},{label:'پوشش منبع',value:`${coverage}/3`}];
- const evidence:string[]=[`نماد: ${name}`,`دیتابیس BIAP: ${storedAvailable?'متصل':'fallback live'}`,`TSETMC: ${liveAvailable?'متصل':'ناموجود'}`,`CODAL: ${codalAvailable?'متصل':'ناموجود'}`,`Tindex: ${tindexAvailable?'متصل':'ناموجود'}`];
- const source=storedAvailable?'BIAP Listed DB • TSETMC + CODAL + Tindex':'TSETMC + CODAL • LIVE FALLBACK';
+ const coverage=[liveAvailable,codalAvailable].filter(Boolean).length;
+ const baseMetrics:DemoMetric[]=[{label:'قیمت بازار',value:last===null?'—':fa(last,0)},{label:'تغییر روز',value:change===null?'—':`${change>=0?'+':''}${fa(change,2)}٪`,tone:change===null?'neutral':change>=0?'positive':'negative'},{label:'پوشش منبع',value:`${coverage}/2`}];
+ const evidence:string[]=[`نماد: ${name}`,`دیتابیس BIAP: ${storedAvailable?'متصل':'دریافت مستقیم'}`,`TSETMC: ${liveAvailable?'متصل':'ناموجود'}`,`CODAL: ${codalAvailable?'متصل':'ناموجود'}`];
+ const source=storedAvailable?'BIAP Listed DB • TSETMC + CODAL':'TSETMC + CODAL • دریافت مستقیم';
  if(key==='pricing')return{available:false,sourceLabel:source,summary:'داده بورسی شرکت دریافت شد، اما قیمت‌گذاری محصول/خدمت به قیمت واحد، هزینه تمام‌شده و حجم فروش داخلی نیاز دارد.',metrics:baseMetrics,bullets:evidence,note:'برای Pricing عدد پیشنهادی از قیمت سهم ساخته نمی‌شود.'};
  if(key==='crm'||key==='journey'||key==='voc'||key==='behavior'||key==='unit')return{available:false,sourceLabel:source,summary:'داده عمومی شرکت بورسی موجود است، اما این ماژول به داده مشتری/عملیاتی داخلی نیاز دارد.',metrics:baseMetrics,bullets:evidence,note:'برای این ماژول داده داخلی شرکت لازم است.'};
- if(key==='financial-model')return{available:codalAvailable||tindexAvailable||liveAvailable,sourceLabel:source,summary:'Financial Model از رکورد پایدار همین شرکت بورسی/فرابورسی در دیتابیس BIAP استفاده می‌کند؛ مقدار ناموجود ساخته نمی‌شود.',metrics:[{label:'رشد درآمد YoY',value:revenueYoy===null?'—':`${revenueYoy>=0?'+':''}${fa(revenueYoy,1)}٪`,tone:revenueYoy===null?'neutral':revenueYoy>=0?'positive':'negative'},{label:'حاشیه خالص',value:margin===null?'—':`${fa(margin,1)}٪`,tone:margin===null?'neutral':margin>=0?'positive':'negative'},{label:'حاشیه قبلی',value:prevMargin===null?'—':`${fa(prevMargin,1)}٪`}],bullets:evidence,note:'برای P&L کامل، رقم‌های مطلق چند دوره باید در CODAL/Tindex موجود باشد.'};
- if(key==='kpi-extract'||key==='business-kpi'||key==='dashboard')return{available:liveAvailable||codalAvailable||tindexAvailable,sourceLabel:source,summary:'KPIهای قابل محاسبه از رکورد پایدار همین نماد در دیتابیس BIAP خوانده می‌شوند.',metrics:[...baseMetrics.slice(0,2),{label:'رشد درآمد YoY',value:revenueYoy===null?'—':`${revenueYoy>=0?'+':''}${fa(revenueYoy,1)}٪`,tone:revenueYoy===null?'neutral':revenueYoy>=0?'positive':'negative'}],bullets:[...evidence,margin===null?'حاشیه خالص فعلاً ناموجود است.':`حاشیه خالص: ${fa(margin,1)}٪`]};
- if(key==='sql')return{available:storedAvailable||liveAvailable||codalAvailable||tindexAvailable,sourceLabel:'BIAP Listed Company DB • QUERY',summary:'SQL / Data Query روی context ساختاریافته و پایدار همین نماد اجرا می‌شود؛ TSE و IFB از یک دیتابیس مشترک خوانده می‌شوند.',metrics:baseMetrics,bullets:[...evidence,revenueYoy===null?'revenue_yoy_pct: null':`revenue_yoy_pct: ${revenueYoy}`,margin===null?'net_margin_pct: null':`net_margin_pct: ${margin}`],note:'این Query روی دیتابیس BIAP است؛ اتصال SQL داخلی شرکت یک کانکتور جداگانه است.'};
+ if(key==='financial-model')return{available:codalAvailable||liveAvailable,sourceLabel:source,summary:'Financial Model از رکورد پایدار همین شرکت بورسی/فرابورسی در دیتابیس BIAP استفاده می‌کند؛ مقدار ناموجود ساخته نمی‌شود.',metrics:[{label:'رشد درآمد YoY',value:revenueYoy===null?'—':`${revenueYoy>=0?'+':''}${fa(revenueYoy,1)}٪`,tone:revenueYoy===null?'neutral':revenueYoy>=0?'positive':'negative'},{label:'حاشیه خالص',value:margin===null?'—':`${fa(margin,1)}٪`,tone:margin===null?'neutral':margin>=0?'positive':'negative'},{label:'حاشیه قبلی',value:prevMargin===null?'—':`${fa(prevMargin,1)}٪`}],bullets:evidence,note:'برای P&L کامل، رقم‌های مطلق چند دوره باید در CODAL/Tindex موجود باشد.'};
+ if(key==='kpi-extract'||key==='business-kpi'||key==='dashboard')return{available:liveAvailable||codalAvailable,sourceLabel:source,summary:'KPIهای قابل محاسبه از رکورد پایدار همین نماد در دیتابیس BIAP خوانده می‌شوند.',metrics:[...baseMetrics.slice(0,2),{label:'رشد درآمد YoY',value:revenueYoy===null?'—':`${revenueYoy>=0?'+':''}${fa(revenueYoy,1)}٪`,tone:revenueYoy===null?'neutral':revenueYoy>=0?'positive':'negative'}],bullets:[...evidence,margin===null?'حاشیه خالص فعلاً ناموجود است.':`حاشیه خالص: ${fa(margin,1)}٪`]};
+ if(key==='sql')return{available:storedAvailable||liveAvailable||codalAvailable,sourceLabel:'BIAP Listed Company DB • QUERY',summary:'SQL / Data Query روی context ساختاریافته و پایدار همین نماد اجرا می‌شود؛ TSE و IFB از یک دیتابیس مشترک خوانده می‌شوند.',metrics:baseMetrics,bullets:[...evidence,revenueYoy===null?'رشد درآمد: داده کافی نیست':`رشد درآمد: ${fa(revenueYoy,1)}٪`,margin===null?'حاشیه خالص: داده کافی نیست':`حاشیه خالص: ${fa(margin,1)}٪`],note:'این Query روی دیتابیس BIAP است؛ اتصال SQL داخلی شرکت یک کانکتور جداگانه است.'};
  if(key==='swot'||key==='executive-report'||key==='report'||key==='market-entry'||key==='forecast'||key==='anomaly')return{available:true,sourceLabel:source,summary:`${TITLES[key]??'تحلیل'} برای همین نماد فقط از شواهد عمومی موجود استفاده می‌کند.`,metrics:[...baseMetrics.slice(0,2),{label:'حاشیه خالص',value:margin===null?'—':`${fa(margin,1)}٪`}],bullets:[...evidence,revenueYoy===null?'رشد درآمد ناموجود است.':`رشد درآمد YoY: ${revenueYoy>=0?'+':''}${fa(revenueYoy,1)}٪`],note:'هر نتیجه‌ای که به داده داخلی مشتری/محصول/بودجه نیاز داشته باشد تا زمان اتصال آن داده ارائه نمی‌شود.'};
  return{available:true,sourceLabel:source,summary:'Context واقعی شرکت بورسی/فرابورسی برای این ماژول دریافت شد.',metrics:baseMetrics,bullets:evidence};
 }

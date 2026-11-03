@@ -48,7 +48,7 @@ export default function LoginScreen({ onLogin, onRegister }: Props) {
       await setDemoMode(normalizedEmail === DEMO_EMAIL);
       onLogin();
     } catch {
-      setErrorMsg('اتصال به سرور برقرار نشد');
+      setErrorMsg('اتصال به سرور برقرار نشد. اگر فیلترشکن روشن است، آن را خاموش کنید.');
     } finally {
       setLoading(false);
     }
@@ -70,7 +70,7 @@ export default function LoginScreen({ onLogin, onRegister }: Props) {
       setInfoMsg(data?.message || 'اگر ایمیل ثبت شده باشد، کد بازیابی ارسال می‌شود.');
       setMode('reset');
     } catch {
-      setErrorMsg('اتصال به سرور برقرار نشد');
+      setErrorMsg('اتصال به سرور برقرار نشد. اگر فیلترشکن روشن است، آن را خاموش کنید.');
     } finally { setLoading(false); }
   };
 
@@ -93,7 +93,7 @@ export default function LoginScreen({ onLogin, onRegister }: Props) {
       setMode('login');
       setInfoMsg(data?.message || 'رمز عبور تغییر کرد. اکنون وارد شوید.');
     } catch {
-      setErrorMsg('اتصال به سرور برقرار نشد');
+      setErrorMsg('اتصال به سرور برقرار نشد. اگر فیلترشکن روشن است، آن را خاموش کنید.');
     } finally { setLoading(false); }
   };
 

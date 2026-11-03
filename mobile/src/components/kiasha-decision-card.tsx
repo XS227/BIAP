@@ -1,3 +1,4 @@
+import { evidenceReasonsFa, evidenceStatusFa } from '@/lib/evidence-fa';
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Brand, Fonts, Spacing, ThemeColors } from '@/constants/theme';
@@ -42,12 +43,12 @@ export function KiashaDecisionCard({ rec, colors, demo }: { rec: Recommendation;
 
   const evidenceBlocked = rec.evidenceReview?.actionable !== true;
   const decision = evidenceBlocked
-    ? { title: 'کیاشا: شواهد مالی کافی نیست', action: 'DATA HOLD', color: Brand.warning, detail: 'این امتیاز فقط توصیفی است. تا تأیید گزارش کدال، توصیه خرید یا فروش ارائه نمی‌شود.' }
+    ? { title: 'کیاشا: شواهد مالی کافی نیست', action: 'داده کافی نیست', color: Brand.warning, detail: 'این امتیاز فقط توصیفی است. تا تأیید گزارش کدال، توصیه خرید یا فروش ارائه نمی‌شود.' }
     : rec.call === 'BUY'
-    ? { title: 'کیاشا: خرید قابل بررسی است', action: 'GO', color: Brand.stockGreen, detail: 'سیگنال فعلی BUY است؛ اندازه موقعیت باید با موجودی و کنترل ریسک محدود شود.' }
+    ? { title: 'کیاشا: خرید قابل بررسی است', action: 'قابل بررسی', color: Brand.stockGreen, detail: 'سیگنال فعلی BUY است؛ اندازه موقعیت باید با موجودی و کنترل ریسک محدود شود.' }
     : rec.call === 'SELL'
-      ? { title: 'کیاشا: فعلاً نخر', action: 'NO-GO', color: Brand.negative, detail: 'سیگنال فعلی SELL است. برای موقعیت جدید خرید پیشنهاد نمی‌شود؛ اگر سهم را دارید، تحلیل فروش را بررسی کنید.' }
-      : { title: 'کیاشا: فعلاً صبر کن', action: 'WAIT', color: Brand.dataViolet, detail: 'سیگنال فعلی HOLD است و ورود جدید پیشنهاد نمی‌شود.' };
+      ? { title: 'کیاشا: فعلاً نخر', action: 'فعلاً نه', color: Brand.negative, detail: 'سیگنال فعلی SELL است. برای موقعیت جدید خرید پیشنهاد نمی‌شود؛ اگر سهم را دارید، تحلیل فروش را بررسی کنید.' }
+      : { title: 'کیاشا: فعلاً صبر کن', action: 'صبر', color: Brand.dataViolet, detail: 'سیگنال فعلی HOLD است و ورود جدید پیشنهاد نمی‌شود.' };
 
   const sizing = useMemo(() => {
     if (evidenceBlocked || rec.call !== 'BUY' || cash === null || sizingCapital === null || cash <= 0 || sizingCapital <= 0) return null;
@@ -67,7 +68,7 @@ export function KiashaDecisionCard({ rec, colors, demo }: { rec: Recommendation;
     <Text style={[styles.score, { color: colors.textSecondary }]}>امتیاز کیا‌شا: {rec.score >= 0 ? '+' : ''}{rec.score.toFixed(3)}</Text>
     <Text style={[styles.detail, { color: colors.text }]}>{decision.detail}</Text>
     {rec.evidenceReview ? <Text style={[styles.quality, { color: evidenceBlocked ? Brand.warning : Brand.stockGreen }]}>
-      وضعیت شواهد کدال: {rec.evidenceReview.status} • {rec.evidenceReview.reasons.join('؛ ')}
+      وضعیت شواهد کدال: {evidenceStatusFa(rec.evidenceReview.status)} • {evidenceReasonsFa(rec.evidenceReview.reasons)}
     </Text> : null}
     {!evidenceBlocked && rec.call === 'BUY' ? <View style={[styles.sizingBox, { backgroundColor: colors.backgroundSelected }]}>
       {sizing ? <>

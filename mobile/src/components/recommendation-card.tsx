@@ -1,3 +1,4 @@
+import { reasoningFa } from '@/lib/reasoning-fa';
 import { callBadge, normalizedWeightPercents, trackButtonLabel, confidenceNote } from '@/lib/signal-display';
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
@@ -150,9 +151,9 @@ export function RecommendationCard({ rec, colors }: { rec: Recommendation; color
     <Text style={[styles.score, { color: colors.textSecondary }]}>امتیاز نهایی: {rec.score >= 0 ? '+' : ''}{rec.score.toFixed(3)}</Text>
     {agentBreakdown.length ? <View style={styles.weights}><Text style={[styles.weightTitle, { color: colors.text }]}>وزن‌دهی فعال کیا‌شا</Text><View style={styles.weightGrid}>{agentBreakdown.map((b, i) => <View key={b.agent} style={[styles.weightPill, { backgroundColor: colors.backgroundSelected }]}><Text style={[styles.weightName, { color: colors.textSecondary }]}>{AGENT_LABEL[b.agent] ?? b.agent}</Text><Text style={[styles.weightPct, { color: Brand.primary }]}>{weightPercents[i]}٪</Text></View>)}</View></View> : null}
     {scenarioEntry?.scenario ? <ScenarioPanel scenario={scenarioEntry.scenario} colors={colors} /> : null}
-    {top ? <Text style={[styles.reasoning, { color: colors.textSecondary }]} numberOfLines={expanded ? undefined : 2}>{top.reasoning}</Text> : null}
+    {top ? <Text style={[styles.reasoning, { color: colors.textSecondary }]} numberOfLines={expanded ? undefined : 2}>{reasoningFa(top.reasoning)}</Text> : null}
     {agentBreakdown.length ? <Pressable onPress={() => setExpanded(e => !e)}><Text style={[styles.toggle, { color: accent }]}>{expanded ? 'بستن جزئیات' : 'جزئیات رأی عامل‌ها'}</Text></Pressable> : null}
-    {expanded ? <View style={styles.breakdown}>{agentBreakdown.map(b => <View key={b.agent} style={styles.breakdownRow}><Text style={[styles.breakdownAgent, { color: colors.text }]}>{AGENT_LABEL[b.agent] ?? b.agent}</Text><Text style={[styles.breakdownDetail, { color: colors.textSecondary }]}>رأی {b.vote >= 0 ? '+' : ''}{b.vote.toFixed(2)} · اطمینان {(b.confidence * 100).toFixed(0)}٪{confidenceNote(b.observed_samples, b.maturity)} · وزن {((b.weight_normalized ?? 0) * 100).toFixed(0)}٪</Text><Text style={[styles.breakdownDetail, { color: colors.textSecondary }]}>{b.reasoning}</Text></View>)}</View> : null}
+    {expanded ? <View style={styles.breakdown}>{agentBreakdown.map(b => <View key={b.agent} style={styles.breakdownRow}><Text style={[styles.breakdownAgent, { color: colors.text }]}>{AGENT_LABEL[b.agent] ?? b.agent}</Text><Text style={[styles.breakdownDetail, { color: colors.textSecondary }]}>رأی {b.vote >= 0 ? '+' : ''}{b.vote.toFixed(2)} · اطمینان {(b.confidence * 100).toFixed(0)}٪{confidenceNote(b.observed_samples, b.maturity)} · وزن {((b.weight_normalized ?? 0) * 100).toFixed(0)}٪</Text><Text style={[styles.breakdownDetail, { color: colors.textSecondary }]}>{reasoningFa(b.reasoning)}</Text></View>)}</View> : null}
     <FundamentalChart rec={rec} colors={colors} />
     <FundamentalDetails rec={rec} colors={colors} />
 

@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, Radius, BottomTabInset, MaxContentWidth, ThemeColors, BiapLogo } from '@/constants/theme';
 import { formatPrice, parsePct, StockItem } from '@/lib/api';
 import { computeMarketSummary } from '@/lib/market-stats';
-import { marketStatusLabel } from '@/lib/market-hours';
+import { marketStatusLabel, lastSessionLabel } from '@/lib/market-hours';
 import { fetchLiveMarketPreview } from '@/lib/live-market-preview';
 import { StockRowSkeleton } from '@/components/skeleton';
 import { SymbolLogo } from '@/components/symbol-logo';
@@ -28,12 +28,11 @@ export default function HomeScreen() {
     <View style={styles.header}><Pressable onPress={() => router.push('/more')} style={[styles.avatar, { backgroundColor: Brand.primary }]}><Text style={styles.avatarText}>؟</Text></Pressable><Image source={BiapLogo} style={styles.logo} resizeMode="contain" /><Pressable onPress={() => router.push('/search')} style={[styles.search, { backgroundColor: colors.backgroundElement }]}><Text>🔍</Text></Pressable></View>
     <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}><Text style={styles.eyebrow}>BIAP • Business & Investment Analysis Platform</Text><Text style={[styles.heroTitle, { color: colors.text }]}>سرمایه‌گذاری، تحلیل داده و رشد کسب‌وکار</Text><Text style={[styles.heroBody, { color: colors.textSecondary }]}>کیاشا برای بازار سرمایه؛ ابزارهای تحلیلی و مدیریتی برای داده و کسب‌وکار، همه در یک اپ.</Text><Pressable onPress={() => router.push('/how-to' as never)} style={[styles.heroButton, { backgroundColor: Brand.primary }]}><Text style={styles.heroButtonText}>چطور از BIAP استفاده کنم؟</Text></Pressable></View>
     <Text style={[styles.sectionTitle, { color: colors.text }]}>حوزه‌های BIAP</Text>
-    <ProductCard icon="🧪" title="آزمایش پنج شرکت ایرانی" body="پنج گزارش کدال، کنترل ترازنامه و تفکیک رأی تاریخی از تحلیل زنده" accent={Brand.warning} onPress={() => router.push("/research-five" as never)} colors={colors} />
     <ProductCard icon="🤖" title="بازار سرمایه • Kiasha" body="تا ۱۰ پیشنهاد برتر از داده واقعی قابل‌تأیید، افق کوتاه/بلندمدت و Track Record Paper" accent={Brand.positive} onPress={() => router.push('/kiasha')} colors={colors} />
     <ProductCard icon="📊" title="تحلیل داده" body="EDA، KPI، SQL، Forecast، Anomaly و داشبورد" accent={Brand.dataViolet} onPress={() => router.push('/modules' as never)} colors={colors} />
     <ProductCard icon="💼" title="توسعه کسب‌وکار" body="SWOT، CRM، Journey، Pricing، Business Plan و مدل مالی" accent={Brand.secondary} onPress={() => router.push('/modules' as never)} colors={colors} />
-    <View style={styles.sectionHead}><Pressable onPress={() => router.push('/market')}><Text style={{ color: Brand.primary, fontFamily: Fonts.sans }}>مشاهده بازار ←</Text></Pressable><Text style={[styles.sectionTitle, { color: colors.text }]}>منتخب زنده بازار</Text></View>
-    <View style={[styles.marketPill, { backgroundColor: colors.backgroundElement }]}><Text style={{ color: marketStatus.open ? Brand.positive : colors.textSecondary, fontFamily: Fonts.sans }}>{marketStatus.label} • {summary.total ? `${summary.gainers} مثبت / ${summary.losers} منفی` : 'در انتظار داده واقعی'}</Text></View>
+    <View style={styles.sectionHead}><Pressable onPress={() => router.push('/market')}><Text style={{ color: Brand.primary, fontFamily: Fonts.sans }}>مشاهده بازار ←</Text></Pressable><Text style={[styles.sectionTitle, { color: colors.text }]}>{marketStatus.open ? 'منتخب زنده بازار' : `منتخب آخرین جلسه • ${lastSessionLabel()}`}</Text></View>
+    <View style={[styles.marketPill, { backgroundColor: colors.backgroundElement }]}><Text style={{ color: marketStatus.open ? Brand.positive : colors.textSecondary, fontFamily: Fonts.sans }}>{marketStatus.label}{marketStatus.open ? '' : ' • قیمت‌های پایانی آخرین جلسه'} • {summary.total ? `${summary.gainers} مثبت / ${summary.losers} منفی` : 'در انتظار داده واقعی'}</Text></View>
     {error ? <Text style={[styles.error, { color: colors.textSecondary, backgroundColor: colors.backgroundElement }]}>فعلاً قیمت معتبر از منبع واقعی دریافت نشد. صفحه را پایین بکش یا وارد بازار شو؛ عدد جایگزین ساخته نمی‌شود.</Text> : null}
     {loading ? [1,2,3].map(i => <StockRowSkeleton key={i} />) : data.map(item => <WatchRow key={`${item.code}-${item.name}`} item={item} colors={colors} />)}
   </View></ScrollView></SafeAreaView>;

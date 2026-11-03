@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { SymbolPicker, type PickedSymbol } from '@/components/symbol-picker';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { getSelectedListedCompany } from '@/lib/listed-company-selection';
 import { AI_STATUS_FA, fetchAiCompanyAnalysis, type AiAnalysis } from '@/lib/ai-analysis-api';
@@ -16,18 +17,21 @@ export default function AiAnalysisScreen() {
   const [title, setTitle] = useState(''); const [busy, setBusy] = useState(false);
   const [state, setState] = useState<AiAnalysis | { error: string } | null>(null);
 
+  const params = useLocalSearchParams<{ code?: string; name?: string }>();
+  const [picked, setPicked] = useState<PickedSymbol | null>(null);
+  const run = useCallback(async (c: PickedSymbol) => {
+    setBusy(true); setState(null); setTitle(`${c.name || c.symbol} (${c.symbol})`);
+    setState(await fetchAiCompanyAnalysis(c.code)); setBusy(false);
+  }, []);
   useFocusEffect(useCallback(() => {
-    let active = true;
     (async () => {
-      setBusy(true);
+      if (picked) return;
+      if (typeof params.code === 'string' && params.code) { const c = { code: params.code, symbol: String(params.name || params.code), name: String(params.name || '') }; setPicked(c); run(c); return; }
       const c = await getSelectedListedCompany();
-      if (!c) { if (active) { setState({ error: 'ابتدا از بخش بازار یک شرکت را انتخاب کنید.' }); setBusy(false); } return; }
-      if (active) setTitle(`${c.name || c.symbol} (${c.symbol})`);
-      const res = await fetchAiCompanyAnalysis(c.symbol);
-      if (active) { setState(res); setBusy(false); }
+      if (!c) { setState({ error: 'یک نماد انتخاب کنید یا از صفحه‌ی نماد وارد شوید.' }); return; }
+      const d = { code: c.code, symbol: c.symbol, name: c.name || c.symbol }; setPicked(d); run(d);
     })();
-    return () => { active = false; };
-  }, []));
+  }, [params.code, params.name, picked, run]));
 
   const ok = state && 'status' in state && state.status === 'OK' ? state : null;
   return (
@@ -37,6 +41,7 @@ export default function AiAnalysisScreen() {
           <Pressable onPress={() => router.back()} style={[styles.back, { backgroundColor: colors.backgroundElement }]}><Text style={{ color: colors.text, fontFamily: Fonts.sans, fontSize: 12, fontWeight: '800' }}>بازگشت ›</Text></Pressable>
           <Text style={[styles.title, { color: colors.text }]}>تحلیل شرکت با هوش مصنوعی</Text>
           <Text style={[styles.body, { color: colors.textSecondary }]}>این متن فقط از نتایج ذخیره‌شده‌ی BIAP (عامل‌ها، کیاشا، صورت‌های مالی) ساخته می‌شود؛ هر روز برای هر شرکت یک‌بار تولید و نگهداری می‌شود.</Text>
+          <SymbolPicker current={title} onPick={(c) => { setPicked(c); run(c); }} />
           {title ? <Text style={[styles.sub, { color: colors.text }]}>{title}</Text> : null}
           {busy ? <ActivityIndicator style={{ marginTop: 20 }} color={Brand.primary} /> : null}
           {state && 'error' in state ? <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.body, { color: Brand.negative, marginTop: 0 }]}>{state.error}</Text></View> : null}

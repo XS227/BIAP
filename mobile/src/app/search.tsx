@@ -13,6 +13,7 @@ import {
 import { router } from 'expo-router';
 import { Colors, Brand, Fonts, Spacing, Radius, BottomTabInset, MaxContentWidth, ThemeColors } from '@/constants/theme';
 import { fetchSymbols, MarketSymbolResult } from '@/lib/api';
+import { instrumentTypeFa, rankMarketSymbols } from '@/lib/market-symbols';
 
 const MARKET_LABEL: Record<string, string> = { TSE: 'بورس', IFB: 'فرابورس', IFB_BASE: 'پایه فرابورس' };
 
@@ -40,7 +41,7 @@ function ResultRow({ item, colors }: { item: MarketSymbolResult; colors: ThemeCo
       <View style={rowStyles.left}>
         <Text style={[rowStyles.symbol, { color: colors.text }]}>{item.symbol}</Text>
         <Text style={[rowStyles.name, { color: colors.textSecondary }]} numberOfLines={1}>
-          {item.name}
+          {instrumentTypeFa(item)} • {item.name}
         </Text>
       </View>
       {item.market ? (
@@ -84,7 +85,7 @@ export default function SearchScreen() {
       return;
     }
     setLoading(true);
-    const items = await fetchSymbols({ q: q.trim(), limit: 40 });
+    const items = rankMarketSymbols(await fetchSymbols({ q: q.trim(), limit: 80 }), q.trim()).slice(0, 40);
     setResults(items);
     setSearched(true);
     setLoading(false);

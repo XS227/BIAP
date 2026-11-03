@@ -107,7 +107,7 @@ export default function RegisterScreen({ onLogin, onBack }: Props) {
       await setDemoMode(false);
       onLogin?.();
     } catch {
-      setErrorMsg('اتصال به سرور برقرار نشد');
+      setErrorMsg('اتصال به سرور برقرار نشد. اگر فیلترشکن روشن است، آن را خاموش کنید.');
     } finally {
       setLoading(false);
     }

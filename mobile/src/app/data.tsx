@@ -65,7 +65,7 @@ export default function DataScreen() {
             <Pressable onPress={openListed} style={[styles.action, { backgroundColor: colors.backgroundElement, borderColor: '#16a34a55' }]}>
               <Text style={styles.icon}>🏢</Text>
               <Text style={[styles.actionTitle, { color: colors.text }]}>شرکت بورسی / فرابورسی</Text>
-              <Text style={[styles.actionText, { color: colors.textSecondary }]}>انتخاب نماد و دریافت خودکار Tindex / TSETMC / CODAL</Text>
+              <Text style={[styles.actionText, { color: colors.textSecondary }]}>انتخاب نماد و دریافت خودکار TSETMC / CODAL</Text>
             </Pressable>
             <Pressable onPress={openPrivate} style={[styles.action, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
               <Text style={styles.icon}>🔌</Text>
@@ -83,7 +83,7 @@ export default function DataScreen() {
               <>
                 <Text style={[styles.companyName, { color: colors.text }]}>{displaySymbol(selectedCompany.symbol, selectedCompany.name)} • {selectedCompany.name && !/^\d{5,}$/.test(selectedCompany.name) ? selectedCompany.name : ''}</Text>
                 <Text style={[styles.source, { color: colors.textSecondary }]}>
-                  {selectedCompany.market || 'TSE / IFB'} • دیتابیس پایدار BIAP • حداقل روزانه از Tindex، baseline دوره‌ای از TSETMC/CODAL
+                  {selectedCompany.market || 'TSE / IFB'} • دیتابیس پایدار BIAP • حداقل روزانه از TSETMC، baseline دوره‌ای از TSETMC/CODAL
                 </Text>
                 <Text style={[styles.autoNote, { color: Brand.positive }]}>KPI، SQL / Data Query و Financial Model بدون آپلود فایل از همین شرکت خوانده می‌شوند.</Text>
                 <View style={styles.buttonRow}>

@@ -92,7 +92,7 @@ export default function BizDevScreen() {
             {selectedCompany ? (
               <>
                 <Text style={[styles.selectedCompany, { color: colors.text }]}>{displaySymbol(selectedCompany.symbol, selectedCompany.name)} • {selectedCompany.name || selectedCompany.code}</Text>
-                <Text style={[styles.heroBody, { color: colors.textSecondary }]}>KPI، SWOT/رقبا، فرصت بازار، گزارش مدیریتی و مدل‌های عمومی از دیتابیس پایدار BIAP و منابع Tindex / TSETMC / CODAL شروع می‌شوند. فقط بخش‌هایی مثل CRM، قیمت محصول و Pipeline به داده داخلی نیاز دارند.</Text>
+                <Text style={[styles.heroBody, { color: colors.textSecondary }]}>KPI، SWOT/رقبا، فرصت بازار، گزارش مدیریتی و مدل‌های عمومی از دیتابیس پایدار BIAP و منابع TSETMC / CODAL شروع می‌شوند. فقط بخش‌هایی مثل CRM، قیمت محصول و Pipeline به داده داخلی نیاز دارند.</Text>
               </>
             ) : (
               <Text style={[styles.heroBody, { color: colors.textSecondary }]}>برای شرکت بورسی یا فرابورسی لازم نیست CSV/Excel وارد کنید. نماد را انتخاب کنید؛ داده عمومی قابل‌تأیید به‌صورت خودکار بارگذاری و ذخیره می‌شود. داده داخلی فقط مکمل است.</Text>

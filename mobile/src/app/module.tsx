@@ -1,3 +1,4 @@
+import { fetchMarketSymbols } from '@/lib/market-symbols';
 import { useCallback, useState } from 'react';
 import { displaySymbol, realSourceBadge } from '@/lib/data-status';
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
@@ -11,7 +12,7 @@ import { getSelectedListedCompany } from '@/lib/listed-company-selection';
 import { matchRequirementColumns, requirementFor, sourceLabel } from '@/lib/module-data-requirements';
 
 export default function ModuleDetailScreen() {
-  const params = useLocalSearchParams<{ key?: string; code?: string; companyMode?: string }>();
+  const params = useLocalSearchParams<{ key?: string; code?: string; name?: string; companyMode?: string }>();
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
   const [demoMode, setDemoModeState] = useState(false);
@@ -21,7 +22,9 @@ export default function ModuleDetailScreen() {
   const key = typeof params.key === 'string' ? params.key : '';
   const paramCode = typeof params.code === 'string' ? params.code : '';
   const paramCompanyMode = typeof params.companyMode === 'string' ? params.companyMode : '';
+  const paramName = typeof params.name === 'string' ? params.name : '';
   const [code, setCode] = useState(paramCode);
+  const [label, setLabel] = useState(paramName);
   const [companyMode, setCompanyMode] = useState<'listed' | 'private' | 'hybrid'>(paramCompanyMode === 'listed' ? 'listed' : paramCompanyMode === 'hybrid' ? 'hybrid' : 'private');
   const module = DEMO_MODULES[key];
   const requirement = requirementFor(key);
@@ -33,13 +36,15 @@ export default function ModuleDetailScreen() {
     const effectiveCode = paramCode || selected?.code || '';
     const effectiveMode: 'listed' | 'private' | 'hybrid' = paramCompanyMode === 'listed' ? 'listed' : paramCompanyMode === 'hybrid' ? 'hybrid' : selected ? 'listed' : 'private';
     setCode(effectiveCode);
+    setLabel(paramName || selected?.symbol || selected?.name || '');
+    if (!paramName && !selected?.symbol && /^\d{5,}$/.test(effectiveCode)) { const hit = (await fetchMarketSymbols({ q: effectiveCode, limit: 5 })).find((s) => s.code === effectiveCode); if (hit) setLabel(hit.symbol || hit.name); }
     setCompanyMode(effectiveMode);
     const [demo, payload, dataset] = await Promise.all([getDemoMode(), fetchRealModuleData(key, { code: effectiveCode, companyMode: effectiveMode }), getBusinessDataset()]);
     setDemoModeState(demo);
     setReal(payload);
     setDatasetColumns(dataset?.columns ?? []);
     setLoadingReal(false);
-  }, [key, paramCode, paramCompanyMode]);
+  }, [key, paramCode, paramName, paramCompanyMode]);
 
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
 
@@ -62,7 +67,7 @@ export default function ModuleDetailScreen() {
 
   const requirementCard = requirement ? <View style={[styles.requirementCard,{backgroundColor:colors.backgroundElement,borderColor:companyMode==='listed'?'#16653444':colors.backgroundSelected}]}> 
     <View style={styles.requirementHead}><View style={[styles.reqBadge,{backgroundColor:companyMode==='listed'?'#14532d':'#1e3a8a'}]}><Text style={styles.reqBadgeText}>{companyMode==='listed'?'بورسی • منبع خودکار':'شرکتی • ورود دستی'}</Text></View><Text style={[styles.requirementTitle,{color:colors.text}]}>داده لازم برای این ماژول</Text></View>
-    {code ? <Text style={[styles.selectedCompany,{color:Brand.positive}]}>نماد انتخاب‌شده: {displaySymbol(code)}</Text> : null}
+    {code ? <Text style={[styles.selectedCompany,{color:Brand.positive}]}>نماد انتخاب‌شده: {displaySymbol(label || code)}</Text> : null}
     <Text style={[styles.requirementText,{color:colors.textSecondary}]}>{requirement.description}</Text>
     {companyMode==='listed' ? <>
       <Text style={[styles.reqSection,{color:colors.text}]}>منابع خودکار BIAP</Text>

@@ -15,8 +15,22 @@ export function isVerifiedEquitySymbol(item: MarketSymbolResult): boolean {
   return ORDINARY_SHARE_PAPER_TYPES.has(paperType);
 }
 
+/** Persian instrument type from the TSETMC paper type (and name hints). Ordinary shares are what BIAP analyses. */
+export function instrumentTypeFa(item: { paper_type?: string | null; name?: string | null; symbol?: string | null }): string {
+  const t = String(item.paper_type ?? '').trim();
+  const name = normalize(item.name);
+  if (ORDINARY_SHARE_PAPER_TYPES.has(t)) return 'سهام';
+  if (t === '301' || /حق\s*تقدم/.test(name)) return 'حق‌تقدم';
+  if (t === '305' || /^صندوق/.test(name)) return 'صندوق';
+  if (t === '306' || /^(اجاره|مرابحه|صکوک|اسناد)/.test(name)) return 'اوراق (اجاره/مرابحه)';
+  if (/اختیار/.test(name)) return 'اختیار معامله';
+  return 'ابزار دیگر';
+}
+export function isOrdinaryShare(item: { paper_type?: string | null }): boolean { return ORDINARY_SHARE_PAPER_TYPES.has(String(item.paper_type ?? '').trim()); }
+
 export function rankMarketSymbols(items: MarketSymbolResult[], query?: string): MarketSymbolResult[] {
   const q = normalize(query);
+  const shareFirst = (item: MarketSymbolResult): number => (isOrdinaryShare(item as ClassifiedMarketSymbol) ? 0 : 10);
   if (!q) return items;
   const rank = (item: MarketSymbolResult): number => {
     const symbol = normalize(item.symbol);
@@ -29,7 +43,8 @@ export function rankMarketSymbols(items: MarketSymbolResult[], query?: string): 
     return 4;
   };
   return [...items].sort((a, b) => {
-    const diff = rank(a) - rank(b);
+    // The main stock always outranks bonds, funds, rights and options with a similar symbol («تابان» before «تابان25»).
+    const diff = shareFirst(a) + rank(a) - (shareFirst(b) + rank(b));
     if (diff !== 0) return diff;
     return normalize(a.symbol).localeCompare(normalize(b.symbol), 'fa');
   });

@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { SymbolPicker, type PickedSymbol } from '@/components/symbol-picker';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { fetchRecommendation } from '@/lib/api';
 import { getSelectedListedCompany } from '@/lib/listed-company-selection';
@@ -14,20 +15,23 @@ const fmt = (v: number | string | null) => (v == null ? '—' : typeof v === 'st
 export default function AuditScreen() {
   const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
   const [state, setState] = useState<{ title: string; report: AuditReport } | { error: string } | null>(null); const [busy, setBusy] = useState(false);
+  const params = useLocalSearchParams<{ code?: string; name?: string }>();
+  const [picked, setPicked] = useState<PickedSymbol | null>(null);
+  const run = useCallback(async (c: PickedSymbol) => {
+    setBusy(true); setState(null);
+    const rec = await fetchRecommendation(c.code);
+    setState(rec ? { title: `${rec.name || c.name || c.symbol} (${c.symbol})`, report: runIranAudit(rec.codalFundamentals as IranFundamentals | null) } : { error: 'پاسخ سرویس تحلیل دریافت نشد.' });
+    setBusy(false);
+  }, []);
   useFocusEffect(useCallback(() => {
-    let active = true;
     (async () => {
-      setBusy(true);
+      if (picked) return;
+      if (typeof params.code === 'string' && params.code) { const c = { code: params.code, symbol: String(params.name || params.code), name: String(params.name || '') }; setPicked(c); run(c); return; }
       const c = await getSelectedListedCompany();
-      if (!c) { if (active) { setState({ error: 'ابتدا از بخش بازار یک شرکت را انتخاب کنید.' }); setBusy(false); } return; }
-      const rec = await fetchRecommendation(c.symbol);
-      if (active) {
-        setState(rec ? { title: `${rec.name || c.name || c.symbol} (${c.symbol})`, report: runIranAudit(rec.codalFundamentals as IranFundamentals | null) } : { error: 'پاسخ سرویس تحلیل دریافت نشد.' });
-        setBusy(false);
-      }
+      if (!c) { setState({ error: 'یک نماد انتخاب کنید یا از صفحه‌ی نماد وارد شوید.' }); return; }
+      const d = { code: c.code, symbol: c.symbol, name: c.name || c.symbol }; setPicked(d); run(d);
     })();
-    return () => { active = false; };
-  }, []));
+  }, [params.code, params.name, picked, run]));
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -35,6 +39,7 @@ export default function AuditScreen() {
           <Pressable onPress={() => router.back()} style={[styles.back, { backgroundColor: colors.backgroundElement }]}><Text style={{ color: colors.text, fontFamily: Fonts.sans, fontSize: 12, fontWeight: '800' }}>بازگشت ›</Text></Pressable>
           <Text style={[styles.title, { color: colors.text }]}>تحلیل حسابرسی</Text>
           <Text style={[styles.body, { color: colors.textSecondary }]}>بررسی‌های قطعی روی صورت‌های مالی ذخیره‌شده. هر بررسی ورودی، دوره و منبع خود را نشان می‌دهد؛ اگر داده نباشد «داده کافی نیست» نمایش داده می‌شود و عددی حدس زده نمی‌شود.</Text>
+          <SymbolPicker current={picked?.symbol} onPick={(c) => { setPicked(c); run(c); }} />
           {busy ? <ActivityIndicator style={{ marginTop: 20 }} color={Brand.primary} /> : null}
           {state && 'error' in state ? <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.body, { color: Brand.negative, marginTop: 0 }]}>{state.error}</Text></View> : null}
           {state && 'report' in state ? (

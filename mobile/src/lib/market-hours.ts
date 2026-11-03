@@ -21,3 +21,17 @@ export function marketStatusLabel(): { open: boolean; label: string } {
     label: open ? 'بازار باز است' : 'بازار بسته است',
   };
 }
+
+/** Calendar date (IRST) of the most recent trading session that has started: Sun–Thu, from 09:00. Public holidays are not known. */
+export function lastSessionDate(now: Date = new Date()): Date {
+  const irst = new Date(now.getTime() + 3.5 * 60 * 60 * 1000);
+  const minutes = irst.getUTCHours() * 60 + irst.getUTCMinutes();
+  const d = new Date(Date.UTC(irst.getUTCFullYear(), irst.getUTCMonth(), irst.getUTCDate()));
+  if (minutes < 9 * 60) d.setUTCDate(d.getUTCDate() - 1);
+  while (d.getUTCDay() === 5 || d.getUTCDay() === 6) d.setUTCDate(d.getUTCDate() - 1);
+  return d;
+}
+
+export function lastSessionLabel(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat('fa-IR-u-ca-persian', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' }).format(lastSessionDate(now));
+}
