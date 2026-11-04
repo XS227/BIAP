@@ -80,6 +80,24 @@ def parse_fundamentals(symbol: str, filing: CodalFiling, report_html: str) -> Co
         "جمع حقوق مالکانه", "جمع حقوق صاحبان سهام", "جمع حقوق صاحبان سرمایه",
         "جمع حقوق صاحبان سهام شرکت اصلی", "جمع حقوق مالکانه شرکت اصلی",
     ))
+    # Additive inputs for the audit checks. Exact-label match only; a value that contradicts the
+    # balance sheet (e.g. current assets above total assets) is dropped rather than guessed.
+    cfo = row_values(rows, (
+        "جریان خالص ورود (خروج) نقد حاصل از فعالیت‌های عملیاتی",
+        "جریان خالص ورود نقد حاصل از فعالیت‌های عملیاتی",
+        "جریان خالص خروج نقد حاصل از فعالیت‌های عملیاتی",
+        "جریان خالص ورود (خروج) وجه نقد حاصل از فعالیت‌های عملیاتی",
+        "جریان خالص نقد حاصل از فعالیت‌های عملیاتی",
+        "خالص جریان نقدی حاصل از فعالیت‌های عملیاتی",
+    ))
+    current_assets = row_values(rows, ("جمع دارایی‌های جاری", "جمع دارایی های جاری", "جمع داراییهای جاری"))
+    current_liabilities = row_values(rows, ("جمع بدهی‌های جاری", "جمع بدهی های جاری", "جمع بدهیهای جاری"))
+    receivables = row_values(rows, (
+        "دریافتنی‌های تجاری و سایر دریافتنی‌ها", "دریافتنی‌های تجاری", "حساب‌ها و اسناد دریافتنی تجاری",
+        "حساب‌های دریافتنی تجاری",
+    ))
+    retained = row_values(rows, ("سود (زیان) انباشته", "سود انباشته", "سود و زیان انباشته", "زیان انباشته"))
+    fixed_assets = row_values(rows, ("دارایی‌های ثابت مشهود", "دارایی ثابت مشهود"))
     if revenue is None or net_profit is None:
         return None
     revenue_current, revenue_prev = revenue
@@ -99,6 +117,18 @@ def parse_fundamentals(symbol: str, filing: CodalFiling, report_html: str) -> Co
         status, _reason = balance_sheet_check(balance, period)
         if status == "BLOCK":
             return None
+    def _pair(pair, index):
+        return pair[index] if pair else None
+
+    ta_cur, tl_cur = balance["total_assets_current"], balance["total_liabilities_current"]
+    ta_prev, tl_prev = balance["total_assets_prev"], balance["total_liabilities_prev"]
+    ca, cl, rec = current_assets, current_liabilities, receivables
+    if ca and ta_cur is not None and ta_prev is not None and (ca[0] > ta_cur or ca[1] > ta_prev):
+        ca = None
+    if cl and tl_cur is not None and tl_prev is not None and (cl[0] > tl_cur or cl[1] > tl_prev):
+        cl = None
+    if rec and ca and (rec[0] > ca[0] or rec[1] > ca[1]):
+        rec = None
     return CodalFundamentals(
         symbol=symbol,
         revenue_current=revenue_current,
@@ -120,4 +150,10 @@ def parse_fundamentals(symbol: str, filing: CodalFiling, report_html: str) -> Co
         report_title=filing.title,
         report_url=filing.excel_url,
         source="codal_financial_statement_html_v2",
+        operating_cash_flow_current=_pair(cfo, 0), operating_cash_flow_prev=_pair(cfo, 1),
+        current_assets_current=_pair(ca, 0), current_assets_prev=_pair(ca, 1),
+        current_liabilities_current=_pair(cl, 0), current_liabilities_prev=_pair(cl, 1),
+        receivables_current=_pair(rec, 0), receivables_prev=_pair(rec, 1),
+        retained_earnings_current=_pair(retained, 0), retained_earnings_prev=_pair(retained, 1),
+        fixed_assets_current=_pair(fixed_assets, 0), fixed_assets_prev=_pair(fixed_assets, 1),
     )

@@ -157,6 +157,19 @@ class CodalFundamentals:
     report_title: Optional[str] = None
     report_url: Optional[str] = None
     source: str = "codal_financial_statement_html"
+    # Additive (parser v2 only): inputs for earnings-quality / Beneish / Altman / Zmijewski checks.
+    operating_cash_flow_current: Optional[float] = None
+    operating_cash_flow_prev: Optional[float] = None
+    current_assets_current: Optional[float] = None
+    current_assets_prev: Optional[float] = None
+    current_liabilities_current: Optional[float] = None
+    current_liabilities_prev: Optional[float] = None
+    receivables_current: Optional[float] = None
+    receivables_prev: Optional[float] = None
+    retained_earnings_current: Optional[float] = None
+    retained_earnings_prev: Optional[float] = None
+    fixed_assets_current: Optional[float] = None
+    fixed_assets_prev: Optional[float] = None
 
     def to_dict(self) -> dict:
         return asdict(self)
