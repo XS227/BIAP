@@ -77,7 +77,7 @@ def _backlog_per_run(inbox_mode: bool) -> int:
     live = _env_int("BIAP_LISTED_COMPANY_BACKLOG_PER_RUN", 25, minimum=0, maximum=100)
     if not inbox_mode:
         return live
-    return _env_int("BIAP_LISTED_COMPANY_INBOX_BACKLOG_PER_RUN", live, minimum=0, maximum=500)
+    return _env_int("BIAP_LISTED_COMPANY_INBOX_BACKLOG_PER_RUN", 100, minimum=0, maximum=500)
 
 
 def main() -> int:
@@ -107,6 +107,15 @@ def main() -> int:
     meta = result.get("metadata") or {}
     if inbox_mode:
         meta["codalInbox"] = codal_inbox.summary()
+        # Prepare the next Liara cron request automatically. The request is atomic,
+        # contains only genuine primary issuers missing financials, and does not
+        # change any existing data or fabricated figures.
+        try:
+            requested = codal_inbox.backlog_symbols(_env_int("BIAP_CODAL_REQUEST_LIMIT", 400))
+            request_path = codal_inbox.write_request(codal_inbox.inbox_dir(), requested)
+            meta["codalRequest"] = {"status": "ok", "count": len(requested), "path": request_path}
+        except (OSError, ValueError, codal_inbox.InboxError) as exc:
+            meta["codalRequest"] = {"status": "error", "reason": str(exc)[:240]}
     if check_date:
         meta["lastFilingCheckDate"] = check_date
     if filing_check_error:

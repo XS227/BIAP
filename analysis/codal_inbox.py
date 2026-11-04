@@ -153,6 +153,11 @@ class Inbox:
         row = self.companies.get(symbol_key(symbol))
         return bool(row and row["status"] in _USABLE)
 
+    def has_financial_filings(self, symbol: str) -> bool:
+        """Only exports containing financial filings can fill an accounting-audit gap."""
+        row = self.companies.get(symbol_key(symbol))
+        return bool(row and row.get("status") == "ok" and row.get("financial_filings"))
+
     def report_html(self, tracing_no: Optional[str]) -> str:
         location = self._reports.get(tracing_no or "")
         if location is None:
@@ -236,17 +241,21 @@ def write_request(root: str, symbols: list[str]) -> str:
 
 
 def backlog_symbols(limit: int) -> list[str]:
-    """Symbols of never-enriched primary companies (the daily job's backlog), without a usable inbox answer."""
+    """Primary companies missing CODAL fundamentals, including market-only enriched rows.
+
+    Only request an upstream answer if no usable export exists yet. A verified
+    no_data response is not retried on every run; the new-filings feed handles updates.
+    """
     from company_registry_store import CompanyRegistryStore
     from listed_company_store import ListedCompanyStore
 
     store = ListedCompanyStore()
     registry = CompanyRegistryStore(store.db_path)
     codes = registry.primary_company_codes() or []
-    never_enriched, _ = store._split_by_enrichment(codes)
+    missing_financials = store.missing_codal_financial_codes(codes)
     have = current() if enabled() else None
     out: list[str] = []
-    for code in never_enriched:
+    for code in missing_financials:
         instrument = registry.get_instrument(code)
         symbol = str((instrument or {}).get("symbol") or "").strip()
         if symbol and not (have and have.has_record(symbol)) and symbol not in out:

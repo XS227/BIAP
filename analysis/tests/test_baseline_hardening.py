@@ -386,7 +386,7 @@ def test_inbox_backlog_per_run_is_separate_from_live_codal_cap(monkeypatch):
     assert runner._backlog_per_run(True) == 150
     assert runner._backlog_per_run(False) == 25
     monkeypatch.delenv("BIAP_LISTED_COMPANY_INBOX_BACKLOG_PER_RUN")
-    assert runner._backlog_per_run(True) == 25
+    assert runner._backlog_per_run(True) == 100
 
 
 # --- funds: not-applicable marker stops retries, nothing is deleted ---------------------------

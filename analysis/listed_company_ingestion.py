@@ -414,8 +414,9 @@ def run_batch(
 
     ``backlog_per_run`` switches to the financials-only policy used by the daily timer:
     (1) companies with new CODAL filings since the last run (``new_filing_codes``) first,
-    (2) then up to ``backlog_per_run`` never-enriched companies, most-traded first,
-    (3) nothing else -- already-enriched companies with no new filing are not refetched.
+    (2) then up to ``backlog_per_run`` companies lacking CODAL financials,
+        including market-only baselines already stored, most-traded first,
+    (3) companies with genuine CODAL fundamentals are not refetched without a new filing.
     A 429 is retried after ``codal_data.backoff_delay`` (Retry-After honoured); after
     ``max_consecutive_rate_limits`` in a row the run saves progress and stops cleanly
     with status ``rate_limited`` (the caller maps that to a non-failing exit code).
@@ -455,14 +456,20 @@ def run_batch(
         eligible_set = set(eligible_codes)
         filing_codes = [c for c in dict.fromkeys(str(c) for c in (new_filing_codes or ())) if c in eligible_set][:safe_batch_size]
         cutoff = (datetime.now(timezone.utc) - timedelta(days=FAILED_RETRY_DAYS)).isoformat()
-        never_enriched, _ = target._split_by_enrichment(eligible_codes)
-        backlog = [c for c in never_enriched if c not in set(filing_codes) and failed_at.get(c, "") < cutoff and c not in not_applicable]
+        # The Liara inbox can cheaply revisit market-only baselines when a verified
+        # financial export arrives. In direct-live mode, keep the old never-enriched
+        # policy to avoid retrying the same CODAL no-data response every day.
+        if codal_inbox.enabled():
+            backlog_candidates = target.missing_codal_financial_codes(eligible_codes)
+        else:
+            backlog_candidates, _ = target._split_by_enrichment(eligible_codes)
+        backlog = [c for c in backlog_candidates if c not in set(filing_codes) and failed_at.get(c, "") < cutoff and c not in not_applicable]
         if codal_inbox.enabled():
             # Do not spend the daily slots on companies the Liara export has not delivered.
             inbox = codal_inbox.current()
-            has = lambda c: inbox.has_record(str((reg.get_instrument(c) or {}).get("symbol") or ""))  # noqa: E731
-            filing_codes = [c for c in filing_codes if has(c)]
-            backlog = [c for c in backlog if has(c)]
+            symbol_for = lambda c: str((reg.get_instrument(c) or {}).get("symbol") or "")  # noqa: E731
+            filing_codes = [c for c in filing_codes if inbox.has_financial_filings(symbol_for(c))]
+            backlog = [c for c in backlog if inbox.has_financial_filings(symbol_for(c))]
         backlog.sort(key=lambda c: (-traded_value.get(c, 0.0), c))  # most-traded first; unknown volume last
         filing_codes = [c for c in filing_codes if c not in not_applicable]
         codes = filing_codes + backlog[:max(0, int(backlog_per_run))]
@@ -492,11 +499,12 @@ def run_batch(
         "companyUniversePolicy": "TSETMC discovery -> instrument classification -> issuer resolution -> dedup -> company enrichment; CODAL is enrichment/verification only",
         "schedulerPriority": (
             "never-enriched genuine companies first, then oldest-enriched for refresh" if backlog_per_run is None
-            else "new CODAL filings first, then never-enriched most-traded first; no refresh of unchanged financials"
+            else "new CODAL filings first, then missing-CODAL-financials most-traded first; no refresh of verified financials"
         ),
         "newFilingCompanies": len(filing_codes),
         "backlogPerRun": backlog_per_run,
         "neverEnrichedBeforeRun": never_enriched_before,
+        "missingCodalFinancialsBeforeRun": len(target.missing_codal_financial_codes(eligible_codes)),
         "runId": run_id,
         "restrictedToCodesCount": len(eligible_codes) if restrict_to_codes is not None else None,
     }

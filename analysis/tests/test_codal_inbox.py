@@ -203,6 +203,7 @@ def test_runner_uses_zero_interval_and_the_exports_window(inbox, tmp_path, monke
     monkeypatch.setattr(runner, "ListedCompanyStore", lambda: store)
     monkeypatch.setattr(runner, "_new_filing_codes", lambda s: [])
     monkeypatch.setattr(runner, "_run_tindex", lambda: None)
+    monkeypatch.setattr(codal_inbox, "backlog_symbols", lambda limit: ["ب"])
     monkeypatch.setattr(runner.baseline_report, "send", lambda r: "skipped")
     monkeypatch.setattr(runner, "run_batch", lambda **kw: seen.update(kw) or {
         "status": "paused", "cursor": 0, "total": 1, "processed": 0, "succeeded": 0, "failed": 0, "metadata": {}})
@@ -231,3 +232,53 @@ def test_fetcher_output_is_accepted_by_the_importer(inbox):
     assert b"<table>" in codal_data._fetch_filing_html(codal_data.latest_financial_filings("فولاد")[0]).encode()
     assert codal_inbox.current().new_filings_through == "2026-10-25"
     assert codal_data.symbols_with_new_financial_filings(date(2026, 10, 1)) == {"فولاد"}
+
+
+def test_market_only_company_is_requested_and_financials_are_backfilled(inbox, tmp_path, monkeypatch):
+    """Saving a live market quote must not permanently exclude the issuer from CODAL."""
+    import company_registry_store as registry_module
+    import listed_company_store as store_module
+
+    store, registry = _job(tmp_path, monkeypatch, ["آ", "ب"])
+    store.save_enriched(
+        "1", {"market": {"price": 1200}, "codal": None, "data_available": {"codal": False}},
+        provenance={"builder": "market-only"},
+    )
+    # The Liara request producer uses the configured persistent production store.
+    monkeypatch.setattr(store_module, "ListedCompanyStore", lambda: store)
+    monkeypatch.setattr(registry_module, "CompanyRegistryStore", lambda db_path: registry)
+    # The fixture registers instrument rows but not issuer records; model the
+    # production issuer registry's primary (deduplicated) company list.
+    monkeypatch.setattr(registry, "primary_company_codes", lambda: ["1", "2"])
+    assert codal_inbox.backlog_symbols(10) == ["آ", "ب"]
+
+    # A valid export now contains financial statements for the market-only company.
+    write_export(inbox, "2026-10-25", [company("آ")])
+    assert codal_inbox.backlog_symbols(10) == ["ب"]
+    built = []
+
+    def parse_company(code):
+        built.append(code)
+        return ({"market": {"price": 1200}, "codal": {"revenue": 42},
+                 "data_available": {"codal": True}}, "verified-codal")
+
+    monkeypatch.setattr(ingestion, "_build_verified_company", parse_company)
+    result = ingestion.run_batch(store=store, registry=registry, batch_size=10, backlog_per_run=10, sleep=lambda _: None)
+    assert result["succeeded"] == 1
+    assert built == ["1"]
+    assert store.get("1")["company"]["codal"]["revenue"] == 42
+    assert store.missing_codal_financial_codes(["1", "2"]) == ["2"]
+
+
+def test_non_financial_codal_export_does_not_take_a_worker_slot(inbox, tmp_path, monkeypatch):
+    """Metadata-only CODAL results cannot produce an accounting audit."""
+    write_export(inbox, "2026-10-25", [company("آ", financial_filings=[]), company("ب")])
+    store, registry = _job(tmp_path, monkeypatch, ["آ", "ب"])
+    built = []
+    monkeypatch.setattr(ingestion, "_build_verified_company",
+                        lambda code: built.append(code) or
+                        ({"market": {}, "codal": {"revenue": 42},
+                          "data_available": {"codal": True}}, "verified-codal"))
+    result = ingestion.run_batch(store=store, registry=registry, batch_size=10, backlog_per_run=10, sleep=lambda _: None)
+    assert result["succeeded"] == 1
+    assert built == ["2"]
