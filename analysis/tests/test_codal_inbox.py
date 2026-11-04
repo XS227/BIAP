@@ -247,6 +247,9 @@ def test_market_only_company_is_requested_and_financials_are_backfilled(inbox, t
     # The Liara request producer uses the configured persistent production store.
     monkeypatch.setattr(store_module, "ListedCompanyStore", lambda: store)
     monkeypatch.setattr(registry_module, "CompanyRegistryStore", lambda db_path: registry)
+    # The fixture registers instrument rows but not issuer records; model the
+    # production issuer registry's primary (deduplicated) company list.
+    monkeypatch.setattr(registry, "primary_company_codes", lambda: ["1", "2"])
     assert codal_inbox.backlog_symbols(10) == ["آ", "ب"]
 
     # A valid export now contains financial statements for the market-only company.
