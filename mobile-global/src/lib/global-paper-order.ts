@@ -98,7 +98,7 @@ export function isPaperDraft(value: unknown): value is PaperDraft {
     typeof v.ticker === 'string' && typeof v.country === 'string' &&
     typeof v.currency === 'string' && (v.side === 'BUY' || v.side === 'SELL') &&
     (v.brokerId === 'ibkr' || v.brokerId === 'saxo' || v.brokerId === 'alpaca') &&
-    Number.isSafeInteger(v.quantity) && Number(v.quantity) > 0 &&
-    Number.isFinite(v.indicativeLimitPrice) && Number(v.indicativeLimitPrice) > 0 &&
-    Number.isFinite(v.indicativeNotional) && Number(v.indicativeNotional) > 0;
+    Number.isSafeInteger(Number(v.quantity)) && Number(v.quantity) > 0 &&
+    Number.isFinite(Number(v.indicativeLimitPrice)) && Number(v.indicativeLimitPrice) > 0 &&
+    Number.isFinite(Number(v.indicativeNotional)) && Number(v.indicativeNotional) > 0;
 }
