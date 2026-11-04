@@ -4,12 +4,12 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SymbolPicker, type PickedSymbol } from '@/components/symbol-picker';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { fetchRecommendation } from '@/lib/api';
-import { getSelectedListedCompany } from '@/lib/listed-company-selection';
+import { fetchListedCompanyDetail, getSelectedListedCompany } from '@/lib/listed-company-selection';
 import { runIranAudit, type AuditReport, type CheckStatus, type IranFundamentals } from '@/lib/audit-analysis';
 
 const TONE: Record<CheckStatus, string> = { OK: Brand.positive, WATCH: Brand.warning, FLAG: Brand.negative, INSUFFICIENT_DATA: '#64748b' };
 const LABEL: Record<CheckStatus, string> = { OK: 'مناسب', WATCH: 'نیازمند توجه', FLAG: 'هشدار', INSUFFICIENT_DATA: 'داده کافی نیست' };
-const fmt = (v: number | string | null) => (v == null ? '—' : typeof v === 'string' ? v : v.toLocaleString('fa-IR', { maximumFractionDigits: 2 }));
+const fmt = (v: number | string | null) => (v == null ? '—' : typeof v === 'string' ? v : Number.isFinite(v) ? v.toLocaleString('fa-IR', { maximumFractionDigits: 2 }) : '—');
 
 /** «تحلیل حسابرسی» — deterministic checks over the stored CODAL statements. */
 export default function AuditScreen() {
@@ -19,9 +19,26 @@ export default function AuditScreen() {
   const [picked, setPicked] = useState<PickedSymbol | null>(null);
   const run = useCallback(async (c: PickedSymbol) => {
     setBusy(true); setState(null);
-    const rec = await fetchRecommendation(c.code);
-    setState(rec ? { title: `${rec.name || c.name || c.symbol} (${c.symbol})`, report: runIranAudit(rec.codalFundamentals as IranFundamentals | null) } : { error: 'پاسخ سرویس تحلیل دریافت نشد.' });
-    setBusy(false);
+    try {
+      // Audit is based on verified CODAL input, not a Kiasha BUY/SELL decision.
+      // The persistent listed-company store remains useful when the live
+      // recommendation endpoint times out or is unavailable.
+      const stored = await fetchListedCompanyDetail(c.code);
+      const persisted = stored?.codalFundamentals as IranFundamentals | null | undefined;
+      const hasPersisted = Boolean(persisted && Object.keys(persisted).length);
+      const rec = hasPersisted ? null : await fetchRecommendation(c.code);
+      if (!stored && !rec) {
+        setState({ error: 'دریافت داده‌های این نماد از سرور ممکن نشد. دوباره تلاش کنید.' });
+      } else {
+        const fundamentals = hasPersisted ? persisted : (rec?.codalFundamentals as IranFundamentals | null | undefined);
+        setState({ title: `${stored?.name || rec?.name || c.name || c.symbol} (${c.symbol})`,
+          report: runIranAudit(fundamentals ?? null) });
+      }
+    } catch {
+      setState({ error: 'خطا در دریافت اطلاعات حسابرسی؛ دوباره تلاش کنید.' });
+    } finally {
+      setBusy(false);
+    }
   }, []);
   useFocusEffect(useCallback(() => {
     (async () => {
@@ -62,7 +79,7 @@ export default function AuditScreen() {
               {state.report.checks.some((c) => c.status === 'INSUFFICIENT_DATA') ? (
                 <View style={[styles.card, { backgroundColor: colors.backgroundElement, borderRightWidth: 3, borderRightColor: '#64748b' }]}>
                   <Text style={[styles.cardTitle, { color: colors.text }]}>بررسی‌های انجام‌نشده (داده کافی نیست)</Text>
-                  {state.report.checks.filter((c) => c.status === 'INSUFFICIENT_DATA').map((c) => <Text key={c.id} style={[styles.meta, { color: colors.textSecondary }]}>• {c.title}</Text>)}
+                  {state.report.checks.filter((c) => c.status === 'INSUFFICIENT_DATA').map((c) => <Text key={c.id} style={[styles.meta, { color: colors.textSecondary }]}>• {c.title}: {c.summary}</Text>)}
                 </View>
               ) : null}
             </>
