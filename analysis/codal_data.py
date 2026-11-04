@@ -170,6 +170,12 @@ class CodalFundamentals:
     retained_earnings_prev: Optional[float] = None
     fixed_assets_current: Optional[float] = None
     fixed_assets_prev: Optional[float] = None
+    operating_profit_current: Optional[float] = None
+    operating_profit_prev: Optional[float] = None
+    sga_expense_current: Optional[float] = None  # as filed: expenses are negative
+    sga_expense_prev: Optional[float] = None
+    depreciation_current: Optional[float] = None
+    depreciation_prev: Optional[float] = None
 
     def to_dict(self) -> dict:
         return asdict(self)

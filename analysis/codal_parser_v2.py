@@ -14,6 +14,8 @@ from codal_quality import balance_sheet_check
 
 def _canonical_label(value: str) -> str:
     text = _normalize_text(value)
+    # Some CODAL templates use Arabic yeh-alef-maqsura (ى) and right-to-left marks inside labels.
+    text = text.replace("ى", "ی").replace("ے", "ی").replace("\u200f", "").replace("\u200e", "")
     text = text.replace("‌", " ").replace("ـ", " ")
     text = re.sub(r"[\[\]{}():؛;،,.\-_/\\]+", " ", text)
     text = re.sub(r"\b(?:یادداشت|شماره|توضیحات)\s*[۰-۹0-9]*\b", " ", text)
@@ -27,6 +29,26 @@ def _matches(cell: str, aliases: tuple[str, ...]) -> bool:
     # total rows in actual CODAL spreadsheets (e.g. سپیدار 1404).
     label = _canonical_label(cell)
     return bool(label) and any(label == _canonical_label(alias) for alias in aliases)
+
+
+def row_values_pct_checked(rows: list[list[str]], aliases: tuple[str, ...]) -> tuple[float, float] | None:
+    """Like row_values, but a 3/4-number row is accepted only if its last column is the % change of the
+    first two. Notes tables with unrelated third columns are rejected instead of guessed."""
+    for row in rows:
+        if not row:
+            continue
+        normalized = [_normalize_text(cell) for cell in row]
+        idx = next((i, c) for i, c in enumerate(normalized) if _matches(c, aliases)) if any(_matches(c, aliases) for c in normalized) else None
+        if idx is None:
+            continue
+        numbers = [v for v in (_parse_number(c) for c in row[idx[0] + 1:]) if v is not None]
+        if len(numbers) == 2:
+            return numbers[0], numbers[1]
+        if len(numbers) == 3 and numbers[1] != 0:
+            change = (numbers[0] - numbers[1]) / abs(numbers[1]) * 100.0
+            if abs(change - numbers[2]) <= max(1.0, abs(change) * 0.02):
+                return numbers[0], numbers[1]
+    return None
 
 
 def row_values(rows: list[list[str]], aliases: tuple[str, ...]) -> tuple[float, float] | None:
@@ -98,6 +120,9 @@ def parse_fundamentals(symbol: str, filing: CodalFiling, report_html: str) -> Co
     ))
     retained = row_values(rows, ("سود (زیان) انباشته", "سود انباشته", "سود و زیان انباشته", "زیان انباشته"))
     fixed_assets = row_values(rows, ("دارایی‌های ثابت مشهود", "دارایی ثابت مشهود"))
+    operating_profit = row_values(rows, ("سود (زیان) عملیاتی", "سود عملیاتی", "زیان عملیاتی", "سود زیان عملیاتی"))
+    sga = row_values(rows, ("هزینه‌های فروش، اداری و عمومی", "هزینه های فروش اداری و عمومی", "هزینه‌های توزیع و فروش و اداری و عمومی"))
+    depreciation = row_values_pct_checked(rows, ("هزینه استهلاک", "استهلاک دارایی‌های ثابت مشهود", "هزینه استهلاک دارایی‌ها"))
     if revenue is None or net_profit is None:
         return None
     revenue_current, revenue_prev = revenue
@@ -156,4 +181,7 @@ def parse_fundamentals(symbol: str, filing: CodalFiling, report_html: str) -> Co
         receivables_current=_pair(rec, 0), receivables_prev=_pair(rec, 1),
         retained_earnings_current=_pair(retained, 0), retained_earnings_prev=_pair(retained, 1),
         fixed_assets_current=_pair(fixed_assets, 0), fixed_assets_prev=_pair(fixed_assets, 1),
+        operating_profit_current=_pair(operating_profit, 0), operating_profit_prev=_pair(operating_profit, 1),
+        sga_expense_current=_pair(sga, 0), sga_expense_prev=_pair(sga, 1),
+        depreciation_current=_pair(depreciation, 0), depreciation_prev=_pair(depreciation, 1),
     )

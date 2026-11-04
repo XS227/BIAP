@@ -58,3 +58,32 @@ def test_parser_drops_current_items_that_contradict_the_balance_sheet():
     """
     r = parse_fundamentals("نماد", _filing(), html)
     assert r is not None and r.current_assets_current is None
+
+
+def test_parser_extracts_operating_profit_sga_and_checks_depreciation_columns():
+    html = """
+    <table>
+      <tr><td>درآمدهای عملیاتی</td><td>1,200</td><td>1,000</td></tr>
+      <tr><td>هزینه‏ هاى فروش، ادارى و عمومى</td><td>(150)</td><td>(120)</td><td>(25)</td></tr>
+      <tr><td>سود(زیان) عملیاتى</td><td>300</td><td>200</td><td>50</td></tr>
+      <tr><td>سود (زیان) خالص</td><td>240</td><td>150</td></tr>
+      <tr><td>هزینه استهلاک</td><td>2,123</td><td>2,205</td><td>3,935</td></tr>
+    </table>
+    """
+    r = parse_fundamentals("نماد", _filing(), html)
+    assert r is not None
+    assert (r.operating_profit_current, r.operating_profit_prev) == (300, 200)
+    assert (r.sga_expense_current, r.sga_expense_prev) == (-150, -120)
+    assert r.depreciation_current is None  # third column is not the % change: rejected, not guessed
+
+
+def test_parser_accepts_depreciation_when_percent_column_is_consistent():
+    html = """
+    <table>
+      <tr><td>درآمدهای عملیاتی</td><td>1,200</td><td>1,000</td></tr>
+      <tr><td>سود (زیان) خالص</td><td>240</td><td>150</td></tr>
+      <tr><td>هزینه استهلاک</td><td>110</td><td>100</td><td>10</td></tr>
+    </table>
+    """
+    r = parse_fundamentals("نماد", _filing(), html)
+    assert (r.depreciation_current, r.depreciation_prev) == (110, 100)
