@@ -53,3 +53,15 @@ test('cash-flow inputs enable accruals, CFO divergence and Zmijewski; score appe
   assert.equal(st('beneish'), 'INSUFFICIENT_DATA');
   assert.ok(r.evaluated >= 6 && r.riskScore != null);
 });
+
+test('Altman needs EBIT; Beneish needs depreciation and SG&A for both years', () => {
+  const base = { revenue_current: 1200, revenue_prev: 1000, net_profit_current: 240, net_profit_prev: 150, total_assets_current: 1000, total_assets_prev: 900, total_liabilities_current: 400, total_liabilities_prev: 350, total_equity_current: 600, total_equity_prev: 550,
+    operating_cash_flow_current: 180, current_assets_current: 600, current_assets_prev: 500, current_liabilities_current: 300, retained_earnings_current: 200, operating_profit_current: 300 };
+  const st = (r, id) => r.checks.find((c) => c.id === id).status;
+  const r1 = runIranAudit(base);
+  assert.notEqual(st(r1, 'altman'), 'INSUFFICIENT_DATA');
+  assert.equal(st(r1, 'beneish'), 'INSUFFICIENT_DATA');
+  const r2 = runIranAudit({ ...base, receivables_current: 200, receivables_prev: 150, gross_profit_current: 500, gross_profit_prev: 400, fixed_assets_current: 300, fixed_assets_prev: 280, depreciation_current: 30, depreciation_prev: 28, sga_expense_current: -100, sga_expense_prev: -90 });
+  assert.notEqual(st(r2, 'beneish'), 'INSUFFICIENT_DATA');
+  assert.equal(runIranAudit({ ...base, operating_profit_current: null }).checks.find((c) => c.id === 'altman').status, 'INSUFFICIENT_DATA');
+});

@@ -26,6 +26,11 @@ export type IranFundamentals = {
   operating_cash_flow_current?: number | null; operating_cash_flow_prev?: number | null;
   current_assets_current?: number | null; current_liabilities_current?: number | null;
   receivables_current?: number | null; retained_earnings_current?: number | null;
+  current_assets_prev?: number | null; current_liabilities_prev?: number | null; receivables_prev?: number | null;
+  fixed_assets_current?: number | null; fixed_assets_prev?: number | null;
+  gross_profit_current?: number | null; gross_profit_prev?: number | null;
+  operating_profit_current?: number | null; sga_expense_current?: number | null; sga_expense_prev?: number | null;
+  depreciation_current?: number | null; depreciation_prev?: number | null;
 };
 
 /** The importer stores English opinion codes; the audit screen shows Persian. */
@@ -96,8 +101,6 @@ export function runIranAudit(f: IranFundamentals | null | undefined): AuditRepor
       ni > 0 ? `جریان نقدی عملیاتی ${r2((cfo / ni) * 100)}٪ سود خالص است.` : 'سود خالص مثبت نیست؛ نسبت جریان نقدی به سود معنادار نیست.',
       [{ label: 'سود خالص', value: ni }, { label: 'جریان نقدی عملیاتی', value: cfo }]));
   } else checks.push(missing('cfo', 'اختلاف سود و جریان نقدی عملیاتی', 'جریان نقدی عملیاتی'));
-  checks.push(missing('beneish', 'امتیاز بنیش (Beneish M-Score)', 'حساب‌های دریافتنی، دارایی ثابت و هزینه‌ی استهلاک دو سال'));
-  checks.push(missing('altman', 'امتیاز آلتمن (Z″)', 'سرمایه در گردش و سود انباشته'));
   const ca = num(f?.current_assets_current), cl = num(f?.current_liabilities_current);
   if (ni != null && ta != null && ta > 0 && tl != null && ca != null && cl != null && cl > 0) {
     const x = -4.336 - 4.513 * (ni / ta) + 5.679 * (tl / ta) + 0.004 * (ca / cl);
@@ -106,6 +109,37 @@ export function runIranAudit(f: IranFundamentals | null | undefined): AuditRepor
       `احتمال برآوردی درماندگی مالی ${r2(p * 100)}٪ (مدل ساده؛ پیش‌بینی قطعی نیست).`,
       [{ label: 'ROA', value: r2((ni / ta) * 100) }, { label: 'بدهی/دارایی', value: r2((tl / ta) * 100) }, { label: 'نسبت جاری', value: r2(ca / cl) }, { label: 'احتمال', value: r2(p * 100) }]));
   } else checks.push(missing('zmijewski', 'امتیاز زمیجفسکی', 'دارایی‌های جاری و بدهی‌های جاری (نسبت جاری)'));
+  // Altman Z'' (non-manufacturing/emerging-market form): needs working capital, retained earnings, EBIT.
+  const ebit = num(f?.operating_profit_current), re = num(f?.retained_earnings_current);
+  if (ca != null && cl != null && re != null && ebit != null && ta != null && ta > 0 && tl != null && tl > 0 && eq != null) {
+    const z = 6.56 * ((ca - cl) / ta) + 3.26 * (re / ta) + 6.72 * (ebit / ta) + 1.05 * (eq / tl);
+    checks.push(mk('altman', 'امتیاز آلتمن (Z″)', true, z < 1.1 ? 'FLAG' : z < 2.6 ? 'WATCH' : 'OK',
+      `Z″ = ${r2(z)} (زیر ۱٫۱ ناحیه‌ی خطر، ۱٫۱ تا ۲٫۶ ناحیه‌ی خاکستری، بالای ۲٫۶ امن). مدل عمومی است و برای صنایع سرمایه‌بر محتاطانه تفسیر شود.`,
+      [{ label: 'سرمایه در گردش/دارایی', value: r2((ca - cl) / ta) }, { label: 'سود انباشته/دارایی', value: r2(re / ta) }, { label: 'سود عملیاتی/دارایی', value: r2(ebit / ta) }, { label: 'حقوق صاحبان سهام/بدهی', value: r2(eq / tl) }]));
+  } else checks.push(missing('altman', 'امتیاز آلتمن (Z″)', 'سرمایه در گردش، سود انباشته و سود عملیاتی'));
+
+  // Beneish M-Score (8 variables). Every input for both years is required; otherwise INSUFFICIENT_DATA.
+  const g = (k: keyof IranFundamentals) => num(f?.[k]);
+  const B = { rec: g('receivables_current'), recP: g('receivables_prev'), gp: g('gross_profit_current'), gpP: g('gross_profit_prev'), ca, caP: g('current_assets_prev'),
+    ppe: g('fixed_assets_current'), ppeP: g('fixed_assets_prev'), dep: g('depreciation_current'), depP: g('depreciation_prev'), sga: g('sga_expense_current'), sgaP: g('sga_expense_prev'),
+    taP: num(f?.total_assets_prev), tlP: num(f?.total_liabilities_prev) };
+  const all = [rev, revP, ta, B.taP, tl, B.tlP, ni, cfo, B.rec, B.recP, B.gp, B.gpP, B.ca, B.caP, B.ppe, B.ppeP, B.dep, B.depP, B.sga, B.sgaP];
+  if (all.every((v) => v != null) && rev! > 0 && revP! > 0 && B.recP! > 0 && B.taP! > 0 && ta! > 0 && B.gp! > 0 && B.gpP! > 0 && (B.dep! + B.ppe!) > 0 && (B.depP! + B.ppeP!) > 0) {
+    const a = (v: number | null) => Math.abs(v as number);
+    const dsri = (B.rec! / rev!) / (B.recP! / revP!);
+    const gmi = (B.gpP! / revP!) / (B.gp! / rev!);
+    const aqi = (1 - (B.ca! + B.ppe!) / ta!) / (1 - (B.caP! + B.ppeP!) / B.taP!);
+    const sgi = rev! / revP!;
+    const depi = (a(B.depP) / (a(B.depP) + B.ppeP!)) / (a(B.dep) / (a(B.dep) + B.ppe!));
+    const sgai = (a(B.sga) / rev!) / (a(B.sgaP) / revP!);
+    const lvgi = (tl! / ta!) / (B.tlP! / B.taP!);
+    const tata = (ni! - cfo!) / ta!;
+    const m = -4.84 + 0.92 * dsri + 0.528 * gmi + 0.404 * aqi + 0.892 * sgi + 0.115 * depi - 0.172 * sgai + 4.679 * tata - 0.327 * lvgi;
+    checks.push(mk('beneish', 'امتیاز بنیش (Beneish M-Score)', true, m > -1.78 ? 'FLAG' : m > -2.22 ? 'WATCH' : 'OK',
+      `M = ${r2(m)} (بالاتر از ‎−۱٫۷۸ احتمال دستکاری سود بیشتر است). غربالگری آماری است، نه اثبات تقلب.`,
+      [{ label: 'DSRI', value: r2(dsri) }, { label: 'GMI', value: r2(gmi) }, { label: 'AQI', value: r2(aqi) }, { label: 'SGI', value: r2(sgi) }, { label: 'DEPI', value: r2(depi) }, { label: 'SGAI', value: r2(sgai) }, { label: 'LVGI', value: r2(lvgi) }, { label: 'TATA', value: r2(tata) }]));
+  } else checks.push(missing('beneish', 'امتیاز بنیش (Beneish M-Score)', 'حساب‌های دریافتنی، دارایی ثابت، هزینه‌ی استهلاک و هزینه‌های فروش/اداری برای دو سال'));
+
   const op = auditOpinionFa(f?.audit_opinion ?? '');
   checks.push(op
     ? mk('opinion', 'نظر حسابرس', true, /مردود|عدم اظهار|مشروط/.test(op) ? 'FLAG' : /مقبول/.test(op) ? 'OK' : 'WATCH', `نظر حسابرس: ${op.slice(0, 160)}`, [{ label: 'متن', value: op.slice(0, 160) }])
