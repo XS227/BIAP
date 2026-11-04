@@ -219,6 +219,13 @@ def is_financial_statement(title):
     return "صورت" in title and "مالی" in title
 
 
+def is_affiliate_statement(title):
+    """CODAL lists an affiliate's statements under the parent's symbol with a trailing «(شرکت <name>)».
+    They are a different legal entity: never fetch or serve them as the symbol's own fundamentals."""
+    title = (title or "").replace("‌", " ")
+    return "(شرکت" in title.replace("( شرکت", "(شرکت")
+
+
 def _now():
     return datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0, tzinfo=None).isoformat() + "Z"
 
@@ -366,7 +373,7 @@ class Run(object):
                     filing = normalize_filing(row)
                     if len(filings) < 3:
                         filings.append(filing)
-                    if is_financial_statement(filing["title"]) and filing["excel_url"] \
+                    if is_financial_statement(filing["title"]) and not is_affiliate_statement(filing["title"]) and filing["excel_url"] \
                             and len(financial) < MAX_FINANCIAL_FILINGS \
                             and filing["tracing_no"] not in [f["tracing_no"] for f in financial]:
                         financial.append(filing)
