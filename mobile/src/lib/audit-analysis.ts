@@ -135,9 +135,16 @@ export function runIranAudit(f: IranFundamentals | null | undefined): AuditRepor
     const lvgi = (tl! / ta!) / (B.tlP! / B.taP!);
     const tata = (ni! - cfo!) / ta!;
     const m = -4.84 + 0.92 * dsri + 0.528 * gmi + 0.404 * aqi + 0.892 * sgi + 0.115 * depi - 0.172 * sgai + 4.679 * tata - 0.327 * lvgi;
-    checks.push(mk('beneish', 'امتیاز بنیش (Beneish M-Score)', true, m > -1.78 ? 'FLAG' : m > -2.22 ? 'WATCH' : 'OK',
-      `M = ${r2(m)} (بالاتر از ‎−۱٫۷۸ احتمال دستکاری سود بیشتر است). غربالگری آماری است، نه اثبات تقلب.`,
-      [{ label: 'DSRI', value: r2(dsri) }, { label: 'GMI', value: r2(gmi) }, { label: 'AQI', value: r2(aqi) }, { label: 'SGI', value: r2(sgi) }, { label: 'DEPI', value: r2(depi) }, { label: 'SGAI', value: r2(sgai) }, { label: 'LVGI', value: r2(lvgi) }, { label: 'TATA', value: r2(tata) }]));
+    // Complete source fields do not guarantee valid ratios. Zero denominators
+    // (e.g. zero depreciation or a prior-period asset-quality index of zero)
+    // must never yield NaN/Infinity and a green "OK" audit.
+    if ([dsri, gmi, aqi, sgi, depi, sgai, lvgi, tata, m].every(Number.isFinite)) {
+      checks.push(mk('beneish', 'امتیاز بنیش (Beneish M-Score)', true, m > -1.78 ? 'FLAG' : m > -2.22 ? 'WATCH' : 'OK',
+        `M = ${r2(m)} (بالاتر از ‎−۱٫۷۸ احتمال دستکاری سود بیشتر است). غربالگری آماری است، نه اثبات تقلب.`,
+        [{ label: 'DSRI', value: r2(dsri) }, { label: 'GMI', value: r2(gmi) }, { label: 'AQI', value: r2(aqi) }, { label: 'SGI', value: r2(sgi) }, { label: 'DEPI', value: r2(depi) }, { label: 'SGAI', value: r2(sgai) }, { label: 'LVGI', value: r2(lvgi) }, { label: 'TATA', value: r2(tata) }]));
+    } else {
+      checks.push(missing('beneish', 'امتیاز بنیش (Beneish M-Score)', 'مخرج یکی از نسبت‌ها صفر یا یکی از شاخص‌های محاسبه‌شده نامعتبر است'));
+    }
   } else checks.push(missing('beneish', 'امتیاز بنیش (Beneish M-Score)', 'حساب‌های دریافتنی، دارایی ثابت، هزینه‌ی استهلاک و هزینه‌های فروش/اداری برای دو سال'));
 
   const op = auditOpinionFa(f?.audit_opinion ?? '');
