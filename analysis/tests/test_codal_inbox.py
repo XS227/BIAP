@@ -203,6 +203,7 @@ def test_runner_uses_zero_interval_and_the_exports_window(inbox, tmp_path, monke
     monkeypatch.setattr(runner, "ListedCompanyStore", lambda: store)
     monkeypatch.setattr(runner, "_new_filing_codes", lambda s: [])
     monkeypatch.setattr(runner, "_run_tindex", lambda: None)
+    monkeypatch.setattr(codal_inbox, "backlog_symbols", lambda limit: ["ب"])
     monkeypatch.setattr(runner.baseline_report, "send", lambda r: "skipped")
     monkeypatch.setattr(runner, "run_batch", lambda **kw: seen.update(kw) or {
         "status": "paused", "cursor": 0, "total": 1, "processed": 0, "succeeded": 0, "failed": 0, "metadata": {}})
