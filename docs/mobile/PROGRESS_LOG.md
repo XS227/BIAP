@@ -99,3 +99,8 @@ Source: CompanyRegistryStore.full_report(), listed_company_ingestion.status(), s
 - Liara (89.42.199.20): port 22 times out from the VPS and no Liara credentials exist here, so backup + redeploy of the fetcher and the re-fetch cannot be done from this session. Runbook prepared (scratchpad/liara-redeploy.sh). Request list on the VPS now starts with شپنا, پارسان, فخوز, یکتانت, سشرق (backups in /home/ubuntu/backups/biap-fin-premerge-20261104/*.pre-five-20261104).
 - Before-state (inbox, validated with scratchpad/validate_five.py): all five have issuer sy match, but NO own report fetched: شپنا own 1562697/1547751/1373349 listed, HTML missing; فخوز 1584708/1541772 missing; یکتانت 1391396 missing; سشرق 1438790/1436320 missing; پارسان: all 8 listed are affiliates (own statements beyond the listing window).
 - Coverage before (2518 enriched / 3805 genuine): CODAL-verified (stored or inbox) 51 (1.34%); audit ≥6/10: 48.
+
+## 2026-11-04 late — recovery follow-up (verification)
+- Production checkout dirty `analysis/audit_parser.py` (private-firm «این موسسه» opinion wording): backed up to `/home/ubuntu/backups/biap-fin-20261104-dirty/`, preserved as PR #85 with tests (not merged, not deployed). Prod checkout still dirty; Deploy backend blocked until #85 merged and the file restored from main.
+- Inbox verification on this VPS: 11 exports, latest `2026-11-04` created 22:11Z has 110 reports (not 137); tracing IDs 1562697/1584708/1391396/1541772 absent from every `reports.jsonl`; validate_five.py → NO_OWN_REPORT_FETCHED for all five. The reported transfer is NOT visible here. No re-ingest, no audit run, no 1.0.12 build performed.
+- PR #82 (a813b7a) verified on branch: test:ui 24/24 pass, tsc clean, Beneish uses finite-only guard.
