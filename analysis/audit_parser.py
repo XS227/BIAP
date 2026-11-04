@@ -54,6 +54,19 @@ def _normalize_pdf_text(text: str) -> str:
 # picked out of running prose. This also naturally excludes "مبنای
 # اظهارنظر" ("Basis for Opinion"), a different, later section: that line
 # starts with "مبنای", which this pattern doesn't allow.
+# The canonical fairness sentence names the auditor: "این سازمان" (the state
+# Audit Organization) *or* "این موسسه" / "این مؤسسه" (a private audit firm,
+# by far the common case). pdftotext also routinely drops the spaces and
+# ZWNJs inside it ("بهنظر", "بهنحو منصفانه نشان میدهد"), so every gap is optional.
+_AUDITOR = r"(?:سازمان|م[ؤو]?سسه|شرکت\s*حسابرسی)"
+_CANONICAL_RE = re.compile(r"به\s*نظر\s*این\s*" + _AUDITOR)
+_FAIR_RE = re.compile(r"به\s*نحو\s*منصفانه\s*نشان\s*می\s*ده[دن]")
+_EXCEPT_RE = re.compile(r"به\s*استثنای")
+# Looser spellings ("به استثنا آثار", "به استثناء") only count when they sit
+# inside the opinion sentence itself, i.e. before the "fairly presents" clause;
+# afterwards they occur in emphasis-of-matter paragraphs that do not qualify.
+_EXCEPT_LOOSE_RE = re.compile(r"به\s*استثنا")
+
 _HEADING_LINE_RE = re.compile(r"^(?:عدم\s+)?(?:اظهارنظر|اظهار نظر)(?:\s+(?:مشروط|مردود))?\s*[:：]?$")
 
 
@@ -115,10 +128,20 @@ def _extract_audit_opinion_section(text: str) -> Optional[str]:
     if not normalized:
         return None
 
-    canonical_index = normalized.find("به نظر این سازمان")
+    canonical_match = _CANONICAL_RE.search(normalized)
+    canonical_index = canonical_match.start() if canonical_match else -1
+
+    # A standalone "عدم اظهار نظر" heading line is a genuine disclaimer. It must
+    # win over a later "به نظر این موسسه" that belongs to another section
+    # (e.g. other legal requirements), which would otherwise hide the heading.
+    disclaimer_offsets = [
+        o for o in heading_offsets if normalized[o:o + 3] == "عدم"
+    ]
 
     start: Optional[int] = None
-    if canonical_index >= 0:
+    if disclaimer_offsets:
+        start = disclaimer_offsets[-1]
+    elif canonical_index >= 0:
         start = canonical_index
     elif heading_offsets:
         # No canonical fairness sentence at all -- true for some disclaimer
@@ -171,16 +194,14 @@ def _classify_audit_opinion_section(section: str) -> Optional[str]:
 
     # Qualified wording must be evaluated before the clean opinion because some
     # qualified reports can still contain otherwise standard opinion language.
-    if "نظر مشروط" in text or "به استثنای" in text:
+    if "نظر مشروط" in text or _EXCEPT_RE.search(text):
         return "qualified"
 
-    if (
-        "به نظر این سازمان" in text
-        and (
-            "به نحو منصفانه نشان می دهد" in text
-            or "به نحو منصفانه نشان میدهد" in text
-        )
-    ):
+    fair = _FAIR_RE.search(text)
+    if fair and _EXCEPT_LOOSE_RE.search(text[: fair.start()]):
+        return "qualified"
+
+    if _CANONICAL_RE.search(text) and _FAIR_RE.search(text):
         return "unqualified"
 
     return None
