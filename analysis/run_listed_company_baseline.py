@@ -77,7 +77,7 @@ def _backlog_per_run(inbox_mode: bool) -> int:
     live = _env_int("BIAP_LISTED_COMPANY_BACKLOG_PER_RUN", 25, minimum=0, maximum=100)
     if not inbox_mode:
         return live
-    return _env_int("BIAP_LISTED_COMPANY_INBOX_BACKLOG_PER_RUN", live, minimum=0, maximum=500)
+    return _env_int("BIAP_LISTED_COMPANY_INBOX_BACKLOG_PER_RUN", 100, minimum=0, maximum=500)
 
 
 def main() -> int:
