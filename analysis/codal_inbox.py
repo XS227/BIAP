@@ -154,9 +154,21 @@ class Inbox:
         return bool(row and row["status"] in _USABLE)
 
     def has_financial_filings(self, symbol: str) -> bool:
-        """Only exports containing financial filings can fill an accounting-audit gap."""
+        """True only if a verified export includes own-company statement HTML.
+
+        CODAL can list affiliate statements under the parent's ticker. It also
+        returns report references whose HTML was not downloaded due to a fetch
+        budget or upstream error. Neither is usable for accounting audits.
+        """
         row = self.companies.get(symbol_key(symbol))
-        return bool(row and row.get("status") == "ok" and row.get("financial_filings"))
+        if not row or row.get("status") != "ok":
+            return False
+        for filing in row.get("financial_filings") or ():
+            title = str(filing.get("title") or "").replace("\u200c", " ").replace("( شرکت", "(شرکت")
+            tracing = str(filing.get("tracing_no") or "")
+            if "(شرکت" not in title and tracing in self._reports:
+                return True
+        return False
 
     def report_html(self, tracing_no: Optional[str]) -> str:
         location = self._reports.get(tracing_no or "")
@@ -258,7 +270,12 @@ def backlog_symbols(limit: int) -> list[str]:
     for code in missing_financials:
         instrument = registry.get_instrument(code)
         symbol = str((instrument or {}).get("symbol") or "").strip()
-        if symbol and not (have and have.has_record(symbol)) and symbol not in out:
+        # A metadata-only, affiliate-only, or partial HTML export must remain
+        # on the Liara request list until a usable own-company statement arrives.
+        # A verified no_data response is excluded; future filings reopen it.
+        row = have.companies.get(symbol_key(symbol)) if have else None
+        has_useful_export = bool(row and (row.get("status") == "no_data" or have.has_financial_filings(symbol)))
+        if symbol and not has_useful_export and symbol not in out:
             out.append(symbol)
         if len(out) >= limit:
             break
