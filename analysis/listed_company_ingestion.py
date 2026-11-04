@@ -456,8 +456,14 @@ def run_batch(
         eligible_set = set(eligible_codes)
         filing_codes = [c for c in dict.fromkeys(str(c) for c in (new_filing_codes or ())) if c in eligible_set][:safe_batch_size]
         cutoff = (datetime.now(timezone.utc) - timedelta(days=FAILED_RETRY_DAYS)).isoformat()
-        missing_financials = target.missing_codal_financial_codes(eligible_codes)
-        backlog = [c for c in missing_financials if c not in set(filing_codes) and failed_at.get(c, "") < cutoff and c not in not_applicable]
+        # The Liara inbox can cheaply revisit market-only baselines when a verified
+        # financial export arrives. In direct-live mode, keep the old never-enriched
+        # policy to avoid retrying the same CODAL no-data response every day.
+        if codal_inbox.enabled():
+            backlog_candidates = target.missing_codal_financial_codes(eligible_codes)
+        else:
+            backlog_candidates, _ = target._split_by_enrichment(eligible_codes)
+        backlog = [c for c in backlog_candidates if c not in set(filing_codes) and failed_at.get(c, "") < cutoff and c not in not_applicable]
         if codal_inbox.enabled():
             # Do not spend the daily slots on companies the Liara export has not delivered.
             inbox = codal_inbox.current()
