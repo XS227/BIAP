@@ -23,6 +23,9 @@ export type IranFundamentals = {
   total_equity_current?: number | null; total_equity_prev?: number | null;
   audit_opinion?: string | null; report_title?: string | null; report_scope?: string | null; source?: string | null;
   tracing_no?: string | null;
+  operating_cash_flow_current?: number | null; operating_cash_flow_prev?: number | null;
+  current_assets_current?: number | null; current_liabilities_current?: number | null;
+  receivables_current?: number | null; retained_earnings_current?: number | null;
 };
 
 /** The importer stores English opinion codes; the audit screen shows Persian. */
@@ -79,12 +82,30 @@ export function runIranAudit(f: IranFundamentals | null | undefined): AuditRepor
       `حقوق صاحبان سهام ${ch >= 0 ? '+' : ''}${r2(ch)}٪ نسبت به سال قبل تغییر کرده است.`, [{ label: 'جاری', value: eq }, { label: 'قبل', value: eqP }]));
   } else checks.push(missing('equity', 'روند حقوق صاحبان سهام', 'حقوق صاحبان سهام دو سال'));
 
-  // checks the stored statements cannot support
-  checks.push(missing('accruals', 'کیفیت سود (اقلام تعهدی)', 'جریان نقدی عملیاتی'));
-  checks.push(missing('cfo', 'اختلاف سود و جریان نقدی عملیاتی', 'جریان نقدی عملیاتی'));
+  // earnings quality / cash-flow divergence (needs operating cash flow)
+  const cfo = num(f?.operating_cash_flow_current);
+  if (cfo != null && ni != null && ta != null && ta > 0) {
+    const acc = (ni - cfo) / ta;
+    checks.push(mk('accruals', 'کیفیت سود (اقلام تعهدی)', true, acc >= 0.2 ? 'FLAG' : acc >= 0.1 ? 'WATCH' : 'OK',
+      `اقلام تعهدی به کل دارایی‌ها ${r2(acc * 100)}٪ است (سود خالص − جریان نقدی عملیاتی).`,
+      [{ label: 'سود خالص', value: ni }, { label: 'جریان نقدی عملیاتی', value: cfo }, { label: 'جمع دارایی', value: ta }, { label: 'نسبت', value: r2(acc * 100) }]));
+  } else checks.push(missing('accruals', 'کیفیت سود (اقلام تعهدی)', 'جریان نقدی عملیاتی'));
+  if (cfo != null && ni != null) {
+    const bad = ni > 0 && (cfo < 0 || cfo < 0.5 * ni);
+    checks.push(mk('cfo', 'اختلاف سود و جریان نقدی عملیاتی', true, ni > 0 && cfo < 0 ? 'FLAG' : bad ? 'WATCH' : 'OK',
+      ni > 0 ? `جریان نقدی عملیاتی ${r2((cfo / ni) * 100)}٪ سود خالص است.` : 'سود خالص مثبت نیست؛ نسبت جریان نقدی به سود معنادار نیست.',
+      [{ label: 'سود خالص', value: ni }, { label: 'جریان نقدی عملیاتی', value: cfo }]));
+  } else checks.push(missing('cfo', 'اختلاف سود و جریان نقدی عملیاتی', 'جریان نقدی عملیاتی'));
   checks.push(missing('beneish', 'امتیاز بنیش (Beneish M-Score)', 'حساب‌های دریافتنی، دارایی ثابت و هزینه‌ی استهلاک دو سال'));
   checks.push(missing('altman', 'امتیاز آلتمن (Z″)', 'سرمایه در گردش و سود انباشته'));
-  checks.push(missing('zmijewski', 'امتیاز زمیجفسکی', 'دارایی‌های جاری و بدهی‌های جاری (نسبت جاری)'));
+  const ca = num(f?.current_assets_current), cl = num(f?.current_liabilities_current);
+  if (ni != null && ta != null && ta > 0 && tl != null && ca != null && cl != null && cl > 0) {
+    const x = -4.336 - 4.513 * (ni / ta) + 5.679 * (tl / ta) + 0.004 * (ca / cl);
+    const p = 1 / (1 + Math.exp(-x));
+    checks.push(mk('zmijewski', 'امتیاز زمیجفسکی (احتمال درماندگی)', true, p >= 0.5 ? 'FLAG' : p >= 0.2 ? 'WATCH' : 'OK',
+      `احتمال برآوردی درماندگی مالی ${r2(p * 100)}٪ (مدل ساده؛ پیش‌بینی قطعی نیست).`,
+      [{ label: 'ROA', value: r2((ni / ta) * 100) }, { label: 'بدهی/دارایی', value: r2((tl / ta) * 100) }, { label: 'نسبت جاری', value: r2(ca / cl) }, { label: 'احتمال', value: r2(p * 100) }]));
+  } else checks.push(missing('zmijewski', 'امتیاز زمیجفسکی', 'دارایی‌های جاری و بدهی‌های جاری (نسبت جاری)'));
   const op = auditOpinionFa(f?.audit_opinion ?? '');
   checks.push(op
     ? mk('opinion', 'نظر حسابرس', true, /مردود|عدم اظهار|مشروط/.test(op) ? 'FLAG' : /مقبول/.test(op) ? 'OK' : 'WATCH', `نظر حسابرس: ${op.slice(0, 160)}`, [{ label: 'متن', value: op.slice(0, 160) }])

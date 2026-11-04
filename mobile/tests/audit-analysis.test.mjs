@@ -44,3 +44,12 @@ test('audit opinion shown in Persian', () => {
   const r = runIranAudit({ audit_opinion: 'qualified' });
   assert.equal(r.checks.find((c) => c.id === 'opinion').status, 'FLAG');
 });
+
+test('cash-flow inputs enable accruals, CFO divergence and Zmijewski; score appears at >=6 checks', () => {
+  const r = runIranAudit({ revenue_current: 1200, revenue_prev: 1000, net_profit_current: 240, net_profit_prev: 150, total_assets_current: 1000, total_liabilities_current: 400, total_equity_current: 600, total_equity_prev: 550,
+    operating_cash_flow_current: 180, current_assets_current: 600, current_liabilities_current: 300 });
+  const st = (id) => r.checks.find((c) => c.id === id).status;
+  assert.notEqual(st('accruals'), 'INSUFFICIENT_DATA'); assert.notEqual(st('cfo'), 'INSUFFICIENT_DATA'); assert.notEqual(st('zmijewski'), 'INSUFFICIENT_DATA');
+  assert.equal(st('beneish'), 'INSUFFICIENT_DATA');
+  assert.ok(r.evaluated >= 6 && r.riskScore != null);
+});

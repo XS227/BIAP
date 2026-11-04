@@ -60,3 +60,10 @@ Tests: mobile test:ui 12/12, tsc clean; analysis 50 passed (enrichment, CODAL ev
 - Taban audit (live recommendation data): 5/10 evaluated (balance identity, margin, leverage, equity, opinion). Threshold 6 is unreachable until cash-flow/current-items parsing exists (accruals, CFO, Beneish, Altman, Zmijewski are never computed). Phone said "6/10" — likely misread of the message «کمتر از ۶ از ۱۰»; message reworded. English opinion «qualified» now shown as «مشروط» (FLAG).
 - Pekarman CODAL HTML contains CFO, current assets/liabilities, trade receivables, retained earnings; analysis/codal_parser_v2.py does not extract them. Backend work, held.
 - Manifest update NOT done: see hand-off note (branch carries analysis/** changes; merging triggers deploy).
+
+## 2026-11-04 — manifest / parser / history PRs
+- Permanent APK: https://biap.dadashi.no/download/BIAP-Iran-1.0.10.apk (sha256 2cc2a712…516b verified); /dl/f98syxug/iran1010.apk kept until update centre confirmed on phone. nginx backup: /home/ubuntu/backups/biap-dadashi.nginx.pre-perm1010-20261104.
+- PR #76 (draft): analysis/mobile_release.json + mobile/app.json → 1.0.10/11. Merge restarts biap-fin (analysis/** path) and triggers an Expo build on main; stable channel then needs deploy/publish-mobile-apk.sh with the 1.0.10 APK.
+- PR #77 (draft): codal_parser_v2 extracts CFO, current assets/liabilities, receivables, retained earnings, fixed assets (depreciation/SG&A deliberately not). 1796 tests pass.
+- PR #78 (draft): Taban history fix split from #75; #75 closed.
+- App branch: audit now computes accruals, CFO divergence and Zmijewski when the fields exist. With PR #77 data: Pekarman 7/10 (score 67), Foolad 7/10 (83), Shepna 7/10 (50) before audit opinion (+1 when recommendation supplies it). Beneish (needs depreciation, SG&A) and Altman Z'' (needs EBIT) stay INSUFFICIENT_DATA.
