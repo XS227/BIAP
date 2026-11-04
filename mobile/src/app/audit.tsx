@@ -47,7 +47,7 @@ export default function AuditScreen() {
               <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
                 <Text style={[styles.cardTitle, { color: colors.text }]}>{state.title}</Text>
                 <Text style={[styles.score, { color: state.report.riskScore == null ? '#64748b' : state.report.riskScore >= 50 ? Brand.negative : state.report.riskScore >= 25 ? Brand.warning : Brand.positive }]}>
-                  {state.report.riskScore == null ? `امتیاز ریسک نمایش داده نمی‌شود (پوشش کمتر از ${state.report.minCoverage.toLocaleString('fa-IR')} از ${state.report.total.toLocaleString('fa-IR')})` : `امتیاز ریسک ${state.report.riskScore.toLocaleString('fa-IR')} از ۱۰۰`}
+                  {state.report.riskScore == null ? `امتیاز ریسک محاسبه نشد: فقط ${state.report.evaluated.toLocaleString('fa-IR')} از ${state.report.total.toLocaleString('fa-IR')} بررسی انجام شد (حداقل ${state.report.minCoverage.toLocaleString('fa-IR')} لازم است)` : `امتیاز ریسک ${state.report.riskScore.toLocaleString('fa-IR')} از ۱۰۰`}
                 </Text>
                 <Text style={[styles.body, { color: colors.textSecondary }]}>پوشش بررسی‌ها: {state.report.evaluated.toLocaleString('fa-IR')} از {state.report.total.toLocaleString('fa-IR')}. {state.report.riskScore == null ? 'برای نمایش امتیاز حداقل ۶ بررسی لازم است؛ فقط بررسی‌های انجام‌شده زیر معتبرند.' : ''} {state.report.note}</Text>
               </View>

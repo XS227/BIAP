@@ -54,3 +54,9 @@ Tests: mobile test:ui 12/12, tsc clean; analysis 50 passed (enrichment, CODAL ev
 - Operating cash flow for Pekarman: the CODAL HTML in the inbox (tracing 1541525) DOES contain the consolidated cash-flow statement (CFO 41,497,665 vs 28,042,248, million-rial units as filed), but analysis/codal_parser_v2.py only extracts revenue, net profit, gross profit, assets, liabilities, equity — no cash-flow/receivables/PP&E/depreciation/current-items aliases, and CodalFundamentals has no such fields. Fix is backend (parser + dataclass + API); not done (held).
 - Tests: test:ui 20 pass, tsc clean. app.json 1.0.10 / versionCode 11.
 - 1.0.10 build OK (EAS run 41720313621, commit 7d3382a): BIAP-1.0.10-Expo-EAS.apk sha256 2cc2a712ca5244541d9909e6b8e88c1b474ca5283117763aabf4420cdf8e516b, temporarily at https://biap.dadashi.no/dl/f98syxug/iran1010.apk. Manifest untouched; PR #75 still draft.
+
+## 2026-11-04 — post-1.0.10 report
+- 1.0.10 phone test OK. Old /dl files (iran.apk, global.apk, iran109.apk) removed; only iran1010.apk remains at /dl/f98syxug/.
+- Taban audit (live recommendation data): 5/10 evaluated (balance identity, margin, leverage, equity, opinion). Threshold 6 is unreachable until cash-flow/current-items parsing exists (accruals, CFO, Beneish, Altman, Zmijewski are never computed). Phone said "6/10" — likely misread of the message «کمتر از ۶ از ۱۰»; message reworded. English opinion «qualified» now shown as «مشروط» (FLAG).
+- Pekarman CODAL HTML contains CFO, current assets/liabilities, trade receivables, retained earnings; analysis/codal_parser_v2.py does not extract them. Backend work, held.
+- Manifest update NOT done: see hand-off note (branch carries analysis/** changes; merging triggers deploy).

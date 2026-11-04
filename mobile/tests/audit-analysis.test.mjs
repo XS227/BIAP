@@ -36,3 +36,11 @@ test('no risk score when fewer than 6 checks could be evaluated', () => {
   assert.equal(r.riskScore, null);
   assert.equal(r.total, r.checks.length);
 });
+
+import { auditOpinionFa } from '../src/lib/audit-analysis.ts';
+test('audit opinion shown in Persian', () => {
+  assert.equal(auditOpinionFa('qualified'), 'مشروط');
+  assert.equal(auditOpinionFa('unqualified'), 'مقبول');
+  const r = runIranAudit({ audit_opinion: 'qualified' });
+  assert.equal(r.checks.find((c) => c.id === 'opinion').status, 'FLAG');
+});

@@ -25,6 +25,16 @@ export type IranFundamentals = {
   tracing_no?: string | null;
 };
 
+/** The importer stores English opinion codes; the audit screen shows Persian. */
+export function auditOpinionFa(raw: string): string {
+  const t = raw.trim().toLowerCase();
+  if (t === 'unqualified' || t === 'clean') return 'مقبول';
+  if (t === 'qualified') return 'مشروط';
+  if (t === 'adverse') return 'مردود';
+  if (t === 'disclaimer') return 'عدم اظهار نظر';
+  return raw.trim();
+}
+
 export const AUDIT_NOTE = 'امتیاز ریسک یک غربالگری ساده است؛ رتبه‌ی اعتباری یا نظر حسابرس نیست.';
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -75,7 +85,7 @@ export function runIranAudit(f: IranFundamentals | null | undefined): AuditRepor
   checks.push(missing('beneish', 'امتیاز بنیش (Beneish M-Score)', 'حساب‌های دریافتنی، دارایی ثابت و هزینه‌ی استهلاک دو سال'));
   checks.push(missing('altman', 'امتیاز آلتمن (Z″)', 'سرمایه در گردش و سود انباشته'));
   checks.push(missing('zmijewski', 'امتیاز زمیجفسکی', 'دارایی‌های جاری و بدهی‌های جاری (نسبت جاری)'));
-  const op = (f?.audit_opinion ?? '').trim();
+  const op = auditOpinionFa(f?.audit_opinion ?? '');
   checks.push(op
     ? mk('opinion', 'نظر حسابرس', true, /مردود|عدم اظهار|مشروط/.test(op) ? 'FLAG' : /مقبول/.test(op) ? 'OK' : 'WATCH', `نظر حسابرس: ${op.slice(0, 160)}`, [{ label: 'متن', value: op.slice(0, 160) }])
     : missing('opinion', 'نظر حسابرس', 'متن نظر حسابرس'));
