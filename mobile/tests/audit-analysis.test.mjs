@@ -65,3 +65,31 @@ test('Altman needs EBIT; Beneish needs depreciation and SG&A for both years', ()
   assert.notEqual(st(r2, 'beneish'), 'INSUFFICIENT_DATA');
   assert.equal(runIranAudit({ ...base, operating_profit_current: null }).checks.find((c) => c.id === 'altman').status, 'INSUFFICIENT_DATA');
 });
+
+
+test('Beneish with zero depreciation or undefined ratios is INSUFFICIENT_DATA, never green', () => {
+  const base = {
+    revenue_current: 1200, revenue_prev: 1000, net_profit_current: 240, net_profit_prev: 150,
+    total_assets_current: 1000, total_assets_prev: 900,
+    total_liabilities_current: 400, total_liabilities_prev: 350,
+    total_equity_current: 600, total_equity_prev: 550,
+    operating_cash_flow_current: 180, current_assets_current: 600, current_assets_prev: 500,
+    current_liabilities_current: 300, receivables_current: 200, receivables_prev: 150,
+    gross_profit_current: 500, gross_profit_prev: 400,
+    fixed_assets_current: 300, fixed_assets_prev: 280,
+    depreciation_current: 30, depreciation_prev: 28,
+    sga_expense_current: -100, sga_expense_prev: -90,
+  };
+  assert.notEqual(by(runIranAudit(base), 'beneish').status, 'INSUFFICIENT_DATA');
+  for (const invalid of [
+    { depreciation_current: 0, depreciation_prev: 0 },
+    { current_assets_prev: 500, fixed_assets_prev: 400 },
+    { sga_expense_prev: 0 },
+    { total_liabilities_prev: 0 },
+  ]) {
+    const report = runIranAudit({ ...base, ...invalid });
+    assert.equal(by(report, 'beneish').status, 'INSUFFICIENT_DATA');
+    assert.equal(by(report, 'beneish').inputs.length, 0);
+    assert.ok(!report.checks.some(c => /NaN|Infinity/.test(c.summary)));
+  }
+});
