@@ -429,3 +429,20 @@ def test_eda_sample_sizes_are_reported_and_small_samples_are_excluded(env):
     assert "P/E" in cols and cols["P/E"] >= 8
     # the interim company has no ratios: it must not widen any sample
     assert all(n <= 19 for n in cols.values())
+
+
+def test_symbol_keyed_stub_row_never_shadows_the_primary_instrument(env):
+    """Production has bare-symbol stub rows next to the numeric primary instrument; the primary must win."""
+    client, store = env
+    import sqlite3
+    from company_registry_store import CompanyRegistryStore
+    CompanyRegistryStore(store.db_path)  # creates registry tables
+    with sqlite3.connect(store.db_path) as c:
+        stub = json.dumps(company("فول3", fundamentals=None, price=None), ensure_ascii=False)
+        c.execute("INSERT INTO listed_companies (code,symbol,name_fa,market,source_universe,source_updated_at,enriched_at,company_json,provenance_json,last_error,created_at,updated_at) VALUES ('فول3','فول3','فول3','TSE','t',NULL,NULL,?,'{}',NULL,'x','x')", (stub,))
+        cols = [r[1] for r in c.execute("PRAGMA table_info(company_registry)")]
+        c.execute(f"INSERT INTO company_registry ({','.join(cols)}) VALUES ({','.join('?' * len(cols))})", [{"issuer_id": 1, "issuer_key": "k", "canonical_symbol": "فول3", "canonical_name": "n", "category": "operating_company", "primary_instrument_code": "F03", "instrument_count": 2}.get(col, "2026-11-05" if "seen" in col else None) for col in cols])
+    md.UNIVERSE._rows, md.UNIVERSE._stamp = [], None
+    ds = client.get("/iran/modules/فول3/dataset").json()
+    assert ds["identity"]["code"] == "F03" and ds["tier"] == "full"
+    assert client.get("/iran/modules/F03/dataset").json()["identity"]["code"] == "F03"
