@@ -248,7 +248,7 @@ class UniverseCache:
             built: list[dict] = []
             with sqlite3.connect(f"file:{store.db_path}?mode=ro", uri=True, timeout=30) as conn:
                 conn.row_factory = sqlite3.Row
-                primary, category, issuer = self._registry(conn)
+                primary, category, issuer, reg_symbol = self._registry(conn)
                 for r in conn.execute("SELECT code,symbol,name_fa,market,enriched_at,company_json FROM listed_companies"):
                     try:
                         company = json.loads(r["company_json"]) if r["company_json"] else None
@@ -256,6 +256,10 @@ class UniverseCache:
                         company = None
                     row = universe_row({"code": r["code"], "symbol": r["symbol"], "name": r["name_fa"], "market": r["market"],
                                         "enrichedAt": r["enriched_at"], "company": company})
+                    if str(row["symbol"] or "").isdigit() and reg_symbol.get(r["code"]):
+                        # some rows were stored with the instrument code in the symbol column: the registry knows the real symbol
+                        row["symbol"] = reg_symbol[r["code"]]
+                        row["symbol_key"] = symbol_key(row["symbol"])
                     row["is_primary"] = 1 if (primary is None or r["code"] in primary) else 0
                     row["category"] = category.get(r["code"])
                     row["issuer_id"] = issuer.get(r["code"])
@@ -264,7 +268,7 @@ class UniverseCache:
             return built
 
     @staticmethod
-    def _registry(conn) -> tuple[Optional[set], dict, dict]:
+    def _registry(conn) -> tuple[Optional[set], dict, dict, dict]:
         """Genuine primary-company codes (one per issuer, shares only) and each instrument's category/issuer.
 
         ``None`` for the primary set means the DB has no registry yet (every stored row is then treated as primary).
@@ -275,9 +279,10 @@ class UniverseCache:
             prim = {str(r[0]) for r in conn.execute(f"SELECT primary_instrument_code FROM company_registry WHERE category IN ({marks})", tuple(COMPANY_CATEGORIES))}
             cat = {str(r[0]): r[1] for r in conn.execute("SELECT code, category FROM instrument_registry")}
             iss = {str(r[0]): r[1] for r in conn.execute("SELECT code, issuer_id FROM instrument_registry")}
+            sym = {str(r[0]): r[1] for r in conn.execute("SELECT code, symbol FROM instrument_registry")}
         except sqlite3.Error:
-            return None, {}, {}
-        return (prim or None), cat, iss
+            return None, {}, {}, {}
+        return (prim or None), cat, iss, sym
 
     @staticmethod
     def _db_stamp(store) -> Any:

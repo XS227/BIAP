@@ -32,28 +32,37 @@ PRIVATE = PrivateStore()
 
 
 def resolve_company(store: ListedCompanyStore, text: str) -> dict:
-    """Instrument code first; otherwise the spelling-insensitive symbol (Arabic ي/ك, ZWNJ, spaces).
+    """Resolve to the issuer's PRIMARY instrument.
 
-    Two different instruments with the same normalized symbol are an error with candidates -- never a guess.
+    Candidates: rows whose code equals the text or whose normalized symbol (Arabic ي/ك, ZWNJ, spaces) matches.
+    Duplicate stub rows keyed by the bare symbol (non-primary) never shadow the primary instrument; only two
+    different primary instruments are ambiguous (409 with candidates, never a guess).
     """
     text = (text or "").strip()
-    with store._connect() as conn:
-        row = conn.execute("SELECT code FROM listed_companies WHERE code=?", (text,)).fetchone()
-        if row:
-            return store.get(row["code"])
-        wanted = symbol_key(text)
-        if not wanted:
-            raise HTTPException(status_code=404, detail="company not found")
-        hits = [r for r in conn.execute("SELECT code, symbol, name_fa, market FROM listed_companies") if symbol_key(r["symbol"]) == wanted]
-    if len(hits) == 1:
-        return store.get(hits[0]["code"])
-    if len(hits) > 1:
-        exact = [h for h in hits if h["symbol"] == text]
+    wanted = symbol_key(text)
+    if not wanted:
+        raise HTTPException(status_code=404, detail="company not found")
+    rows = md.UNIVERSE.rows(store)
+    cands = [r for r in rows if r["code"] == text or r.get("symbol_key") == wanted]
+    if not cands:
+        raise HTTPException(status_code=404, detail="company not found")
+    # a candidate may be a secondary/stub instrument of an issuer whose primary instrument is stored under another code
+    issuers = {r.get("issuer_id") for r in cands if r.get("issuer_id")}
+    cands += [r for r in rows if r.get("issuer_id") in issuers and r.get("is_primary", 1) and r not in cands]
+    primary = [r for r in cands if r.get("is_primary", 1)]
+    pool = primary or cands
+    if len(pool) > 1:
+        exact = [r for r in pool if r["code"] == text] or [r for r in pool if r["symbol"] == text]
         if len(exact) == 1:
-            return store.get(exact[0]["code"])
+            pool = exact
+        else:
+            rank = {md.TIER_FULL: 0, md.TIER_PARTIAL: 1, md.TIER_MARKET: 2, md.TIER_REGISTERED: 3}
+            best = min(rank.get(r["tier"], 9) for r in pool)
+            pool = [r for r in pool if rank.get(r["tier"], 9) == best] if not primary else pool
+    if len(pool) > 1:
         raise HTTPException(status_code=409, detail={"message": "ambiguous symbol", "candidates": [
-            {"code": h["code"], "symbol": h["symbol"], "name": h["name_fa"], "market": h["market"]} for h in hits[:10]]})
-    raise HTTPException(status_code=404, detail="company not found")
+            {"code": r["code"], "symbol": r["symbol"], "name": r["name"], "market": r["market"]} for r in pool[:10]]})
+    return store.get(pool[0]["code"])
 
 
 def _history(symbol: Optional[str]) -> list[dict]:
@@ -73,6 +82,9 @@ def _history(symbol: Optional[str]) -> list[dict]:
 
 def dataset_for(code: str) -> dict:
     item = resolve_company(STORE, code)
+    urow = next((r for r in md.UNIVERSE.rows(STORE) if r["code"] == item["code"]), None)
+    if urow and urow.get("symbol"):
+        item = {**item, "symbol": urow["symbol"]}  # registry symbol (some rows store the instrument code there)
     history = _history(item.get("symbol"))
     return md.build_company_dataset(item, history, now_iso=datetime.now(timezone.utc).isoformat(timespec="seconds"))
 
