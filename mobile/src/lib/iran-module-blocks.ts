@@ -14,7 +14,7 @@ export type Block =
 export type KpiItem = { group: string; key: string; label: string; value: number | null; unit: string; formula: string; inputs: string[]; source: string; period: string | null; status: string; missing: string[] };
 export type ModuleEnvelope = {
   module: string; title?: string; status: ModuleStatus; summary?: string; blocks: Block[]; missing: string[]; note?: string | null;
-  tier?: string; provenance?: Record<string, unknown>; quality?: { missing?: string[]; warnings?: string[] }; company?: { code?: string; symbol?: string; name?: string } | null;
+  tier?: string; provenance?: Record<string, unknown>; quality?: { missing?: string[]; warnings?: string[] }; dataStatus?: { codes?: string[]; hasCurrentPrice?: boolean; hasHistory?: boolean; historyObservations?: number }; company?: { code?: string; symbol?: string; name?: string } | null;
   pipeline?: unknown; schema?: Record<string, { name: string; type: string }[]>; examples?: { title: string; sql: string; params: unknown[] }[];
 };
 
@@ -42,6 +42,20 @@ export function statusTone(status: ModuleStatus): 'positive' | 'warning' | 'nega
 export const TIER_LABEL: Record<string, string> = {
   full: 'مالی کامل + بازار', partial_financials: 'مالی ناقص', market_only: 'فقط بازار', registered_only: 'فقط ثبت‌شده', private: 'داده‌ی داخلی',
 };
+
+export const DATA_STATUS_LABEL: Record<string, string> = {
+  REGISTERED_ONLY: 'شرکت در رجیستری هست، اما هنوز داده‌ی بازار یا کدال برایش دریافت نشده است.',
+  MISSING_MARKET: 'قیمت بازار فعلی موجود نیست.',
+  MISSING_CODAL: 'صورت مالی کدال برای این شرکت هنوز دریافت نشده است.',
+  SOURCE_RATE_LIMITED: 'منبع داده موقتاً محدودیت نرخ اعمال کرده؛ دریافت در اجرای بعدی تکرار می‌شود.',
+};
+/** Why a module is empty, in words. Distinguishes a missing current price from stored historical observations. */
+export function dataStatusText(ds?: ModuleEnvelope['dataStatus']): string[] {
+  if (!ds || !Array.isArray(ds.codes)) return [];
+  const out = ds.codes.filter((c) => c in DATA_STATUS_LABEL).map((c) => DATA_STATUS_LABEL[c]);
+  if (ds.codes.includes('MISSING_MARKET') && ds.hasHistory) out.push(`${ds.historyObservations ?? 0} مشاهده‌ی تاریخی قیمت ذخیره شده است (قیمت فعلی نیست).`);
+  return out;
+}
 
 const FA = '۰۱۲۳۴۵۶۷۸۹';
 export function faDigits(s: string): string { return s.replace(/[0-9]/g, (d) => FA[Number(d)]); }

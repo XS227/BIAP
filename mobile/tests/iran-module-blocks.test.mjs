@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeEnvelope, formatValue, formatKpi, scaleBars, scaleLine, markerBin, groupKpis, statusTone, readinessText, cellText, faDigits } from '../src/lib/iran-module-blocks.ts';
+import { normalizeEnvelope, formatValue, formatKpi, scaleBars, scaleLine, markerBin, groupKpis, statusTone, readinessText, cellText, faDigits, dataStatusText } from '../src/lib/iran-module-blocks.ts';
 
 test('garbage / empty responses degrade to a blocked envelope, never to content', () => {
   for (const raw of [null, undefined, 42, 'x', {}, []]) {
@@ -55,4 +55,15 @@ test('groupKpis keeps order; status helpers', () => {
   assert.deepEqual(g.map((x) => [x.group, x.items.length]), [['b', 2], ['a', 1]]);
   assert.equal(statusTone('ok'), 'positive'); assert.equal(statusTone('blocked'), 'negative');
   assert.equal(readinessText('ready'), 'آماده'); assert.equal(readinessText('x'), 'نامشخص');
+});
+
+test('dataStatusText explains empties and separates missing price from stored history', () => {
+  assert.deepEqual(dataStatusText(undefined), []);
+  assert.deepEqual(dataStatusText({ codes: [] }), []);
+  const reg = dataStatusText({ codes: ['REGISTERED_ONLY'] });
+  assert.equal(reg.length, 1); assert.match(reg[0], /رجیستری/);
+  const hist = dataStatusText({ codes: ['MISSING_MARKET', 'MISSING_CODAL'], hasHistory: true, historyObservations: 5 });
+  assert.equal(hist.length, 3); assert.match(hist[2], /5/);
+  assert.match(dataStatusText({ codes: ['SOURCE_RATE_LIMITED'] })[0], /محدودیت نرخ/);
+  assert.deepEqual(dataStatusText({ codes: ['UNKNOWN_X'] }), []);
 });

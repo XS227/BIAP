@@ -123,3 +123,8 @@ First broken steps: (1) Liara downloaded HTML for the first 2 listed statements 
 Backend PR #89 (unmerged, not deployed): module_dataset/module_compute/module_stats/safe_sql/private_store/private_analytics/module_routes; contracts in docs/iran/MODULE_DATA_CONTRACTS.md; 1,865 backend tests pass (50 new e2e).
 Real-data dry run (backup copy of prod DB, read-only): primary companies 3,805; market price 1,663 (43.7%); CODAL statements 77 (2.02%); with cash flow 32. EDA works on 13 indicators (market ones n≥1,000, financial ones n=28–77); anomaly 47 / forecast 26 companies have enough history (market-memory collects ~700 symbols, only 41 with ≥15 days).
 Mobile branch feat/mobile-iran-1013-20261105 (020e291): backend-driven module screen with charts, SQL screen (builder + SELECT, CSV), CRM/KPI register screen; 31 ui tests; stable manifest unchanged (1.0.12).
+
+## 2026-11-05 post-#91 verification
+- prod 35e7e2a (PR #91), biap-fin healthy; /iran/* endpoints return 401 unauthenticated (not 404).
+- Authenticated sweep on prod-DB copy: 156 registry-sampled primary companies (40 per tier) x 12 modules + dataset/readiness: 0 errors; SQL read-only OK, DROP rejected (400); CRM ok.
+- 1.0.13 test link still 404: needs sudo perm13test.sh (root-owned /var/www/biap-downloads). Stable 1.0.12 untouched.

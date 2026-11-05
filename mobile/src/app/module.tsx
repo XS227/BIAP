@@ -10,7 +10,7 @@ import { fetchRealModuleData, RealModulePayload } from '@/lib/real-module-data';
 import { getBusinessDataset } from '@/lib/business-data';
 import { getSelectedListedCompany } from '@/lib/listed-company-selection';
 import { ModuleBlocks } from '@/components/module-blocks';
-import { ModuleEnvelope, STATUS_LABEL, TIER_LABEL, statusTone } from '@/lib/iran-module-blocks';
+import { ModuleEnvelope, STATUS_LABEL, TIER_LABEL, dataStatusText, statusTone } from '@/lib/iran-module-blocks';
 import { fetchModule } from '@/lib/iran-modules-api';
 import { matchRequirementColumns, requirementFor, sourceLabel } from '@/lib/module-data-requirements';
 
@@ -142,6 +142,7 @@ export default function ModuleDetailScreen() {
     {result.summary ? <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.heroText, { color: colors.textSecondary }]}>{result.summary}</Text></View> : null}
     <ModuleBlocks blocks={result.blocks} colors={colors} />
     {result.missing.length > 0 ? <View style={[styles.realNote, { borderColor: Brand.warning + '88' }]}><Text style={[styles.realNoteText, { color: colors.textSecondary }]}>ورودی‌های ناموجود: {result.missing.join('، ')}</Text></View> : null}
+    {dataStatusText(result.dataStatus).length ? <View style={[styles.realNote, { borderColor: Brand.warning + '88' }]}><Text style={[styles.realNoteText, { color: colors.textSecondary }]}>{dataStatusText(result.dataStatus).join(' ')}</Text></View> : null}
     {result.quality?.warnings?.length ? <View style={[styles.realNote, { borderColor: Brand.warning + '88' }]}><Text style={[styles.realNoteText, { color: colors.textSecondary }]}>هشدار کیفیت داده: {result.quality.warnings.join('؛ ')}</Text></View> : null}
     {prov.tracingNo ? <Text style={[styles.realNoteText, { color: colors.textSecondary, marginTop: 6 }]}>صورت مالی: {String(prov.statementTitle ?? '')} • شماره رهگیری {String(prov.tracingNo)}</Text> : null}
     {result.note ? <View style={[styles.realNote, { borderColor: Brand.stockGreen + '55' }]}><Text style={[styles.realNoteText, { color: colors.textSecondary }]}>{result.note}</Text></View> : null}
