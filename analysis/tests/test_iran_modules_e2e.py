@@ -409,3 +409,23 @@ def test_module_service_does_not_touch_production_stores(env):
     import safe_sql
     src = inspect.getsource(safe_sql)
     assert "sqlite3.connect(\":memory:\"" in src and "query_only" in src
+
+
+def test_eda_works_for_market_only_company_using_market_columns(env):
+    client, _ = env
+    e = post(client, "M01", "eda", {"column": "pe"})
+    assert e["status"] == "ok"
+    summary = next(b for b in e["blocks"] if b.get("title") == "خلاصه آماری")["rows"]
+    assert any(r["column"] == "P/E" and r["n"] >= 8 for r in summary)
+    assert all(r["scope"] for r in summary)
+    hist = next(b for b in e["blocks"] if b["type"] == "histogram")
+    assert hist["marker"] == 8.0  # the company's own P/E is marked on the distribution
+
+
+def test_eda_sample_sizes_are_reported_and_small_samples_are_excluded(env):
+    client, _ = env
+    e = post(client, "F00", "eda")
+    cols = {r["column"]: r["n"] for r in next(b for b in e["blocks"] if b.get("title") == "خلاصه آماری")["rows"]}
+    assert "P/E" in cols and cols["P/E"] >= 8
+    # the interim company has no ratios: it must not widen any sample
+    assert all(n <= 19 for n in cols.values())

@@ -93,7 +93,7 @@ def module_dataset(code: str, _user: str = Depends(require_user_id)):
 def module_readiness(code: str, _user: str = Depends(require_user_id)):
     ds = dataset_for(code)
     universe = md.UNIVERSE.rows(STORE)
-    return {"company": ds["identity"], "tier": ds["tier"], "modules": mc.readiness(ds, _peers(ds, universe)), "quality": ds["quality"]}
+    return {"company": ds["identity"], "tier": ds["tier"], "modules": mc.readiness(ds, _peers(ds, universe), sum(1 for r in universe if r.get("is_primary", 1) and r.get("pe") is not None)), "quality": ds["quality"]}
 
 
 @router.post("/modules/{code}/{module}")

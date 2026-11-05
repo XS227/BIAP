@@ -51,7 +51,7 @@ def fmt_ratio(v: Optional[float]) -> Optional[float]:
     return None if v is None else round(v, 6)
 
 
-def readiness(ds: dict, peers: int) -> dict[str, dict]:
+def readiness(ds: dict, peers: int, market_rows: int = 0) -> dict[str, dict]:
     """Per-module readiness for this company: ready / partial / blocked + exact missing inputs."""
     cur = (ds["fundamentals"].get("current") or {})
     has_fund = bool(ds["fundamentals"].get("present"))
@@ -62,7 +62,7 @@ def readiness(ds: dict, peers: int) -> dict[str, dict]:
         missing: list[str] = []
         for need, label in spec.get("needs", []):
             ok = {
-                "universe": peers >= MIN_PEERS, "fundamentals": has_fund,
+                "universe": max(peers, market_rows) >= MIN_PEERS, "fundamentals": has_fund,
                 "history>=15": n_hist >= MIN_HISTORY_ANOMALY, "history>=30": n_hist >= MIN_HISTORY_FORECAST,
                 "peers>=8": peers >= MIN_PEERS, "sector": bool(ds["identity"].get("sector")),
             }.get(need)
@@ -144,65 +144,88 @@ def kpi(ds: dict) -> dict:
 
 # ---- EDA -------------------------------------------------------------------------------------
 
-EDA_COLUMNS = ["net_margin", "operating_margin", "roa", "roe", "debt_ratio", "current_ratio", "revenue_growth", "profit_growth", "cfo_to_profit", "pe"]
+EDA_COLUMNS = ["net_margin", "operating_margin", "roa", "roe", "debt_ratio", "current_ratio", "revenue_growth", "profit_growth", "cfo_to_profit",
+               "pe", "change_percent", "market_cap", "trade_value"]
 EDA_LABELS = {"net_margin": "حاشیه سود خالص", "operating_margin": "حاشیه سود عملیاتی", "roa": "ROA", "roe": "ROE", "debt_ratio": "نسبت بدهی",
-              "current_ratio": "نسبت جاری", "revenue_growth": "رشد درآمد", "profit_growth": "رشد سود", "cfo_to_profit": "جریان نقد ÷ سود", "pe": "P/E"}
+              "current_ratio": "نسبت جاری", "revenue_growth": "رشد درآمد", "profit_growth": "رشد سود", "cfo_to_profit": "جریان نقد ÷ سود", "pe": "P/E",
+              "change_percent": "تغییر روزانه (٪)", "market_cap": "ارزش بازار", "trade_value": "ارزش معاملات"}
+MARKET_COLUMNS = {"pe", "change_percent", "market_cap", "trade_value"}
+POSITIVE_ONLY = {"pe", "market_cap", "trade_value"}
+
+
+def _column_rows(ds: dict, universe: list[dict], col: str, sector_only: bool) -> tuple[list[dict], str]:
+    """Rows to describe ``col`` and the scope label. Financial ratios prefer the company's own category;
+    when that is too small they widen to every primary company with statements (and say so)."""
+    primary = [r for r in universe if r.get("is_primary", 1) and r.get(col) is not None]
+    if col in POSITIVE_ONLY:
+        primary = [r for r in primary if r[col] > 0]
+    code, sector = ds["identity"]["code"], ds["identity"].get("sector")
+    own = next((r for r in universe if r["code"] == code), None)
+    cat = own.get("category") if own else None
+    scopes: list[tuple[list[dict], str]] = []
+    if sector_only and sector:
+        scopes.append(([r for r in primary if r.get("sector") == sector], f"گروه {sector}"))
+    if cat:
+        scopes.append(([r for r in primary if r.get("category") == cat], "هم‌دسته"))
+    scopes.append((primary, "همه‌ی شرکت‌های اصلی"))
+    for rows, label in scopes:
+        if len(rows) >= MIN_PEERS:
+            return rows, label
+    return [], "ناکافی"
 
 
 def eda(ds: dict, universe: list[dict], *, column: Optional[str] = None, sector_only: bool = False) -> dict:
-    rows = comparable(universe, ds["identity"]["code"])
-    sector = ds["identity"].get("sector")
-    scope_label = "شرکت‌های اصلی هم‌دسته دارای صورت مالی"
-    if sector_only and sector:
-        same = [r for r in rows if r.get("sector") == sector]
-        if len(same) >= MIN_PEERS:
-            rows, scope_label = same, f"گروه {sector}"
-    if len(rows) < MIN_PEERS:
-        return blocked("eda", ds, ["حداقل ۸ شرکت با نسبت مالی"], f"فقط {len(rows)} شرکت دارای صورت مالی در پایگاه است؛ برای تحلیل آماری معنادار کافی نیست.")
-    cols = [c for c in EDA_COLUMNS if sum(1 for r in rows if r.get(c) is not None) >= MIN_PEERS]
-    universe = [r for r in universe if r.get("is_primary", 1)]
-    total = len(universe)
-    # missing-value analysis over the whole universe (not only companies with statements)
-    miss = [{"column": EDA_LABELS[c], "present": sum(1 for r in universe if r.get(c) is not None),
-             "missingPct": round(100 * (1 - sum(1 for r in universe if r.get(c) is not None) / total), 1)} for c in EDA_COLUMNS]
-    summary_rows, hist_blocks, own = [], [], []
-    for c in cols:
-        vals = [r[c] for r in rows if r.get(c) is not None]
+    primary = [r for r in universe if r.get("is_primary", 1)]
+    total = len(primary)
+    code = ds["identity"]["code"]
+    usable: dict[str, tuple[list[dict], str]] = {}
+    for c in EDA_COLUMNS:
+        rows, label = _column_rows(ds, universe, c, sector_only)
+        if rows:
+            usable[c] = (rows, label)
+    if not usable:
+        return blocked("eda", ds, ["حداقل ۸ شرکت با مقدار معتبر برای هر شاخص"], "هیچ شاخصی در پایگاه BIAP نمونه‌ی کافی (۸ شرکت) برای تحلیل آماری ندارد.")
+    miss = [{"column": EDA_LABELS[c], "present": sum(1 for r in primary if r.get(c) is not None),
+             "missingPct": round(100 * (1 - sum(1 for r in primary if r.get(c) is not None) / total), 1) if total else 100.0} for c in EDA_COLUMNS]
+    summary_rows, own_rows = [], []
+    for c, (rows, label) in usable.items():
+        vals = [r[c] for r in rows]
         d = st.describe(vals)
-        summary_rows.append({"column": EDA_LABELS[c], **{k: (None if d.get(k) is None else round(d[k], 4)) for k in ("n", "mean", "median", "std", "min", "q1", "q3", "max", "skew")}})
-        sv = sorted(vals)
-        mine = next((r.get(c) for r in universe if r["code"] == ds["identity"]["code"]), None)
+        summary_rows.append({"column": EDA_LABELS[c], "scope": label, **{k: (None if d.get(k) is None else round(d[k], 4)) for k in ("n", "mean", "median", "std", "min", "q1", "q3", "max", "skew")}})
+        mine = next((r.get(c) for r in universe if r["code"] == code), None)
         if mine is not None:
-            own.append({"column": EDA_LABELS[c], "value": round(mine, 4), "percentile": round(100 * st.percentile_rank(sv, mine), 1), "outlier": st.iqr_outlier(sv, mine)})
-    focus = column if column in cols else (cols[0] if cols else None)
-    if focus:
-        v = sorted(r[focus] for r in rows if r.get(focus) is not None)
-        lo, hi = st.quantile(v, 0.01), st.quantile(v, 0.99)
-        h = st.histogram(v, 12, lo=lo, hi=hi)
-        mine = next((r.get(focus) for r in universe if r["code"] == ds["identity"]["code"]), None)
-        hist_blocks.append({"type": "histogram", "title": f"توزیع {EDA_LABELS[focus]}", "bins": h["bins"], "clipped": h["clipped"], "n": h["n"],
-                            "marker": mine, "note": "مقادیر خارج از صدک ۱ تا ۹۹ در نمودار کوتاه شده‌اند و در clipped شمرده می‌شوند."})
+            sv = sorted(vals)
+            own_rows.append({"column": EDA_LABELS[c], "value": round(mine, 4), "percentile": round(100 * st.percentile_rank(sv, mine), 1), "outlier": st.iqr_outlier(sv, mine), "scope": label})
+    focus = column if column in usable else next(iter(usable))
+    rows, label = usable[focus]
+    v = sorted(r[focus] for r in rows)
+    h = st.histogram(v, 12, lo=st.quantile(v, 0.01), hi=st.quantile(v, 0.99))
+    mine = next((r.get(focus) for r in universe if r["code"] == code), None)
+    blocks: list[dict] = [
+        {"type": "metrics", "items": [{"label": "نمونه‌ی شاخص انتخابی", "value": len(rows)}, {"label": "دامنه", "value": label}, {"label": "شرکت‌های اصلی ثبت‌شده", "value": total}]},
+        {"type": "histogram", "title": f"توزیع {EDA_LABELS[focus]} ({label})", "bins": h["bins"], "clipped": h["clipped"], "n": h["n"], "marker": mine,
+         "note": "مقادیر خارج از صدک ۱ تا ۹۹ در نمودار کوتاه شده‌اند و در clipped شمرده می‌شوند."},
+        {"type": "table", "title": "خلاصه آماری", "columns": ["column", "scope", "n", "mean", "median", "std", "min", "q1", "q3", "max", "skew"], "rows": summary_rows},
+    ]
+    if own_rows:
+        blocks.append({"type": "table", "title": "جایگاه این شرکت", "columns": ["column", "value", "percentile", "outlier", "scope"], "rows": own_rows})
+    cols = [c for c in usable if c not in MARKET_COLUMNS or True]
     corr = []
     for i, a in enumerate(cols):
-        for b in cols[i + 1:]:
-            pairs = [(r.get(a), r.get(b)) for r in rows]
-            r_ = st.pearson([p[0] for p in pairs], [p[1] for p in pairs])
+        for b2 in cols[i + 1:]:
+            both = [r for r in universe if r.get("is_primary", 1) and r.get(a) is not None and r.get(b2) is not None]
+            r_ = st.pearson([r[a] for r in both], [r[b2] for r in both]) if len(both) >= MIN_PEERS else None
             if r_ is not None:
-                corr.append({"a": EDA_LABELS[a], "b": EDA_LABELS[b], "r": round(r_, 3), "n": sum(1 for p in pairs if None not in p)})
+                corr.append({"a": EDA_LABELS[a], "b": EDA_LABELS[b2], "r": round(r_, 3), "n": len(both)})
     corr.sort(key=lambda x: -abs(x["r"]))
-    blocks: list[dict] = [
-        {"type": "metrics", "items": [{"label": "نمونه", "value": len(rows)}, {"label": "دامنه", "value": scope_label}, {"label": "کل شرکت‌ها", "value": total}]},
-        *hist_blocks,
-        {"type": "table", "title": "خلاصه آماری", "columns": ["column", "n", "mean", "median", "std", "min", "q1", "q3", "max", "skew"], "rows": summary_rows},
-    ]
-    if own:
-        blocks.append({"type": "table", "title": "جایگاه این شرکت", "columns": ["column", "value", "percentile", "outlier"], "rows": own})
-    blocks.append({"type": "table", "title": "قوی‌ترین همبستگی‌ها (پیرسون)", "columns": ["a", "b", "r", "n"], "rows": corr[:8]})
-    blocks.append({"type": "table", "title": "تحلیل مقادیر گمشده در کل جهان شرکت‌ها", "columns": ["column", "present", "missingPct"], "rows": miss})
+    blocks.append({"type": "table", "title": "قوی‌ترین همبستگی‌ها (پیرسون، فقط جفت‌های هم‌نمونه)", "columns": ["a", "b", "r", "n"], "rows": corr[:8]})
+    blocks.append({"type": "table", "title": "تحلیل مقادیر گمشده در کل شرکت‌های اصلی", "columns": ["column", "present", "missingPct"], "rows": miss})
     if len(ds["history"]) >= 3:
-        blocks.append({"type": "line", "title": "تاریخچه قیمت ثبت‌شده در BIAP", "points": [{"x": h["date"], "y": h["price"]} for h in ds["history"]]})
-    return envelope("eda", ds, "ok", f"تحلیل اکتشافی روی {len(rows)} شرکت ({scope_label}) از صورت‌های مالی و بازار ثبت‌شده در BIAP.", blocks,
-                    note="داده‌ی ورودی همان جدول تحلیلی BIAP است؛ نیازی به بارگذاری CSV نیست.")
+        blocks.append({"type": "line", "title": "تاریخچه قیمت ثبت‌شده در BIAP", "points": [{"x": h_["date"], "y": h_["price"]} for h_ in ds["history"]]})
+    skipped = [EDA_LABELS[c] for c in EDA_COLUMNS if c not in usable]
+    return envelope("eda", ds, "ok", f"تحلیل اکتشافی روی {len(usable)} شاخص با نمونه‌ی کافی از {total} شرکت اصلی (شاخص‌های مالی فقط برای شرکت‌های دارای صورت مالی).", blocks,
+                    missing=[f"نمونه‌ی کافی: {s}" for s in skipped],
+                    note="ورودی همان جدول تحلیلی BIAP است؛ نیازی به CSV نیست. شاخص‌های مالی تا گسترش پوشش CODAL نمونه‌ی کوچکی دارند و اندازه‌ی نمونه در جدول آمده است.")
 
 
 # ---- anomaly / forecast ----------------------------------------------------------------------
