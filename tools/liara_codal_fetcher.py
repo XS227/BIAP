@@ -251,6 +251,19 @@ def _dump(record):
     return (json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n").encode("utf-8")
 
 
+
+def reports_to_fetch(filings, limit):
+    """Choose which listed statements get their HTML downloaded.
+
+    BIAP parses exactly one scope (consolidated if any, else standalone) and never mixes them, so only
+    filings of that scope are useful. Taking the first N in listing order downloaded HTML BIAP could not use.
+    """
+    def consolidated(f):
+        return "تلفیقی" in (f.get("title") or "")
+    chosen = [f for f in filings if consolidated(f)] or list(filings)
+    return chosen[:limit]
+
+
 class Run(object):
     def __init__(self, client, out_root, day, page_length=PAGE_LENGTH, max_pages=MAX_SYMBOL_PAGES,
                  reports_per_company=REPORTS_PER_COMPANY, max_seconds=None, clock=time.monotonic):
@@ -388,7 +401,7 @@ class Run(object):
             return record, []
         record["status"] = "ok" if (record["financial_years"] or record["filings"] or record["company"]) else "no_data"
         reports = []
-        for filing in record["financial_filings"][:self.reports_per_company]:
+        for filing in reports_to_fetch(record["financial_filings"], self.reports_per_company):
             try:
                 html = self.client.get(filing["excel_url"]).decode("utf-8", errors="ignore")
             except FetchError as exc:

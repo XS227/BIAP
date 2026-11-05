@@ -96,6 +96,19 @@ def _jsonl(path: str):
             offset += len(line)
 
 
+
+def _keep_earlier_filings(previous: dict, row: dict) -> dict:
+    """A later export that lists fewer statements (fetch budget, partial run) must not hide earlier ones.
+
+    Statement references are unioned by tracing number; the newer row wins for everything else.
+    """
+    seen = {str(f.get("tracing_no")) for f in row.get("financial_filings") or ()}
+    extra = [f for f in previous.get("financial_filings") or () if str(f.get("tracing_no")) not in seen]
+    if not extra:
+        return row
+    return {**row, "financial_filings": list(row.get("financial_filings") or ()) + extra}
+
+
 class Inbox:
     def __init__(self, root: str) -> None:
         self.root = root
@@ -103,6 +116,7 @@ class Inbox:
         self._reports: dict[str, tuple[str, int]] = {}
         self._new_filings: list[dict] = []
         self.exports: list[dict] = []
+        self.attempts: dict[str, dict] = {}  # symbol key -> {"count", "last"} (export days that carried the symbol)
         self.rejected: list[dict] = []
         self.new_filings_through: Optional[str] = None
         try:
@@ -126,8 +140,13 @@ class Inbox:
         for row in companies:
             key = symbol_key(row["symbol"])
             previous = self.companies.get(key)
+            attempt = self.attempts.setdefault(key, {"count": 0, "last": None})
+            attempt["count"] += 1
+            attempt["last"] = name
             if row["status"] == "error" and previous and previous["status"] in _USABLE:
                 continue
+            if row["status"] == "ok" and previous and previous["status"] == "ok":
+                row = _keep_earlier_filings(previous, row)
             self.companies[key] = row
         for tracing_no, offset in reports:
             self._reports[tracing_no] = (os.path.join(folder, "reports.jsonl"), offset)
@@ -163,12 +182,22 @@ class Inbox:
         row = self.companies.get(symbol_key(symbol))
         if not row or row.get("status") != "ok":
             return False
-        for filing in row.get("financial_filings") or ():
-            title = str(filing.get("title") or "").replace("\u200c", " ").replace("( شرکت", "(شرکت")
-            tracing = str(filing.get("tracing_no") or "")
-            if "(شرکت" not in title and tracing in self._reports:
-                return True
-        return False
+        # Same scope policy as the parser (consolidated first, never mixed): HTML for a filing the
+        # parser will not select cannot produce fundamentals, so it must not count as usable.
+        return bool(self.usable_tracing_nos(symbol))
+
+    def usable_tracing_nos(self, symbol: str) -> list[str]:
+        """Tracing numbers of own, scope-selected statements whose HTML is in the inbox (sorted)."""
+        row = self.companies.get(symbol_key(symbol))
+        if not row or row.get("status") != "ok":
+            return []
+        from codal_data import CodalFiling
+        from financial_scope import select_scope_filings
+        try:
+            _, chosen = select_scope_filings([CodalFiling(**f) for f in row.get("financial_filings") or ()])
+        except TypeError:
+            return []
+        return sorted(str(f.tracing_no) for f in chosen if str(f.tracing_no) in self._reports)
 
     def report_html(self, tracing_no: Optional[str]) -> str:
         location = self._reports.get(tracing_no or "")
@@ -252,6 +281,29 @@ def write_request(root: str, symbols: list[str]) -> str:
     return path
 
 
+# Days to wait before asking CODAL again about a symbol whose last export gave no usable own statement.
+# The wait doubles with every failed attempt (capped), so dead ends stop consuming the nightly budget.
+RETRY_BASE_DAYS = {"error": 1, "partial": 2, "no_statements": 14}
+RETRY_MAX_DAYS = 56
+
+
+def _retry_due(row: Optional[dict], attempt: dict, today: datetime.date) -> bool:
+    if not row or not attempt.get("last"):
+        return True
+    if row.get("status") == "error":
+        kind = "error"
+    elif row.get("financial_filings"):
+        kind = "partial"  # statements listed but own HTML missing / affiliate-only
+    else:
+        kind = "no_statements"
+    wait = min(RETRY_BASE_DAYS[kind] * (2 ** max(0, int(attempt.get("count", 1)) - 1)), RETRY_MAX_DAYS)
+    try:
+        last = datetime.date.fromisoformat(attempt["last"])
+    except ValueError:
+        return True
+    return (today - last).days >= wait
+
+
 def backlog_symbols(limit: int) -> list[str]:
     """Primary companies missing CODAL fundamentals, including market-only enriched rows.
 
@@ -266,7 +318,9 @@ def backlog_symbols(limit: int) -> list[str]:
     codes = registry.primary_company_codes() or []
     missing_financials = store.missing_codal_financial_codes(codes)
     have = current() if enabled() else None
+    today = datetime.datetime.now(datetime.timezone.utc).date()
     out: list[str] = []
+    retry_later: dict[str, str] = {}
     for code in missing_financials:
         instrument = registry.get_instrument(code)
         symbol = str((instrument or {}).get("symbol") or "").strip()
@@ -275,12 +329,52 @@ def backlog_symbols(limit: int) -> list[str]:
         # A verified no_data response is excluded; future filings reopen it.
         row = have.companies.get(symbol_key(symbol)) if have else None
         has_useful_export = bool(row and (row.get("status") == "no_data" or have.has_financial_filings(symbol)))
-        if symbol and not has_useful_export and symbol not in out:
-            out.append(symbol)
+        if not symbol or has_useful_export or symbol in out or symbol in retry_later:
+            continue
+        attempt = have.attempts.get(symbol_key(symbol)) if have else None
+        if attempt and not _retry_due(row, attempt, today):
+            continue  # attempted recently without success: do not burn the nightly fetch budget on it
+        if attempt:
+            retry_later[symbol] = attempt["last"] or ""  # retries go after every never-attempted symbol
+            continue
+        out.append(symbol)
+        if len(out) >= limit:
+            return out
+    # Due retries fill what is left, least recently attempted first.
+    for symbol in sorted(retry_later, key=lambda sym: (retry_later[sym], sym)):
         if len(out) >= limit:
             break
+        out.append(symbol)
     return out
 
+
+
+def seal_exports(root: str) -> list[str]:
+    """Make every verified dated export read-only so a later upload cannot overwrite recovered reports.
+
+    A re-upload into a sealed day fails loudly (permission denied) instead of silently replacing data;
+    a deliberate correction needs an explicit ``chmod -R u+w`` by the operator. Rejected exports are left
+    alone so an incomplete copy can still be completed.
+    """
+    sealed: list[str] = []
+    inbox = current()
+    rejected = {r["date"] for r in inbox.rejected}
+    for export in inbox.exports:
+        name = export["date"]
+        if name in rejected:
+            continue
+        folder = os.path.join(root, name)
+        try:
+            for entry in os.listdir(folder):
+                path = os.path.join(folder, entry)
+                if os.stat(path).st_mode & 0o222:
+                    os.chmod(path, 0o444)
+            if os.stat(folder).st_mode & 0o222:
+                os.chmod(folder, 0o555)
+                sealed.append(name)
+        except OSError:
+            continue
+    return sealed
 
 def main(argv: list[str]) -> int:
     root = inbox_dir()

@@ -344,6 +344,12 @@ def refresh_universe(
     }
 
 
+
+def _unparseable_unchanged(entry: dict | None, tracing_nos: list[str]) -> bool:
+    """True when we already failed to parse exactly this set of inbox statements."""
+    return bool(entry and tracing_nos and list(entry.get("tracingNos") or []) == list(tracing_nos))
+
+
 def _build_verified_company(code: str) -> tuple[dict[str, Any] | None, str]:
     try:
         quote = find_quote(code)
@@ -456,6 +462,9 @@ def run_batch(
     failed_at: dict[str, str] = dict((previous_state.get("metadata") or {}).get("failedCodes") or {})
     not_applicable: dict[str, dict] = dict((previous_state.get("metadata") or {}).get("notApplicable") or {})
     needs_review: dict[str, str] = dict((previous_state.get("metadata") or {}).get("needsReview") or {})
+    # Companies whose usable inbox statements could not be parsed (funds, stub HTML, unsupported layouts).
+    # They are not re-enriched until a different set of statements arrives, so they cannot eat the nightly slots.
+    unparseable: dict[str, dict] = dict((previous_state.get("metadata") or {}).get("unparseable") or {})
     filing_codes: list[str] = []
     if backlog_per_run is None:
         codes = target.order_by_enrichment_priority(eligible_codes)[:safe_batch_size]
@@ -471,6 +480,10 @@ def run_batch(
         else:
             backlog_candidates, _ = target._split_by_enrichment(eligible_codes)
         backlog = [c for c in backlog_candidates if c not in set(filing_codes) and failed_at.get(c, "") < cutoff and c not in not_applicable]
+        if codal_inbox.enabled():
+            _inbox = codal_inbox.current()
+            backlog = [c for c in backlog if not _unparseable_unchanged(
+                unparseable.get(c), _inbox.usable_tracing_nos(str((reg.get_instrument(c) or {}).get("symbol") or "")))]
         if codal_inbox.enabled():
             # Do not spend the daily slots on companies the Liara export has not delivered.
             inbox = codal_inbox.current()
@@ -585,6 +598,13 @@ def run_batch(
         codal_error = " ".join(str(codal_diag.get(key) or "") for key in ("metadataError", "fundamentalsError", "error"))
         if codal_inbox.MISS_MARKER in codal_error and not availability.get("codal"):
             raise InboxPending(codal_error[:240])
+        if codal_inbox.enabled():
+            _tracing = codal_inbox.current().usable_tracing_nos(str((instrument or {}).get("symbol") or ""))
+            if _tracing and not availability.get("codal"):
+                unparseable[code] = {"tracingNos": _tracing, "at": _now_iso(),
+                                     "reason": str(codal_diag.get("fundamentalsReason") or codal_diag.get("status") or "")[:120]}
+            elif code in unparseable:
+                unparseable.pop(code, None)
         if code in already_enriched_in_slice:
             re_enriched_companies += 1
         if _is_rate_limit_error(RuntimeError(codal_error)) and not availability.get("codal"):
@@ -661,6 +681,7 @@ def run_batch(
 
     metadata["failedCodes"] = dict(sorted(failed_at.items(), key=lambda kv: kv[1])[-2000:])
     metadata["notApplicable"] = not_applicable
+    metadata["unparseable"] = unparseable
     metadata["needsReview"] = needs_review
     metadata["rateLimitedCount"] = total_rate_limits
     if codal_inbox.enabled():
