@@ -80,6 +80,54 @@ def _backlog_per_run(inbox_mode: bool) -> int:
     return _env_int("BIAP_LISTED_COMPANY_INBOX_BACKLOG_PER_RUN", 100, minimum=0, maximum=500)
 
 
+def _record_progress(store: ListedCompanyStore, meta: dict) -> dict:
+    """Append one line per run to <inbox>/request/progress.jsonl: real growth, not just successful requests.
+
+    newStatements = verified own statements (unique CODAL tracing numbers with HTML) that were not in the
+    inbox at the previous snapshot; auditReady = stored fundamentals that pass the quality review and carry
+    operating cash flow (the input without which most accounting checks cannot be scored).
+    """
+    import codal_quality
+    inbox = codal_inbox.current()
+    stored = audit_ready = 0
+    with sqlite3.connect(store.db_path) as conn:
+        for (raw,) in conn.execute("SELECT company_json FROM listed_companies WHERE company_json IS NOT NULL"):
+            try:
+                company = json.loads(raw)
+            except (TypeError, ValueError):
+                continue
+            codal = company.get("codal")
+            if not (company.get("data_available") or {}).get("codal") or not isinstance(codal, dict):
+                continue
+            stored += 1
+            if codal.get("operating_cash_flow_current") is not None and \
+                    codal_quality.review_iran_codal({"codal": codal, "data_available": {"codal": True}}).get("status") == "PASS":
+                audit_ready += 1
+    path = os.path.join(codal_inbox.inbox_dir(), "request", "progress.jsonl")
+    previous = {}
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            for line in handle:
+                if line.strip():
+                    previous = json.loads(line)
+    except (OSError, ValueError):
+        previous = {}
+    summary = inbox.summary()
+    usable_symbols = sum(1 for key in inbox.companies if inbox.usable_tracing_nos(key))
+    entry = {
+        "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "newestExport": summary["newestExport"], "exports": summary["exports"], "uniqueReports": summary["reports"],
+        "symbolsWithUsableStatement": usable_symbols, "storedCodalFundamentals": stored, "auditReady": audit_ready,
+        "requested": (meta.get("codalRequest") or {}).get("count"),
+        "unparseable": len(meta.get("unparseable") or {}),
+    }
+    for key, label in (("uniqueReports", "newStatements"), ("storedCodalFundamentals", "newStoredFundamentals"), ("auditReady", "newAuditReady")):
+        entry[label] = entry[key] - int(previous.get(key, entry[key]))
+    with open(path, "a", encoding="utf-8") as handle:
+        handle.write(json.dumps(entry, ensure_ascii=False, sort_keys=True) + "\n")
+    return entry
+
+
 def main() -> int:
     batch_size = _env_int("BIAP_LISTED_COMPANY_DAILY_BASELINE_BATCH", 300)
     interval = _env_float("BIAP_LISTED_COMPANY_INTERVAL_SECONDS", 5.0)
@@ -116,6 +164,12 @@ def main() -> int:
             meta["codalRequest"] = {"status": "ok", "count": len(requested), "path": request_path}
         except (OSError, ValueError, codal_inbox.InboxError) as exc:
             meta["codalRequest"] = {"status": "error", "reason": str(exc)[:240]}
+    if inbox_mode:
+        try:
+            meta["codalSealedExports"] = codal_inbox.seal_exports(codal_inbox.inbox_dir())
+            meta["codalProgress"] = _record_progress(store, meta)
+        except (OSError, ValueError, sqlite3.Error) as exc:
+            meta["codalProgress"] = {"status": "error", "reason": str(exc)[:240]}
     if check_date:
         meta["lastFilingCheckDate"] = check_date
     if filing_check_error:

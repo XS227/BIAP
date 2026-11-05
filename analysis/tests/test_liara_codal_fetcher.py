@@ -249,3 +249,13 @@ def test_interval_above_the_cap_is_left_alone():
     with pytest.raises(lf.FetchError):
         c.get("https://h/p")
     assert c.interval == 90.0
+
+
+def test_reports_to_fetch_prefers_the_scope_consolidated_first():
+    f = lf
+    filings = [{"tracing_no": "1", "title": "صورت‌های مالی میان‌دوره‌ای"},
+               {"tracing_no": "2", "title": "صورت‌های مالی تلفیقی سال مالی"},
+               {"tracing_no": "3", "title": "صورت‌های مالی تلفیقی میان‌دوره"}]
+    assert [x["tracing_no"] for x in f.reports_to_fetch(filings, 2)] == ["2", "3"]
+    standalone = filings[:1]
+    assert [x["tracing_no"] for x in f.reports_to_fetch(standalone, 2)] == ["1"]
