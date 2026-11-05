@@ -446,3 +446,17 @@ def test_symbol_keyed_stub_row_never_shadows_the_primary_instrument(env):
     ds = client.get("/iran/modules/فول3/dataset").json()
     assert ds["identity"]["code"] == "F03" and ds["tier"] == "full"
     assert client.get("/iran/modules/F03/dataset").json()["identity"]["code"] == "F03"
+
+
+def test_exact_code_lookup_is_case_sensitive_and_arabic_spelling_breaks_space_ties(env):
+    client, store = env
+    import sqlite3
+    with sqlite3.connect(store.db_path) as c:
+        for code, sym in (("Ab c", "Ab c"), ("AB C", "AB C"), ("S1", "زغال سنگ کرمان"), ("S2", "زغالسنگ کرمان")):
+            c.execute("INSERT INTO listed_companies (code,symbol,name_fa,market,source_universe,source_updated_at,enriched_at,company_json,provenance_json,last_error,created_at,updated_at) VALUES (?,?,?,?,?,NULL,NULL,?,'{}',NULL,'x','x')",
+                      (code, sym, sym, "TSE", "t", json.dumps(company(sym, fundamentals=None), ensure_ascii=False)))
+    md.UNIVERSE._rows, md.UNIVERSE._stamp = [], None
+    assert client.get("/iran/modules/Ab c/dataset").json()["identity"]["code"] == "Ab c"
+    assert client.get("/iran/modules/AB C/dataset").json()["identity"]["code"] == "AB C"
+    assert client.get("/iran/modules/زغال سنگ كرمان/dataset").json()["identity"]["code"] == "S1"   # Arabic kaf, spaced spelling
+    assert client.get("/iran/modules/زغالسنگ كرمان/dataset").json()["identity"]["code"] == "S2"

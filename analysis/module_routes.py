@@ -52,7 +52,9 @@ def resolve_company(store: ListedCompanyStore, text: str) -> dict:
     primary = [r for r in cands if r.get("is_primary", 1)]
     pool = primary or cands
     if len(pool) > 1:
-        exact = [r for r in pool if r["code"] == text] or [r for r in pool if r["symbol"] == text]
+        loose = _loose(text)
+        exact = ([r for r in pool if r["code"] == text] or [r for r in pool if r["symbol"] == text]
+                 or [r for r in pool if _loose(r["symbol"]) == loose])
         if len(exact) == 1:
             pool = exact
         else:
@@ -62,7 +64,21 @@ def resolve_company(store: ListedCompanyStore, text: str) -> dict:
     if len(pool) > 1:
         raise HTTPException(status_code=409, detail={"message": "ambiguous symbol", "candidates": [
             {"code": r["code"], "symbol": r["symbol"], "name": r["name"], "market": r["market"]} for r in pool[:10]]})
-    return store.get(pool[0]["code"])
+    return _row_by_code(store, pool[0]["code"])
+
+
+def _loose(value: Any) -> str:
+    """Persian/Arabic letter forms and ZWNJ folded, spaces and case kept (narrower than symbol_key)."""
+    return str(value or "").translate(str.maketrans({"ي": "ی", "ك": "ک", "\u200c": ""})).strip().lower()
+
+
+def _row_by_code(store: ListedCompanyStore, code: str) -> dict:
+    """The stored row with EXACTLY this code (ListedCompanyStore.get also matches symbols and upper-cases)."""
+    with store._connect() as conn:
+        row = conn.execute("SELECT * FROM listed_companies WHERE code=?", (code,)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="company not found")
+    return store._row(row, include_company=True)
 
 
 def _history(symbol: Optional[str]) -> list[dict]:
