@@ -136,6 +136,11 @@ def main() -> int:
     if inbox_mode:
         interval = 0.0  # CODAL is read from the local Liara export; there is nothing to throttle
     store = ListedCompanyStore()
+    try:  # the registry is canonical: every primary company must have a stored row before enrichment is planned
+        import registry_reconcile
+        registry_reconcile_result = registry_reconcile.reconcile(store)
+    except (sqlite3.Error, OSError, ValueError) as exc:
+        registry_reconcile_result = {"status": "error", "reason": str(exc)[:200]}
     filing_check_error = None
     try:
         filing_codes = _new_filing_codes(store)
@@ -153,6 +158,7 @@ def main() -> int:
         backlog_per_run=backlog_per_run, new_filing_codes=filing_codes,
     )
     meta = result.get("metadata") or {}
+    meta["registryReconcile"] = registry_reconcile_result
     if inbox_mode:
         meta["codalInbox"] = codal_inbox.summary()
         # Prepare the next Liara cron request automatically. The request is atomic,

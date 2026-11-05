@@ -9,11 +9,17 @@ GET  /iran/coverage                       whole-universe data coverage and reaso
 """
 from __future__ import annotations
 
+import logging
+import re
+from contextlib import closing
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
-from fastapi.responses import PlainTextResponse
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, Response
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.routing import APIRoute
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import module_compute as mc
 import module_dataset as md
@@ -23,10 +29,41 @@ from auth import require_user_id
 from business_dataset_store import get_dataset
 from codal_inbox import symbol_key
 from listed_company_store import ListedCompanyStore
-from market_memory import recent_symbol_history
+from market_memory import history_for_symbols, recent_symbol_history
 from private_store import PrivateDataError, PrivateStore
 
-router = APIRouter(prefix="/iran", tags=["iran-modules"])
+log = logging.getLogger("biap.iran.modules")
+
+
+class ModuleError(Exception):
+    """A typed failure: ``code`` is one of NOT_FOUND, AMBIGUOUS, SERVER_ERROR (data states live in dataset.status)."""
+
+    def __init__(self, status: int, code: str, message: str, **extra: Any) -> None:
+        super().__init__(message)
+        self.status, self.code, self.message, self.extra = status, code, message, extra
+
+
+class _TypedRoute(APIRoute):
+    """Every /iran route answers with ``{"detail": <string>, "code": <CODE>}``: no bare 500 stack traces, no generic empties."""
+
+    def get_route_handler(self) -> Callable:
+        original = super().get_route_handler()
+
+        async def handler(request: Request) -> Response:
+            try:
+                return await original(request)
+            except ModuleError as exc:
+                return JSONResponse({"detail": exc.message, "code": exc.code, **exc.extra}, status_code=exc.status)
+            except (HTTPException, StarletteHTTPException, RequestValidationError):
+                raise  # client errors (404/422/...) keep FastAPI's normal handlers and details
+            except Exception:  # noqa: BLE001 - classified, logged, and returned as a typed SERVER_ERROR
+                log.exception("iran module request failed: %s %s", request.method, request.url.path)
+                return JSONResponse({"detail": "خطای داخلی سرور؛ دوباره تلاش کنید.", "code": "SERVER_ERROR"}, status_code=500)
+
+        return handler
+
+
+router = APIRouter(prefix="/iran", tags=["iran-modules"], route_class=_TypedRoute)
 STORE = ListedCompanyStore()
 PRIVATE = PrivateStore()
 
@@ -41,11 +78,16 @@ def resolve_company(store: ListedCompanyStore, text: str) -> dict:
     text = (text or "").strip()
     wanted = symbol_key(text)
     if not wanted:
-        raise HTTPException(status_code=404, detail="company not found")
+        raise ModuleError(404, "NOT_FOUND", "company not found")
     rows = md.UNIVERSE.rows(store)
-    cands = [r for r in rows if r["code"] == text or r.get("symbol_key") == wanted]
+    # discovery order: instrument code / symbol -> full company name or registry alias -> unique name fragment
+    cands = [r for r in rows if r["code"] == text or r.get("symbol_key") == wanted or symbol_key(r["code"]) == wanted]
     if not cands:
-        raise HTTPException(status_code=404, detail="company not found")
+        cands = [r for r in rows if r.get("name_key") == wanted or wanted in (r.get("aliases") or ())]
+    if not cands and len(wanted) >= 3:
+        cands = [r for r in rows if r.get("is_primary", 1) and (wanted in (r.get("name_key") or "") or any(wanted in a for a in r.get("aliases") or ()))]
+    if not cands:
+        raise ModuleError(404, "NOT_FOUND", "company not found")
     # a candidate may be a secondary/stub instrument of an issuer whose primary instrument is stored under another code
     issuers = {r.get("issuer_id") for r in cands if r.get("issuer_id")}
     cands += [r for r in rows if r.get("issuer_id") in issuers and r.get("is_primary", 1) and r not in cands]
@@ -54,17 +96,42 @@ def resolve_company(store: ListedCompanyStore, text: str) -> dict:
     if len(pool) > 1:
         loose = _loose(text)
         exact = ([r for r in pool if r["code"] == text] or [r for r in pool if r["symbol"] == text]
-                 or [r for r in pool if _loose(r["symbol"]) == loose])
+                 or [r for r in pool if _loose(r["symbol"]) == loose] or [r for r in pool if r.get("name_key") == wanted]
+                 or [r for r in pool if r.get("symbol_key") == wanted])
         if len(exact) == 1:
             pool = exact
+        elif (family := _instrument_family_base(pool)) is not None:
+            pool = [family]
         else:
             rank = {md.TIER_FULL: 0, md.TIER_PARTIAL: 1, md.TIER_MARKET: 2, md.TIER_REGISTERED: 3}
             best = min(rank.get(r["tier"], 9) for r in pool)
             pool = [r for r in pool if rank.get(r["tier"], 9) == best] if not primary else pool
     if len(pool) > 1:
-        raise HTTPException(status_code=409, detail={"message": "ambiguous symbol", "candidates": [
-            {"code": r["code"], "symbol": r["symbol"], "name": r["name"], "market": r["market"]} for r in pool[:10]]})
+        raise ModuleError(409, "AMBIGUOUS", "ambiguous symbol", candidates=[
+            {"code": r["code"], "symbol": r["symbol"], "name": r["name"], "market": r["market"]} for r in pool[:10]])
     return _row_by_code(store, pool[0]["code"])
+
+
+def _instrument_family_base(pool: list[dict]) -> Optional[dict]:
+    """Same company name, symbols that differ only by a trailing number (آریا / آریا۲ / آریا۳): the base symbol is the share.
+
+    The registry keeps some numbered instruments of one company as separate issuers; a lookup by the company's
+    full name must still land on the base share instead of failing as ambiguous. Anything less clear stays ambiguous.
+    """
+    # stub rows named after their own code/symbol carry no company name: they do not disprove the family
+    named = [r for r in pool if r.get("name_key") not in (None, "", symbol_key(r["code"]), r.get("symbol_key"))]
+    names = {r["name_key"] for r in named}
+    if len(names) != 1:
+        return None
+    bases = [r for r in pool if all(re.fullmatch(re.escape(r["symbol_key"]) + r"[0-9۰-۹]*", o.get("symbol_key") or "") for o in pool)]
+    if not bases or len({b["symbol_key"] for b in bases}) != 1:
+        return None
+    rank = {md.TIER_FULL: 0, md.TIER_PARTIAL: 1, md.TIER_MARKET: 2, md.TIER_REGISTERED: 3}
+    best = min(rank.get(b["tier"], 9) for b in bases)
+    top = [b for b in bases if rank.get(b["tier"], 9) == best]
+    if len(top) > 1:
+        top = [b for b in top if str(b["code"]).isdigit()]   # a real instrument code beats a symbol-spelled stub row
+    return top[0] if len(top) == 1 else None
 
 
 def _loose(value: Any) -> str:
@@ -73,12 +140,16 @@ def _loose(value: Any) -> str:
 
 
 def _row_by_code(store: ListedCompanyStore, code: str) -> dict:
-    """The stored row with EXACTLY this code (ListedCompanyStore.get also matches symbols and upper-cases)."""
-    with store._connect() as conn:
+    """The stored row with EXACTLY this code; a registry company with no stored row keeps its identity (REGISTERED_ONLY)."""
+    with closing(store._connect()) as conn:
         row = conn.execute("SELECT * FROM listed_companies WHERE code=?", (code,)).fetchone()
-    if row is None:
-        raise HTTPException(status_code=404, detail="company not found")
-    return store._row(row, include_company=True)
+    if row is not None:
+        return store._row(row, include_company=True)
+    urow = next((r for r in md.UNIVERSE.rows(store) if r["code"] == code), None)
+    if urow is None:
+        raise ModuleError(404, "NOT_FOUND", "company not found")
+    return {"code": urow["code"], "symbol": urow["symbol"], "name": urow["name"], "market": urow["market"], "enrichedAt": None,
+            "lastError": None, "company": None, "registryOnly": True}
 
 
 def _history(symbol: Optional[str]) -> list[dict]:
@@ -136,7 +207,10 @@ def module_compute(code: str, module: str, params: Optional[dict] = Body(default
     if module == "sql":
         return {"module": "sql", "status": "ok", "title": "SQL / Data Query", "schema": safe_sql.schema(), "company": ds["identity"], "tier": ds["tier"],
                 "examples": _sql_examples(ds), "summary": "پرس‌وجوی فقط‌خواندنی روی جدول‌های تحلیلی BIAP.", "blocks": [], "missing": [], "provenance": ds["provenance"], "quality": ds["quality"]}
-    return mc.compute(module, ds, md.UNIVERSE.rows(STORE), params)
+    result = mc.compute(module, ds, md.UNIVERSE.rows(STORE), params)
+    if isinstance(result, dict):
+        result["dataStatus"] = ds["status"]
+    return result
 
 
 def _sql_examples(ds: dict) -> list[dict]:
@@ -152,14 +226,25 @@ def _sql_examples(ds: dict) -> list[dict]:
     return ex
 
 
+def _symbol_variants(symbol: str) -> list[str]:
+    out: list[str] = []
+    for cand in (symbol, symbol.replace("ی", "ي").replace("ک", "ك"), symbol.replace("ي", "ی").replace("ك", "ک"), symbol.replace("\u200c", "")):
+        if cand not in out:
+            out.append(cand)
+    return out
+
+
 def _sql_database() -> Any:
     universe = md.UNIVERSE.rows(STORE)
+    wanted = [r for r in universe if r.get("has_market") and r.get("symbol")]
+    variants = {r["symbol"]: _symbol_variants(r["symbol"]) for r in wanted}
+    snaps = history_for_symbols([v for vs in variants.values() for v in vs], days=400)  # one connection for the whole universe
     history = []
-    for row in universe:
-        if row.get("has_market") and row.get("symbol"):
-            for h in _history(row["symbol"]):
-                history.append({"symbol": row["symbol"], "date": h.get("observed_date"), "price": h.get("price"), "change_percent": h.get("change_percent"),
-                                "pe": h.get("pe"), "market_cap": h.get("market_cap"), "source": h.get("source")})
+    for row in wanted:
+        rows = next((snaps[v] for v in variants[row["symbol"]] if snaps.get(v)), [])
+        for h in rows:
+            history.append({"symbol": row["symbol"], "date": h.get("observed_date"), "price": h.get("price"), "change_percent": h.get("change_percent"),
+                            "pe": h.get("pe"), "market_cap": h.get("market_cap"), "source": h.get("source")})
     return safe_sql.build_database(universe, history)
 
 
@@ -172,7 +257,7 @@ def _execute(body: dict) -> dict:
             sql, params = body.get("sql") or "", body.get("params") or []
         return safe_sql.run(conn, sql, params, limit=int(body.get("limit") or safe_sql.DEFAULT_ROWS), offset=int(body.get("offset") or 0))
     except safe_sql.QueryError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise ModuleError(400, "BAD_QUERY", str(exc)) from exc
     finally:
         conn.close()
 
