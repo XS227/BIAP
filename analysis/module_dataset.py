@@ -62,7 +62,28 @@ def _fundamental_pair(codal: dict, name: str) -> tuple[Optional[float], Optional
     return num(codal.get(f"{name}_current")), num(codal.get(f"{name}_prev"))
 
 
-BALANCE_TOLERANCE = 0.02
+BALANCE_TOLERANCE = 0.01  # genuine statements balance within 0.1%; the loosest balanced stored row is 0.1%
+STALE_AFTER_MONTHS = 18
+_FA_DIGITS = str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789")
+
+
+def period_end(title: Optional[str]) -> Optional[str]:
+    """Jalali period end («منتهی به ۱۴۰۴/۱۲/۲۹») from the statement title, ASCII digits, or None."""
+    import re as _re
+    m = _re.search(r"(\d{4})/(\d{2})/(\d{2})", str(title or "").translate(_FA_DIGITS))
+    return f"{m.group(1)}/{m.group(2)}/{m.group(3)}" if m else None
+
+
+def months_old(end: Optional[str], today: Optional["datetime.date"] = None) -> Optional[int]:
+    """Whole Jalali months between the statement's period end and today (None when the date is unknown)."""
+    if not end:
+        return None
+    import datetime as _dt
+    from codal_data import gregorian_to_jalali
+    t = today or _dt.date.today()
+    jy, jm, _ = gregorian_to_jalali(t.year, t.month, t.day)
+    y, m = int(end[:4]), int(end[5:7])
+    return (jy * 12 + jm) - (y * 12 + m)
 BALANCE_SHEET_RATIOS = ("roa", "roe", "debt_ratio", "debt_to_equity", "current_ratio", "accruals_ratio", "asset_turnover", "receivable_days")
 
 
@@ -73,10 +94,10 @@ def _gap(vals: dict) -> Optional[float]:
     return (ta - tl - te) / abs(ta)
 
 
-def statement_verification(cur: dict, prev: dict, codal: dict) -> dict:
+def statement_verification(cur: dict, prev: dict, codal: dict, *, today=None) -> dict:
     """Independent checks on one stored statement. ``unverified`` withholds every balance-sheet ratio built on it.
 
-    verified   - assets = liabilities + equity (±2%) for both periods and no stored re-verification failure
+    verified   - assets = liabilities + equity (±1%) for both periods and no stored re-verification failure
     unverified - the balance sheet does not reconcile, or a re-read of the original filing failed
     incomplete - assets/liabilities/equity are not all present (ratios needing the missing inputs are already withheld)
     """
@@ -97,10 +118,22 @@ def statement_verification(cur: dict, prev: dict, codal: dict) -> dict:
             reasons.append(f"بازخوانی مستقل صورت مالی اصلی ناموفق بود: {stored['reason']}")
     checks["scope"] = codal.get("report_scope")
     checks["tracingNo"] = codal.get("tracing_no")
+    end = period_end(codal.get("report_title"))
+    age = months_old(end, today)
+    checks["periodEnd"], checks["monthsOld"] = end, age
+    stale = age is not None and age > STALE_AFTER_MONTHS
+    if stale:
+        checks["stale"] = True
+    tracing = codal.get("tracing_no")
+    if tracing:
+        reasons = [f"{r} • شماره رهگیری کدال {tracing}" for r in reasons]
     if reasons:
-        return {"status": "unverified", "reasons": reasons, "checks": checks}
+        return {"status": "unverified", "reasons": reasons, "checks": checks, "stale": stale}
     have_all = all(cur.get(k) is not None for k in ("total_assets", "total_liabilities", "total_equity"))
-    return {"status": "verified" if have_all else "incomplete", "reasons": [] if have_all else ["جمع دارایی/بدهی/حقوق کامل نیست؛ تطبیق ترازنامه ممکن نیست"], "checks": checks}
+    notes = [] if have_all else ["جمع دارایی/بدهی/حقوق کامل نیست؛ تطبیق ترازنامه ممکن نیست"]
+    if stale:
+        notes.append(f"صورت مالی مربوط به دوره‌ی منتهی به {end} است ({age} ماه پیش)؛ جاری نیست و در آمار مقایسه‌ای نمی‌آید")
+    return {"status": "verified" if have_all else "incomplete", "reasons": notes, "checks": checks, "stale": stale}
 
 
 def fundamentals_view(codal: Optional[dict]) -> dict:
@@ -115,7 +148,7 @@ def fundamentals_view(codal: Optional[dict]) -> dict:
     period_type = "interim" if ("میان" in title and "دوره" in title) else ("annual" if "سال مالی" in title else "unknown")
     verification = statement_verification(cur, prev, codal)
     return {
-        "present": any(v is not None for v in cur.values()),
+        "present": any(v is not None for v in cur.values()), "periodEnd": period_end(title),
         "current": cur, "prev": prev, "scope": codal.get("report_scope"), "tracingNo": codal.get("tracing_no"),
         "title": title or None, "periodType": period_type, "auditOpinion": codal.get("audit_opinion"),
         "source": codal.get("source") or "CODAL", "reportUrl": codal.get("report_url"), "verification": verification,
@@ -168,7 +201,7 @@ def compute_ratios(view: dict) -> dict[str, dict]:
     for key, label, formula, value, inputs in specs:
         if unverified and key in BALANCE_SHEET_RATIOS and value is not None:
             out[key] = {"label": label, "formula": formula, "value": None, "inputs": inputs, "missing": [], "unverified": True,
-                        "reason": "تأییدنشده: ترازنامه‌ی ذخیره‌شده با صورت مالی اصلی هم‌خوان نیست؛ عدد منتشر نمی‌شود",
+                        "reason": "تأییدنشده: ترازنامه‌ی ذخیره‌شده با صورت مالی اصلی هم‌خوان نیست؛ عدد منتشر نمی‌شود" + (f" • شماره رهگیری کدال {view.get('tracingNo')}" if view.get("tracingNo") else ""),
                         "withheldValue": None}
             continue
         entry: dict[str, Any] = {"label": label, "formula": formula, "value": value, "inputs": inputs}
@@ -219,7 +252,7 @@ def data_quality(company: dict, view: dict, market: dict, history_n: int) -> dic
         warnings.append("statement scope (consolidated/standalone) not recorded")
     ver = view.get("verification") or {}
     if ver.get("status") == "unverified":
-        warnings.append("balance sheet does not balance within 2% or failed re-verification: balance-sheet ratios are withheld (unverified)")
+        warnings.append("balance sheet does not balance within 1% or failed re-verification: balance-sheet ratios are withheld (unverified)")
     if not market.get("price"):
         warnings.append("no market price on record")
     return {"missing": missing, "warnings": warnings, "historyObservations": history_n}
@@ -298,6 +331,7 @@ def universe_row(item: dict) -> dict:
         "name": ds["identity"]["name"], "market": ds["identity"]["market"], "sector": ds["identity"]["sector"],
         "tier": ds["tier"], "has_market": 1 if m.get("price") is not None else 0, "has_codal": 1 if v.get("present") else 0,
         "scope": v.get("scope"), "period_type": v.get("periodType"), "tracing_no": v.get("tracingNo"),
+        "stale": 1 if (v.get("verification") or {}).get("stale") else 0, "verification": (v.get("verification") or {}).get("status"),
         "price": m.get("price"), "change_percent": num(m.get("change_percent")), "pe": num(m.get("pe")),
         "eps": num(m.get("eps_value")), "market_cap": num(m.get("market_cap")), "volume": num(m.get("volume_today")),
         "trade_value": num(m.get("trade_value_today")), "enriched_at": item.get("enrichedAt"),

@@ -176,3 +176,45 @@ def test_reparse_clears_rejected_optional_values_and_refreshes_derived_percentag
     assert res["values"]["current_liabilities_current"] is None          # larger than total liabilities: rejected, cleared
     assert "current_liabilities_current" in res["changed"]
     assert abs(res["values"]["net_margin_pct"] - 10.0) < 1e-9 and abs(res["values"]["revenue_yoy_pct"] - 25.0) < 1e-9
+
+
+def test_side_by_side_balance_sheet_rows_use_only_their_own_numbers():
+    """Assets (left) and equity+liabilities (right) share one table row; the parser must not fail closed on six numbers."""
+    from codal_parser_v2 import row_values
+    rows = [["جمع دارایی‌ها", "31,129,934", "25,424,549", "22", "جمع بدهی‌ها و حقوق صاحبان سهام", "31,129,934", "25,424,549", "22"],
+            ["جمع بدهی‌ها", "5,908,746", "5,410,488", "9", "جمع حقوق صاحبان سهام", "25,221,188", "20,014,061", "26"]]
+    assert row_values(rows, ("جمع دارایی‌ها",)) == (31129934.0, 25424549.0)
+    assert row_values(rows, ("جمع بدهی‌ها",)) == (5908746.0, 5410488.0)
+    assert row_values(rows, ("جمع حقوق صاحبان سهام",)) == (25221188.0, 20014061.0)
+    assert row_values([["جمع دارایی‌ها", "1", "2", "3", "4", "5"]], ("جمع دارایی‌ها",)) is None   # five plain numbers stay fail-closed
+
+
+def test_negative_equity_statement_still_balances():
+    c = _codal(0, total_assets_current=13554.0, total_liabilities_current=227456.0, total_equity_current=-213902.0,
+               total_assets_prev=10273.0, total_liabilities_prev=221028.0, total_equity_prev=-210755.0)
+    assert md.build_company_dataset(_item("N", c))["fundamentals"]["verification"]["status"] == "verified"
+
+
+def test_filing_header_reports_unit_and_period_and_a_period_mismatch_is_unverified():
+    from codal_reparse import filing_header
+    rows = [["جمع دارایی‌ها", "2,000", "1,800"], ["جمع بدهی‌ها", "1,200", "1,100"], ["جمع حقوق مالکانه", "800", "700"],
+            ["درآمدهای عملیاتی", "1,000", "800"], ["سود (زیان) خالص", "100", "80"]]
+    html = "<html><body><p>کلیه مبالغ درج شده به میلیون ریال می باشد</p><p>عملکرد واقعی منتهی به ۱۴۰۴/۱۲/۲۹</p>" + _html(rows)[len("<html><body>"):]
+    assert filing_header(html) == {"unit": "میلیون ریال", "periodEnd": "1404/12/29"}
+    ok = verify_statement("X", _codal(0, tracing_no="T3"), lambda t: html)
+    assert ok["status"] in ("verified", "corrected") and ok["filing"]["unit"] == "میلیون ریال"
+    bad = verify_statement("X", _codal(0, tracing_no="T3", report_title="صورت‌های مالی سال مالی منتهی به ۱۴۰۳/۱۲/۳۰"), lambda t: html)
+    assert bad["status"] == "unverified" and "period mismatch" in bad["reason"]
+
+
+def test_statement_from_long_ago_is_stale_not_current_and_stays_out_of_peer_statistics():
+    import datetime
+    old = md.build_company_dataset(_item("O", _codal(0, report_title="صورت‌های مالی سال مالی منتهی به ۱۳۹۶/۰۸/۳۰")))
+    v = old["fundamentals"]["verification"]
+    assert v["stale"] is True and any("جاری نیست" in r for r in v["reasons"])
+    assert md.build_company_dataset(_item("F", _codal(0)))["fundamentals"]["verification"]["stale"] is False
+    uni = _universe()
+    uni.append(dict(md.universe_row(_item("OLD", _codal(0, net_profit_current=999999.0, report_title="صورت‌های مالی سال مالی منتهی به ۱۳۹۶/۰۸/۳۰"))), is_primary=1, category="operating_company"))
+    rows, _ = mc._column_rows(old, uni, "net_margin", False)
+    assert all(r["code"] != "OLD" for r in rows)
+    assert md.months_old("1404/12/29", datetime.date(2026, 11, 5)) == 8

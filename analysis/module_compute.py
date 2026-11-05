@@ -173,6 +173,8 @@ def _column_rows(ds: dict, universe: list[dict], col: str, sector_only: bool) ->
     """Rows to describe ``col`` and the scope label. Financial ratios prefer the company's own category;
     when that is too small they widen to every primary company with statements (and say so)."""
     primary = [r for r in universe if r.get("is_primary", 1) and r.get(col) is not None]
+    if col not in MARKET_COLUMNS:  # statements of long-past periods and unverified balance sheets never enter peer statistics
+        primary = [r for r in primary if not r.get("stale") and r.get("verification") != "unverified"]
     if col in POSITIVE_ONLY:
         primary = [r for r in primary if r[col] > 0]
     code, sector = ds["identity"]["code"], ds["identity"].get("sector")
@@ -208,6 +210,12 @@ def _own_value(ds: dict, col: str) -> tuple[Optional[float], str, Optional[str]]
     if not view.get("present"):
         return None, "CODAL", "صورت مالی CODAL برای این شرکت ثبت نشده است"
     src = f"CODAL • {'تلفیقی' if view.get('scope') == 'consolidated' else 'جداگانه' if view.get('scope') == 'standalone' else 'دامنه نامشخص'}"
+    if view.get("periodEnd"):
+        src += f" • دوره‌ی منتهی به {view['periodEnd']}"
+    if (view.get("verification") or {}).get("stale"):
+        src += " (قدیمی؛ در آمار مقایسه‌ای نیست)"
+    if view.get("tracingNo"):
+        src += f" • رهگیری {view['tracingNo']}"
     if r is None or r["value"] is None:
         miss = (r or {}).get("missing") or []
         return None, src, ("ورودی‌های ناموجود: " + "، ".join(miss)) if miss else ((r or {}).get("reason") or "قابل محاسبه نیست")

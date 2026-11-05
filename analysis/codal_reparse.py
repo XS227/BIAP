@@ -36,6 +36,18 @@ def _fields(codal: dict) -> dict[str, Optional[float]]:
     return out
 
 
+_PD = str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789")
+
+
+def filing_header(html: str) -> dict[str, Optional[str]]:
+    """Unit («به میلیون ریال») and the balance-sheet period end printed in the original filing itself."""
+    import re
+    text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html)).translate(str.maketrans({"ي": "ی", "ك": "ک"})).translate(_PD)
+    unit = re.search(r"مبالغ[^.]{0,40}?به (میلیارد ریال|میلیون ریال|هزار ریال|ریال)", text)
+    end = re.search(r"منتهی به (\d{4}/\d{2}/\d{2})", text)
+    return {"unit": unit.group(1) if unit else None, "periodEnd": end.group(1) if end else None}
+
+
 def balance_gap(codal: dict, suffix: str = "current") -> Optional[float]:
     """(assets - liabilities - equity) / |assets|, or None when an input is missing."""
     ta, tl, te = (codal.get(f"total_{k}_{suffix}") for k in ("assets", "liabilities", "equity"))
@@ -70,10 +82,17 @@ def verify_statement(symbol: str, codal: dict, read_html) -> dict[str, Any]:
     changed = {k: {"stored": old[k], "filing": cur[k]} for k in old if old[k] != cur[k]}
     gap = balance_gap(new)
     out["filingGap"] = gap
+    header = filing_header(html)
+    out["filing"] = header
+    from module_dataset import period_end
+    stored_end = period_end(codal.get("report_title"))
+    if header["periodEnd"] and stored_end and header["periodEnd"] != stored_end:
+        return {**out, "status": "unverified", "reason": f"period mismatch: stored {stored_end}, filing {header['periodEnd']}"}
     if gap is None:
         return {**out, "status": "unverified", "reason": "the filing does not give all three of assets, liabilities and equity"}
-    if abs(gap) > 0.02:
-        return {**out, "status": "unverified", "reason": "the filing's own balance sheet does not balance within 2%"}
+    from module_dataset import BALANCE_TOLERANCE
+    if abs(gap) > BALANCE_TOLERANCE:
+        return {**out, "status": "unverified", "reason": "the filing's own balance sheet does not balance within 1%"}
     return {**out, "status": "corrected" if changed else "verified", "changed": changed, "values": dict(cur)}
 
 
@@ -101,7 +120,7 @@ def reparse(db_path: str, *, apply: bool = False, inbox=None, limit: Optional[in
             details.append({"code": code, "symbol": symbol, **{k: v for k, v in res.items() if k != "values"}})
             if not apply:
                 continue
-            stamp = {"status": res["status"], "checkedAt": now, "method": "inbox-html-reparse", "reason": res.get("reason"),
+            stamp = {"unit": (res.get("filing") or {}).get("unit"), "periodEnd": (res.get("filing") or {}).get("periodEnd"), "status": res["status"], "checkedAt": now, "method": "inbox-html-reparse", "reason": res.get("reason"),
                      "storedGap": res.get("storedGap"), "filingGap": res.get("filingGap")}
             if res["status"] == "corrected":
                 codal.update(res["values"])

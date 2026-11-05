@@ -1,0 +1,290 @@
+symbol,tracing,field,before,after
+سپیدار,1531915,total_assets_current,843393.0,27962957.0
+سپیدار,1531915,total_assets_prev,843540.0,12030479.0
+سپیدار,1531915,total_liabilities_current,141311.0,3136271.0
+سپیدار,1531915,total_liabilities_prev,82517.0,1370241.0
+سپیدار,1531915,current_assets_current,,27884454.0
+سپیدار,1531915,current_assets_prev,,11187086.0
+سپیدار,1531915,current_liabilities_current,,2994960.0
+سپیدار,1531915,current_liabilities_prev,,1287724.0
+سپیدار,1531915,receivables_current,,484967.0
+سپیدار,1531915,receivables_prev,,1159191.0
+سپیدار,1531915,retained_earnings_current,,13833371.0
+سپیدار,1531915,retained_earnings_prev,,8075238.0
+سپیدار,1531915,fixed_assets_current,,9733.0
+سپیدار,1531915,fixed_assets_prev,,376147.0
+سپیدار,1531915,operating_profit_current,,10306316.0
+سپیدار,1531915,operating_profit_prev,,7461477.0
+سپیدار,1531915,operating_cash_flow_current,,10188865.0
+سپیدار,1531915,operating_cash_flow_prev,,6811361.0
+دلقما,1524946,total_assets_current,8136576.0,32946982.0
+دلقما,1524946,total_assets_prev,8190252.0,21760471.0
+دلقما,1524946,total_liabilities_current,529893.0,15994754.0
+دلقما,1524946,total_liabilities_prev,394860.0,10414010.0
+دلقما,1524946,current_assets_current,,26098524.0
+دلقما,1524946,current_assets_prev,,13623895.0
+دلقما,1524946,current_liabilities_current,,15464861.0
+دلقما,1524946,current_liabilities_prev,,10019150.0
+دلقما,1524946,receivables_current,,18112902.0
+دلقما,1524946,receivables_prev,,9594490.0
+دلقما,1524946,retained_earnings_current,,6127537.0
+دلقما,1524946,retained_earnings_prev,,4340449.0
+دلقما,1524946,fixed_assets_current,,5561501.0
+دلقما,1524946,fixed_assets_prev,,5238584.0
+دلقما,1524946,operating_profit_current,,7101761.0
+دلقما,1524946,operating_profit_prev,,1574836.0
+دلقما,1524946,operating_cash_flow_current,,-5250459.0
+دلقما,1524946,operating_cash_flow_prev,,-314065.0
+چکاپا,1504023,total_assets_current,17429673.0,25057957.0
+چکاپا,1504023,total_assets_prev,17458986.0,27160895.0
+چکاپا,1504023,total_liabilities_current,2079333.0,14524034.0
+چکاپا,1504023,total_liabilities_prev,4412231.0,19160745.0
+چکاپا,1504023,total_equity_current,8000150.0,10533923.0
+چکاپا,1504023,total_equity_prev,12118941.0,8000150.0
+چکاپا,1504023,current_assets_current,,7628284.0
+چکاپا,1504023,current_assets_prev,,9701909.0
+چکاپا,1504023,current_liabilities_current,,12444701.0
+چکاپا,1504023,current_liabilities_prev,,14748514.0
+چکاپا,1504023,receivables_current,,3277154.0
+چکاپا,1504023,receivables_prev,,3107572.0
+چکاپا,1504023,retained_earnings_current,,-2035539.0
+چکاپا,1504023,retained_earnings_prev,,-1405800.0
+چکاپا,1504023,fixed_assets_current,,17038724.0
+چکاپا,1504023,fixed_assets_prev,,17274614.0
+چکاپا,1504023,operating_profit_current,,-1890809.0
+چکاپا,1504023,operating_profit_prev,,-2321617.0
+چکاپا,1504023,operating_cash_flow_current,,-770529.0
+چکاپا,1504023,operating_cash_flow_prev,,4789538.0
+مبین3,1558868,total_assets_current,414252849.0,1009985861.0
+مبین3,1558868,total_assets_prev,248460270.0,617063670.0
+مبین3,1558868,total_liabilities_current,40871979.0,808522157.0
+مبین3,1558868,total_liabilities_prev,18019078.0,413860274.0
+مبین3,1558868,current_assets_current,,595733012.0
+مبین3,1558868,current_assets_prev,,368603400.0
+مبین3,1558868,current_liabilities_current,,767650178.0
+مبین3,1558868,current_liabilities_prev,,395841196.0
+مبین3,1558868,receivables_current,,522466310.0
+مبین3,1558868,receivables_prev,,310064242.0
+مبین3,1558868,retained_earnings_current,,140028117.0
+مبین3,1558868,retained_earnings_prev,,141801248.0
+مبین3,1558868,fixed_assets_current,,405216515.0
+مبین3,1558868,fixed_assets_prev,,240236550.0
+مبین3,1558868,operating_profit_current,,171233551.0
+مبین3,1558868,operating_profit_prev,,179369164.0
+مبین3,1558868,operating_cash_flow_current,,98932630.0
+مبین3,1558868,operating_cash_flow_prev,,111094138.0
+تامین مسکن,1617480,total_assets_current,,31129934.0
+تامین مسکن,1617480,total_assets_prev,,25424549.0
+تامین مسکن,1617480,current_assets_current,,19775468.0
+تامین مسکن,1617480,current_assets_prev,,15800019.0
+تامین مسکن,1617480,receivables_current,,1293608.0
+تامین مسکن,1617480,receivables_prev,,952613.0
+تامین مسکن,1617480,fixed_assets_current,,10438009.0
+تامین مسکن,1617480,fixed_assets_prev,,9145005.0
+دیزباد,988934,current_assets_current,,2996218.0
+دیزباد,988934,current_assets_prev,,1933965.0
+دیزباد,988934,current_liabilities_current,,2345669.0
+دیزباد,988934,current_liabilities_prev,,1809550.0
+دیزباد,988934,receivables_current,,1637513.0
+دیزباد,988934,receivables_prev,,824324.0
+دیزباد,988934,retained_earnings_current,,601463.0
+دیزباد,988934,retained_earnings_prev,,125408.0
+دیزباد,988934,fixed_assets_current,,533260.0
+دیزباد,988934,fixed_assets_prev,,531832.0
+دیزباد,988934,operating_profit_current,,728593.0
+دیزباد,988934,operating_profit_prev,,345803.0
+دیزباد,988934,operating_cash_flow_current,,187746.0
+دیزباد,988934,operating_cash_flow_prev,,-61089.0
+رکارت,543800,total_assets_current,,2363407.0
+رکارت,543800,total_assets_prev,,1882423.0
+رکارت,543800,current_assets_current,,1034076.0
+رکارت,543800,current_assets_prev,,677116.0
+رکارت,543800,current_liabilities_current,,1038618.0
+رکارت,543800,current_liabilities_prev,,1045778.0
+رکارت,543800,receivables_current,,736934.0
+رکارت,543800,receivables_prev,,511301.0
+رکارت,543800,retained_earnings_current,,294573.0
+رکارت,543800,retained_earnings_prev,,191072.0
+رکارت,543800,fixed_assets_current,,1262204.0
+رکارت,543800,fixed_assets_prev,,1161670.0
+رکارت,543800,operating_profit_current,,285793.0
+رکارت,543800,operating_profit_prev,,297976.0
+زرنام,1216183,current_assets_current,,45094432.0
+زرنام,1216183,current_assets_prev,,34627696.0
+زرنام,1216183,current_liabilities_current,,79230140.0
+زرنام,1216183,current_liabilities_prev,,64826263.0
+زرنام,1216183,receivables_current,,22292908.0
+زرنام,1216183,receivables_prev,,7860065.0
+زرنام,1216183,retained_earnings_current,,2284243.0
+زرنام,1216183,retained_earnings_prev,,3853888.0
+زرنام,1216183,fixed_assets_current,,48607718.0
+زرنام,1216183,fixed_assets_prev,,44426341.0
+زرنام,1216183,operating_profit_current,,5091887.0
+زرنام,1216183,operating_profit_prev,,7684319.0
+زرنام,1216183,operating_cash_flow_current,,10506779.0
+زرنام,1216183,operating_cash_flow_prev,,522487.0
+زشک,1605923,current_assets_current,,17449246.0
+زشک,1605923,current_assets_prev,,12416491.0
+زشک,1605923,current_liabilities_current,,10260516.0
+زشک,1605923,current_liabilities_prev,,4991545.0
+زشک,1605923,receivables_current,,1243149.0
+زشک,1605923,receivables_prev,,1873275.0
+زشک,1605923,retained_earnings_current,,10173308.0
+زشک,1605923,retained_earnings_prev,,8952590.0
+زشک,1605923,fixed_assets_current,,5028183.0
+زشک,1605923,fixed_assets_prev,,1545431.0
+زشک,1605923,operating_profit_current,,7275717.0
+زشک,1605923,operating_profit_prev,,3656668.0
+زشک,1605923,operating_cash_flow_current,,4555740.0
+زشک,1605923,operating_cash_flow_prev,,2686292.0
+ساباد,724407,total_assets_current,570844.0,865272.0
+ساباد,724407,total_assets_prev,403656.0,667106.0
+ساباد,724407,total_liabilities_current,189205.0,1120758.0
+ساباد,724407,total_liabilities_prev,56967.0,743353.0
+ساباد,724407,current_assets_current,,294428.0
+ساباد,724407,current_assets_prev,,263450.0
+ساباد,724407,current_liabilities_current,,931553.0
+ساباد,724407,current_liabilities_prev,,686386.0
+ساباد,724407,receivables_current,,95659.0
+ساباد,724407,receivables_prev,,74750.0
+ساباد,724407,retained_earnings_current,,-412092.0
+ساباد,724407,retained_earnings_prev,,-237279.0
+ساباد,724407,fixed_assets_current,,550679.0
+ساباد,724407,fixed_assets_prev,,378668.0
+ساباد,724407,operating_profit_current,,-184794.0
+ساباد,724407,operating_profit_prev,,-161437.0
+ساباد,724407,operating_cash_flow_current,,114844.0
+ساباد,724407,operating_cash_flow_prev,,33978.0
+سپرمی,1121679,revenue_current,504.0,71.0
+سپرمی,1121679,revenue_prev,-86.0,504.0
+سپرمی,1121679,total_assets_current,697.0,13554.0
+سپرمی,1121679,total_assets_prev,845.0,10273.0
+سپرمی,1121679,total_liabilities_current,226796.0,227456.0
+سپرمی,1121679,total_liabilities_prev,220457.0,221028.0
+سپرمی,1121679,current_assets_current,,697.0
+سپرمی,1121679,current_assets_prev,,845.0
+سپرمی,1121679,current_liabilities_current,,226796.0
+سپرمی,1121679,current_liabilities_prev,,220457.0
+سپرمی,1121679,receivables_current,,45.0
+سپرمی,1121679,receivables_prev,,45.0
+سپرمی,1121679,retained_earnings_current,,-251829.0
+سپرمی,1121679,retained_earnings_prev,,-248682.0
+سپرمی,1121679,fixed_assets_current,,12383.0
+سپرمی,1121679,fixed_assets_prev,,8954.0
+سپرمی,1121679,operating_profit_current,,-13485.0
+سپرمی,1121679,operating_profit_prev,,-30046.0
+سپرمی,1121679,revenue_yoy_pct,686.046511627907,-85.9126984126984
+سپرمی,1121679,net_margin_pct,-624.4047619047618,-4432.394366197183
+سپرمی,1121679,net_margin_prev_pct,-39689.53488372093,6772.420634920635
+شساخت,1571124,total_assets_current,268234031.0,1417889784.0
+شساخت,1571124,total_assets_prev,123543098.0,808274864.0
+شساخت,1571124,total_liabilities_current,22141672.0,1115420651.0
+شساخت,1571124,total_liabilities_prev,16916342.0,689906315.0
+شساخت,1571124,current_assets_current,,1149655753.0
+شساخت,1571124,current_assets_prev,,684731766.0
+شساخت,1571124,current_liabilities_current,,1093278979.0
+شساخت,1571124,current_liabilities_prev,,672989973.0
+شساخت,1571124,receivables_current,,777248322.0
+شساخت,1571124,receivables_prev,,442404313.0
+شساخت,1571124,retained_earnings_current,,185676778.0
+شساخت,1571124,retained_earnings_prev,,92955414.0
+شساخت,1571124,fixed_assets_current,,135811327.0
+شساخت,1571124,fixed_assets_prev,,42861350.0
+شساخت,1571124,operating_profit_current,,105599025.0
+شساخت,1571124,operating_profit_prev,,32888809.0
+شساخت,1571124,operating_cash_flow_current,,26905299.0
+شساخت,1571124,operating_cash_flow_prev,,29358313.0
+شهر فرش,1604925,current_assets_current,,198265412.0
+شهر فرش,1604925,current_assets_prev,,90362529.0
+شهر فرش,1604925,current_liabilities_current,,153815621.0
+شهر فرش,1604925,current_liabilities_prev,,56525371.0
+شهر فرش,1604925,receivables_current,,96187461.0
+شهر فرش,1604925,receivables_prev,,39225658.0
+شهر فرش,1604925,retained_earnings_current,,6596302.0
+شهر فرش,1604925,retained_earnings_prev,,5300025.0
+شهر فرش,1604925,fixed_assets_current,,1632321.0
+شهر فرش,1604925,fixed_assets_prev,,1180917.0
+شهر فرش,1604925,operating_profit_current,,7336442.0
+شهر فرش,1604925,operating_profit_prev,,-4722464.0
+شهر فرش,1604925,operating_cash_flow_current,,29746387.0
+شهر فرش,1604925,operating_cash_flow_prev,,57148115.0
+مشاور ایده,1626421,total_assets_current,,227489.0
+مشاور ایده,1626421,total_assets_prev,,237749.0
+مشاور ایده,1626421,current_assets_current,,156605.0
+مشاور ایده,1626421,current_assets_prev,,168560.0
+مشاور ایده,1626421,receivables_current,,18642.0
+مشاور ایده,1626421,receivables_prev,,2867.0
+مشاور ایده,1626421,fixed_assets_current,,51291.0
+مشاور ایده,1626421,fixed_assets_prev,,53855.0
+واعتضاد,1605001,total_assets_current,,43099323.0
+واعتضاد,1605001,total_assets_prev,,27507480.0
+واعتضاد,1605001,current_assets_current,,30548858.0
+واعتضاد,1605001,current_assets_prev,,23669910.0
+واعتضاد,1605001,receivables_current,,2109890.0
+واعتضاد,1605001,receivables_prev,,3188484.0
+واعتضاد,1605001,fixed_assets_current,,526751.0
+واعتضاد,1605001,fixed_assets_prev,,297930.0
+وزرین,1618816,total_assets_current,,44434090.0
+وزرین,1618816,total_assets_prev,,26193496.0
+وزرین,1618816,current_assets_current,,27633752.0
+وزرین,1618816,current_assets_prev,,7480200.0
+وزرین,1618816,receivables_current,,3197937.0
+وزرین,1618816,receivables_prev,,661733.0
+وزرین,1618816,fixed_assets_current,,602229.0
+وزرین,1618816,fixed_assets_prev,,607315.0
+وسپهر الوند,1625898,total_assets_current,,5620701.0
+وسپهر الوند,1625898,total_assets_prev,,1833419.0
+وسپهر الوند,1625898,current_assets_current,,5620086.0
+وسپهر الوند,1625898,current_assets_prev,,1833159.0
+وسپهر الوند,1625898,receivables_current,,52953.0
+وسپهر الوند,1625898,receivables_prev,,143707.0
+فخوز3,1584708,total_assets_current,739801676.0,1462046402.0
+فخوز3,1584708,total_assets_prev,546296022.0,1038556939.0
+فخوز3,1584708,total_liabilities_current,116645812.0,1002795175.0
+فخوز3,1584708,total_liabilities_prev,65376402.0,628981762.0
+فخوز3,1584708,current_assets_current,,722244726.0
+فخوز3,1584708,current_assets_prev,,492260917.0
+فخوز3,1584708,current_liabilities_current,,886149363.0
+فخوز3,1584708,current_liabilities_prev,,563605360.0
+فخوز3,1584708,receivables_current,,268896498.0
+فخوز3,1584708,receivables_prev,,128767789.0
+فخوز3,1584708,retained_earnings_current,,92689843.0
+فخوز3,1584708,retained_earnings_prev,,77016200.0
+فخوز3,1584708,fixed_assets_current,,579458358.0
+فخوز3,1584708,fixed_assets_prev,,430667153.0
+فخوز3,1584708,operating_profit_current,,126273940.0
+فخوز3,1584708,operating_profit_prev,,79345327.0
+فخوز3,1584708,operating_cash_flow_current,,124672685.0
+فخوز3,1584708,operating_cash_flow_prev,,158876980.0
+فخوز2,1584708,total_assets_current,739801676.0,1462046402.0
+فخوز2,1584708,total_assets_prev,546296022.0,1038556939.0
+فخوز2,1584708,total_liabilities_current,116645812.0,1002795175.0
+فخوز2,1584708,total_liabilities_prev,65376402.0,628981762.0
+فخوز2,1584708,current_assets_current,,722244726.0
+فخوز2,1584708,current_assets_prev,,492260917.0
+فخوز2,1584708,current_liabilities_current,,886149363.0
+فخوز2,1584708,current_liabilities_prev,,563605360.0
+فخوز2,1584708,receivables_current,,268896498.0
+فخوز2,1584708,receivables_prev,,128767789.0
+فخوز2,1584708,retained_earnings_current,,92689843.0
+فخوز2,1584708,retained_earnings_prev,,77016200.0
+فخوز2,1584708,fixed_assets_current,,579458358.0
+فخوز2,1584708,fixed_assets_prev,,430667153.0
+فخوز2,1584708,operating_profit_current,,126273940.0
+فخوز2,1584708,operating_profit_prev,,79345327.0
+فخوز2,1584708,operating_cash_flow_current,,124672685.0
+فخوز2,1584708,operating_cash_flow_prev,,158876980.0
+22983482324640038,1601836,current_assets_current,,1090638987.0
+22983482324640038,1601836,current_assets_prev,,784098038.0
+22983482324640038,1601836,current_liabilities_current,,410208727.0
+22983482324640038,1601836,current_liabilities_prev,,173282605.0
+22983482324640038,1601836,receivables_current,,1058899133.0
+22983482324640038,1601836,receivables_prev,,742137121.0
+22983482324640038,1601836,retained_earnings_current,,266858468.0
+22983482324640038,1601836,retained_earnings_prev,,184856385.0
+22983482324640038,1601836,fixed_assets_current,,177520.0
+22983482324640038,1601836,fixed_assets_prev,,180472.0
+22983482324640038,1601836,operating_profit_current,,356485745.0
+22983482324640038,1601836,operating_profit_prev,,253406588.0
+22983482324640038,1601836,operating_cash_flow_current,,194180676.0
+22983482324640038,1601836,operating_cash_flow_prev,,233503035.0
