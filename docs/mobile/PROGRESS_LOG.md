@@ -104,3 +104,11 @@ Source: CompanyRegistryStore.full_report(), listed_company_ingestion.status(), s
 - Production checkout dirty `analysis/audit_parser.py` (private-firm «این موسسه» opinion wording): backed up to `/home/ubuntu/backups/biap-fin-20261104-dirty/`, preserved as PR #85 with tests (not merged, not deployed). Prod checkout still dirty; Deploy backend blocked until #85 merged and the file restored from main.
 - Inbox verification on this VPS: 11 exports, latest `2026-11-04` created 22:11Z has 110 reports (not 137); tracing IDs 1562697/1584708/1391396/1541772 absent from every `reports.jsonl`; validate_five.py → NO_OWN_REPORT_FETCHED for all five. The reported transfer is NOT visible here. No re-ingest, no audit run, no 1.0.12 build performed.
 - PR #82 (a813b7a) verified on branch: test:ui 24/24 pass, tsc clean, Beneish uses finite-only guard.
+
+## 2026-11-05 — recovery completed on production
+- Inbox verified: 2026-11-04 = 137 reports, 365 unique, manifest sha256 OK, 1562697/1584708/1391396 present. validate_five: Shepna (1562697), Parsan (1467085), Fakhuz (1584708), Yektanet (1628887) VERIFIED, own consolidated scope, issuer match.
+- #85 merged (d6a3a62), prod deployed via workflow, health 200, restarted 01:28Z; dirty audit_parser.py was byte-identical to #85, restored from git after backup. Rollback: 8ed53e2 (`/home/ubuntu/backups/biap-fin-20261104-dirty/ROLLBACK_SHA`), DB backups in `/home/ubuntu/backups/biap-fin-20261105/`.
+- Re-ingest: restricted run_batch ingested nothing for numeric codes (TSETMC down → fallback looked up numeric code as symbol → inbox miss). Shepna/Fakhuz/Yektanet saved via build_company_from_symbol(registry symbol); Parsan already refreshed by the timer. Fix PR opened (unmerged).
+- Audit (runIranAudit on stored CODAL): Shepna 9/10 risk 19, Parsan 9/10 risk 19, Fakhuz 9/10 risk 31, Yektanet 9/10 risk 0. Beneish needs prior-year inputs for 3 of 4.
+- Inbox protection: tgz snapshot + read-only dated folders.
+- 1.0.12 bump pushed (2247573), EAS run 41949890942.
