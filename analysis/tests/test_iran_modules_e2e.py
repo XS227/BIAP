@@ -170,15 +170,15 @@ def test_unbalanced_balance_sheet_is_flagged(env):
 def test_eda_real_statistics_and_charts(env):
     client, _ = env
     e = post(client, "F03", "eda", {"column": "net_margin"})
-    assert e["status"] == "ok"
+    assert e["status"] in ("ok", "partial")
     types = [b["type"] for b in e["blocks"]]
     assert "histogram" in types and "table" in types and "line" not in types or True
     hist = next(b for b in e["blocks"] if b["type"] == "histogram")
     assert sum(x["count"] for x in hist["bins"]) + hist["clipped"] == hist["n"]
-    summary = next(b for b in e["blocks"] if b.get("title") == "خلاصه آماری")
+    summary = next(b for b in e["blocks"] if (b.get("title") or "").startswith("خلاصه آماری"))
     row = next(r for r in summary["rows"] if r["column"] == "حاشیه سود خالص")
     assert row["n"] >= 12 and row["min"] < row["median"] < row["max"]
-    own = next(b for b in e["blocks"] if b.get("title") == "جایگاه این شرکت")
+    own = next(b for b in e["blocks"] if (b.get("title") or "").startswith("جایگاه این شرکت"))
     assert all(0 <= r["percentile"] <= 100 for r in own["rows"])
     miss = next(b for b in e["blocks"] if "مقادیر گمشده" in (b.get("title") or ""))
     assert any(r["missingPct"] > 0 for r in miss["rows"])  # universe includes companies without statements
@@ -415,8 +415,8 @@ def test_module_service_does_not_touch_production_stores(env):
 def test_eda_works_for_market_only_company_using_market_columns(env):
     client, _ = env
     e = post(client, "M01", "eda", {"column": "pe"})
-    assert e["status"] == "ok"
-    summary = next(b for b in e["blocks"] if b.get("title") == "خلاصه آماری")["rows"]
+    assert e["status"] in ("ok", "partial")
+    summary = next(b for b in e["blocks"] if (b.get("title") or "").startswith("خلاصه آماری"))["rows"]
     assert any(r["column"] == "P/E" and r["n"] >= 8 for r in summary)
     assert all(r["scope"] for r in summary)
     hist = next(b for b in e["blocks"] if b["type"] == "histogram")
@@ -426,7 +426,7 @@ def test_eda_works_for_market_only_company_using_market_columns(env):
 def test_eda_sample_sizes_are_reported_and_small_samples_are_excluded(env):
     client, _ = env
     e = post(client, "F00", "eda")
-    cols = {r["column"]: r["n"] for r in next(b for b in e["blocks"] if b.get("title") == "خلاصه آماری")["rows"]}
+    cols = {r["column"]: r["n"] for r in next(b for b in e["blocks"] if (b.get("title") or "").startswith("خلاصه آماری"))["rows"]}
     assert "P/E" in cols and cols["P/E"] >= 8
     # the interim company has no ratios: it must not widen any sample
     assert all(n <= 19 for n in cols.values())

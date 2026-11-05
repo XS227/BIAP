@@ -51,6 +51,24 @@ def row_values_pct_checked(rows: list[list[str]], aliases: tuple[str, ...]) -> t
     return None
 
 
+_TEXT_CELL = re.compile(r"[آ-ی٠-٩A-Za-z]{2,}")
+
+
+def _own_numbers(cells: list[str]) -> list[float]:
+    """Numbers that belong to the row's own label: stop at the first text cell. CODAL's balance sheet places assets on the
+    left and equity+liabilities on the right of the SAME table row, so the cells after «جمع دارایی‌ها» continue with the
+    next label and its numbers (six or more numbers) which belong to a different line."""
+    out: list[float] = []
+    for cell in cells:
+        value = _parse_number(cell)
+        if value is None:
+            if _TEXT_CELL.search(_normalize_text(cell)):
+                break
+            continue
+        out.append(value)
+    return out
+
+
 def row_values(rows: list[list[str]], aliases: tuple[str, ...]) -> tuple[float, float] | None:
     for row in rows:
         if not row:
@@ -59,8 +77,7 @@ def row_values(rows: list[list[str]], aliases: tuple[str, ...]) -> tuple[float, 
         label_idx = next((idx for idx, cell in enumerate(normalized) if _matches(cell, aliases)), None)
         if label_idx is None:
             continue
-        values = [_parse_number(cell) for cell in row[label_idx + 1:]]
-        numbers = [value for value in values if value is not None]
+        numbers = _own_numbers(row[label_idx + 1:])
         if len(numbers) == 2:
             return numbers[0], numbers[1]
         if len(numbers) == 3 or len(numbers) == 4:
