@@ -324,3 +324,56 @@ def test_financial_reference_without_html_remains_requested(inbox, tmp_path, mon
     assert codal_inbox.current().has_record("شپنا")
     assert not codal_inbox.current().has_financial_filings("شپنا")
     assert codal_inbox.backlog_symbols(10) == ["شپنا"]
+
+
+# --- nightly pipeline hardening ---------------------------------------------------------------
+
+def test_later_partial_export_keeps_earlier_statement_references(inbox):
+    other = dict(FILING, tracing_no="222", title="صورت‌های مالی تلفیقی (حسابرسی شده)")
+    write_export(inbox, "2026-10-25", [company("آ", financial_filings=[FILING, other])],
+                 reports=[{"tracing_no": "222", "html": "<table>x</table>"}])
+    write_export(inbox, "2026-10-26", [company("آ", financial_filings=[FILING])])  # fetch budget ran out
+    rows = codal_inbox.current().companies[codal_inbox.symbol_key("آ")]["financial_filings"]
+    assert {f["tracing_no"] for f in rows} == {"111", "222"}
+    assert codal_inbox.current().has_financial_filings("آ")
+
+
+def test_usable_means_html_for_the_scope_the_parser_selects(inbox):
+    consolidated = dict(FILING, tracing_no="222", title="صورت‌های مالی تلفیقی (حسابرسی شده)")
+    standalone_html = [{"tracing_no": "111", "html": "<table>standalone</table>"}]
+    write_export(inbox, "2026-10-25", [company("آ", financial_filings=[FILING, consolidated])], reports=standalone_html)
+    assert not codal_inbox.current().has_financial_filings("آ")  # parser wants the consolidated one
+    write_export(inbox, "2026-10-26", [company("آ", financial_filings=[FILING, consolidated])],
+                 reports=[{"tracing_no": "222", "html": "<table>c</table>"}])
+    assert codal_inbox.current().usable_tracing_nos("آ") == ["222"]
+
+
+def test_retry_cooldown_and_never_attempted_first(inbox, tmp_path, monkeypatch):
+    import company_registry_store as registry_module
+    import listed_company_store as store_module
+    from datetime import date as _date, timedelta
+    store, registry = _job(tmp_path, monkeypatch, ["آ", "ب"])
+    monkeypatch.setattr(store_module, "ListedCompanyStore", lambda: store)
+    monkeypatch.setattr(registry_module, "CompanyRegistryStore", lambda db_path: registry)
+    monkeypatch.setattr(registry, "primary_company_codes", lambda: ["1", "2"])
+    recent = (_date.today() - timedelta(days=1)).isoformat()
+    write_export(inbox, recent, [company("آ", financial_filings=[])])  # ok but no own statements: 14 day wait
+    assert codal_inbox.backlog_symbols(10) == ["ب"]
+    codal_inbox.reset()
+    old = (_date.today() - timedelta(days=30)).isoformat()
+    for child in inbox.iterdir():
+        if child.is_dir():
+            for f in child.iterdir():
+                f.unlink()
+            child.rmdir()
+    write_export(inbox, old, [company("آ", financial_filings=[])])
+    assert codal_inbox.backlog_symbols(10) == ["ب", "آ"]  # due retries go after never-attempted symbols
+
+
+def test_seal_makes_verified_exports_read_only(inbox):
+    import os
+    folder = write_export(inbox, "2026-10-25", [company("آ")])
+    assert codal_inbox.seal_exports(str(inbox)) == ["2026-10-25"]
+    assert not os.stat(folder / "reports.jsonl").st_mode & 0o222
+    assert not os.stat(folder).st_mode & 0o222
+    os.chmod(folder, 0o755)  # let pytest clean up
