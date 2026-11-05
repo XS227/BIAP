@@ -35,6 +35,18 @@ CONTRACTS: dict[str, dict] = {
 }
 
 
+def comparable(universe: list[dict], code: str, *, need_codal: bool = True, same_category: bool = True) -> list[dict]:
+    """Genuine primary companies of the same category (banks are not compared with manufacturers)."""
+    own = next((r for r in universe if r["code"] == code), None)
+    cat = own.get("category") if own else None
+    out = [r for r in universe if r.get("is_primary", 1)]
+    if need_codal:
+        out = [r for r in out if r.get("has_codal")]
+    if same_category and cat:
+        out = [r for r in out if r.get("category") == cat]
+    return out
+
+
 def fmt_ratio(v: Optional[float]) -> Optional[float]:
     return None if v is None else round(v, 6)
 
@@ -138,9 +150,9 @@ EDA_LABELS = {"net_margin": "حاشیه سود خالص", "operating_margin": "�
 
 
 def eda(ds: dict, universe: list[dict], *, column: Optional[str] = None, sector_only: bool = False) -> dict:
-    rows = [r for r in universe if r.get("has_codal")]
+    rows = comparable(universe, ds["identity"]["code"])
     sector = ds["identity"].get("sector")
-    scope_label = "همه‌ی شرکت‌های دارای صورت مالی"
+    scope_label = "شرکت‌های اصلی هم‌دسته دارای صورت مالی"
     if sector_only and sector:
         same = [r for r in rows if r.get("sector") == sector]
         if len(same) >= MIN_PEERS:
@@ -148,6 +160,7 @@ def eda(ds: dict, universe: list[dict], *, column: Optional[str] = None, sector_
     if len(rows) < MIN_PEERS:
         return blocked("eda", ds, ["حداقل ۸ شرکت با نسبت مالی"], f"فقط {len(rows)} شرکت دارای صورت مالی در پایگاه است؛ برای تحلیل آماری معنادار کافی نیست.")
     cols = [c for c in EDA_COLUMNS if sum(1 for r in rows if r.get(c) is not None) >= MIN_PEERS]
+    universe = [r for r in universe if r.get("is_primary", 1)]
     total = len(universe)
     # missing-value analysis over the whole universe (not only companies with statements)
     miss = [{"column": EDA_LABELS[c], "present": sum(1 for r in universe if r.get(c) is not None),
@@ -327,9 +340,9 @@ def scenario(ds: dict, spread: float = 0.10) -> dict:
 
 def _peers(ds: dict, universe: list[dict]) -> tuple[list[dict], str]:
     sector = ds["identity"].get("sector")
-    rows = [r for r in universe if r.get("has_codal") and r["code"] != ds["identity"]["code"]]
+    rows = [r for r in comparable(universe, ds["identity"]["code"]) if r["code"] != ds["identity"]["code"]]
     same = [r for r in rows if sector and r.get("sector") == sector]
-    return (same, f"گروه {sector}") if len(same) >= MIN_PEERS else (rows, "کل بازار")
+    return (same, f"گروه {sector}") if len(same) >= MIN_PEERS else (rows, "شرکت‌های هم‌دسته")
 
 
 def swot(ds: dict, universe: list[dict]) -> dict:
@@ -378,10 +391,11 @@ def market_entry(ds: dict, universe: list[dict]) -> dict:
     sector = ds["identity"].get("sector")
     if not sector:
         return blocked("market-entry", ds, ["گروه صنعت"], "گروه صنعت شرکت ثبت نشده است.")
-    same = [r for r in universe if r.get("has_codal") and r.get("sector") == sector]
+    base = comparable(universe, ds["identity"]["code"])
+    same = [r for r in base if r.get("sector") == sector]
     if len(same) < MIN_PEERS:
         return blocked("market-entry", ds, ["حداقل ۸ شرکت هم‌گروه"], f"فقط {len(same)} شرکت هم‌گروه صورت مالی دارند.")
-    allr = [r for r in universe if r.get("has_codal")]
+    allr = base
     rows = []
     for key in ("net_margin", "revenue_growth", "roe", "debt_ratio", "pe"):
         a = st.describe([r.get(key) for r in same]); b = st.describe([r.get(key) for r in allr])

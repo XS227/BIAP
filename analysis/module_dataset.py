@@ -248,15 +248,36 @@ class UniverseCache:
             built: list[dict] = []
             with sqlite3.connect(f"file:{store.db_path}?mode=ro", uri=True, timeout=30) as conn:
                 conn.row_factory = sqlite3.Row
+                primary, category, issuer = self._registry(conn)
                 for r in conn.execute("SELECT code,symbol,name_fa,market,enriched_at,company_json FROM listed_companies"):
                     try:
                         company = json.loads(r["company_json"]) if r["company_json"] else None
                     except (TypeError, ValueError):
                         company = None
-                    built.append(universe_row({"code": r["code"], "symbol": r["symbol"], "name": r["name_fa"], "market": r["market"],
-                                               "enrichedAt": r["enriched_at"], "company": company}))
+                    row = universe_row({"code": r["code"], "symbol": r["symbol"], "name": r["name_fa"], "market": r["market"],
+                                        "enrichedAt": r["enriched_at"], "company": company})
+                    row["is_primary"] = 1 if (primary is None or r["code"] in primary) else 0
+                    row["category"] = category.get(r["code"])
+                    row["issuer_id"] = issuer.get(r["code"])
+                    built.append(row)
             self._rows, self._built_at, self._stamp = built, clock(), stamp
             return built
+
+    @staticmethod
+    def _registry(conn) -> tuple[Optional[set], dict, dict]:
+        """Genuine primary-company codes (one per issuer, shares only) and each instrument's category/issuer.
+
+        ``None`` for the primary set means the DB has no registry yet (every stored row is then treated as primary).
+        """
+        try:
+            from company_registry_store import COMPANY_CATEGORIES
+            marks = ",".join("?" for _ in COMPANY_CATEGORIES)
+            prim = {str(r[0]) for r in conn.execute(f"SELECT primary_instrument_code FROM company_registry WHERE category IN ({marks})", tuple(COMPANY_CATEGORIES))}
+            cat = {str(r[0]): r[1] for r in conn.execute("SELECT code, category FROM instrument_registry")}
+            iss = {str(r[0]): r[1] for r in conn.execute("SELECT code, issuer_id FROM instrument_registry")}
+        except sqlite3.Error:
+            return None, {}, {}
+        return (prim or None), cat, iss
 
     @staticmethod
     def _db_stamp(store) -> Any:

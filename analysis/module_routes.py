@@ -56,15 +56,30 @@ def resolve_company(store: ListedCompanyStore, text: str) -> dict:
     raise HTTPException(status_code=404, detail="company not found")
 
 
+def _history(symbol: Optional[str]) -> list[dict]:
+    """Market-memory snapshots under any spelling of the symbol (Persian/Arabic yeh and kaf, ZWNJ)."""
+    if not symbol:
+        return []
+    variants = []
+    for cand in (symbol, symbol.replace("ی", "ي").replace("ک", "ك"), symbol.replace("ي", "ی").replace("ك", "ک"), symbol.replace("\u200c", "")):
+        if cand not in variants:
+            variants.append(cand)
+    for cand in variants:
+        rows = recent_symbol_history(cand, days=400)
+        if rows:
+            return rows
+    return []
+
+
 def dataset_for(code: str) -> dict:
     item = resolve_company(STORE, code)
-    history = recent_symbol_history(item["symbol"], days=400) if item.get("symbol") else []
+    history = _history(item.get("symbol"))
     return md.build_company_dataset(item, history, now_iso=datetime.now(timezone.utc).isoformat(timespec="seconds"))
 
 
 def _peers(ds: dict, universe: list[dict]) -> int:
     sector = ds["identity"].get("sector")
-    rows = [r for r in universe if r.get("has_codal") and r["code"] != ds["identity"]["code"]]
+    rows = [r for r in mc.comparable(universe, ds["identity"]["code"]) if r["code"] != ds["identity"]["code"]]
     same = [r for r in rows if sector and r.get("sector") == sector]
     return max(len(same), len(rows))
 
@@ -114,7 +129,7 @@ def _sql_database() -> Any:
     history = []
     for row in universe:
         if row.get("has_market") and row.get("symbol"):
-            for h in recent_symbol_history(row["symbol"], days=400):
+            for h in _history(row["symbol"]):
                 history.append({"symbol": row["symbol"], "date": h.get("observed_date"), "price": h.get("price"), "change_percent": h.get("change_percent"),
                                 "pe": h.get("pe"), "market_cap": h.get("market_cap"), "source": h.get("source")})
     return safe_sql.build_database(universe, history)
@@ -239,7 +254,9 @@ def kpi_delete(kid: int, user_id: str = Depends(require_user_id)):
 
 # ---- coverage --------------------------------------------------------------------------------
 
-def coverage_report(universe: list[dict]) -> dict:
+def coverage_report(all_rows: list[dict]) -> dict:
+    """Coverage over genuine primary companies (one per issuer); non-primary instruments are counted separately."""
+    universe = [r for r in all_rows if r.get("is_primary", 1)]
     total = len(universe)
     by_tier: dict[str, int] = {}
     for r in universe:
@@ -250,7 +267,7 @@ def coverage_report(universe: list[dict]) -> dict:
     ratios_ok = sum(1 for r in universe if sum(1 for k in md.UNIVERSE_RATIO_KEYS if r.get(k) is not None) >= 6)
     pct = lambda n: round(100 * n / total, 2) if total else 0.0  # noqa: E731
     return {
-        "registered": total, "tiers": by_tier,
+        "registered": total, "storedInstrumentRows": len(all_rows), "nonPrimaryInstrumentRows": len(all_rows) - total, "tiers": by_tier,
         "sources": {"market": {"count": market, "pct": pct(market)}, "codalFinancials": {"count": codal, "pct": pct(codal)},
                     "codalWithCashFlow": {"count": cfo, "pct": pct(cfo)}, "ratiosComputable(>=6)": {"count": ratios_ok, "pct": pct(ratios_ok)}},
         "reasons": {"noMarketPrice": total - market, "noCodalStatement": total - codal, "codalWithoutCashFlow": codal - cfo},

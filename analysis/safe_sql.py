@@ -29,6 +29,7 @@ COMPANY_COLUMNS = {
     "gross_margin": "REAL", "operating_margin": "REAL", "net_margin": "REAL", "roa": "REAL", "roe": "REAL", "debt_ratio": "REAL",
     "debt_to_equity": "REAL", "current_ratio": "REAL", "revenue_growth": "REAL", "profit_growth": "REAL", "cfo_to_profit": "REAL",
     "accruals_ratio": "REAL", "asset_turnover": "REAL", "receivable_days": "REAL", "enriched_at": "TEXT",
+    "is_primary": "INTEGER", "category": "TEXT", "issuer_id": "TEXT",
 }
 HISTORY_COLUMNS = {"symbol": "TEXT", "date": "TEXT", "price": "REAL", "change_percent": "REAL", "pe": "REAL", "market_cap": "REAL", "source": "TEXT"}
 TABLES = {"companies": COMPANY_COLUMNS, "market_history": HISTORY_COLUMNS}
