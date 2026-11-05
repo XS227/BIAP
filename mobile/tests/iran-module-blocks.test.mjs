@@ -21,14 +21,14 @@ test('formatValue never shows NaN/Infinity/undefined', () => {
   for (const v of [null, undefined, '', NaN, Infinity, -Infinity]) assert.equal(formatValue(v), '—');
   assert.equal(formatValue(0), '۰');
   assert.equal(formatValue(1234567), '۱,۲۳۴,۵۶۷');
-  assert.equal(formatValue(0.5, { unit: '%' }), '۰.۵٪');
+  assert.equal(formatValue(0.5, { unit: '%' }), '۰٫۵٪');
   assert.equal(cellText(null), '—');
   assert.equal(faDigits('2026'), '۲۰۲۶');
 });
 
 test('KPI formatting: ratios as percent, units kept, missing as dash', () => {
   const base = { group: 'g', key: 'k', label: 'l', formula: 'f', inputs: [], source: 's', period: null, status: 'ok', missing: [] };
-  assert.equal(formatKpi({ ...base, value: 0.125, unit: 'نسبت' }), '۱۲٫۵٪'.replace('٫', '.'));
+  assert.equal(formatKpi({ ...base, value: 0.125, unit: 'نسبت' }), '۱۲٫۵٪');
   assert.equal(formatKpi({ ...base, value: null, unit: 'نسبت' }), '—');
   assert.equal(formatKpi({ ...base, value: NaN, unit: '×' }), '—');
   assert.match(formatKpi({ ...base, value: 1.8, unit: '×' }), /×$/);
@@ -66,4 +66,44 @@ test('dataStatusText explains empties and separates missing price from stored hi
   assert.equal(hist.length, 3); assert.match(hist[2], /5/);
   assert.match(dataStatusText({ codes: ['SOURCE_RATE_LIMITED'] })[0], /محدودیت نرخ/);
   assert.deepEqual(dataStatusText({ codes: ['UNKNOWN_X'] }), []);
+});
+
+import { formatMoney, formatByUnit, tableCell, columnLabel, columnWidth, verificationText, scopeBadge, formatKpi as formatKpi2 } from '../src/lib/iran-module-blocks.ts';
+
+test('money is compact, never rounds to zero, keeps sign', () => {
+  assert.equal(formatMoney(19950000000000), '۱۹٫۹۵ هزار میلیارد');
+  assert.equal(formatMoney(2999475220), '۳ میلیارد');
+  assert.equal(formatMoney(-1500000), '-۱٫۵ میلیون');
+  assert.equal(formatMoney(NaN), '—');
+});
+test('values render by the unit the backend declares', () => {
+  assert.equal(formatByUnit(0.0682, 'fraction'), '۶٫۸٪');
+  assert.equal(formatByUnit(2.78, 'percent'), '۲٫۷۸٪');
+  assert.equal(formatByUnit(0.815, 'times'), '۰٫۸۲×');
+  assert.equal(formatByUnit(null, 'fraction'), '—');
+});
+test('table cells use the row unit, percentile gets ٪, outlier is Persian, missing value is a dash', () => {
+  const row = { column: 'ROE', unit: 'fraction', value: 0.1915, peerMedian: 0.12, percentile: 29.5, outlier: 'high' };
+  assert.equal(tableCell(row, 'value'), '۱۹٫۲٪');
+  assert.equal(tableCell(row, 'peerMedian'), '۱۲٪');
+  assert.equal(tableCell(row, 'percentile'), '۲۹٫۵٪');
+  assert.equal(tableCell(row, 'outlier'), 'بالا');
+  assert.equal(tableCell({ column: 'P/E', unit: 'times', value: null }, 'value'), '—');
+});
+test('table headers are Persian, never raw JSON keys, and long text widens the column', () => {
+  for (const k of ['column', 'value', 'source', 'percentile', 'sampleN', 'reason', 'sectorMedian']) assert.notEqual(columnLabel(k), k);
+  const rows = [{ column: 'x', reason: 'ورودی‌های ناموجود: net_profit، total_assets و ورودی‌های دیگر' }];
+  assert.ok(columnWidth(rows, 'reason') > columnWidth(rows, 'column'));
+  assert.ok(columnWidth(rows, 'reason') <= 220);
+});
+test('verification banner only for unverified/incomplete statements; scope badges', () => {
+  assert.equal(verificationText({ verification: { status: 'verified', reasons: [] } }), null);
+  assert.match(verificationText({ verification: { status: 'unverified', reasons: ['ترازنامه تراز نیست'] } }), /تأییدنشده/);
+  assert.match(verificationText({ verification: { status: 'incomplete', reasons: ['ناقص'] } }), /ناقص/);
+  assert.equal(scopeBadge('company'), 'این شرکت');
+  assert.equal(scopeBadge('market'), 'کل بازار / نمونه');
+  assert.equal(scopeBadge(undefined), null);
+});
+test('an unverified KPI is shown as unverified, not as a number or a dash', () => {
+  assert.equal(formatKpi2({ group: 'g', key: 'roa', label: 'ROA', value: null, unit: 'نسبت', formula: '', inputs: [], source: 'CODAL', period: null, status: 'unverified', missing: ['x'] }), 'تأییدنشده');
 });

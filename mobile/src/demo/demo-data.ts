@@ -26,7 +26,7 @@ export const DEMO_MODULES: Record<string, DemoModule> = {
     bullets: ['رشد فروش در ۳ ماه اخیر', 'همبستگی مثبت بازدید سایت و فروش', '۱۷ رکورد خارج از الگوی معمول'],
   },
   sql: {
-    key: 'sql', title: 'SQL Query', icon: '🗄️',
+    key: 'sql', title: 'SQL Query', icon: '💾',
     summary: 'نمونه خروجی یک Query تحلیلی روی داده فروش و مشتری.',
     metrics: [
       { label: 'ردیف نتیجه', value: '42' },
@@ -116,7 +116,7 @@ export const DEMO_MODULES: Record<string, DemoModule> = {
     bullets: ['اصطکاک در مرحله پرداخت', 'نیاز به onboarding کوتاه‌تر', 'پیگیری پس از خرید اثر مثبت دارد'],
   },
   crm: {
-    key: 'crm', title: 'CRM + Pipeline', icon: '👥',
+    key: 'crm', title: 'CRM + Pipeline', icon: '📇',
     summary: 'قیف فروش نمونه با فرصت‌ها و پیش‌بینی ارزش قرارداد.',
     metrics: [
       { label: 'Pipeline', value: '8.7B' },

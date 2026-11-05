@@ -2,16 +2,16 @@
 
 export type ModuleStatus = 'ok' | 'partial' | 'blocked' | 'needs_private_data';
 export type Block =
-  | { type: 'metrics'; items: { label: string; value: unknown; unit?: string }[] }
+  | { type: 'metrics'; title?: string; scopeKind?: 'company' | 'market'; items: { label: string; value: unknown; unit?: string }[] }
   | { type: 'kpi_table'; items: KpiItem[] }
-  | { type: 'table'; title?: string; columns: string[]; rows: Record<string, unknown>[] }
-  | { type: 'histogram'; title?: string; bins: { from: number; to: number; count: number }[]; clipped?: number; n?: number; marker?: number | null; note?: string }
+  | { type: 'table'; title?: string; scopeKind?: 'company' | 'market'; columns: string[]; rows: Record<string, unknown>[] }
+  | { type: 'histogram'; title?: string; unit?: string; markerInRange?: boolean; bins: { from: number; to: number; count: number }[]; clipped?: number; n?: number; marker?: number | null; note?: string }
   | { type: 'bars'; title?: string; items: { label: string; value: number }[] }
-  | { type: 'line'; title?: string; points: { x: string; y: number }[]; forecast?: { x: string; y: number; low: number; high: number }[] }
+  | { type: 'line'; title?: string; scopeKind?: 'company' | 'market'; points: { x: string; y: number }[]; forecast?: { x: string; y: number; low: number; high: number }[] }
   | { type: 'swot'; strengths: string[]; weaknesses: string[]; opportunities: string[]; threats: string[] }
   | { type: 'bullets'; title?: string; items: string[] }
-  | { type: 'notice'; tone?: string; text: string; missing?: string[] };
-export type KpiItem = { group: string; key: string; label: string; value: number | null; unit: string; formula: string; inputs: string[]; source: string; period: string | null; status: string; missing: string[] };
+  | { type: 'notice'; tone?: string; scopeKind?: 'company' | 'market'; text: string; missing?: string[] };
+export type KpiItem = { group: string; key: string; label: string; value: number | null; unit: string; formula: string; inputs: string[]; source: string; period: string | null; status: string; missing: string[]; kind?: string; requiresPrivateData?: boolean };
 export type ModuleEnvelope = {
   module: string; title?: string; status: ModuleStatus; summary?: string; blocks: Block[]; missing: string[]; note?: string | null;
   tier?: string; provenance?: Record<string, unknown>; quality?: { missing?: string[]; warnings?: string[] }; dataStatus?: { codes?: string[]; hasCurrentPrice?: boolean; hasHistory?: boolean; historyObservations?: number }; company?: { code?: string; symbol?: string; name?: string } | null;
@@ -67,12 +67,66 @@ export function formatValue(v: unknown, opts: { unit?: string; digits?: number }
     if (!Number.isFinite(v)) return '—';
     const abs = Math.abs(v);
     const digits = opts.digits ?? (abs >= 1000 ? 0 : abs >= 10 ? 1 : 3);
-    const text = faDigits(v.toLocaleString('en-US', { maximumFractionDigits: digits }));
+    const text = faDigits(v.toLocaleString('en-US', { maximumFractionDigits: digits })).replace('.', '٫');
     return opts.unit === '%' ? `${text}٪` : text;
   }
   return String(v);
 }
+/** Compact rial amounts: 19,950,000,000,000 -> «۱۹٫۹۵ هزار میلیارد». Never rounds a small value to zero. */
+export function formatMoney(v: number): string {
+  if (!Number.isFinite(v)) return '—';
+  const a = Math.abs(v);
+  const sign = v < 0 ? '-' : '';
+  const f = (x: number, unit: string) => `${sign}${faDigits(x.toLocaleString('en-US', { maximumFractionDigits: 2 }).replace('.', '٫'))} ${unit}`;
+  if (a >= 1e12) return f(a / 1e12, 'هزار میلیارد');
+  if (a >= 1e9) return f(a / 1e9, 'میلیارد');
+  if (a >= 1e6) return f(a / 1e6, 'میلیون');
+  return formatValue(v);
+}
+/** Render a number by the unit the backend declares for its column. */
+export function formatByUnit(v: unknown, unit?: string): string {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return v === null || v === undefined ? '—' : String(v);
+  if (unit === 'fraction') return `${faDigits((v * 100).toLocaleString('en-US', { maximumFractionDigits: 1 }).replace('.', '٫'))}٪`;
+  if (unit === 'percent') return `${faDigits(v.toLocaleString('en-US', { maximumFractionDigits: 2 }).replace('.', '٫'))}٪`;
+  if (unit === 'times') return `${faDigits(v.toLocaleString('en-US', { maximumFractionDigits: 2 }).replace('.', '٫'))}×`;
+  if (unit === 'rial') return formatMoney(v);
+  return formatValue(v);
+}
+export const COLUMN_LABEL: Record<string, string> = {
+  column: 'شاخص', value: 'مقدار', source: 'منبع', peerMedian: 'میانه نمونه', percentile: 'صدک', sampleN: 'اندازه نمونه', scope: 'دامنه', reason: 'توضیح',
+  n: 'تعداد', mean: 'میانگین', median: 'میانه', std: 'انحراف معیار', min: 'کمینه', q1: 'چارک ۱', q3: 'چارک ۳', max: 'بیشینه', skew: 'چولگی',
+  outlier: 'پرت', a: 'شاخص اول', b: 'شاخص دوم', r: 'همبستگی', present: 'موجود', missingPct: 'گمشده ٪', metric: 'شاخص', sectorMedian: 'میانه گروه',
+  marketMedian: 'میانه بازار', company: 'این شرکت', date: 'تاریخ', return: 'بازده', robustZ: 'z مقاوم', step: 'گام', forecast: 'پیش‌بینی', low: 'کف', high: 'سقف',
+};
+export function columnLabel(c: string): string { return COLUMN_LABEL[c] ?? c; }
+const PCT_COLUMNS = new Set(['percentile', 'missingPct']);
+/** Table cell: value-like columns use the row's own unit, percentile columns get ٪, text stays text. */
+export function tableCell(row: Record<string, unknown>, col: string): string {
+  const v = row[col];
+  if (v === null || v === undefined) return col === 'value' || col === 'peerMedian' || col === 'company' ? '—' : '';
+  if (typeof v === 'number') {
+    if (PCT_COLUMNS.has(col)) return `${formatValue(v, { digits: 1 })}٪`;
+    const unitCols = new Set(['value', 'peerMedian', 'mean', 'median', 'std', 'min', 'q1', 'q3', 'max', 'sectorMedian', 'marketMedian', 'company']);
+    if (unitCols.has(col) && typeof row.unit === 'string') return formatByUnit(v, row.unit);
+  }
+  if (col === 'outlier') return v === 'high' ? 'بالا' : v === 'low' ? 'پایین' : '';
+  return cellText(v);
+}
+export function columnWidth(rows: Record<string, unknown>[], col: string): number {
+  const longest = Math.max(columnLabel(col).length, ...rows.map((r) => tableCell(r, col).length));
+  return Math.max(64, Math.min(220, 14 + longest * 7.2));
+}
+export function scopeBadge(kind?: string): string | null { return kind === 'company' ? 'این شرکت' : kind === 'market' ? 'کل بازار / نمونه' : null; }
+export function verificationText(prov?: Record<string, unknown>): string | null {
+  const v = prov?.verification as { status?: string; reasons?: string[] } | undefined;
+  if (!v) return null;
+  if (v.status === 'unverified') return `صورت مالی تأییدنشده: ${(v.reasons ?? []).join('؛ ')}. نسبت‌های مبتنی بر ترازنامه نمایش داده نمی‌شوند.`;
+  if (v.status === 'incomplete') return `صورت مالی ناقص: ${(v.reasons ?? []).join('؛ ')}`;
+  return null;
+}
+
 export function formatKpi(item: KpiItem): string {
+  if (item.status === 'unverified') return 'تأییدنشده';
   if (item.value === null || !Number.isFinite(item.value)) return '—';
   if (item.unit === 'نسبت' && Math.abs(item.value) < 5) return `${formatValue(item.value * 100, { digits: 1 })}٪`;
   return `${formatValue(item.value)}${item.unit && item.unit !== 'نسبت' ? ` ${item.unit}` : ''}`;

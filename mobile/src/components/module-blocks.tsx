@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Brand, Radius, Spacing, ThemeColors } from '@/constants/theme';
-import { Block, KpiItem, cellText, formatKpi, formatValue, groupKpis, markerBin, scaleBars, scaleLine } from '@/lib/iran-module-blocks';
+import { Block, KpiItem, columnLabel, columnWidth, formatByUnit, formatKpi, formatValue, groupKpis, markerBin, scaleBars, scaleLine, scopeBadge, tableCell } from '@/lib/iran-module-blocks';
 
 type Props = { blocks: Block[]; colors: ThemeColors };
 const CHART_H = 110;
 
-function Card({ colors, title, children }: { colors: ThemeColors; title?: string; children: React.ReactNode }) {
+function Card({ colors, title, scope, children }: { colors: ThemeColors; title?: string; scope?: string; children: React.ReactNode }) {
+  const badge = scopeBadge(scope);
   return (
-    <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
+    <View style={[styles.card, { backgroundColor: colors.backgroundElement, borderRightWidth: badge ? 3 : 0, borderRightColor: scope === 'company' ? Brand.positive : Brand.primary }]}>
+      {badge ? <Text style={[styles.badge, { color: scope === 'company' ? Brand.positive : Brand.primary }]}>{badge}</Text> : null}
       {title ? <Text style={[styles.cardTitle, { color: colors.text }]}>{title}</Text> : null}
       {children}
     </View>
@@ -26,7 +29,7 @@ function KpiBlock({ items, colors }: { items: KpiItem[]; colors: ThemeColors }) 
                 <Text style={[styles.kpiLabel, { color: colors.text }]}>{k.label}</Text>
               </View>
               <Text style={[styles.kpiMeta, { color: colors.textSecondary }]}>
-                {k.value === null ? `ورودی ناموجود: ${(k.missing.length ? k.missing : k.inputs).join('، ')}` : `فرمول: ${k.formula}`}
+                {k.status === 'unverified' ? `تأییدنشده: ${k.missing.join('، ')}` : k.value === null ? `ورودی ناموجود: ${(k.missing.length ? k.missing : k.inputs).join('، ')}` : `فرمول: ${k.formula}`}
               </Text>
               <Text style={[styles.kpiMeta, { color: colors.textSecondary }]}>منبع: {k.source}{k.period ? ` • ${k.period}` : ''}</Text>
             </View>
@@ -41,7 +44,7 @@ function Histogram({ block, colors }: { block: Extract<Block, { type: 'histogram
   const heights = scaleBars(block.bins.map((b) => b.count), CHART_H);
   const mark = markerBin(block.bins, block.marker);
   return (
-    <Card colors={colors} title={block.title}>
+    <Card colors={colors} title={block.title} scope="market">
       <View style={styles.chartRow}>
         {block.bins.map((b, i) => (
           <View key={i} style={styles.colWrap}>
@@ -50,11 +53,11 @@ function Histogram({ block, colors }: { block: Extract<Block, { type: 'histogram
         ))}
       </View>
       <View style={styles.axis}>
-        <Text style={[styles.axisText, { color: colors.textSecondary }]}>{formatValue(block.bins[0]?.from)}</Text>
-        <Text style={[styles.axisText, { color: colors.textSecondary }]}>{formatValue(block.bins[block.bins.length - 1]?.to)}</Text>
+        <Text style={[styles.axisText, { color: colors.textSecondary }]}>{formatByUnit(block.bins[0]?.from, block.unit)}</Text>
+        <Text style={[styles.axisText, { color: colors.textSecondary }]}>{formatByUnit(block.bins[block.bins.length - 1]?.to, block.unit)}</Text>
       </View>
       <Text style={[styles.note, { color: colors.textSecondary }]}>
-        {block.marker !== null && block.marker !== undefined ? `مقدار این شرکت: ${formatValue(block.marker)} (ستون نارنجی). ` : ''}
+        {block.marker !== null && block.marker !== undefined ? (block.markerInRange === false ? `مقدار این شرکت: ${formatByUnit(block.marker, block.unit)} (خارج از بازه‌ی نمودار). ` : `مقدار این شرکت: ${formatByUnit(block.marker, block.unit)} (ستون نارنجی). `) : ''}
         n={formatValue(block.n)}{block.clipped ? ` • ${formatValue(block.clipped)} مقدار پرت خارج از نمودار` : ''}
       </Text>
       {block.note ? <Text style={[styles.note, { color: colors.textSecondary }]}>{block.note}</Text> : null}
@@ -78,34 +81,38 @@ function Bars({ block, colors }: { block: Extract<Block, { type: 'bars' }>; colo
 }
 
 function Line({ block, colors }: { block: Extract<Block, { type: 'line' }>; colors: ThemeColors }) {
+  const [w, setW] = useState(280);
   const ys = [...block.points.map((p) => p.y), ...(block.forecast ?? []).map((p) => p.y)];
-  const W = 280;
-  const pts = scaleLine(ys, W, CHART_H);
+  const pts = scaleLine(ys, w, CHART_H);
   const nHist = block.points.length;
+  const finite = ys.filter((v) => Number.isFinite(v));
   return (
-    <Card colors={colors} title={block.title}>
-      <View style={{ width: W, height: CHART_H, alignSelf: 'center' }}>
+    <Card colors={colors} title={block.title} scope={block.scopeKind}>
+      <View style={{ alignSelf: 'stretch', height: CHART_H }} onLayout={(e) => setW(Math.max(120, Math.round(e.nativeEvent.layout.width) - 8))}>
         {pts.map((p, i) => (
           <View key={i} style={{ position: 'absolute', left: p.x - 2, top: p.y - 2, width: 4, height: 4, borderRadius: 2, backgroundColor: i < nHist ? Brand.primary : Brand.warning }} />
         ))}
       </View>
+      {finite.length ? <View style={styles.axis}><Text style={[styles.axisText, { color: colors.textSecondary }]}>کمینه {formatValue(Math.min(...finite))}</Text><Text style={[styles.axisText, { color: colors.textSecondary }]}>بیشینه {formatValue(Math.max(...finite))}</Text></View> : null}
       <Text style={[styles.note, { color: colors.textSecondary }]}>
-        {nHist} مشاهده{(block.forecast?.length ?? 0) > 0 ? ` • ${block.forecast!.length} گام پیش‌بینی (نارنجی)` : ''} • از {block.points[0]?.x ?? '—'} تا {block.points[nHist - 1]?.x ?? '—'}
+        {nHist} مشاهده{(block.forecast?.length ?? 0) > 0 ? ` • ${block.forecast!.length} گام پیش‌بینی (نارنجی)` : ''} • از {block.points[0]?.x ?? '—'} تا {block.points[nHist - 1]?.x ?? '—'} • آخرین: {formatValue(block.points[nHist - 1]?.y)}
       </Text>
     </Card>
   );
 }
 
 function Table({ block, colors }: { block: Extract<Block, { type: 'table' }>; colors: ThemeColors }) {
-  if (!block.rows.length) return <Card colors={colors} title={block.title}><Text style={[styles.note, { color: colors.textSecondary }]}>موردی برای نمایش نیست.</Text></Card>;
+  if (!block.rows.length) return <Card colors={colors} title={block.title} scope={block.scopeKind}><Text style={[styles.note, { color: colors.textSecondary }]}>موردی برای نمایش نیست.</Text></Card>;
+  const cols = block.columns.filter((c) => block.rows.some((r) => r[c] !== null && r[c] !== undefined && r[c] !== ''));
+  const widths = Object.fromEntries(cols.map((c) => [c, columnWidth(block.rows, c)]));
   return (
-    <Card colors={colors} title={block.title}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+    <Card colors={colors} title={block.title} scope={block.scopeKind}>
+      <ScrollView horizontal showsHorizontalScrollIndicator>
         <View>
-          <View style={styles.tr}>{block.columns.map((c) => <Text key={c} style={[styles.th, { color: colors.textSecondary }]}>{c}</Text>)}</View>
+          <View style={styles.tr}>{cols.map((c) => <Text key={c} style={[styles.th, { color: colors.textSecondary, width: widths[c] }]}>{columnLabel(c)}</Text>)}</View>
           {block.rows.map((r, i) => (
             <View key={i} style={[styles.tr, { borderTopColor: colors.backgroundSelected }]}>
-              {block.columns.map((c) => <Text key={c} style={[styles.td, { color: colors.text }]}>{cellText(r[c])}</Text>)}
+              {cols.map((c) => <Text key={c} style={[styles.td, { color: colors.text, width: widths[c] }]}>{tableCell(r, c)}</Text>)}
             </View>
           ))}
         </View>
@@ -132,6 +139,8 @@ function BlockView({ block, colors }: { block: Block; colors: ThemeColors }) {
   switch (block.type) {
     case 'metrics':
       return (
+        <View>
+        {block.title ? <Text style={[styles.badge, { color: Brand.positive }]}>{block.title}</Text> : null}
         <View style={styles.metricsRow}>
           {block.items.map((m, i) => (
             <View key={i} style={[styles.metric, { backgroundColor: colors.backgroundElement }]}>
@@ -139,6 +148,7 @@ function BlockView({ block, colors }: { block: Block; colors: ThemeColors }) {
               <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{m.label}</Text>
             </View>
           ))}
+        </View>
         </View>
       );
     case 'kpi_table': return <KpiBlock items={block.items} colors={colors} />;
@@ -150,7 +160,7 @@ function BlockView({ block, colors }: { block: Block; colors: ThemeColors }) {
     case 'bullets': return <Card colors={colors} title={block.title}>{block.items.map((t, i) => <Text key={i} style={[styles.bullet, { color: colors.text, borderRightColor: Brand.primary }]}>{t}</Text>)}</Card>;
     case 'notice':
       return (
-        <Card colors={colors}>
+        <Card colors={colors} scope={block.scopeKind}>
           <Text style={[styles.note, { color: colors.text }]}>{block.text}</Text>
           {block.missing?.length ? <Text style={[styles.note, { color: Brand.warning }]}>لازم است: {block.missing.join('، ')}</Text> : null}
         </Card>
@@ -166,6 +176,7 @@ export function ModuleBlocks({ blocks, colors }: Props) {
 const styles = StyleSheet.create({
   card: { borderRadius: Radius.lg, padding: Spacing.three, marginBottom: Spacing.two },
   cardTitle: { fontSize: 15, fontWeight: '700', textAlign: 'right', marginBottom: Spacing.two },
+  badge: { fontSize: 10, fontWeight: '800', textAlign: 'right', marginBottom: 2 },
   note: { fontSize: 12, textAlign: 'right', marginTop: 6, lineHeight: 19 },
   bullet: { fontSize: 13, textAlign: 'right', lineHeight: 21, borderRightWidth: 3, paddingRight: 8, marginBottom: 6 },
   metricsRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: Spacing.two, marginBottom: Spacing.two },
@@ -187,6 +198,6 @@ const styles = StyleSheet.create({
   hbarTrack: { flex: 1, alignItems: 'flex-end' },
   hbarValue: { width: 70, fontSize: 11, textAlign: 'left' },
   tr: { flexDirection: 'row-reverse', borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: 6 },
-  th: { width: 96, fontSize: 11, fontWeight: '700', textAlign: 'right' },
-  td: { width: 96, fontSize: 12, textAlign: 'right' },
+  th: { fontSize: 11, fontWeight: '700', textAlign: 'right', paddingHorizontal: 4 },
+  td: { fontSize: 12, textAlign: 'right', paddingHorizontal: 4, writingDirection: 'rtl' },
 });

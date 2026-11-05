@@ -20,7 +20,7 @@ const GROUPS: ModuleGroup[] = [
   ]},
   { key: 'data', title: 'تحلیل داده', accent: Brand.dataViolet, items: [
     { key: 'eda', title: 'EDA Explorer', subtitle: 'تحلیل اکتشافی و الگوها', icon: '🔬' },
-    { key: 'sql', title: 'SQL Query', subtitle: 'Query روی context واقعی شرکت بورسی', icon: '🗄️' },
+    { key: 'sql', title: 'SQL Query', subtitle: 'Query روی context واقعی شرکت بورسی', icon: '💾' },
     { key: 'anomaly', title: 'تشخیص ناهنجاری', subtitle: 'Outlier و رفتار غیرعادی', icon: '🚨' },
     { key: 'forecast', title: 'پیش‌بینی آماری', subtitle: 'روند و سری زمانی', icon: '📉' },
     { key: 'journey', title: 'Journey Map', subtitle: 'مسیر مشتری و نقاط اصطکاک', icon: '🗺️' },
@@ -37,7 +37,7 @@ const GROUPS: ModuleGroup[] = [
     { key: 'business-kpi', title: 'داشبورد KPI کسب‌وکار', subtitle: 'شاخص‌های عمومی + داده داخلی اختیاری', icon: '🎯' },
     { key: 'swot', title: 'SWOT + رقبا', subtitle: 'رقبا و موقعیت بازار', icon: '⚔️' },
     { key: 'market-entry', title: 'فرصت و ورود به بازار', subtitle: 'شواهد بازار و اولویت‌ها', icon: '🌍' },
-    { key: 'crm', title: 'CRM + Pipeline', subtitle: 'Lead Scoring، Pipeline و پیگیری', icon: '👥' },
+    { key: 'crm', title: 'CRM + Pipeline', subtitle: 'Lead Scoring، Pipeline و پیگیری', icon: '📇' },
     { key: 'campaign', title: 'کمپین بازاریابی', subtitle: 'هدف، کانال و پیام', icon: '📣' },
     { key: 'pricing', title: 'قیمت‌گذاری هوشمند', subtitle: 'سناریوهای قیمت', icon: '💰' },
     { key: 'plan', title: 'Business Plan', subtitle: 'طرح کسب‌وکار', icon: '📄' },
