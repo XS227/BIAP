@@ -162,6 +162,10 @@ EDA_LABELS = {"net_margin": "حاشیه سود خالص", "operating_margin": "�
               "current_ratio": "نسبت جاری", "revenue_growth": "رشد درآمد", "profit_growth": "رشد سود", "cfo_to_profit": "جریان نقد ÷ سود", "pe": "P/E",
               "change_percent": "تغییر روزانه (٪)", "market_cap": "ارزش بازار", "trade_value": "ارزش معاملات"}
 MARKET_COLUMNS = {"pe", "change_percent", "market_cap", "trade_value"}
+# how the client must render each column's numbers: fraction -> ٪, times -> ×, percent (already ×100) -> ٪, rial -> compact money
+EDA_UNITS = {"net_margin": "fraction", "operating_margin": "fraction", "roa": "fraction", "roe": "fraction", "debt_ratio": "fraction",
+             "current_ratio": "times", "revenue_growth": "fraction", "profit_growth": "fraction", "cfo_to_profit": "times", "pe": "times",
+             "change_percent": "percent", "market_cap": "rial", "trade_value": "rial"}
 POSITIVE_ONLY = {"pe", "market_cap", "trade_value"}
 
 
@@ -223,7 +227,7 @@ def eda(ds: dict, universe: list[dict], *, column: Optional[str] = None, sector_
     profile, own_rows = [], []
     for c in EDA_COLUMNS:
         mine, source, why = _own_value(ds, c)
-        entry: dict[str, Any] = {"column": EDA_LABELS[c], "value": None if mine is None else round(mine, 4), "source": source,
+        entry: dict[str, Any] = {"column": EDA_LABELS[c], "unit": EDA_UNITS[c], "value": None if mine is None else round(mine, 4), "source": source,
                                  "status": "ok" if mine is not None else "missing", "reason": why,
                                  "sampleN": None, "peerMedian": None, "percentile": None, "outlier": None, "scope": None}
         if c in usable:
@@ -233,7 +237,7 @@ def eda(ds: dict, universe: list[dict], *, column: Optional[str] = None, sector_
             if mine is not None and not (c in POSITIVE_ONLY and mine <= 0):
                 entry["percentile"] = round(100 * st.percentile_rank(vals, mine), 1)
                 entry["outlier"] = st.iqr_outlier(vals, mine)
-                own_rows.append({"column": EDA_LABELS[c], "value": entry["value"], "percentile": entry["percentile"], "outlier": entry["outlier"], "scope": label})
+                own_rows.append({"column": EDA_LABELS[c], "unit": EDA_UNITS[c], "value": entry["value"], "percentile": entry["percentile"], "outlier": entry["outlier"], "scope": label})
         elif mine is not None:
             entry["reason"] = f"نمونه‌ی مقایسه کافی نیست (کمتر از {MIN_PEERS} شرکت)؛ جایگاه صدکی نمایش داده نمی‌شود"
         profile.append(entry)
@@ -266,13 +270,13 @@ def eda(ds: dict, universe: list[dict], *, column: Optional[str] = None, sector_
         mine = next((e["value"] for e in profile if e["column"] == EDA_LABELS[focus]), None)
         in_range = mine is not None and lo is not None and lo <= mine <= hi
         blocks.append({"type": "histogram", "scopeKind": "market", "title": f"توزیع {EDA_LABELS[focus]} در {label} (آمار نمونه، نه این شرکت)",
-                       "bins": h["bins"], "clipped": h["clipped"], "n": h["n"], "marker": mine, "markerInRange": in_range,
+                       "bins": h["bins"], "clipped": h["clipped"], "n": h["n"], "marker": mine, "markerInRange": in_range, "unit": EDA_UNITS[focus],
                        "range": [lo, hi], "note": "مقادیر خارج از صدک ۱ تا ۹۹ در نمودار کوتاه شده‌اند و در clipped شمرده می‌شوند."
                        + ("" if mine is None or in_range else " مقدار این شرکت خارج از بازه‌ی نمودار است.")})
         summary_rows = []
         for c, (rws, lab) in usable.items():
             d = st.describe([r[c] for r in rws])
-            summary_rows.append({"column": EDA_LABELS[c], "scope": lab, **{k: (None if d.get(k) is None else round(d[k], 4)) for k in ("n", "mean", "median", "std", "min", "q1", "q3", "max", "skew")}})
+            summary_rows.append({"column": EDA_LABELS[c], "unit": EDA_UNITS[c], "scope": lab, **{k: (None if d.get(k) is None else round(d[k], 4)) for k in ("n", "mean", "median", "std", "min", "q1", "q3", "max", "skew")}})
         blocks.append({"type": "table", "title": "خلاصه آماری نمونه‌ی مقایسه (کل بازار/هم‌دسته)", "scopeKind": "market",
                        "columns": ["column", "scope", "n", "mean", "median", "std", "min", "q1", "q3", "max", "skew"], "rows": summary_rows})
         if own_rows:
@@ -505,7 +509,7 @@ def market_entry(ds: dict, universe: list[dict]) -> dict:
             continue
         a, b2 = st.describe([r[key] for r in same]), st.describe([r[key] for r in pool])
         mine = next((e for e in [_own_value(ds, key)] if e[0] is not None), None)
-        rows.append({"metric": EDA_LABELS.get(key, key), "scope": scope, "sectorMedian": round(a["median"], 4), "marketMedian": round(b2["median"], 4),
+        rows.append({"metric": EDA_LABELS.get(key, key), "unit": EDA_UNITS.get(key), "scope": scope, "sectorMedian": round(a["median"], 4), "marketMedian": round(b2["median"], 4),
                      "n": a["n"], "company": None if mine is None else round(mine[0], 4)})
     if not rows:
         return blocked("market-entry", ds, limits or ["حداقل ۸ شرکت هم‌گروه با داده‌ی معتبر"], f"برای گروه {sector} نمونه‌ی کافی (۸ شرکت) در هیچ شاخص وجود ندارد.")
