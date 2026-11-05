@@ -212,3 +212,20 @@ def test_numbered_instruments_of_one_company_resolve_to_the_base_share_by_name(e
     assert ds(client, "پلیمر آریا ساسول")[1]["identity"]["code"] == "2001"       # by full name -> base share
     assert ds(client, "آریا3")[1]["identity"]["code"] == "2002"                  # exact symbol still exact
     assert ds(client, "گروه خودرو")[0] == 409                                      # unrelated names stay ambiguous
+
+
+def test_request_validation_errors_stay_422_with_details_not_500(env):
+    client, _ = env
+    r = client.get("/iran/crm/contacts?limit=0")
+    assert r.status_code == 422 and isinstance(r.json()["detail"], list) and r.json()["detail"][0]["loc"]
+    r = client.get("/iran/crm/contacts?limit=abc")
+    assert r.status_code == 422
+    r = client.post("/iran/sql/query", content=b"{not json", headers={"Content-Type": "application/json"})
+    assert r.status_code == 422
+    r = client.post("/iran/sql/query", json=["not", "an", "object"])
+    assert r.status_code == 422
+    r = client.put("/iran/crm/contacts/notanint", json={"name": "x"})
+    assert r.status_code in (404, 405, 422)
+    # typed errors still work next to it
+    assert client.post("/iran/sql/query", json={"sql": "DROP TABLE companies"}).json()["code"] == "BAD_QUERY"
+    assert client.get("/iran/modules/ناموجودxyz/dataset").json()["code"] == "NOT_FOUND"

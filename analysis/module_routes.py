@@ -16,8 +16,10 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, Response
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.routing import APIRoute
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import module_compute as mc
 import module_dataset as md
@@ -52,8 +54,8 @@ class _TypedRoute(APIRoute):
                 return await original(request)
             except ModuleError as exc:
                 return JSONResponse({"detail": exc.message, "code": exc.code, **exc.extra}, status_code=exc.status)
-            except HTTPException:
-                raise
+            except (HTTPException, StarletteHTTPException, RequestValidationError):
+                raise  # client errors (404/422/...) keep FastAPI's normal handlers and details
             except Exception:  # noqa: BLE001 - classified, logged, and returned as a typed SERVER_ERROR
                 log.exception("iran module request failed: %s %s", request.method, request.url.path)
                 return JSONResponse({"detail": "خطای داخلی سرور؛ دوباره تلاش کنید.", "code": "SERVER_ERROR"}, status_code=500)
