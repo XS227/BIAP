@@ -41,7 +41,7 @@ def comparable(universe: list[dict], code: str, *, need_codal: bool = True, same
     cat = own.get("category") if own else None
     out = [r for r in universe if r.get("is_primary", 1)]
     if need_codal:
-        out = [r for r in out if r.get("has_codal")]
+        out = [r for r in out if r.get("has_codal") and not r.get("stale") and r.get("verification") != "unverified"]
     if same_category and cat:
         out = [r for r in out if r.get("category") == cat]
     return out
@@ -511,7 +511,7 @@ def market_entry(ds: dict, universe: list[dict]) -> dict:
     rows, limits = [], []
     for key in ("net_margin", "revenue_growth", "roe", "debt_ratio", "pe", "market_cap"):
         market_metric = key in MARKET_COLUMNS
-        pool = [r for r in primary if r.get(key) is not None and (key not in POSITIVE_ONLY or r[key] > 0)]
+        pool = [r for r in primary if r.get(key) is not None and _eligible(r, key) and (key not in POSITIVE_ONLY or r[key] > 0)]
         same = [r for r in pool if r.get("sector") == sector]
         scope = f"گروه {sector}"
         if len(same) < MIN_PEERS and cat and not market_metric:

@@ -246,3 +246,17 @@ def test_correlation_pairs_exclude_stale_and_unverified_statements():
     e = mc.eda(ds, uni)
     corr = next(b for b in e["blocks"] if "همبستگی" in (b.get("title") or ""))
     assert all(r["n"] <= 8 for r in corr["rows"]) and corr["rows"] == []   # 8 eligible < 15 required pairs
+
+
+def test_market_entry_and_peer_pool_ignore_stale_and_unverified_statements():
+    uni = _universe(8)
+    for i in range(12):
+        uni.append(dict(md.universe_row(_item(f"OLD{i}", _codal(i, net_profit_current=5000.0, report_title="صورت‌های مالی سال مالی منتهی به ۱۳۹۶/۰۸/۳۰"))),
+                        is_primary=1, category="operating_company", sector="X"))
+    for r in uni[:8]:
+        r["sector"] = "X"
+    ds = md.build_company_dataset(_item("S1", _codal(1), {"last_price": 1000, "sector_name": "X"}))
+    assert all(r["code"].startswith("S") for r in mc.comparable(uni, "S1"))
+    e = mc.market_entry(ds, uni)
+    nm = [r for r in (e["blocks"][0].get("rows") or []) if r["metric"] == "حاشیه سود خالص"]
+    assert nm and nm[0]["n"] == 8          # the 12 stale statements are not counted
