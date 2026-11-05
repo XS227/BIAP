@@ -169,6 +169,28 @@ def data_quality(company: dict, view: dict, market: dict, history_n: int) -> dic
     return {"missing": missing, "warnings": warnings, "historyObservations": history_n}
 
 
+RATE_LIMIT_MARKERS = ("429", "rate limit", "rate-limit", "too many requests", "retry-after")
+
+
+def data_status(item: dict, market: dict, view: dict, history_n: int) -> dict:
+    """Why a module may be empty: explicit, machine-readable reasons instead of a generic empty result."""
+    has_price = bool(market.get("price"))
+    has_codal = bool(view.get("present"))
+    codes: list[str] = []
+    if not has_price and not has_codal and history_n == 0:
+        codes.append("REGISTERED_ONLY")
+    else:
+        if not has_price:
+            codes.append("MISSING_MARKET")
+        if not has_codal:
+            codes.append("MISSING_CODAL")
+    err = str(item.get("lastError") or item.get("last_error") or "").lower()
+    if err and any(m in err for m in RATE_LIMIT_MARKERS) and (not has_price or not has_codal):
+        codes.append("SOURCE_RATE_LIMITED")
+    return {"codes": codes, "hasCurrentPrice": has_price, "hasCodal": has_codal, "historyObservations": history_n,
+            "hasHistory": history_n > 0, "inStore": not bool(item.get("registryOnly")), "lastError": item.get("lastError") or item.get("last_error")}
+
+
 def build_company_dataset(item: dict, history: Iterable[dict] = (), *, now_iso: Optional[str] = None) -> dict:
     """``item`` is a ListedCompanyStore row (with ``company``). ``history`` = market-memory daily snapshots."""
     company = item.get("company") or {}
@@ -198,6 +220,7 @@ def build_company_dataset(item: dict, history: Iterable[dict] = (), *, now_iso: 
             "dataAvailability": company.get("data_available") or {},
         },
         "quality": data_quality(company, view, market, len(hist)),
+        "status": data_status(item, market, view, len(hist)),
         "generatedAt": now_iso,
     }
 
@@ -230,6 +253,19 @@ def universe_row(item: dict) -> dict:
     return row
 
 
+class _Registry:
+    def __init__(self) -> None:
+        self.primary: Optional[set] = None
+        self.primary_keys: set = set()
+        self.category: dict = {}
+        self.issuer: dict = {}
+        self.symbol: dict = {}
+        self.category_by_key: dict = {}
+        self.issuer_by_key: dict = {}
+        self.aliases: dict = {}
+        self.companies: list = []
+
+
 class UniverseCache:
     """Flat universe table, rebuilt when the listed-company DB changes or the TTL passes."""
 
@@ -246,49 +282,98 @@ class UniverseCache:
             if not force and self._rows and stamp == self._stamp and clock() - self._built_at < self.ttl:
                 return self._rows
             built: list[dict] = []
-            with sqlite3.connect(f"file:{store.db_path}?mode=ro", uri=True, timeout=30) as conn:
+            conn = sqlite3.connect(f"file:{store.db_path}?mode=ro", uri=True, timeout=30)
+            try:
                 conn.row_factory = sqlite3.Row
-                primary, category, issuer, reg_symbol = self._registry(conn)
-                for r in conn.execute("SELECT code,symbol,name_fa,market,enriched_at,company_json FROM listed_companies"):
+                reg = self._registry(conn)
+                seen_keys: set[str] = set()
+                for r in conn.execute("SELECT code,symbol,name_fa,market,enriched_at,last_error,company_json FROM listed_companies"):
                     try:
                         company = json.loads(r["company_json"]) if r["company_json"] else None
                     except (TypeError, ValueError):
                         company = None
                     row = universe_row({"code": r["code"], "symbol": r["symbol"], "name": r["name_fa"], "market": r["market"],
                                         "enrichedAt": r["enriched_at"], "company": company})
-                    if str(row["symbol"] or "").isdigit() and reg_symbol.get(r["code"]):
+                    ckey = symbol_key(r["code"])
+                    seen_keys.add(ckey)
+                    if str(row["symbol"] or "").isdigit() and reg.symbol.get(r["code"]):
                         # some rows were stored with the instrument code in the symbol column: the registry knows the real symbol
-                        row["symbol"] = reg_symbol[r["code"]]
+                        row["symbol"] = reg.symbol[r["code"]]
                         row["symbol_key"] = symbol_key(row["symbol"])
-                    row["is_primary"] = 1 if (primary is None or r["code"] in primary) else 0
-                    row["category"] = category.get(r["code"])
-                    row["issuer_id"] = issuer.get(r["code"])
+                    # registry codes may differ from stored codes only by spelling (ZWNJ / Arabic letters): match on the folded key
+                    row["is_primary"] = 1 if (reg.primary is None or r["code"] in reg.primary or ckey in reg.primary_keys) else 0
+                    row["category"] = reg.category.get(r["code"]) or reg.category_by_key.get(ckey)
+                    row["issuer_id"] = reg.issuer.get(r["code"]) or reg.issuer_by_key.get(ckey)
+                    row["last_error"] = r["last_error"]
+                    row["registry_only"] = 0
                     built.append(row)
+                # the registry is the canonical discovery source: primary companies without a stored row keep their identity
+                for company in reg.companies:
+                    if symbol_key(company["code"]) in seen_keys:
+                        continue
+                    row = universe_row({"code": company["code"], "symbol": company["symbol"], "name": company["name"],
+                                        "market": company["market"], "enrichedAt": None, "company": None})
+                    row.update({"is_primary": 1, "category": company["category"], "issuer_id": company["issuer_id"],
+                                "last_error": None, "registry_only": 1})
+                    built.append(row)
+                for row in built:
+                    keys = {symbol_key(row["symbol"]), symbol_key(row["name"])}
+                    keys |= reg.aliases.get(row.get("issuer_id") or "", set())
+                    row["aliases"] = sorted(k for k in keys if k)
+                    row["name_key"] = symbol_key(row["name"])
+            finally:
+                conn.close()
             self._rows, self._built_at, self._stamp = built, clock(), stamp
             return built
 
     @staticmethod
-    def _registry(conn) -> tuple[Optional[set], dict, dict, dict]:
-        """Genuine primary-company codes (one per issuer, shares only) and each instrument's category/issuer.
+    def _registry(conn) -> "_Registry":
+        """Genuine primary-company codes (one per issuer, shares only), each instrument's category/issuer and name aliases.
 
-        ``None`` for the primary set means the DB has no registry yet (every stored row is then treated as primary).
+        ``primary=None`` means the DB has no registry yet (every stored row is then treated as primary).
         """
+        reg = _Registry()
         try:
             from company_registry_store import COMPANY_CATEGORIES
             marks = ",".join("?" for _ in COMPANY_CATEGORIES)
-            prim = {str(r[0]) for r in conn.execute(f"SELECT primary_instrument_code FROM company_registry WHERE category IN ({marks})", tuple(COMPANY_CATEGORIES))}
-            cat = {str(r[0]): r[1] for r in conn.execute("SELECT code, category FROM instrument_registry")}
-            iss = {str(r[0]): r[1] for r in conn.execute("SELECT code, issuer_id FROM instrument_registry")}
-            sym = {str(r[0]): r[1] for r in conn.execute("SELECT code, symbol FROM instrument_registry")}
+            companies = conn.execute(
+                f"SELECT issuer_id,canonical_symbol,canonical_name,category,primary_instrument_code FROM company_registry WHERE category IN ({marks})",
+                tuple(COMPANY_CATEGORIES)).fetchall()
+            inst = conn.execute("SELECT code,symbol,name,market,category,issuer_id FROM instrument_registry").fetchall()
         except sqlite3.Error:
-            return None, {}, {}, {}
-        return (prim or None), cat, iss, sym
+            return reg
+        by_code = {str(i["code"]): i for i in inst}
+        for i in inst:
+            code = str(i["code"])
+            reg.category[code] = i["category"]; reg.issuer[code] = i["issuer_id"]; reg.symbol[code] = i["symbol"]
+            k = symbol_key(code)
+            reg.category_by_key.setdefault(k, i["category"]); reg.issuer_by_key.setdefault(k, i["issuer_id"])
+            if i["issuer_id"]:
+                reg.aliases.setdefault(i["issuer_id"], set()).update({symbol_key(i["symbol"]), symbol_key(i["name"])} - {""})
+        prim = set()
+        for c in companies:
+            code = str(c["primary_instrument_code"])
+            prim.add(code); reg.primary_keys.add(symbol_key(code))
+            i = by_code.get(code)
+            reg.aliases.setdefault(c["issuer_id"], set()).update({symbol_key(c["canonical_symbol"]), symbol_key(c["canonical_name"])} - {""})
+            reg.companies.append({"code": code, "symbol": c["canonical_symbol"], "name": c["canonical_name"] or c["canonical_symbol"],
+                                  "market": (i["market"] if i else None), "category": c["category"], "issuer_id": c["issuer_id"]})
+        reg.primary = prim or None
+        return reg
 
     @staticmethod
     def _db_stamp(store) -> Any:
         try:
-            with sqlite3.connect(f"file:{store.db_path}?mode=ro", uri=True, timeout=30) as conn:
-                return conn.execute("SELECT COUNT(*), MAX(updated_at) FROM listed_companies").fetchone()
+            conn = sqlite3.connect(f"file:{store.db_path}?mode=ro", uri=True, timeout=30)
+            try:
+                listed = conn.execute("SELECT COUNT(*), MAX(updated_at) FROM listed_companies").fetchone()
+                try:
+                    reg = conn.execute("SELECT COUNT(*), MAX(last_seen_at) FROM company_registry").fetchone()
+                except sqlite3.Error:
+                    reg = None
+                return (tuple(listed), tuple(reg) if reg else None)
+            finally:
+                conn.close()
         except sqlite3.Error:
             return None
 

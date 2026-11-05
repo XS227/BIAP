@@ -62,6 +62,7 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(mr, "STORE", store)
     monkeypatch.setattr(mr, "PRIVATE", PrivateStore(str(tmp_path / "private.sqlite3")))
     monkeypatch.setattr(mr, "recent_symbol_history", lambda symbol, days=400: history.get(symbol, []))
+    monkeypatch.setattr(mr, "history_for_symbols", lambda symbols, days=400: {x: history[x] for x in symbols if x in history})
     monkeypatch.setattr(mr, "get_dataset", lambda uid: None)
     md.UNIVERSE._rows, md.UNIVERSE._stamp = [], None
     m.app.dependency_overrides[mr.require_user_id] = lambda: "user-a"
