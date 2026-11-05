@@ -359,7 +359,14 @@ def _build_verified_company(code: str) -> tuple[dict[str, Any] | None, str]:
             if instrument and instrument.get("symbol"):
                 codal_symbol = str(instrument["symbol"])
         return build_company_from_quote(quote, codal_symbol=codal_symbol), "tsetmc+tindex+codal+company_builder"
-    return build_company_from_symbol(code), "tindex+codal+company_builder-fallback"
+    # TSETMC unreachable: a numeric code is not a CODAL symbol, so resolve the registry symbol
+    # (otherwise the inbox lookup misses and a verified export is never ingested).
+    symbol = code
+    if str(code).isascii() and str(code).isdigit():
+        instrument = CompanyRegistryStore().get_instrument(code)
+        if instrument and instrument.get("symbol"):
+            symbol = str(instrument["symbol"])
+    return build_company_from_symbol(symbol), "tindex+codal+company_builder-fallback"
 
 
 def run_batch(
