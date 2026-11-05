@@ -166,7 +166,9 @@ def _column_rows(ds: dict, universe: list[dict], col: str, sector_only: bool) ->
     if sector_only and sector:
         scopes.append(([r for r in primary if r.get("sector") == sector], f"گروه {sector}"))
     if cat:
-        scopes.append(([r for r in primary if r.get("category") == cat], "هم‌دسته"))
+        same_cat = [r for r in primary if r.get("category") == cat]
+        if len(same_cat) >= 30:  # a same-category sample smaller than this is noisier than the full primary universe
+            scopes.append((same_cat, "هم‌دسته"))
     scopes.append((primary, "همه‌ی شرکت‌های اصلی"))
     for rows, label in scopes:
         if len(rows) >= MIN_PEERS:
