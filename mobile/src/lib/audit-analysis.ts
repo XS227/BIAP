@@ -12,7 +12,7 @@ export type AuditCheck = {
   /** counts toward the risk score (data-quality checks do not) */
   scored: boolean;
 };
-export type AuditReport = { checks: AuditCheck[]; evaluated: number; total: number; minCoverage: number; riskScore: number | null; note: string };
+export type AuditReport = { checks: AuditCheck[]; evaluated: number; total: number; minCoverage: number; riskScore: number | null; note: string; stale: boolean; withheld: boolean };
 /** A risk score is shown only when at least this many of the checks could actually be evaluated. */
 export const MIN_AUDIT_COVERAGE = 6;
 export type IranFundamentals = {
@@ -23,6 +23,8 @@ export type IranFundamentals = {
   total_equity_current?: number | null; total_equity_prev?: number | null;
   audit_opinion?: string | null; report_title?: string | null; report_scope?: string | null; source?: string | null;
   tracing_no?: string | null;
+  /** backend re-verification stamp (codal_reparse) when present */
+  verification?: { status?: string | null; reason?: string | null } | null;
   operating_cash_flow_current?: number | null; operating_cash_flow_prev?: number | null;
   current_assets_current?: number | null; current_liabilities_current?: number | null;
   receivables_current?: number | null; retained_earnings_current?: number | null;
@@ -43,11 +45,32 @@ export function auditOpinionFa(raw: string): string {
   return raw.trim();
 }
 
+
+/** Standard normal CDF (Abramowitz–Stegun 7.1.26, |error| < 1.5e-7). Zmijewski (1984) is a PROBIT model: P = Φ(x). */
+export function normCdf(x: number): number {
+  const t = 1 / (1 + 0.3275911 * Math.abs(x) / Math.SQRT2);
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-(x * x) / 2);
+  return x >= 0 ? 0.5 * (1 + y) : 0.5 * (1 - y);
+}
+const FA_TO_EN = (s: string) => s.replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+/** Jalali period end («منتهی به ۱۴۰۴/۱۲/۲۹») from the statement title. */
+export function periodEndOf(title: string | null | undefined): { y: number; m: number; text: string } | null {
+  const m = FA_TO_EN(String(title ?? '')).match(/(\d{4})\/(\d{2})\/(\d{2})/);
+  return m ? { y: Number(m[1]), m: Number(m[2]), text: `${m[1]}/${m[2]}/${m[3]}` } : null;
+}
+export function jalaliYearMonth(now: Date): { y: number; m: number } {
+  const parts = new Intl.DateTimeFormat('en-u-ca-persian-nu-latn', { year: 'numeric', month: 'numeric' }).formatToParts(now);
+  return { y: Number(parts.find((p) => p.type === 'year')?.value), m: Number(parts.find((p) => p.type === 'month')?.value) };
+}
+export const STALE_AFTER_MONTHS = 18;
+/** Checks whose inputs come from the balance sheet: withheld when the balance sheet is not verified. */
+export const BALANCE_SHEET_CHECKS = ['leverage', 'equity', 'accruals', 'zmijewski', 'altman', 'beneish'];
+
 export const AUDIT_NOTE = 'امتیاز ریسک یک غربالگری ساده است؛ رتبه‌ی اعتباری یا نظر حسابرس نیست.';
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const r2 = (v: number) => Math.round(v * 100) / 100;
 
-export function runIranAudit(f: IranFundamentals | null | undefined): AuditReport {
+export function runIranAudit(f: IranFundamentals | null | undefined, now: Date = new Date()): AuditReport {
   const period = f?.report_title ?? null;
   const source = f ? [f.source, f.report_scope, f.tracing_no ? `کد رهگیری ${f.tracing_no}` : null].filter(Boolean).join(' · ') || null : null;
   const rev = num(f?.revenue_current), revP = num(f?.revenue_prev), ni = num(f?.net_profit_current), niP = num(f?.net_profit_prev);
@@ -104,9 +127,9 @@ export function runIranAudit(f: IranFundamentals | null | undefined): AuditRepor
   const ca = num(f?.current_assets_current), cl = num(f?.current_liabilities_current);
   if (ni != null && ta != null && ta > 0 && tl != null && ca != null && cl != null && cl > 0) {
     const x = -4.336 - 4.513 * (ni / ta) + 5.679 * (tl / ta) + 0.004 * (ca / cl);
-    const p = 1 / (1 + Math.exp(-x));
+    const p = normCdf(x);
     checks.push(mk('zmijewski', 'امتیاز زمیجفسکی (احتمال درماندگی)', true, p >= 0.5 ? 'FLAG' : p >= 0.2 ? 'WATCH' : 'OK',
-      `احتمال برآوردی درماندگی مالی ${r2(p * 100)}٪ (مدل ساده؛ پیش‌بینی قطعی نیست).`,
+      `احتمال برآوردی درماندگی مالی ${r2(p * 100)}٪ (مدل پروبیت زمیجفسکی؛ پیش‌بینی قطعی نیست).`,
       [{ label: 'ROA', value: r2((ni / ta) * 100) }, { label: 'بدهی/دارایی', value: r2((tl / ta) * 100) }, { label: 'نسبت جاری', value: r2(ca / cl) }, { label: 'احتمال', value: r2(p * 100) }]));
   } else checks.push(missing('zmijewski', 'امتیاز زمیجفسکی', 'دارایی‌های جاری و بدهی‌های جاری (نسبت جاری)'));
   // Altman Z'' (non-manufacturing/emerging-market form): needs working capital, retained earnings, EBIT.
@@ -152,9 +175,23 @@ export function runIranAudit(f: IranFundamentals | null | undefined): AuditRepor
     ? mk('opinion', 'نظر حسابرس', true, /مردود|عدم اظهار|مشروط/.test(op) ? 'FLAG' : /مقبول/.test(op) ? 'OK' : 'WATCH', `نظر حسابرس: ${op.slice(0, 160)}`, [{ label: 'متن', value: op.slice(0, 160) }])
     : missing('opinion', 'نظر حسابرس', 'متن نظر حسابرس'));
 
+  // Verification gate: balance-sheet based checks are never computed on a statement that does not reconcile or was not confirmed.
+  const idCheck = checks.find((c) => c.id === 'identity');
+  const stampedBad = f?.verification?.status === 'unverified';
+  const withheld = Boolean(f) && ((idCheck?.status === 'FLAG') || stampedBad);
+  if (withheld) {
+    const why = `تأییدنشده: ${stampedBad && f?.verification?.reason ? f.verification.reason : 'ترازنامه‌ی ذخیره‌شده با خودش تراز نیست'}${f?.tracing_no ? ` • شماره رهگیری کدال ${f.tracing_no}` : ''}`;
+    for (let i = 0; i < checks.length; i++) if (BALANCE_SHEET_CHECKS.includes(checks[i].id)) checks[i] = mk(checks[i].id, checks[i].title, true, 'INSUFFICIENT_DATA', why, []);
+  }
+  const end = periodEndOf(f?.report_title);
+  const cur = jalaliYearMonth(now);
+  const age = end ? (cur.y * 12 + cur.m) - (end.y * 12 + end.m) : null;
+  const stale = age !== null && age > STALE_AFTER_MONTHS;
+  if (stale) checks.push(mk('freshness', 'تازگی صورت مالی', false, 'WATCH', `صورت مالی مربوط به دوره‌ی منتهی به ${end!.text} است (${age} ماه پیش)؛ امتیاز ریسک برای آن محاسبه نمی‌شود.`, [{ label: 'پایان دوره', value: end!.text }]));
+
   const scored = checks.filter((c) => c.scored && c.status !== 'INSUFFICIENT_DATA');
   const pts = { OK: 0, WATCH: 50, FLAG: 100, INSUFFICIENT_DATA: 0 } as const;
   const evaluated = checks.filter((c) => c.status !== 'INSUFFICIENT_DATA').length;
-  const riskScore = evaluated >= MIN_AUDIT_COVERAGE && scored.length >= 2 ? Math.round(scored.reduce((a, c) => a + pts[c.status], 0) / scored.length) : null;
-  return { checks, evaluated, total: checks.length, minCoverage: MIN_AUDIT_COVERAGE, riskScore, note: AUDIT_NOTE };
+  const riskScore = !stale && !withheld && evaluated >= MIN_AUDIT_COVERAGE && scored.length >= 2 ? Math.round(scored.reduce((a, c) => a + pts[c.status], 0) / scored.length) : null;
+  return { checks, evaluated, total: checks.length, minCoverage: MIN_AUDIT_COVERAGE, riskScore, note: AUDIT_NOTE, stale, withheld };
 }
