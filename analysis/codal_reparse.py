@@ -26,8 +26,14 @@ NUMERIC = ("revenue", "net_profit", "gross_profit", "total_assets", "total_liabi
            "operating_profit", "operating_cash_flow")
 
 
+DERIVED = ("revenue_yoy_pct", "net_margin_pct", "net_margin_prev_pct")
+
+
 def _fields(codal: dict) -> dict[str, Optional[float]]:
-    return {f"{n}_{s}": codal.get(f"{n}_{s}") for n in NUMERIC for s in ("current", "prev")}
+    """Every amount the parser owns plus the percentages derived from them (kept consistent when amounts change)."""
+    out = {f"{n}_{s}": codal.get(f"{n}_{s}") for n in NUMERIC for s in ("current", "prev")}
+    out.update({k: codal.get(k) for k in DERIVED})
+    return out
 
 
 def balance_gap(codal: dict, suffix: str = "current") -> Optional[float]:
@@ -60,14 +66,15 @@ def verify_statement(symbol: str, codal: dict, read_html) -> dict[str, Any]:
         return {**out, "status": "unverified", "reason": "the original filing does not give a balancing balance sheet under the current parser"}
     new = parsed.to_dict()
     old, cur = _fields(codal), _fields(new)
-    changed = {k: {"stored": old[k], "filing": cur[k]} for k in old if cur[k] is not None and old[k] != cur[k]}
+    # a stored value the current parser no longer accepts (None) is cleared too, so a rejected number is never kept as verified
+    changed = {k: {"stored": old[k], "filing": cur[k]} for k in old if old[k] != cur[k]}
     gap = balance_gap(new)
     out["filingGap"] = gap
     if gap is None:
         return {**out, "status": "unverified", "reason": "the filing does not give all three of assets, liabilities and equity"}
     if abs(gap) > 0.02:
         return {**out, "status": "unverified", "reason": "the filing's own balance sheet does not balance within 2%"}
-    return {**out, "status": "corrected" if changed else "verified", "changed": changed, "values": {k: cur[k] for k in cur if cur[k] is not None}}
+    return {**out, "status": "corrected" if changed else "verified", "changed": changed, "values": dict(cur)}
 
 
 def reparse(db_path: str, *, apply: bool = False, inbox=None, limit: Optional[int] = None) -> dict[str, Any]:

@@ -164,3 +164,15 @@ def test_kpi_marks_balance_sheet_ratios_unverified_with_reason():
     k = mc.kpi(ds)
     roa = next(i for i in k["blocks"][0]["items"] if i["key"] == "roa")
     assert roa["status"] == "unverified" and roa["value"] is None and roa["missing"]
+
+
+def test_reparse_clears_rejected_optional_values_and_refreshes_derived_percentages():
+    html = _html([["درآمدهای عملیاتی", "1,000", "800"], ["سود (زیان) خالص", "100", "80"], ["جمع دارایی‌ها", "2,000", "1,800"],
+                  ["جمع بدهی‌ها", "1,200", "1,100"], ["جمع حقوق مالکانه", "800", "700"], ["جمع بدهی‌های جاری", "9,999", "9,000"]])
+    stored = _codal(0, tracing_no="T2", current_liabilities_current=9999.0, current_liabilities_prev=9000.0,
+                    revenue_current=500.0, net_margin_pct=99.0, revenue_yoy_pct=1.0)
+    res = verify_statement("X", stored, lambda t: html)
+    assert res["status"] == "corrected"
+    assert res["values"]["current_liabilities_current"] is None          # larger than total liabilities: rejected, cleared
+    assert "current_liabilities_current" in res["changed"]
+    assert abs(res["values"]["net_margin_pct"] - 10.0) < 1e-9 and abs(res["values"]["revenue_yoy_pct"] - 25.0) < 1e-9
