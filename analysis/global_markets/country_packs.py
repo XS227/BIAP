@@ -90,7 +90,7 @@ COUNTRY_PACKS: dict[str, CountryPack] = {
     ), "twelve-data", "esef-issuer", "esef-issuer", "Euronext + ESEF/issuer filings", ("ISEQ",), "ibkr"),
     "PT": CountryPack("PT", "Portugal", (
         E("EURONEXT_LISBON", "Euronext Lisbon", ("EUR",), "XLIS", ("ALXL", "ENXL")),
-    ), "twelve-data", "esef-issuer", "esef-issuer", "Euronext + ESEF/issuer filings", ("PSI",), "ibkr"),
+    ), "twelve-data", "esef-issuer", "esef-issuer", "Euronext + ESEF/issuer filings", ("PSI20.LS",), "ibkr"),
     "IT": CountryPack("IT", "Italy", (
         E("EURONEXT_MILAN", "Euronext Milan", ("EUR",), "XMIL", ("MTAA",)),
     ), "twelve-data", "esef-issuer", "esef-issuer", "Euronext + ESEF/issuer filings", ("FTSEMIB",), "ibkr"),

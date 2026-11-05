@@ -12,8 +12,10 @@ exchange in one request rather than a hand-maintained symbol shortlist.
 from __future__ import annotations
 
 import csv
-from datetime import datetime
+from datetime import date, datetime
 import io
+import os
+import re
 from typing import Iterable, Optional
 
 import requests
@@ -21,6 +23,7 @@ import requests
 from .country_packs import ExchangeSpec
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
+from .session_calendar import has_calendar, last_completed_session
 
 
 _BASE = "https://live.euronext.com"
@@ -48,6 +51,31 @@ _EXACT_MARKET_NAMES: dict[tuple[str, str], str] = {
 }
 
 
+# The CSV carries no trade date per row: the line under "European Equities" is the generation date and the
+# "Closing Price DateTime" column is empty. Markets listed here are dated with the last completed session on their
+# venue calendar (cross-checked against the file's own date); every other Euronext market keeps quoteDate=None
+# exactly as before (FR/IT/NL/NO are paper-portfolio markets). Env BIAP_EURONEXT_SESSION_DATE_MARKETS="PT:EURONEXT_LISBON,..."
+_DEFAULT_SESSION_DATE_MARKETS = "PT:EURONEXT_LISBON"
+_FILE_DATE = re.compile(r"^\s*(\d{1,2} [A-Za-z]{3} \d{4})\s*$")
+
+
+def _session_date_markets() -> set[tuple[str, str]]:
+    raw = os.environ.get("BIAP_EURONEXT_SESSION_DATE_MARKETS", _DEFAULT_SESSION_DATE_MARKETS)
+    out = set()
+    for part in raw.split(","):
+        if ":" in part:
+            c, e = part.strip().upper().split(":", 1)
+            out.add((c, e))
+    return out
+
+
+def _file_date(text: str) -> Optional[date]:
+    try:
+        return datetime.strptime(text.strip(), "%d %b %Y").date() if _FILE_DATE.match(text) else None
+    except ValueError:
+        return None
+
+
 def _float(value: object) -> Optional[float]:
     text = str(value or "").strip().replace(",", "")
     if not text or text == "-":
@@ -69,6 +97,7 @@ class EuronextLiveRegulatedClient:
 
     def __init__(self, *, timeout: float = 45.0) -> None:
         self.timeout = max(10.0, float(timeout))
+        self.last_file_date: Optional[date] = None   # generation date printed under "European Equities" in the last download
 
     @staticmethod
     def supported(country: str, exchange: str) -> bool:
@@ -106,9 +135,12 @@ class EuronextLiveRegulatedClient:
         text = response.content.decode("utf-8-sig", errors="replace")
         reader = csv.DictReader(io.StringIO(text), delimiter=";")
         rows: list[dict] = []
+        self.last_file_date = None
         for raw in reader:
             if not isinstance(raw, dict):
                 continue
+            if self.last_file_date is None and not raw.get("ISIN"):
+                self.last_file_date = _file_date(str(raw.get("Name") or ""))
             isin = _valid_isin(raw.get("ISIN"))
             symbol = str(raw.get("Symbol") or "").strip().upper()
             if not isin or not symbol:
@@ -173,9 +205,23 @@ class EuronextLiveRegulatedClient:
         instruments: Iterable[GlobalCompany],
         country: str,
         spec: ExchangeSpec,
+        *,
+        now: Optional[datetime] = None,
     ) -> tuple[list[dict], list[str], str]:
         selected = list(instruments)
         mic, rows = self._download(country=country, exchange=spec.code)
+        session: Optional[date] = None
+        errors: list[str] = []
+        if (country.upper(), spec.code.upper()) in _session_date_markets() and has_calendar(mic):
+            session = last_completed_session(mic, now)
+            # The file must have been generated on or after that session; an older file is a stale feed, so no date is
+            # claimed (quoteDate stays None) and the problem is reported instead of dating old prices as current.
+            if session is not None and (self.last_file_date is None or self.last_file_date < session):
+                errors.append(
+                    f"Euronext regulated CSV for {country}/{spec.code} is dated {self.last_file_date}, "
+                    f"older than the last completed session {session}; quote date not stamped"
+                )
+                session = None
         by_isin: dict[str, list[dict]] = {}
         for row in rows:
             by_isin.setdefault(str(row["isin"]), []).append(row)
@@ -210,13 +256,13 @@ class EuronextLiveRegulatedClient:
                 "averageVolume": effective_volume,
                 "liquidityValue": float(row.get("turnover") or (float(price) * effective_volume)),
                 "rangePosition": range_position,
-                "quoteDate": None,
+                "quoteDate": session.isoformat() if session else None,
+                **({"quoteDateBasis": "last_completed_session"} if session else {}),
                 "mic": mic,
                 "provider": self.provider_id,
                 "isin": isin,
                 "directorySymbol": row.get("symbol"),
             })
-        errors: list[str] = []
         if not quotes:
             errors.append(f"Euronext regulated EOD returned no usable FIRDS-universe matches for {country}/{spec.code}")
         return quotes, errors, f"Euronext regulated official EOD ({mic})"
