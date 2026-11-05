@@ -23,11 +23,11 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import module_compute as mc
 import module_dataset as md
+from module_dataset import symbol_key
 import private_analytics
 import safe_sql
 from auth import require_user_id
 from business_dataset_store import get_dataset
-from codal_inbox import symbol_key
 from listed_company_store import ListedCompanyStore
 from market_memory import history_for_symbols, recent_symbol_history
 from private_store import PrivateDataError, PrivateStore

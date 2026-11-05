@@ -31,3 +31,20 @@ Rollback: the service is additive (`/iran/*`, new private DB `BIAP_PRIVATE_OPS_D
 - Every dataset and module response carries `status.codes` (`REGISTERED_ONLY`, `MISSING_MARKET`, `MISSING_CODAL`, `SOURCE_RATE_LIMITED`) plus `hasCurrentPrice`, `hasHistory`, `historyObservations`. Errors: `{"detail","code"}` with `NOT_FOUND`, `AMBIGUOUS`, `BAD_QUERY`, `SERVER_ERROR`.
 - `registry_reconcile.py` inserts identity-only rows for primary companies with no stored row (insert-only, runs at the start of the nightly baseline).
 - Fixed: `market_memory._connect` leaked a file descriptor per `with` block (process hit the 1024 limit -> HTTP 500). SQL now loads all price history over one connection.
+
+## Functional repair (2026-11-05)
+
+- **Identity:** instrument digits are folded (`شاوان۳` = `شاوان٣` = `شاوان3`).
+- **Statement verification** (`statement_verification`): every stored CODAL statement carries `fundamentals.verification` =
+  `verified` (assets = liabilities + equity within 2% for both periods), `incomplete` (inputs missing) or `unverified`
+  (does not reconcile, or `codal_reparse` could not confirm it against the original filing). For `unverified` statements the
+  balance-sheet ratios (ROA, ROE, debt ratio, debt/equity, current ratio, accruals, asset turnover, receivable days) are
+  **withheld with a reason**; income-statement ratios are kept.
+- **`codal_reparse.py`** re-reads each stored statement's tracing number from the verified CODAL inbox with the current parser:
+  `verified` / `corrected` (numbers replaced from the filing) / `unverified`. Dry run by default; `--apply` updates only `company_json`.
+- **EDA** is company-first: the first blocks (`scopeKind: "company"`) hold this company's own ratios with source, peer median and
+  percentile (only when the comparison sample has ≥ 8 companies). Whole-market tables/histograms carry `scopeKind: "market"` and a
+  title saying so. Correlation is Spearman (rank), ≥ 15 pairs. A company with nothing of its own is `blocked`, never shown market statistics.
+- **KPI**: every item is `kind: "public"`, `requiresPrivateData: false`; the last stored close is shown as
+  `last_recorded_close` (never as the current price). Private KPIs (CAC, CRM, internal costs) are listed separately.
+- **Market-entry**: each metric uses its own valid sample (P/E and market cap need only market data).

@@ -76,6 +76,30 @@ def pearson(xs: Sequence, ys: Sequence) -> Optional[float]:
     return sum((a - mx) * (b - my) for a, b in pairs) / math.sqrt(sxx * syy)
 
 
+def _ranks(values: Sequence[float]) -> list[float]:
+    """Average ranks (ties share the mean rank), 1-based."""
+    order = sorted(range(len(values)), key=lambda i: values[i])
+    ranks = [0.0] * len(values)
+    i = 0
+    while i < len(order):
+        j = i
+        while j + 1 < len(order) and values[order[j + 1]] == values[order[i]]:
+            j += 1
+        for k in range(i, j + 1):
+            ranks[order[k]] = (i + j) / 2 + 1
+        i = j + 1
+    return ranks
+
+
+def spearman(xs: Sequence, ys: Sequence) -> Optional[float]:
+    """Rank correlation: one extreme value cannot dominate it the way it dominates Pearson."""
+    pairs = [(float(a), float(b)) for a, b in zip(xs, ys) if a is not None and b is not None
+             and math.isfinite(float(a)) and math.isfinite(float(b))]
+    if len(pairs) < 5:
+        return None
+    return pearson(_ranks([a for a, _ in pairs]), _ranks([b for _, b in pairs]))
+
+
 def percentile_rank(sorted_vals: Sequence[float], x: float) -> Optional[float]:
     n = len(sorted_vals)
     if n == 0:

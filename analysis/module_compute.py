@@ -7,7 +7,7 @@ import math
 from typing import Any, Optional
 
 import module_stats as st
-from module_dataset import TIER_FULL, TIER_MARKET, TIER_PARTIAL, TIER_REGISTERED, UNIVERSE_RATIO_KEYS, num
+from module_dataset import compute_ratios, TIER_FULL, TIER_MARKET, TIER_PARTIAL, TIER_REGISTERED, UNIVERSE_RATIO_KEYS, num
 
 MIN_HISTORY_ANOMALY = 15
 MIN_HISTORY_FORECAST = 30
@@ -19,7 +19,7 @@ PRIVATE_MODULES = ("business-kpi", "governance", "crm", "campaign", "pricing", "
 
 # Required inputs per listed-company module (data contract). "any" = at least one of the group.
 CONTRACTS: dict[str, dict] = {
-    "eda": {"title": "EDA Explorer", "needs": [("universe", "حداقل ۸ شرکت با نسبت‌های مالی در پایگاه BIAP")], "optional": ["history"]},
+    "eda": {"title": "EDA Explorer", "needs_any": ["market.price", "fundamentals", "history>=3"]},
     "sql": {"title": "SQL / Data Query", "needs": [("universe", "جدول‌های تحلیلی BIAP")]},
     "kpi-extract": {"title": "KPI", "needs_any": ["market.price", "fundamentals"]},
     "anomaly": {"title": "تشخیص ناهنجاری", "needs": [("history>=15", "حداقل ۱۵ مشاهده‌ی قیمت روزانه")]},
@@ -27,7 +27,7 @@ CONTRACTS: dict[str, dict] = {
     "dashboard": {"title": "BI Dashboard", "needs_any": ["market.price", "fundamentals"]},
     "report": {"title": "گزارش تحلیلی", "needs_any": ["market.price", "fundamentals"]},
     "swot": {"title": "SWOT + رقبا", "needs": [("fundamentals", "صورت مالی CODAL"), ("peers>=8", "حداقل ۸ شرکت هم‌گروه یا بازار برای مقایسه")]},
-    "market-entry": {"title": "فرصت و ورود به بازار", "needs": [("sector", "گروه صنعت"), ("peers>=8", "حداقل ۸ شرکت هم‌گروه")]},
+    "market-entry": {"title": "فرصت و ورود به بازار", "needs": [("sector", "گروه صنعت")]},
     "financial-model": {"title": "Financial Modeling", "needs": [("fundamentals.revenue", "درآمد دوره"), ("fundamentals.net_profit", "سود خالص")]},
     "scenario": {"title": "Scenario Analysis", "needs": [("fundamentals.revenue", "درآمد دوره"), ("fundamentals.net_profit", "سود خالص")]},
     "executive-report": {"title": "گزارش مدیریتی", "needs_any": ["market.price", "fundamentals"]},
@@ -71,11 +71,11 @@ def readiness(ds: dict, peers: int, market_rows: int = 0) -> dict[str, dict]:
             if not ok:
                 missing.append(label)
         if "needs_any" in spec:
-            if not (has_fund or has_price):
-                missing.append("قیمت بازار یا صورت مالی")
+            if not (has_fund or has_price or (key == "eda" and n_hist >= 3)):
+                missing.append("قیمت بازار، صورت مالی CODAL یا حداقل ۳ مشاهده‌ی قیمت")
         if missing:
             status = "blocked"
-        elif key in ("kpi-extract", "dashboard", "report", "executive-report", "mbr") and not (has_fund and has_price):
+        elif key in ("eda", "kpi-extract", "dashboard", "report", "executive-report", "mbr") and not (has_fund and has_price):
             status = "partial"
             missing = ["صورت مالی CODAL"] if not has_fund else ["قیمت بازار"]
         else:
@@ -109,11 +109,17 @@ def kpi(ds: dict) -> dict:
     def add(group, key, label, value, unit, formula, inputs, source, extra_missing=None):
         items.append({"group": group, "key": key, "label": label, "value": fmt_ratio(value), "unit": unit, "formula": formula,
                       "inputs": inputs, "source": source, "period": period if source.startswith("CODAL") else None,
-                      "status": "ok" if value is not None else "missing", "missing": extra_missing or []})
+                      "status": "ok" if value is not None else "missing", "missing": extra_missing or [], "kind": "public", "requiresPrivateData": False})
 
     price = market.get("price")
     pe = num(market.get("pe"))
-    add("بازار", "price", "قیمت آخر", price, "ریال", "آخرین قیمت معامله/پایانی", ["last_price"], f"بازار ({ds['provenance'].get('priceSource') or 'TSETMC/Tindex'})")
+    add("بازار", "price", "قیمت جاری", price, "ریال", "آخرین قیمت معامله/پایانی از منبع بازار", ["last_price"], f"بازار ({ds['provenance'].get('priceSource') or 'TSETMC/Tindex'})",
+        None if price is not None else ["قیمت جاری از منبع بازار دریافت نشده است"])
+    hist = ds.get("history") or []
+    if hist:
+        last = hist[-1]
+        add("بازار", "last_recorded_close", f"آخرین قیمت ثبت‌شده در تاریخچه ({last['date']})", last["price"], "ریال",
+            "آخرین مشاهده‌ی روزانه‌ی ذخیره‌شده در BIAP؛ قیمت جاری نیست", ["history"], f"تاریخچه BIAP • {len(hist)} مشاهده")
     add("بازار", "change_percent", "تغییر روزانه", num(market.get("change_percent")), "%", "(قیمت − قیمت دیروز) ÷ قیمت دیروز", ["change_percent"], "بازار")
     add("بازار", "pe", "P/E", pe, "×", "قیمت ÷ سود هر سهم (گزارش‌شده توسط منبع)", ["pe"], "بازار")
     add("بازار", "earnings_yield", "بازده سود (۱/PE)", (1 / pe) if pe and pe > 0 else None, "نسبت", "۱ ÷ P/E (فقط P/E مثبت)", ["pe"], "بازار")
@@ -125,20 +131,26 @@ def kpi(ds: dict) -> dict:
     groups = {"gross_margin": "سودآوری", "operating_margin": "سودآوری", "net_margin": "سودآوری", "roa": "سودآوری", "roe": "سودآوری",
               "revenue_growth": "رشد", "profit_growth": "رشد", "current_ratio": "نقدینگی", "debt_ratio": "بدهی", "debt_to_equity": "بدهی",
               "cfo_to_profit": "جریان نقد", "accruals_ratio": "جریان نقد", "asset_turnover": "کارایی", "receivable_days": "کارایی"}
+    labels = compute_ratios({"current": {}, "prev": {}, "periodType": "unknown"})
     for key, group in groups.items():
         r = ratios.get(key)
         if r is None:
-            add(group, key, key, None, "نسبت", "—", [], "CODAL", ["صورت مالی CODAL"])
+            lab = labels.get(key) or {}
+            add(group, key, lab.get("label", key), None, "نسبت", lab.get("formula", "—"), lab.get("inputs", []), "CODAL", ["صورت مالی CODAL"])
             continue
         unit = "روز" if key == "receivable_days" else ("×" if key in ("current_ratio", "debt_to_equity", "asset_turnover") else "نسبت")
-        add(group, key, r["label"], r["value"], unit, r["formula"], r["inputs"], f"CODAL • {view.get('scope') or 'نامشخص'}", r.get("missing"))
+        add(group, key, r["label"], r["value"], unit, r["formula"], r["inputs"], f"CODAL • {view.get('scope') or 'نامشخص'}", r.get("missing") or ([r["reason"]] if r.get("reason") else []))
+        if r.get("unverified"):
+            items[-1]["status"] = "unverified"
     ok = [i for i in items if i["status"] == "ok"]
     missing_inputs = sorted({m for i in items for m in i["missing"]})
     if not ok:
         return blocked("kpi-extract", ds, missing_inputs or ["قیمت بازار", "صورت مالی CODAL"], "هیچ شاخصی با داده‌ی تأییدشده قابل محاسبه نیست.")
     status = "ok" if len(ok) == len(items) else "partial"
     return envelope("kpi-extract", ds, status, f"{len(ok)} از {len(items)} شاخص محاسبه شد؛ هر شاخص فرمول، ورودی و منبع دارد.",
-                    [{"type": "kpi_table", "items": items}], missing=missing_inputs,
+                    [{"type": "kpi_table", "items": items},
+                     {"type": "notice", "tone": "info", "text": "شاخص‌های بالا عمومی‌اند و از CODAL/TSETMC خودکار محاسبه می‌شوند؛ Excel نمی‌خواهند. فقط شاخص‌های خصوصی (هزینه‌ی جذب مشتری، CRM، هزینه‌های داخلی) به داده‌ی خود شما نیاز دارند.",
+                      "privateKpis": ["هزینه‌ی جذب مشتری (CAC)", "نرخ تبدیل CRM", "هزینه‌های داخلی", "حاشیه‌ی محصول/کانال"]}], missing=missing_inputs,
                     note="مقادیر CODAL فقط از یک صورت مالی با دامنه‌ی مشخص و بدون اختلاط تلفیقی/جداگانه می‌آیند.")
 
 
@@ -176,6 +188,28 @@ def _column_rows(ds: dict, universe: list[dict], col: str, sector_only: bool) ->
     return [], "ناکافی"
 
 
+MIN_CORR_PAIRS = 15
+
+
+def _own_value(ds: dict, col: str) -> tuple[Optional[float], str, Optional[str]]:
+    """This company's own value for an EDA column, the source label and, when absent, the precise reason."""
+    if col in MARKET_COLUMNS:
+        key = {"pe": "pe", "change_percent": "change_percent", "market_cap": "market_cap", "trade_value": "trade_value_today"}[col]
+        v = num(ds["market"].get(key))
+        if v is None:
+            return None, "بازار", "قیمت/داده‌ی جاری بازار برای این شرکت ثبت نشده است" if ds["market"].get("price") is None else "این فیلد از منبع بازار دریافت نشده است"
+        return v, "بازار", None
+    r = ds["ratios"].get(col)
+    view = ds["fundamentals"]
+    if not view.get("present"):
+        return None, "CODAL", "صورت مالی CODAL برای این شرکت ثبت نشده است"
+    src = f"CODAL • {'تلفیقی' if view.get('scope') == 'consolidated' else 'جداگانه' if view.get('scope') == 'standalone' else 'دامنه نامشخص'}"
+    if r is None or r["value"] is None:
+        miss = (r or {}).get("missing") or []
+        return None, src, ("ورودی‌های ناموجود: " + "، ".join(miss)) if miss else ((r or {}).get("reason") or "قابل محاسبه نیست")
+    return r["value"], src, None
+
+
 def eda(ds: dict, universe: list[dict], *, column: Optional[str] = None, sector_only: bool = False) -> dict:
     primary = [r for r in universe if r.get("is_primary", 1)]
     total = len(primary)
@@ -185,49 +219,85 @@ def eda(ds: dict, universe: list[dict], *, column: Optional[str] = None, sector_
         rows, label = _column_rows(ds, universe, c, sector_only)
         if rows:
             usable[c] = (rows, label)
-    if not usable:
-        return blocked("eda", ds, ["حداقل ۸ شرکت با مقدار معتبر برای هر شاخص"], "هیچ شاخصی در پایگاه BIAP نمونه‌ی کافی (۸ شرکت) برای تحلیل آماری ندارد.")
+    # 1) company-specific profile: always this company's own numbers, with source and an exact reason when absent
+    profile, own_rows = [], []
+    for c in EDA_COLUMNS:
+        mine, source, why = _own_value(ds, c)
+        entry: dict[str, Any] = {"column": EDA_LABELS[c], "value": None if mine is None else round(mine, 4), "source": source,
+                                 "status": "ok" if mine is not None else "missing", "reason": why,
+                                 "sampleN": None, "peerMedian": None, "percentile": None, "outlier": None, "scope": None}
+        if c in usable:
+            rows, label = usable[c]
+            vals = sorted(r[c] for r in rows)
+            entry.update({"sampleN": len(vals), "scope": label, "peerMedian": round(st.quantile(vals, 0.5), 4)})
+            if mine is not None and not (c in POSITIVE_ONLY and mine <= 0):
+                entry["percentile"] = round(100 * st.percentile_rank(vals, mine), 1)
+                entry["outlier"] = st.iqr_outlier(vals, mine)
+                own_rows.append({"column": EDA_LABELS[c], "value": entry["value"], "percentile": entry["percentile"], "outlier": entry["outlier"], "scope": label})
+        elif mine is not None:
+            entry["reason"] = f"نمونه‌ی مقایسه کافی نیست (کمتر از {MIN_PEERS} شرکت)؛ جایگاه صدکی نمایش داده نمی‌شود"
+        profile.append(entry)
+    have = [e for e in profile if e["status"] == "ok"]
+    if not have and len(ds["history"]) < 3:
+        reasons = sorted({e["reason"] for e in profile if e["reason"]})
+        return blocked("eda", ds, reasons or ["داده‌ی خود شرکت"], "برای این شرکت هیچ شاخص یا تاریخچه‌ی قیمتی ثبت نشده است؛ آمار کل بازار به‌جای آن نمایش داده نمی‌شود.")
+    blocks: list[dict] = [
+        {"type": "metrics", "title": "این شرکت", "scopeKind": "company",
+         "items": [{"label": "شاخص‌های محاسبه‌شده برای این شرکت", "value": f"{len(have)} از {len(profile)}"},
+                   {"label": "مشاهده‌های قیمت ثبت‌شده", "value": len(ds["history"])},
+                   {"label": "شرکت‌های اصلی ثبت‌شده (کل بازار)", "value": total}]},
+        {"type": "table", "title": "شاخص‌های همین شرکت (نه آمار کل بازار)", "scopeKind": "company",
+         "columns": ["column", "value", "source", "peerMedian", "percentile", "sampleN", "scope", "reason"], "rows": profile},
+    ]
+    # 2) the company's own price record (explicit count; never confused with a current quote)
+    if len(ds["history"]) >= 3:
+        blocks.append({"type": "line", "title": f"تاریخچه قیمت ثبت‌شده همین شرکت ({len(ds['history'])} مشاهده، از {ds['history'][0]['date']} تا {ds['history'][-1]['date']})",
+                       "scopeKind": "company", "points": [{"x": h_["date"], "y": h_["price"]} for h_ in ds["history"]]})
+    else:
+        blocks.append({"type": "notice", "tone": "info", "scopeKind": "company",
+                       "text": f"تاریخچه‌ی قیمت این شرکت {len(ds['history'])} مشاهده دارد؛ برای نمودار حداقل ۳ مشاهده لازم است."})
+    # 3) whole-market statistics, always labelled as such
+    if usable:
+        focus = column if column in usable else next((c for c in usable if any(e["column"] == EDA_LABELS[c] and e["status"] == "ok" for e in profile)), next(iter(usable)))
+        rows, label = usable[focus]
+        v = sorted(r[focus] for r in rows)
+        lo, hi = st.quantile(v, 0.01), st.quantile(v, 0.99)
+        h = st.histogram(v, 12, lo=lo, hi=hi)
+        mine = next((e["value"] for e in profile if e["column"] == EDA_LABELS[focus]), None)
+        in_range = mine is not None and lo is not None and lo <= mine <= hi
+        blocks.append({"type": "histogram", "scopeKind": "market", "title": f"توزیع {EDA_LABELS[focus]} در {label} (آمار نمونه، نه این شرکت)",
+                       "bins": h["bins"], "clipped": h["clipped"], "n": h["n"], "marker": mine, "markerInRange": in_range,
+                       "range": [lo, hi], "note": "مقادیر خارج از صدک ۱ تا ۹۹ در نمودار کوتاه شده‌اند و در clipped شمرده می‌شوند."
+                       + ("" if mine is None or in_range else " مقدار این شرکت خارج از بازه‌ی نمودار است.")})
+        summary_rows = []
+        for c, (rws, lab) in usable.items():
+            d = st.describe([r[c] for r in rws])
+            summary_rows.append({"column": EDA_LABELS[c], "scope": lab, **{k: (None if d.get(k) is None else round(d[k], 4)) for k in ("n", "mean", "median", "std", "min", "q1", "q3", "max", "skew")}})
+        blocks.append({"type": "table", "title": "خلاصه آماری نمونه‌ی مقایسه (کل بازار/هم‌دسته)", "scopeKind": "market",
+                       "columns": ["column", "scope", "n", "mean", "median", "std", "min", "q1", "q3", "max", "skew"], "rows": summary_rows})
+        if own_rows:
+            blocks.append({"type": "table", "title": "جایگاه این شرکت در نمونه", "scopeKind": "company", "columns": ["column", "value", "percentile", "outlier", "scope"], "rows": own_rows})
+        corr = []
+        cols = list(usable)
+        for i, a in enumerate(cols):
+            for b2 in cols[i + 1:]:
+                both = [r for r in primary if r.get(a) is not None and r.get(b2) is not None]
+                r_ = st.spearman([r[a] for r in both], [r[b2] for r in both]) if len(both) >= MIN_CORR_PAIRS else None
+                if r_ is not None:
+                    corr.append({"a": EDA_LABELS[a], "b": EDA_LABELS[b2], "r": round(r_, 3), "n": len(both)})
+        corr.sort(key=lambda x: -abs(x["r"]))
+        blocks.append({"type": "table", "title": f"همبستگی رتبه‌ای اسپیرمن در کل بازار (حداقل {MIN_CORR_PAIRS} جفت؛ مقدار پرت جهت را تعیین نمی‌کند)", "scopeKind": "market",
+                       "columns": ["a", "b", "r", "n"], "rows": corr[:8]})
     miss = [{"column": EDA_LABELS[c], "present": sum(1 for r in primary if r.get(c) is not None),
              "missingPct": round(100 * (1 - sum(1 for r in primary if r.get(c) is not None) / total), 1) if total else 100.0} for c in EDA_COLUMNS]
-    summary_rows, own_rows = [], []
-    for c, (rows, label) in usable.items():
-        vals = [r[c] for r in rows]
-        d = st.describe(vals)
-        summary_rows.append({"column": EDA_LABELS[c], "scope": label, **{k: (None if d.get(k) is None else round(d[k], 4)) for k in ("n", "mean", "median", "std", "min", "q1", "q3", "max", "skew")}})
-        mine = next((r.get(c) for r in universe if r["code"] == code), None)
-        if mine is not None:
-            sv = sorted(vals)
-            own_rows.append({"column": EDA_LABELS[c], "value": round(mine, 4), "percentile": round(100 * st.percentile_rank(sv, mine), 1), "outlier": st.iqr_outlier(sv, mine), "scope": label})
-    focus = column if column in usable else next(iter(usable))
-    rows, label = usable[focus]
-    v = sorted(r[focus] for r in rows)
-    h = st.histogram(v, 12, lo=st.quantile(v, 0.01), hi=st.quantile(v, 0.99))
-    mine = next((r.get(focus) for r in universe if r["code"] == code), None)
-    blocks: list[dict] = [
-        {"type": "metrics", "items": [{"label": "نمونه‌ی شاخص انتخابی", "value": len(rows)}, {"label": "دامنه", "value": label}, {"label": "شرکت‌های اصلی ثبت‌شده", "value": total}]},
-        {"type": "histogram", "title": f"توزیع {EDA_LABELS[focus]} ({label})", "bins": h["bins"], "clipped": h["clipped"], "n": h["n"], "marker": mine,
-         "note": "مقادیر خارج از صدک ۱ تا ۹۹ در نمودار کوتاه شده‌اند و در clipped شمرده می‌شوند."},
-        {"type": "table", "title": "خلاصه آماری", "columns": ["column", "scope", "n", "mean", "median", "std", "min", "q1", "q3", "max", "skew"], "rows": summary_rows},
-    ]
-    if own_rows:
-        blocks.append({"type": "table", "title": "جایگاه این شرکت", "columns": ["column", "value", "percentile", "outlier", "scope"], "rows": own_rows})
-    cols = [c for c in usable if c not in MARKET_COLUMNS or True]
-    corr = []
-    for i, a in enumerate(cols):
-        for b2 in cols[i + 1:]:
-            both = [r for r in universe if r.get("is_primary", 1) and r.get(a) is not None and r.get(b2) is not None]
-            r_ = st.pearson([r[a] for r in both], [r[b2] for r in both]) if len(both) >= MIN_PEERS else None
-            if r_ is not None:
-                corr.append({"a": EDA_LABELS[a], "b": EDA_LABELS[b2], "r": round(r_, 3), "n": len(both)})
-    corr.sort(key=lambda x: -abs(x["r"]))
-    blocks.append({"type": "table", "title": "قوی‌ترین همبستگی‌ها (پیرسون، فقط جفت‌های هم‌نمونه)", "columns": ["a", "b", "r", "n"], "rows": corr[:8]})
-    blocks.append({"type": "table", "title": "تحلیل مقادیر گمشده در کل شرکت‌های اصلی", "columns": ["column", "present", "missingPct"], "rows": miss})
-    if len(ds["history"]) >= 3:
-        blocks.append({"type": "line", "title": "تاریخچه قیمت ثبت‌شده در BIAP", "points": [{"x": h_["date"], "y": h_["price"]} for h_ in ds["history"]]})
+    blocks.append({"type": "table", "title": "تحلیل مقادیر گمشده در کل شرکت‌های اصلی (کل بازار)", "scopeKind": "market", "columns": ["column", "present", "missingPct"], "rows": miss})
     skipped = [EDA_LABELS[c] for c in EDA_COLUMNS if c not in usable]
-    return envelope("eda", ds, "ok", f"تحلیل اکتشافی روی {len(usable)} شاخص با نمونه‌ی کافی از {total} شرکت اصلی (شاخص‌های مالی فقط برای شرکت‌های دارای صورت مالی).", blocks,
-                    missing=[f"نمونه‌ی کافی: {s}" for s in skipped],
-                    note="ورودی همان جدول تحلیلی BIAP است؛ نیازی به CSV نیست. شاخص‌های مالی تا گسترش پوشش CODAL نمونه‌ی کوچکی دارند و اندازه‌ی نمونه در جدول آمده است.")
+    absent = [f"{e['column']}: {e['reason']}" for e in profile if e["status"] == "missing"]
+    status = "ok" if len(have) == len(profile) else "partial"
+    return envelope("eda", ds, status,
+                    f"{len(have)} از {len(profile)} شاخص برای همین شرکت محاسبه شد؛ جدول‌های آمار نمونه با برچسب «کل بازار» جدا شده‌اند.", blocks,
+                    missing=absent + [f"نمونه‌ی مقایسه‌ی کافی نیست: {s}" for s in skipped],
+                    note="شاخص‌های مالی از آخرین صورت مالی همین شرکت می‌آیند؛ نمونه‌ی مقایسه فقط شرکت‌های دارای صورت مالی (سالانه، تلفیقی یا جداگانه) است و اندازه‌ی آن در جدول آمده است. نیازی به CSV نیست.")
 
 
 # ---- anomaly / forecast ----------------------------------------------------------------------
@@ -413,22 +483,35 @@ def swot(ds: dict, universe: list[dict]) -> dict:
 
 
 def market_entry(ds: dict, universe: list[dict]) -> dict:
+    """Sector vs market medians, each metric on its own valid sample (financial ratios need CODAL peers, P/E and
+    market size only need market data, so a sector with few statements still gets the market metrics)."""
     sector = ds["identity"].get("sector")
     if not sector:
         return blocked("market-entry", ds, ["گروه صنعت"], "گروه صنعت شرکت ثبت نشده است.")
-    base = comparable(universe, ds["identity"]["code"])
-    same = [r for r in base if r.get("sector") == sector]
-    if len(same) < MIN_PEERS:
-        return blocked("market-entry", ds, ["حداقل ۸ شرکت هم‌گروه"], f"فقط {len(same)} شرکت هم‌گروه صورت مالی دارند.")
-    allr = base
-    rows = []
-    for key in ("net_margin", "revenue_growth", "roe", "debt_ratio", "pe"):
-        a = st.describe([r.get(key) for r in same]); b = st.describe([r.get(key) for r in allr])
-        if a["n"] >= MIN_PEERS and b["n"]:
-            rows.append({"metric": EDA_LABELS.get(key, key), "sectorMedian": round(a["median"], 4), "marketMedian": round(b["median"], 4), "n": a["n"]})
-    return envelope("market-entry", ds, "ok", f"مقایسه‌ی صنعت {sector} با کل بازار روی {len(same)} شرکت.", [
-        {"type": "table", "title": "میانه صنعت در برابر بازار", "columns": ["metric", "sectorMedian", "marketMedian", "n"], "rows": rows}],
-        note="این ماژول شاهد عددی صنعت را نشان می‌دهد؛ ارزیابی ورود به بازار به داده‌ی تقاضا و هزینه‌ی داخلی نیاز دارد.")
+    primary = [r for r in universe if r.get("is_primary", 1)]
+    code = ds["identity"]["code"]
+    own = next((r for r in universe if r["code"] == code), None)
+    cat = own.get("category") if own else None
+    rows, limits = [], []
+    for key in ("net_margin", "revenue_growth", "roe", "debt_ratio", "pe", "market_cap"):
+        market_metric = key in MARKET_COLUMNS
+        pool = [r for r in primary if r.get(key) is not None and (key not in POSITIVE_ONLY or r[key] > 0)]
+        same = [r for r in pool if r.get("sector") == sector]
+        scope = f"گروه {sector}"
+        if len(same) < MIN_PEERS and cat and not market_metric:
+            same, scope = [r for r in pool if r.get("category") == cat], "هم‌دسته (گروه صنعت نمونه‌ی کافی ندارد)"
+        if len(same) < MIN_PEERS or len(pool) < MIN_PEERS:
+            limits.append(f"{EDA_LABELS.get(key, key)}: فقط {len(same)} شرکت با داده‌ی معتبر در {scope}")
+            continue
+        a, b2 = st.describe([r[key] for r in same]), st.describe([r[key] for r in pool])
+        mine = next((e for e in [_own_value(ds, key)] if e[0] is not None), None)
+        rows.append({"metric": EDA_LABELS.get(key, key), "scope": scope, "sectorMedian": round(a["median"], 4), "marketMedian": round(b2["median"], 4),
+                     "n": a["n"], "company": None if mine is None else round(mine[0], 4)})
+    if not rows:
+        return blocked("market-entry", ds, limits or ["حداقل ۸ شرکت هم‌گروه با داده‌ی معتبر"], f"برای گروه {sector} نمونه‌ی کافی (۸ شرکت) در هیچ شاخص وجود ندارد.")
+    return envelope("market-entry", ds, "ok" if not limits else "partial", f"مقایسه‌ی صنعت {sector} با کل بازار روی {len(rows)} شاخص با نمونه‌ی کافی.", [
+        {"type": "table", "title": "میانه صنعت در برابر بازار (هر شاخص با نمونه‌ی خودش)", "columns": ["metric", "scope", "sectorMedian", "marketMedian", "company", "n"], "rows": rows}],
+        missing=limits, note="این ماژول شاهد عددی صنعت را نشان می‌دهد؛ ارزیابی ورود به بازار به داده‌ی تقاضا و هزینه‌ی داخلی نیاز دارد.")
 
 
 # ---- composites ------------------------------------------------------------------------------
