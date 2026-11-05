@@ -112,3 +112,9 @@ Source: CompanyRegistryStore.full_report(), listed_company_ingestion.status(), s
 - Audit (runIranAudit on stored CODAL): Shepna 9/10 risk 19, Parsan 9/10 risk 19, Fakhuz 9/10 risk 31, Yektanet 9/10 risk 0. Beneish needs prior-year inputs for 3 of 4.
 - Inbox protection: tgz snapshot + read-only dated folders.
 - 1.0.12 bump pushed (2247573), EAS run 41949890942.
+
+## 2026-11-05 — nightly CODAL pipeline audit (PR #87, unmerged)
+Pipeline: VPS baseline 01:0xZ writes request/symbols.txt (400) → Liara cron (~22:15–22:45Z, exports 10-25…11-04) fetches → scp → inbox (hash-verified) → baseline ingests ≤100/run → accounting audit.
+First broken steps: (1) Liara downloaded HTML for the first 2 listed statements in any scope, parser selects consolidated-first → HTML unusable; (2) `has_financial_filings` ignored that, so such symbols left the request list and were re-enriched ~78x/run without progress (94 "usable" in inbox, only 16 parse PASS, 77 unparsable incl. funds/stub HTML); (3) no retry schedule — 212 symbols fetched ≥4 times, 114 "ok, zero own statements"; first-seen symbols per night fell from 134 to 0–11; (4) later partial exports hid earlier statement refs.
+#86 merged/deployed (20e79f4, health 200). #87: scope-consistent usability, doubling retry cooldown, unparseable memory, union of statement refs, sealed exports, request/progress.jsonl, Liara fetcher scope-aware report choice. 1,817 backend tests pass.
+1.0.12: EAS 41949890942 OK, apk sha256 182cb990e88bb0666bef082af27eb45c66c79cfafe8dabf42d7eecf8eb7a9253; manifest PR #88 draft; scratchpad perm12.sh (sudo) installs permanent path.
