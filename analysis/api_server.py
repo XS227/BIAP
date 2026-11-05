@@ -33,6 +33,7 @@ from local_auth import router as auth_router
 from market_data import MarketDataUnavailable, base_url as market_base_url, find_quote
 from paper_execution_store import PaperExecutionStore
 from paper_sell_store import PaperSellStore
+from module_routes import router as iran_modules_router
 from performance_routes import router as performance_router
 from release_routes import router as release_router
 from risk import evaluate_order_risk, policy_snapshot
@@ -94,6 +95,7 @@ app.include_router(performance_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(release_router)
+app.include_router(iran_modules_router)
 
 
 @app.exception_handler(AdminAuthRequired)
