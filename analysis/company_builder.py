@@ -84,6 +84,13 @@ def _enrich_codal_risk_fields(symbol: str, fundamentals, report_scope: str | Non
     return result
 
 
+def _risk_budget() -> float:
+    try:
+        return max(0.5, min(float(os.getenv("BIAP_CODAL_RISK_BUDGET_SECONDS", "4")), 8.0))
+    except ValueError:
+        return 4.0
+
+
 def _codal_parts(symbol: str, *, lightweight: bool = False):
     wanted = _canonical_symbol(symbol)
     if not wanted:
@@ -117,8 +124,16 @@ def _codal_parts(symbol: str, *, lightweight: bool = False):
     for variant in _symbol_variants(symbol):
         try:
             fundamentals, report_scope = scoped_fundamentals_for_symbol(variant)
-            if not lightweight:
-                fundamentals = _enrich_codal_risk_fields(variant, fundamentals, report_scope)
+            if not lightweight and fundamentals is not None:
+                # Audit-opinion / related-party fields come from filing PDFs fetched over the CODAL relay (5-20 s each).
+                # They are optional: a slow relay must never discard the statement we already hold, so the lookup gets a
+                # bounded budget. A late result still lands in the persistent PDF cache and completes on the next run.
+                enriched = run_parallel_with_deadline([lambda f=fundamentals, v=variant: _enrich_codal_risk_fields(v, f, report_scope)],
+                                                      timeout=_risk_budget())[0]
+                if isinstance(enriched, BaseException) or enriched is None:
+                    diagnostic["riskFields"] = "deferred" if isinstance(enriched, DeadlineExceeded) else "unavailable"
+                else:
+                    fundamentals = enriched
             if fundamentals is not None:
                 codal_fundamentals = fundamentals.to_dict()
                 codal_fundamentals["report_scope"] = report_scope
