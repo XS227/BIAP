@@ -127,7 +127,8 @@ def reparse(db_path: str, *, apply: bool = False, inbox=None, limit: Optional[in
                 stamp["changedFields"] = sorted(res["changed"])
             if codal.get("verification") != stamp or res["status"] == "corrected":
                 codal["verification"] = stamp
-                conn.execute("UPDATE listed_companies SET company_json=? WHERE code=?", (json.dumps(company, ensure_ascii=False, sort_keys=True), code))
+                # updated_at must move: the API's universe cache is keyed on COUNT/MAX(updated_at) and would otherwise keep serving old numbers
+                conn.execute("UPDATE listed_companies SET company_json=?, updated_at=? WHERE code=?", (json.dumps(company, ensure_ascii=False, sort_keys=True), now, code))
         if apply:
             conn.commit()
     return {"applied": apply, "counts": counts, "details": details}

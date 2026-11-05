@@ -260,3 +260,27 @@ def test_market_entry_and_peer_pool_ignore_stale_and_unverified_statements():
     e = mc.market_entry(ds, uni)
     nm = [r for r in (e["blocks"][0].get("rows") or []) if r["metric"] == "حاشیه سود خالص"]
     assert nm and nm[0]["n"] == 8          # the 12 stale statements are not counted
+
+
+def test_apply_bumps_updated_at_so_the_universe_cache_refreshes(tmp_path):
+    import json as _json
+    import sqlite3
+    from codal_reparse import reparse
+    from listed_company_store import ListedCompanyStore
+    store = ListedCompanyStore(str(tmp_path / "l.sqlite3"))
+    stored = _codal(0, total_assets_current=300.0, total_assets_prev=250.0, tracing_no="T9")
+    store.save_enriched("AAA", {"ticker": "AAA", "name_fa": "AAA", "codal": stored}, provenance={})
+    html = _html([["درآمدهای عملیاتی", "1,000", "800"], ["سود (زیان) خالص", "100", "80"], ["جمع دارایی‌ها", "2,000", "1,800"],
+                  ["جمع بدهی‌ها", "1,200", "1,100"], ["جمع حقوق مالکانه", "800", "700"]])
+
+    class Inbox:
+        def report_html(self, t):
+            return html
+    conn = sqlite3.connect(store.db_path)
+    before = conn.execute("SELECT updated_at FROM listed_companies WHERE code='AAA'").fetchone()[0]
+    stamp0 = md.UniverseCache._db_stamp(store)
+    res = reparse(store.db_path, apply=True, inbox=Inbox())
+    assert res["counts"]["corrected"] == 1
+    after = sqlite3.connect(store.db_path).execute("SELECT updated_at, company_json FROM listed_companies WHERE code='AAA'").fetchone()
+    assert after[0] != before and md.UniverseCache._db_stamp(store) != stamp0
+    assert _json.loads(after[1])["codal"]["total_assets_current"] == 2000.0
