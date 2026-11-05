@@ -6,6 +6,8 @@ import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing,
 import { getBusinessDataset } from '@/lib/business-data';
 import { getDemoMode, setDemoMode } from '@/lib/demo-mode';
 import { getSelectedListedCompany, ListedCompanySummary } from '@/lib/listed-company-selection';
+import { fetchReadiness } from '@/lib/iran-modules-api';
+import { readinessText } from '@/lib/iran-module-blocks';
 
 type ModuleItem = { key: string; title: string; subtitle: string; icon: string; href?: '/market' | '/portfolio' | '/kiasha' };
 type ModuleGroup = { key: string; title: string; accent: string; items: ModuleItem[] };
@@ -55,6 +57,14 @@ function ModuleCard({ item, colors, accent, state, selected }: { item: ModuleIte
       router.push(item.href);
       return;
     }
+    if (item.key === 'crm') {
+      router.push('/crm' as never);
+      return;
+    }
+    if (item.key === 'sql') {
+      router.push({ pathname: '/sql', params: selected ? { code: selected.code } : {} } as never);
+      return;
+    }
     if (!selected) {
       router.push({ pathname: '/data-connect', params: { key: item.key, companyMode: 'listed' } } as never);
       return;
@@ -66,7 +76,7 @@ function ModuleCard({ item, colors, accent, state, selected }: { item: ModuleIte
       <View style={[styles.moduleIcon, { backgroundColor: `${accent}22` }]}><Text style={styles.moduleEmoji}>{item.icon}</Text></View>
       <Text style={[styles.moduleTitle, { color: colors.text }]}>{item.title}</Text>
       <Text style={[styles.moduleSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
-      <Text style={[styles.state, { color: state === 'داده‌ی BIAP' || state.startsWith('بورسی') ? Brand.stockGreen : state === 'نمایشی' ? '#a78bfa' : colors.textSecondary }]}>{state}</Text>
+      <Text style={[styles.state, { color: state === 'آماده' || state === 'داده‌ی BIAP' || state.startsWith('بورسی') ? Brand.stockGreen : state === 'ناقص' ? Brand.warning : state === 'داده ناکافی' ? Brand.negative : state === 'نمایشی' ? '#a78bfa' : colors.textSecondary }]}>{state}</Text>
     </Pressable>
   );
 }
@@ -77,12 +87,17 @@ export default function ModulesScreen() {
   const [demo, setDemo] = useState(false);
   const [companyConnected, setCompanyConnected] = useState(false);
   const [selected, setSelected] = useState<ListedCompanySummary | null>(null);
+  const [readiness, setReadiness] = useState<Record<string, { status: string; missing: string[] }> | null>(null);
 
   const refreshStatus = useCallback(async () => {
     const [d, dataset, listed] = await Promise.all([getDemoMode(), getBusinessDataset(), getSelectedListedCompany()]);
     setDemo(d);
     setCompanyConnected(Boolean(dataset?.rows.length));
     setSelected(listed);
+    if (listed?.code) {
+      const r = await fetchReadiness(listed.code);
+      setReadiness(r.ok ? r.data.modules : null);
+    } else setReadiness(null);
   }, []);
   useFocusEffect(useCallback(() => { refreshStatus(); }, [refreshStatus]));
   const toggle = async () => { const next = !demo; await setDemoMode(next); setDemo(next); };
@@ -132,7 +147,7 @@ export default function ModulesScreen() {
           {GROUPS.map(group => (
             <View key={group.key} style={styles.group}>
               <View style={styles.groupHead}><View style={[styles.dot, { backgroundColor: group.accent }]} /><Text style={[styles.groupTitle, { color: colors.text }]}>{group.title}</Text></View>
-              <View style={styles.grid}>{group.items.map(item => <ModuleCard key={item.key} item={item} colors={colors} accent={group.accent} state={stateFor(group.key)} selected={selected} />)}</View>
+              <View style={styles.grid}>{group.items.map(item => <ModuleCard key={item.key} item={item} colors={colors} accent={group.accent} state={readiness && readiness[item.key] ? readinessText(readiness[item.key].status) : item.key === 'sql' ? (selected ? 'پرس‌وجوی فقط‌خواندنی' : stateFor(group.key)) : stateFor(group.key)} selected={selected} />)}</View>
             </View>
           ))}
 

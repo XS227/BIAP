@@ -1,7 +1,7 @@
 import { fetchMarketSymbols } from '@/lib/market-symbols';
 import { useCallback, useState } from 'react';
 import { displaySymbol, realSourceBadge } from '@/lib/data-status';
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View, useColorScheme } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { DEMO_MODULES } from '@/demo/demo-data';
@@ -9,7 +9,15 @@ import { getDemoMode, setDemoMode } from '@/lib/demo-mode';
 import { fetchRealModuleData, RealModulePayload } from '@/lib/real-module-data';
 import { getBusinessDataset } from '@/lib/business-data';
 import { getSelectedListedCompany } from '@/lib/listed-company-selection';
+import { ModuleBlocks } from '@/components/module-blocks';
+import { ModuleEnvelope, STATUS_LABEL, TIER_LABEL, statusTone } from '@/lib/iran-module-blocks';
+import { fetchModule } from '@/lib/iran-modules-api';
 import { matchRequirementColumns, requirementFor, sourceLabel } from '@/lib/module-data-requirements';
+
+const PRIVATE_KEYS = ['business-kpi', 'governance', 'campaign', 'pricing', 'plan', 'unit', 'journey', 'voc', 'behavior'];
+const LISTED_KEYS = ['eda', 'anomaly', 'forecast', 'kpi-extract', 'dashboard', 'report', 'swot', 'market-entry', 'financial-model', 'scenario', 'executive-report', 'mbr'];
+const BACKEND_KEYS = [...LISTED_KEYS, ...PRIVATE_KEYS];
+const EDA_COLUMNS: [string, string][] = [['net_margin', 'حاشیه سود'], ['roe', 'ROE'], ['roa', 'ROA'], ['debt_ratio', 'بدهی'], ['current_ratio', 'جاری'], ['revenue_growth', 'رشد درآمد'], ['pe', 'P/E']];
 
 export default function ModuleDetailScreen() {
   const params = useLocalSearchParams<{ key?: string; code?: string; name?: string; companyMode?: string }>();
@@ -17,6 +25,13 @@ export default function ModuleDetailScreen() {
   const colors = Colors[scheme];
   const [demoMode, setDemoModeState] = useState(false);
   const [real, setReal] = useState<RealModulePayload | null>(null);
+  const [result, setResult] = useState<ModuleEnvelope | null>(null);
+  const [resultError, setResultError] = useState<string | null>(null);
+  const [edaColumn, setEdaColumn] = useState('net_margin');
+  const [sectorOnly, setSectorOnly] = useState(false);
+  const [growthIn, setGrowthIn] = useState('');
+  const [marginIn, setMarginIn] = useState('');
+  const [applied, setApplied] = useState({ g: '', m: '' });
   const [loadingReal, setLoadingReal] = useState(true);
   const [datasetColumns, setDatasetColumns] = useState<string[]>([]);
   const key = typeof params.key === 'string' ? params.key : '';
@@ -39,12 +54,26 @@ export default function ModuleDetailScreen() {
     setLabel(paramName || selected?.symbol || selected?.name || '');
     if (!paramName && !selected?.symbol && /^\d{5,}$/.test(effectiveCode)) { const hit = (await fetchMarketSymbols({ q: effectiveCode, limit: 5 })).find((s) => s.code === effectiveCode); if (hit) setLabel(hit.symbol || hit.name); }
     setCompanyMode(effectiveMode);
-    const [demo, payload, dataset] = await Promise.all([getDemoMode(), fetchRealModuleData(key, { code: effectiveCode, companyMode: effectiveMode }), getBusinessDataset()]);
+    const backendModule = BACKEND_KEYS.includes(key);
+    const [demo, payload, dataset] = await Promise.all([getDemoMode(), backendModule ? Promise.resolve(null) : fetchRealModuleData(key, { code: effectiveCode, companyMode: effectiveMode }), getBusinessDataset()]);
     setDemoModeState(demo);
     setReal(payload);
     setDatasetColumns(dataset?.columns ?? []);
+    setResult(null);
+    setResultError(null);
+    if (backendModule && (PRIVATE_KEYS.includes(key) || effectiveCode)) {
+      const body: Record<string, unknown> = {};
+      if (key === 'eda') { body.column = edaColumn; body.sectorOnly = sectorOnly; }
+      if (key === 'financial-model') {
+        const g = Number(applied.g.replace('٪', '')); const m = Number(applied.m.replace('٪', ''));
+        if (applied.g.trim() && Number.isFinite(g)) body.growth = g / 100;
+        if (applied.m.trim() && Number.isFinite(m)) body.margin = m / 100;
+      }
+      const res = await fetchModule(effectiveCode || '_', key, body);
+      if (res.ok) setResult(res.data); else setResultError(res.message);
+    }
     setLoadingReal(false);
-  }, [key, paramCode, paramName, paramCompanyMode]);
+  }, [key, paramCode, paramName, paramCompanyMode, edaColumn, sectorOnly, applied]);
 
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
 
@@ -86,6 +115,40 @@ export default function ModuleDetailScreen() {
     <Pressable onPress={openDataConnect} style={[styles.requirementButton,{borderColor:companyMode==='listed'?Brand.positive:Brand.primary}]}><Text style={[styles.requirementButtonText,{color:companyMode==='listed'?Brand.positive:Brand.primary}]}>{companyMode==='listed'?'بررسی / تکمیل داده این نماد':'باز کردن قالب داده این ماژول'}</Text></Pressable>
   </View> : null;
 
+  const paramsPanel = key === 'eda' ? (
+    <View style={[styles.requirementCard, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
+      <Text style={[styles.reqSection, { color: colors.text }]}>شاخص مورد بررسی</Text>
+      <View style={styles.chips}>{EDA_COLUMNS.map(([k, label]) => (
+        <Pressable key={k} onPress={() => setEdaColumn(k)} style={[styles.inputChip, edaColumn === k && { backgroundColor: Brand.primary }]}><Text style={[styles.inputChipText, edaColumn === k && { color: '#fff' }]}>{label}</Text></Pressable>
+      ))}</View>
+      <Pressable onPress={() => setSectorOnly(!sectorOnly)} style={[styles.inputChip, { alignSelf: 'flex-end', marginTop: 8 }, sectorOnly && { backgroundColor: Brand.primary }]}><Text style={[styles.inputChipText, sectorOnly && { color: '#fff' }]}>{sectorOnly ? 'فقط هم‌گروه' : 'همه‌ی هم‌دسته‌ها'}</Text></Pressable>
+    </View>
+  ) : key === 'financial-model' ? (
+    <View style={[styles.requirementCard, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
+      <Text style={[styles.reqSection, { color: colors.text }]}>فرضیات (خالی = مقدار مشاهده‌شده)</Text>
+      <TextInput value={growthIn} onChangeText={setGrowthIn} keyboardType="numeric" placeholder="رشد درآمد سال اول (٪)" placeholderTextColor={colors.textSecondary} style={[styles.paramInput, { color: colors.text, borderColor: colors.backgroundSelected }]} />
+      <TextInput value={marginIn} onChangeText={setMarginIn} keyboardType="numeric" placeholder="حاشیه سود خالص (٪)" placeholderTextColor={colors.textSecondary} style={[styles.paramInput, { color: colors.text, borderColor: colors.backgroundSelected }]} />
+      <Pressable onPress={() => setApplied({ g: growthIn, m: marginIn })} style={[styles.requirementButton, { borderColor: Brand.primary, marginTop: 8 }]}><Text style={[styles.requirementButtonText, { color: Brand.primary }]}>محاسبه با این فرضیات</Text></Pressable>
+    </View>
+  ) : null;
+
+  const toneColor = (t: string) => (t === 'positive' ? Brand.positive : t === 'warning' ? Brand.warning : t === 'negative' ? Brand.negative : Brand.primary);
+  const prov = (result?.provenance ?? {}) as Record<string, unknown>;
+  const resultView = result ? <>
+    <View style={[styles.realBadge, { backgroundColor: toneColor(statusTone(result.status)) + '22' }]}>
+      <Text style={[styles.realBadgeText, { color: toneColor(statusTone(result.status)) }]}>{STATUS_LABEL[result.status]}{result.tier ? ` • ${TIER_LABEL[result.tier] ?? result.tier}` : ''}</Text>
+    </View>
+    {paramsPanel}
+    {result.summary ? <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.heroText, { color: colors.textSecondary }]}>{result.summary}</Text></View> : null}
+    <ModuleBlocks blocks={result.blocks} colors={colors} />
+    {result.missing.length > 0 ? <View style={[styles.realNote, { borderColor: Brand.warning + '88' }]}><Text style={[styles.realNoteText, { color: colors.textSecondary }]}>ورودی‌های ناموجود: {result.missing.join('، ')}</Text></View> : null}
+    {result.quality?.warnings?.length ? <View style={[styles.realNote, { borderColor: Brand.warning + '88' }]}><Text style={[styles.realNoteText, { color: colors.textSecondary }]}>هشدار کیفیت داده: {result.quality.warnings.join('؛ ')}</Text></View> : null}
+    {prov.tracingNo ? <Text style={[styles.realNoteText, { color: colors.textSecondary, marginTop: 6 }]}>صورت مالی: {String(prov.statementTitle ?? '')} • شماره رهگیری {String(prov.tracingNo)}</Text> : null}
+    {result.note ? <View style={[styles.realNote, { borderColor: Brand.stockGreen + '55' }]}><Text style={[styles.realNoteText, { color: colors.textSecondary }]}>{result.note}</Text></View> : null}
+    <Pressable onPress={reload} style={[styles.secondaryButton, { borderColor: Brand.primary + '66' }]}><Text style={[styles.secondaryButtonText, { color: Brand.primary }]}>اعمال / به‌روزرسانی</Text></Pressable>
+    {(result.status === 'needs_private_data' || result.status === 'blocked') ? <Pressable onPress={key === 'governance' ? () => router.push({ pathname: '/crm', params: { tab: 'kpi' } } as never) : openDataConnect} style={[styles.secondaryButton, { borderColor: Brand.stockGreen + '66' }]}><Text style={[styles.secondaryButtonText, { color: Brand.stockGreen }]}>{result.status === 'needs_private_data' ? 'افزودن داده‌ی داخلی' : 'مدیریت منبع داده'}</Text></Pressable> : null}
+  </> : resultError ? <View style={[styles.empty, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.emptyTitle, { color: colors.text }]}>دریافت نتیجه ممکن نشد</Text><Text style={[styles.emptyBody, { color: colors.textSecondary }]}>{resultError}</Text><Pressable onPress={reload} style={[styles.secondaryButton, { borderColor: Brand.primary + '66' }]}><Text style={[styles.secondaryButtonText, { color: Brand.primary }]}>تلاش دوباره</Text></Pressable></View> : null;
+
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.six }]}><View style={styles.maxWidth}>
     <View style={styles.headerRow}><Pressable onPress={() => router.back()} style={[styles.back, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.backText, { color: colors.text }]}>←</Text></Pressable><View style={styles.headerText}><Text style={[styles.title, { color: colors.text }]}>{module?.icon ?? '🧩'} {module?.title ?? requirement?.title ?? 'ماژول BIAP'}</Text><Text style={[styles.subtitle, { color: colors.textSecondary }]}>BIAP Mobile • Real Data First</Text></View></View>
 
@@ -100,7 +163,7 @@ export default function ModuleDetailScreen() {
       {renderBullets('خلاصه Demo', module.bullets)}
       <View style={[styles.disclaimer, { borderColor: '#7c5cff66' }]}><Text style={styles.disclaimerText}>این مقادیر ساختگی و فقط برای نمایش Demo هستند؛ در حساب واقعی جایگزین داده ناموجود نمی‌شوند.</Text></View>
       <Pressable onPress={openDataConnect} style={[styles.secondaryButton,{borderColor:'#7048e8'}]}><Text style={[styles.secondaryButtonText,{color:'#a78bfa'}]}>اتصال داده و رفتن به Real Mode</Text></Pressable>
-    </> : loadingReal ? <View style={styles.loading}><ActivityIndicator color={Brand.primary} /><Text style={[styles.emptyBody, { color: colors.textSecondary }]}>در حال خواندن منابع واقعی BIAP...</Text></View> : real?.available ? <>
+    </> : loadingReal ? <View style={styles.loading}><ActivityIndicator color={Brand.primary} /><Text style={[styles.emptyBody, { color: colors.textSecondary }]}>در حال خواندن منابع واقعی BIAP...</Text></View> : resultView ? resultView : real?.available ? <>
       <View style={styles.realBadge}><Text style={styles.realBadgeText}>{realSourceBadge(real.sourceLabel)} • {real.sourceLabel.replace(/\s*•\s*LIVE( FALLBACK)?/i,'')}</Text></View>
       <View style={[styles.hero, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.heroText, { color: colors.textSecondary }]}>{real.summary}</Text></View>
       {renderMetrics(real.metrics)}
@@ -113,5 +176,5 @@ export default function ModuleDetailScreen() {
 
 const styles = StyleSheet.create({
   safe:{flex:1},content:{paddingHorizontal:Spacing.three,paddingTop:Spacing.three},maxWidth:{maxWidth:MaxContentWidth,width:'100%',alignSelf:'center'},headerRow:{flexDirection:'row-reverse',alignItems:'center',gap:Spacing.three,marginBottom:Spacing.three},headerText:{flex:1,alignItems:'flex-end'},title:{fontFamily:Fonts.sans,fontSize:21,fontWeight:'800',textAlign:'right'},subtitle:{fontFamily:Fonts.sans,fontSize:11,marginTop:2},back:{width:38,height:38,borderRadius:19,alignItems:'center',justifyContent:'center'},backText:{fontSize:19},modeCard:{flexDirection:'row-reverse',alignItems:'center',gap:Spacing.three,borderRadius:Radius.md,padding:Spacing.three,marginBottom:Spacing.three},modeTitle:{fontFamily:Fonts.sans,fontSize:14,fontWeight:'800'},modeText:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:17,textAlign:'right',marginTop:3},toggle:{minWidth:62,paddingHorizontal:12,paddingVertical:8,borderRadius:18,alignItems:'center'},toggleText:{color:'#fff',fontFamily:Fonts.sans,fontSize:11,fontWeight:'800'},demoBadge:{alignSelf:'flex-end',backgroundColor:'#7048e8',borderRadius:14,paddingHorizontal:10,paddingVertical:5,marginBottom:Spacing.two},demoBadgeText:{color:'#fff',fontFamily:Fonts.mono,fontSize:10,fontWeight:'800'},realBadge:{alignSelf:'flex-end',backgroundColor:'#0f5132',borderRadius:14,paddingHorizontal:10,paddingVertical:5,marginBottom:Spacing.two},realBadgeText:{color:'#7ef7bc',fontFamily:Fonts.mono,fontSize:10,fontWeight:'800'},hero:{borderRadius:Radius.lg,padding:Spacing.four,marginBottom:Spacing.three},heroText:{fontFamily:Fonts.sans,fontSize:13,lineHeight:23,textAlign:'right'},metricsRow:{flexDirection:'row-reverse',gap:Spacing.two,marginBottom:Spacing.three},metric:{flex:1,borderRadius:Radius.md,padding:Spacing.three,alignItems:'center',minHeight:108,justifyContent:'center'},metricValue:{fontFamily:Fonts.mono,fontSize:18,fontWeight:'800'},metricDelta:{fontFamily:Fonts.mono,fontSize:10,marginTop:2},metricLabel:{fontFamily:Fonts.sans,fontSize:10,textAlign:'center',marginTop:5},insightCard:{borderRadius:Radius.lg,padding:Spacing.four,marginBottom:Spacing.three},insightTitle:{fontFamily:Fonts.sans,fontSize:15,fontWeight:'800',textAlign:'right',marginBottom:Spacing.three},bulletRow:{flexDirection:'row-reverse',alignItems:'center',gap:8,marginBottom:9},bulletDot:{width:6,height:6,borderRadius:3,backgroundColor:Brand.primary},bulletText:{flex:1,fontFamily:Fonts.sans,fontSize:12,lineHeight:20,textAlign:'right'},disclaimer:{borderWidth:1,borderRadius:Radius.md,padding:Spacing.three,backgroundColor:'#7048e811'},disclaimerText:{color:'#b6a6ff',fontFamily:Fonts.sans,fontSize:10.5,lineHeight:18,textAlign:'right'},realNote:{borderWidth:1,borderRadius:Radius.md,padding:Spacing.three},realNoteText:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:18,textAlign:'right'},empty:{borderRadius:Radius.lg,padding:Spacing.four,alignItems:'center',marginTop:Spacing.four},emptyTitle:{fontFamily:Fonts.sans,fontSize:16,fontWeight:'800',textAlign:'center'},emptyBody:{fontFamily:Fonts.sans,fontSize:12,lineHeight:21,textAlign:'center',marginTop:Spacing.two},noFake:{fontFamily:Fonts.sans,fontSize:11,fontWeight:'800',marginTop:Spacing.three},connectButton:{backgroundColor:Brand.primary,borderRadius:Radius.md,paddingHorizontal:20,paddingVertical:11,marginTop:Spacing.three},connectButtonText:{color:'#fff',fontFamily:Fonts.sans,fontSize:12,fontWeight:'900'},secondaryButton:{borderWidth:1,borderRadius:Radius.md,paddingHorizontal:18,paddingVertical:10,marginTop:Spacing.three,alignItems:'center'},secondaryButtonText:{fontFamily:Fonts.sans,fontSize:11.5,fontWeight:'900'},loading:{paddingVertical:Spacing.six,alignItems:'center',gap:Spacing.two},
-  requirementCard:{borderWidth:1,borderRadius:Radius.lg,padding:Spacing.four,marginBottom:Spacing.three},requirementHead:{flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center'},requirementTitle:{fontFamily:Fonts.sans,fontSize:15,fontWeight:'900'},reqBadge:{borderRadius:12,paddingHorizontal:8,paddingVertical:4},reqBadgeText:{color:'#dbeafe',fontFamily:Fonts.mono,fontSize:8.5,fontWeight:'900'},selectedCompany:{fontFamily:Fonts.sans,fontSize:11,fontWeight:'900',textAlign:'right',marginTop:8},requirementText:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:18,textAlign:'right',marginTop:7},reqSection:{fontFamily:Fonts.sans,fontSize:11.5,fontWeight:'900',textAlign:'right',marginTop:12},chips:{flexDirection:'row-reverse',flexWrap:'wrap',gap:6,marginTop:7},autoChip:{backgroundColor:'#14532d22',borderWidth:1,borderColor:'#16a34a66',borderRadius:12,paddingHorizontal:8,paddingVertical:5},autoChipText:{color:Brand.positive,fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},inputChip:{backgroundColor:'#1e40af18',borderWidth:1,borderColor:'#2563eb55',borderRadius:12,paddingHorizontal:8,paddingVertical:5},inputChipText:{color:'#60a5fa',fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},fieldRow:{flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center',paddingVertical:7,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:'#94a3b833'},fieldLabel:{fontFamily:Fonts.sans,fontSize:10.5,fontWeight:'700'},fieldState:{fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},coverage:{fontFamily:Fonts.sans,fontSize:10.5,fontWeight:'800',textAlign:'right',marginTop:10},requirementButton:{borderWidth:1,borderRadius:Radius.md,paddingVertical:10,alignItems:'center',marginTop:12},requirementButtonText:{fontFamily:Fonts.sans,fontSize:11.5,fontWeight:'900'}
+  paramInput:{borderWidth:1,borderRadius:8,padding:8,marginTop:8,textAlign:'right'},requirementCard:{borderWidth:1,borderRadius:Radius.lg,padding:Spacing.four,marginBottom:Spacing.three},requirementHead:{flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center'},requirementTitle:{fontFamily:Fonts.sans,fontSize:15,fontWeight:'900'},reqBadge:{borderRadius:12,paddingHorizontal:8,paddingVertical:4},reqBadgeText:{color:'#dbeafe',fontFamily:Fonts.mono,fontSize:8.5,fontWeight:'900'},selectedCompany:{fontFamily:Fonts.sans,fontSize:11,fontWeight:'900',textAlign:'right',marginTop:8},requirementText:{fontFamily:Fonts.sans,fontSize:10.5,lineHeight:18,textAlign:'right',marginTop:7},reqSection:{fontFamily:Fonts.sans,fontSize:11.5,fontWeight:'900',textAlign:'right',marginTop:12},chips:{flexDirection:'row-reverse',flexWrap:'wrap',gap:6,marginTop:7},autoChip:{backgroundColor:'#14532d22',borderWidth:1,borderColor:'#16a34a66',borderRadius:12,paddingHorizontal:8,paddingVertical:5},autoChipText:{color:Brand.positive,fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},inputChip:{backgroundColor:'#1e40af18',borderWidth:1,borderColor:'#2563eb55',borderRadius:12,paddingHorizontal:8,paddingVertical:5},inputChipText:{color:'#60a5fa',fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},fieldRow:{flexDirection:'row-reverse',justifyContent:'space-between',alignItems:'center',paddingVertical:7,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:'#94a3b833'},fieldLabel:{fontFamily:Fonts.sans,fontSize:10.5,fontWeight:'700'},fieldState:{fontFamily:Fonts.mono,fontSize:9,fontWeight:'900'},coverage:{fontFamily:Fonts.sans,fontSize:10.5,fontWeight:'800',textAlign:'right',marginTop:10},requirementButton:{borderWidth:1,borderRadius:Radius.md,paddingVertical:10,alignItems:'center',marginTop:12},requirementButtonText:{fontFamily:Fonts.sans,fontSize:11.5,fontWeight:'900'}
 });
