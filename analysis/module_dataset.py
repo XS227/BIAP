@@ -104,6 +104,9 @@ def statement_verification(cur: dict, prev: dict, codal: dict, *, today=None) ->
     checks: dict[str, Any] = {}
     reasons: list[str] = []
     for label, vals in (("current", cur), ("prev", prev)):
+        ta0 = vals.get("total_assets")
+        if ta0 is not None and ta0 <= 0:  # a balance sheet cannot have zero/negative assets: the gap is not computable, so it is not verified
+            reasons.append(f"جمع دارایی‌ها ({'دوره جاری' if label == 'current' else 'دوره قبل'}) صفر یا منفی است؛ ترازنامه قابل تطبیق نیست")
         g = _gap(vals)
         checks[f"balanceGap_{label}"] = None if g is None else round(g, 4)
         if g is not None and abs(g) > BALANCE_TOLERANCE:

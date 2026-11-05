@@ -218,3 +218,11 @@ def test_statement_from_long_ago_is_stale_not_current_and_stays_out_of_peer_stat
     rows, _ = mc._column_rows(old, uni, "net_margin", False)
     assert all(r["code"] != "OLD" for r in rows)
     assert md.months_old("1404/12/29", datetime.date(2026, 11, 5)) == 8
+
+
+def test_zero_or_negative_assets_are_unverified_not_verified():
+    for ta in (0.0, -5.0):
+        ds = md.build_company_dataset(_item("Z", _codal(0, total_assets_current=ta, total_liabilities_current=1200.0, total_equity_current=800.0)))
+        v = ds["fundamentals"]["verification"]
+        assert v["status"] == "unverified" and any("صفر یا منفی" in r for r in v["reasons"])
+        assert ds["ratios"]["roe"]["value"] is None and ds["ratios"]["debt_to_equity"]["value"] is None
