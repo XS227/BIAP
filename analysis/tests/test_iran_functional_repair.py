@@ -226,3 +226,23 @@ def test_zero_or_negative_assets_are_unverified_not_verified():
         v = ds["fundamentals"]["verification"]
         assert v["status"] == "unverified" and any("صفر یا منفی" in r for r in v["reasons"])
         assert ds["ratios"]["roe"]["value"] is None and ds["ratios"]["debt_to_equity"]["value"] is None
+
+
+def test_reparse_compares_sga_and_depreciation_too():
+    html = _html([["درآمدهای عملیاتی", "1,000", "800"], ["سود (زیان) خالص", "100", "80"], ["جمع دارایی‌ها", "2,000", "1,800"],
+                  ["جمع بدهی‌ها", "1,200", "1,100"], ["جمع حقوق مالکانه", "800", "700"],
+                  ["هزینه‌های فروش، اداری و عمومی", "(50)", "(40)"]])
+    stored = _codal(0, tracing_no="T4", sga_expense_current=-999.0, sga_expense_prev=-40.0)
+    res = verify_statement("X", stored, lambda t: html)
+    assert res["status"] == "corrected" and res["changed"]["sga_expense_current"]["filing"] == -50.0
+
+
+def test_correlation_pairs_exclude_stale_and_unverified_statements():
+    uni = _universe(8)
+    for i in range(12):
+        row = dict(md.universe_row(_item(f"OLD{i}", _codal(i, report_title="صورت‌های مالی سال مالی منتهی به ۱۳۹۶/۰۸/۳۰"))), is_primary=1, category="operating_company")
+        uni.append(row)
+    ds = md.build_company_dataset(_item("S1", _codal(1)))
+    e = mc.eda(ds, uni)
+    corr = next(b for b in e["blocks"] if "همبستگی" in (b.get("title") or ""))
+    assert all(r["n"] <= 8 for r in corr["rows"]) and corr["rows"] == []   # 8 eligible < 15 required pairs

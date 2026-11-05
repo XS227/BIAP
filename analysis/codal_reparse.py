@@ -23,7 +23,7 @@ from typing import Any, Optional
 
 NUMERIC = ("revenue", "net_profit", "gross_profit", "total_assets", "total_liabilities", "total_equity",
            "current_assets", "current_liabilities", "receivables", "retained_earnings", "fixed_assets",
-           "operating_profit", "operating_cash_flow")
+           "operating_profit", "operating_cash_flow", "sga_expense", "depreciation")
 
 
 DERIVED = ("revenue_yoy_pct", "net_margin_pct", "net_margin_prev_pct")

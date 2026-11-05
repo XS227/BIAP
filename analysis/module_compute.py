@@ -169,12 +169,16 @@ EDA_UNITS = {"net_margin": "fraction", "operating_margin": "fraction", "roa": "f
 POSITIVE_ONLY = {"pe", "market_cap", "trade_value"}
 
 
+def _eligible(row: dict, col: str) -> bool:
+    """Financial columns only count statements that are current and not unverified; market columns are unaffected."""
+    return col in MARKET_COLUMNS or (not row.get("stale") and row.get("verification") != "unverified")
+
+
 def _column_rows(ds: dict, universe: list[dict], col: str, sector_only: bool) -> tuple[list[dict], str]:
     """Rows to describe ``col`` and the scope label. Financial ratios prefer the company's own category;
     when that is too small they widen to every primary company with statements (and say so)."""
     primary = [r for r in universe if r.get("is_primary", 1) and r.get(col) is not None]
-    if col not in MARKET_COLUMNS:  # statements of long-past periods and unverified balance sheets never enter peer statistics
-        primary = [r for r in primary if not r.get("stale") and r.get("verification") != "unverified"]
+    primary = [r for r in primary if _eligible(r, col)]  # long-past periods and unverified balance sheets never enter peer statistics
     if col in POSITIVE_ONLY:
         primary = [r for r in primary if r[col] > 0]
     code, sector = ds["identity"]["code"], ds["identity"].get("sector")
@@ -293,7 +297,7 @@ def eda(ds: dict, universe: list[dict], *, column: Optional[str] = None, sector_
         cols = list(usable)
         for i, a in enumerate(cols):
             for b2 in cols[i + 1:]:
-                both = [r for r in primary if r.get(a) is not None and r.get(b2) is not None]
+                both = [r for r in primary if r.get(a) is not None and r.get(b2) is not None and _eligible(r, a) and _eligible(r, b2)]
                 r_ = st.spearman([r[a] for r in both], [r[b2] for r in both]) if len(both) >= MIN_CORR_PAIRS else None
                 if r_ is not None:
                     corr.append({"a": EDA_LABELS[a], "b": EDA_LABELS[b2], "r": round(r_, 3), "n": len(both)})

@@ -17,6 +17,8 @@ symbol,tracing,field,before,after
 سپیدار,1531915,operating_profit_prev,,7461477.0
 سپیدار,1531915,operating_cash_flow_current,,10188865.0
 سپیدار,1531915,operating_cash_flow_prev,,6811361.0
+سپیدار,1531915,sga_expense_current,,-548293.0
+سپیدار,1531915,sga_expense_prev,,-465979.0
 دلقما,1524946,total_assets_current,8136576.0,32946982.0
 دلقما,1524946,total_assets_prev,8190252.0,21760471.0
 دلقما,1524946,total_liabilities_current,529893.0,15994754.0
@@ -35,6 +37,8 @@ symbol,tracing,field,before,after
 دلقما,1524946,operating_profit_prev,,1574836.0
 دلقما,1524946,operating_cash_flow_current,,-5250459.0
 دلقما,1524946,operating_cash_flow_prev,,-314065.0
+دلقما,1524946,sga_expense_current,,-1215050.0
+دلقما,1524946,sga_expense_prev,,-707931.0
 چکاپا,1504023,total_assets_current,17429673.0,25057957.0
 چکاپا,1504023,total_assets_prev,17458986.0,27160895.0
 چکاپا,1504023,total_liabilities_current,2079333.0,14524034.0
@@ -55,6 +59,8 @@ symbol,tracing,field,before,after
 چکاپا,1504023,operating_profit_prev,,-2321617.0
 چکاپا,1504023,operating_cash_flow_current,,-770529.0
 چکاپا,1504023,operating_cash_flow_prev,,4789538.0
+چکاپا,1504023,sga_expense_current,,-942509.0
+چکاپا,1504023,sga_expense_prev,,-595546.0
 مبین3,1558868,total_assets_current,414252849.0,1009985861.0
 مبین3,1558868,total_assets_prev,248460270.0,617063670.0
 مبین3,1558868,total_liabilities_current,40871979.0,808522157.0
@@ -73,6 +79,8 @@ symbol,tracing,field,before,after
 مبین3,1558868,operating_profit_prev,,179369164.0
 مبین3,1558868,operating_cash_flow_current,,98932630.0
 مبین3,1558868,operating_cash_flow_prev,,111094138.0
+مبین3,1558868,sga_expense_current,,-12529700.0
+مبین3,1558868,sga_expense_prev,,-6473284.0
 تامین مسکن,1617480,total_assets_current,,31129934.0
 تامین مسکن,1617480,total_assets_prev,,25424549.0
 تامین مسکن,1617480,current_assets_current,,19775468.0
@@ -95,6 +103,8 @@ symbol,tracing,field,before,after
 دیزباد,988934,operating_profit_prev,,345803.0
 دیزباد,988934,operating_cash_flow_current,,187746.0
 دیزباد,988934,operating_cash_flow_prev,,-61089.0
+دیزباد,988934,sga_expense_current,,-440735.0
+دیزباد,988934,sga_expense_prev,,-290203.0
 رکارت,543800,total_assets_current,,2363407.0
 رکارت,543800,total_assets_prev,,1882423.0
 رکارت,543800,current_assets_current,,1034076.0
@@ -109,6 +119,8 @@ symbol,tracing,field,before,after
 رکارت,543800,fixed_assets_prev,,1161670.0
 رکارت,543800,operating_profit_current,,285793.0
 رکارت,543800,operating_profit_prev,,297976.0
+رکارت,543800,sga_expense_current,,-81154.0
+رکارت,543800,sga_expense_prev,,-53827.0
 زرنام,1216183,current_assets_current,,45094432.0
 زرنام,1216183,current_assets_prev,,34627696.0
 زرنام,1216183,current_liabilities_current,,79230140.0
@@ -123,6 +135,8 @@ symbol,tracing,field,before,after
 زرنام,1216183,operating_profit_prev,,7684319.0
 زرنام,1216183,operating_cash_flow_current,,10506779.0
 زرنام,1216183,operating_cash_flow_prev,,522487.0
+زرنام,1216183,sga_expense_current,,-3552220.0
+زرنام,1216183,sga_expense_prev,,-1977254.0
 زشک,1605923,current_assets_current,,17449246.0
 زشک,1605923,current_assets_prev,,12416491.0
 زشک,1605923,current_liabilities_current,,10260516.0
@@ -137,6 +151,8 @@ symbol,tracing,field,before,after
 زشک,1605923,operating_profit_prev,,3656668.0
 زشک,1605923,operating_cash_flow_current,,4555740.0
 زشک,1605923,operating_cash_flow_prev,,2686292.0
+زشک,1605923,sga_expense_current,,-665143.0
+زشک,1605923,sga_expense_prev,,-273139.0
 ساباد,724407,total_assets_current,570844.0,865272.0
 ساباد,724407,total_assets_prev,403656.0,667106.0
 ساباد,724407,total_liabilities_current,189205.0,1120758.0
@@ -155,6 +171,8 @@ symbol,tracing,field,before,after
 ساباد,724407,operating_profit_prev,,-161437.0
 ساباد,724407,operating_cash_flow_current,,114844.0
 ساباد,724407,operating_cash_flow_prev,,33978.0
+ساباد,724407,sga_expense_current,,-70046.0
+ساباد,724407,sga_expense_prev,,-56443.0
 سپرمی,1121679,revenue_current,504.0,71.0
 سپرمی,1121679,revenue_prev,-86.0,504.0
 سپرمی,1121679,total_assets_current,697.0,13554.0
@@ -173,6 +191,8 @@ symbol,tracing,field,before,after
 سپرمی,1121679,fixed_assets_prev,,8954.0
 سپرمی,1121679,operating_profit_current,,-13485.0
 سپرمی,1121679,operating_profit_prev,,-30046.0
+سپرمی,1121679,sga_expense_current,,-13533.0
+سپرمی,1121679,sga_expense_prev,,-25076.0
 سپرمی,1121679,revenue_yoy_pct,686.046511627907,-85.9126984126984
 سپرمی,1121679,net_margin_pct,-624.4047619047618,-4432.394366197183
 سپرمی,1121679,net_margin_prev_pct,-39689.53488372093,6772.420634920635
@@ -194,6 +214,8 @@ symbol,tracing,field,before,after
 شساخت,1571124,operating_profit_prev,,32888809.0
 شساخت,1571124,operating_cash_flow_current,,26905299.0
 شساخت,1571124,operating_cash_flow_prev,,29358313.0
+شساخت,1571124,sga_expense_current,,-17507811.0
+شساخت,1571124,sga_expense_prev,,-9517665.0
 شهر فرش,1604925,current_assets_current,,198265412.0
 شهر فرش,1604925,current_assets_prev,,90362529.0
 شهر فرش,1604925,current_liabilities_current,,153815621.0
@@ -208,6 +230,8 @@ symbol,tracing,field,before,after
 شهر فرش,1604925,operating_profit_prev,,-4722464.0
 شهر فرش,1604925,operating_cash_flow_current,,29746387.0
 شهر فرش,1604925,operating_cash_flow_prev,,57148115.0
+شهر فرش,1604925,sga_expense_current,,-30844325.0
+شهر فرش,1604925,sga_expense_prev,,-24833034.0
 مشاور ایده,1626421,total_assets_current,,227489.0
 مشاور ایده,1626421,total_assets_prev,,237749.0
 مشاور ایده,1626421,current_assets_current,,156605.0
@@ -256,6 +280,8 @@ symbol,tracing,field,before,after
 فخوز3,1584708,operating_profit_prev,,79345327.0
 فخوز3,1584708,operating_cash_flow_current,,124672685.0
 فخوز3,1584708,operating_cash_flow_prev,,158876980.0
+فخوز3,1584708,sga_expense_current,,-107460120.0
+فخوز3,1584708,sga_expense_prev,,-64954601.0
 فخوز2,1584708,total_assets_current,739801676.0,1462046402.0
 فخوز2,1584708,total_assets_prev,546296022.0,1038556939.0
 فخوز2,1584708,total_liabilities_current,116645812.0,1002795175.0
@@ -274,6 +300,8 @@ symbol,tracing,field,before,after
 فخوز2,1584708,operating_profit_prev,,79345327.0
 فخوز2,1584708,operating_cash_flow_current,,124672685.0
 فخوز2,1584708,operating_cash_flow_prev,,158876980.0
+فخوز2,1584708,sga_expense_current,,-107460120.0
+فخوز2,1584708,sga_expense_prev,,-64954601.0
 22983482324640038,1601836,current_assets_current,,1090638987.0
 22983482324640038,1601836,current_assets_prev,,784098038.0
 22983482324640038,1601836,current_liabilities_current,,410208727.0
@@ -288,3 +316,7 @@ symbol,tracing,field,before,after
 22983482324640038,1601836,operating_profit_prev,,253406588.0
 22983482324640038,1601836,operating_cash_flow_current,,194180676.0
 22983482324640038,1601836,operating_cash_flow_prev,,233503035.0
+22983482324640038,1601836,sga_expense_current,,-91696424.0
+22983482324640038,1601836,sga_expense_prev,,-64745542.0
+22983482324640038,1601836,depreciation_current,,0.0
+22983482324640038,1601836,depreciation_prev,,0.0

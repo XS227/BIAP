@@ -34,4 +34,4 @@ they do not match one-to-one. After the parser fix below the outcome is 36 + 20 
 - Reporting scope: stored scope equals the title's scope for 56/56.
 - Period end in the filing header equals the date in the stored title for 56/56.
 - Balance identity (assets = liabilities + equity): tolerance 1%; all genuinely balanced stored rows are within 0.1% except one (حآسا3, 1.8%, `unverified`).
-- Field changes: 289 (246 fill a previously missing field, 43 replace a value; 0 clear). Core replacements: total assets/liabilities on 9 rows (8 filings), equity on 1, revenue on 1.
+- Field changes: 321 (278 fill a previously missing field, 43 replace a value, 0 clear a value the parser rejects). Core replacements: total assets/liabilities on 9 rows (8 filings), equity on 1, revenue on 1.
