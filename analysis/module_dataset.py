@@ -10,6 +10,7 @@ import json
 import math
 import sqlite3
 import threading
+from datetime import datetime, timezone
 import time
 from typing import Any, Callable, Iterable, Optional
 
@@ -240,6 +241,41 @@ def clean_market(market: Optional[dict]) -> dict:
     return out
 
 
+HISTORY_PRICE_MAX_AGE_DAYS = 5
+
+
+def price_from_recent_history(market: dict, hist: list[dict], now_iso: Optional[str] = None) -> tuple[dict, Optional[str]]:
+    """When the stored quote is empty but BIAP recorded a recent daily close (price, P/E, market cap, change%), use that
+    recorded observation - labelled with its date (``priceSource = history:<date>``) - instead of reporting the company as
+    having no market data at all. Never invents a value: only fields present on the recorded row are copied."""
+    if market.get("price") or not hist:
+        return market, None
+    # Multiple sources can record the same trading date. The list returned by
+    # market_memory is ordered by observed_at, but max(date) alone picked the
+    # FIRST (oldest) row on ties. Choose the latest recording timestamp and
+    # preserve input order as a deterministic fallback for legacy rows.
+    last = max(enumerate(hist), key=lambda pair: (
+        str(pair[1].get("observed_date") or ""),
+        str(pair[1].get("observed_at") or ""),
+        pair[0],
+    ))[1]
+    day = str(last.get("observed_date") or "")[:10]
+    try:
+        d = datetime.strptime(day, "%Y-%m-%d").date()
+        today = datetime.fromisoformat(now_iso.replace("Z", "+00:00")).date() if now_iso else datetime.now(timezone.utc).date()
+    except (ValueError, AttributeError):
+        return market, None
+    if not 0 <= (today - d).days <= HISTORY_PRICE_MAX_AGE_DAYS:
+        return market, None
+    out = dict(market)
+    for field, key in (("price", "price"), ("pe", "pe"), ("market_cap", "market_cap"), ("change_percent", "change_percent")):
+        v = num(last.get(key))
+        if v is not None and out.get(field) is None:
+            out[field] = v
+    out["price"] = num(last.get("price"))
+    return out, day
+
+
 def data_quality(company: dict, view: dict, market: dict, history_n: int) -> dict:
     warnings: list[str] = []
     missing: list[str] = []
@@ -290,6 +326,7 @@ def build_company_dataset(item: dict, history: Iterable[dict] = (), *, now_iso: 
     market = clean_market(company.get("market"))
     view = fundamentals_view(codal)
     hist = [h for h in history if num(h.get("price")) is not None]
+    market, price_from_history = price_from_recent_history(market, hist, now_iso)
     tier = classify_tier(market, view)
     ratios = compute_ratios(view) if view["present"] else {}
     meta = company.get("codal_metadata") or {}
@@ -306,13 +343,13 @@ def build_company_dataset(item: dict, history: Iterable[dict] = (), *, now_iso: 
         "history": [{"date": h.get("observed_date"), "price": num(h.get("price")), "changePercent": num(h.get("change_percent")),
                      "pe": num(h.get("pe")), "marketCap": num(h.get("market_cap")), "source": h.get("source")} for h in hist],
         "provenance": {
-            "baselineEnrichedAt": item.get("enrichedAt"), "priceSource": (company.get("market") or {}).get("price_source"),
+            "baselineEnrichedAt": item.get("enrichedAt"), "priceSource": (f"history:{price_from_history}" if price_from_history else (company.get("market") or {}).get("price_source")),
             "financialSource": view.get("source") if view["present"] else None, "tracingNo": view.get("tracingNo"),
             "statementTitle": view.get("title"), "statementScope": view.get("scope"), "periodType": view.get("periodType"),
             "verification": view.get("verification"), "auditOpinionSource": "codal_filing" if view.get("auditOpinion") else None,
             "dataAvailability": company.get("data_available") or {},
         },
-        "quality": data_quality(company, view, market, len(hist)),
+        "quality": {**data_quality(company, view, market, len(hist)), **({"priceFromHistory": price_from_history} if price_from_history else {})},
         "status": data_status(item, market, view, len(hist)),
         "generatedAt": now_iso,
     }
