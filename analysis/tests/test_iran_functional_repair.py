@@ -446,3 +446,13 @@ def test_history_keeps_one_row_per_day_and_the_live_snapshot_wins_over_a_backfil
             {"observed_date": "2026-11-03", "price": 2950.0, "source": "tsetmc-history-backfill", "pe": None}]
     ds = md.build_company_dataset(_item("H1", _codal(0)), hist, now_iso="2026-11-06T00:00:00+00:00")
     assert [(h["date"], h["price"]) for h in ds["history"]] == [("2026-11-03", 2950.0), ("2026-11-04", 3010.0)]
+
+
+def test_statement_stored_only_under_a_sub_symbol_is_kept_when_mapping_to_the_main_stock():
+    import module_routes as mr
+    main = {"code": "m", "symbol": "فخوز", "company": {"market": {"last_price": None}}}
+    sub = {"code": "s", "symbol": "فخوز3", "company": {"codal": {"tracing_no": "1"}, "codal_metadata": {"company_name": "x"}, "data_available": {"codal": True}, "market": {"last_price": 3040.0}}}
+    out = mr._fill_from_sub_symbol(main, sub)
+    assert out["symbol"] == "فخوز" and out["company"]["codal"]["tracing_no"] == "1" and out["company"]["market"]["last_price"] == 3040.0
+    full = {"code": "m", "symbol": "ا", "company": {"codal": {"tracing_no": "own"}, "market": {"last_price": 5.0}}}
+    assert mr._fill_from_sub_symbol(full, sub)["company"]["codal"]["tracing_no"] == "own"  # the main stock's own data always wins

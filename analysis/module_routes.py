@@ -167,6 +167,18 @@ def _history(symbol: Optional[str]) -> list[dict]:
     return []
 
 
+def _fill_from_sub_symbol(main_item: dict, sub_item: dict) -> dict:
+    """The main stock stays the identity, but a statement/market stored only under a numbered sub-symbol is not lost."""
+    mc_, sc_ = dict(main_item.get("company") or {}), sub_item.get("company") or {}
+    for key in ("codal", "codal_metadata", "data_available"):
+        if not mc_.get(key) and sc_.get(key):
+            mc_[key] = sc_[key]
+    main_market, sub_market = mc_.get("market") or {}, sc_.get("market") or {}
+    if not any(main_market.get(k) for k in ("last_price", "closing_price", "price")) and sub_market:
+        mc_["market"] = sub_market
+    return {**main_item, "company": mc_ or main_item.get("company")}
+
+
 def dataset_for(code: str) -> dict:
     item = resolve_company(STORE, code)
     rows = md.UNIVERSE.rows(STORE)
@@ -176,7 +188,9 @@ def dataset_for(code: str) -> dict:
         main = next((r for r in rows if r["code"] == urow["sub_of"]), None)
         if main is not None:
             mapped_from = {"code": urow["code"], "symbol": urow["symbol"]}
+            sub_item = item
             item, urow = _row_by_code(STORE, main["code"]), main
+            item = _fill_from_sub_symbol(item, sub_item)
     if urow and urow.get("symbol"):
         item = {**item, "symbol": urow["symbol"]}  # registry symbol (some rows store the instrument code there)
     history = _history(item.get("symbol"))
