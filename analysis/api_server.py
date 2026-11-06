@@ -153,6 +153,20 @@ def health():
     }
 
 
+def _stored_ticker(code: str) -> Optional[str]:
+    """The ticker of a stored company when the app sends its InsCode (some rows keep the code in the symbol column; the name is then the ticker)."""
+    try:
+        from listed_company_store import ListedCompanyStore
+        item = ListedCompanyStore().get(code)
+    except Exception:
+        return None
+    for cand in ((item or {}).get("symbol"), (item or {}).get("name")):
+        text = str(cand or "").strip()
+        if text and not text.isdigit() and text != code:
+            return text
+    return None
+
+
 def _company_or_404(code: str) -> tuple[dict, str]:
     mock = MOCK_COMPANIES.get(code.upper())
     if mock is not None:
@@ -166,6 +180,11 @@ def _company_or_404(code: str) -> tuple[dict, str]:
     company = build_company_from_symbol(code)
     if company is not None:
         return company, "codal"
+    ticker = _stored_ticker(code)  # InsCode from the app: retry under the stored ticker
+    if ticker and ticker != code:
+        company = build_company_from_symbol(ticker)
+        if company is not None:
+            return company, "codal"
     raise HTTPException(status_code=404, detail=f"no data for {code}")
 
 
