@@ -207,6 +207,41 @@ def _classify_audit_opinion_section(section: str) -> Optional[str]:
     return None
 
 
+_BASIS_HEAD = re.compile(r"مبنای\s*اظهار\s*نظر(?:\s*(?:مشروط|مردود))?")
+_BASIS_STOPS = ("مسئولیت هیئت مدیره", "مسئولیت هیات مدیره", "مسئولیت حسابرس", "سایر اطلاعات", "تاکید بر مطلب خاص", "تأکید بر مطلب خاص",
+                "گزارش در مورد سایر الزامات", "سایر موارد", "نظر حسابرس")
+_FIRM_RE = re.compile(r"((?:م[ؤو]?سسه|سازمان)\s+حسابرسی\s+[آ-ی]+(?:\s+[آ-ی]+){0,3})")
+_FIRM_STOP = re.compile(r"\s+(?:و|بر|در|به|که|این|را|است|می|گزارش|صورت|شماره|تاریخ|حسابرس|عضو|شریک|مدیر)(?:\s|$)")
+
+
+def extract_audit_basis(text: str) -> Optional[str]:
+    """The «مبنای اظهارنظر [مشروط]» paragraphs, verbatim, bounded; None when the heading is absent (never guessed)."""
+    normalized = _normalize_pdf_text(text)
+    heads = list(_BASIS_HEAD.finditer(normalized))
+    for m in reversed(heads):  # the real section follows a table-of-contents mention
+        body = normalized[m.end(): m.end() + 2600]
+        stops = [body.find(x, 40) for x in _BASIS_STOPS]
+        stops = [i for i in stops if i >= 0]
+        body = (body[: min(stops)] if stops else body).strip(" :.")
+        if len(body) >= 60:
+            return body
+    return None
+
+
+def extract_auditor_name(text: str) -> Optional[str]:
+    """Auditor firm named in the report (last mention = the signature block), or None."""
+    normalized = _normalize_pdf_text(text)
+    names = [m.group(1) for m in _FIRM_RE.finditer(normalized)]
+    if not names:
+        return None
+    name = re.sub(r"\s+", " ", names[-1]).strip()
+    head, _, tail = name.partition(" حسابرسی ")
+    cut = _FIRM_STOP.search(" " + tail)
+    if cut:
+        tail = (" " + tail)[: cut.start()].strip()
+    return f"{head} حسابرسی {tail}".strip() if tail else None
+
+
 def classify_audit_opinion_from_text(text: str) -> Optional[str]:
     section = _extract_audit_opinion_section(text)
     if section is None:
@@ -219,3 +254,11 @@ def audit_opinion_from_pdf(filing: CodalFiling) -> Optional[str]:
     if raw_text is None:
         return None
     return classify_audit_opinion_from_text(raw_text)
+
+
+def audit_details_from_pdf(filing: CodalFiling) -> dict:
+    """Auditor firm and basis-for-opinion paragraphs from the same cached PDF text as the opinion."""
+    raw_text = extracted_text_for_filing(filing, www_base=_codal_www_base())
+    if raw_text is None:
+        return {"auditor_name": None, "audit_basis": None}
+    return {"auditor_name": extract_auditor_name(raw_text), "audit_basis": extract_audit_basis(raw_text)}

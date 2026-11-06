@@ -151,6 +151,8 @@ class CodalFundamentals:
     total_equity_current: Optional[float] = None
     total_equity_prev: Optional[float] = None
     audit_opinion: Optional[str] = None
+    auditor_name: Optional[str] = None
+    audit_basis: Optional[str] = None
     related_party_flags: Optional[int] = None
     guidance_note: Optional[str] = None
     tracing_no: Optional[str] = None

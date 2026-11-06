@@ -154,7 +154,9 @@ def fundamentals_view(codal: Optional[dict]) -> dict:
     return {
         "present": any(v is not None for v in cur.values()), "periodEnd": period_end(title),
         "current": cur, "prev": prev, "scope": codal.get("report_scope"), "tracingNo": codal.get("tracing_no"),
-        "title": title or None, "periodType": period_type, "auditOpinion": codal.get("audit_opinion"),
+        "title": title or None, "periodType": period_type, "auditStatus": "unaudited" if is_unaudited_title(title) else "audited",
+        "auditOpinion": None if is_unaudited_title(title) else codal.get("audit_opinion"),
+        "auditorName": codal.get("auditor_name"), "auditBasis": codal.get("audit_basis"),
         "source": codal.get("source") or "CODAL", "reportUrl": codal.get("report_url"), "verification": verification,
     }
 
@@ -239,6 +241,12 @@ def clean_market(market: Optional[dict]) -> dict:
     out = {k: market.get(k) for k in MARKET_FIELDS if market.get(k) is not None}
     out["price"] = num(market.get("last_price") or market.get("closing_price") or market.get("price"))
     return out
+
+
+def is_unaudited_title(title: Optional[str]) -> bool:
+    """CODAL marks unaudited statements «(حسابرسی نشده)» in the title: such a statement has no auditor opinion."""
+    t = str(title or "").translate(str.maketrans({"ي": "ی", "ك": "ک", "\u200c": " ", "\u00a0": " "}))
+    return "حسابرسی نشده" in " ".join(t.split())
 
 
 HISTORY_PRICE_MAX_AGE_DAYS = 5

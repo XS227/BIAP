@@ -125,7 +125,12 @@ def reparse(db_path: str, *, apply: bool = False, inbox=None, limit: Optional[in
             if res["status"] == "corrected":
                 codal.update(res["values"])
                 stamp["changedFields"] = sorted(res["changed"])
-            if codal.get("verification") != stamp or res["status"] == "corrected":
+            from module_dataset import is_unaudited_title
+            cleared_opinion = bool(codal.get("audit_opinion")) and is_unaudited_title(codal.get("report_title"))
+            if cleared_opinion:  # an «حسابرسی نشده» statement cannot carry an auditor opinion
+                stamp["clearedAuditOpinion"] = codal.pop("audit_opinion")
+                codal["audit_opinion"] = None
+            if codal.get("verification") != stamp or res["status"] == "corrected" or cleared_opinion:
                 codal["verification"] = stamp
                 # updated_at must move: the API's universe cache is keyed on COUNT/MAX(updated_at) and would otherwise keep serving old numbers
                 conn.execute("UPDATE listed_companies SET company_json=?, updated_at=? WHERE code=?", (json.dumps(company, ensure_ascii=False, sort_keys=True), now, code))

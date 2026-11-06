@@ -10,7 +10,7 @@ from dataclasses import replace
 import os
 import time
 
-from audit_parser import audit_opinion_from_pdf
+from audit_parser import audit_details_from_pdf, audit_opinion_from_pdf
 from codal_data import CodalDataUnavailable, latest_financial_filings, metadata_for_symbol
 from deadline import DeadlineExceeded, run_parallel_with_deadline
 from financial_scope import report_scope_from_title, scoped_fundamentals_for_symbol
@@ -79,6 +79,8 @@ def _enrich_codal_risk_fields(symbol: str, fundamentals, report_scope: str | Non
             related_party_flags = related_party_flags_from_pdf(filing)
         if audit_opinion is not None or related_party_flags is not None:
             result = replace(result, audit_opinion=audit_opinion, related_party_flags=related_party_flags)
+        if audit_opinion is not None and result.audit_basis is None and result.auditor_name is None:
+            result = replace(result, **audit_details_from_pdf(filing))
         if result.audit_opinion is not None and result.related_party_flags is not None:
             break
     return result
