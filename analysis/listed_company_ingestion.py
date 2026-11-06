@@ -12,6 +12,9 @@ company_registry_store.py) even when it is not a company.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from functools import lru_cache
+import hashlib
+from pathlib import Path
 import time
 from typing import Any, Iterable
 import uuid
@@ -345,9 +348,30 @@ def refresh_universe(
 
 
 
+@lru_cache(maxsize=1)
+def _parser_revision() -> str:
+    """Fingerprint the actual code that decides whether a CODAL filing is parseable.
+
+    A filing rejected by an old parser must be tried again after a parser or
+    scope/metadata fix, even when its tracing numbers have not changed.
+    A stable revision prevents repeatedly burning scarce nightly slots on the
+    same HTML when the parsing code is unchanged.
+    """
+    digest = hashlib.sha256()
+    for filename in ("codal_parser_v2.py", "financial_scope.py", "codal_data.py", "company_builder.py"):
+        digest.update(filename.encode("utf-8"))
+        digest.update(Path(__file__).with_name(filename).read_bytes())
+    return digest.hexdigest()[:16]
+
+
 def _unparseable_unchanged(entry: dict | None, tracing_nos: list[str]) -> bool:
-    """True when we already failed to parse exactly this set of inbox statements."""
-    return bool(entry and tracing_nos and list(entry.get("tracingNos") or []) == list(tracing_nos))
+    """Skip only an unchanged filing rejected by THIS parser revision.
+
+    Legacy entries have no parserRevision and are replayed once after upgrade.
+    """
+    return bool(entry and tracing_nos
+                and list(entry.get("tracingNos") or []) == list(tracing_nos)
+                and entry.get("parserRevision") == _parser_revision())
 
 
 def _build_verified_company(code: str) -> tuple[dict[str, Any] | None, str]:
@@ -511,6 +535,8 @@ def run_batch(
         "markets": ["TSE", "IFB", "IFB_BASE"],
         "maxBatchSize": DAILY_BATCH_SIZE,
         "requestedBatchSize": safe_batch_size,
+        "actualCompaniesScheduled": len(codes),  # 300 configured is NOT 300 usable CODAL statements
+        "parserRevision": _parser_revision(),
         "intervalSeconds": safe_interval,
         "moduleTargets": ["kpi", "sql", "financial-model"],
         "tindexConfigured": tindex_configured(),
@@ -601,7 +627,7 @@ def run_batch(
         if codal_inbox.enabled():
             _tracing = codal_inbox.current().usable_tracing_nos(str((instrument or {}).get("symbol") or ""))
             if _tracing and not availability.get("codal"):
-                unparseable[code] = {"tracingNos": _tracing, "at": _now_iso(),
+                unparseable[code] = {"tracingNos": _tracing, "parserRevision": _parser_revision(), "at": _now_iso(),
                                      "reason": str(codal_diag.get("fundamentalsReason") or codal_diag.get("status") or "")[:120]}
             elif code in unparseable:
                 unparseable.pop(code, None)
