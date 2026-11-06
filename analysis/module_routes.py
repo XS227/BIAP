@@ -197,6 +197,11 @@ def module_readiness(code: str, _user: str = Depends(require_user_id)):
 
 @router.post("/modules/{code}/{module}")
 def module_compute(code: str, module: str, params: Optional[dict] = Body(default=None), user_id: str = Depends(require_user_id)):
+    if module == "business-kpi" and code not in ("", "_"):  # a listed symbol: fill from CODAL, ask only for customer metrics
+        ds = dataset_for(code)
+        result = mc.compute(module, ds, md.UNIVERSE.rows(STORE), params)
+        result["dataStatus"] = ds["status"]
+        return result
     if module in mc.PRIVATE_MODULES and module != "crm":
         return private_analytics.compute(module, get_dataset(user_id), PRIVATE.list_kpis(user_id))
     if module == "crm":

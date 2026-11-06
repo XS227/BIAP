@@ -100,6 +100,64 @@ def blocked(module: str, ds: dict, missing: list[str], why: str) -> dict:
     return envelope(module, ds, "blocked", why, [{"type": "notice", "tone": "warning", "text": why, "missing": missing}], missing=missing)
 
 
+# ---- KPI dashboard for a listed company: everything CODAL can supply is filled in; only customer metrics are asked for --------
+
+CUSTOMER_METRICS = ["مشتری فعال", "مشتری جدید", "نرخ تبدیل", "نرخ ریزش مشتری"]
+
+
+def business_kpi_listed(ds: dict) -> dict:
+    """Revenue, cost, profits and margins per period straight from the stored CODAL statement (current and previous year).
+    Customer metrics are never guessed: they need the company's own upload."""
+    view = ds["fundamentals"]
+    if not view.get("present"):
+        return blocked("business-kpi", ds, ["صورت مالی کدال"], "صورت مالی کدال برای این نماد در BIAP ذخیره نشده است؛ ارقام فروش و هزینه از کدال پر نمی‌شود.")
+    ver = view.get("verification") or {}
+    if ver.get("status") == "unverified":
+        return blocked("business-kpi", ds, ["صورت مالی تأییدشده"], "صورت مالی ذخیره‌شده با ترازنامه‌اش تراز نیست یا فایل اصلی کدال تأیید نشد؛ ارقام آن نمایش داده نمی‌شود." + (f" شماره رهگیری کدال {view.get('tracingNo')}." if view.get("tracingNo") else ""))
+    cur, prev = view["current"], view["prev"]
+
+    def pair(key):
+        return cur.get(key), prev.get(key)
+
+    def sub(a, b):
+        return (a - b) if a is not None and b is not None else None
+
+    def ratio(a, b):
+        return (a / b) if a is not None and b else None
+
+    rev, gp, op, npf = pair("revenue"), pair("gross_profit"), pair("operating_profit"), pair("net_profit")
+    cost = (sub(rev[0], gp[0]), sub(rev[1], gp[1]))
+    rows = []
+
+    def money(label, pr, formula):
+        rows.append({"metric": label, "value": pr[0], "prev": pr[1], "unit": "million_rial", "formula": formula})
+
+    def frac(label, pr, formula):
+        rows.append({"metric": label, "value": fmt_ratio(pr[0]), "prev": fmt_ratio(pr[1]), "unit": "fraction", "formula": formula})
+
+    money("درآمد عملیاتی", rev, "ردیف درآمد عملیاتی صورت سود و زیان")
+    money("بهای تمام‌شده درآمد", cost, "درآمد − سود ناخالص")
+    money("سود ناخالص", gp, "ردیف سود (زیان) ناخالص")
+    money("سود عملیاتی", op, "ردیف سود (زیان) عملیاتی")
+    money("سود خالص", npf, "ردیف سود (زیان) خالص")
+    frac("حاشیه سود ناخالص", (ratio(gp[0], rev[0]), ratio(gp[1], rev[1])), "سود ناخالص ÷ درآمد")
+    frac("حاشیه سود عملیاتی", (ratio(op[0], rev[0]), ratio(op[1], rev[1])), "سود عملیاتی ÷ درآمد")
+    frac("حاشیه سود خالص", (ratio(npf[0], rev[0]), ratio(npf[1], rev[1])), "سود خالص ÷ درآمد")
+    growth = ((rev[0] / rev[1] - 1) if rev[0] is not None and rev[1] else None)
+    rows.append({"metric": "رشد درآمد نسبت به دوره قبل", "value": fmt_ratio(growth), "prev": None, "unit": "fraction", "formula": "درآمد جاری ÷ درآمد دوره قبل − ۱"})
+    have = [r for r in rows if r["value"] is not None or r["prev"] is not None]
+    period = view.get("title") or "دوره‌ی آخرین صورت مالی"
+    notes = [f"منبع: صورت مالی کدال • {period}" + (f" • شماره رهگیری {view.get('tracingNo')}" if view.get("tracingNo") else "") + " • واحد: میلیون ریال"]
+    if (ver.get("stale")):
+        notes.append("این صورت مالی قدیمی است (بیش از ۱۸ ماه)؛ ارقام تاریخی هستند.")
+    blocks = [{"type": "table", "title": "درآمد، هزینه و حاشیه‌ها (دوره جاری و دوره قبل)", "scopeKind": "company",
+               "columns": ["metric", "value", "prev"], "rows": have},
+              {"type": "notice", "tone": "info", "text": " • ".join(notes)},
+              {"type": "notice", "tone": "warning", "text": "شاخص‌های مشتری (" + "، ".join(CUSTOMER_METRICS) + ") در کدال نیست؛ فقط برای این موارد داده‌ی خودتان را در «ابزار شرکت‌ها» وارد کنید.", "missing": CUSTOMER_METRICS}]
+    status = "partial"  # customer metrics are always still missing
+    return envelope("business-kpi", ds, status, f"{len(have)} شاخص مالی از کدال پر شد؛ شاخص‌های مشتری نیاز به داده‌ی شما دارد.", blocks, missing=CUSTOMER_METRICS)
+
+
 # ---- KPI -------------------------------------------------------------------------------------
 
 def kpi(ds: dict) -> dict:
@@ -579,6 +637,8 @@ def compute(module: str, ds: dict, universe: list[dict], params: Optional[dict] 
     params = params or {}
     if module == "kpi-extract":
         return kpi(ds)
+    if module == "business-kpi":
+        return business_kpi_listed(ds)
     if module == "eda":
         return eda(ds, universe, column=params.get("column"), sector_only=bool(params.get("sectorOnly")))
     if module == "anomaly":
