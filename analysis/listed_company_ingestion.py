@@ -358,7 +358,7 @@ def _parser_revision() -> str:
     same HTML when the parsing code is unchanged.
     """
     digest = hashlib.sha256()
-    for filename in ("codal_parser_v2.py", "financial_scope.py", "codal_data.py", "company_builder.py"):
+    for filename in ("codal_parser_v2.py", "codal_quality.py", "financial_scope.py", "codal_data.py", "company_builder.py"):
         digest.update(filename.encode("utf-8"))
         digest.update(Path(__file__).with_name(filename).read_bytes())
     return digest.hexdigest()[:16]

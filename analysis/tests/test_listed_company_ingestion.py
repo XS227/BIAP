@@ -363,3 +363,20 @@ def test_inbox_parser_upgrade_bypasses_failure_cooldown_once(monkeypatch):
     new = {"tracingNos": ["1553923"], "parserRevision": "new-parser"}
     assert ingestion._inbox_retry_eligible(inbox, "سیدکو", failure, cutoff, old)
     assert not ingestion._inbox_retry_eligible(inbox, "سیدکو", failure, cutoff, new)
+
+
+
+def test_parser_revision_changes_when_balance_validator_changes(monkeypatch):
+    from pathlib import Path
+    original_read_bytes = Path.read_bytes
+    ingestion._parser_revision.cache_clear()
+    original_revision = ingestion._parser_revision()
+
+    def changed_balance_checker(path):
+        data = original_read_bytes(path)
+        return data + b"# changed balance policy" if path.name == "codal_quality.py" else data
+
+    monkeypatch.setattr(Path, "read_bytes", changed_balance_checker)
+    ingestion._parser_revision.cache_clear()
+    assert ingestion._parser_revision() != original_revision
+    ingestion._parser_revision.cache_clear()
