@@ -250,7 +250,15 @@ def price_from_recent_history(market: dict, hist: list[dict], now_iso: Optional[
     having no market data at all. Never invents a value: only fields present on the recorded row are copied."""
     if market.get("price") or not hist:
         return market, None
-    last = max(hist, key=lambda h: str(h.get("observed_date") or ""))
+    # Multiple sources can record the same trading date. The list returned by
+    # market_memory is ordered by observed_at, but max(date) alone picked the
+    # FIRST (oldest) row on ties. Choose the latest recording timestamp and
+    # preserve input order as a deterministic fallback for legacy rows.
+    last = max(enumerate(hist), key=lambda pair: (
+        str(pair[1].get("observed_date") or ""),
+        str(pair[1].get("observed_at") or ""),
+        pair[0],
+    ))[1]
     day = str(last.get("observed_date") or "")[:10]
     try:
         d = datetime.strptime(day, "%Y-%m-%d").date()

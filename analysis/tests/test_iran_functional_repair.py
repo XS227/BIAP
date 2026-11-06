@@ -308,3 +308,30 @@ def test_old_recorded_close_is_not_presented_as_current_and_a_real_quote_always_
     live = _item("L", _codal(0)); live["company"]["market"] = {"last_price": 4000.0, "pe": 12.0}
     ds2 = md.build_company_dataset(live, [{"observed_date": "2026-11-05", "price": 3630.0, "pe": 16.4}], now_iso="2026-11-06T01:00:00+00:00")
     assert ds2["market"]["price"] == 4000.0 and ds2["market"]["pe"] == 12.0 and "priceFromHistory" not in ds2["quality"]
+
+
+
+def test_same_day_observation_uses_latest_recorded_timestamp_not_first_source():
+    hist = [
+        {"observed_date": "2026-11-05", "observed_at": "2026-11-05T13:02:00+00:00",
+         "price": 3540, "pe": 13.0, "source": "first-source"},
+        {"observed_date": "2026-11-05", "observed_at": "2026-11-05T17:25:00+00:00",
+         "price": 3630, "pe": 16.4, "source": "newest-source"},
+        {"observed_date": "2026-11-04", "observed_at": "2026-11-04T23:59:00+00:00",
+         "price": 9999, "pe": 50.0, "source": "older-date"},
+    ]
+    ds = md.build_company_dataset(_empty_quote_item(), hist, now_iso="2026-11-06T01:00:00+00:00")
+    assert ds["market"]["price"] == 3630 and ds["market"]["pe"] == 16.4
+    assert ds["provenance"]["priceSource"] == "history:2026-11-05"
+
+    # Input order is not a proxy for recency when explicit timestamps exist.
+    reversed_ds = md.build_company_dataset(_empty_quote_item(), list(reversed(hist)),
+                                           now_iso="2026-11-06T01:00:00+00:00")
+    assert reversed_ds["market"]["price"] == 3630
+
+
+def test_same_day_without_timestamps_uses_last_history_row():
+    hist = [{"observed_date": "2026-11-05", "price": 3500},
+            {"observed_date": "2026-11-05", "price": 3600}]
+    ds = md.build_company_dataset(_empty_quote_item(), hist, now_iso="2026-11-06T01:00:00+00:00")
+    assert ds["market"]["price"] == 3600
