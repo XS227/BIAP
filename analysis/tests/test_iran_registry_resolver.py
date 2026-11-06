@@ -210,7 +210,8 @@ def test_numbered_instruments_of_one_company_resolve_to_the_base_share_by_name(e
             c.execute("INSERT INTO listed_companies (code,symbol,name_fa,market,source_universe,provenance_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)", (code, sym, "پلیمر آریا ساسول", "TSE", "test", "{}", now, now))
     md.UNIVERSE._rows, md.UNIVERSE._stamp = [], None
     assert ds(client, "پلیمر آریا ساسول")[1]["identity"]["code"] == "2001"       # by full name -> base share
-    assert ds(client, "آریا3")[1]["identity"]["code"] == "2002"                  # exact symbol still exact
+    sub = ds(client, "آریا3")[1]["identity"]                                       # a numbered sub-symbol maps to its main stock (one row per company)
+    assert sub["code"] == "2001" and sub["mappedFrom"]["symbol"] == "آریا3"
     assert ds(client, "گروه خودرو")[0] == 409                                      # unrelated names stay ambiguous
 
 

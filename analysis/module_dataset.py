@@ -7,6 +7,7 @@ explicitly; no value is estimated or borrowed from another company.
 from __future__ import annotations
 
 import json
+import re
 import math
 import sqlite3
 import threading
@@ -85,6 +86,17 @@ def months_old(end: Optional[str], today: Optional["datetime.date"] = None) -> O
     jy, jm, _ = gregorian_to_jalali(t.year, t.month, t.day)
     y, m = int(end[:4]), int(end[5:7])
     return (jy * 12 + jm) - (y * 12 + m)
+# Sanity guard: a ratio outside these limits comes from a unit/parse error, not from a company. It is never shown or used in peer statistics.
+RATIO_LIMITS = {"gross_margin": 2.0, "operating_margin": 2.0, "net_margin": 2.0, "roa": 1.5, "roe": 3.0, "debt_ratio": 5.0, "debt_to_equity": 50.0,
+                "current_ratio": 100.0, "revenue_growth": 50.0, "profit_growth": 50.0, "asset_turnover": 20.0, "receivable_days": 3650.0, "accruals_ratio": 2.0}
+INVALID_DATA_FA = "داده نامعتبر"
+
+
+def ratio_out_of_range(key: str, value: Optional[float]) -> bool:
+    limit = RATIO_LIMITS.get(key)
+    return limit is not None and value is not None and abs(value) > limit
+
+
 BALANCE_SHEET_RATIOS = ("roa", "roe", "debt_ratio", "debt_to_equity", "current_ratio", "accruals_ratio", "asset_turnover", "receivable_days")
 
 
@@ -210,6 +222,10 @@ def compute_ratios(view: dict) -> dict[str, dict]:
                         "reason": "تأییدنشده: ترازنامه‌ی ذخیره‌شده با صورت مالی اصلی هم‌خوان نیست؛ عدد منتشر نمی‌شود" + (f" • شماره رهگیری کدال {view.get('tracingNo')}" if view.get("tracingNo") else ""),
                         "withheldValue": None}
             continue
+        if ratio_out_of_range(key, value):
+            out[key] = {"label": label, "formula": formula, "value": None, "inputs": inputs, "missing": [], "invalid": True, "rejectedValue": value,
+                        "reason": f"{INVALID_DATA_FA}: مقدار محاسبه‌شده خارج از دامنه‌ی معتبر (حد ±{RATIO_LIMITS[key]:g}) است؛ احتمال خطای واحد یا استخراج؛ نمایش داده نمی‌شود"}
+            continue
         entry: dict[str, Any] = {"label": label, "formula": formula, "value": value, "inputs": inputs}
         if value is None:
             missing = []
@@ -305,6 +321,10 @@ def data_quality(company: dict, view: dict, market: dict, history_n: int) -> dic
     return {"missing": missing, "warnings": warnings, "historyObservations": history_n}
 
 
+def invalid_ratio_keys(ratios: dict) -> list[str]:
+    return sorted(k for k, v in ratios.items() if isinstance(v, dict) and v.get("invalid"))
+
+
 RATE_LIMIT_MARKERS = ("429", "rate limit", "rate-limit", "too many requests", "retry-after")
 
 
@@ -327,13 +347,22 @@ def data_status(item: dict, market: dict, view: dict, history_n: int) -> dict:
             "hasHistory": history_n > 0, "inStore": not bool(item.get("registryOnly")), "lastError": item.get("lastError") or item.get("last_error")}
 
 
+def _one_per_day(rows: list[dict]) -> list[dict]:
+    """A backfilled close is dropped when a live snapshot exists for the same day (the live one carries P/E and market cap);
+    every other row is kept exactly as recorded."""
+    is_bf = lambda h: str(h.get("source") or "").endswith("backfill")
+    live_days = {str(h.get("observed_date") or "") for h in rows if not is_bf(h)}
+    kept = [h for h in rows if not (is_bf(h) and str(h.get("observed_date") or "") in live_days)]
+    return sorted(kept, key=lambda h: str(h.get("observed_date") or ""))  # stable: same-day rows keep their recorded order
+
+
 def build_company_dataset(item: dict, history: Iterable[dict] = (), *, now_iso: Optional[str] = None) -> dict:
     """``item`` is a ListedCompanyStore row (with ``company``). ``history`` = market-memory daily snapshots."""
     company = item.get("company") or {}
     codal = company.get("codal") if isinstance(company.get("codal"), dict) else None
     market = clean_market(company.get("market"))
     view = fundamentals_view(codal)
-    hist = [h for h in history if num(h.get("price")) is not None]
+    hist = _one_per_day([h for h in history if num(h.get("price")) is not None])
     market, price_from_history = price_from_recent_history(market, hist, now_iso)
     tier = classify_tier(market, view)
     ratios = compute_ratios(view) if view["present"] else {}
@@ -343,6 +372,7 @@ def build_company_dataset(item: dict, history: Iterable[dict] = (), *, now_iso: 
             "code": item.get("code"), "symbol": item.get("symbol"), "symbolKey": symbol_key(item.get("symbol")),
             "name": item.get("name"), "market": item.get("market"), "sector": market.get("sector_name"),
             "issuerName": meta.get("company_name") if isinstance(meta, dict) else None,
+            "instrumentKind": instrument_kind(item.get("symbol"), item.get("name"), item.get("category")),
         },
         "tier": tier,
         "market": market,
@@ -357,7 +387,8 @@ def build_company_dataset(item: dict, history: Iterable[dict] = (), *, now_iso: 
             "verification": view.get("verification"), "auditOpinionSource": "codal_filing" if view.get("auditOpinion") else None,
             "dataAvailability": company.get("data_available") or {},
         },
-        "quality": {**data_quality(company, view, market, len(hist)), **({"priceFromHistory": price_from_history} if price_from_history else {})},
+        "quality": {**data_quality(company, view, market, len(hist)), **({"priceFromHistory": price_from_history} if price_from_history else {}),
+                    **({"invalidRatios": invalid_ratio_keys(ratios)} if invalid_ratio_keys(ratios) else {})},
         "status": data_status(item, market, view, len(hist)),
         "generatedAt": now_iso,
     }
@@ -390,6 +421,48 @@ def universe_row(item: dict) -> dict:
     for key in UNIVERSE_RATIO_KEYS:
         row[key] = (ds["ratios"].get(key) or {}).get("value")
     return row
+
+
+_BOND_NAME = re.compile(r"^(اجاره|مرابحه|صکوک|اسناد|مشارکت|منفعت|سلف|گام)")
+_FUND_NAME = re.compile(r"^(صندوق|ص\.?\s*س\.?\b)|\bETF\b")
+_TRAILING_DIGITS = re.compile(r"[0-9۰-۹]+$")
+
+
+def instrument_kind(symbol: Any, name: Any, category: Optional[str] = None) -> str:
+    """stock | bond | fund | rights | option: only ordinary shares go through the stock modules."""
+    n = str(name or "").translate(str.maketrans({"ي": "ی", "ك": "ک"})).strip()
+    if category == "bond_debt" or _BOND_NAME.search(n):
+        return "bond"
+    if category == "fund_etf" or _FUND_NAME.search(n):
+        return "fund"
+    if category == "option_derivative" or n.startswith("اختیار"):
+        return "option"
+    if re.search(r"حق\s*تقدم", n):
+        return "rights"
+    return "stock"
+
+
+def collapse_sub_symbols(rows: list[dict]) -> None:
+    """One row per company: numbered sub-symbols of the same company (فخوز2 / فخوز3 under فخوز) get ``is_primary=0`` and
+    ``sub_of=<main code>``. The main one is the symbol without a trailing number, else the best-covered instrument."""
+    groups: dict[str, list[dict]] = {}
+    for r in rows:
+        if not r.get("is_primary", 1) or instrument_kind(r.get("symbol"), r.get("name"), r.get("category")) != "stock":
+            continue
+        nk, sk = r.get("name_key") or symbol_key(r.get("name")), r.get("symbol_key") or symbol_key(r.get("symbol"))
+        if not nk or nk == sk or nk == symbol_key(r.get("code")):  # stub rows named after their own ticker/code carry no company name
+            continue
+        groups.setdefault(nk, []).append(r)
+    rank = {TIER_FULL: 0, TIER_PARTIAL: 1, TIER_MARKET: 2, TIER_REGISTERED: 3}
+    for members in groups.values():
+        bases = {_TRAILING_DIGITS.sub("", str(m.get("symbol_key") or "")) for m in members}
+        if len(members) < 2 or len(bases) != 1:
+            continue  # different base tickers under one name are separate instruments: never merged by guess
+        main = min(members, key=lambda m: (bool(_TRAILING_DIGITS.search(str(m.get("symbol_key") or ""))), rank.get(m.get("tier"), 9),
+                                           0 if m.get("has_market") else 1, len(str(m.get("symbol") or "")), str(m.get("code"))))
+        for m in members:
+            if m is not main:
+                m["is_primary"], m["sub_of"] = 0, main["code"]
 
 
 class _Registry:
@@ -460,6 +533,8 @@ class UniverseCache:
                     keys |= reg.aliases.get(row.get("issuer_id") or "", set())
                     row["aliases"] = sorted(k for k in keys if k)
                     row["name_key"] = symbol_key(row["name"])
+                    row["instrument_kind"] = instrument_kind(row.get("symbol"), row.get("name"), row.get("category"))
+                collapse_sub_symbols(built)
             finally:
                 conn.close()
             self._rows, self._built_at, self._stamp = built, clock(), stamp

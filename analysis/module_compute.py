@@ -143,6 +143,8 @@ def kpi(ds: dict) -> dict:
         add(group, key, r["label"], r["value"], unit, r["formula"], r["inputs"], f"CODAL • {view.get('scope') or 'نامشخص'}", r.get("missing") or ([r["reason"]] if r.get("reason") else []))
         if r.get("unverified"):
             items[-1]["status"] = "unverified"
+        elif r.get("invalid"):
+            items[-1]["status"] = "invalid"  # «داده نامعتبر»: out-of-range value is flagged, never displayed
     ok = [i for i in items if i["status"] == "ok"]
     missing_inputs = sorted({m for i in items for m in i["missing"]})
     if not ok:
@@ -575,8 +577,14 @@ def composite(module: str, ds: dict, universe: list[dict]) -> dict:
     return envelope(module, ds, "ok" if ds["tier"] == TIER_FULL else "partial", "گزارش از همان شاخص‌های محاسبه‌شده‌ی KPI و صورت مالی ساخته شد.", blocks, missing=miss)
 
 
+KIND_FA = {"bond": "اوراق بدهی (اجاره/مرابحه/صکوک)", "fund": "صندوق", "rights": "حق تقدم", "option": "اختیار معامله"}
+
+
 def compute(module: str, ds: dict, universe: list[dict], params: Optional[dict] = None) -> dict:
     params = params or {}
+    kind = ds["identity"].get("instrumentKind") or "stock"
+    if kind != "stock" and module not in ("sql",):
+        return blocked(module, ds, ["سهام عادی"], f"این نماد «{KIND_FA.get(kind, kind)}» است، نه سهام شرکت؛ ماژول‌های تحلیل سهام فقط روی سهام عادی کار می‌کنند. نماد سهام شرکت را انتخاب کنید.")
     if module == "kpi-extract":
         return kpi(ds)
     if module == "eda":

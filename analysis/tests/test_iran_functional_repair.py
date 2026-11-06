@@ -384,3 +384,65 @@ def test_unaudited_statement_never_carries_an_auditor_opinion():
                                                      auditor_name="موسسه حسابرسی الف", audit_basis="متن مبنا")))["fundamentals"]
     assert audited["auditStatus"] == "audited" and audited["auditOpinion"] == "qualified" and audited["auditorName"] == "موسسه حسابرسی الف" and audited["auditBasis"] == "متن مبنا"
     assert md.is_unaudited_title("صورت‌های مالی (حسابرسي نشده)") is True
+
+
+# ---- sanity guard -------------------------------------------------------------------------------
+
+def test_out_of_range_ratio_is_flagged_invalid_and_never_displayed():
+    ds = md.build_company_dataset(_item("TK", _codal(0, revenue_current=1.0, net_profit_current=780934.0, gross_profit_current=971572.0)))
+    nm, gm = ds["ratios"]["net_margin"], ds["ratios"]["gross_margin"]
+    assert nm["value"] is None and nm["invalid"] is True and "داده نامعتبر" in nm["reason"] and nm["rejectedValue"] > 2
+    assert gm["value"] is None and gm["invalid"] is True
+    assert "net_margin" in ds["quality"]["invalidRatios"]
+    kpi_items = {i["key"]: i for i in mc.kpi(ds)["blocks"][0]["items"]}
+    assert kpi_items["net_margin"]["status"] == "invalid" and kpi_items["net_margin"]["value"] is None
+    assert md.universe_row(_item("TK", _codal(0, revenue_current=1.0, net_profit_current=780934.0)))["net_margin"] is None  # never enters peer statistics
+    ok = md.build_company_dataset(_item("OKK", _codal(0)))
+    assert not ok["quality"].get("invalidRatios") and ok["ratios"]["net_margin"]["value"] is not None
+
+
+def test_roe_above_limit_is_invalid_and_in_range_values_are_untouched():
+    assert md.ratio_out_of_range("roe", 3.5) and not md.ratio_out_of_range("roe", 2.9)
+    assert md.ratio_out_of_range("net_margin", -2.5) and not md.ratio_out_of_range("net_margin", 1.39)
+
+
+# ---- one row per company; instrument kind -------------------------------------------------------
+
+def _row(code, symbol, name, tier=md.TIER_FULL, has_market=1, category="operating_company"):
+    return {"code": code, "symbol": symbol, "symbol_key": md.symbol_key(symbol), "name": name, "name_key": md.symbol_key(name), "tier": tier,
+            "has_market": has_market, "is_primary": 1, "category": category}
+
+
+def test_numbered_sub_symbols_collapse_into_the_main_stock():
+    rows = [_row("a", "فخوز2", "فولاد خوزستان"), _row("b", "فخوز", "فولاد خوزستان", md.TIER_MARKET, 0), _row("c", "فخوز3", "فولاد خوزستان"),
+            _row("d", "فولاد", "فولاد مبارکه اصفهان"), _row("e", "مبین", "مبین انرژی خلیج فارس")]
+    md.collapse_sub_symbols(rows)
+    by = {r["symbol"]: r for r in rows}
+    assert by["فخوز"]["is_primary"] == 1 and "sub_of" not in by["فخوز"]
+    assert by["فخوز2"]["is_primary"] == 0 and by["فخوز2"]["sub_of"] == "b" and by["فخوز3"]["sub_of"] == "b"
+    assert by["فولاد"]["is_primary"] == 1 and by["مبین"]["is_primary"] == 1
+
+
+def test_different_base_tickers_under_one_name_are_never_merged():
+    rows = [_row("x", "کگل", "گل گهر"), _row("y", "کگهر", "گل گهر")]
+    md.collapse_sub_symbols(rows)
+    assert all(r["is_primary"] == 1 for r in rows)
+
+
+def test_instrument_kind_keeps_bonds_and_funds_out_of_stock_modules():
+    assert md.instrument_kind("سمگا061", "مرابحه سمگا-دماوند060907") == "bond"
+    assert md.instrument_kind("کگهر073", "اجاره گهرزمین کاردان14070822", "bond_debt") == "bond"
+    assert md.instrument_kind("اهرم", "صندوق س. اهرمی") == "fund" and md.instrument_kind("فولاد", "فولاد مبارکه اصفهان") == "stock"
+    ds = md.build_company_dataset(_item("BD", _codal(0)))
+    ds["identity"]["instrumentKind"] = "bond"
+    for module in ("kpi-extract", "eda", "swot", "forecast", "financial-model"):
+        out = mc.compute(module, ds, _universe())
+        assert out["status"] == "blocked" and "سهام" in out["summary"], module
+
+
+def test_history_keeps_one_row_per_day_and_the_live_snapshot_wins_over_a_backfilled_close():
+    hist = [{"observed_date": "2026-11-04", "price": 3000.0, "source": "tsetmc-history-backfill", "pe": None},
+            {"observed_date": "2026-11-04", "price": 3010.0, "source": "kiasha:tsetmc", "pe": 15.0},
+            {"observed_date": "2026-11-03", "price": 2950.0, "source": "tsetmc-history-backfill", "pe": None}]
+    ds = md.build_company_dataset(_item("H1", _codal(0)), hist, now_iso="2026-11-06T00:00:00+00:00")
+    assert [(h["date"], h["price"]) for h in ds["history"]] == [("2026-11-03", 2950.0), ("2026-11-04", 3010.0)]

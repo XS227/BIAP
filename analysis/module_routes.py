@@ -161,7 +161,7 @@ def _history(symbol: Optional[str]) -> list[dict]:
         if cand not in variants:
             variants.append(cand)
     for cand in variants:
-        rows = recent_symbol_history(cand, days=400)
+        rows = recent_symbol_history(cand, days=2200)
         if rows:
             return rows
     return []
@@ -169,11 +169,23 @@ def _history(symbol: Optional[str]) -> list[dict]:
 
 def dataset_for(code: str) -> dict:
     item = resolve_company(STORE, code)
-    urow = next((r for r in md.UNIVERSE.rows(STORE) if r["code"] == item["code"]), None)
+    rows = md.UNIVERSE.rows(STORE)
+    urow = next((r for r in rows if r["code"] == item["code"]), None)
+    mapped_from = None
+    if urow and urow.get("sub_of"):  # a numbered sub-symbol (فخوز2/3) is the same company as its main stock: one row per company
+        main = next((r for r in rows if r["code"] == urow["sub_of"]), None)
+        if main is not None:
+            mapped_from = {"code": urow["code"], "symbol": urow["symbol"]}
+            item, urow = _row_by_code(STORE, main["code"]), main
     if urow and urow.get("symbol"):
         item = {**item, "symbol": urow["symbol"]}  # registry symbol (some rows store the instrument code there)
     history = _history(item.get("symbol"))
-    return md.build_company_dataset(item, history, now_iso=datetime.now(timezone.utc).isoformat(timespec="seconds"))
+    ds = md.build_company_dataset(item, history, now_iso=datetime.now(timezone.utc).isoformat(timespec="seconds"))
+    if urow and urow.get("instrument_kind"):
+        ds["identity"]["instrumentKind"] = urow["instrument_kind"]
+    if mapped_from:
+        ds["identity"]["mappedFrom"] = mapped_from
+    return ds
 
 
 def _peers(ds: dict, universe: list[dict]) -> int:
