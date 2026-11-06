@@ -18,3 +18,11 @@ export function rankListedCompanies<T extends { symbol: string; name?: string | 
   const rel = (i: T) => { const s = i.symbol.replace(/ي/g, 'ی').replace(/ك/g, 'ک').toLowerCase(); return !nq ? 2 : s === nq ? 0 : s.startsWith(nq) ? 1 : 2; };
   return [...items].sort((a, b) => (isNonShareListing(a) ? 10 : 0) + rel(a) - ((isNonShareListing(b) ? 10 : 0) + rel(b)));
 }
+
+/** Module/analysis entry points work on ordinary shares only: bonds, funds, rights and options have no CODAL statements. */
+export function splitShares<T extends { name?: string | null; symbol?: string | null; paper_type?: string | null }>(items: T[]): { shares: T[]; others: T[] } {
+  const shares: T[] = []; const others: T[] = [];
+  for (const i of items) (isNonShareListing(i) ? others : shares).push(i);
+  return { shares, others };
+}
+export const NON_SHARE_NOTE = 'این نتیجه سهام نیست (اوراق، صندوق، حق‌تقدم یا اختیار) و صورت مالی کدال ندارد؛ نماد سهام شرکت را جست‌وجو کنید.';

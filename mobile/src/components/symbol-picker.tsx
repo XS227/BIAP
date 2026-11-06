@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View, useColorScheme } from 're
 import { Brand, Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { fetchMarketSymbols, instrumentTypeFa } from '@/lib/market-symbols';
 import type { MarketSymbolResult } from '@/lib/api';
+import { NON_SHARE_NOTE, splitShares } from '@/lib/listed-company-rank';
 
 export type PickedSymbol = { code: string; symbol: string; name: string };
 
@@ -12,11 +13,12 @@ export function SymbolPicker({ onPick, current }: { onPick: (s: PickedSymbol) =>
   const [q, setQ] = useState('');
   const [items, setItems] = useState<MarketSymbolResult[]>([]);
   const [searched, setSearched] = useState(false);
+  const [hiddenOthers, setHiddenOthers] = useState(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current);
     if (q.trim().length < 2) { setItems([]); setSearched(false); return; }
-    timer.current = setTimeout(async () => { setItems((await fetchMarketSymbols({ q: q.trim(), limit: 40 })).slice(0, 8)); setSearched(true); }, 350);
+    timer.current = setTimeout(async () => { const found = await fetchMarketSymbols({ q: q.trim(), limit: 40 }); const { shares, others } = splitShares(found as never[]); setItems((shares as MarketSymbolResult[]).slice(0, 8)); setHiddenOthers(others.length); setSearched(true); }, 350);
     return () => { if (timer.current) clearTimeout(timer.current); };
   }, [q]);
   return (
@@ -30,7 +32,8 @@ export function SymbolPicker({ onPick, current }: { onPick: (s: PickedSymbol) =>
           <Text style={[styles.sub, { color: colors.textSecondary }]} numberOfLines={1}>{instrumentTypeFa(s as never)} • {s.name}</Text>
         </Pressable>
       ))}
-      {searched && !items.length ? <Text style={[styles.sub, { color: colors.textSecondary, textAlign: 'right' }]}>نمادی با این نام پیدا نشد.</Text> : null}
+      {searched && hiddenOthers > 0 ? <Text style={[styles.sub, { color: colors.textSecondary, textAlign: 'right' }]}>{NON_SHARE_NOTE}</Text> : null}
+      {searched && !items.length && hiddenOthers === 0 ? <Text style={[styles.sub, { color: colors.textSecondary, textAlign: 'right' }]}>نمادی با این نام پیدا نشد.</Text> : null}
     </View>
   );
 }

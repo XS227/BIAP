@@ -67,3 +67,25 @@ test('SWOT competitor columns have Persian headers', () => {
   assert.equal(columnLabel('pe'), 'P/E'); assert.equal(columnLabel('debt_ratio'), 'نسبت بدهی');
   assert.equal(columnLabel('roe'), 'ROE'); assert.equal(columnLabel('net_margin'), 'حاشیه سود خالص'); assert.equal(columnLabel('name'), 'نام شرکت');
 });
+
+import { splitShares, NON_SHARE_NOTE, isNonShareListing } from '../src/lib/listed-company-rank.ts';
+import { fieldStateText } from '../src/lib/module-data-requirements.ts';
+import { formatByUnit, tableCell } from '../src/lib/iran-module-blocks.ts';
+test('analysis entry points hide bonds/funds (e.g. «مرابحه تندیس08») and keep the main stock', () => {
+  const { shares, others } = splitShares([
+    { symbol: 'تندیس08', name: 'مرابحه تندیس08', paper_type: '306' }, { symbol: 'پارسان', name: 'گسترش نفت و گاز پارسیان', paper_type: '300' },
+    { symbol: 'اهرم', name: 'صندوق س. اهرمی' }, { symbol: 'فولاد', name: 'فولاد مبارکه اصفهان' }]);
+  assert.deepEqual(shares.map((x) => x.symbol), ['پارسان', 'فولاد']); assert.equal(others.length, 2);
+  assert.ok(NON_SHARE_NOTE.includes('سهام نیست')); assert.equal(isNonShareListing({ name: 'مرابحه تندیس08' }), true);
+});
+test('listed symbol never shows «✓ موجود» from a private dataset: CODAL fields are automatic, customer fields come from the user', () => {
+  assert.equal(fieldStateText({ required: true, autoSources: ['codal'] }, 'listed', true), 'خودکار از کدال');
+  assert.equal(fieldStateText({ required: true }, 'listed', true), 'از شما (آپلود)');
+  assert.equal(fieldStateText({ required: false }, 'listed', true), 'اختیاری (داده‌ی خودتان)');
+  assert.equal(fieldStateText({ required: true }, 'private', true), '✓ موجود');
+});
+test('CODAL KPI table formats million-rial amounts and fractions with the previous-period column', () => {
+  assert.ok(formatByUnit(1234, 'million_rial').endsWith('م.ر'));
+  assert.ok(tableCell({ metric: 'درآمد', value: 1000, prev: 800, unit: 'million_rial' }, 'prev').includes('م.ر'));
+  assert.ok(tableCell({ metric: 'حاشیه', value: 0.2, prev: 0.15, unit: 'fraction' }, 'prev').includes('٪'));
+});

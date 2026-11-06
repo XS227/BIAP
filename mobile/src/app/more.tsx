@@ -5,6 +5,7 @@ import { Colors, Brand, Fonts, Spacing, Radius, BottomTabInset, MaxContentWidth,
 import { useLogout } from '@/lib/logout-context';
 import { logoutAndClearAuthSession } from '@/lib/auth-session';
 import { API_BASE } from '@/lib/api';
+import { getSelectedListedCompany } from '@/lib/listed-company-selection';
 
 type MenuItem = { icon: string; title: string; sub: string; onPress: () => void; destructive?: boolean; accent?: string };
 type MobileRelease = { version: string; versionCode?: number | null; releasedAt?: string | null; changes?: string[]; apkAvailable?: boolean; apkUrl?: string };
@@ -109,29 +110,52 @@ export default function MoreScreen() {
     );
   };
 
+  const openStockModule = async (key: string) => {
+    const sel = await getSelectedListedCompany();
+    if (sel) router.push({ pathname: '/module', params: { key, companyMode: 'listed', code: sel.code, name: sel.symbol } } as never);
+    else router.push({ pathname: '/data-connect', params: { key, companyMode: 'listed' } } as never);
+  };
+  const openCompanyTool = (key: string) => router.push({ pathname: '/module', params: { key, companyMode: 'private' } } as never);
+
   const items: MenuItem[] = [
     { icon: '🔄', title: 'به‌روزرسانی BIAP', sub: `بررسی نسخه جدید و دانلود APK • نسخه فعلی ${currentVersion}`, onPress: () => { void checkForUpdate(); }, accent: Brand.primary },
     { icon: '📈', title: 'معاملات آنلاین فارابی', sub: 'ورود امن به سامانه رسمی فارابیکسو برای خرید و فروش واقعی', onPress: openFarabiTrading, accent: Brand.positive },
     { icon: '🤝', title: 'همکاری با فارابی (فارابیز پلاس)', sub: 'برنامه رسمی معرفی صندوق‌های ETF و درآمد مشارکتی فارابی', onPress: () => { void openUrl(FARABIZ_PARTNER_URL, 'فارابیز پلاس'); }, accent: '#0ea5e9' },
-    { icon: '🧠', title: 'تحلیل شرکت با هوش مصنوعی', sub: 'خلاصه‌ی نقاط قوت، ضعف و ریسک از نتایج ذخیره‌شده؛ توصیه‌ی سرمایه‌گذاری نیست', onPress: () => router.push('/ai-analysis' as never), accent: '#8b5cf6' },
-    { icon: '🔍', title: 'تحلیل حسابرسی', sub: 'بررسی‌های قطعی روی صورت‌های مالی؛ امتیاز ریسک، نه رتبه‌ی اعتباری', onPress: () => router.push('/audit' as never), accent: '#f59e0b' },
     { icon: '🧾', title: 'سفارش‌ها', sub: 'سفارش‌های Paper و تاریخچه اجرای کیا‌شا', onPress: () => router.push('/orders'), accent: Brand.warning },
     { icon: '💼', title: 'پرتفوی', sub: 'موقعیت‌ها، تخصیص سرمایه و بازده Paper', onPress: () => router.push('/portfolio'), accent: Brand.secondary },
     { icon: '⭐', title: 'علاقه‌مندی‌ها', sub: 'نمادهایی که برای بررسی بعدی ذخیره کرده‌اید', onPress: () => router.push('/favorites' as never), accent: '#f59e0b' },
     { icon: '❓', title: 'چطور از BIAP استفاده کنم؟', sub: 'How to do it • راهنمای بازار، کیا‌شا، Paper و ماژول‌ها', onPress: () => router.push('/how-to' as never), accent: Brand.primary },
     { icon: '🤖', title: 'پروفایل سرمایه‌گذاری کیا‌شا', sub: 'سرمایه Paper، بازده، دقت و Track Record ایجنت', onPress: () => router.push('/kiasha-profile' as never), accent: '#7c3aed' },
     { icon: '🧩', title: 'همه ماژول‌های BIAP', sub: 'سرمایه‌گذاری، داده، KPI، کسب‌وکار و مدل مالی', onPress: openModules, accent: Brand.primary },
-    { icon: '💼', title: 'توسعه کسب‌وکار', sub: 'SWOT، CRM، Journey، کمپین و مدل مالی', onPress: () => router.push('/bizdev'), accent: Brand.secondary },
-    { icon: '📇', title: 'CRM و Pipeline', sub: 'نیازمند داده‌ی داخلی شرکت شماست؛ بدون داده‌ی شرکت خالی می‌ماند', onPress: () => router.push('/crm' as never), accent: Brand.secondary },
-    { icon: '📊', title: 'تحلیل داده', sub: 'EDA، آمار، نمودار و خروجی CSV', onPress: () => router.push('/data'), accent: Brand.dataViolet },
-    { icon: '🔌', title: 'اتصال داده', sub: 'داده شرکت برای ماژول‌های تحلیل و کسب‌وکار', onPress: () => router.push('/data-connect' as never), accent: Brand.dataViolet },
     { icon: '👤', title: 'حساب کاربری', sub: 'اطلاعات، تغییر رمز و تنظیمات حساب', onPress: () => router.push('/profile') },
+  ];
+  const stockItems: MenuItem[] = [
+    { icon: '🔍', title: 'تحلیل حسابرسی', sub: 'بررسی‌های قطعی روی صورت‌های مالی؛ نظر حسابرس، امتیاز ریسک، نه رتبه‌ی اعتباری', onPress: () => router.push('/audit' as never), accent: Brand.warning },
+    { icon: '⚔️', title: 'SWOT و رقبا', sub: 'قوت و ضعف از صورت مالی کدال و رقبای هم‌صنعت', onPress: () => { void openStockModule('swot'); }, accent: Brand.secondary },
+    { icon: '🔬', title: 'EDA و آمار', sub: 'جایگاه شرکت در میان شرکت‌های بورسی', onPress: () => { void openStockModule('eda'); }, accent: Brand.dataViolet },
+    { icon: '🎯', title: 'KPI مالی', sub: 'درآمد، هزینه و حاشیه‌ها به تفکیک دوره از کدال', onPress: () => { void openStockModule('business-kpi'); }, accent: Brand.primary },
+    { icon: '🌍', title: 'ورود به بازار', sub: 'شواهد بازار و اولویت‌ها برای این نماد', onPress: () => { void openStockModule('market-entry'); }, accent: Brand.positive },
+    { icon: '📋', title: 'گزارش تحلیلی', sub: 'خلاصه‌ی قابل ارائه از همهٔ تحلیل‌های نماد', onPress: () => { void openStockModule('report'); }, accent: Brand.primary },
+    { icon: '🧠', title: 'تحلیل شرکت با هوش مصنوعی', sub: 'خلاصه‌ی نقاط قوت، ضعف و ریسک از نتایج ذخیره‌شده؛ توصیه‌ی سرمایه‌گذاری نیست', onPress: () => router.push('/ai-analysis' as never), accent: '#8b5cf6' },
+  ];
+  const companyItems: MenuItem[] = [
+    { icon: '📇', title: 'CRM و Pipeline', sub: 'نیازمند داده‌ی خود شرکت (آپلود فایل)؛ بدون آن خالی می‌ماند', onPress: () => router.push('/crm' as never), accent: Brand.secondary },
+    { icon: '💰', title: 'قیمت‌گذاری', sub: 'سناریوی قیمت از داده‌ی فروش شما', onPress: () => openCompanyTool('pricing'), accent: Brand.secondary },
+    { icon: '📣', title: 'کمپین بازاریابی', sub: 'هدف، کانال و نتیجه از داده‌ی کمپین شما', onPress: () => openCompanyTool('campaign'), accent: Brand.secondary },
+    { icon: '📏', title: 'KPI Governance', sub: 'مالک، هدف و آستانه‌ی هشدار شاخص‌های شما', onPress: () => openCompanyTool('governance'), accent: Brand.primary },
+    { icon: '🔌', title: 'اتصال داده‌ی شرکت', sub: 'آپلود CSV/Excel یا اتصال منبع داده برای ابزارهای بالا', onPress: () => router.push({ pathname: '/data-connect', params: { companyMode: 'private' } } as never), accent: Brand.dataViolet },
   ];
 
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]}><View style={{ maxWidth: MaxContentWidth, width: '100%', alignSelf: 'center' }}>
     <View style={styles.header}><Text style={[styles.headerTitle, { color: colors.text }]}>بیشتر</Text><Text style={[styles.headerSub, { color: colors.textSecondary }]}>مرکز ماژول‌ها، معاملات، به‌روزرسانی، راهنما و تنظیمات BIAP</Text></View>
     <Pressable onPress={() => router.push('/how-to' as never)} style={[styles.hero, { backgroundColor: colors.backgroundElement }]}><Text style={styles.heroEyebrow}>START HERE</Text><Text style={[styles.heroTitle, { color: colors.text }]}>اولین بار است؟ از اینجا شروع کن</Text><Text style={[styles.heroBody, { color: colors.textSecondary }]}>راهنمای قدم‌به‌قدم بازار، کیا‌شا، Paper Trade، تحلیل داده و مسیر معاملات واقعی.</Text><Text style={styles.heroLink}>مشاهده راهنما ←</Text></Pressable>
     {items.map((item) => <MenuRow key={item.title} item={item} colors={colors} />)}
+    <Text style={[styles.headerTitle, { color: colors.text, marginTop: Spacing.three, alignSelf: 'flex-end' }]}>تحلیل سهام</Text>
+    <Text style={[styles.headerSub, { color: colors.textSecondary, alignSelf: 'flex-end', textAlign: 'right' }]}>روی نماد بورسی و از صورت‌های مالی کدال و بازار؛ بدون نیاز به آپلود.</Text>
+    {stockItems.map((item) => <MenuRow key={item.title} item={item} colors={colors} />)}
+    <Text style={[styles.headerTitle, { color: colors.text, marginTop: Spacing.three, alignSelf: 'flex-end' }]}>ابزار شرکت‌ها – با داده خودتان</Text>
+    <Text style={[styles.headerSub, { color: colors.textSecondary, alignSelf: 'flex-end', textAlign: 'right' }]}>این ابزارها با داده‌ی خود شرکت شما کار می‌کنند (آپلود فایل یا اتصال منبع). برای نمادهای بورسی داده‌ای ندارند و خالی می‌مانند.</Text>
+    {companyItems.map((item) => <MenuRow key={item.title} item={item} colors={colors} />)}
     <View style={{ height: Spacing.three }} /><MenuRow item={{ icon: '🚪', title: 'خروج از حساب', sub: 'خروج از حساب کاربری فعلی', onPress: handleLogout, destructive: true }} colors={colors} />
   </View></ScrollView></SafeAreaView>;
 }

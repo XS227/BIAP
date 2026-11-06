@@ -17,7 +17,7 @@ import { RealTradeGate } from '@/components/real-trade-gate';
 const COMPANY_ANALYSES = [
   { key:'kpi-extract', title:'KPI', icon:'🎯' },
   { key:'financial-model', title:'مدل مالی', icon:'📈' },
-  { key:'pricing', title:'قیمت‌گذاری', icon:'💰' },
+  { key:'business-kpi', title:'KPI مالی (کدال)', icon:'📊' },
   { key:'sql', title:'SQL / داده', icon:'🗄️' },
   { key:'swot', title:'SWOT', icon:'⚔️' },
   { key:'executive-report', title:'گزارش مدیریتی', icon:'📋' },

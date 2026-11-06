@@ -12,7 +12,7 @@ import { getSelectedListedCompany } from '@/lib/listed-company-selection';
 import { ModuleBlocks } from '@/components/module-blocks';
 import { ModuleEnvelope, STATUS_LABEL, TIER_LABEL, dataStatusText, statusTone, verificationText } from '@/lib/iran-module-blocks';
 import { fetchModule } from '@/lib/iran-modules-api';
-import { matchRequirementColumns, requirementFor, sourceLabel } from '@/lib/module-data-requirements';
+import { fieldStateText, matchRequirementColumns, requirementFor, sourceLabel } from '@/lib/module-data-requirements';
 
 const PRIVATE_KEYS = ['business-kpi', 'governance', 'campaign', 'pricing', 'plan', 'unit', 'journey', 'voc', 'behavior'];
 const LISTED_KEYS = ['eda', 'anomaly', 'forecast', 'kpi-extract', 'dashboard', 'report', 'swot', 'market-entry', 'financial-model', 'scenario', 'executive-report', 'mbr'];
@@ -43,7 +43,7 @@ export default function ModuleDetailScreen() {
   const [companyMode, setCompanyMode] = useState<'listed' | 'private' | 'hybrid'>(paramCompanyMode === 'listed' ? 'listed' : paramCompanyMode === 'hybrid' ? 'hybrid' : 'private');
   const module = DEMO_MODULES[key];
   const requirement = requirementFor(key);
-  const readiness = requirement ? matchRequirementColumns(key, datasetColumns) : { matched: [], missing: [] };
+  const readiness = requirement && companyMode !== 'listed' ? matchRequirementColumns(key, datasetColumns) : { matched: [], missing: [] };
 
   const reload = useCallback(async () => {
     setLoadingReal(true);
@@ -107,9 +107,9 @@ export default function ModuleDetailScreen() {
     </>}
     <Text style={[styles.reqSection,{color:colors.text}]}>فیلدها</Text>
     {requirement.fields.map(field=>{
-      const matched=readiness.matched.includes(field);
+      const matched=companyMode!=='listed' && readiness.matched.includes(field);
       const auto=companyMode==='listed' && Boolean(field.autoSources?.length);
-      return <View key={field.key} style={styles.fieldRow}><Text style={[styles.fieldState,{color:matched?Brand.positive:field.required?Brand.warning:colors.textSecondary}]}>{matched?'✓ موجود':auto?'منبع خودکار دارد':field.required?'لازم':'اختیاری'}</Text><Text style={[styles.fieldLabel,{color:colors.text}]}>{field.label}</Text></View>;
+      return <View key={field.key} style={styles.fieldRow}><Text style={[styles.fieldState,{color:matched?Brand.positive:field.required?Brand.warning:colors.textSecondary}]}>{fieldStateText(field,companyMode,matched)}</Text><Text style={[styles.fieldLabel,{color:colors.text}]}>{field.label}</Text></View>;
     })}
     {companyMode!=='listed' && datasetColumns.length>0 ? <Text style={[styles.coverage,{color:readiness.missing.length?Brand.warning:Brand.positive}]}>{readiness.missing.length ? `${readiness.missing.length} فیلد اجباری هنوز در dataset پیدا نشد.` : '✓ همه فیلدهای اجباری در dataset شناسایی شدند.'}</Text> : null}
     <Pressable onPress={openDataConnect} style={[styles.requirementButton,{borderColor:companyMode==='listed'?Brand.positive:Brand.primary}]}><Text style={[styles.requirementButtonText,{color:companyMode==='listed'?Brand.positive:Brand.primary}]}>{companyMode==='listed'?'بررسی / تکمیل داده این نماد':'باز کردن قالب داده این ماژول'}</Text></Pressable>

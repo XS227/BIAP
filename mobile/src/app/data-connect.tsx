@@ -1,3 +1,4 @@
+import { NON_SHARE_NOTE, isNonShareListing } from '@/lib/listed-company-rank';
 import { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View, Pressable, useColorScheme } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -69,6 +70,7 @@ export default function DataConnectScreen() {
   }, [companyMode]);
 
   const selectCompany = async (company: ListedCompanySummary) => {
+    if (isNonShareListing(company)) { setStatus(NON_SHARE_NOTE); return; }
     await setSelectedListedCompany(company);
     setSelectedCompanyState(company);
     setName(`${company.code} • company data`);

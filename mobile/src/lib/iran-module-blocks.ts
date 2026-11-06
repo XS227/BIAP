@@ -90,13 +90,14 @@ export function formatByUnit(v: unknown, unit?: string): string {
   if (unit === 'percent') return `${faDigits(v.toLocaleString('en-US', { maximumFractionDigits: 2 }).replace('.', '٫'))}٪`;
   if (unit === 'times') return `${faDigits(v.toLocaleString('en-US', { maximumFractionDigits: 2 }).replace('.', '٫'))}×`;
   if (unit === 'rial') return formatMoney(v);
+  if (unit === 'million_rial') return `${formatValue(v)} م.ر`;
   return formatValue(v);
 }
 export const COLUMN_LABEL: Record<string, string> = {
   column: 'شاخص', value: 'مقدار', source: 'منبع', peerMedian: 'میانه نمونه', percentile: 'صدک', sampleN: 'اندازه نمونه', scope: 'دامنه', reason: 'توضیح',
   n: 'تعداد', mean: 'میانگین', median: 'میانه', std: 'انحراف معیار', min: 'کمینه', q1: 'چارک ۱', q3: 'چارک ۳', max: 'بیشینه', skew: 'چولگی',
   outlier: 'پرت', a: 'شاخص اول', b: 'شاخص دوم', r: 'همبستگی', present: 'موجود', missingPct: 'گمشده ٪', metric: 'شاخص', sectorMedian: 'میانه گروه',
-  name: 'نام شرکت', symbol: 'نماد', pe: 'P/E', debt_ratio: 'نسبت بدهی', roe: 'ROE', net_margin: 'حاشیه سود خالص',
+  prev: 'دوره قبل', metric: 'شاخص', name: 'نام شرکت', symbol: 'نماد', pe: 'P/E', debt_ratio: 'نسبت بدهی', roe: 'ROE', net_margin: 'حاشیه سود خالص',
   marketMedian: 'میانه بازار', company: 'این شرکت', date: 'تاریخ', return: 'بازده', robustZ: 'z مقاوم', step: 'گام', forecast: 'پیش‌بینی', low: 'کف', high: 'سقف',
 };
 export function columnLabel(c: string): string { return COLUMN_LABEL[c] ?? c; }
@@ -107,7 +108,7 @@ export function tableCell(row: Record<string, unknown>, col: string): string {
   if (v === null || v === undefined) return col === 'value' || col === 'peerMedian' || col === 'company' ? '—' : '';
   if (typeof v === 'number') {
     if (PCT_COLUMNS.has(col)) return `${formatValue(v, { digits: 1 })}٪`;
-    const unitCols = new Set(['value', 'peerMedian', 'mean', 'median', 'std', 'min', 'q1', 'q3', 'max', 'sectorMedian', 'marketMedian', 'company']);
+    const unitCols = new Set(['value', 'prev', 'peerMedian', 'mean', 'median', 'std', 'min', 'q1', 'q3', 'max', 'sectorMedian', 'marketMedian', 'company']);
     if (unitCols.has(col) && typeof row.unit === 'string') return formatByUnit(v, row.unit);
   }
   if (col === 'outlier') return v === 'high' ? 'بالا' : v === 'low' ? 'پایین' : '';

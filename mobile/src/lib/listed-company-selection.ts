@@ -1,3 +1,4 @@
+import { fetchMarketSymbols } from '@/lib/market-symbols';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { KIASHA_API_BASE } from '@/lib/api';
 import { authFetch } from '@/lib/auth-session';
@@ -59,6 +60,16 @@ export async function getSelectedListedCompany(): Promise<ListedCompanySummary |
     if (!(parsed?.code && parsed?.symbol)) return null;
     // A bond/fund/right saved by an older version (e.g. «تابان25») is dropped so the main stock can be picked again.
     if (isNonShareListing(parsed)) { await AsyncStorage.removeItem(await storageKey()); return null; }
+    // A bare InsCode saved as the symbol would show «نماد نامشخص»: resolve it to the real ticker (and drop it if it is not a share).
+    if (/^\d{5,}$/.test(String(parsed.symbol).trim())) {
+      try {
+        const hit = (await fetchMarketSymbols({ q: parsed.code, limit: 5 })).find((x) => x.code === parsed.code);
+        if (!hit || isNonShareListing(hit as never)) { await AsyncStorage.removeItem(await storageKey()); return null; }
+        const fixed = { ...parsed, symbol: hit.symbol, name: parsed.name && !/^\d{5,}$/.test(parsed.name) ? parsed.name : hit.name };
+        await AsyncStorage.setItem(await storageKey(), JSON.stringify(fixed));
+        return fixed;
+      } catch { return parsed; }
+    }
     return parsed;
   } catch {
     return null;
