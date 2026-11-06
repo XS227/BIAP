@@ -7,7 +7,7 @@ positive investment call; Agent 9 still never creates BUY/SELL by itself.
 """
 from __future__ import annotations
 
-from math import exp
+from math import erf, exp, sqrt
 from typing import Optional
 
 from .models import DistressAssessment, GlobalCompany, taxonomy_financial_institution
@@ -71,6 +71,14 @@ _CAPITAL_INTENSIVE_TOKENS = (
     "tanker", "offshore",
     "real estate", "reit", "property", "properties",
 )
+
+
+def zmijewski_probability(index: float) -> float:
+    """Zmijewski (1984) is a PROBIT model: P = Phi(index). v2 uses the correct link; v1 (frozen, paper-measured) keeps the logistic link."""
+    from . import decision_logic
+    if decision_logic.is_v2():
+        return 0.5 * (1.0 + erf(index / sqrt(2.0)))
+    return _logistic(index)
 
 
 def zmijewski_band(p: float) -> str:
@@ -143,7 +151,7 @@ def distress_agent(company: GlobalCompany, capital_intensive_guard: Optional[boo
         tl_ta = float(company.total_liabilities) / float(company.total_assets)
         ca_cl = float(company.current_assets) / float(company.current_liabilities)
         zmijewski_index = -4.3 - 4.5 * ni_ta + 5.7 * tl_ta - 0.004 * ca_cl
-        distress_probability = _logistic(zmijewski_index)
+        distress_probability = zmijewski_probability(zmijewski_index)
         available_models.append("zmijewski")
         reasons.append(
             f"Zmijewski P(distress)={distress_probability:.3f} "

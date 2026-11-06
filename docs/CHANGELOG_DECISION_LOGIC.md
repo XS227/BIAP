@@ -144,3 +144,7 @@ Tests: `analysis/tests/test_liquidity_gate.py` (13), full suite 1976 passed.
 ### 2026-11-02 — owner decisions on P1.12 (after push of 05f4ed6)
 - SELL margin -0.10: **not implemented, value stays 0.0.** Measured effect: 5 of 399 SELLs (1.3 %) would become REDUCE (NASDAQ 1 of 214, NYSE 4 of 151, DE 0, NO 0); no other tier moves.
 - Norway: current behaviour stays (BUY -> ACCUMULATE labelled "نقدشوندگی تأیید نشده") until Oslo volume data exists (P2.4).
+
+### 2026-11-07 — v2 only: Zmijewski probit + «valuation unverified» cap (owner-approved plan, items 5 and 6)
+- **Zmijewski link (Agent 9, `distress.zmijewski_probability`)**: v2 computes P(distress) = Φ(index) (the 1984 model is PROBIT); v1 keeps the logistic link because it is the frozen, paper-measured logic. The index and coefficients are unchanged. Effect: probabilities shift (e.g. index −1 → 15.9 % probit vs 26.9 % logistic). This is a **protocol deviation (OSF osf.io/6p8y7)** in v2 only; recorded in `docs/paper-revisions/2026-11-07-v2-zmijewski-probit-and-valuation-cap.md`.
+- **Valuation cap (`investment_mode`, v2)**: a BUY without a valid positive P/E (`decision_logic.valid_valuation`) is capped at ACCUMULATE, flag `valuation_unverified`, `blockingGate.code = VALUATION_UNVERIFIED` («ارزش‌گذاری تأیید نشده»). SELL/REDUCE/HOLD untouched; v1 unchanged. Tests: `analysis/tests/test_valuation_and_zmijewski_v2.py`; two older test files patch the rule off because they test other gates.

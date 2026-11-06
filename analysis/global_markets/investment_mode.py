@@ -626,6 +626,9 @@ def _decide_core(
                 elif confidence < decision_logic.SELL_MIN_CONFIDENCE:
                     flags.append("sell_low_confidence")
                     tier = "REDUCE"
+            if tier == "BUY" and decision_logic.is_v2() and not decision_logic.valid_valuation(c.pe):
+                flags.append("valuation_unverified")      # v2: no BUY without a valid positive P/E; labelled «valuation unverified»
+                tier = "ACCUMULATE"
             if tier in ("BUY", "ACCUMULATE") and decision_logic.liquidity_gate_active(c.exchange):
                 if c.daily_value_usd is None:                # unknown liquidity: labelled, not rejected; BUY limited to ACCUMULATE
                     flags.append("liquidity_unconfirmed")

@@ -17,6 +17,13 @@ from global_markets.investment_mode import Candidate, decide_market
 
 
 @pytest.fixture(autouse=True)
+def _valuation_rule_is_tested_in_test_valuation_and_zmijewski_v2(monkeypatch):
+    """These tests are about other rules; the v2 valuation cap (no BUY without a valid P/E) has its own test file."""
+    from global_markets import decision_logic as _dl
+    monkeypatch.setattr(_dl, "valid_valuation", lambda pe: True)
+
+
+@pytest.fixture(autouse=True)
 def _env(monkeypatch):
     monkeypatch.setenv(im.SCOPE_ENV, "all")
     monkeypatch.setenv("DECISION_LOGIC_VERSION", "v2")

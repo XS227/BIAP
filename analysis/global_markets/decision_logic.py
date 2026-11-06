@@ -309,7 +309,17 @@ BLOCKING_GATES = {
     "DISTRESS_GATE": ("Distress safety gate", "دروازه ایمنی ریسک ورشکستگی"),
     "LOW_LIQUIDITY": ("Low liquidity", "نقدشوندگی کم"),
     "LIQUIDITY_UNCONFIRMED": ("Liquidity unconfirmed", "نقدشوندگی تأیید نشده"),
+    "VALUATION_UNVERIFIED": ("Valuation unverified", "ارزش‌گذاری تأیید نشده"),
 }
+
+
+def valid_valuation(pe) -> bool:
+    """A usable valuation for a BUY: a finite, positive P/E (EPS present and earnings positive)."""
+    try:
+        v = float(pe)
+    except (TypeError, ValueError):
+        return False
+    return v == v and 0 < v < float("inf")
 
 
 def make_gate(code: str, detail: str = "", **extra) -> dict:
@@ -331,6 +341,9 @@ def investment_blocking_gate(call, blocked_by, flags, tier_before, score, soft_f
                          **{"from": tier_before or "BUY", "to": call})
     if "liquidity_unconfirmed" in flags and tier_before == "BUY" and call == "ACCUMULATE":
         return make_gate("LIQUIDITY_UNCONFIRMED", "no usable volume/price/FX to confirm tradability; BUY limited to ACCUMULATE",
+                         **{"from": "BUY", "to": "ACCUMULATE"})
+    if "valuation_unverified" in flags and tier_before == "BUY" and call == "ACCUMULATE":
+        return make_gate("VALUATION_UNVERIFIED", "no valid positive P/E; BUY limited to ACCUMULATE",
                          **{"from": "BUY", "to": "ACCUMULATE"})
     if "insufficient_evidence" in flags:
         return make_gate("CONFIDENCE_FLOOR", "decision confidence is below the BUY / ACCUMULATE floor; capped at HOLD",
