@@ -197,6 +197,8 @@ def dataset_for(code: str) -> dict:
     ds = md.build_company_dataset(item, history, now_iso=datetime.now(timezone.utc).isoformat(timespec="seconds"))
     if urow and urow.get("instrument_kind"):
         ds["identity"]["instrumentKind"] = urow["instrument_kind"]
+    if urow and urow.get("sector") and not ds["identity"].get("sector"):
+        ds["identity"]["sector"] = urow["sector"]  # TSETMC sector (sector_backfill) when the baseline quote carried none
     if mapped_from:
         ds["identity"]["mappedFrom"] = mapped_from
     return ds

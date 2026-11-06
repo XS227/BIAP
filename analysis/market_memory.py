@@ -92,6 +92,16 @@ def _init(con: sqlite3.Connection) -> None:
             value TEXT NOT NULL,
             updated_at TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS instrument_sectors (
+            code TEXT PRIMARY KEY,
+            sector_code TEXT,
+            sector_name TEXT,
+            subsector_code TEXT,
+            subsector_name TEXT,
+            paper_type TEXT,
+            market_title TEXT,
+            fetched_at TEXT NOT NULL
+        );
         """
     )
     con.commit()
@@ -288,3 +298,25 @@ def latest_weekly_market_report(*, days: int = 7) -> dict:
     }
     save_analysis(scope="market", analysis_type="weekly_tse_ifb", payload=report)
     return report
+
+
+def save_sectors(rows: list[tuple]) -> int:
+    """rows: (code, sector_code, sector_name, subsector_code, subsector_name, paper_type, market_title, fetched_at)."""
+    with _connect() as con:
+        con.executemany(
+            "INSERT INTO instrument_sectors VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(code) DO UPDATE SET sector_code=excluded.sector_code, sector_name=excluded.sector_name, "
+            "subsector_code=excluded.subsector_code, subsector_name=excluded.subsector_name, paper_type=excluded.paper_type, market_title=excluded.market_title, fetched_at=excluded.fetched_at",
+            rows)
+        con.commit()
+    return len(rows)
+
+
+def sector_map() -> dict[str, dict]:
+    """{InsCode: {sectorCode, sectorName, subsectorCode, subsectorName, paperType, marketTitle}} (empty when never backfilled)."""
+    try:
+        with _connect() as con:
+            rows = con.execute("SELECT code,sector_code,sector_name,subsector_code,subsector_name,paper_type,market_title FROM instrument_sectors").fetchall()
+    except sqlite3.Error:
+        return {}
+    return {r["code"]: {"sectorCode": r["sector_code"], "sectorName": r["sector_name"], "subsectorCode": r["subsector_code"], "subsectorName": r["subsector_name"],
+                        "paperType": r["paper_type"], "marketTitle": r["market_title"]} for r in rows}
