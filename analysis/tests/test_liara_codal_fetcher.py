@@ -199,8 +199,8 @@ def test_read_symbols_dedupes_and_skips_comments():
     assert lf.read_symbols("a\n\n# c\nb\na\n") == ["a", "b"]
 
 
-def test_default_interval_is_12_seconds():
-    assert lf.INTERVAL_SECONDS == 12.0 and lf.Client().interval == 12.0
+def test_default_interval_is_20_seconds():
+    assert lf.INTERVAL_SECONDS == 20.0 and lf.Client().interval == 20.0
 
 
 def test_each_429_doubles_the_interval_for_the_rest_of_the_run_up_to_60():
@@ -259,3 +259,54 @@ def test_reports_to_fetch_prefers_the_scope_consolidated_first():
     assert [x["tracing_no"] for x in f.reports_to_fetch(filings, 2)] == ["2", "3"]
     standalone = filings[:1]
     assert [x["tracing_no"] for x in f.reports_to_fetch(standalone, 2)] == ["1"]
+
+
+# ---- 429 mitigation: skip stored reports, cooldown, request budget ------------------------------
+
+def _one_company_routes(sym="فولاد"):
+    q = __import__("urllib.parse").parse.quote(sym)
+    html = b"<html><table><tr><td>x</td></tr></table></html>"
+    return {"financialYears?Symbol=" + q: [(200, ["1403"])], "v2/q?Symbol=" + q: [(200, letters(row()))], "excel.codal.ir": [(200, html)]}
+
+
+def test_already_shipped_report_is_not_downloaded_again(tmp_path):
+    day1 = FakeCodal(_one_company_routes())
+    m1 = new_run(tmp_path, day1, day="2026-10-25").run(["فولاد"])
+    assert m1["counts"]["reports"] == 1 and any("excel.codal.ir" in u for u in day1.calls)
+    day2 = FakeCodal(_one_company_routes())
+    run2 = new_run(tmp_path, day2, day="2026-10-26")
+    m2 = run2.run(["فولاد"])
+    assert not any("excel.codal.ir" in u for u in day2.calls)  # the report request is saved
+    assert m2["counts"]["reports"] == 0 and run2.reports_skipped == 1 and m2["counts"]["ok"] == 1
+
+
+def test_known_tracing_is_seeded_from_earlier_reports_files(tmp_path):
+    (tmp_path / "2026-10-20").mkdir()
+    (tmp_path / "2026-10-20" / "reports.jsonl").write_text(json.dumps({"symbol": "x", "tracing_no": "111", "html": "<html>"}) + "\n")
+    run = new_run(tmp_path, FakeCodal(_one_company_routes()))
+    assert "111" in run.known_tracing
+
+
+def test_429_stop_starts_a_cooldown_and_the_next_run_makes_no_request(tmp_path):
+    t = {"now": 1000.0}
+    fake = FakeCodal({"financialYears": [(429, b"")]})
+    r1 = lf.Run(make_client(fake, []), str(tmp_path), "2026-10-25", now=lambda: t["now"], cooldown_hours=6)
+    r1.skip_new_filings = True
+    assert r1.run(["آ", "ب", "ج", "د"])["stop_reason"].startswith("rate_limited")
+    t["now"] += 3600  # one hour later: still cooling down
+    again = FakeCodal({})
+    r2 = lf.Run(make_client(again, []), str(tmp_path), "2026-10-25", now=lambda: t["now"], cooldown_hours=6)
+    m = r2.run(["آ", "ب", "ج", "د"])
+    assert again.calls == [] and m["stop_reason"].startswith("cooldown")
+    t["now"] += 6 * 3600  # after the cooldown the run proceeds again
+    r3 = lf.Run(make_client(FakeCodal({"financialYears": [(200, ["1"])], "v2/q": [(200, letters())]}), []), str(tmp_path), "2026-10-25", now=lambda: t["now"])
+    r3.skip_new_filings = True
+    assert r3.run(["آ"])["stop_reason"] is None
+
+
+def test_request_budget_stops_between_companies(tmp_path):
+    fake = FakeCodal({"financialYears": [(200, ["1"])], "v2/q": [(200, letters())]})
+    run = lf.Run(make_client(fake, []), str(tmp_path), "2026-10-25", max_requests=4)
+    run.skip_new_filings = True
+    m = run.run(["آ", "ب", "ج", "د"])
+    assert m["stop_reason"] == "request_budget" and m["counts"]["ok"] == 2 and m["counts"]["pending"] == 2
