@@ -39,3 +39,18 @@ test('confidence note flags thin track records', () => {
   assert.equal(confidenceNote(null), '');
   assert.match(confidenceNote(50), /50|۵۰/);
 });
+
+import { previewRowBadge, previewExplanation, NO_CODAL_LABEL } from '../src/lib/signal-display.ts';
+test('home preview: stock without CODAL or with held evidence carries «بدون تأیید کدال»; verified stock none; unloaded none', () => {
+  assert.equal(NO_CODAL_LABEL, 'بدون تأیید کدال');
+  assert.equal(previewRowBadge(undefined), null);
+  assert.deepEqual(previewRowBadge(null), { label: NO_CODAL_LABEL, held: true });
+  assert.equal(previewRowBadge({ dataAvailability: { codal: false }, evidenceReview: { actionable: true } }).held, true);
+  assert.equal(previewRowBadge({ dataAvailability: { codal: true }, evidenceReview: { actionable: false } }).held, true);
+  assert.equal(previewRowBadge({ dataAvailability: { codal: true }, evidenceReview: { actionable: true } }), null);
+});
+test('home preview explanation says why only one stock shows and counts held ones', () => {
+  const t = previewExplanation(1, 1, false);
+  assert.ok(t.includes('بازار بسته') && t.includes('تنها یک نماد') && t.includes(NO_CODAL_LABEL) && t.includes('توصیهٔ Kiasha'));
+  assert.ok(!previewExplanation(5, 0, true).includes('تنها یک نماد'));
+});

@@ -55,3 +55,24 @@ export function confidenceNote(samples?: number | null, maturity?: string | null
   if (samples < 10) return ` (سابقه‌ی کم: ${samples} نمونه${maturity ? ` • ${maturity}` : ''})`;
   return ` (${samples} نمونه‌ی ارزیابی‌شده)`;
 }
+
+export const NO_CODAL_LABEL = 'بدون تأیید کدال';
+
+type PreviewReviewLike = { evidenceReview?: EvidenceReviewLike; dataAvailability?: { codal?: boolean | null } | null } | null | undefined;
+
+/** Home «منتخب بازار» row badge: a stock whose evidence is held (or has no CODAL statement) is never shown as a pick without this label. */
+export function previewRowBadge(rec: PreviewReviewLike): { label: string; held: boolean } | null {
+  if (rec === undefined) return null; // recommendation not loaded yet: show nothing rather than guess
+  const noCodal = !rec || rec.dataAvailability?.codal !== true;
+  if (noCodal || evidenceHeld(rec.evidenceReview)) return { label: NO_CODAL_LABEL, held: true };
+  return null;
+}
+
+/** Why the home list can be short, in plain Persian. */
+export function previewExplanation(shown: number, heldCount: number, marketOpen: boolean): string {
+  const parts = [marketOpen ? 'این فهرست، بیشترین حرکت قیمتی در نمونهٔ محدودی از نمادهای دارای قیمت معتبر است، نه توصیهٔ Kiasha.'
+    : 'بازار بسته است؛ فقط نمادهایی نمایش داده می‌شوند که قیمت معتبر آخرین جلسه دارند، و این فهرست توصیهٔ Kiasha نیست.'];
+  if (shown <= 1) parts.push('امروز تنها یک نماد قیمت معتبر داشت؛ بقیه قیمت قابل‌اتکا از منبع دریافت نشد و ساخته نشدند.');
+  if (heldCount > 0) parts.push(`${heldCount} مورد «${NO_CODAL_LABEL}» است: Kiasha برای آن توصیهٔ قابل‌اتکا نمی‌دهد.`);
+  return parts.join(' ');
+}
