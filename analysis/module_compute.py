@@ -456,6 +456,9 @@ def _peers(ds: dict, universe: list[dict]) -> tuple[list[dict], str]:
     return (same, f"گروه {sector}") if len(same) >= MIN_PEERS else (rows, "شرکت‌های هم‌دسته")
 
 
+AUDIT_OPINION_FA = {"unqualified": "مقبول", "qualified": "مشروط", "adverse": "مردود", "disclaimer": "عدم اظهارنظر"}
+
+
 def swot(ds: dict, universe: list[dict]) -> dict:
     if not ds["fundamentals"].get("present"):
         return blocked("swot", ds, ["صورت مالی CODAL"], "SWOT بدون صورت مالی تأییدشده ساخته نمی‌شود.")
@@ -485,8 +488,8 @@ def swot(ds: dict, universe: list[dict]) -> dict:
     if cfo is not None and cfo < 0.5:
         T.append(f"جریان نقد عملیاتی کمتر از نیمی از سود است (نسبت {cfo:.2f})")
     opinion = ds["fundamentals"].get("auditOpinion")
-    if opinion in ("qualified", "adverse", "disclaimer"):
-        T.append(f"نظر حسابرس: {opinion}")
+    if opinion in AUDIT_OPINION_FA and opinion != "unqualified":
+        T.append(f"نظر حسابرس: {AUDIT_OPINION_FA[opinion]}")
     debt = ds["ratios"].get("debt_ratio", {}).get("value")
     if debt is not None and debt > 0.8:
         T.append(f"اهرم بالا: نسبت بدهی {debt:.2f}")

@@ -335,3 +335,14 @@ def test_same_day_without_timestamps_uses_last_history_row():
             {"observed_date": "2026-11-05", "price": 3600}]
     ds = md.build_company_dataset(_empty_quote_item(), hist, now_iso="2026-11-06T01:00:00+00:00")
     assert ds["market"]["price"] == 3600
+
+
+def test_swot_threat_shows_audit_opinion_in_persian_not_english():
+    for op, fa in (("qualified", "مشروط"), ("adverse", "مردود"), ("disclaimer", "عدم اظهارنظر")):
+        ds = md.build_company_dataset(_item("W" + op, _codal(0)))
+        ds["fundamentals"]["auditOpinion"] = op
+        threats = next(b for b in mc.swot(ds, _universe())["blocks"] if b["type"] == "swot")["threats"]
+        text = " ".join(threats)
+        assert f"نظر حسابرس: {fa}" in text and op not in text
+    ds = md.build_company_dataset(_item("Wok", _codal(0))); ds["fundamentals"]["auditOpinion"] = "unqualified"
+    assert "نظر حسابرس" not in " ".join(next(b for b in mc.swot(ds, _universe())["blocks"] if b["type"] == "swot")["threats"])
