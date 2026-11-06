@@ -149,7 +149,7 @@ def test_histogram_marks_when_company_is_outside_the_plotted_range():
 # ---- KPI ------------------------------------------------------------------------------------
 
 def test_kpi_public_items_never_require_private_data_and_history_close_is_not_a_current_price():
-    ds = md.build_company_dataset(_item("S6", _codal(6)), history=[{"observed_date": "2026-11-04", "price": 3650.0}])
+    ds = md.build_company_dataset(_item("S6", _codal(6)), history=[{"observed_date": "2026-09-01", "price": 3650.0}], now_iso="2026-11-06T00:00:00+00:00")
     k = mc.kpi(ds)
     items = k["blocks"][0]["items"]
     assert all(i["kind"] == "public" and i["requiresPrivateData"] is False for i in items)
@@ -284,3 +284,27 @@ def test_apply_bumps_updated_at_so_the_universe_cache_refreshes(tmp_path):
     after = sqlite3.connect(store.db_path).execute("SELECT updated_at, company_json FROM listed_companies WHERE code='AAA'").fetchone()
     assert after[0] != before and md.UniverseCache._db_stamp(store) != stamp0
     assert _json.loads(after[1])["codal"]["total_assets_current"] == 2000.0
+
+
+def _empty_quote_item():
+    it = _item("Q", _codal(0))
+    it["company"]["market"] = {k: None for k in ("last_price", "closing_price", "price", "pe", "market_cap", "change_percent")}
+    return it
+
+
+def test_recent_recorded_close_fills_an_empty_quote_and_is_labelled_with_its_date():
+    hist = [{"observed_date": "2026-11-04", "price": 3650.0, "pe": 16.3, "market_cap": 8.869e14, "change_percent": 2.8, "source": "kiasha:tsetmc"},
+            {"observed_date": "2026-11-05", "price": 3630.0, "pe": 16.4, "market_cap": 8.918e14, "change_percent": 2.25, "source": "kiasha:tsetmc"}]
+    ds = md.build_company_dataset(_empty_quote_item(), hist, now_iso="2026-11-06T01:00:00+00:00")
+    assert ds["market"]["price"] == 3630.0 and ds["market"]["pe"] == 16.4 and ds["market"]["market_cap"] == 8.918e14
+    assert ds["provenance"]["priceSource"] == "history:2026-11-05" and ds["quality"]["priceFromHistory"] == "2026-11-05"
+    assert ds["status"]["hasCurrentPrice"] is True and "MISSING_MARKET" not in ds["status"]["codes"]
+
+
+def test_old_recorded_close_is_not_presented_as_current_and_a_real_quote_always_wins():
+    old = [{"observed_date": "2026-10-01", "price": 3000.0, "pe": 10.0}]
+    ds = md.build_company_dataset(_empty_quote_item(), old, now_iso="2026-11-06T01:00:00+00:00")
+    assert ds["market"]["price"] is None and "MISSING_MARKET" in ds["status"]["codes"] and "priceFromHistory" not in ds["quality"]
+    live = _item("L", _codal(0)); live["company"]["market"] = {"last_price": 4000.0, "pe": 12.0}
+    ds2 = md.build_company_dataset(live, [{"observed_date": "2026-11-05", "price": 3630.0, "pe": 16.4}], now_iso="2026-11-06T01:00:00+00:00")
+    assert ds2["market"]["price"] == 4000.0 and ds2["market"]["pe"] == 12.0 and "priceFromHistory" not in ds2["quality"]
