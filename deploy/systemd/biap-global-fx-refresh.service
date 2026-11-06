@@ -1,0 +1,18 @@
+[Unit]
+Description=BIAP Global: refresh ECB reference-rate history cache (only fx/ecb-hist.json)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/biap-global/BIAP/analysis
+Environment=BIAP_GLOBAL_DATA_DIR=/var/lib/biap-global
+Environment=PYTHONPATH=/home/ubuntu/biap-global/BIAP/analysis
+ExecStart=/home/ubuntu/biap-global/BIAP/analysis/.venv-global/bin/python -m global_markets.fx_history refresh
+SyslogIdentifier=biap-global-fx-refresh
+TimeoutStartSec=300
+Nice=15
+NoNewPrivileges=true
+PrivateTmp=true

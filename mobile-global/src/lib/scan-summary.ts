@@ -77,11 +77,11 @@ export function categoryLabel(row: { call?: string; category?: string }): string
   return CATEGORY_LABELS[row.category ?? ''] ?? row.call ?? '—';
 }
 
-/** "Conservative qualified BUY 1 • Watchlist/Hold 45 • … • Insufficient evidence 29" for the whole analysed market. */
+/** "Conservative qualified BUY 1 • Watchlist/Hold 45 • … • Statements incomplete 29" for the whole analysed market. */
 export function groupLine(result: Pick<GlobalScanResponse, 'rankingGroups'>): string {
   const g = result.rankingGroups;
   if (!g || !Object.keys(g).length) return '';
   const part = (label: string, key: string) => `${label} ${g[key] ?? 0}`;
   return [part('Conservative qualified BUY', 'QUALIFIED_BUY'), part('Watchlist/Hold', 'WATCHLIST_HOLD'), part('Avoid/Review', 'AVOID_REVIEW'),
-    part('Ranked, no buy signal', 'NO_SIGNAL'), part('Insufficient evidence', 'INSUFFICIENT_EVIDENCE')].join(' • ');
+    part('Ranked, no buy signal', 'NO_SIGNAL'), part('Statements incomplete', 'INSUFFICIENT_EVIDENCE')].join(' • ');
 }

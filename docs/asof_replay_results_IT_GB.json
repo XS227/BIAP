@@ -1,0 +1,191 @@
+{
+ "schema": 1,
+ "pinClock": true,
+ "pinBenchmark": true,
+ "patchedModules": [
+  "global_markets.models",
+  "global_markets.evidence_contract",
+  "global_markets.agents",
+  "global_markets.exchange_shares",
+  "global_markets.adx_fundamentals",
+  "global_markets.history_store",
+  "global_markets.adx_market",
+  "global_markets.adx_official",
+  "global_markets.b3_official",
+  "global_markets.bist_official",
+  "global_markets.bse_official",
+  "global_markets.boerse_frankfurt_fundamentals",
+  "global_markets.session_calendar",
+  "global_markets.euronext_live",
+  "global_markets.esma_firds_universe",
+  "global_markets.firds_lei_index",
+  "global_markets.cached_esef",
+  "global_markets.cached_fundamentals",
+  "global_markets.cached_market",
+  "global_markets.sec_filing_instance",
+  "global_markets.cached_sec_edgar",
+  "global_markets.lse_official",
+  "global_markets.cached_universe",
+  "global_markets.companies_house",
+  "global_markets.cvm",
+  "global_markets.cvm_itr",
+  "global_markets.dfm_fundamentals",
+  "global_markets.dfm_market",
+  "global_markets.dfm_official",
+  "global_markets.edinet",
+  "global_markets.nasdaq_nordic",
+  "global_markets.nzx_official",
+  "global_markets.nzx_issuer",
+  "global_markets.oam_esef",
+  "global_markets.fallback_fundamentals",
+  "global_markets.hkex_official",
+  "global_markets.india_official",
+  "global_markets.italy_issuer",
+  "global_markets.india_nse_filings",
+  "global_markets.iran_adapter",
+  "global_markets.jpx_official",
+  "global_markets.jse_official",
+  "global_markets.jse_issuer",
+  "global_markets.krx_official",
+  "global_markets.kap",
+  "global_markets.kap_current",
+  "global_markets.opendart",
+  "global_markets.official_universe",
+  "global_markets.yahoo_chart",
+  "global_markets.sgx_official",
+  "global_markets.saudi_official",
+  "global_markets.six_official",
+  "global_markets.swiss_issuer",
+  "global_markets.twelve_data",
+  "global_markets.tsx_official",
+  "global_markets.us_official",
+  "global_markets.verified_filing_drop",
+  "global_markets.yahoo_fundamentals",
+  "global_markets.service"
+ ],
+ "markets": {
+  "IT:EURONEXT_MILAN": {
+   "ledger": {
+    "rows": 193,
+    "call_match": 193,
+    "call_and_score_match": 193
+   },
+   "mismatches": [],
+   "mismatchCount": 0,
+   "snapshotPeriod": {
+    "rowDays": 1930,
+    "notReplayable_ledger_overwritten": 1170,
+    "replayable": 760,
+    "snapshotCall_matches_replay": 760
+   },
+   "snapshotDays": {
+    "2026-10-23": {
+     "rowDays": 193,
+     "notReplayable_ledger_overwritten": 193
+    },
+    "2026-10-24": {
+     "rowDays": 193,
+     "notReplayable_ledger_overwritten": 193
+    },
+    "2026-10-25": {
+     "rowDays": 193,
+     "notReplayable_ledger_overwritten": 193
+    },
+    "2026-10-26": {
+     "rowDays": 193,
+     "notReplayable_ledger_overwritten": 193
+    },
+    "2026-10-27": {
+     "rowDays": 193,
+     "notReplayable_ledger_overwritten": 193
+    },
+    "2026-10-28": {
+     "rowDays": 193,
+     "notReplayable_ledger_overwritten": 193
+    },
+    "2026-10-29": {
+     "rowDays": 193,
+     "replayable": 181,
+     "snapshotCall_matches_replay": 181,
+     "notReplayable_ledger_overwritten": 12
+    },
+    "2026-10-30": {
+     "rowDays": 193,
+     "replayable": 193,
+     "snapshotCall_matches_replay": 193
+    },
+    "2026-10-31": {
+     "rowDays": 193,
+     "replayable": 193,
+     "snapshotCall_matches_replay": 193
+    },
+    "2026-11-01": {
+     "rowDays": 193,
+     "replayable": 193,
+     "snapshotCall_matches_replay": 193
+    }
+   }
+  },
+  "GB:LSE": {
+   "ledger": {
+    "rows": 522,
+    "call_match": 522,
+    "call_and_score_match": 522,
+    "no_result_or_time": 5
+   },
+   "mismatches": [],
+   "mismatchCount": 0,
+   "snapshotPeriod": {
+    "rowDays": 5219,
+    "notReplayable_ledger_overwritten": 3653,
+    "replayable": 1566,
+    "snapshotCall_matches_replay": 1566
+   },
+   "snapshotDays": {
+    "2026-10-23": {
+     "rowDays": 521,
+     "notReplayable_ledger_overwritten": 521
+    },
+    "2026-10-24": {
+     "rowDays": 522,
+     "notReplayable_ledger_overwritten": 522
+    },
+    "2026-10-25": {
+     "rowDays": 522,
+     "notReplayable_ledger_overwritten": 522
+    },
+    "2026-10-26": {
+     "rowDays": 522,
+     "notReplayable_ledger_overwritten": 522
+    },
+    "2026-10-27": {
+     "rowDays": 522,
+     "notReplayable_ledger_overwritten": 522
+    },
+    "2026-10-28": {
+     "rowDays": 522,
+     "notReplayable_ledger_overwritten": 522
+    },
+    "2026-10-29": {
+     "rowDays": 522,
+     "notReplayable_ledger_overwritten": 522
+    },
+    "2026-10-30": {
+     "rowDays": 522,
+     "replayable": 522,
+     "snapshotCall_matches_replay": 522
+    },
+    "2026-10-31": {
+     "rowDays": 522,
+     "replayable": 522,
+     "snapshotCall_matches_replay": 522
+    },
+    "2026-11-01": {
+     "rowDays": 522,
+     "replayable": 522,
+     "snapshotCall_matches_replay": 522
+    }
+   }
+  }
+ }
+}

@@ -1,6 +1,6 @@
 {
-  "version": "0.3.22",
-  "versionCode": 25,
+  "version": "0.3.23",
+  "versionCode": 26,
   "releasedAt": "2026-10-13",
   "changes": [
     "UK ranking is released: pooled investment trusts/funds are classified by the LSE's own ICB sector and no longer dilute operating-company fundamentals coverage (the 70% gate is unchanged)",

@@ -22,6 +22,11 @@ import requests
 from .country_packs import ExchangeSpec
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
+from .session_calendar import flag_enabled, has_calendar, last_completed_session
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 _NASDAQ_DIRECTORY = "https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt"
 _OTHER_DIRECTORY = "https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt"
@@ -249,6 +254,11 @@ class NasdaqUSFullScreenerClient:
         if not self.supported(country, spec.code):
             raise GlobalProviderError(f"Nasdaq full screener is not configured for {country}/{spec.code}")
         observed, rows = self._rows()
+        # The screener has no per-row trade date and the fetch date can be a weekend/holiday (3,001 records were dated
+        # Saturday 31 Oct). Stamp the last completed regular session on the exchange calendar instead.
+        mic = spec.mic or "XNAS"
+        session = last_completed_session(mic, _utc_now()) if (flag_enabled("BIAP_US_SESSION_DATE") and has_calendar(mic)) else None
+        session_date = session.isoformat() if session else None
         by_symbol = {
             str(row.get("symbol") or "").strip().upper(): row
             for row in rows
@@ -274,7 +284,8 @@ class NasdaqUSFullScreenerClient:
                 "averageVolume": volume,
                 "liquidityValue": price * volume,
                 "rangePosition": None,
-                "quoteDate": observed,
+                "quoteDate": session_date or observed,
+                **({"quoteDateBasis": "trading_calendar_session", "fetchedOn": observed} if session_date else {}),
                 "mic": company.mic_code or spec.mic,
                 "provider": self.provider_id,
                 "sourceUrl": _SCREENER,

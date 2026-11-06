@@ -1,3 +1,4 @@
+import { LIVE_ANALYSIS_LABEL, LIVE_MAY_DIFFER, scoreScanSuffix } from '@/lib/scan-display';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -5,14 +6,16 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { analyzeGlobalInstrument, GlobalAnalysis, GlobalAgentSignal, GlobalInstrument } from '@/lib/global-api';
 import { getGlobalMarketSelection } from '@/lib/global-market-selection';
-import { conservativeLine, ENGINES_LINE, DISCLAIMER, investmentBadge, reasonLine, tierLabel, tierTone } from '@/lib/decision-tier';
+import { conservativeLine, DISCLAIMER, gateText, engineScoreLines, ENGINE_LABEL, ENGINES_LINE, investmentBadge, reasonLine, tierLabel, tierTone } from '@/lib/decision-tier';
 import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
+import { reportingCurrencyNote, reportingSuffix } from '@/lib/reporting-currency';
 import { statementStatus } from '@/lib/statement-status';
 import { dataLimitationLines, fundamentalFreshnessLines, governanceReasonLines } from '@/lib/freshness-labels';
 
 function n(value: number | null | undefined, digits = 2) {
   if (value == null || !Number.isFinite(Number(value))) return '—';
-  return Number(value).toLocaleString('en-US', { maximumFractionDigits: digits });
+  // "-0" / "-0.000" (a tiny negative rounded to zero) is shown as plain zero
+  return Number(value).toLocaleString('en-US', { maximumFractionDigits: digits }).replace(/^-(0(?:\.0+)?)$/, '$1');
 }
 
 function priceN(value: number | null | undefined) {
@@ -192,15 +195,15 @@ export default function GlobalStockDetailScreen() {
     ['Annualized volatility', pct(company?.volatility_annualized_pct)],
     ['Max drawdown', pct(company?.max_drawdown_pct)],
     ['Beta', n(company?.beta)],
-    ['Volume / 30d avg.', `${n(company?.volume_today, 0)} / ${n(company?.avg_volume_30d, 0)}`],
-  ], [company, price, analysis?.currency]);
+    [analysis?.country === 'DE' ? 'Volume / 30d avg. (Xetra only · فقط حجم Xetra)' : 'Volume / 30d avg.', `${n(company?.volume_today, 0)} / ${n(company?.avg_volume_30d, 0)}`],
+  ], [company, price, analysis?.currency, analysis?.country]);
   const valuationRows = useMemo(() => [
     ['Market cap', n(company?.market_cap, 0)], ['P/E', n(company?.pe)], ['P/B', n(company?.pb)], ['EV/EBITDA', n(company?.ev_ebitda)], ['Peer benchmark P/E', n(company?.sector_pe)],
-    ['Dividend yield', pct(company?.dividend_yield_pct)], ['EPS', n(company?.eps)], ['Book value / share', n(company?.book_value_per_share)],
+    ['Dividend yield', pct(company?.dividend_yield_pct)], [`EPS${reportingSuffix(company)}`, n(company?.eps)], [`Book value / share${reportingSuffix(company)}`, n(company?.book_value_per_share)],
   ], [company]);
   const financialRows = useMemo(() => [
-    ['Revenue', n(company?.revenue, 0)], ['Revenue YoY', pct(company?.revenue_yoy_pct)], ['Net income', n(company?.net_income, 0)], ['Net margin', pct(company?.net_margin_pct)],
-    ['Assets', n(company?.total_assets, 0)], ['Liabilities', n(company?.total_liabilities, 0)], ['Equity', n(company?.total_equity, 0)], ['Operating cash flow', n(company?.operating_cash_flow, 0)], ['Free cash flow', n(company?.free_cash_flow, 0)], ['Debt', n(company?.total_debt, 0)],
+    [`Revenue${reportingSuffix(company)}`, n(company?.revenue, 0)], ['Revenue YoY', pct(company?.revenue_yoy_pct)], [`Net income${reportingSuffix(company)}`, n(company?.net_income, 0)], ['Net margin', pct(company?.net_margin_pct)],
+    [`Assets${reportingSuffix(company)}`, n(company?.total_assets, 0)], [`Liabilities${reportingSuffix(company)}`, n(company?.total_liabilities, 0)], [`Equity${reportingSuffix(company)}`, n(company?.total_equity, 0)], [`Operating cash flow${reportingSuffix(company)}`, n(company?.operating_cash_flow, 0)], [`Free cash flow${reportingSuffix(company)}`, n(company?.free_cash_flow, 0)], [`Debt${reportingSuffix(company)}`, n(company?.total_debt, 0)],
   ], [company]);
 
   const valuationMissing = [
@@ -214,9 +217,9 @@ export default function GlobalStockDetailScreen() {
 
   const decisionRows = useMemo(() => [
     ...(analysis?.investment ? [['Investment tier', tierLabel(analysis.investment.tier)], ['Conservative rule (reference)', friendly(analysis?.call)]] : [['Kiasha call', friendly(analysis?.call)]]),
-    ['Decision confidence', analysis?.decisionConfidence == null ? (analysis?.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`) : `${Math.round(analysis.decisionConfidence * 100)}%`],
-    ['Evidence confidence', analysis?.evidenceConfidence == null ? '—' : `${Math.round(analysis.evidenceConfidence * 100)}%`],
-    ['Overall calibrated', analysis?.overallCalibratedConfidence == null ? (analysis?.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`) : `${Math.round(analysis.overallCalibratedConfidence * 100)}%`],
+    ['Decision confidence', analysis?.decisionConfidence == null ? (analysis?.confidence == null ? '—' : `${analysis.confidence.toFixed(3)}`) : `${analysis.decisionConfidence.toFixed(3)}`],
+    ['Evidence confidence', analysis?.evidenceConfidence == null ? '—' : `${analysis.evidenceConfidence.toFixed(3)}`],
+    ['Overall calibrated', analysis?.overallCalibratedConfidence == null ? (analysis?.confidence == null ? '—' : `${analysis.confidence.toFixed(3)}`) : `${analysis.overallCalibratedConfidence.toFixed(3)}`],
     ['Short-term outlook', friendly(decision?.shortTermOutlook)],
     ['Long-term outlook', friendly(decision?.longTermOutlook)],
     ['Momentum', friendly(decision?.momentum)],
@@ -228,12 +231,14 @@ export default function GlobalStockDetailScreen() {
     ['P/E vs peer benchmark', pct(dm?.peVsSectorPct)],
     ['Dividend / income', friendly(decision?.incomeProfile)],
     ['Dividend yield', pct(dm?.dividendYieldPct)],
-    ['Debt / equity', dm?.debtToEquity == null ? '—' : `${n(dm.debtToEquity, 2)}x`],
+    ['Financial debt / equity (D/E)', dm?.debtToEquity == null ? '—' : `${n(dm.debtToEquity, 2)}x`],
+    ['Total liabilities / equity', ratio(company?.total_liabilities, company?.total_equity) == null ? '—' : `${n(ratio(company?.total_liabilities, company?.total_equity), 2)}x`],
     ['Current ratio', dm?.currentRatio == null ? '—' : `${n(dm.currentRatio, 2)}x`],
     ['ROE', pct(dm?.roePct)],
     ['ROA', pct(dm?.roaPct)],
     [analysis?.investment ? 'New position (conservative rule)' : 'New position', friendly(decision?.kiasha?.newPositionAction || analysis?.call)],
     [analysis?.investment ? 'If already owned (conservative rule)' : 'If already owned', friendly(decision?.kiasha?.existingHolderAction)],
+    ...(decision?.kiasha?.existingHolderNote ? [['', decision.kiasha.existingHolderNote] as [string, string]] : []),
     ['Evidence', analysis?.evidence?.status || '—'],
   ], [analysis?.call, analysis?.investment?.tier, analysis?.confidence, analysis?.decisionConfidence, analysis?.evidenceConfidence, analysis?.overallCalibratedConfidence, analysis?.evidence?.status, decision, dm]);
 
@@ -247,13 +252,21 @@ export default function GlobalStockDetailScreen() {
           <Text style={[styles.timestamp, { color: colors.textSecondary }]}>{priceTimestamp ? `Price observed ${priceTimestamp}` : 'Verified price timestamp unavailable'}</Text>
         </View>
 
+        {!analysis.investment && gateText(analysis.blockingGate) ? <Text style={[styles.body, { color: Brand.warning, fontWeight: '700' }]}>{gateText(analysis.blockingGate)}</Text> : null}
         {analysis.investment ? <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
           <Text style={[styles.cardTitle, { color: decisionColor(analysis.investment.tier, colors.textSecondary) }]}>{tierLabel(analysis.investment.tier)}</Text>
           {investmentBadge(analysis.investment).notice ? <Text style={[styles.body, { color: Brand.warning, fontWeight: '700' }]}>{investmentBadge(analysis.investment).notice}</Text> : null}
+          {gateText(analysis.blockingGate ?? analysis.investment.blockingGate) ? <Text style={[styles.body, { color: Brand.warning, fontWeight: '700' }]}>{gateText(analysis.blockingGate ?? analysis.investment.blockingGate)}</Text> : null}
           <Text style={[styles.body, { color: colors.textSecondary }]}>{`Positive reasons: ${reasonLine(analysis.investment.positive)}`}</Text>
           <Text style={[styles.body, { color: colors.textSecondary }]}>{`Negative reasons: ${reasonLine(analysis.investment.negative)}`}</Text>
-          <Text style={[styles.body, { color: colors.textSecondary, fontSize: 12, marginTop: 8 }]}>{conservativeLine(analysis.call)}</Text>
           <Text style={[styles.body, { color: colors.textSecondary, fontSize: 12, fontWeight: '700' }]}>{ENGINES_LINE}</Text>
+          {engineScoreLines(analysis.engines).length ? engineScoreLines(analysis.engines).map((line) => <Text key={line} style={[styles.body, { color: colors.textSecondary, fontSize: 12, marginTop: 6 }]}>{line}</Text>) : <Text style={[styles.body, { color: colors.textSecondary, fontSize: 12, marginTop: 8 }]}>{conservativeLine(analysis.call)}</Text>}
+          {(analysis.agentNotes || []).map((note) => <Text key={note} style={[styles.body, { color: colors.textSecondary, fontSize: 12, marginTop: 6 }]}>{`Note: ${note}.`}</Text>)}
+          {analysis.abstentionCap ? <Text style={[styles.body, { color: Brand.warning, fontSize: 12, marginTop: 6 }]}>{`${analysis.abstentionCap.label || 'Positive; relative valuation not confirmed'} (${analysis.abstentionCap.labelFa || ''}): held at Hold Or Watch because the peer comparison could not be verified.`}</Text> : null}
+          {analysis.needsReview ? <Text style={[styles.body, { color: Brand.warning, fontSize: 12, marginTop: 6 }]}>{`${analysis.needsReview.label || 'Needs review'} (${analysis.needsReview.labelFa || ''}): shown as Hold Or Watch. ${(analysis.needsReview.reasons || []).join('; ')}`}</Text> : null}
+          {analysis.riskCap ? <Text style={[styles.body, { color: Brand.warning, fontSize: 12, marginTop: 6 }]}>{`Risk cap: ${analysis.riskCap.reason || 'strongly negative risk signal'}; the rating is capped instead of being sent to review.`}</Text> : null}
+          {(analysis.investment?.flags || []).includes('risk_cap') ? <Text style={[styles.body, { color: Brand.warning, fontSize: 12, marginTop: 6 }]}>Risk cap: a strongly negative risk signal limits this rating to ACCUMULATE.</Text> : null}
+          {(analysis.investment?.flags || []).includes('dimension_note') && !(analysis.agentNotes || []).length ? <Text style={[styles.body, { color: colors.textSecondary, fontSize: 12, marginTop: 6 }]}>Note: two agents measuring different things point in opposite directions; this is informational and does not block the rating.</Text> : null}
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 8 }]}>{DISCLAIMER}</Text>
         </View> : null}
 
@@ -261,14 +274,18 @@ export default function GlobalStockDetailScreen() {
 
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Price Intelligence</Text>
-          <Text style={[styles.body, { color: colors.textSecondary }]}>{price == null ? 'A verified market price is unavailable. No price-based conclusion can be made.' : `Last observed price: ${priceN(price)} ${analysis.currency}. A low share price alone does not mean the company is undervalued.`}</Text>
-          <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{analysis.score == null ? 'Kiasha score unavailable.' : `Kiasha score ${n(analysis.score, 3)} (${analysis.score > 0 ? 'positive' : analysis.score < 0 ? 'negative' : 'neutral'}). `}{`Evidence ${analysis.evidence?.status || 'unavailable'} checks data quality, not whether the stock is a buy. Overall calibrated confidence ${analysis.confidence == null ? 'unavailable' : Math.round(analysis.confidence * 100) + '%'}; current decision: ${analysis.investment ? tierLabel(analysis.investment.tier) : friendly(analysis.call)}.`}</Text>
-          <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{company?.pe != null && Number(company.pe) > 0 && company?.sector_pe != null && Number(company.sector_pe) > 0 ? `P/E ${n(company.pe)} versus peer benchmark ${n(company.sector_pe)} (${pct(dm.peVsSectorPct)} difference). This comparison alone is not a fair-value estimate.` : 'Peer-relative valuation: insufficient verified P/E and benchmark data.'}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary }]}>{price == null ? 'A verified market price is unavailable. No price-based conclusion can be made.' : `Last observed price: ${priceN(price)} ${analysis.currency}.${Number(price) < 10 ? ' A low share price alone does not mean the company is undervalued.' : ''}`}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{analysis.score == null ? `${ENGINE_LABEL.conservative} score unavailable.` : `${ENGINE_LABEL.conservative} score ${n(analysis.score, 3)} (${analysis.score > 0 ? 'positive' : analysis.score < 0 ? 'negative' : 'neutral'}). `}{`Evidence ${analysis.evidence?.status || 'unavailable'} checks data quality, not whether the stock is a buy. Overall calibrated confidence ${analysis.confidence == null ? 'unavailable' : analysis.confidence.toFixed(3)}; current decision: ${analysis.investment ? tierLabel(analysis.investment.tier) : friendly(analysis.call)}.`}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{company?.pe != null && Number(company.pe) > 0 && company?.sector_pe != null && Number(company.sector_pe) > 0 ? `P/E ${n(company.pe)} versus peer benchmark ${n(company.sector_pe)} (${pct(dm.peVsSectorPct)} difference). This comparison alone is not a fair-value estimate.` : (company?.pe != null && Number(company.pe) > 0 ? 'Peer-relative valuation: peer benchmark unavailable.' : 'Peer-relative valuation: company P/E is not verified (peer benchmark unavailable).')}</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>Fair value / upside / downside: Insufficient Data — no verified valuation model estimate is available. Do not infer a price target from Kiasha score.</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{distress?.status ? `Financial distress risk (Agent 9): ${friendly(distress.status)}. See Agent 9 for model inputs and limitations.` : 'Financial distress: insufficient verified inputs. See Agent 9 for details.'}</Text>
         </View>
 
-        <View style={styles.metrics}><Metric label="Kiasha score" value={analysis.score == null ? '—' : n(analysis.score, 3)} colors={colors}/><Metric label="Overall calibrated" value={analysis.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`} colors={colors}/><Metric label="Evidence" value={analysis.evidence?.status || '—'} colors={colors}/></View>
+        {analysis.officialSnapshot ? <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
+          <Text style={[styles.body, { color: colors.textSecondary }]}>{`Official score, confidence and tier: stored scan${scoreScanSuffix(analysis.analyzedAt)} - the same numbers as the market list and Kiasha.`}</Text>
+          {analysis.live ? <Text style={[styles.body, { color: colors.textSecondary }]}>{`${LIVE_ANALYSIS_LABEL}${scoreScanSuffix(analysis.live.analyzedAt)}: score ${analysis.live.score == null ? '—' : n(analysis.live.score, 3)}, confidence ${analysis.live.confidence == null ? '—' : n(analysis.live.confidence, 3)}. ${LIVE_MAY_DIFFER}. The agent tables below are from this live run.`}</Text> : null}
+        </View> : analysis.analyzedAt ? <Text style={[styles.body, { color: colors.textSecondary }]}>{`Analysis${scoreScanSuffix(analysis.analyzedAt)}`}</Text> : null}
+        <View style={styles.metrics}><Metric label="Conservative score" value={analysis.score == null ? '—' : n(analysis.score, 3)} colors={colors}/>{analysis.investment?.score != null ? <Metric label="Scan-list score" value={n(analysis.investment.score, 3)} colors={colors}/> : null}<Metric label="Overall calibrated" value={analysis.confidence == null ? '—' : `${analysis.confidence.toFixed(3)}`} colors={colors}/><Metric label="Evidence" value={analysis.evidence?.status || '—'} colors={colors}/></View>
 
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.cardTitle, { color: colors.text }]}>Kiasha decision</Text><Text style={[styles.body, { color: colors.textSecondary }]}>Kiasha combines the six scoring agent signals after provider normalization, then applies the Evidence/Verification gate. Evidence PASS means the data is sufficiently verified; it is not itself a BUY signal. A new BUY candidate also needs a positive score and enough decision confidence.</Text></View>
 
@@ -335,7 +352,7 @@ export default function GlobalStockDetailScreen() {
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Fundamentals</Text>
         <Text style={[styles.body, { color: statementStatus(analysis.fundamentalEvidence as never, (company as { reporting_currency?: string | null } | undefined)?.reporting_currency).status === 'OK' ? colors.textSecondary : Brand.warning, marginBottom: 6 }]}>{statementStatus(analysis.fundamentalEvidence as never, (company as { reporting_currency?: string | null } | undefined)?.reporting_currency).line}</Text>
-        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>{financialRows.map(([label, value]) => <View key={label} style={[styles.dataRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>{label}</Text><Text style={[styles.dataValue, { color: colors.text }]}>{value}</Text></View>)}{fundamentalsMissing ? <Text style={[styles.body, { color: colors.textSecondary }]}>{sourcePlan?.status === 'market-ready' ? `Official filing adapter not connected yet. Planned source: ${sourcePlan.filings || 'issuer/regulator filings'}. Market data can still be analyzed, but Evidence remains blocked without verified fundamentals.` : sourcePlan?.runtimeConfigured === false ? (sourcePlan.runtimeNote || `Official connector exists for ${sourcePlan.filings || 'regulatory filings'}, but it is not configured on this server yet.`) : sourcePlan?.status === 'connected' ? `Official source is connected (${sourcePlan.filings || 'regulatory filings'}), but no verified filing matched this listing yet. Evidence may BLOCK until issuer identity/filing coverage is available.` : 'No verified filing was matched for this listing. Evidence may BLOCK the decision until official fundamentals are available.'}</Text> : null}</View>
+        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>{financialRows.map(([label, value]) => <View key={label} style={[styles.dataRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>{label}</Text><Text style={[styles.dataValue, { color: colors.text }]}>{value}</Text></View>)}{reportingCurrencyNote(company, analysis?.currency) ? <Text style={[styles.body, { color: colors.textSecondary }]}>{reportingCurrencyNote(company, analysis?.currency)}</Text> : null}{fundamentalsMissing ? <Text style={[styles.body, { color: colors.textSecondary }]}>{sourcePlan?.status === 'market-ready' ? `Official filing adapter not connected yet. Planned source: ${sourcePlan.filings || 'issuer/regulator filings'}. Market data can still be analyzed, but Evidence remains blocked without verified fundamentals.` : sourcePlan?.runtimeConfigured === false ? (sourcePlan.runtimeNote || `Official connector exists for ${sourcePlan.filings || 'regulatory filings'}, but it is not configured on this server yet.`) : sourcePlan?.status === 'connected' ? `Official source is connected (${sourcePlan.filings || 'regulatory filings'}), but no verified filing matched this listing yet. Evidence may BLOCK until issuer identity/filing coverage is available.` : 'No verified filing was matched for this listing. Evidence may BLOCK the decision until official fundamentals are available.'}</Text> : null}</View>
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Evidence sources</Text>
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>{sources.length ? sources.map((source, index) => <View key={`${source.provider}-${index}`} style={[styles.sourceRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.sourceProvider, { color: colors.text }]}>{sourceName(source.provider)}</Text><Text style={[styles.sourceMeta, { color: colors.textSecondary }]}>{sourceTypeName(source.source_type)} • quality {source.quality == null ? '—' : n(source.quality, 2)}{source.observed_at ? ` • ${source.observed_at}` : ''}</Text></View>) : <Text style={[styles.body, { color: colors.textSecondary }]}>No verified provenance records were returned. Evidence Agent should block a directional recommendation.</Text>}</View>

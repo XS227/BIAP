@@ -20,6 +20,7 @@ from dataclasses import replace
 from datetime import datetime, timezone
 import math
 import statistics
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from typing import Any, Optional
 from urllib.parse import quote
 
@@ -29,6 +30,7 @@ from .country_packs import get_exchange
 from .history_store import persist_daily_history
 from .http_governor import YAHOO_GOVERNOR
 from .models import GlobalCompany, SourceEvidence
+from .session_calendar import flag_enabled
 from .providers import GlobalProviderError, MarketDataProvider, append_source
 
 DEFAULT_BASE_URL = "https://query1.finance.yahoo.com/v8/finance/chart"
@@ -120,6 +122,39 @@ class YahooChartMarketProvider(MarketDataProvider):
         return start <= bar < end and start <= now < end
 
     @staticmethod
+    def _session_close_at(meta: dict, bar_timestamp: Any, partial: bool) -> tuple[Optional[str], str]:
+        """Timestamp of the price, stated as the session close instead of Yahoo's daily-bar stamp (the session OPEN).
+
+        Yahoo stamps a daily bar at the open (08:00 UTC for Xetra/Oslo, 13:30 UTC for US), although the value is the close.
+        For a completed session the stamp becomes the venue's regular-session close time on that bar's local date (the
+        close time-of-day is taken from ``currentTradingPeriod.regular``; an early-close day is therefore stated at the
+        nominal close, which is later than the real one). A session still open keeps the provider's last-trade time.
+        Returns ``(iso_utc, basis)``; the basis is ``None``-safe: ``bar_open_timestamp`` means no close could be derived.
+        """
+        try:
+            bar = int(bar_timestamp)
+        except (TypeError, ValueError):
+            return None, "bar_open_timestamp"
+        if partial:
+            try:
+                last = int(meta.get("regularMarketTime") or 0)
+            except (TypeError, ValueError):
+                last = 0
+            if last > 0:
+                return datetime.fromtimestamp(last, tz=timezone.utc).isoformat(), "last_trade_time_session_open"
+            return None, "bar_open_timestamp"
+        try:
+            regular = meta["currentTradingPeriod"]["regular"]
+            tz = ZoneInfo(str(meta.get("exchangeTimezoneName") or regular.get("timezone")))
+            close_tod = datetime.fromtimestamp(int(regular["end"]), tz=tz).time()
+        except (KeyError, TypeError, ValueError, ZoneInfoNotFoundError, AttributeError):
+            return None, "bar_open_timestamp"
+        local_day = datetime.fromtimestamp(bar, tz=tz).date()
+        closed = datetime.combine(local_day, close_tod, tzinfo=tz).astimezone(timezone.utc)
+        now = datetime.now(timezone.utc)
+        return min(closed, now).isoformat(), "session_close_nominal"
+
+    @staticmethod
     def _float(value: Any) -> Optional[float]:
         if value in (None, ""):
             return None
@@ -154,6 +189,25 @@ class YahooChartMarketProvider(MarketDataProvider):
         previous = closes[previous_index]
         current = closes[-1]
         return (current / previous - 1.0) * 100.0 if previous > 0 and current > 0 else None
+
+    @staticmethod
+    def _daily_volume_series(bars: list, meta: dict) -> Optional[list]:
+        """P2.8: [[trading date (exchange-local), volume], ...] for the last 30 completed sessions; None when nothing usable."""
+        try:
+            tz = ZoneInfo(str(meta.get("exchangeTimezoneName")))
+        except (TypeError, ValueError, ZoneInfoNotFoundError):
+            tz = timezone.utc
+        out = []
+        for bar in bars[-30:]:
+            vol = bar.get("volume")
+            if not isinstance(vol, (int, float)) or vol < 0:
+                continue
+            try:
+                day = datetime.fromtimestamp(int(bar["timestamp"]), tz=tz).date().isoformat()
+            except (TypeError, ValueError, KeyError, OSError):
+                continue
+            out.append([day, float(vol)])
+        return out or None
 
     @staticmethod
     def _observed_at(timestamp: Any) -> Optional[str]:
@@ -251,6 +305,11 @@ class YahooChartMarketProvider(MarketDataProvider):
         latest = bars[-1]
         partial_session = self._latest_bar_is_partial(meta, latest.get("timestamp"))
         observed_at = self._observed_at(latest["timestamp"])
+        close_at, price_time_basis = (
+            self._session_close_at(meta, latest["timestamp"], partial_session)
+            if flag_enabled("BIAP_YAHOO_CLOSE_STAMP") else (None, "bar_open_timestamp"))
+        if close_at:
+            observed_at = close_at
         if not observed_at:
             raise GlobalProviderError(f"Yahoo returned no valid price timestamp for {company.identity()}")
         adjusted_closes = [bar["adjusted"] for bar in bars if isinstance(bar.get("adjusted"), (int, float)) and bar["adjusted"] > 0]
@@ -262,6 +321,7 @@ class YahooChartMarketProvider(MarketDataProvider):
         volume_bars = bars[:-1] if partial_session and len(bars) > 1 else bars
         recent_volumes = [bar["volume"] for bar in volume_bars[-30:] if isinstance(bar.get("volume"), (int, float)) and bar["volume"] >= 0]
         volume_today = volume_bars[-1].get("volume") if volume_bars else latest.get("volume")
+        daily_volume_30d = self._daily_volume_series(volume_bars, meta)
 
         persist_daily_history(
             replace(company, currency=currency),
@@ -291,6 +351,7 @@ class YahooChartMarketProvider(MarketDataProvider):
             price_observed_at=observed_at,
             volume_today=volume_today,
             avg_volume_30d=(sum(recent_volumes) / len(recent_volumes) if recent_volumes else None),
+            daily_volume_30d=daily_volume_30d,
             price_52w_high=max(valid_highs) if valid_highs else None,
             price_52w_low=min(valid_lows) if valid_lows else None,
             volatility_annualized_pct=self._annualized_volatility(adjusted_closes),
@@ -305,6 +366,7 @@ class YahooChartMarketProvider(MarketDataProvider):
                 "public_market_exchange": meta.get("exchangeName") or meta.get("fullExchangeName"),
                 "public_market_price_scale": price_scale,
                 "latest_bar_partial_session": partial_session,
+                **({"price_time_basis": price_time_basis} if flag_enabled("BIAP_YAHOO_CLOSE_STAMP") else {}),
             },
         )
         return append_source(enriched, SourceEvidence(

@@ -14,6 +14,7 @@ from __future__ import annotations
 import csv
 from datetime import datetime
 import io
+import os
 from typing import Iterable, Optional
 
 import requests
@@ -21,6 +22,7 @@ import requests
 from .country_packs import ExchangeSpec
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
+from .session_calendar import has_calendar, last_completed_session
 
 
 _BASE = "https://live.euronext.com"
@@ -41,6 +43,23 @@ _MARKETS: dict[tuple[str, str], str] = {
     # membership is independently validated in the BIAP universe layer.
     ("IE", "EURONEXT_DUBLIN"): "XMSM",
 }
+
+
+# The Euronext regulated-stocks CSV has no per-row trade date ("Closing Price DateTime" is empty; the date on line 3 is the
+# download date). Markets listed here are stamped with the last completed session on their venue calendar and
+# quoteDateBasis="last_completed_session"; every other Euronext market keeps quoteDate=None. No market is enabled by default
+# (owner decision 2026-11-02: off until after 2026-11-19); extend with env BIAP_EURONEXT_SESSION_DATE_MARKETS="NO:EURONEXT_OSLO,FR:EURONEXT_PARIS".
+_DEFAULT_SESSION_DATE_MARKETS = ""   # owner 2026-11-02: all off until after 2026-11-19
+
+
+def _session_date_markets() -> set[tuple[str, str]]:
+    raw = os.environ.get("BIAP_EURONEXT_SESSION_DATE_MARKETS", _DEFAULT_SESSION_DATE_MARKETS)
+    out = set()
+    for part in raw.split(","):
+        if ":" in part:
+            c, e = part.strip().upper().split(":", 1)
+            out.add((c, e))
+    return out
 
 
 _EXACT_MARKET_NAMES: dict[tuple[str, str], str] = {
@@ -173,9 +192,14 @@ class EuronextLiveRegulatedClient:
         instruments: Iterable[GlobalCompany],
         country: str,
         spec: ExchangeSpec,
+        *,
+        now: Optional[datetime] = None,
     ) -> tuple[list[dict], list[str], str]:
         selected = list(instruments)
         mic, rows = self._download(country=country, exchange=spec.code)
+        session = None
+        if (country.upper(), spec.code.upper()) in _session_date_markets() and has_calendar(mic):
+            session = last_completed_session(mic, now)
         by_isin: dict[str, list[dict]] = {}
         for row in rows:
             by_isin.setdefault(str(row["isin"]), []).append(row)
@@ -210,7 +234,8 @@ class EuronextLiveRegulatedClient:
                 "averageVolume": effective_volume,
                 "liquidityValue": float(row.get("turnover") or (float(price) * effective_volume)),
                 "rangePosition": range_position,
-                "quoteDate": None,
+                "quoteDate": session.isoformat() if session else None,
+                **({"quoteDateBasis": "last_completed_session"} if session else {}),
                 "mic": mic,
                 "provider": self.provider_id,
                 "isin": isin,

@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Optional
 
 from .models import DistressAssessment, EvidenceAssessment, GovernanceAssessment
+from . import decision_logic
 
 
 MIN_BUY_PEER_GROUP = 8
@@ -140,12 +141,25 @@ def decision_governance_agent(
             accepted=True,
             escalated=False,
             abstained=False,
-            reasoning=f"Accepted draft decision at calibrated confidence {conf:.2f}.",
+            reasoning=f"Accepted draft decision at calibrated confidence {decision_logic.fmt_conf(conf, accept_threshold)}.",
+        )
+
+    if decision_logic.is_v2() and proposed_call == "HOLD_OR_WATCH":
+        # v2 (P1.2): confidence gates only active calls (BUY / AVOID). A neutral HOLD is accepted at any confidence; evidence BLOCK
+        # and WARN, scope blocks and agent contradictions were handled above and still apply. The low confidence stays on the record.
+        return GovernanceAssessment(
+            action="ACCEPT",
+            final_call=proposed_call,
+            accepted=True,
+            escalated=False,
+            abstained=False,
+            reasoning=(f"Accepted neutral HOLD_OR_WATCH at calibrated confidence {decision_logic.fmt_conf(conf, accept_threshold)}: "
+                       "confidence gates only active calls (BUY / AVOID), not a neutral call."),
         )
 
     if conf >= escalate_threshold:
         reviews.append(
-            f"calibrated confidence {conf:.2f} below accept threshold {accept_threshold:.2f}"
+            f"calibrated confidence {decision_logic.fmt_conf(conf, accept_threshold)} below accept threshold {decision_logic.fmt_threshold(accept_threshold)}"
         )
         if evidence.status == "WARN":
             reviews.append("evidence gate returned WARN")
@@ -172,7 +186,7 @@ def decision_governance_agent(
         abstained=True,
         hard_blocks=(),
         review_reasons=(
-            f"calibrated confidence {conf:.2f} below escalation threshold {escalate_threshold:.2f}",
+            f"calibrated confidence {decision_logic.fmt_conf(conf, escalate_threshold)} below escalation threshold {decision_logic.fmt_threshold(escalate_threshold)}",
         ),
-        reasoning=f"Abstained: calibrated confidence {conf:.2f} too low to act on.",
+        reasoning=f"Abstained: calibrated confidence {decision_logic.fmt_conf(conf, escalate_threshold)} too low to act on.",
     )

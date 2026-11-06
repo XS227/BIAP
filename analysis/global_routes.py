@@ -13,7 +13,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from global_markets import decision_overlay
+from global_markets import decision_logic, decision_overlay
 from global_markets.broker_catalog import broker_readiness
 from global_markets.country_packs import country_catalog, get_exchange
 from global_markets.credit_scoring import score_individual_credit
@@ -488,8 +488,37 @@ def global_analysis_ledger(
             decision = view.get(str(row.get("ticker") or ""))
             if decision is not None:
                 row["investment"] = decision      # additive: the stored conservative ``call`` is unchanged
+                row["blockingGate"] = decision.get("blockingGate")
     return {"country": country, "exchange": exchange, "counts": counts, "rows": rows,
             "decisionMode": "investment" if view else "conservative"}
+
+
+@router.get("/review-list")
+def global_review_list(country: str, exchange: str, limit: int = 200):
+    """Simple management list (P1.3, v2): stocks whose governance result was REVIEW and is shown as a labelled HOLD_OR_WATCH."""
+    from global_markets.analysis_ledger import AnalysisLedger, ledger_path
+
+    country, exchange = country.strip().upper(), exchange.strip().upper()
+    try:
+        get_exchange(country, exchange)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not ledger_path(country, exchange).exists():
+        return {"country": country, "exchange": exchange, "count": 0, "rows": []}
+    ledger = AnalysisLedger(country, exchange)
+    rows = []
+    try:
+        for result in ledger.full_results():
+            nr = result.get("needsReview")
+            if not nr:
+                continue
+            rows.append({"ticker": result.get("ticker"), "name": result.get("name"), "call": result.get("call"),
+                         "score": result.get("score"), "confidence": result.get("confidence"),
+                         "wouldHaveBeen": nr.get("capped"), "reasons": nr.get("reasons") or [], "labelFa": nr.get("labelFa")})
+    finally:
+        ledger.close()
+    rows.sort(key=lambda r: -(abs(r.get("score") or 0) * (r.get("confidence") or 0)))
+    return {"country": country, "exchange": exchange, "count": len(rows), "rows": rows[:max(1, min(int(limit), 1000))]}
 
 
 @router.get("/recommendations")
@@ -555,17 +584,47 @@ def global_scan_top10(req: GlobalTop10Request):
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
 
 
+def _official_snapshot_view(result: dict) -> dict:
+    """v2: score / confidence / call come from the stored scan snapshot (same as the list and Kiasha), with its scan time.
+
+    The live analysis is kept under ``live`` with its own time; the agent tables below still come from that live run
+    (``detailsFromLive``). v1, or a ticker without a stored snapshot, is returned unchanged.
+    """
+    if not decision_logic.is_v2():
+        return result
+    from global_markets.analysis_ledger import AnalysisLedger, ledger_path
+    country, exchange = str(result.get("country") or "").upper(), str(result.get("exchange") or "").upper()
+    if not (country and exchange and ledger_path(country, exchange).exists()):
+        return result
+    ledger = AnalysisLedger(country, exchange)
+    try:
+        snap = ledger.snapshot(str(result.get("ticker") or ""))
+    finally:
+        ledger.close()
+    if not snap:
+        return result
+    live = {"analyzedAt": result.get("analyzedAt"), "score": result.get("score"), "confidence": result.get("confidence"),
+            "call": result.get("call"), "note": "May differ from the official tier: computed now on current inputs."}
+    return {**result, "score": snap["score"], "confidence": snap["confidence"], "call": snap["call"] or result.get("call"),
+            "analyzedAt": snap["analyzed_at"], "officialSnapshot": True, "detailsFromLive": True, "live": live}
+
+
 @router.post("/analyze")
 def global_analyze(req: InstrumentRequest):
     try:
         result = analyze_company(_seed(req))
         if isinstance(result, dict):
+            result = _official_snapshot_view(result)          # v2: headline numbers = the stored scan snapshot, live kept apart
             view = decision_overlay.market_view(str(result.get("country") or ""), str(result.get("exchange") or ""))
             decision = view.get(str(result.get("ticker") or ""))
             if decision is not None:
                 evidence = result.get("evidence") if isinstance(result.get("evidence"), dict) else {}
                 decision = decision_overlay.cap_for_evidence(decision, evidence.get("status"), result.get("confidence"))
                 result = {**result, "investment": decision}     # additive; ``call`` stays the conservative value
+            result = {**result, "engines": decision_logic.engines_block(result, decision)}   # additive, P1.11 labels
+            # P1.9: the gate of the engine whose label is displayed (investment tier when present, else the conservative call)
+            result["blockingGate"] = (decision.get("blockingGate") if decision is not None
+                                      else decision_logic.conservative_blocking_gate(result))
         return result
     except HTTPException:
         raise
@@ -620,6 +679,18 @@ def global_portfolio(req: PortfolioRequest):
     instruments = [_seed(item) for item in req.instruments]
     fx = {currency.upper(): float(rate) for currency, rate in req.fxToBase.items() if float(rate) > 0}
     try:
-        return portfolio_from_instruments(profile, instruments, fx_to_base=fx)
+        proposal = portfolio_from_instruments(profile, instruments, fx_to_base=fx)
+        if isinstance(proposal, dict):
+            if decision_logic.is_v2():
+                engine = {"engine": decision_logic.ENGINE_INVESTMENT, "label": decision_logic.ENGINE_LABEL[decision_logic.ENGINE_INVESTMENT],
+                          "description": "Built from the investment ranking (BUY and ACCUMULATE); the conservative check only excludes stocks "
+                                         "without PASS evidence, with a distress block or with an AVOID call.",
+                          "riskFilter": decision_logic.ENGINE_CONSERVATIVE, "logicVersion": decision_logic.logic_version()}
+            else:
+                engine = {"engine": decision_logic.ENGINE_CONSERVATIVE, "label": decision_logic.ENGINE_LABEL[decision_logic.ENGINE_CONSERVATIVE],
+                          "description": "Built from the conservative engine's absolute score and confidence floors, not from the investment tiers.",
+                          "logicVersion": decision_logic.logic_version()}
+            proposal = {**proposal, "engine": engine}
+        return proposal
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc

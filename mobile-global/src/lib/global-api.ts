@@ -1,4 +1,4 @@
-import type { GlobalInvestmentDecision } from '@/lib/decision-tier';
+import type { BlockingGate, EngineBlocks, GlobalInvestmentDecision } from '@/lib/decision-tier';
 
 export const GLOBAL_API_BASE = (process.env.EXPO_PUBLIC_BIAP_GLOBAL_API_BASE || 'https://biap.dadashi.no/global-api').replace(/\/$/, '');
 
@@ -65,6 +65,7 @@ export type GlobalFundamentalEvidence = {
     periodAgeDays?: number | null;
     filingDate?: string | null;
     priceObservedAt?: string | null;
+    priceDateBasis?: string | null;
     priceAgeDays?: number | null;
     statement?: string;
   };
@@ -168,6 +169,7 @@ export type GlobalGovernance = {
 };
 
 export type GlobalCompanyData = GlobalInstrument & {
+  reporting_currency?: string | null;
   price?: number | null;
   price_observed_at?: string | null;
   previous_close?: number | null;
@@ -255,6 +257,8 @@ export type GlobalDecisionTable = {
     call?: string;
     newPositionAction?: string;
     existingHolderAction?: string;
+    /** Decision logic v2 (P1.6): why an owner of a stock without a recommendation is told to hold and monitor. */
+    existingHolderNote?: string;
     score?: number;
     confidence?: number;
     evidence?: string;
@@ -263,6 +267,12 @@ export type GlobalDecisionTable = {
 };
 
 export type GlobalAnalysis = {
+  /** P3 (v2): when this score was computed (live analysis = now, scan row = ledger snapshot time). */
+  analyzedAt?: string;
+  /** v2: score/confidence/call are the stored scan snapshot (same as list and Kiasha); the agent tables still come from the live run. */
+  officialSnapshot?: boolean;
+  detailsFromLive?: boolean;
+  live?: { analyzedAt?: string | null; score?: number | null; confidence?: number | null; call?: string | null; note?: string };
   fundamentalEvidence?: GlobalFundamentalEvidence;
   decisionReasons?: GlobalDecisionReasons;
   identity?: string;
@@ -277,6 +287,15 @@ export type GlobalAnalysis = {
   call?: 'BUY_CANDIDATE' | 'HOLD_OR_WATCH' | 'AVOID_OR_REVIEW' | 'NO_RECOMMENDATION' | string;
   /** Present only in investment mode (BUY/ACCUMULATE/HOLD/REDUCE/SELL); old rows and conservative mode omit it. */
   investment?: GlobalInvestmentDecision;
+  engines?: EngineBlocks;
+  /** P1.9: which gate held the displayed call back (investment gate when a tier is shown, else the conservative one). */
+  blockingGate?: BlockingGate | null;
+  /** Decision logic v2 only: informational notes (cross-dimension disagreement) and the severe-risk cap. */
+  agentNotes?: string[];
+  riskCap?: { capped?: string; to?: string; reason?: string };
+  /** Decision logic v2 (P1.5): a positive score held at HOLD_OR_WATCH only because the relative valuation could not be verified. */
+  abstentionCap?: { capped?: string; to?: string; qualifier?: string; label?: string; labelFa?: string; reasons?: string[] };
+  needsReview?: { capped?: string; to?: string; qualifier?: string; label?: string; labelFa?: string; reasons?: string[] };
   score?: number;
   confidence?: number;
   decisionConfidence?: number;
@@ -431,6 +450,7 @@ export type IndividualCreditScoringResponse = {
 };
 
 export type GlobalPortfolioResponse = {
+  engine?: { engine?: string; label?: string; description?: string; logicVersion?: string };
   profileAssessment?: {
     label?: string;
     riskTolerance?: string;

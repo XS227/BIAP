@@ -28,7 +28,7 @@ from .source_cache import write_bulk_text
 
 _MARKET_FIELDS = (
     "currency", "mic_code", "instrument_type", "sector", "industry",
-    "price", "price_observed_at", "volume_today", "avg_volume_30d",
+    "price", "price_observed_at", "volume_today", "avg_volume_30d", "daily_volume_30d",
     "market_cap", "shares_outstanding", "price_52w_high", "price_52w_low",
     "volatility_annualized_pct", "max_drawdown_pct", "return_1m_pct",
     "return_3m_pct", "return_6m_pct", "beta", "pe", "sector_pe", "pb",
