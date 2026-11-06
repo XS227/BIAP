@@ -310,3 +310,39 @@ def test_request_budget_stops_between_companies(tmp_path):
     run.skip_new_filings = True
     m = run.run(["آ", "ب", "ج", "د"])
     assert m["stop_reason"] == "request_budget" and m["counts"]["ok"] == 2 and m["counts"]["pending"] == 2
+
+
+# ---- 3 fiscal years per company ------------------------------------------------------------------
+
+def _f(fy, tracing, kind="سال مالی", cons=True, audited=True, sent="1405/01/01"):
+    t = f"صورت‌های مالی {'تلفیقی ' if cons else ''}{kind} منتهی به {fy}/12/29 ({'حسابرسی شده' if audited else 'حسابرسی نشده'})"
+    return {"tracing_no": tracing, "title": t, "excel_url": "https://excel.codal.ir/" + tracing, "sent_at": sent}
+
+
+def test_three_annual_years_plus_the_newest_statement_are_chosen_one_per_year():
+    fl = [_f(1405, "n1", "دوره ۶ ماهه", sent="1405/08/01"), _f(1404, "a1", sent="1405/02/01"), _f(1404, "a0", audited=False, sent="1405/01/01"),
+          _f(1403, "b1"), _f(1402, "c1"), _f(1401, "d1")]
+    got = [f["tracing_no"] for f in lf.annual_reports_to_fetch(fl)]
+    assert got == ["n1", "a1", "b1", "c1"]  # newest + audited 1404 + 1403 + 1402; 1401 is beyond 3 years
+
+
+def test_amendment_replaces_its_original_and_scope_is_consolidated_when_any_exists():
+    fl = [_f(1404, "sep", cons=False), _f(1404, "con_old", sent="1405/01/01"), _f(1404, "con_new", sent="1405/03/01")]
+    assert [f["tracing_no"] for f in lf.annual_reports_to_fetch(fl, 1)] == ["con_new"] or "con_new" in [f["tracing_no"] for f in lf.annual_reports_to_fetch(fl, 1)]
+    assert "sep" not in [f["tracing_no"] for f in lf.annual_reports_to_fetch(fl, 1)]
+
+
+def test_listing_keeps_paging_until_three_annual_years_are_seen(tmp_path):
+    import urllib.parse
+    q = urllib.parse.quote("فولاد")
+    page1 = letters(*[row(tracing=f"t{i}", title=f"صورت‌های مالی سال مالی منتهی به {1404 - i // 3}/12/29 (حسابرسی شده)") for i in range(6)])
+    page2 = letters(*[row(tracing=f"u{i}", title=f"صورت‌های مالی سال مالی منتهی به {1402 - i}/12/29 (حسابرسی شده)") for i in range(6)])
+    for r in page1["Letters"] + page2["Letters"]:
+        r["Symbol"] = "فولاد"
+    fake = FakeCodal({"financialYears?Symbol=" + q: [(200, ["1404", "1403", "1402"])], "PageNumber=1": [(200, {**page1, "Page": 3})], "PageNumber=2": [(200, {**page2, "Page": 3})],
+                      "excel.codal.ir": [(200, b"<html><table><tr><td>x</td></tr></table></html>")]})
+    run = new_run(tmp_path, fake)
+    run.page_length = 6
+    m = run.run(["فولاد"])
+    years = {lf.fiscal_year(f["title"]) for f in json.loads((tmp_path / "2026-10-25" / "companies.jsonl").read_text().splitlines()[0])["financial_filings"]}
+    assert {1404, 1403, 1402} <= years and m["counts"]["reports"] >= 3

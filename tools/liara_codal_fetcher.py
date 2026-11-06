@@ -54,9 +54,10 @@ BACKOFF_CAP = 600.0
 COOLDOWN_HOURS = 6.0  # after a 429 stop, later runs of the same day make NO request until this has passed
 MAX_CONSECUTIVE_EXHAUSTED_429 = 3  # requests that ran out of retries on 429 in a row -> stop the run
 PAGE_LENGTH = 12
-MAX_SYMBOL_PAGES = 5
-MAX_FINANCIAL_FILINGS = 8
-REPORTS_PER_COMPANY = 2
+MAX_SYMBOL_PAGES = 8
+MAX_FINANCIAL_FILINGS = 40  # filings kept per company in the listing (was 8: only ~2 fiscal years)
+REPORTS_PER_COMPANY = 4  # newest statement + one annual statement for each of the last ANNUAL_YEARS fiscal years
+ANNUAL_YEARS = 3
 UA = "Mozilla/5.0 BIAP-liara-fetcher/1.0"
 FILES = ("companies.jsonl", "reports.jsonl", "new_filings.jsonl")
 
@@ -253,6 +254,49 @@ def _dump(record):
 
 
 
+_FY_RE = re.compile(r"منتهی\s*به\s*([0-9۰-۹]{4})")
+_FA_DIGITS = str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")
+
+
+def fiscal_year(title):
+    m = _FY_RE.search(title or "")
+    return int(m.group(1).translate(_FA_DIGITS)) if m else None
+
+
+def is_annual(title):
+    return "سال مالی" in (title or "") and "ماهه" not in (title or "")
+
+
+def annual_year_count(filings):
+    """Distinct fiscal years with an annual statement in the scope BIAP parses (consolidated if any, else standalone)."""
+    annual = [f for f in filings if is_annual(f.get("title")) and fiscal_year(f.get("title"))]
+    cons = [f for f in annual if "تلفیقی" in (f.get("title") or "")]
+    return len({fiscal_year(f["title"]) for f in (cons or annual)})
+
+
+def annual_reports_to_fetch(filings, years=ANNUAL_YEARS, known=()):
+    """The newest statement of any period, plus the best annual statement of each of the newest ``years`` fiscal years.
+
+    Same scope rule as ``reports_to_fetch``. Per fiscal year the audited, latest-sent filing wins (an amendment replaces its original).
+    Filings whose tracing number is in ``known`` stay in the choice (they still count as covering their year) but cost no request later."""
+    scope_cons = any("تلفیقی" in (f.get("title") or "") for f in filings if is_annual(f.get("title")))
+    scoped = [f for f in filings if ("تلفیقی" in (f.get("title") or "")) == scope_cons] or list(filings)
+    chosen, seen_years = [], set()
+    if scoped:
+        chosen.append(scoped[0])  # newest of any period (listing order is newest first)
+    by_year = {}
+    for f in scoped:
+        y = fiscal_year(f.get("title"))
+        if y and is_annual(f.get("title")):
+            by_year.setdefault(y, []).append(f)
+    for y in sorted(by_year, reverse=True)[:years]:
+        best = sorted(by_year[y], key=lambda f: (1 if "حسابرسی شده" in (f.get("title") or "") and "حسابرسی نشده" not in (f.get("title") or "") else 0,
+                                                  str(f.get("sent_at") or f.get("publish_at") or "")), reverse=True)[0]
+        if best not in chosen:
+            chosen.append(best)
+    return chosen
+
+
 def reports_to_fetch(filings, limit):
     """Choose which listed statements get their HTML downloaded.
 
@@ -268,9 +312,10 @@ def reports_to_fetch(filings, limit):
 class Run(object):
     def __init__(self, client, out_root, day, page_length=PAGE_LENGTH, max_pages=MAX_SYMBOL_PAGES,
                  reports_per_company=REPORTS_PER_COMPANY, max_seconds=None, clock=time.monotonic, max_requests=None,
-                 cooldown_hours=COOLDOWN_HOURS, now=time.time):
+                 cooldown_hours=COOLDOWN_HOURS, now=time.time, annual_years=ANNUAL_YEARS):
         self.client, self.out_root, self.day = client, out_root, day
         self.max_requests, self.cooldown_hours, self.now = max_requests, cooldown_hours, now
+        self.annual_years = annual_years
         self.cooldown_path = os.path.join(out_root, "state", "cooldown.json")
         self.known_path = os.path.join(out_root, "state", "known_tracing.json")
         self.page_length, self.max_pages, self.reports_per_company = page_length, max_pages, reports_per_company
@@ -432,7 +477,7 @@ class Run(object):
                             and filing["tracing_no"] not in [f["tracing_no"] for f in financial]:
                         financial.append(filing)
                 total_pages = payload.get("Page")
-                if len(rows) < self.page_length or len(financial) >= MAX_FINANCIAL_FILINGS \
+                if len(rows) < self.page_length or len(financial) >= MAX_FINANCIAL_FILINGS or annual_year_count(financial) >= self.annual_years \
                         or (isinstance(total_pages, int) and page >= total_pages):
                     break
             record.update(company=company, filings=filings, financial_filings=financial)
@@ -442,7 +487,7 @@ class Run(object):
             return record, []
         record["status"] = "ok" if (record["financial_years"] or record["filings"] or record["company"]) else "no_data"
         reports = []
-        for filing in reports_to_fetch(record["financial_filings"], self.reports_per_company):
+        for filing in annual_reports_to_fetch(record["financial_filings"], self.annual_years):
             if str(filing["tracing_no"]) in self.known_tracing:  # already in the BIAP inbox: spend no request on it
                 self.reports_skipped += 1
                 continue
@@ -599,6 +644,7 @@ def main(argv=None):
     ap.add_argument("--interval", type=float, default=INTERVAL_SECONDS)
     ap.add_argument("--max-seconds", type=int, default=3 * 3600, help="stop starting new companies after this")
     ap.add_argument("--max-requests", type=int, help="stop starting new companies after this many HTTP requests in this run (use with several cron runs a day)")
+    ap.add_argument("--annual-years", type=int, default=ANNUAL_YEARS, help="annual statements fetched per company (newest fiscal years)")
     ap.add_argument("--page-length", type=int, default=PAGE_LENGTH)
     ap.add_argument("--no-upload", action="store_true")
     ap.add_argument("--no-new-filings", action="store_true", help="skip the new-filings check (implied by --symbols)")
@@ -632,7 +678,7 @@ def main(argv=None):
 
     day = utc_today().isoformat()
     run = Run(Client(interval=args.interval), args.out_root, day, page_length=args.page_length,
-              max_seconds=args.max_seconds, max_requests=args.max_requests)
+              max_seconds=args.max_seconds, max_requests=args.max_requests, annual_years=args.annual_years)
     # An explicit --symbols run is a test: it must fetch exactly those companies and must not touch the cursor.
     run.skip_new_filings = bool(args.no_new_filings or args.symbols)
     manifest = run.run(symbols)
