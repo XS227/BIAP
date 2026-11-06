@@ -1,6 +1,8 @@
 """Regression + independent numeric validation for the Iran module repair (digits, verification, EDA scope, KPI, re-parse)."""
 import math
 
+import pytest
+
 import module_compute as mc
 import module_dataset as md
 import module_stats as st
@@ -384,3 +386,27 @@ def test_unaudited_statement_never_carries_an_auditor_opinion():
                                                      auditor_name="موسسه حسابرسی الف", audit_basis="متن مبنا")))["fundamentals"]
     assert audited["auditStatus"] == "audited" and audited["auditOpinion"] == "qualified" and audited["auditorName"] == "موسسه حسابرسی الف" and audited["auditBasis"] == "متن مبنا"
     assert md.is_unaudited_title("صورت‌های مالی (حسابرسي نشده)") is True
+
+
+def test_listed_business_kpi_is_filled_from_codal_and_asks_only_for_customer_metrics():
+    ds = md.build_company_dataset(_item("BK", _codal(0, gross_profit_current=400.0, gross_profit_prev=300.0)))
+    out = mc.compute("business-kpi", ds, _universe())
+    assert out["status"] == "partial" and out["missing"] == mc.CUSTOMER_METRICS
+    table = next(b for b in out["blocks"] if b["type"] == "table")
+    by = {r["metric"]: r for r in table["rows"]}
+    cur = ds["fundamentals"]["current"]
+    assert by["درآمد عملیاتی"]["value"] == cur["revenue"] and by["سود خالص"]["value"] == cur["net_profit"]
+    assert by["بهای تمام‌شده درآمد"]["value"] == pytest.approx(cur["revenue"] - cur["gross_profit"])
+    assert by["حاشیه سود خالص"]["value"] == pytest.approx(round(cur["net_profit"] / cur["revenue"], 4), abs=1e-3)
+    assert not any("مشتری" in r["metric"] for r in table["rows"])  # never guessed
+    no_gp = mc.compute("business-kpi", md.build_company_dataset(_item("BK2", _codal(0))), _universe())
+    assert "بهای تمام‌شده درآمد" not in {r["metric"] for r in next(b for b in no_gp["blocks"] if b["type"] == "table")["rows"]}  # no gross profit -> no invented cost
+    assert "مشتری فعال" in " ".join(b.get("text", "") for b in out["blocks"])
+
+
+def test_listed_business_kpi_withheld_when_statement_unverified_or_missing():
+    unver = md.build_company_dataset(_item("BU", _codal(0, total_assets_current=10.0)))
+    out = mc.compute("business-kpi", unver, _universe())
+    assert out["status"] == "blocked" and "ارقام آن نمایش داده نمی‌شود" in out["summary"]
+    none = md.build_company_dataset({"code": "N", "symbol": "N", "name": "N", "market": "TSE", "company": {}})
+    assert mc.compute("business-kpi", none, _universe())["status"] == "blocked"
