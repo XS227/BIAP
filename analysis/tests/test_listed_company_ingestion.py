@@ -324,3 +324,42 @@ def test_parser_revision_is_stable_and_source_derived():
     assert len(revision) == 16
     assert all(ch in "0123456789abcdef" for ch in revision)
     assert ingestion._parser_revision() == revision
+
+
+
+def test_inbox_retries_when_export_arrives_after_failure(monkeypatch):
+    monkeypatch.setattr(ingestion, "_parser_revision", lambda: "new-parser")
+
+    class InboxStub:
+        attempts = {"سیدکو": {"last": "2026-11-04"}}
+        def has_financial_filings(self, sym):
+            return sym == "سیدکو"
+        def usable_tracing_nos(self, sym):
+            return ["1553923"]
+
+    inbox = InboxStub()
+    cutoff = "2026-10-30T00:00:00+00:00"
+    failure = "2026-11-01T12:00:00+00:00"
+    assert ingestion._inbox_retry_eligible(inbox, "سیدکو", failure, cutoff, None)
+    inbox.attempts = {"سیدکو": {"last": "2026-10-30"}}
+    assert not ingestion._inbox_retry_eligible(inbox, "سیدکو", failure, cutoff, None)
+    assert not ingestion._inbox_retry_eligible(inbox, "not-delivered", failure, cutoff, None)
+
+
+def test_inbox_parser_upgrade_bypasses_failure_cooldown_once(monkeypatch):
+    monkeypatch.setattr(ingestion, "_parser_revision", lambda: "new-parser")
+
+    class InboxStub:
+        attempts = {"سیدکو": {"last": "2026-10-30"}}
+        def has_financial_filings(self, sym):
+            return True
+        def usable_tracing_nos(self, sym):
+            return ["1553923"]
+
+    inbox = InboxStub()
+    failure = "2026-11-05T12:00:00+00:00"
+    cutoff = "2026-10-30T00:00:00+00:00"
+    old = {"tracingNos": ["1553923"], "parserRevision": "old-parser"}
+    new = {"tracingNos": ["1553923"], "parserRevision": "new-parser"}
+    assert ingestion._inbox_retry_eligible(inbox, "سیدکو", failure, cutoff, old)
+    assert not ingestion._inbox_retry_eligible(inbox, "سیدکو", failure, cutoff, new)

@@ -374,6 +374,29 @@ def _unparseable_unchanged(entry: dict | None, tracing_nos: list[str]) -> bool:
                 and entry.get("parserRevision") == _parser_revision())
 
 
+def _inbox_retry_eligible(
+    inbox: codal_inbox.Inbox, symbol: str, failed_at: str, cutoff: str, entry: dict | None,
+) -> bool:
+    """Retry if the HTML arrived after failure OR the parser code changed.
+
+    In inbox mode, the upstream fetch has already happened. The old seven-day
+    failure cooldown must not block newly delivered verified HTML. Conversely,
+    an unchanged report rejected by the current parser must not occupy nightly
+    slots repeatedly.
+    """
+    if not inbox.has_financial_filings(symbol):
+        return False
+    traces = inbox.usable_tracing_nos(symbol)
+    if _unparseable_unchanged(entry, traces):
+        return False
+    if not failed_at or failed_at < cutoff:
+        return True
+    if entry and entry.get("parserRevision") != _parser_revision():
+        return True
+    last_export = (inbox.attempts.get(codal_inbox.symbol_key(symbol)) or {}).get("last")
+    return bool(last_export and last_export > failed_at[:10])
+
+
 def _build_verified_company(code: str) -> tuple[dict[str, Any] | None, str]:
     try:
         quote = find_quote(code)
@@ -503,17 +526,24 @@ def run_batch(
             backlog_candidates = target.missing_codal_financial_codes(eligible_codes)
         else:
             backlog_candidates, _ = target._split_by_enrichment(eligible_codes)
-        backlog = [c for c in backlog_candidates if c not in set(filing_codes) and failed_at.get(c, "") < cutoff and c not in not_applicable]
+        scheduled_filing_codes = set(filing_codes)
         if codal_inbox.enabled():
-            _inbox = codal_inbox.current()
-            backlog = [c for c in backlog if not _unparseable_unchanged(
-                unparseable.get(c), _inbox.usable_tracing_nos(str((reg.get_instrument(c) or {}).get("symbol") or "")))]
-        if codal_inbox.enabled():
-            # Do not spend the daily slots on companies the Liara export has not delivered.
+            # Do not wait seven more days when Liara has delivered an original
+            # filing after the previous failure. Likewise retry a formerly
+            # unparseable filing once when parser code changed.
             inbox = codal_inbox.current()
             symbol_for = lambda c: str((reg.get_instrument(c) or {}).get("symbol") or "")  # noqa: E731
+            backlog = [
+                c for c in backlog_candidates
+                if c not in scheduled_filing_codes and c not in not_applicable
+                and _inbox_retry_eligible(inbox, symbol_for(c), failed_at.get(c, ""), cutoff, unparseable.get(c))
+            ]
             filing_codes = [c for c in filing_codes if inbox.has_financial_filings(symbol_for(c))]
-            backlog = [c for c in backlog if inbox.has_financial_filings(symbol_for(c))]
+        else:
+            backlog = [
+                c for c in backlog_candidates
+                if c not in scheduled_filing_codes and c not in not_applicable and failed_at.get(c, "") < cutoff
+            ]
         backlog.sort(key=lambda c: (-traded_value.get(c, 0.0), c))  # most-traded first; unknown volume last
         filing_codes = [c for c in filing_codes if c not in not_applicable]
         codes = filing_codes + backlog[:max(0, int(backlog_per_run))]
