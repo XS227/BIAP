@@ -79,3 +79,14 @@ test('unaudited statement shows «حسابرسی نشده» and never an opinion
   assert.ok(au.inputs.some((i) => i.label === 'مؤسسهٔ حسابرسی' && i.value === 'موسسه حسابرسی الف') && au.inputs.some((i) => i.label === 'مبنای اظهارنظر' && i.value === 'مبنای متن'));
   assert.equal(au.link, 'https://excel.codal.ir/x');
 });
+
+import { invalidRatios as _inv } from '../src/lib/audit-analysis.ts';
+import { formatKpi as _fk } from '../src/lib/iran-module-blocks.ts';
+test('out-of-range ratios (e.g. net margin 78,000,000%) are «داده نامعتبر», withhold the risk score and are never shown', () => {
+  assert.deepEqual(_inv({ revenue_current: 1, net_profit_current: 780934, total_assets_current: 1e6, total_equity_current: 5e5 }), ['حاشیه سود خالص']);
+  assert.deepEqual(_inv({ revenue_current: 100, net_profit_current: 5, total_assets_current: 100, total_equity_current: 50 }), []);
+  const rep = _run({ revenue_current: 1, net_profit_current: 780934, revenue_prev: 1, net_profit_prev: 1, total_assets_current: 1e6, total_liabilities_current: 5e5, total_equity_current: 5e5, tracing_no: '1528840', report_title: 'صورت‌های مالی (حسابرسی شده)' }, new Date('2026-11-06'));
+  assert.equal(rep.withheld, true); assert.equal(rep.riskScore, null);
+  assert.ok(rep.checks.find((c) => c.id === 'zmijewski').summary.includes('داده نامعتبر'));
+  assert.equal(_fk({ group: 'g', key: 'net_margin', label: 'x', value: null, unit: 'نسبت', formula: '', inputs: [], source: '', period: null, status: 'invalid', missing: [] }), 'داده نامعتبر');
+});

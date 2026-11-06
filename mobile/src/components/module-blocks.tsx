@@ -29,7 +29,7 @@ function KpiBlock({ items, colors }: { items: KpiItem[]; colors: ThemeColors }) 
                 <Text style={[styles.kpiLabel, { color: colors.text }]}>{k.label}</Text>
               </View>
               <Text style={[styles.kpiMeta, { color: colors.textSecondary }]}>
-                {k.status === 'unverified' ? `تأییدنشده: ${k.missing.join('، ')}` : k.value === null ? `ورودی ناموجود: ${(k.missing.length ? k.missing : k.inputs).join('، ')}` : `فرمول: ${k.formula}`}
+                {k.status === 'unverified' ? `تأییدنشده: ${k.missing.join('، ')}` : k.status === 'invalid' ? k.missing.join('، ') || 'داده نامعتبر' : k.value === null ? `ورودی ناموجود: ${(k.missing.length ? k.missing : k.inputs).join('، ')}` : `فرمول: ${k.formula}`}
               </Text>
               <Text style={[styles.kpiMeta, { color: colors.textSecondary }]}>منبع: {k.source}{k.period ? ` • ${k.period}` : ''}</Text>
             </View>

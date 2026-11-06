@@ -72,6 +72,17 @@ export function jalaliYearMonth(now: Date): { y: number; m: number } {
   return { y: Number(parts.find((p) => p.type === 'year')?.value), m: Number(parts.find((p) => p.type === 'month')?.value) };
 }
 export const STALE_AFTER_MONTHS = 18;
+/** Same limits as the backend sanity guard: beyond them a ratio is a unit/parse error, shown as «داده نامعتبر» and never used. */
+export const RATIO_LIMITS: Record<string, number> = { margin: 2, roa: 1.5, roe: 3 };
+export function invalidRatios(f: { revenue_current?: number | null; net_profit_current?: number | null; total_assets_current?: number | null; total_equity_current?: number | null } | null | undefined): string[] {
+  const out: string[] = [];
+  if (!f) return out;
+  const { revenue_current: rev, net_profit_current: ni, total_assets_current: ta, total_equity_current: eq } = f;
+  if (rev && ni != null && Math.abs(ni / rev) > RATIO_LIMITS.margin) out.push('حاشیه سود خالص');
+  if (ta && ta > 0 && ni != null && Math.abs(ni / ta) > RATIO_LIMITS.roa) out.push('ROA');
+  if (eq && eq > 0 && ni != null && Math.abs(ni / eq) > RATIO_LIMITS.roe) out.push('ROE');
+  return out;
+}
 /** Checks whose inputs come from the balance sheet: withheld when the balance sheet is not verified. */
 export const BALANCE_SHEET_CHECKS = ['leverage', 'equity', 'accruals', 'zmijewski', 'altman', 'beneish'];
 
@@ -199,9 +210,10 @@ export function runIranAudit(f: IranFundamentals | null | undefined, now: Date =
   // Verification gate: balance-sheet based checks are never computed on a statement that does not reconcile or was not confirmed.
   const idCheck = checks.find((c) => c.id === 'identity');
   const stampedBad = f?.verification?.status === 'unverified';
-  const withheld = Boolean(f) && ((idCheck?.status === 'FLAG') || stampedBad);
+  const badRatios = invalidRatios(f);
+  const withheld = Boolean(f) && ((idCheck?.status === 'FLAG') || stampedBad || badRatios.length > 0);
   if (withheld) {
-    const why = `تأییدنشده: ${stampedBad && f?.verification?.reason ? f.verification.reason : 'ترازنامه‌ی ذخیره‌شده با خودش تراز نیست'}${f?.tracing_no ? ` • شماره رهگیری کدال ${f.tracing_no}` : ''}`;
+    const why = badRatios.length ? `داده نامعتبر: ${badRatios.join('، ')} خارج از دامنه‌ی معتبر است (احتمال خطای واحد یا استخراج)؛ محاسبه نشد${f?.tracing_no ? ` • شماره رهگیری کدال ${f.tracing_no}` : ''}` : `تأییدنشده: ${stampedBad && f?.verification?.reason ? f.verification.reason : 'ترازنامه‌ی ذخیره‌شده با خودش تراز نیست'}${f?.tracing_no ? ` • شماره رهگیری کدال ${f.tracing_no}` : ''}`;
     for (let i = 0; i < checks.length; i++) if (BALANCE_SHEET_CHECKS.includes(checks[i].id)) checks[i] = mk(checks[i].id, checks[i].title, true, 'INSUFFICIENT_DATA', why, []);
   }
   const end = periodEndOf(f?.report_title);

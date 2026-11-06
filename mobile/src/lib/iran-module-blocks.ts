@@ -129,6 +129,7 @@ export function verificationText(prov?: Record<string, unknown>): string | null 
 
 export function formatKpi(item: KpiItem): string {
   if (item.status === 'unverified') return 'تأییدنشده';
+  if (item.status === 'invalid') return 'داده نامعتبر';
   if (item.value === null || !Number.isFinite(item.value)) return '—';
   if (item.unit === 'نسبت' && Math.abs(item.value) < 5) return `${formatValue(item.value * 100, { digits: 1 })}٪`;
   return `${formatValue(item.value)}${item.unit && item.unit !== 'نسبت' ? ` ${item.unit}` : ''}`;
