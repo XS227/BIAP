@@ -29,3 +29,11 @@ export function realSourceBadge(sourceLabel: string): string {
   if (/Company Dataset/i.test(sourceLabel)) return 'داده‌ی خود شرکت شما';
   return 'داده‌ی ذخیره‌شده‌ی BIAP';
 }
+
+/** Persian/Arabic letter forms differ between keyboards and TSETMC/CODAL: fold ي/ك (and ى/ة/ۀ, Arabic-Indic digits) so a search finds the stored symbol. */
+export function normalizeSearch(q: string): string {
+  return String(q ?? '')
+    .replace(/[يىئ]/g, (c) => (c === 'ئ' ? 'ئ' : 'ی')).replace(/ك/g, 'ک').replace(/[ۀة]/g, 'ه')
+    .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+    .replace(/[\u200c\u200f\u200e\u00a0]/g, ' ').replace(/\s+/g, ' ').trim();
+}

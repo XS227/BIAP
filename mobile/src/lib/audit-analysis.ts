@@ -9,6 +9,8 @@ export type CheckStatus = 'OK' | 'WATCH' | 'FLAG' | 'INSUFFICIENT_DATA';
 export type AuditCheck = {
   id: string; title: string; status: CheckStatus; summary: string;
   inputs: { label: string; value: number | string | null }[]; period: string | null; source: string | null;
+  /** CODAL report link shown as a tappable row on the card */
+  link?: string | null;
   /** counts toward the risk score (data-quality checks do not) */
   scored: boolean;
 };
@@ -23,6 +25,8 @@ export type IranFundamentals = {
   total_equity_current?: number | null; total_equity_prev?: number | null;
   audit_opinion?: string | null; report_title?: string | null; report_scope?: string | null; source?: string | null;
   tracing_no?: string | null;
+  /** auditor firm, the «مبنای اظهارنظر» paragraphs and the CODAL report link, when the importer captured them */
+  auditor_name?: string | null; audit_basis?: string | null; report_url?: string | null;
   /** backend re-verification stamp (codal_reparse) when present */
   verification?: { status?: string | null; reason?: string | null } | null;
   operating_cash_flow_current?: number | null; operating_cash_flow_prev?: number | null;
@@ -34,6 +38,11 @@ export type IranFundamentals = {
   operating_profit_current?: number | null; sga_expense_current?: number | null; sga_expense_prev?: number | null;
   depreciation_current?: number | null; depreciation_prev?: number | null;
 };
+
+/** CODAL titles carry «(حسابرسی نشده)» for unaudited statements: those have NO auditor opinion, whatever the importer stored. */
+export function isUnaudited(title: string | null | undefined): boolean {
+  return String(title ?? '').replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\u200c\u00a0]/g, ' ').replace(/\s+/g, ' ').includes('حسابرسی نشده');
+}
 
 /** The importer stores English opinion codes; the audit screen shows Persian. */
 export function auditOpinionFa(raw: string): string {
@@ -170,10 +179,22 @@ export function runIranAudit(f: IranFundamentals | null | undefined, now: Date =
     }
   } else checks.push(missing('beneish', 'امتیاز بنیش (Beneish M-Score)', 'حساب‌های دریافتنی، دارایی ثابت، هزینه‌ی استهلاک و هزینه‌های فروش/اداری برای دو سال'));
 
-  const op = auditOpinionFa(f?.audit_opinion ?? '');
-  checks.push(op
-    ? mk('opinion', 'نظر حسابرس', true, /مردود|عدم اظهار|مشروط/.test(op) ? 'FLAG' : /مقبول/.test(op) ? 'OK' : 'WATCH', `نظر حسابرس: ${op.slice(0, 160)}`, [{ label: 'متن', value: op.slice(0, 160) }])
-    : missing('opinion', 'نظر حسابرس', 'متن نظر حسابرس'));
+  const link = f?.report_url ?? null;
+  const tracing = f?.tracing_no ? `شماره رهگیری کدال ${f.tracing_no}` : null;
+  if (isUnaudited(f?.report_title)) {
+    const c = mk('opinion', 'نظر حسابرس', false, 'INSUFFICIENT_DATA', `حسابرسی نشده: این صورت مالی حسابرسی نشده و نظر حسابرس ندارد.${tracing ? ` • ${tracing}` : ''}`, [{ label: 'وضعیت', value: 'حسابرسی نشده' }]);
+    checks.push({ ...c, link });
+  } else {
+    const op = auditOpinionFa(f?.audit_opinion ?? '');
+    if (op) {
+      const c = mk('opinion', 'نظر حسابرس', true, /مردود|عدم اظهار|مشروط/.test(op) ? 'FLAG' : /مقبول/.test(op) ? 'OK' : 'WATCH', `نظر حسابرس: ${op.slice(0, 160)}${tracing ? ` • ${tracing}` : ''}`, [
+        { label: 'نظر', value: op.slice(0, 160) },
+        { label: 'مؤسسهٔ حسابرسی', value: f?.auditor_name?.trim() || 'در داده‌ی ذخیره‌شده موجود نیست' },
+        { label: 'مبنای اظهارنظر', value: f?.audit_basis?.trim() ? f.audit_basis.trim().slice(0, 1200) : 'متن بند مبانی هنوز از گزارش کدال استخراج نشده است' },
+      ]);
+      checks.push({ ...c, link });
+    } else checks.push({ ...missing('opinion', 'نظر حسابرس', 'متن نظر حسابرس'), link });
+  }
 
   // Verification gate: balance-sheet based checks are never computed on a statement that does not reconcile or was not confirmed.
   const idCheck = checks.find((c) => c.id === 'identity');

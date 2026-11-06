@@ -96,7 +96,7 @@ export default function ModuleDetailScreen() {
 
   const requirementCard = requirement ? <View style={[styles.requirementCard,{backgroundColor:colors.backgroundElement,borderColor:companyMode==='listed'?'#16653444':colors.backgroundSelected}]}> 
     <View style={styles.requirementHead}><View style={[styles.reqBadge,{backgroundColor:companyMode==='listed'?'#14532d':'#1e3a8a'}]}><Text style={styles.reqBadgeText}>{companyMode==='listed'?'بورسی • منبع خودکار':'شرکتی • ورود دستی'}</Text></View><Text style={[styles.requirementTitle,{color:colors.text}]}>داده لازم برای این ماژول</Text></View>
-    {code ? <Text style={[styles.selectedCompany,{color:Brand.positive}]}>نماد انتخاب‌شده: {displaySymbol(label || code)}</Text> : null}
+    {code ? <Text style={[styles.selectedCompany,{color:Brand.positive}]}>نماد انتخاب‌شده: {displaySymbol(label || result?.company?.symbol, result?.company?.name || code)}</Text> : null}
     <Text style={[styles.requirementText,{color:colors.textSecondary}]}>{requirement.description}</Text>
     {companyMode==='listed' ? <>
       <Text style={[styles.reqSection,{color:colors.text}]}>منابع خودکار BIAP</Text>
@@ -154,7 +154,7 @@ export default function ModuleDetailScreen() {
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><ScrollView contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.six }]}><View style={styles.maxWidth}>
     <View style={styles.headerRow}><Pressable onPress={() => router.back()} style={[styles.back, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.backText, { color: colors.text }]}>←</Text></Pressable><View style={styles.headerText}><Text style={[styles.title, { color: colors.text }]}>{module?.icon ?? '🧩'} {module?.title ?? requirement?.title ?? 'ماژول BIAP'}</Text><Text style={[styles.subtitle, { color: colors.textSecondary }]}>BIAP Mobile • Real Data First</Text></View></View>
 
-    {code ? <View style={[styles.ctxBar, { backgroundColor: colors.backgroundElement, borderColor: Brand.positive + '66' }]}><Text style={[styles.ctxText, { color: colors.text }]} numberOfLines={1}>شرکت انتخاب‌شده: {displaySymbol(label || code)}{result?.company?.name && result.company.name !== label ? ` — ${result.company.name}` : ''}</Text></View> : null}
+    {code ? <View style={[styles.ctxBar, { backgroundColor: colors.backgroundElement, borderColor: Brand.positive + '66' }]}><Text style={[styles.ctxText, { color: colors.text }]} numberOfLines={1}>شرکت انتخاب‌شده: {displaySymbol(label || result?.company?.symbol, result?.company?.name || code)}{result?.company?.name && result.company.name !== label ? ` — ${result.company.name}` : ''}</Text></View> : null}
 
     {requirementCard}
 

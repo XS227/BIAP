@@ -67,3 +67,15 @@ test('Jalali period parsing and current Jalali month', () => {
   assert.equal(periodEndOf('بدون تاریخ'), null);
   assert.deepEqual(jalaliYearMonth(NOW), { y: 1405, m: 8 });
 });
+
+import { runIranAudit as _run, isUnaudited as _un } from '../src/lib/audit-analysis.ts';
+test('unaudited statement shows «حسابرسی نشده» and never an opinion; audited shows firm, basis and CODAL link', () => {
+  const base = { total_assets_current: 100, total_liabilities_current: 60, total_equity_current: 40, revenue_current: 50, net_profit_current: 5, report_url: 'https://excel.codal.ir/x', tracing_no: '1504023' };
+  const un = _run({ ...base, audit_opinion: 'qualified', report_title: 'صورت‌های مالی (حسابرسی نشده)' }, new Date('2026-11-06')).checks.find((c) => c.id === 'opinion');
+  assert.equal(un.status, 'INSUFFICIENT_DATA'); assert.ok(un.summary.includes('حسابرسی نشده')); assert.ok(!un.summary.includes('مشروط'));
+  assert.equal(un.link, 'https://excel.codal.ir/x'); assert.equal(_un('(حسابرسي نشده)'), true);
+  const au = _run({ ...base, audit_opinion: 'qualified', report_title: 'صورت‌های مالی (حسابرسی شده)', auditor_name: 'موسسه حسابرسی الف', audit_basis: 'مبنای متن' }, new Date('2026-11-06')).checks.find((c) => c.id === 'opinion');
+  assert.equal(au.status, 'FLAG'); assert.ok(au.summary.includes('مشروط'));
+  assert.ok(au.inputs.some((i) => i.label === 'مؤسسهٔ حسابرسی' && i.value === 'موسسه حسابرسی الف') && au.inputs.some((i) => i.label === 'مبنای اظهارنظر' && i.value === 'مبنای متن'));
+  assert.equal(au.link, 'https://excel.codal.ir/x');
+});

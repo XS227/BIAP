@@ -96,6 +96,7 @@ export const COLUMN_LABEL: Record<string, string> = {
   column: 'شاخص', value: 'مقدار', source: 'منبع', peerMedian: 'میانه نمونه', percentile: 'صدک', sampleN: 'اندازه نمونه', scope: 'دامنه', reason: 'توضیح',
   n: 'تعداد', mean: 'میانگین', median: 'میانه', std: 'انحراف معیار', min: 'کمینه', q1: 'چارک ۱', q3: 'چارک ۳', max: 'بیشینه', skew: 'چولگی',
   outlier: 'پرت', a: 'شاخص اول', b: 'شاخص دوم', r: 'همبستگی', present: 'موجود', missingPct: 'گمشده ٪', metric: 'شاخص', sectorMedian: 'میانه گروه',
+  name: 'نام شرکت', symbol: 'نماد', pe: 'P/E', debt_ratio: 'نسبت بدهی', roe: 'ROE', net_margin: 'حاشیه سود خالص',
   marketMedian: 'میانه بازار', company: 'این شرکت', date: 'تاریخ', return: 'بازده', robustZ: 'z مقاوم', step: 'گام', forecast: 'پیش‌بینی', low: 'کف', high: 'سقف',
 };
 export function columnLabel(c: string): string { return COLUMN_LABEL[c] ?? c; }

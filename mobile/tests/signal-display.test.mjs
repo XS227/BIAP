@@ -54,3 +54,16 @@ test('home preview explanation says why only one stock shows and counts held one
   assert.ok(t.includes('بازار بسته') && t.includes('تنها یک نماد') && t.includes(NO_CODAL_LABEL) && t.includes('توصیهٔ Kiasha'));
   assert.ok(!previewExplanation(5, 0, true).includes('تنها یک نماد'));
 });
+
+import { normalizeSearch } from '../src/lib/data-status.ts';
+import { columnLabel } from '../src/lib/iran-module-blocks.ts';
+test('search folds Arabic ي/ك and digits so a keyboard variant finds the stored symbol', () => {
+  assert.equal(normalizeSearch('فولاد خوزستان'), 'فولاد خوزستان');
+  assert.equal(normalizeSearch('كيان'), 'کیان');
+  assert.equal(normalizeSearch('مبين٣'), 'مبین3');
+  assert.equal(normalizeSearch('  وبملت‌ '), 'وبملت');
+});
+test('SWOT competitor columns have Persian headers', () => {
+  assert.equal(columnLabel('pe'), 'P/E'); assert.equal(columnLabel('debt_ratio'), 'نسبت بدهی');
+  assert.equal(columnLabel('roe'), 'ROE'); assert.equal(columnLabel('net_margin'), 'حاشیه سود خالص'); assert.equal(columnLabel('name'), 'نام شرکت');
+});

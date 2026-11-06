@@ -1,3 +1,4 @@
+import { normalizeSearch } from '@/lib/data-status';
 import { KIASHA_API_BASE, MarketSymbolResult } from '@/lib/api';
 
 const ORDINARY_SHARE_PAPER_TYPES = new Set(['300', '303', '307', '309', '313']);
@@ -58,7 +59,7 @@ export async function fetchMarketSymbols(
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const query = new URLSearchParams();
-    if (params.q) query.set('q', params.q);
+    if (params.q) query.set('q', normalizeSearch(params.q));
     if (params.market) query.set('market', params.market);
     if (params.limit) query.set('limit', String(params.limit));
 

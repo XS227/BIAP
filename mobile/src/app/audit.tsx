@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SymbolPicker, type PickedSymbol } from '@/components/symbol-picker';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -72,6 +72,7 @@ export default function AuditScreen() {
                 <View key={c.id} style={[styles.card, { backgroundColor: colors.backgroundElement, borderRightWidth: 3, borderRightColor: TONE[c.status] }]}>
                   <View style={styles.rowBetween}><Text style={[styles.status, { color: TONE[c.status] }]}>{LABEL[c.status]}</Text><Text style={[styles.cardTitle, { color: colors.text, flex: 1 }]}>{c.title}</Text></View>
                   <Text style={[styles.body, { color: colors.textSecondary }]}>{c.summary}</Text>
+                  {c.link ? <Pressable onPress={() => { void Linking.openURL(c.link as string); }}><Text style={[styles.meta, { color: Brand.primary }]}>مشاهدهٔ گزارش در کدال ←</Text></Pressable> : null}
                   {c.inputs.map((i) => <Text key={i.label} style={[styles.meta, { color: colors.textSecondary }]}>{i.label}: {fmt(i.value)}</Text>)}
                   {c.status !== 'INSUFFICIENT_DATA' ? <Text style={[styles.meta, { color: colors.textSecondary }]}>دوره: {c.period || '—'} · منبع: {c.source || '—'}</Text> : null}
                 </View>

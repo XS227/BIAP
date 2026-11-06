@@ -122,6 +122,7 @@ export default function MoreScreen() {
     { icon: '🤖', title: 'پروفایل سرمایه‌گذاری کیا‌شا', sub: 'سرمایه Paper، بازده، دقت و Track Record ایجنت', onPress: () => router.push('/kiasha-profile' as never), accent: '#7c3aed' },
     { icon: '🧩', title: 'همه ماژول‌های BIAP', sub: 'سرمایه‌گذاری، داده، KPI، کسب‌وکار و مدل مالی', onPress: openModules, accent: Brand.primary },
     { icon: '💼', title: 'توسعه کسب‌وکار', sub: 'SWOT، CRM، Journey، کمپین و مدل مالی', onPress: () => router.push('/bizdev'), accent: Brand.secondary },
+    { icon: '📇', title: 'CRM و Pipeline', sub: 'نیازمند داده‌ی داخلی شرکت شماست؛ بدون داده‌ی شرکت خالی می‌ماند', onPress: () => router.push('/crm' as never), accent: Brand.secondary },
     { icon: '📊', title: 'تحلیل داده', sub: 'EDA، آمار، نمودار و خروجی CSV', onPress: () => router.push('/data'), accent: Brand.dataViolet },
     { icon: '🔌', title: 'اتصال داده', sub: 'داده شرکت برای ماژول‌های تحلیل و کسب‌وکار', onPress: () => router.push('/data-connect' as never), accent: Brand.dataViolet },
     { icon: '👤', title: 'حساب کاربری', sub: 'اطلاعات، تغییر رمز و تنظیمات حساب', onPress: () => router.push('/profile') },
