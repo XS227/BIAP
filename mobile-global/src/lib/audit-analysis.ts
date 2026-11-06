@@ -14,6 +14,9 @@ export type AuditInput = {
   beneish?: Record<string, number | null | undefined> | null; // two-year inputs; not stored today
   /** Banks/insurers: accruals, Altman and Beneish are not meaningful (balance sheet is the business). */
   financialSector?: boolean | null;
+  /** Sector / industry text: oil & gas, utilities, shipping and real estate lower the Altman Z″ weight in the risk score. */
+  sector?: string | null;
+  industry?: string | null;
 };
 
 export type AuditCheck = {
@@ -73,9 +76,17 @@ export function cfoDivergenceCheck(inp: AuditInput): AuditCheck {
 
 const BENEISH_KEYS = ['receivables', 'receivables_prev', 'revenue', 'revenue_prev', 'gross_profit', 'gross_profit_prev', 'ppe', 'ppe_prev', 'depreciation', 'depreciation_prev', 'sga', 'sga_prev', 'total_assets', 'total_assets_prev', 'total_debt', 'total_debt_prev', 'net_income', 'operating_cash_flow'];
 
+/** Beneish inputs actually available: the stored two-year block plus the single-year fields already in the audit values. */
+export function beneishInputs(inp: AuditInput): Record<string, number | null | undefined> {
+  const v = inp.values ?? {};
+  const own: Record<string, number | null | undefined> = {};
+  for (const k of ['total_assets', 'net_income', 'operating_cash_flow', 'revenue', 'gross_profit', 'receivables', 'ppe', 'depreciation', 'sga', 'total_debt']) if (num(v[k]) != null) own[k] = num(v[k]);
+  return { ...own, ...(inp.beneish ?? {}) };
+}
+
 export function beneishCheck(inp: AuditInput): AuditCheck {
   const t = 'Beneish M-Score';
-  const b = inp.beneish ?? {};
+  const b = beneishInputs(inp);
   const miss = missing(b, BENEISH_KEYS);
   if (miss.length) return insufficient('beneish', t, miss, inp);
   const g = (k: string) => num(b[k])!;
@@ -101,12 +112,19 @@ export function altmanCheck(inp: AuditInput): AuditCheck {
     inputs: [{ label: 'Altman Z″', value: z }], period: inp.reportPeriod ?? null, source: 'BIAP Agent 9 (stored)', });
 }
 
+/** One band function for Agent 9 and the Audit screen: <20% unlikely, 20–50% watch band, >=50% likely. */
+export function zmijewskiBand(p: number): { status: CheckStatus; label: string } {
+  if (p >= 0.5) return { status: 'FLAG', label: 'distress likely (≥50%)' };
+  if (p >= 0.2) return { status: 'WATCH', label: 'watch band (20–50%)' };
+  return { status: 'OK', label: 'distress unlikely (<20%)' };
+}
+
 export function zmijewskiCheck(inp: AuditInput): AuditCheck {
   const t = 'Zmijewski distress probability (stored)';
   const d = inp.distress, p = num(d?.distress_probability);
   if (p == null) return insufficient('zmijewski', t, ['distress_probability'], inp);
-  const status: CheckStatus = p >= 0.5 ? 'FLAG' : p >= 0.2 ? 'WATCH' : 'OK';
-  return mk({ id: 'zmijewski', title: t, status, summary: `Distress probability ${(p * 100).toFixed(1)}% (>=50% flag, 20–50% watch).`,
+  const band = zmijewskiBand(p), status: CheckStatus = band.status;
+  return mk({ id: 'zmijewski', title: t, status, summary: `Distress probability ${(p * 100).toFixed(1)}%: ${band.label}.`,
     inputs: [{ label: 'Distress probability', value: p }, { label: 'Zmijewski index', value: num(d?.zmijewski_index) }], period: inp.reportPeriod ?? null, source: 'BIAP Agent 9 (stored)' });
 }
 
@@ -121,6 +139,12 @@ export function auditorOpinionCheck(inp: AuditInput): AuditCheck {
 
 const WEIGHTS: Record<CheckStatus, number> = { OK: 0, WATCH: 0.5, FLAG: 1, INSUFFICIENT_DATA: 0 };
 
+const CAPITAL_INTENSIVE = /\b(oil|gas|coal|pipeline|utilit|electric|power|water|shipping|marine|tanker|offshore|real estate|reit|propert)/i;
+export const ALTMAN_CAPITAL_INTENSIVE_WEIGHT = 0.5;
+export function isCapitalIntensive(sector?: string | null, industry?: string | null): boolean {
+  return /^(energy|utilities|real estate)$/i.test((sector || '').trim()) || CAPITAL_INTENSIVE.test(industry || '');
+}
+
 const NOT_FOR_FINANCIALS = new Set<AuditCheck['id']>(['accruals', 'altman', 'beneish']);
 
 export function runAudit(inp: AuditInput): AuditReport {
@@ -132,8 +156,11 @@ export function runAudit(inp: AuditInput): AuditReport {
     : raw;
   const done = checks.filter((c) => c.status !== 'INSUFFICIENT_DATA');
   if (done.length < 2) return { checks, riskScore: null, evaluated: done.length, status: 'INSUFFICIENT_DATA', note: AUDIT_NOTE };
-  const score = Math.round((done.reduce((s, c) => s + WEIGHTS[c.status], 0) / done.length) * 100);
-  return { checks, riskScore: score, evaluated: done.length, status: 'OK', note: AUDIT_NOTE };
+  const cap = isCapitalIntensive(inp.sector, inp.industry);
+  const w = (c: AuditCheck) => (cap && c.id === 'altman' ? ALTMAN_CAPITAL_INTENSIVE_WEIGHT : 1);
+  const score = Math.round((done.reduce((s, c) => s + w(c) * WEIGHTS[c.status], 0) / done.reduce((s, c) => s + w(c), 0)) * 100);
+  const note = cap && done.some((c) => c.id === 'altman') ? `${AUDIT_NOTE} Altman Z″ counts at half weight here: capital-intensive sector (oil & gas, utilities, shipping, real estate).` : AUDIT_NOTE;
+  return { checks, riskScore: score, evaluated: done.length, status: 'OK', note };
 }
 
 /** API flag when present, else the sector/industry text (HSBC comes with sector "Financials", flag null). */

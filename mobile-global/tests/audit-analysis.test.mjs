@@ -54,3 +54,26 @@ test('isFinancialSector: flag wins, else sector text', () => {
   assert.equal(isFinancialSector(false, 'Financials', 'Banks'), false);
   assert.equal(isFinancialSector(undefined, 'Technology', 'Software'), false);
 });
+
+import { beneishInputs, zmijewskiBand, isCapitalIntensive, runAudit as _runAudit } from '../src/lib/audit-analysis.ts';
+test('Beneish lists only truly missing fields (total_assets, net_income, operating_cash_flow are present)', () => {
+  const inp = { values: { total_assets: 100, net_income: 5, operating_cash_flow: 7 } };
+  const b = beneishInputs(inp);
+  assert.equal(b.total_assets, 100); assert.equal(b.net_income, 5); assert.equal(b.operating_cash_flow, 7);
+  const c = _runAudit({ ...inp, auditOpinion: null, distress: null }).checks.find((x) => x.id === 'beneish');
+  assert.equal(c.status, 'INSUFFICIENT_DATA');
+  for (const k of ['total_assets', 'net_income', 'operating_cash_flow']) assert.ok(!c.missing.includes(k), k);
+  assert.ok(c.missing.includes('receivables_prev'));
+});
+test('one Zmijewski band function: 48.8% is the watch band, never "distress unlikely"', () => {
+  assert.equal(zmijewskiBand(0.488).status, 'WATCH'); assert.ok(zmijewskiBand(0.488).label.includes('watch band'));
+  assert.equal(zmijewskiBand(0.1).status, 'OK'); assert.equal(zmijewskiBand(0.5).status, 'FLAG');
+  const r = _runAudit({ values: { net_income: 1, operating_cash_flow: 1, total_assets: 10 }, distress: { distress_probability: 0.488, altman_z_double_prime: 3 } });
+  assert.ok(r.checks.find((x) => x.id === 'zmijewski').summary.includes('watch band'));
+});
+test('Altman Z″ counts at half weight for capital-intensive sectors and the note says so', () => {
+  assert.equal(isCapitalIntensive('Energy', ''), true); assert.equal(isCapitalIntensive('Industrials', 'Marine Shipping'), true); assert.equal(isCapitalIntensive('Technology', 'Software'), false);
+  const base = { values: { net_income: 10, operating_cash_flow: 10, total_assets: 100 }, distress: { altman_z_double_prime: 0.5, distress_probability: 0.05 } };
+  const plain = _runAudit({ ...base, sector: 'Technology' }), oil = _runAudit({ ...base, sector: 'Energy' });
+  assert.ok(oil.riskScore < plain.riskScore); assert.ok(oil.note.includes('half weight')); assert.ok(!plain.note.includes('half weight'));
+});

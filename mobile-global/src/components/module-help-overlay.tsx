@@ -64,7 +64,7 @@ function guideFor(pathname: string, moduleKey?: string): Guide {
       title: 'Kiasha Global',
       purpose: 'Kiasha combines the independent scoring agents and the Evidence/Verification gate into a ranked research view for the active market.',
       steps: ['Run the selected-market scan.', 'Review only candidates that pass evidence checks.', 'Open a candidate to inspect every agent vote before using it in a portfolio.'],
-      checks: ['Fundamental', 'Risk', 'Forecast', 'Comparison', 'Quality', 'Liquidity', 'Evidence/Verification'],
+      checks: ['Fundamental', 'Market risk', 'Forecast', 'Comparison', 'Quality', 'Liquidity', 'Evidence/Verification'],
       caution: 'A strong aggregate score is not enough by itself. Evidence can block promotion to a BUY candidate.',
     };
   }

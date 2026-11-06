@@ -32,7 +32,7 @@ export const TIER_LABEL: Record<string, string> = {
 
 export const AGENT_LABEL: Record<string, string> = {
   fundamental: 'Fundamentals',
-  risk: 'Risk',
+  risk: 'Market risk',
   forecast: 'Price trend',
   comparison: 'Peer comparison',
   quality: 'Earnings quality',
@@ -79,3 +79,6 @@ export function investmentBadge(inv: GlobalInvestmentDecision | null | undefined
   const weak = inv.insufficientEvidence || Boolean(inv.notice) || (inv.flags || []).includes('insufficient_evidence');
   return { label: tierLabel(inv.tier), tier: inv.tier as string, notice: weak ? inv.notice || INSUFFICIENT_EVIDENCE : '' };
 }
+
+/** Shown under the two engines: which one is the recommendation. */
+export const ENGINES_LINE = 'Investment engine = main recommendation; conservative rule = reference only.';

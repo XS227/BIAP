@@ -33,7 +33,7 @@ export default function AuditAnalysisScreen() {
         const co = (a as unknown as { company?: { audit_opinion?: string | null; sector?: string | null; industry?: string | null } }).company;
         const input: AuditInput = {
           values: fe?.values ?? {}, reportPeriod: fe?.reportPeriod ?? null, source: fe?.sourceProvider ?? null,
-          auditOpinion: co?.audit_opinion ?? null, financialSector: isFinancialSector(fe?.financialSector, co?.sector, co?.industry), distress: (a as unknown as { distress?: AuditInput['distress'] }).distress ?? null,
+          auditOpinion: co?.audit_opinion ?? null, sector: co?.sector ?? null, industry: co?.industry ?? null, financialSector: isFinancialSector(fe?.financialSector, co?.sector, co?.industry), distress: (a as unknown as { distress?: AuditInput['distress'] }).distress ?? null,
         };
         if (active) setState({ title: `${a.name || c.name} (${a.ticker || c.ticker})`, report: runAudit(input) });
       } catch (e) {

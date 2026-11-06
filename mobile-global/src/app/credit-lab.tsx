@@ -212,36 +212,36 @@ export default function CreditLabScreen() {
             {companyError ? <View style={[styles.notice, { borderColor: Brand.negative }]}><Text style={[styles.body, { color: Brand.negative }]}>{companyError}</Text><Pressable onPress={() => void loadCompany()} style={[styles.action, { backgroundColor: Brand.primary }]}><Text style={styles.actionText}>Retry</Text></Pressable></View> : null}
 
             {!companyLoading && analysis ? <>
-              <Text style={[styles.section, { color: colors.text }]}>Corporate credit rating</Text>
+              <Text style={[styles.section, { color: colors.text }]}>Internal risk score (Agent 10)</Text>
               <View style={[styles.ratingCard, { backgroundColor: colors.backgroundElement, borderColor: credit?.indicated_rating_sp ? Brand.positive : Brand.warning }]}>
                 <Text style={[styles.agentLabel, { color: Brand.primary }]}>AGENT 10 · LEGAL ENTITY</Text>
                 {credit?.indicated_rating_sp ? <>
                   <View style={styles.ratingRow}>
-                    <View><Text style={[styles.ratingValue, { color: colors.text }]}>{credit.indicated_rating_sp}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>S&P equivalent</Text></View>
-                    <View><Text style={[styles.ratingValue, { color: colors.text }]}>{credit.indicated_rating_moodys || '—'}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Moody's grid</Text></View>
+                    <View><Text style={[styles.ratingValue, { color: colors.text }]}>{credit.indicated_rating_sp}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Internal risk band (illustrative)</Text></View>
+                    <View><Text style={[styles.ratingValue, { color: colors.text }]}>{credit.indicated_rating_moodys || '—'}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Alternative band scale (illustrative)</Text></View>
                   </View>
                   <View style={styles.ratingRow}>
-                    <View style={{ flex: 1 }}><Text style={[styles.metricValue, { color: colors.text }]}>{credit.pd_1y == null ? '—' : pct(credit.pd_1y, 2)}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>1-year historical PD mapping</Text></View>
+                    <View style={{ flex: 1 }}><Text style={[styles.metricValue, { color: colors.text }]}>{credit.pd_1y == null ? '—' : pct(credit.pd_1y, 2)}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>1-year PD (illustrative mapping)</Text></View>
                     <View style={{ flex: 1 }}><Text style={[styles.metricValue, { color: colors.text }]}>{credit.weight_coverage == null ? '—' : pct(credit.weight_coverage, 0)}</Text><Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Grid coverage</Text></View>
                   </View>
-                  <Text style={[styles.body, { color: credit.investment_grade ? Brand.positive : Brand.warning }]}>{credit.investment_grade ? 'Indicated investment-grade band' : 'Indicated non-investment-grade band'}</Text>
+                  <Text style={[styles.body, { color: credit.investment_grade ? Brand.positive : Brand.warning }]}>{credit.investment_grade ? 'Lower-risk internal band (illustrative)' : 'Higher-risk internal band (illustrative)'}</Text>
                 </> : <>
-                  <Text style={[styles.cardTitle, { color: Brand.warning }]}>Rating not produced yet</Text>
-                  <Text style={[styles.body, { color: colors.textSecondary }]}>{credit?.status || 'Agent 10 does not have enough verified company inputs to produce a rating.'}</Text>
+                  <Text style={[styles.cardTitle, { color: Brand.warning }]}>Risk score not produced yet</Text>
+                  <Text style={[styles.body, { color: colors.textSecondary }]}>{credit?.status || 'Agent 10 does not have enough verified company inputs to produce a risk score.'}</Text>
                   {credit?.weight_coverage != null ? <Text style={[styles.body, { color: colors.textSecondary }]}>Available grid coverage: {pct(credit.weight_coverage, 0)}</Text> : null}
                   {credit?.partial_view ? <View style={[styles.partialBox, { borderColor: Brand.warning }]}>
                     <Text style={[styles.cardTitle, { color: colors.text }]}>Partial factor view</Text>
                     <Text style={[styles.body, { color: colors.textSecondary }]}>
                       {credit.partial_view.factor_band_sp
-                        ? `${credit.partial_view.factor_band_sp} / ${credit.partial_view.factor_band_moodys || '—'} from scored factors only`
+                        ? `${credit.partial_view.factor_band_sp} / ${credit.partial_view.factor_band_moodys || '—'} from scored factors only (internal risk band, illustrative)`
                         : 'Too little factor coverage to map even a partial band.'}
                     </Text>
                     <Text style={[styles.body, { color: Brand.warning }]}>
-                      Coverage {pct(credit.partial_view.coverage, 0)} • provisional • not a credit rating • not used for BUY/SELL
+                      Coverage {pct(credit.partial_view.coverage, 0)} • provisional • not a rating • not used for BUY/SELL
                     </Text>
                   </View> : null}
                 </>}
-                <Text style={[styles.disclaimerInline, { color: colors.textSecondary }]}>Report-only synthetic credit scoring from canonical Agent 10. It is not an agency-issued rating and does not alter the stock decision. The investment Evidence gate is separate from this credit calculation.</Text>
+                <Text style={[styles.disclaimerInline, { color: colors.textSecondary }]}>Report-only internal risk score from canonical Agent 10 (illustrative bands). It is not an agency-issued rating and does not alter the stock decision. The investment Evidence gate is separate from this credit calculation.</Text>
               </View>
 
               <Text style={[styles.section, { color: colors.text }]}>Agent 9 cross-check</Text>

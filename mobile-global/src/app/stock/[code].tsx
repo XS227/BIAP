@@ -5,7 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { BottomTabInset, Brand, Colors, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { analyzeGlobalInstrument, GlobalAnalysis, GlobalAgentSignal, GlobalInstrument } from '@/lib/global-api';
 import { getGlobalMarketSelection } from '@/lib/global-market-selection';
-import { conservativeLine, DISCLAIMER, investmentBadge, reasonLine, tierLabel, tierTone } from '@/lib/decision-tier';
+import { conservativeLine, ENGINES_LINE, DISCLAIMER, investmentBadge, reasonLine, tierLabel, tierTone } from '@/lib/decision-tier';
 import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
 import { statementStatus } from '@/lib/statement-status';
 import { dataLimitationLines, fundamentalFreshnessLines, governanceReasonLines } from '@/lib/freshness-labels';
@@ -253,6 +253,7 @@ export default function GlobalStockDetailScreen() {
           <Text style={[styles.body, { color: colors.textSecondary }]}>{`Positive reasons: ${reasonLine(analysis.investment.positive)}`}</Text>
           <Text style={[styles.body, { color: colors.textSecondary }]}>{`Negative reasons: ${reasonLine(analysis.investment.negative)}`}</Text>
           <Text style={[styles.body, { color: colors.textSecondary, fontSize: 12, marginTop: 8 }]}>{conservativeLine(analysis.call)}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary, fontSize: 12, fontWeight: '700' }]}>{ENGINES_LINE}</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 8 }]}>{DISCLAIMER}</Text>
         </View> : null}
 
@@ -264,7 +265,7 @@ export default function GlobalStockDetailScreen() {
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{analysis.score == null ? 'Kiasha score unavailable.' : `Kiasha score ${n(analysis.score, 3)} (${analysis.score > 0 ? 'positive' : analysis.score < 0 ? 'negative' : 'neutral'}). `}{`Evidence ${analysis.evidence?.status || 'unavailable'} checks data quality, not whether the stock is a buy. Overall calibrated confidence ${analysis.confidence == null ? 'unavailable' : Math.round(analysis.confidence * 100) + '%'}; current decision: ${analysis.investment ? tierLabel(analysis.investment.tier) : friendly(analysis.call)}.`}</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{company?.pe != null && Number(company.pe) > 0 && company?.sector_pe != null && Number(company.sector_pe) > 0 ? `P/E ${n(company.pe)} versus peer benchmark ${n(company.sector_pe)} (${pct(dm.peVsSectorPct)} difference). This comparison alone is not a fair-value estimate.` : 'Peer-relative valuation: insufficient verified P/E and benchmark data.'}</Text>
           <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>Fair value / upside / downside: Insufficient Data — no verified valuation model estimate is available. Do not infer a price target from Kiasha score.</Text>
-          <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{distress?.status ? `Financial distress assessment: ${friendly(distress.status)}. See Agent 9 for model inputs and limitations.` : 'Financial distress: insufficient verified inputs. See Agent 9 for details.'}</Text>
+          <Text style={[styles.body, { color: colors.textSecondary, marginTop: 10 }]}>{distress?.status ? `Financial distress risk (Agent 9): ${friendly(distress.status)}. See Agent 9 for model inputs and limitations.` : 'Financial distress: insufficient verified inputs. See Agent 9 for details.'}</Text>
         </View>
 
         <View style={styles.metrics}><Metric label="Kiasha score" value={analysis.score == null ? '—' : n(analysis.score, 3)} colors={colors}/><Metric label="Overall calibrated" value={analysis.confidence == null ? '—' : `${Math.round(analysis.confidence * 100)}%`} colors={colors}/><Metric label="Evidence" value={analysis.evidence?.status || '—'} colors={colors}/></View>
@@ -303,22 +304,22 @@ export default function GlobalStockDetailScreen() {
         </View>
 
         <View style={[styles.agentCard, { backgroundColor: colors.backgroundElement, borderColor: distress?.status === 'HIGH_RISK' ? Brand.negative : distress?.status === 'ELEVATED_RISK' ? Brand.warning : distress?.status === 'LOW_RISK' ? Brand.positive : colors.backgroundSelected }]}>
-          <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>Agent 9 · Distress & Credit</Text><Text style={[styles.agentVote, { color: distress?.status === 'HIGH_RISK' ? Brand.negative : distress?.status === 'ELEVATED_RISK' ? Brand.warning : distress?.status === 'LOW_RISK' ? Brand.positive : colors.textSecondary }]}>{friendly(distress?.status)}</Text></View>
+          <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>Agent 9 · Financial distress risk</Text><Text style={[styles.agentVote, { color: distress?.status === 'HIGH_RISK' ? Brand.negative : distress?.status === 'ELEVATED_RISK' ? Brand.warning : distress?.status === 'LOW_RISK' ? Brand.positive : colors.textSecondary }]}>{friendly(distress?.status)}</Text></View>
           <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Zmijewski {distress?.distress_probability == null ? '—' : `${(distress.distress_probability * 100).toFixed(1)}%`} • Altman Z'' {distress?.altman_z_double_prime == null ? '—' : n(distress.altman_z_double_prime, 2)} • ICR {distress?.interest_coverage == null ? '—' : `${n(distress.interest_coverage, 2)}x`}</Text>
           <Text style={[styles.agentReason, { color: colors.textSecondary }]}>{distress?.reasoning || 'Insufficient verified inputs for distress models.'}</Text>
-          {distress?.synthetic_credit_band ? <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Credit band: {friendly(distress.synthetic_credit_band)}</Text> : null}
+          {distress?.synthetic_credit_band ? <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Internal risk band (illustrative): {friendly(distress.synthetic_credit_band)}</Text> : null}
           {distress?.positive_block ? <Text style={[styles.warning, { color: Brand.negative }]}>Positive-decision safety gate active.</Text> : null}
           {distress?.missing_inputs?.length ? <Text style={[styles.warning, { color: Brand.warning }]}>Not guessed: {distress.missing_inputs.join(', ')}</Text> : null}
         </View>
 
         <View style={[styles.agentCard, { backgroundColor: colors.backgroundElement, borderColor: credit?.indicated_rating_sp ? Brand.positive : credit?.status ? Brand.warning : colors.backgroundSelected }]}>
-          <Text style={[styles.agentName, { color: colors.text, flex: 0 }]}>Agent 10 · Corporate Credit Scoring</Text>
+          <Text style={[styles.agentName, { color: colors.text, flex: 0 }]}>Agent 10 · Internal risk band (illustrative)</Text>
           <Text style={[styles.agentVote, { color: credit?.indicated_rating_sp ? Brand.positive : Brand.warning, maxWidth: '100%', textAlign: 'left', marginTop: 6 }]}>{credit?.indicated_rating_sp || creditStatusLabel(credit?.status)}</Text>
           <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>
-            {credit?.indicated_rating_moodys ? `Moody's grid ${credit.indicated_rating_moodys} • S&P equivalent ${credit.indicated_rating_sp} • 1y PD ${credit.pd_1y == null ? '—' : (credit.pd_1y * 100).toFixed(2) + '%'}` : 'Canonical Agent 10 legal-entity grid'}
+            {credit?.indicated_rating_moodys ? `Internal risk band (illustrative) ${credit.indicated_rating_sp} • alternative scale ${credit.indicated_rating_moodys} • 1y PD (illustrative) ${credit.pd_1y == null ? '—' : (credit.pd_1y * 100).toFixed(2) + '%'}` : 'Internal risk band grid (illustrative)'}
           </Text>
           <Text style={[styles.agentReason, { color: colors.textSecondary }]}>
-            {credit?.weight_coverage == null ? (credit?.status || 'Credit-scoring inputs unavailable.') : `Grid coverage ${Math.round(credit.weight_coverage * 100)}% • ${credit.investment_grade == null ? 'rating not produced' : credit.investment_grade ? 'investment-grade indicated band' : 'non-investment-grade indicated band'}`}
+            {credit?.weight_coverage == null ? (credit?.status || 'Credit-scoring inputs unavailable.') : `Grid coverage ${Math.round(credit.weight_coverage * 100)}% • ${credit.investment_grade == null ? 'risk band not produced' : credit.investment_grade ? 'lower-risk internal band' : 'higher-risk internal band'}`}
           </Text>
           {credit?.factors ? Object.entries(credit.factors).map(([key, factor]) => <Text key={key} style={[styles.agentConfidence, { color: colors.textSecondary }]}>{friendly(key)}: {factor.value == null ? '—' : typeof factor.value === 'number' ? n(factor.value, 2) : String(factor.value)} • {factor.category || '—'}</Text>) : null}
           {credit?.factors_missing && Object.keys(credit.factors_missing).length ? <Text style={[styles.warning, { color: Brand.warning }]}>Not guessed: {Object.entries(credit.factors_missing).map(([key, why]) => `${friendly(key)} — ${why}`).join(' • ')}</Text> : null}
