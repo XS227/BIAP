@@ -361,7 +361,7 @@ def test_crm_module_without_data_is_an_empty_pipeline_not_fake_metrics(env):
 
 def test_private_modules_need_data_and_name_the_columns(env, monkeypatch):
     client, _ = env
-    for mod in ("business-kpi", "campaign", "pricing", "unit", "behavior", "journey", "voc", "plan", "governance"):
+    for mod in ("campaign", "pricing", "unit", "behavior", "journey", "voc", "plan", "governance"):
         r = post(client, "F00", mod)
         assert r["status"] == "needs_private_data" and r["missing"], mod
 
@@ -461,3 +461,14 @@ def test_exact_code_lookup_is_case_sensitive_and_arabic_spelling_breaks_space_ti
     assert client.get("/iran/modules/AB C/dataset").json()["identity"]["code"] == "AB C"
     assert client.get("/iran/modules/زغال سنگ كرمان/dataset").json()["identity"]["code"] == "S1"   # Arabic kaf, spaced spelling
     assert client.get("/iran/modules/زغالسنگ كرمان/dataset").json()["identity"]["code"] == "S2"
+
+
+import module_compute as mc  # noqa: E402
+
+
+def test_business_kpi_for_a_listed_symbol_without_upload_is_filled_from_codal(env):
+    client, _ = env
+    r = post(client, "F00", "business-kpi")
+    assert r["status"] in ("partial", "blocked") and r["module"] == "business-kpi" and r["company"]["symbol"]
+    if r["status"] == "partial":
+        assert r["missing"] == mc.CUSTOMER_METRICS
