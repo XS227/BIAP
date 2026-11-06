@@ -3,6 +3,7 @@ and the universe table; none of them knows a specific symbol. A module that cann
 status "blocked" with the exact missing inputs, never a placeholder number."""
 from __future__ import annotations
 
+import re
 import math
 from typing import Any, Optional
 
@@ -456,6 +457,27 @@ def _peers(ds: dict, universe: list[dict]) -> tuple[list[dict], str]:
     return (same, f"گروه {sector}") if len(same) >= MIN_PEERS else (rows, "شرکت‌های هم‌دسته")
 
 
+_SUB_SYMBOL = re.compile(r"[\d۰-۹]+$")
+
+
+def _distinct_companies(rows: list[dict], own_name: Optional[str]) -> list[dict]:
+    """Largest first, one row per company: sub-symbols (فخوز2/3, name3, ...) of the same company are collapsed and the company itself is excluded."""
+    seen = {str(own_name or "").strip()} - {""}
+    out: list[dict] = []
+    for r in sorted(rows, key=lambda r: -r["market_cap"]):
+        name = str(r.get("name") or "").strip()
+        base = _SUB_SYMBOL.sub("", str(r.get("symbol") or ""))
+        key = name or base
+        if key in seen or ("sym:" + base) in seen:
+            continue
+        seen.add(key); seen.add("sym:" + base)
+        out.append(r)
+    return out
+
+
+AUDIT_OPINION_FA = {"unqualified": "مقبول", "qualified": "مشروط", "adverse": "مردود", "disclaimer": "عدم اظهارنظر"}
+
+
 def swot(ds: dict, universe: list[dict]) -> dict:
     if not ds["fundamentals"].get("present"):
         return blocked("swot", ds, ["صورت مالی CODAL"], "SWOT بدون صورت مالی تأییدشده ساخته نمی‌شود.")
@@ -485,15 +507,16 @@ def swot(ds: dict, universe: list[dict]) -> dict:
     if cfo is not None and cfo < 0.5:
         T.append(f"جریان نقد عملیاتی کمتر از نیمی از سود است (نسبت {cfo:.2f})")
     opinion = ds["fundamentals"].get("auditOpinion")
-    if opinion in ("qualified", "adverse", "disclaimer"):
-        T.append(f"نظر حسابرس: {opinion}")
+    if opinion in AUDIT_OPINION_FA and opinion != "unqualified":
+        T.append(f"نظر حسابرس: {AUDIT_OPINION_FA[opinion]}")
     debt = ds["ratios"].get("debt_ratio", {}).get("value")
     if debt is not None and debt > 0.8:
         T.append(f"اهرم بالا: نسبت بدهی {debt:.2f}")
-    comp = sorted([r for r in peers if r.get("market_cap")], key=lambda r: -r["market_cap"])[:5]
-    comp_rows = [{"symbol": r["symbol"], "net_margin": fmt_ratio(r.get("net_margin")), "roe": fmt_ratio(r.get("roe")), "debt_ratio": fmt_ratio(r.get("debt_ratio")), "pe": fmt_ratio(r.get("pe"))} for r in comp]
+    comp = _distinct_companies([r for r in peers if r.get("market_cap")], ds["identity"].get("name"))[:5]
+    comp_rows = [{"name": r.get("name"), "symbol": r["symbol"], "pe": fmt_ratio(r.get("pe")), "debt_ratio": fmt_ratio(r.get("debt_ratio")),
+                  "roe": fmt_ratio(r.get("roe")), "net_margin": fmt_ratio(r.get("net_margin"))} for r in comp]
     blocks = [{"type": "swot", "strengths": S, "weaknesses": W, "opportunities": O, "threats": T},
-              {"type": "table", "title": f"بزرگ‌ترین رقبا بر اساس ارزش بازار ({scope})", "columns": ["symbol", "net_margin", "roe", "debt_ratio", "pe"], "rows": comp_rows}]
+              {"type": "table", "title": f"بزرگ‌ترین رقبا بر اساس ارزش بازار ({scope})", "columns": ["name", "symbol", "pe", "debt_ratio", "roe", "net_margin"], "rows": comp_rows}]
     return envelope("swot", ds, "ok" if (S or W or O or T) else "partial", "هر مورد SWOT از مقایسه‌ی عددی با شرکت‌های هم‌گروه می‌آید؛ متن توصیفی بدون شاهد تولید نمی‌شود.", blocks,
                     note="فرصت‌ها و تهدیدهای برون‌سازمانی (مقررات، رقابت‌های خاص) از داده‌ی عمومی استخراج‌شدنی نیستند.")
 

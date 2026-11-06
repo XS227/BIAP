@@ -335,3 +335,52 @@ def test_same_day_without_timestamps_uses_last_history_row():
             {"observed_date": "2026-11-05", "price": 3600}]
     ds = md.build_company_dataset(_empty_quote_item(), hist, now_iso="2026-11-06T01:00:00+00:00")
     assert ds["market"]["price"] == 3600
+
+
+def test_swot_threat_shows_audit_opinion_in_persian_not_english():
+    for op, fa in (("qualified", "مشروط"), ("adverse", "مردود"), ("disclaimer", "عدم اظهارنظر")):
+        ds = md.build_company_dataset(_item("W" + op, _codal(0)))
+        ds["fundamentals"]["auditOpinion"] = op
+        threats = next(b for b in mc.swot(ds, _universe())["blocks"] if b["type"] == "swot")["threats"]
+        text = " ".join(threats)
+        assert f"نظر حسابرس: {fa}" in text and op not in text
+    ds = md.build_company_dataset(_item("Wok", _codal(0))); ds["fundamentals"]["auditOpinion"] = "unqualified"
+    assert "نظر حسابرس" not in " ".join(next(b for b in mc.swot(ds, _universe())["blocks"] if b["type"] == "swot")["threats"])
+
+
+def test_swot_competitors_show_names_and_collapse_sub_symbols():
+    uni = _universe()
+    own = md.build_company_dataset(_item("OWN", _codal(0)))
+    for code, sym, nm, cap in (("a", "فخوز", "فولاد خوزستان", 9.0), ("b", "فخوز2", "فولاد خوزستان", 8.0), ("c", "فخوز3", "فولاد خوزستان", 7.0),
+                               ("d", "مبین", "مبین انرژی", 6.0), ("e", "مبین3", "مبین انرژی", 5.0)):
+        uni.append({**uni[0], "code": code, "symbol": sym, "name": nm, "market_cap": cap, "is_primary": 1, "category": uni[0].get("category")})
+    rows = next(b for b in mc.swot(own, uni)["blocks"] if b["type"] == "table")["rows"]
+    names = [r["name"] for r in rows if r["name"] in ("فولاد خوزستان", "مبین انرژی")]
+    assert names.count("فولاد خوزستان") == 1 and names.count("مبین انرژی") == 1
+    assert set(rows[0]) == {"name", "symbol", "pe", "debt_ratio", "roe", "net_margin"}
+
+
+# ---- audit opinion details ---------------------------------------------------------------------
+
+_AUDIT_TEXT = ("گزارش حسابرس مستقل صورت‌های مالی تلفیقی اظهارنظر مشروط به نظر این مؤسسه به استثنای آثار مورد مندرج در بند مبنای اظهارنظر مشروط "
+               "صورت‌های مالی وضعیت مالی گروه را به نحو منصفانه نشان می‌دهد مبنای اظهارنظر مشروط حسابرسی ما طبق استانداردهای حسابرسی انجام شده است "
+               "در حساب‌های دریافتنی مبلغ ۱۲۰ میلیارد ریال وصول‌نشده است و ذخیره‌ای شناسایی نشده است مسئولیت هیئت مدیره در قبال صورت‌های مالی "
+               "مؤسسه حسابرسی آزمون پرداز ایران مشهود تاریخ ۱۴۰۵/۰۲/۱۰ شریک مسئول")
+
+
+def test_audit_basis_and_auditor_firm_are_extracted_verbatim_or_not_at_all():
+    from audit_parser import extract_audit_basis, extract_auditor_name
+    basis = extract_audit_basis(_AUDIT_TEXT)
+    assert basis and basis.startswith("حسابرسی ما طبق استانداردهای") and "۱۲۰ میلیارد ریال" in basis and "مسئولیت هیئت مدیره" not in basis
+    assert extract_auditor_name(_AUDIT_TEXT) == "مؤسسه حسابرسی آزمون پرداز ایران مشهود"
+    assert extract_audit_basis("متن بدون بخش مبنا") is None and extract_auditor_name("متن بدون نام") is None
+
+
+def test_unaudited_statement_never_carries_an_auditor_opinion():
+    unaudited = _codal(0, report_title="صورت‌های مالی تلفیقی سال مالی منتهی به ۱۴۰۴/۱۲/۲۹ (حسابرسی نشده)", audit_opinion="qualified")
+    f = md.build_company_dataset(_item("U1", unaudited))["fundamentals"]
+    assert f["auditStatus"] == "unaudited" and f["auditOpinion"] is None
+    audited = md.build_company_dataset(_item("U2", _codal(0, report_title="صورت‌های مالی سال مالی منتهی به ۱۴۰۴/۱۲/۲۹ (حسابرسی شده)", audit_opinion="qualified",
+                                                     auditor_name="موسسه حسابرسی الف", audit_basis="متن مبنا")))["fundamentals"]
+    assert audited["auditStatus"] == "audited" and audited["auditOpinion"] == "qualified" and audited["auditorName"] == "موسسه حسابرسی الف" and audited["auditBasis"] == "متن مبنا"
+    assert md.is_unaudited_title("صورت‌های مالی (حسابرسي نشده)") is True
