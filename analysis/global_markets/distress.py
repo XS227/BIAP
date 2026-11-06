@@ -73,6 +73,15 @@ _CAPITAL_INTENSIVE_TOKENS = (
 )
 
 
+def zmijewski_band(p: float) -> str:
+    """One band wording for Agent 9 and the Audit screen: <20% unlikely, 20-50% watch band, >=50% likely."""
+    if p >= 0.5:
+        return "distress-likely"
+    if p >= 0.2:
+        return "watch band (20-50%)"
+    return "distress-unlikely"
+
+
 def is_capital_intensive(company: GlobalCompany) -> bool:
     """Oil & gas, utilities and shipping carry structurally high liabilities and low working capital."""
     sector = (company.sector or "").strip().lower()
@@ -138,7 +147,7 @@ def distress_agent(company: GlobalCompany, capital_intensive_guard: Optional[boo
         available_models.append("zmijewski")
         reasons.append(
             f"Zmijewski P(distress)={distress_probability:.3f} "
-            f"({'distress-likely' if distress_probability >= 0.5 else 'distress-unlikely'})"
+            f"({zmijewski_band(distress_probability)})"
         )
     else:
         for field_name, value in (

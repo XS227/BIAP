@@ -89,3 +89,10 @@
 
 ## 2026-11-03 (owner: four items from the Global 0.3.24 phone test, plan only)
 - Added four items to Phase 6 of BIAP_FIX_PLAN.md: Beneish missing-field list, one Zmijewski label (48.8 % is not "distress-unlikely"), lower Altman Z'' weight in the Audit risk score for capital-intensive sectors (P1.8 list), Agent 10 wording ("internal risk band (illustrative)", "risk score"). v2 after 19 Nov 2026; nothing changed in code and nothing applied to production.
+
+## 2026-11-06 (owner: prepare everything for the 20 Nov deploy; branches + staging only)
+- Staging review of the 10 markets (v2, data copy of 2026-11-05/06 ledgers, nothing written to production): `docs/reports/BIAP-Global-v2-staging-review-20261106.xlsx` (script: `docs/reports/global_v2_staging_review.py`). Per-market tables, 30 sample stocks, findings, vendor comparison, deploy checklist with rollback.
+- Fixed on this v2 branch (labels/wording only, no gate or threshold changed, so no OSF protocol deviation): Agent 9 Zmijewski band wording from one function (`distress.zmijewski_band`), Agent 10 text without agency names, Risk agent label «Market risk».
+- Fixed on `feat/mobile-global-20261103` (commit 5619f0b, app 0.3.24 lineage): Beneish lists only truly missing fields, one Zmijewski band, Altman Z'' half weight in the Audit risk score for capital-intensive sectors, Agent 9/10 relabel, engines line. The Audit risk score is a screen heuristic, not a decision gate.
+- Finding, not changed (owner decision, would be a protocol deviation): Agent 9 computes Zmijewski with a LOGISTIC link; the 1984 model is PROBIT.
+- Finding: the v2 app lineage and the 0.3.24 app lineage differ (conflicts in package.json and stock/[code].tsx); an integration branch is needed before the APK build. Production checkout is on main 6c8ada1 with an uncommitted change in benchmark_refresh.py (not touched).

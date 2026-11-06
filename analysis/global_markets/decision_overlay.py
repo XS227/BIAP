@@ -29,7 +29,7 @@ TIER_LABEL = {
 }
 AGENT_LABEL = {
     "fundamental": "Fundamentals",
-    "risk": "Risk",
+    "risk": "Market risk",
     "forecast": "Price trend",
     "comparison": "Peer comparison",
     "quality": "Earnings quality",
