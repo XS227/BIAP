@@ -48,7 +48,7 @@ jobs:
           python3 -m compileall -q research/paper_portfolio_diagnostics.py
           python3 -m unittest discover -s research/tests -p 'test_paper_portfolio_diagnostics.py' -v
       - name: Install Yahoo Finance metadata reader
-        if: github.event_name == 'workflow_dispatch' && inputs.metadata_mode == 'live'
+        if: github.event_name == 'push' || inputs.metadata_mode == 'live'
         run: python3 -m pip install --disable-pip-version-check 'yfinance>=0.2.55,<1'
       - name: Download preliminary-run reference summary (for drift audit)
         continue-on-error: true
@@ -64,8 +64,8 @@ jobs:
         shell: bash
         env:
           OUT: ${{ runner.temp }}/biap-diagnostics
-          # First push validates without live metadata; manual runs default to live.
-          META: ${{ github.event_name == 'push' && 'none' || inputs.metadata_mode }}
+          # Branch validation now checks best-effort live sector and cap coverage; manual default is live.
+          META: ${{ github.event_name == 'push' && 'live' || inputs.metadata_mode }}
         run: |
           set -euo pipefail
           python3 research/paper_portfolio_diagnostics.py \
