@@ -7,7 +7,7 @@ on:
       as_of:
         description: 'Latest allowed exit date (historical closes only)'
         required: true
-        default: '2026-11-19'
+        default: '2026-11-18'
         type: string
 
 permissions:
@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sha256sum -c research/paper_portfolio_2026-10-20.json.sha256
+          (cd research && sha256sum -c paper_portfolio_2026-10-20.json.sha256)
           python3 - <<'PY'
           import json
           from pathlib import Path
