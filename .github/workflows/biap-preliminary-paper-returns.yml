@@ -2,6 +2,10 @@ name: BIAP frozen portfolio – preliminary 1-month returns
 
 # Research-only, no server access, deployment, restart, or source-snapshot edits.
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/biap-preliminary-paper-returns.yml'
   workflow_dispatch:
     inputs:
       as_of:
@@ -37,7 +41,7 @@ jobs:
       - name: Compute priced subset and list unresolved prices
         shell: bash
         env:
-          AS_OF: ${{ inputs.as_of }}
+          AS_OF: ${{ inputs.as_of || '2026-11-18' }}
           PYTHONUNBUFFERED: '1'
         run: |
           set -euo pipefail
@@ -90,7 +94,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: biap-preliminary-oct20-returns-${{ inputs.as_of }}
+          name: biap-preliminary-oct20-returns-${{ inputs.as_of || '2026-11-18' }}
           path: /tmp/biap-returns/
           if-no-files-found: warn
           retention-days: 14
