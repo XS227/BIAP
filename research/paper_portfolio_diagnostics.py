@@ -224,8 +224,8 @@ def main():
     path = Path(args.snapshot)
     snap, digest, rows, has_isins = load_frozen(path)
     entry_date, end = date.fromisoformat(snap["snapshotDate"]), date.fromisoformat(args.end)
-    if end != date(2026, 11, 18):
-        raise SystemExit("This diagnostic run is pinned to 2026-11-18 to match preliminary returns.")
+    if end not in {date(2026, 11, 18), date(2026, 11, 19)}:
+        raise SystemExit("Diagnostics permit only 2026-11-18 and 2026-11-19. Do not mix with the 20-Nov final.")
     history_start = three_months_before(entry_date)
     markets = [k for k, v in snap["markets"].items() if isinstance(v, dict) and "benchmark" in v]
     if not has_isins:
@@ -414,7 +414,7 @@ def main():
     notes = [
         "# BIAP paper-portfolio diagnostics (research-only)",
         f"Frozen source: {path}, SHA256 {digest}. No source mutation, server, deployment or release.",
-        f"Snapshot 2026-10-20; latest allowed exit close 2026-11-18. Yahoo chart prices/dividends and ISIN-map rules match preliminary returns.",
+        f"Snapshot 2026-10-20; latest allowed exit close {end.isoformat()}. Yahoo chart prices/dividends and ISIN-map rules match preliminary returns.",
         "Per-stock total return = (exit close + cash dividends after entry) / entry close - 1; latest close <= end.",
         "Median per side; symmetric trimmed mean drops floor(5% × n) from EACH tail within that market and side.",
         "ALL_HOLDINGS_POOL pools priced, ISIN-deduplicated holdings; ALL_MARKETS_EQUAL_WEIGHT averages 12 market-level estimates.",
