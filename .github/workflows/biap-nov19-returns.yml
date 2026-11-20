@@ -1,12 +1,8 @@
 name: BIAP - complete Nov 19 market close research
 
-# Research-only isolated branch. Temporary push validates one run; final workflow
-# retains workflow_dispatch only. No deploy, server access or snapshot mutation.
+# Research-only isolated branch. Manual-only workflow; no deploy, no server,
+# no edits to the frozen snapshot or production branch.
 on:
-  push:
-    branches: [research/paper-portfolio-diagnostics-20261119]
-    paths:
-      - '.github/workflows/biap-nov19-returns.yml'
   workflow_dispatch:
 
 permissions:
