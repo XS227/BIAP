@@ -1,0 +1,31 @@
+name: BIAP Global mobile validation
+
+on:
+  pull_request:
+    paths:
+      - 'mobile-global/**'
+      - '.github/workflows/biap-global-mobile-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: mobile-global
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobile-global/package-lock.json
+      - run: npm ci
+      - name: Test global client helpers
+        run: npm run test:api
+      - name: TypeScript compile check
+        run: npx tsc --noEmit

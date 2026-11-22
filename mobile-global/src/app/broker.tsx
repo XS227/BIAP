@@ -63,6 +63,10 @@ export default function BrokerHandoffScreen() {
                 <Text style={[styles.body, { color: colors.textSecondary }]}>{target.ticker} • {target.country}{target.isin ? ` • ${target.isin}` : ''}</Text>
                 <Text style={[styles.body, { color: colors.textSecondary }]}>Search this ticker or ISIN on the broker’s platform; BIAP does not pre-fill it.</Text>
               </View>
+              {supported ? <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/orders', params: { country: target.country || '', ticker: target.ticker || '' } } as never)} style={[styles.broker, { borderWidth: 1, borderColor: Brand.primary, backgroundColor: colors.backgroundElement }]}>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>Prepare a BIAP paper order</Text>
+                <Text style={[styles.body, { color: colors.textSecondary }]}>Pre-fill the ticker for an indicative, unsent research draft. No account or order is sent to a broker.</Text>
+              </Pressable> : null}
               {!supported ? (
                 <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}><Text style={[styles.body, { color: Brand.warning, marginTop: 0 }]}>{unsupportedGlobalInstrumentMessage({ ticker: target.ticker || '', name: target.name || '' })}</Text></View>
               ) : brokers.length === 0 ? (
