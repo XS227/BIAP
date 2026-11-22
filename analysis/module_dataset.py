@@ -442,6 +442,27 @@ def instrument_kind(symbol: Any, name: Any, category: Optional[str] = None) -> s
     return "stock"
 
 
+def _apply_sector_map(rows: list[dict]) -> None:
+    """TSETMC sector / paper type per InsCode (``sector_backfill``): fills a missing sector and, from the paper type, tells ETFs/funds, rights,
+    options and bonds from ordinary shares (more reliable than the name). Non-shares are not primaries of the stock universe."""
+    try:
+        import market_memory
+        from sector_backfill import kind_from_paper_type
+        smap = market_memory.sector_map()
+    except Exception:
+        return
+    for r in rows:
+        info = smap.get(str(r.get("code")))
+        if not info:
+            continue
+        if not r.get("sector"):
+            r["sector"] = info.get("sectorName")
+        r["sector_code"], r["paper_type"] = info.get("sectorCode"), info.get("paperType")
+        kind = kind_from_paper_type(info.get("paperType"))
+        if kind and kind != "stock" and r.get("instrument_kind") == "stock":
+            r["instrument_kind"], r["is_primary"] = kind, 0
+
+
 def collapse_sub_symbols(rows: list[dict]) -> None:
     """One row per company: numbered sub-symbols of the same company (فخوز2 / فخوز3 under فخوز) get ``is_primary=0`` and
     ``sub_of=<main code>``. The main one is the symbol without a trailing number, else the best-covered instrument."""
@@ -534,6 +555,7 @@ class UniverseCache:
                     row["aliases"] = sorted(k for k in keys if k)
                     row["name_key"] = symbol_key(row["name"])
                     row["instrument_kind"] = instrument_kind(row.get("symbol"), row.get("name"), row.get("category"))
+                _apply_sector_map(built)
                 collapse_sub_symbols(built)
             finally:
                 conn.close()
