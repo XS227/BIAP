@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "horizons_months": [1, 3, 6, 12],
+  "min_priced_per_side": 10,
+  "bootstrap_resamples": 10000,
+  "bootstrap_seed": 20261125,
+  "confidence_level": 0.95,
+  "cohorts": ["v1-20261020"]
+}

@@ -13,7 +13,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from global_markets import decision_logic, decision_overlay
+from global_markets import decision_accuracy, decision_logic, decision_overlay
 from global_markets.broker_catalog import broker_readiness
 from global_markets.country_packs import country_catalog, get_exchange
 from global_markets.credit_scoring import score_individual_credit
@@ -393,6 +393,7 @@ def global_status():
     return {
         "mode": "research-paper-first",
         "liveTrading": False,
+        "decisionAccuracyEnabled": decision_accuracy.enabled(),
         "liveBrokerConnected": False,
         "liveTradingSwitchRequested": live_switch_requested,
         "marketProviderConfigured": market_configured,
@@ -630,6 +631,31 @@ def global_analyze(req: InstrumentRequest):
         raise
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+
+
+@router.get("/accuracy/summary")
+def global_accuracy_summary(horizon: int = 1, cohort: str = "v1-20261020", market: Optional[str] = None):
+    """Decision Accuracy Agent (flag ``DECISION_ACCURACY_AGENT_ENABLED``, default off -> 404): realised BUY/SELL results vs benchmark."""
+    if not decision_accuracy.enabled():
+        raise HTTPException(status_code=404, detail="decision accuracy agent disabled")
+    cfg = decision_accuracy.load_config()
+    if horizon not in cfg["horizons_months"] or cohort not in cfg["cohorts"]:
+        raise HTTPException(status_code=422, detail=f"horizon must be one of {cfg['horizons_months']} and cohort one of {cfg['cohorts']}")
+    try:
+        return {"agent": "decision_accuracy", "version": decision_accuracy.VERSION, "advisoryOnly": True,
+                **decision_accuracy.summarize(decision_accuracy.load_cohort(cohort), horizon, market=market, config=cfg)}
+    except (OSError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail=str(exc)[:300]) from exc
+
+
+@router.get("/accuracy/stock")
+def global_accuracy_stock(country: str, exchange: str, ticker: str):
+    if not decision_accuracy.enabled():
+        raise HTTPException(status_code=404, detail="decision accuracy agent disabled")
+    try:
+        return decision_accuracy.stock_record(decision_accuracy.load_all(), country, exchange, ticker)
+    except (OSError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail=str(exc)[:300]) from exc
 
 
 @router.post("/credit/individual")
