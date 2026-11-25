@@ -1,0 +1,50 @@
+﻿market,side,ticker,vendorSymbol,reason
+US:NASDAQ,SELL,LNAI,LNAI,no_exit_price: no close after entry
+US:NYSE,BUY,RAMP,RAMP,no_exit_price: no close after entry
+SE:NASDAQ_STOCKHOLM,SELL,BONAV.A,,no_entry_price
+SE:NASDAQ_STOCKHOLM,SELL,VPLAY.A,,no_entry_price
+DE:XETRA,SELL,ERW,ERW.DE,no_exit_price: no close after entry
+DE:FRANKFURT,BUY,1GBS,1GBS.F,duplicate_isin_side
+DE:FRANKFURT,BUY,KA8,KA8.F,duplicate_isin_side
+DE:FRANKFURT,BUY,SVE,SVE.F,duplicate_isin_side
+DE:FRANKFURT,BUY,SHF,SHF.F,duplicate_isin_side
+DE:FRANKFURT,BUY,IXX,IXX.F,duplicate_isin_side
+DE:FRANKFURT,BUY,AAG,AAG.F,duplicate_isin_side
+DE:FRANKFURT,BUY,PFS0,PFS0.F,no_exit_price: no close after entry
+DE:FRANKFURT,BUY,EUZ,EUZ.F,duplicate_isin_side
+DE:FRANKFURT,BUY,EVAC,EVAC.F,duplicate_isin_side
+DE:FRANKFURT,BUY,M12,M12.F,duplicate_isin_side
+DE:FRANKFURT,BUY,TIMA,TIMA.F,duplicate_isin_side
+DE:FRANKFURT,BUY,IVU,IVU.F,duplicate_isin_side
+DE:FRANKFURT,BUY,DLX,DLX.F,duplicate_isin_side
+DE:FRANKFURT,BUY,BOG,BOG.F,duplicate_isin_side
+DE:FRANKFURT,BUY,DRW8,DRW8.F,duplicate_isin_side
+DE:FRANKFURT,BUY,DRW3,DRW3.F,duplicate_isin_side
+DE:FRANKFURT,BUY,KRN,KRN.F,duplicate_isin_side
+DE:FRANKFURT,SELL,SYZ,SYZ.F,duplicate_isin_side
+DE:FRANKFURT,SELL,KTA,KTA.F,duplicate_isin_side
+DE:FRANKFURT,SELL,MAK,MAK.F,duplicate_isin_side
+DE:FRANKFURT,SELL,BIG,BIG.F,duplicate_isin_side
+DE:FRANKFURT,SELL,AMM,AMM.F,duplicate_isin_side
+DE:FRANKFURT,SELL,YOC,YOC.F,duplicate_isin_side
+DE:FRANKFURT,SELL,HGEA,HGEA.F,duplicate_isin_side
+DE:FRANKFURT,SELL,TGTA,TGTA.F,duplicate_isin_side
+DE:FRANKFURT,SELL,V3V,V3V.F,duplicate_isin_side
+DE:FRANKFURT,SELL,SNG,SNG.F,duplicate_isin_side
+DE:FRANKFURT,SELL,EVT,EVT.F,duplicate_isin_side
+DE:FRANKFURT,SELL,AMI,AMI.F,duplicate_isin_side
+DE:FRANKFURT,SELL,KSC,KSC.F,duplicate_isin_side
+DE:FRANKFURT,SELL,BKHT,BKHT.F,duplicate_isin_side
+DE:FRANKFURT,SELL,H2O,H2O.F,duplicate_isin_side
+DE:FRANKFURT,SELL,LXS,LXS.F,duplicate_isin_side
+DE:FRANKFURT,SELL,TUF,TUF.F,duplicate_isin_side
+DE:FRANKFURT,SELL,NC5A,NC5A.F,duplicate_isin_side
+DE:FRANKFURT,SELL,AAD,AAD.F,duplicate_isin_side
+DE:FRANKFURT,SELL,CEA,CEA.F,duplicate_isin_side
+DE:FRANKFURT,SELL,BNN,BNN.F,duplicate_isin_side
+DE:FRANKFURT,SELL,IS7,IS7.F,duplicate_isin_side
+DE:FRANKFURT,SELL,TIW,TIW.F,duplicate_isin_side
+DE:FRANKFURT,SELL,SZG,SZG.F,duplicate_isin_side
+DE:FRANKFURT,SELL,N4G0,N4G0.F,duplicate_isin_side
+DE:FRANKFURT,SELL,DMRE,DMRE.F,duplicate_isin_side
+DE:FRANKFURT,SELL,IUR,IUR.F,duplicate_isin_side

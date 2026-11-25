@@ -130,6 +130,11 @@ _CONCEPTS = {
     "current_other_loans": ("ifrs-full:CurrentLoansReceivedAndCurrentPortionOfNoncurrentLoansReceived",),
     "noncurrent_other_loans": ("ifrs-full:NoncurrentPortionOfNoncurrentLoansReceived",),
     "interest_expense": ("ifrs-full:FinanceCosts", "ifrs-full:InterestExpense"),
+    # IFRS 16 lease items (Risk Agent: debt incl. leases, lease interest). Extra keys only; no existing key changes.
+    "lease_liabilities_total": ("ifrs-full:LeaseLiabilities",),
+    "current_lease_liabilities": ("ifrs-full:CurrentLeaseLiabilities",),
+    "noncurrent_lease_liabilities": ("ifrs-full:NoncurrentLeaseLiabilities",),
+    "lease_interest": ("ifrs-full:InterestExpenseOnLeaseLiabilities",),
     # Used only to detect gross-up: issuers such as Eni tag derivative/FX
     # gross flows in FinanceCosts that are offset by a similar FinanceIncome.
     "interest_expense_only": ("ifrs-full:InterestExpense",),
@@ -346,6 +351,11 @@ def _unit_currency(raw: Any) -> Optional[str]:
     return match.group(1).upper() if match else None
 
 
+def _risk_agent_on() -> bool:
+    import os
+    return os.environ.get("RISK_AGENT_ENABLED", "0").strip().lower() in ("1", "true", "yes", "on")
+
+
 class ESEFFundamentalsProvider(FundamentalsProvider):
     provider_id = "esef-xbrl"
 
@@ -442,6 +452,30 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             if (exact or extension) and cls._plain_fact(fact) and _num(fact.get("value")) is not None:
                 result.append(fact)
         return result
+
+    @classmethod
+    def _lease_liabilities(cls, concept_facts: dict, period_end: date) -> Optional[float]:
+        """IFRS 16 lease liabilities: the tagged total, else current + non-current (both parts required)."""
+        total = cls._instant_value(concept_facts["lease_liabilities_total"], period_end)
+        if total is not None:
+            return total
+        cur = cls._instant_value(concept_facts["current_lease_liabilities"], period_end)
+        non = cls._instant_value(concept_facts["noncurrent_lease_liabilities"], period_end)
+        return cur + non if cur is not None and non is not None else None
+
+    @classmethod
+    def _lease_fields(cls, concept_facts: dict, period_end: date) -> dict:
+        return {"lease_liabilities": cls._lease_liabilities(concept_facts, period_end),
+                "lease_interest_expense": cls._duration_value(concept_facts["lease_interest"], period_end),
+                "interest_expense_basis": cls._interest_expense_basis(concept_facts, period_end)}
+
+    @classmethod
+    def _interest_expense_basis(cls, concept_facts: dict, period_end: date) -> Optional[str]:
+        if cls._duration_value(concept_facts.get("interest_expense_only", []), period_end) is not None:
+            return "InterestExpense"
+        if cls._duration_value(concept_facts.get("finance_costs_only", []), period_end) is not None:
+            return "FinanceCosts"
+        return "other" if cls._duration_value(concept_facts["interest_expense"], period_end) is not None else None
 
     @classmethod
     def _interest_expense(cls, concept_facts: dict, period_end: date) -> Optional[float]:
@@ -1171,6 +1205,8 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             "free_cash_flow": fcf,
             "total_debt": debt,
             "interest_expense": self._interest_expense(concept_facts, period_end),
+            # IFRS 16 keys only while the Risk Agent flag is on: with it off the output is byte-identical to before this change.
+            **(self._lease_fields(concept_facts, period_end) if _risk_agent_on() else {}),
             "eps": eps,
             # absent key (not None) when the filing carries no plain share count,
             # so an existing provider value is never overwritten with a gap
