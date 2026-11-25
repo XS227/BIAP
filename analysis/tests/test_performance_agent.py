@@ -129,3 +129,74 @@ def test_pure_and_never_referenced_by_decision_logic():
     assert c == before
     import global_markets.decision_logic as dl
     assert "performance_agent" not in inspect.getsource(dl)
+
+
+# --- sector-relative scoring ------------------------------------------------------------------------------------------------------
+def _peers(tmp_path, monkeypatch, *, roa, n_market=30, n_sector=60, sector="industrials"):
+    """Peer file with evenly spread values; returns config pointing at it."""
+    def arr(n, lo, hi):
+        return [lo + (hi - lo) * i / (n - 1) for i in range(n)]
+    cell = {"n": n_market, "roa": arr(n_market, *roa), "roe": arr(n_market, 0.0, 0.2), "operating_margin": arr(n_market, 0.0, 0.2),
+            "cfo_to_net_income": arr(n_market, 0.2, 1.4), "accrual_ratio": arr(n_market, -0.05, 0.1)}
+    sec = {k: (v if k == "n" else arr(n_sector, v[0], v[-1])) for k, v in cell.items()}
+    sec["n"] = n_sector
+    f = tmp_path / "peers.json"
+    f.write_text(json.dumps({"schema": 1, "sector": {sector.title(): sec}, "sectorMarket": {f"{sector.title()}|DE:XETRA": cell}}))
+    cfg = pa.load_config()
+    cfg["relative"]["peer_file"] = str(f)
+    pa._PEER_CACHE.clear()
+    return cfg
+
+
+def test_percentile_midrank():
+    assert pa.percentile([1, 2, 3, 4], 2.5) == 0.5
+    assert pa.percentile([1, 2, 2, 3], 2) == pytest.approx(0.5)
+    assert pa.percentile([], 1) is None
+
+
+def test_strong_min_points_is_four_in_config():
+    assert pa.load_config()["levels"]["strong_min_points"] == 4
+
+
+def test_relative_level_high_vs_low_peers_same_company(tmp_path, monkeypatch):
+    c = company()                                                                       # ROA 8%
+    low_peer_cfg = _peers(tmp_path, monkeypatch, roa=(-0.02, 0.06))
+    r = pa.assess(c, config=low_peer_cfg)
+    assert r["absoluteLevel"] == "STRONG" and r["relative"]["status"] == "OK" and r["relative"]["scope"] == "sector+market"
+    roa_row = [x for x in r["relative"]["metrics"] if x["id"] == "roa"][0]
+    assert roa_row["percentile"] == 1.0 and roa_row["scope"] == "sector+market"
+    high_peer_cfg = _peers(tmp_path, monkeypatch, roa=(0.06, 0.30))
+    r2 = pa.assess(c, config=high_peer_cfg)
+    assert r2["absoluteLevel"] == "STRONG"                                              # absolute level does not move with peers
+    assert [x for x in r2["relative"]["metrics"] if x["id"] == "roa"][0]["percentile"] <= 0.1
+
+
+def test_relative_falls_back_to_sector_then_none(tmp_path, monkeypatch):
+    cfg = _peers(tmp_path, monkeypatch, roa=(0.0, 0.1), n_market=5)                     # market cell too small, sector big enough
+    r = pa.assess(company(), config=cfg)["relative"]
+    assert r["status"] == "OK" and r["scope"] == "sector"
+    cfg = _peers(tmp_path, monkeypatch, roa=(0.0, 0.1), n_market=5, n_sector=10)
+    r = pa.assess(company(), config=cfg)["relative"]
+    assert r["status"] == "INSUFFICIENT_PEERS" and r["level"] is None
+
+
+def test_relative_unknown_sector_and_missing_file(tmp_path, monkeypatch):
+    cfg = _peers(tmp_path, monkeypatch, roa=(0.0, 0.1))
+    assert pa.assess(company(sector=None), config=cfg)["relative"]["status"] == "NO_SECTOR"
+    cfg["relative"]["peer_file"] = str(tmp_path / "missing.json")
+    pa._PEER_CACHE.clear()
+    assert pa.assess(company(), config=cfg)["relative"]["status"] == "NO_PEER_REFERENCE"
+
+
+def test_relative_deteriorating_uses_same_trend_rule(tmp_path, monkeypatch):
+    cfg = _peers(tmp_path, monkeypatch, roa=(0.0, 0.1))
+    r = pa.assess(company(revenue_yoy_pct=-8.0, net_margin_prev_pct=12.0), config=cfg)
+    assert r["absoluteLevel"] == "DETERIORATING" and r["relative"]["level"] == "DETERIORATING"
+
+
+def test_packaged_peer_file_loads_and_is_consistent():
+    cfg = pa.load_config()
+    peers = pa.load_peers(cfg)
+    assert peers and peers["schema"] == 1 and peers["sector"]
+    for cell in list(peers["sector"].values())[:3]:
+        assert cell["roa"] == sorted(cell["roa"])

@@ -7,6 +7,7 @@ Plan: docs/agents/performance_agent_plan.md. Flag ``PERFORMANCE_AGENT_ENABLED`` 
 """
 from __future__ import annotations
 
+import bisect
 import json
 import math
 import os
@@ -23,7 +24,8 @@ CONFIG_PATH = Path(__file__).resolve().parent / "data" / "performance_agent_conf
 CONFIG_ENV = "PERFORMANCE_AGENT_CONFIG"
 _SECTIONS = {"points": ("roa_strong", "roa_ok", "roe_good", "cfo_to_ni_good", "cfo_to_ni_weak", "accrual_high"),
              "trend": ("revenue_decline_pct", "net_margin_drop_pp", "net_income_drop_pct"),
-             "levels": ("strong_min_points", "stable_min_points", "deteriorating_min_trend_signals", "min_scoring_metrics")}
+             "levels": ("strong_min_points", "stable_min_points", "deteriorating_min_trend_signals", "min_scoring_metrics"),
+             "relative": ("min_peers_market", "min_peers_sector", "strong_pct", "weak_pct", "min_metrics")}
 
 
 def enabled() -> bool:
@@ -37,8 +39,99 @@ def load_config(path: Optional[Path] = None) -> dict:
         bad = [k for k in keys if not isinstance((cfg.get(section) or {}).get(k), (int, float)) or isinstance(cfg[section][k], bool)]
         if bad:
             raise ValueError(f"performance agent config {p} is missing numeric {section} values: {bad}")
+    if not isinstance(cfg["relative"].get("peer_file"), str):
+        raise ValueError(f"performance agent config {p}: relative.peer_file missing")
     cfg["_path"] = str(p)
     return cfg
+
+
+# --- sector-relative scoring (peer reference built offline by tools/performance_peer_reference.py) -----------------------------
+_PEER_CACHE: dict = {}
+
+
+def load_peers(cfg: dict) -> Optional[dict]:
+    """Versioned peer reference (sorted metric values per sector and sector x market). None when the file is missing; never invented."""
+    name = cfg["relative"]["peer_file"]
+    path = Path(name) if os.path.isabs(name) else CONFIG_PATH.parent / name
+    if str(path) in _PEER_CACHE:
+        return _PEER_CACHE[str(path)]
+    try:
+        peers = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        peers = None
+    _PEER_CACHE[str(path)] = peers
+    return peers
+
+
+def _norm_sector(sector: Optional[str], cfg: dict) -> Optional[str]:
+    s = (sector or "").strip().casefold()
+    if not s:
+        return None
+    return str((cfg["relative"].get("sector_aliases") or {}).get(s, s))
+
+
+def percentile(sorted_values: list, x: float) -> Optional[float]:
+    """Mid-rank percentile of x among sorted_values in [0, 1] (share below plus half the ties)."""
+    n = len(sorted_values)
+    if not n:
+        return None
+    lo, hi = bisect.bisect_left(sorted_values, x), bisect.bisect_right(sorted_values, x)
+    return (lo + 0.5 * (hi - lo)) / n
+
+
+_REL_METRICS = (("roa", "ROA", False), ("roe", "ROE", False), ("operating_margin", "Operating margin", False),
+                ("cfo_to_net_income", "Cash conversion", False), ("accrual_ratio", "Accrual ratio (lower is better)", True))
+
+
+def relative_assessment(company: GlobalCompany, m: dict, trend: list, cfg: dict) -> dict:
+    """Percentile of each metric within the company's sector (and within sector x market when enough peers), composite and relative level."""
+    R, L = cfg["relative"], cfg["levels"]
+    peers = load_peers(cfg)
+    sector = _norm_sector(company.sector, cfg)
+    market = f"{company.country}:{company.exchange}"
+    base = {"sector": company.sector, "market": market, "peerFile": R["peer_file"], "level": None, "composite": None, "metrics": [], "scope": None}
+    if peers is None:
+        return {**base, "status": "NO_PEER_REFERENCE", "reasons": ["peer reference file not available"]}
+    if sector is None:
+        return {**base, "status": "NO_SECTOR", "reasons": ["sector unknown for this issuer; no sector-relative level"]}
+    sec_key = next((k for k in peers["sector"] if k.casefold() == sector), None)
+    cell_key = next((k for k in peers["sectorMarket"] if k.casefold() == f"{sector}|{market}".casefold()), None)
+    values = {"roa": m["roa"], "roe": m["roe"], "operating_margin": m["margins"]["operating"],
+              "cfo_to_net_income": m["cash_quality"]["cfo_to_net_income"], "accrual_ratio": m["cash_quality"]["accrual_ratio"]}
+    rows, pcts = [], []
+    for mid, label, lower_better in _REL_METRICS:
+        x = values[mid]
+        if x is None:
+            continue
+        cell, sec = (peers["sectorMarket"].get(cell_key) if cell_key else None), (peers["sector"].get(sec_key) if sec_key else None)
+        if cell and len(cell.get(mid, [])) >= int(R["min_peers_market"]):
+            arr, scope = cell[mid], "sector+market"
+        elif sec and len(sec.get(mid, [])) >= int(R["min_peers_sector"]):
+            arr, scope = sec[mid], "sector"
+        else:
+            continue
+        pc = percentile(arr, x)
+        score = 1.0 - pc if lower_better else pc
+        pcts.append(score)
+        rows.append({"id": mid, "name": label, "value": x, "percentile": round(pc, 3), "score": round(score, 3), "scope": scope, "peers": len(arr)})
+    need = int(R["min_metrics"])
+    if len(pcts) < need:
+        return {**base, "metrics": rows, "status": "INSUFFICIENT_PEERS",
+                "reasons": [f"fewer than {need} metrics have enough sector peers (market >= {R['min_peers_market']}, sector >= {R['min_peers_sector']})"]}
+    comp = sum(pcts) / len(pcts)
+    if len(trend) >= int(L["deteriorating_min_trend_signals"]):
+        level = "DETERIORATING"
+    elif comp >= R["strong_pct"]:
+        level = "STRONG"
+    elif comp <= R["weak_pct"]:
+        level = "WEAK"
+    else:
+        level = "STABLE"
+    scopes = {r["scope"] for r in rows}
+    scope = scopes.pop() if len(scopes) == 1 else "mixed (sector+market where enough peers, else sector)"
+    return {**base, "metrics": rows, "level": level, "composite": round(comp, 3), "status": "OK", "scope": scope,
+            "reasons": [f"average percentile {comp:.0%} among {company.sector} peers (>= {R['strong_pct']:.0%} STRONG, <= {R['weak_pct']:.0%} WEAK)"]
+                       + [f"trend: {t}" for t in trend]}
 
 
 def _num(v: Any) -> Optional[float]:
@@ -96,7 +189,7 @@ def assess(company: GlobalCompany, *, config: Optional[dict] = None) -> dict:
             "config": {"path": cfg.get("_path"), "version": cfg.get("version")},
             "disclaimer": "Research aid on stored statements. Not a forecast and not investment advice; it does not change any BIAP score, tier or call."}
     if _is_financial(company):
-        return {**base, "level": None, "status": "NOT_APPLICABLE", "metrics": None, "signals": [], "points": None,
+        return {**base, "level": None, "absoluteLevel": None, "relative": {"level": None, "status": "NOT_APPLICABLE", "reasons": []}, "status": "NOT_APPLICABLE", "metrics": None, "signals": [], "points": None,
                 "reasons": ["not applicable: financial institution (ROA, margins and cash-flow quality are not comparable for banks and insurers)"],
                 "dataSufficiency": {"scoringMetricsAvailable": 0, "required": int(L["min_scoring_metrics"]), "missing": {}}}
     m = metrics(company)
@@ -164,7 +257,8 @@ def assess(company: GlobalCompany, *, config: Optional[dict] = None) -> dict:
             level = "WEAK"
     if level and not reasons:
         reasons.append("no metric stands out")
-    return {**base, "level": level, "status": status, "reasons": reasons, "points": pts, "trendSignals": trend, "metrics": m, "signals": signals,
+    rel = relative_assessment(company, m, trend, cfg) if status == "OK" else {"level": None, "status": "NO_ABSOLUTE_LEVEL", "reasons": []}
+    return {**base, "level": level, "absoluteLevel": level, "relative": rel, "status": status, "reasons": reasons, "points": pts, "trendSignals": trend, "metrics": m, "signals": signals,
             "dataSufficiency": {"scoringMetricsAvailable": len(scoring), "required": need, "missing": missing},
             "notes": ["ROA/ROE use year-end balance sheet values (one balance sheet is stored, no averages)",
                       "prior-year DuPont legs other than net margin are not available"]}
