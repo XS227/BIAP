@@ -756,3 +756,108 @@ export async function fetchGlobalBrokerReadiness(): Promise<{
     return null;
   }
 }
+
+// ---------------------------------------------------------------------------------------------------------------------------------
+// Advisory agents (Risk, Performance, Decision Accuracy). Flags are OFF on the server by default: a disabled agent answers 404 and the
+// app hides the section (never an error banner). Every response is a research aid and never changes the recommendation.
+// ---------------------------------------------------------------------------------------------------------------------------------
+export type GlobalRiskSignal = {
+  id: string; name: string; available: boolean; applicable: boolean; severity: number; value: number | null; band: string | null;
+  inputs: Record<string, number | string | null>; missing: string[]; reason: string; flags?: string[]; provisional?: boolean; unitScale?: string;
+};
+export type GlobalRiskAssessment = {
+  agent: 'risk'; level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | null; status: 'OK' | 'PARTIAL' | 'INSUFFICIENT_DATA' | 'NOT_APPLICABLE' | string;
+  reasons: string[]; hardReasons?: string[]; signals: GlobalRiskSignal[]; flags?: string[];
+  leases?: { applied?: boolean; notes?: string[]; lease_liabilities?: number | null; debt_incl_leases?: number | null };
+  unitScale?: { status?: string; basis?: string };
+  asOf?: { filingPeriodEnd?: string | null; priceObservedAt?: string | null }; disclaimer?: string;
+};
+export type GlobalPerformanceMetric = { id: string; name: string; value: number | null; percentile: number | null; score?: number | null; peers?: number };
+export type GlobalPerformanceRelative = {
+  status: string; level?: string | null; sector?: string | null; sectorSource?: string | null; market?: string | null; scope?: string | null;
+  compositePercentile?: number | null; peerCount?: number | null; metrics?: GlobalPerformanceMetric[]; reasons?: string[];
+};
+export type GlobalPerformanceAssessment = {
+  agent: 'performance'; level: string | null; absoluteLevel: string | null; status: string; reasons: string[];
+  relative?: GlobalPerformanceRelative | null; points?: number; trendSignals?: string[];
+  metrics?: {
+    roa?: number | null; roe?: number | null;
+    dupont?: { net_margin?: number | null; asset_turnover?: number | null; equity_multiplier?: number | null; roe_from_parts?: number | null };
+    margins?: { gross?: number | null; operating?: number | null; ebitda?: number | null; net?: number | null };
+    growth?: { revenue_yoy?: number | null; net_income_yoy?: number | null };
+    cash_quality?: { cfo_to_net_income?: number | null; accrual_ratio?: number | null; fcf_margin?: number | null };
+  };
+  notes?: string[]; asOf?: { filingPeriodEnd?: string | null }; disclaimer?: string;
+};
+export type GlobalAccuracySide = { n: number; meanReturnPct: number | null; medianReturnPct?: number | null; meanExcessPct: number | null; hitRate: number | null; hitRateCi95?: [number, number] | null; venues?: number };
+export type GlobalAccuracyMarket = {
+  benchmark: { symbol: string; returnPct: number; exitDate: string }; buy: GlobalAccuracySide; sell: GlobalAccuracySide;
+  spreadMeanPp: number | null; spreadMedianPp?: number | null; tooSmallToInterpret: boolean;
+};
+export type GlobalAccuracyPooled = { weighting: string; buy: GlobalAccuracySide; sell: GlobalAccuracySide; spreadMeanPp: number | null; spreadCi95Pp: [number, number] | null; note?: string };
+export type GlobalAccuracySummary = {
+  cohortId: string; decisionDate: string; horizonMonths: number; horizon: { status: 'MATURED' | 'PENDING' | string; matures: string | null; note?: string | null };
+  returnBasis?: string; markets: Record<string, GlobalAccuracyMarket> | null; pooled: GlobalAccuracyPooled | null; pooledStockWeighted: GlobalAccuracyPooled | null;
+  caveats?: string[]; message?: string;
+};
+export type GlobalAccuracyHorizon = { status: string; returnPct?: number; benchmarkPct?: number; excessPct?: number; hit?: boolean; exitDate?: string; matures?: string; reason?: string | null };
+export type GlobalAccuracyStock = {
+  decisions: Array<{ cohortId: string; decisionDate: string; side: string; tier: string; horizons: Record<string, GlobalAccuracyHorizon> }>; n: number; note?: string;
+};
+export type GlobalAccuracyRow = {
+  market: string; country: string; exchange: string; ticker: string; name?: string | null; side: string; returnPct: number; benchmarkPct: number; excessPct: number; edgePct?: number; hit: boolean;
+};
+export type GlobalAccuracyDecisions = { total: number; offset?: number; limit?: number; rows: GlobalAccuracyRow[]; message?: string; horizon?: { status: string; matures: string | null } };
+
+/** 'off' = flag off or no data (404): hide the section. 'unavailable' = 5xx/network: show "Temporarily unavailable" inside the section only. */
+export type AgentResult<T> = { state: 'ok'; data: T } | { state: 'off' } | { state: 'unavailable' };
+
+async function agentCall<T>(path: string, init: RequestInit | undefined, timeoutMs: number): Promise<AgentResult<T>> {
+  try { return { state: 'ok', data: await request<T>(path, init, timeoutMs) }; }
+  catch (err) {
+    const status = (err as GlobalApiError)?.status;
+    return status === 404 || status === 422 ? { state: 'off' } : { state: 'unavailable' };
+  }
+}
+
+const agentCache = new Map<string, AgentResult<unknown>>();
+async function cached<T>(key: string, load: () => Promise<AgentResult<T>>): Promise<AgentResult<T>> {
+  const hit = agentCache.get(key) as AgentResult<T> | undefined;
+  if (hit) return hit;
+  const res = await load();
+  if (res.state !== 'unavailable') agentCache.set(key, res);   // never cache a failure
+  return res;
+}
+export function clearAgentCache() { agentCache.clear(); }
+
+function instrumentBody(i: GlobalInstrument) {
+  return JSON.stringify({ country: i.country, exchange: i.exchange, ticker: i.ticker, name: i.name, currency: i.currency, isin: i.isin || undefined, lei: i.lei || undefined });
+}
+const instrumentKey = (i: GlobalInstrument) => `${i.country}:${i.exchange}:${i.ticker}`.toUpperCase();
+
+export function fetchRiskAssessment(i: GlobalInstrument) {
+  return cached(`risk:${instrumentKey(i)}`, () => agentCall<GlobalRiskAssessment>('/global/risk', { method: 'POST', body: instrumentBody(i) }, 60_000));
+}
+export function fetchPerformanceAssessment(i: GlobalInstrument) {
+  return cached(`perf:${instrumentKey(i)}`, () => agentCall<GlobalPerformanceAssessment>('/global/performance', { method: 'POST', body: instrumentBody(i) }, 60_000));
+}
+export function fetchAccuracySummary(horizon = 1) {
+  return cached(`acc:${horizon}`, () => agentCall<GlobalAccuracySummary>(`/global/accuracy/summary?horizon=${horizon}`, undefined, 20_000));
+}
+export function fetchAccuracyStock(i: GlobalInstrument) {
+  const q = new URLSearchParams({ country: i.country, exchange: i.exchange, ticker: i.ticker });
+  return cached(`accstock:${instrumentKey(i)}`, () => agentCall<GlobalAccuracyStock>(`/global/accuracy/stock?${q.toString()}`, undefined, 20_000));
+}
+export function fetchAccuracyDecisions(opts: { horizon?: number; market?: string | null; q?: string; sort?: string; limit?: number; offset?: number }) {
+  const p = new URLSearchParams({ horizon: String(opts.horizon ?? 1), sort: opts.sort ?? 'edge_desc', limit: String(opts.limit ?? 20), offset: String(opts.offset ?? 0) });
+  if (opts.market) p.set('market', opts.market);
+  if (opts.q?.trim()) p.set('q', opts.q.trim());
+  return agentCall<GlobalAccuracyDecisions>(`/global/accuracy/decisions?${p.toString()}`, undefined, 20_000);
+}
+
+let flagsPromise: Promise<Record<string, unknown> | null> | null = null;
+/** Server status once per session (a failure is retried next time, a success is kept). */
+export function sessionGlobalStatus(): Promise<Record<string, unknown> | null> {
+  if (!flagsPromise) flagsPromise = fetchGlobalStatus().then((s) => { if (!s) flagsPromise = null; return s; });
+  return flagsPromise;
+}

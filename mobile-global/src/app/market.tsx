@@ -11,6 +11,10 @@ import { setSelectedGlobalCompany } from '@/lib/global-company-selection';
 import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
 import type { GlobalInvestmentDecision } from '@/lib/decision-tier';
 import { investmentBadge, tierCounts, tierLabel, tierTone } from '@/lib/decision-tier';
+import { agentFlags } from '@/lib/agent-format';
+import { sessionGlobalStatus } from '@/lib/global-api';
+import { useAgentLang } from '@/lib/agent-lang';
+import { tr } from '@/lib/agent-i18n';
 
 const PAGE_SIZE = 80;
 
@@ -76,6 +80,9 @@ function appendUnique(existing: GlobalInstrument[], incoming: GlobalInstrument[]
 
 export default function MarketScreen() {
   const colors = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
+  const [accuracyOn, setAccuracyOn] = useState(false);
+  const [agentLang] = useAgentLang();
+  useEffect(() => { let alive = true; sessionGlobalStatus().then((st) => { if (alive) setAccuracyOn(agentFlags(st).accuracy); }); return () => { alive = false; }; }, []);
   const [selection, setSelection] = useState<GlobalMarketSelection | null>(null);
   const [instruments, setInstruments] = useState<GlobalInstrument[]>([]);
   const [query, setQuery] = useState('');
@@ -297,6 +304,7 @@ export default function MarketScreen() {
 
   return <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}><View style={[styles.container, { backgroundColor: colors.background }]}>
     <View style={styles.header}><View style={styles.headerTop}><View style={{ flex: 1 }}><Text style={[styles.title, { color: colors.text }]}>Market</Text><Text style={[styles.subtitle, { color: colors.textSecondary }]}>{selection ? `${selection.countryName} • ${selection.exchangeLabel}` : 'Loading market context…'}</Text></View><Pressable onPress={() => router.push('/global')} style={[styles.changeButton, { borderColor: Brand.primary }]}><Text style={styles.changeButtonText}>Change market</Text></Pressable></View>{selection ? <Text style={[styles.contextLine, { color: colors.textSecondary }]}>{selection.mic || selection.exchange} • {selection.currency} • one BIAP engine</Text> : null}</View>
+    {accuracyOn ? <Pressable testID="track-record-card" onPress={() => router.push('/track-record' as never)} style={[styles.pick, { backgroundColor: colors.backgroundElement, marginHorizontal: 0, marginBottom: 8 }]}><View style={{ flex: 1 }}><Text style={[styles.pickTicker, { color: colors.text }]}>🎯 {tr(agentLang, 'trackCardTitle')}</Text><Text style={[styles.pickName, { color: colors.textSecondary }]}>{tr(agentLang, 'trackCardSub')}</Text></View><Text style={{ color: colors.textSecondary, fontSize: 22 }}>›</Text></Pressable> : null}
 
     <View style={styles.searchRow}><TextInput value={query} onChangeText={setQuery} onSubmitEditing={() => { void searchRemote(); }} autoCapitalize="characters" placeholder="Ticker, company or ISIN" numberOfLines={1} placeholderTextColor={colors.textSecondary} style={[styles.search, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected, color: colors.text }]} /><Pressable disabled={loadingSearch} onPress={() => { void searchRemote(); }} style={[styles.searchButton, { backgroundColor: Brand.primary, opacity: loadingSearch ? .6 : 1 }]}>{loadingSearch ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.searchButtonText}>Search</Text>}</Pressable></View>
 

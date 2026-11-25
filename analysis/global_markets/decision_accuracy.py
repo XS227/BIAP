@@ -218,7 +218,7 @@ def summarize(cohort: Mapping, horizon: int, *, market: Optional[str] = None, co
         pooled_sw = _stock_weighted(recs, rows, cfg)
     return {**base, "markets": markets, "pooled": pooled, "pooledStockWeighted": pooled_sw,
             "caveats": ["past decisions, not a forecast", POSITIVE_RANKING_WORDING,
-                        "markets and venues are not independent observations", "price returns only (no dividends)"]}
+                        "markets and venues are not independent observations", "stock returns include cash dividends (total return); benchmarks are price indices, so excess returns slightly understate BUY and SELL alike"]}
 
 
 def stock_record(cohorts: list, country: str, exchange: str, ticker: str, *, config: Optional[Mapping] = None, today: Optional[date] = None) -> dict:
@@ -245,6 +245,36 @@ def stock_record(cohorts: list, country: str, exchange: str, ticker: str, *, con
     return {"agent": "decision_accuracy", "version": VERSION, "advisoryOnly": True, "country": country, "exchange": exchange, "ticker": ticker,
             "decisions": items, "n": len(items),
             "note": "one cohort gives one observation per stock: this is an anecdote, not a track record, until more cohorts mature"}
+
+
+def list_decisions(cohort: Mapping, horizon: int, *, market: Optional[str] = None, side: Optional[str] = None, q: Optional[str] = None,
+                   sort: str = "edge_desc", limit: int = 20, offset: int = 0, config: Optional[Mapping] = None, today: Optional[date] = None) -> dict:
+    """Per-stock rows for the Track record screen (priced holdings only). Same flag and same numbers as ``summarize``; read-only."""
+    cfg = config or load_config()
+    state = _horizon_state(cohort, horizon, today)
+    base = {"cohortId": cohort["cohortId"], "horizonMonths": horizon, "horizon": state}
+    if state["status"] != "MATURED":
+        return {**base, "total": 0, "rows": [], "message": f"{horizon}-month horizon not matured: due {state['matures']}" if state["status"] == "PENDING" else "outcomes not computed yet"}
+    recs = _records(cohort, horizon, market)
+    if side:
+        recs = [r for r in recs if r["side"] == side.upper()]
+    if q and q.strip():
+        needle = q.strip().lower()
+        recs = [r for r in recs if needle in str(r["ticker"]).lower() or needle in str(r.get("name") or "").lower()]
+    edge = lambda r: r["excess"] if r["side"] == "BUY" else -r["excess"]       # excess return in the direction of the call
+    keys = {"edge_desc": (edge, True), "edge_asc": (edge, False),
+            "excess_desc": (lambda r: r["excess"], True), "excess_asc": (lambda r: r["excess"], False),
+            "return_desc": (lambda r: r["ret"], True), "return_asc": (lambda r: r["ret"], False)}
+    if sort not in keys:
+        raise ValueError(f"sort must be one of {sorted(keys)}")
+    fn, rev = keys[sort]
+    recs = sorted(recs, key=lambda r: (fn(r), r["ticker"]), reverse=rev)
+    limit, offset = max(1, min(int(limit), 200)), max(0, int(offset))
+    rows = [{"market": r["market"], "country": r["country"], "exchange": r["exchange"], "ticker": r["ticker"], "name": r.get("name"),
+             "side": r["side"], "returnPct": r["ret"] * 100, "benchmarkPct": r["bench"] * 100, "excessPct": r["excess"] * 100,
+             "edgePct": edge(r) * 100, "hit": r["hit"], "exitDate": r.get("exitDate")} for r in recs[offset:offset + limit]]
+    return {**base, "total": len(recs), "offset": offset, "limit": limit, "rows": rows,
+            "note": "one cohort gives one observation per stock; per-stock rows are anecdotes, not a track record"}
 
 
 def load_all() -> list:

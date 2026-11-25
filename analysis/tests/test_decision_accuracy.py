@@ -178,3 +178,51 @@ def test_agent_is_read_only_and_never_touches_the_frozen_file():
     assert c == before
     import global_markets.decision_logic as dl
     assert "decision_accuracy" not in inspect.getsource(dl)
+
+
+def test_list_decisions_matches_summary_and_pages(monkeypatch):
+    c = da.load_cohort("v1-20261020")
+    today = date(2026, 11, 25)
+    s = da.summarize(c, 1, today=today)
+    n_priced = sum(m["buy"]["n"] + m["sell"]["n"] for m in s["markets"].values())
+    out = da.list_decisions(c, 1, limit=5, today=today)
+    assert out["total"] == n_priced == 918 and len(out["rows"]) == 5
+    ed = [r["edgePct"] for r in out["rows"]]
+    assert ed == sorted(ed, reverse=True)                                      # default sort: best call first (direction-adjusted)
+    assert all(r["edgePct"] == pytest.approx(r["excessPct"] if r["side"] == "BUY" else -r["excessPct"]) for r in out["rows"])
+    assert out["rows"][0]["hit"] is True                                       # the best calls are hits, not SELLs that rose
+    worst = da.list_decisions(c, 1, sort="edge_asc", limit=3, today=today)["rows"]
+    assert all(r["hit"] is False for r in worst)
+    raw = [r["excessPct"] for r in da.list_decisions(c, 1, sort="excess_desc", limit=5, today=today)["rows"]]
+    assert raw == sorted(raw, reverse=True)
+    page2 = da.list_decisions(c, 1, limit=5, offset=5, today=today)["rows"]
+    assert len(page2) == 5 and {r["ticker"] for r in page2}.isdisjoint({r["ticker"] for r in out["rows"]})
+    assert da.list_decisions(c, 1, limit=500, today=today)["limit"] == 200
+    buys = da.list_decisions(c, 1, side="buy", limit=200, today=today)
+    assert buys["total"] == sum(m["buy"]["n"] for m in s["markets"].values()) and all(r["side"] == "BUY" for r in buys["rows"])
+    mu = da.list_decisions(c, 1, q="micron", today=today)
+    assert any(r["ticker"] == "MU" for r in mu["rows"])
+    one = da.list_decisions(c, 1, market="ES:BME_MADRID", today=today)
+    assert one["total"] == 12 and all(r["market"] == "ES:BME_MADRID" for r in one["rows"])
+
+
+def test_list_decisions_pending_and_bad_sort_and_route_flag(monkeypatch):
+    import global_routes
+    c = da.load_cohort("v1-20261020")
+    p = da.list_decisions(c, 3, today=date(2026, 11, 25))
+    assert p["rows"] == [] and p["total"] == 0 and "2027-01-20" in p["message"]
+    with pytest.raises(ValueError):
+        da.list_decisions(c, 1, sort="nope", today=date(2026, 11, 25))
+    with pytest.raises(HTTPException) as e:
+        global_routes.global_accuracy_decisions()
+    assert e.value.status_code == 404
+    monkeypatch.setenv(da.FLAG, "1")
+    assert global_routes.global_accuracy_decisions(horizon=1, limit=3)["rows"]
+    with pytest.raises(HTTPException) as e2:
+        global_routes.global_accuracy_decisions(horizon=1, side="HOLD")
+    assert e2.value.status_code == 422
+
+
+def test_caveat_states_total_return_basis():
+    s = da.summarize(da.load_cohort("v1-20261020"), 1, today=date(2026, 11, 25))
+    assert not any("no dividends" in c for c in s["caveats"]) and any("total return" in c for c in s["caveats"])
