@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "note": "Performance Agent rules (plan: docs/agents/performance_agent_plan.md). Override the file with env PERFORMANCE_AGENT_CONFIG.",
+  "points": {
+    "roa_strong": 0.05,
+    "roa_ok": 0.02,
+    "roe_good": 0.1,
+    "cfo_to_ni_good": 0.8,
+    "cfo_to_ni_weak": 0.5,
+    "accrual_high": 0.1
+  },
+  "trend": {
+    "revenue_decline_pct": -5.0,
+    "net_margin_drop_pp": 2.0,
+    "net_income_drop_pct": -25.0
+  },
+  "levels": {
+    "strong_min_points": 4,
+    "stable_min_points": 0,
+    "deteriorating_min_trend_signals": 2,
+    "min_scoring_metrics": 3
+  },
+  "relative": {
+    "peer_file": "performance_peers_20261125.json",
+    "min_peers_market": 20,
+    "min_peers_sector": 30,
+    "strong_pct": 0.67,
+    "weak_pct": 0.33,
+    "min_metrics": 3,
+    "sector_aliases": {
+      "industrial": "industrials",
+      "consumer cyclicals": "consumer discretionary",
+      "information technology": "technology"
+    }
+  }
+}
