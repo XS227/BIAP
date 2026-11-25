@@ -1,0 +1,2678 @@
+{
+  "freeze": "2026-10-20",
+  "end": "2026-11-19",
+  "snapshot_sha256": "0bd9066eb980d9293566c2cb682dce579f6d6fbf15e102eeb341e2e7e52621a1",
+  "holdings": 964,
+  "priced_issuers": 915,
+  "excluded_rows": 49,
+  "exclusions_by_reason": {
+    "no_exit_price: no close after entry": 4,
+    "no_entry_price": 2,
+    "duplicate_isin_side": 43
+  },
+  "metadata_coverage": [
+    {
+      "market": "US:NASDAQ",
+      "side": "BUY",
+      "n_priced": 151,
+      "n_with_market_cap": 132,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 132,
+      "n_with_prior_vol": 151
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "SELL",
+      "n_priced": 211,
+      "n_with_market_cap": 194,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 193,
+      "n_with_prior_vol": 211
+    },
+    {
+      "market": "US:NYSE",
+      "side": "BUY",
+      "n_priced": 117,
+      "n_with_market_cap": 106,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 106,
+      "n_with_prior_vol": 117
+    },
+    {
+      "market": "US:NYSE",
+      "side": "SELL",
+      "n_priced": 66,
+      "n_with_market_cap": 60,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 60,
+      "n_with_prior_vol": 66
+    },
+    {
+      "market": "GB:LSE",
+      "side": "BUY",
+      "n_priced": 27,
+      "n_with_market_cap": 25,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 25,
+      "n_with_prior_vol": 27
+    },
+    {
+      "market": "GB:LSE",
+      "side": "SELL",
+      "n_priced": 42,
+      "n_with_market_cap": 40,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 39,
+      "n_with_prior_vol": 42
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "side": "BUY",
+      "n_priced": 15,
+      "n_with_market_cap": 15,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 15,
+      "n_with_prior_vol": 15
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "side": "SELL",
+      "n_priced": 15,
+      "n_with_market_cap": 14,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 14,
+      "n_with_prior_vol": 15
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "BUY",
+      "n_priced": 25,
+      "n_with_market_cap": 24,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 24,
+      "n_with_prior_vol": 25
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "SELL",
+      "n_priced": 35,
+      "n_with_market_cap": 31,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 31,
+      "n_with_prior_vol": 35
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "side": "BUY",
+      "n_priced": 12,
+      "n_with_market_cap": 10,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 10,
+      "n_with_prior_vol": 12
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "side": "SELL",
+      "n_priced": 12,
+      "n_with_market_cap": 12,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 12,
+      "n_with_prior_vol": 12
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "BUY",
+      "n_priced": 23,
+      "n_with_market_cap": 22,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 23,
+      "n_with_prior_vol": 22
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "SELL",
+      "n_priced": 35,
+      "n_with_market_cap": 32,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 33,
+      "n_with_prior_vol": 34
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "side": "BUY",
+      "n_priced": 14,
+      "n_with_market_cap": 13,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 13,
+      "n_with_prior_vol": 14
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "side": "SELL",
+      "n_priced": 17,
+      "n_with_market_cap": 17,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 17,
+      "n_with_prior_vol": 17
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "BUY",
+      "n_priced": 23,
+      "n_with_market_cap": 21,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 21,
+      "n_with_prior_vol": 23
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "SELL",
+      "n_priced": 26,
+      "n_with_market_cap": 24,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 24,
+      "n_with_prior_vol": 26
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "side": "BUY",
+      "n_priced": 7,
+      "n_with_market_cap": 6,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 6,
+      "n_with_prior_vol": 7
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "side": "SELL",
+      "n_priced": 8,
+      "n_with_market_cap": 8,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 8,
+      "n_with_prior_vol": 8
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "side": "BUY",
+      "n_priced": 9,
+      "n_with_market_cap": 9,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 9,
+      "n_with_prior_vol": 9
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "side": "SELL",
+      "n_priced": 12,
+      "n_with_market_cap": 12,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 12,
+      "n_with_prior_vol": 12
+    },
+    {
+      "market": "ES:BME_MADRID",
+      "side": "BUY",
+      "n_priced": 4,
+      "n_with_market_cap": 4,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 4,
+      "n_with_prior_vol": 4
+    },
+    {
+      "market": "ES:BME_MADRID",
+      "side": "SELL",
+      "n_priced": 9,
+      "n_with_market_cap": 9,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 8,
+      "n_with_prior_vol": 9
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "BUY",
+      "n_priced": 427,
+      "n_with_market_cap": 387,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 388,
+      "n_with_prior_vol": 426
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "SELL",
+      "n_priced": 488,
+      "n_with_market_cap": 453,
+      "n_cap_point_in_time": 0,
+      "n_with_sector": 451,
+      "n_with_prior_vol": 487
+    }
+  ],
+  "benchmark": {
+    "US:NASDAQ": {
+      "symbol": "^IXIC",
+      "return": -0.09633447129045636,
+      "exit_date": "2026-11-19",
+      "issue": ""
+    },
+    "US:NYSE": {
+      "symbol": "^NYA",
+      "return": -0.04343868123595496,
+      "exit_date": "2026-11-19",
+      "issue": ""
+    },
+    "GB:LSE": {
+      "symbol": "^FTAS",
+      "return": -0.02404128014298057,
+      "exit_date": "2026-11-19",
+      "issue": ""
+    },
+    "IT:EURONEXT_MILAN": {
+      "symbol": "FTSEMIB.MI",
+      "return": 0.017729412483951767,
+      "exit_date": "2026-11-19",
+      "issue": ""
+    },
+    "SE:NASDAQ_STOCKHOLM": {
+      "symbol": "^OMXSPI",
+      "return": 0.0076878575630741075,
+      "exit_date": "2026-11-19",
+      "issue": ""
+    },
+    "NO:EURONEXT_OSLO": {
+      "symbol": "OSEBX.OL",
+      "return": -0.010115314042715595,
+      "exit_date": "2026-11-19",
+      "issue": ""
+    },
+    "DE:XETRA": {
+      "symbol": "^GDAXI",
+      "return": 0.006298924278529405,
+      "exit_date": "2026-11-19",
+      "issue": ""
+    },
+    "DE:FRANKFURT": {
+      "symbol": "^GDAXI",
+      "return": 0.006298924278529405,
+      "exit_date": "2026-11-19",
+      "issue": ""
+    },
+    "FR:EURONEXT_PARIS": {
+      "symbol": "^FCHI",
+      "return": 0.03090518617190252,
+      "exit_date": "2026-11-19",
+      "issue": ""
+    },
+    "NL:EURONEXT_AMSTERDAM": {
+      "symbol": "^AEX",
+      "return": -0.0367417017350915,
+      "exit_date": "2026-11-19",
+      "issue": ""
+    },
+    "FI:NASDAQ_HELSINKI": {
+      "symbol": "^OMXH25",
+      "return": -0.02581795346243343,
+      "exit_date": "2026-11-19",
+      "issue": ""
+    },
+    "ES:BME_MADRID": {
+      "symbol": "^IBEX",
+      "return": 0.004912888175708785,
+      "exit_date": "2026-11-19",
+      "issue": ""
+    }
+  },
+  "dividend_unit_sanity_over_50pct": [
+    {
+      "market": "US:NYSE",
+      "ticker": "SITC",
+      "dividends": 3.0,
+      "entry": 3.640000104904175,
+      "ratio": 0.8241758004232191
+    }
+  ],
+  "summary": [
+    {
+      "market": "US:NASDAQ",
+      "buy_n": 151,
+      "sell_n": 211,
+      "buy_mean_pct": -7.00539,
+      "sell_mean_pct": -21.01031,
+      "buy_median_pct": -6.59014,
+      "sell_median_pct": -24.30152,
+      "median_spread_pp": 17.71138,
+      "buy_trimmed_pct": -6.70677,
+      "sell_trimmed_pct": -25.87868,
+      "trimmed_spread_pp": 19.17191,
+      "buy_trim_n_each_tail": 7,
+      "sell_trim_n_each_tail": 10,
+      "benchmark_symbol": "^IXIC",
+      "benchmark_return_pct": -9.63345,
+      "benchmark_exit_date": "2026-11-19"
+    },
+    {
+      "market": "US:NYSE",
+      "buy_n": 117,
+      "sell_n": 66,
+      "buy_mean_pct": -3.08551,
+      "sell_mean_pct": -14.17552,
+      "buy_median_pct": -2.51078,
+      "sell_median_pct": -14.65773,
+      "median_spread_pp": 12.14694,
+      "buy_trimmed_pct": -2.9805,
+      "sell_trimmed_pct": -13.75928,
+      "trimmed_spread_pp": 10.77878,
+      "buy_trim_n_each_tail": 5,
+      "sell_trim_n_each_tail": 3,
+      "benchmark_symbol": "^NYA",
+      "benchmark_return_pct": -4.34387,
+      "benchmark_exit_date": "2026-11-19"
+    },
+    {
+      "market": "GB:LSE",
+      "buy_n": 27,
+      "sell_n": 42,
+      "buy_mean_pct": -3.89943,
+      "sell_mean_pct": -11.59875,
+      "buy_median_pct": -2.98165,
+      "sell_median_pct": -5.98967,
+      "median_spread_pp": 3.00801,
+      "buy_trimmed_pct": -3.99108,
+      "sell_trimmed_pct": -8.57136,
+      "trimmed_spread_pp": 4.58028,
+      "buy_trim_n_each_tail": 1,
+      "sell_trim_n_each_tail": 2,
+      "benchmark_symbol": "^FTAS",
+      "benchmark_return_pct": -2.40413,
+      "benchmark_exit_date": "2026-11-19"
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "buy_n": 15,
+      "sell_n": 15,
+      "buy_mean_pct": -2.64181,
+      "sell_mean_pct": -12.34191,
+      "buy_median_pct": -3.99568,
+      "sell_median_pct": -10.9375,
+      "median_spread_pp": 6.94183,
+      "buy_trimmed_pct": -2.64181,
+      "sell_trimmed_pct": -12.34191,
+      "trimmed_spread_pp": 9.7001,
+      "buy_trim_n_each_tail": 0,
+      "sell_trim_n_each_tail": 0,
+      "benchmark_symbol": "FTSEMIB.MI",
+      "benchmark_return_pct": 1.77294,
+      "benchmark_exit_date": "2026-11-19"
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "buy_n": 25,
+      "sell_n": 35,
+      "buy_mean_pct": 1.67928,
+      "sell_mean_pct": -11.04797,
+      "buy_median_pct": 0.61538,
+      "sell_median_pct": -10.25641,
+      "median_spread_pp": 10.87179,
+      "buy_trimmed_pct": 1.66804,
+      "sell_trimmed_pct": -11.43055,
+      "trimmed_spread_pp": 13.09859,
+      "buy_trim_n_each_tail": 1,
+      "sell_trim_n_each_tail": 1,
+      "benchmark_symbol": "^OMXSPI",
+      "benchmark_return_pct": 0.76879,
+      "benchmark_exit_date": "2026-11-19"
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "buy_n": 12,
+      "sell_n": 12,
+      "buy_mean_pct": 1.77345,
+      "sell_mean_pct": -10.46588,
+      "buy_median_pct": 1.30259,
+      "sell_median_pct": -12.61957,
+      "median_spread_pp": 13.92216,
+      "buy_trimmed_pct": 1.77345,
+      "sell_trimmed_pct": -10.46588,
+      "trimmed_spread_pp": 12.23933,
+      "buy_trim_n_each_tail": 0,
+      "sell_trim_n_each_tail": 0,
+      "benchmark_symbol": "OSEBX.OL",
+      "benchmark_return_pct": -1.01153,
+      "benchmark_exit_date": "2026-11-19"
+    },
+    {
+      "market": "DE:XETRA",
+      "buy_n": 23,
+      "sell_n": 35,
+      "buy_mean_pct": 2.4436,
+      "sell_mean_pct": -4.54643,
+      "buy_median_pct": 0.54348,
+      "sell_median_pct": -7.73809,
+      "median_spread_pp": 8.28157,
+      "buy_trimmed_pct": 2.37673,
+      "sell_trimmed_pct": -6.99051,
+      "trimmed_spread_pp": 9.36724,
+      "buy_trim_n_each_tail": 1,
+      "sell_trim_n_each_tail": 1,
+      "benchmark_symbol": "^GDAXI",
+      "benchmark_return_pct": 0.62989,
+      "benchmark_exit_date": "2026-11-19"
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "buy_n": 14,
+      "sell_n": 17,
+      "buy_mean_pct": -3.49808,
+      "sell_mean_pct": -14.00995,
+      "buy_median_pct": 0.70734,
+      "sell_median_pct": -7.87519,
+      "median_spread_pp": 8.58253,
+      "buy_trimmed_pct": -3.49808,
+      "sell_trimmed_pct": -14.00995,
+      "trimmed_spread_pp": 10.51187,
+      "buy_trim_n_each_tail": 0,
+      "sell_trim_n_each_tail": 0,
+      "benchmark_symbol": "^GDAXI",
+      "benchmark_return_pct": 0.62989,
+      "benchmark_exit_date": "2026-11-19"
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "buy_n": 23,
+      "sell_n": 26,
+      "buy_mean_pct": 3.61646,
+      "sell_mean_pct": 1.01092,
+      "buy_median_pct": 5.55555,
+      "sell_median_pct": -3.09794,
+      "median_spread_pp": 8.65349,
+      "buy_trimmed_pct": 3.41517,
+      "sell_trimmed_pct": -3.70406,
+      "trimmed_spread_pp": 7.11923,
+      "buy_trim_n_each_tail": 1,
+      "sell_trim_n_each_tail": 1,
+      "benchmark_symbol": "^FCHI",
+      "benchmark_return_pct": 3.09052,
+      "benchmark_exit_date": "2026-11-19"
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "buy_n": 7,
+      "sell_n": 8,
+      "buy_mean_pct": 0.17357,
+      "sell_mean_pct": -17.16336,
+      "buy_median_pct": 1.50943,
+      "sell_median_pct": -7.83866,
+      "median_spread_pp": 9.3481,
+      "buy_trimmed_pct": 0.17357,
+      "sell_trimmed_pct": -17.16336,
+      "trimmed_spread_pp": 17.33693,
+      "buy_trim_n_each_tail": 0,
+      "sell_trim_n_each_tail": 0,
+      "benchmark_symbol": "^AEX",
+      "benchmark_return_pct": -3.67417,
+      "benchmark_exit_date": "2026-11-19"
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "buy_n": 9,
+      "sell_n": 12,
+      "buy_mean_pct": 2.10257,
+      "sell_mean_pct": -12.55051,
+      "buy_median_pct": 0.0,
+      "sell_median_pct": -13.60338,
+      "median_spread_pp": 13.60338,
+      "buy_trimmed_pct": 2.10257,
+      "sell_trimmed_pct": -12.55051,
+      "trimmed_spread_pp": 14.65308,
+      "buy_trim_n_each_tail": 0,
+      "sell_trim_n_each_tail": 0,
+      "benchmark_symbol": "^OMXH25",
+      "benchmark_return_pct": -2.5818,
+      "benchmark_exit_date": "2026-11-19"
+    },
+    {
+      "market": "ES:BME_MADRID",
+      "buy_n": 4,
+      "sell_n": 9,
+      "buy_mean_pct": 3.47959,
+      "sell_mean_pct": -2.95108,
+      "buy_median_pct": 1.91969,
+      "sell_median_pct": -3.54192,
+      "median_spread_pp": 5.46161,
+      "buy_trimmed_pct": 3.47959,
+      "sell_trimmed_pct": -2.95108,
+      "trimmed_spread_pp": 6.43067,
+      "buy_trim_n_each_tail": 0,
+      "sell_trim_n_each_tail": 0,
+      "benchmark_symbol": "^IBEX",
+      "benchmark_return_pct": 0.49129,
+      "benchmark_exit_date": "2026-11-19"
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "buy_n": 427,
+      "sell_n": 488,
+      "buy_mean_pct": -3.22249,
+      "sell_mean_pct": -14.83358,
+      "buy_median_pct": -1.71428,
+      "sell_median_pct": -13.28739,
+      "median_spread_pp": 11.57311,
+      "buy_trimmed_pct": -2.89408,
+      "sell_trimmed_pct": -16.66923,
+      "trimmed_spread_pp": 13.77515,
+      "buy_trim_n_each_tail": 21,
+      "sell_trim_n_each_tail": 24,
+      "benchmark_symbol": "N/A",
+      "benchmark_return_pct": null,
+      "benchmark_exit_date": ""
+    },
+    {
+      "market": "ALL_MARKETS_EQUAL_WEIGHT",
+      "buy_n": 427,
+      "sell_n": 488,
+      "buy_mean_pct": -0.40514,
+      "sell_mean_pct": -10.90423,
+      "buy_median_pct": -0.32707,
+      "sell_median_pct": -10.2048,
+      "median_spread_pp": 9.87773,
+      "buy_trimmed_pct": -0.40243,
+      "sell_trimmed_pct": -11.65143,
+      "trimmed_spread_pp": 11.249,
+      "buy_trim_n_each_tail": null,
+      "sell_trim_n_each_tail": null,
+      "benchmark_symbol": "N/A",
+      "benchmark_return_pct": null,
+      "benchmark_exit_date": ""
+    }
+  ],
+  "controls": [
+    {
+      "market": "US:NASDAQ",
+      "group": "low",
+      "metric": "market_cap",
+      "median_cut": 131006320.0,
+      "n_buy": 8,
+      "n_sell": 155,
+      "buy_mean_pct": -8.53086,
+      "sell_mean_pct": -24.27418,
+      "spread_pct": 15.74332,
+      "status": "OK;POST_EVENT_PROXY"
+    },
+    {
+      "market": "US:NASDAQ",
+      "group": "high",
+      "metric": "market_cap",
+      "median_cut": 131006320.0,
+      "n_buy": 124,
+      "n_sell": 39,
+      "buy_mean_pct": -6.30132,
+      "sell_mean_pct": -5.95261,
+      "spread_pct": -0.34871,
+      "status": "OK;POST_EVENT_PROXY"
+    },
+    {
+      "market": "US:NASDAQ",
+      "group": "low",
+      "metric": "prior_volatility",
+      "median_cut": 0.69653,
+      "n_buy": 139,
+      "n_sell": 42,
+      "buy_mean_pct": -5.90608,
+      "sell_mean_pct": -10.38366,
+      "spread_pct": 4.47758,
+      "status": "OK"
+    },
+    {
+      "market": "US:NASDAQ",
+      "group": "high",
+      "metric": "prior_volatility",
+      "median_cut": 0.69653,
+      "n_buy": 12,
+      "n_sell": 169,
+      "buy_mean_pct": -19.73906,
+      "sell_mean_pct": -23.65126,
+      "spread_pct": 3.9122,
+      "status": "OK"
+    },
+    {
+      "market": "US:NYSE",
+      "group": "low",
+      "metric": "market_cap",
+      "median_cut": 4023995776.0,
+      "n_buy": 35,
+      "n_sell": 48,
+      "buy_mean_pct": -5.06463,
+      "sell_mean_pct": -14.28027,
+      "spread_pct": 9.21564,
+      "status": "OK;POST_EVENT_PROXY"
+    },
+    {
+      "market": "US:NYSE",
+      "group": "high",
+      "metric": "market_cap",
+      "median_cut": 4023995776.0,
+      "n_buy": 71,
+      "n_sell": 12,
+      "buy_mean_pct": -2.43046,
+      "sell_mean_pct": -8.49091,
+      "spread_pct": 6.06045,
+      "status": "OK;POST_EVENT_PROXY"
+    },
+    {
+      "market": "US:NYSE",
+      "group": "low",
+      "metric": "prior_volatility",
+      "median_cut": 0.361115,
+      "n_buy": 83,
+      "n_sell": 9,
+      "buy_mean_pct": -1.41417,
+      "sell_mean_pct": -5.45857,
+      "spread_pct": 4.0444,
+      "status": "OK"
+    },
+    {
+      "market": "US:NYSE",
+      "group": "high",
+      "metric": "prior_volatility",
+      "median_cut": 0.361115,
+      "n_buy": 34,
+      "n_sell": 57,
+      "buy_mean_pct": -7.16553,
+      "sell_mean_pct": -15.55188,
+      "spread_pct": 8.38635,
+      "status": "OK"
+    },
+    {
+      "market": "GB:LSE",
+      "group": "low",
+      "metric": "market_cap",
+      "median_cut": 211334288.0,
+      "n_buy": 2,
+      "n_sell": 31,
+      "buy_mean_pct": -11.69663,
+      "sell_mean_pct": -11.84709,
+      "spread_pct": 0.15046,
+      "status": "OK;POST_EVENT_PROXY;SMALL_GROUP"
+    },
+    {
+      "market": "GB:LSE",
+      "group": "high",
+      "metric": "market_cap",
+      "median_cut": 211334288.0,
+      "n_buy": 23,
+      "n_sell": 9,
+      "buy_mean_pct": -3.65562,
+      "sell_mean_pct": -11.67856,
+      "spread_pct": 8.02294,
+      "status": "OK;POST_EVENT_PROXY"
+    },
+    {
+      "market": "GB:LSE",
+      "group": "low",
+      "metric": "prior_volatility",
+      "median_cut": 0.470569,
+      "n_buy": 22,
+      "n_sell": 13,
+      "buy_mean_pct": -2.80456,
+      "sell_mean_pct": -1.54463,
+      "spread_pct": -1.25993,
+      "status": "OK"
+    },
+    {
+      "market": "GB:LSE",
+      "group": "high",
+      "metric": "prior_volatility",
+      "median_cut": 0.470569,
+      "n_buy": 5,
+      "n_sell": 29,
+      "buy_mean_pct": -8.71685,
+      "sell_mean_pct": -16.10576,
+      "spread_pct": 7.38892,
+      "status": "OK"
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "group": "low",
+      "metric": "market_cap",
+      "median_cut": 114474832.0,
+      "n_buy": 5,
+      "n_sell": 10,
+      "buy_mean_pct": -3.1888,
+      "sell_mean_pct": -13.15547,
+      "spread_pct": 9.96667,
+      "status": "OK;POST_EVENT_PROXY"
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "group": "high",
+      "metric": "market_cap",
+      "median_cut": 114474832.0,
+      "n_buy": 10,
+      "n_sell": 4,
+      "buy_mean_pct": -2.36832,
+      "sell_mean_pct": -10.65909,
+      "spread_pct": 8.29076,
+      "status": "OK;POST_EVENT_PROXY;SMALL_GROUP"
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "group": "low",
+      "metric": "prior_volatility",
+      "median_cut": 0.307031,
+      "n_buy": 12,
+      "n_sell": 3,
+      "buy_mean_pct": -0.80995,
+      "sell_mean_pct": -12.27429,
+      "spread_pct": 11.46434,
+      "status": "OK;SMALL_GROUP"
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "group": "high",
+      "metric": "prior_volatility",
+      "median_cut": 0.307031,
+      "n_buy": 3,
+      "n_sell": 12,
+      "buy_mean_pct": -9.96929,
+      "sell_mean_pct": -12.35881,
+      "spread_pct": 2.38952,
+      "status": "OK;SMALL_GROUP"
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "group": "low",
+      "metric": "market_cap",
+      "median_cut": 1405394048.0,
+      "n_buy": 5,
+      "n_sell": 23,
+      "buy_mean_pct": 2.54459,
+      "sell_mean_pct": -10.31706,
+      "spread_pct": 12.86165,
+      "status": "OK;POST_EVENT_PROXY"
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "group": "high",
+      "metric": "market_cap",
+      "median_cut": 1405394048.0,
+      "n_buy": 19,
+      "n_sell": 8,
+      "buy_mean_pct": 0.71694,
+      "sell_mean_pct": -10.20116,
+      "spread_pct": 10.9181,
+      "status": "OK;POST_EVENT_PROXY"
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "group": "low",
+      "metric": "prior_volatility",
+      "median_cut": 0.36849,
+      "n_buy": 19,
+      "n_sell": 11,
+      "buy_mean_pct": 3.688,
+      "sell_mean_pct": 1.75086,
+      "spread_pct": 1.93714,
+      "status": "OK"
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "group": "high",
+      "metric": "prior_volatility",
+      "median_cut": 0.36849,
+      "n_buy": 6,
+      "n_sell": 24,
+      "buy_mean_pct": -4.68166,
+      "sell_mean_pct": -16.9141,
+      "spread_pct": 12.23244,
+      "status": "OK"
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "group": "low",
+      "metric": "market_cap",
+      "median_cut": 1105671360.0,
+      "n_buy": 1,
+      "n_sell": 10,
+      "buy_mean_pct": 8.07601,
+      "sell_mean_pct": -9.93075,
+      "spread_pct": 18.00676,
+      "status": "OK;POST_EVENT_PROXY;SMALL_GROUP"
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "group": "high",
+      "metric": "market_cap",
+      "median_cut": 1105671360.0,
+      "n_buy": 9,
+      "n_sell": 2,
+      "buy_mean_pct": -0.00754,
+      "sell_mean_pct": -13.14152,
+      "spread_pct": 13.13399,
+      "status": "OK;POST_EVENT_PROXY;SMALL_GROUP"
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "group": "low",
+      "metric": "prior_volatility",
+      "median_cut": 0.331674,
+      "n_buy": 11,
+      "n_sell": 1,
+      "buy_mean_pct": 2.43423,
+      "sell_mean_pct": 0.0,
+      "spread_pct": 2.43423,
+      "status": "OK;SMALL_GROUP"
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "group": "high",
+      "metric": "prior_volatility",
+      "median_cut": 0.331674,
+      "n_buy": 1,
+      "n_sell": 11,
+      "buy_mean_pct": -5.49511,
+      "sell_mean_pct": -11.41732,
+      "spread_pct": 5.92222,
+      "status": "OK;SMALL_GROUP"
+    },
+    {
+      "market": "DE:XETRA",
+      "group": "low",
+      "metric": "market_cap",
+      "median_cut": 60065556.0,
+      "n_buy": 6,
+      "n_sell": 21,
+      "buy_mean_pct": 1.12146,
+      "sell_mean_pct": -8.80343,
+      "spread_pct": 9.9249,
+      "status": "OK;POST_EVENT_PROXY"
+    },
+    {
+      "market": "DE:XETRA",
+      "group": "high",
+      "metric": "market_cap",
+      "median_cut": 60065556.0,
+      "n_buy": 16,
+      "n_sell": 11,
+      "buy_mean_pct": 2.39384,
+      "sell_mean_pct": 5.12451,
+      "spread_pct": -2.73066,
+      "status": "OK;POST_EVENT_PROXY"
+    },
+    {
+      "market": "DE:XETRA",
+      "group": "low",
+      "metric": "prior_volatility",
+      "median_cut": 0.382525,
+      "n_buy": 20,
+      "n_sell": 8,
+      "buy_mean_pct": -0.26141,
+      "sell_mean_pct": -8.79818,
+      "spread_pct": 8.53677,
+      "status": "OK"
+    },
+    {
+      "market": "DE:XETRA",
+      "group": "high",
+      "metric": "prior_volatility",
+      "median_cut": 0.382525,
+      "n_buy": 2,
+      "n_sell": 26,
+      "buy_mean_pct": 25.12924,
+      "sell_mean_pct": -3.20086,
+      "spread_pct": 28.3301,
+      "status": "OK;SMALL_GROUP"
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "group": "low",
+      "metric": "market_cap",
+      "median_cut": 63181488.0,
+      "n_buy": 4,
+      "n_sell": 11,
+      "buy_mean_pct": -12.55447,
+      "sell_mean_pct": -17.18572,
+      "spread_pct": 4.63125,
+      "status": "OK;POST_EVENT_PROXY;SMALL_GROUP"
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "group": "high",
+      "metric": "market_cap",
+      "median_cut": 63181488.0,
+      "n_buy": 9,
+      "n_sell": 6,
+      "buy_mean_pct": 1.13169,
+      "sell_mean_pct": -8.18771,
+      "spread_pct": 9.3194,
+      "status": "OK;POST_EVENT_PROXY"
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "group": "low",
+      "metric": "prior_volatility",
+      "median_cut": 0.519385,
+      "n_buy": 11,
+      "n_sell": 5,
+      "buy_mean_pct": -2.55287,
+      "sell_mean_pct": -4.75934,
+      "spread_pct": 2.20647,
+      "status": "OK"
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "group": "high",
+      "metric": "prior_volatility",
+      "median_cut": 0.519385,
+      "n_buy": 3,
+      "n_sell": 12,
+      "buy_mean_pct": -6.96383,
+      "sell_mean_pct": -17.86437,
+      "spread_pct": 10.90055,
+      "status": "OK;SMALL_GROUP"
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "group": "low",
+      "metric": "market_cap",
+      "median_cut": 402615136.0,
+      "n_buy": 4,
+      "n_sell": 19,
+      "buy_mean_pct": -1.39612,
+      "sell_mean_pct": 2.11272,
+      "spread_pct": -3.50884,
+      "status": "OK;POST_EVENT_PROXY;SMALL_GROUP"
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "group": "high",
+      "metric": "market_cap",
+      "median_cut": 402615136.0,
+      "n_buy": 17,
+      "n_sell": 5,
+      "buy_mean_pct": 4.14457,
+      "sell_mean_pct": -6.77926,
+      "spread_pct": 10.92382,
+      "status": "OK;POST_EVENT_PROXY"
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "group": "low",
+      "metric": "prior_volatility",
+      "median_cut": 0.420051,
+      "n_buy": 19,
+      "n_sell": 6,
+      "buy_mean_pct": 3.6576,
+      "sell_mean_pct": -1.00837,
+      "spread_pct": 4.66598,
+      "status": "OK"
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "group": "high",
+      "metric": "prior_volatility",
+      "median_cut": 0.420051,
+      "n_buy": 4,
+      "n_sell": 20,
+      "buy_mean_pct": 3.42105,
+      "sell_mean_pct": 1.61671,
+      "spread_pct": 1.80434,
+      "status": "OK;SMALL_GROUP"
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "group": "low",
+      "metric": "market_cap",
+      "median_cut": 67908440.0,
+      "n_buy": 0,
+      "n_sell": 7,
+      "buy_mean_pct": null,
+      "sell_mean_pct": -18.35604,
+      "spread_pct": null,
+      "status": "EMPTY_SIDE;POST_EVENT_PROXY;SMALL_GROUP"
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "group": "high",
+      "metric": "market_cap",
+      "median_cut": 67908440.0,
+      "n_buy": 6,
+      "n_sell": 1,
+      "buy_mean_pct": -0.04907,
+      "sell_mean_pct": -8.81458,
+      "spread_pct": 8.76552,
+      "status": "OK;POST_EVENT_PROXY;SMALL_GROUP"
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "group": "low",
+      "metric": "prior_volatility",
+      "median_cut": 0.408955,
+      "n_buy": 6,
+      "n_sell": 2,
+      "buy_mean_pct": 1.79341,
+      "sell_mean_pct": -21.97297,
+      "spread_pct": 23.76638,
+      "status": "OK;SMALL_GROUP"
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "group": "high",
+      "metric": "prior_volatility",
+      "median_cut": 0.408955,
+      "n_buy": 1,
+      "n_sell": 6,
+      "buy_mean_pct": -9.54545,
+      "sell_mean_pct": -15.56015,
+      "spread_pct": 6.0147,
+      "status": "OK;SMALL_GROUP"
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "group": "low",
+      "metric": "market_cap",
+      "median_cut": 76068688.0,
+      "n_buy": 1,
+      "n_sell": 10,
+      "buy_mean_pct": -12.38533,
+      "sell_mean_pct": -11.1041,
+      "spread_pct": -1.28123,
+      "status": "OK;POST_EVENT_PROXY;SMALL_GROUP"
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "group": "high",
+      "metric": "market_cap",
+      "median_cut": 76068688.0,
+      "n_buy": 8,
+      "n_sell": 2,
+      "buy_mean_pct": 3.91355,
+      "sell_mean_pct": -19.78255,
+      "spread_pct": 23.6961,
+      "status": "OK;POST_EVENT_PROXY;SMALL_GROUP"
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "group": "low",
+      "metric": "prior_volatility",
+      "median_cut": 0.37014,
+      "n_buy": 7,
+      "n_sell": 4,
+      "buy_mean_pct": 4.30624,
+      "sell_mean_pct": -15.3856,
+      "spread_pct": 19.69184,
+      "status": "OK;SMALL_GROUP"
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "group": "high",
+      "metric": "prior_volatility",
+      "median_cut": 0.37014,
+      "n_buy": 2,
+      "n_sell": 8,
+      "buy_mean_pct": -5.6103,
+      "sell_mean_pct": -11.13296,
+      "spread_pct": 5.52266,
+      "status": "OK;SMALL_GROUP"
+    },
+    {
+      "market": "ES:BME_MADRID",
+      "group": "low",
+      "metric": "market_cap",
+      "median_cut": 302762752.0,
+      "n_buy": 1,
+      "n_sell": 6,
+      "buy_mean_pct": 0.8982,
+      "sell_mean_pct": -3.33857,
+      "spread_pct": 4.23677,
+      "status": "OK;POST_EVENT_PROXY;SMALL_GROUP"
+    },
+    {
+      "market": "ES:BME_MADRID",
+      "group": "high",
+      "metric": "market_cap",
+      "median_cut": 302762752.0,
+      "n_buy": 3,
+      "n_sell": 3,
+      "buy_mean_pct": 4.34006,
+      "sell_mean_pct": -2.17608,
+      "spread_pct": 6.51614,
+      "status": "OK;POST_EVENT_PROXY;SMALL_GROUP"
+    },
+    {
+      "market": "ES:BME_MADRID",
+      "group": "low",
+      "metric": "prior_volatility",
+      "median_cut": 0.287874,
+      "n_buy": 4,
+      "n_sell": 3,
+      "buy_mean_pct": 3.47959,
+      "sell_mean_pct": -3.53915,
+      "spread_pct": 7.01875,
+      "status": "OK;SMALL_GROUP"
+    },
+    {
+      "market": "ES:BME_MADRID",
+      "group": "high",
+      "metric": "prior_volatility",
+      "median_cut": 0.287874,
+      "n_buy": 0,
+      "n_sell": 6,
+      "buy_mean_pct": null,
+      "sell_mean_pct": -2.65704,
+      "spread_pct": null,
+      "status": "EMPTY_SIDE;SMALL_GROUP"
+    }
+  ],
+  "sector_mix": [
+    {
+      "market": "US:NASDAQ",
+      "side": "BUY",
+      "sector": "Technology",
+      "n": 31,
+      "pct_of_side": 20.5298
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "BUY",
+      "sector": "Healthcare",
+      "n": 24,
+      "pct_of_side": 15.89404
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "BUY",
+      "sector": "UNKNOWN",
+      "n": 19,
+      "pct_of_side": 12.58278
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "BUY",
+      "sector": "Industrials",
+      "n": 18,
+      "pct_of_side": 11.92053
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "BUY",
+      "sector": "Consumer Defensive",
+      "n": 17,
+      "pct_of_side": 11.25828
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "BUY",
+      "sector": "Financial Services",
+      "n": 13,
+      "pct_of_side": 8.60927
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "BUY",
+      "sector": "Consumer Cyclical",
+      "n": 12,
+      "pct_of_side": 7.94702
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "BUY",
+      "sector": "Communication Services",
+      "n": 7,
+      "pct_of_side": 4.63576
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "BUY",
+      "sector": "Basic Materials",
+      "n": 5,
+      "pct_of_side": 3.31126
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "BUY",
+      "sector": "Energy",
+      "n": 3,
+      "pct_of_side": 1.98675
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "BUY",
+      "sector": "Real Estate",
+      "n": 1,
+      "pct_of_side": 0.66225
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "BUY",
+      "sector": "Utilities",
+      "n": 1,
+      "pct_of_side": 0.66225
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "SELL",
+      "sector": "Healthcare",
+      "n": 40,
+      "pct_of_side": 18.95735
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "SELL",
+      "sector": "Industrials",
+      "n": 35,
+      "pct_of_side": 16.58768
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "SELL",
+      "sector": "Technology",
+      "n": 30,
+      "pct_of_side": 14.21801
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "SELL",
+      "sector": "Consumer Cyclical",
+      "n": 29,
+      "pct_of_side": 13.74408
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "SELL",
+      "sector": "Communication Services",
+      "n": 21,
+      "pct_of_side": 9.95261
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "SELL",
+      "sector": "UNKNOWN",
+      "n": 18,
+      "pct_of_side": 8.53081
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "SELL",
+      "sector": "Consumer Defensive",
+      "n": 14,
+      "pct_of_side": 6.63507
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "SELL",
+      "sector": "Basic Materials",
+      "n": 8,
+      "pct_of_side": 3.79147
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "SELL",
+      "sector": "Financial Services",
+      "n": 7,
+      "pct_of_side": 3.31754
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "SELL",
+      "sector": "Energy",
+      "n": 4,
+      "pct_of_side": 1.89573
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "SELL",
+      "sector": "Real Estate",
+      "n": 4,
+      "pct_of_side": 1.89573
+    },
+    {
+      "market": "US:NASDAQ",
+      "side": "SELL",
+      "sector": "Utilities",
+      "n": 1,
+      "pct_of_side": 0.47393
+    },
+    {
+      "market": "US:NYSE",
+      "side": "BUY",
+      "sector": "Industrials",
+      "n": 24,
+      "pct_of_side": 20.51282
+    },
+    {
+      "market": "US:NYSE",
+      "side": "BUY",
+      "sector": "Financial Services",
+      "n": 15,
+      "pct_of_side": 12.82051
+    },
+    {
+      "market": "US:NYSE",
+      "side": "BUY",
+      "sector": "Technology",
+      "n": 15,
+      "pct_of_side": 12.82051
+    },
+    {
+      "market": "US:NYSE",
+      "side": "BUY",
+      "sector": "Basic Materials",
+      "n": 12,
+      "pct_of_side": 10.25641
+    },
+    {
+      "market": "US:NYSE",
+      "side": "BUY",
+      "sector": "Healthcare",
+      "n": 11,
+      "pct_of_side": 9.40171
+    },
+    {
+      "market": "US:NYSE",
+      "side": "BUY",
+      "sector": "UNKNOWN",
+      "n": 11,
+      "pct_of_side": 9.40171
+    },
+    {
+      "market": "US:NYSE",
+      "side": "BUY",
+      "sector": "Energy",
+      "n": 10,
+      "pct_of_side": 8.54701
+    },
+    {
+      "market": "US:NYSE",
+      "side": "BUY",
+      "sector": "Consumer Cyclical",
+      "n": 8,
+      "pct_of_side": 6.83761
+    },
+    {
+      "market": "US:NYSE",
+      "side": "BUY",
+      "sector": "Communication Services",
+      "n": 4,
+      "pct_of_side": 3.4188
+    },
+    {
+      "market": "US:NYSE",
+      "side": "BUY",
+      "sector": "Real Estate",
+      "n": 4,
+      "pct_of_side": 3.4188
+    },
+    {
+      "market": "US:NYSE",
+      "side": "BUY",
+      "sector": "Consumer Defensive",
+      "n": 2,
+      "pct_of_side": 1.7094
+    },
+    {
+      "market": "US:NYSE",
+      "side": "BUY",
+      "sector": "Utilities",
+      "n": 1,
+      "pct_of_side": 0.8547
+    },
+    {
+      "market": "US:NYSE",
+      "side": "SELL",
+      "sector": "Consumer Cyclical",
+      "n": 17,
+      "pct_of_side": 25.75758
+    },
+    {
+      "market": "US:NYSE",
+      "side": "SELL",
+      "sector": "Financial Services",
+      "n": 10,
+      "pct_of_side": 15.15152
+    },
+    {
+      "market": "US:NYSE",
+      "side": "SELL",
+      "sector": "Industrials",
+      "n": 8,
+      "pct_of_side": 12.12121
+    },
+    {
+      "market": "US:NYSE",
+      "side": "SELL",
+      "sector": "Communication Services",
+      "n": 7,
+      "pct_of_side": 10.60606
+    },
+    {
+      "market": "US:NYSE",
+      "side": "SELL",
+      "sector": "Consumer Defensive",
+      "n": 6,
+      "pct_of_side": 9.09091
+    },
+    {
+      "market": "US:NYSE",
+      "side": "SELL",
+      "sector": "UNKNOWN",
+      "n": 6,
+      "pct_of_side": 9.09091
+    },
+    {
+      "market": "US:NYSE",
+      "side": "SELL",
+      "sector": "Real Estate",
+      "n": 4,
+      "pct_of_side": 6.06061
+    },
+    {
+      "market": "US:NYSE",
+      "side": "SELL",
+      "sector": "Basic Materials",
+      "n": 2,
+      "pct_of_side": 3.0303
+    },
+    {
+      "market": "US:NYSE",
+      "side": "SELL",
+      "sector": "Energy",
+      "n": 2,
+      "pct_of_side": 3.0303
+    },
+    {
+      "market": "US:NYSE",
+      "side": "SELL",
+      "sector": "Technology",
+      "n": 2,
+      "pct_of_side": 3.0303
+    },
+    {
+      "market": "US:NYSE",
+      "side": "SELL",
+      "sector": "Healthcare",
+      "n": 1,
+      "pct_of_side": 1.51515
+    },
+    {
+      "market": "US:NYSE",
+      "side": "SELL",
+      "sector": "Utilities",
+      "n": 1,
+      "pct_of_side": 1.51515
+    },
+    {
+      "market": "GB:LSE",
+      "side": "BUY",
+      "sector": "Basic Materials",
+      "n": 6,
+      "pct_of_side": 22.22222
+    },
+    {
+      "market": "GB:LSE",
+      "side": "BUY",
+      "sector": "Industrials",
+      "n": 6,
+      "pct_of_side": 22.22222
+    },
+    {
+      "market": "GB:LSE",
+      "side": "BUY",
+      "sector": "Communication Services",
+      "n": 3,
+      "pct_of_side": 11.11111
+    },
+    {
+      "market": "GB:LSE",
+      "side": "BUY",
+      "sector": "Consumer Cyclical",
+      "n": 3,
+      "pct_of_side": 11.11111
+    },
+    {
+      "market": "GB:LSE",
+      "side": "BUY",
+      "sector": "Energy",
+      "n": 3,
+      "pct_of_side": 11.11111
+    },
+    {
+      "market": "GB:LSE",
+      "side": "BUY",
+      "sector": "Consumer Defensive",
+      "n": 2,
+      "pct_of_side": 7.40741
+    },
+    {
+      "market": "GB:LSE",
+      "side": "BUY",
+      "sector": "Technology",
+      "n": 2,
+      "pct_of_side": 7.40741
+    },
+    {
+      "market": "GB:LSE",
+      "side": "BUY",
+      "sector": "UNKNOWN",
+      "n": 2,
+      "pct_of_side": 7.40741
+    },
+    {
+      "market": "GB:LSE",
+      "side": "SELL",
+      "sector": "Basic Materials",
+      "n": 9,
+      "pct_of_side": 21.42857
+    },
+    {
+      "market": "GB:LSE",
+      "side": "SELL",
+      "sector": "Energy",
+      "n": 7,
+      "pct_of_side": 16.66667
+    },
+    {
+      "market": "GB:LSE",
+      "side": "SELL",
+      "sector": "Consumer Cyclical",
+      "n": 6,
+      "pct_of_side": 14.28571
+    },
+    {
+      "market": "GB:LSE",
+      "side": "SELL",
+      "sector": "Industrials",
+      "n": 5,
+      "pct_of_side": 11.90476
+    },
+    {
+      "market": "GB:LSE",
+      "side": "SELL",
+      "sector": "Financial Services",
+      "n": 4,
+      "pct_of_side": 9.52381
+    },
+    {
+      "market": "GB:LSE",
+      "side": "SELL",
+      "sector": "Communication Services",
+      "n": 3,
+      "pct_of_side": 7.14286
+    },
+    {
+      "market": "GB:LSE",
+      "side": "SELL",
+      "sector": "Real Estate",
+      "n": 3,
+      "pct_of_side": 7.14286
+    },
+    {
+      "market": "GB:LSE",
+      "side": "SELL",
+      "sector": "UNKNOWN",
+      "n": 3,
+      "pct_of_side": 7.14286
+    },
+    {
+      "market": "GB:LSE",
+      "side": "SELL",
+      "sector": "Technology",
+      "n": 1,
+      "pct_of_side": 2.38095
+    },
+    {
+      "market": "GB:LSE",
+      "side": "SELL",
+      "sector": "Utilities",
+      "n": 1,
+      "pct_of_side": 2.38095
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "side": "BUY",
+      "sector": "Consumer Cyclical",
+      "n": 4,
+      "pct_of_side": 26.66667
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "side": "BUY",
+      "sector": "Financial Services",
+      "n": 3,
+      "pct_of_side": 20.0
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "side": "BUY",
+      "sector": "Basic Materials",
+      "n": 2,
+      "pct_of_side": 13.33333
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "side": "BUY",
+      "sector": "Energy",
+      "n": 2,
+      "pct_of_side": 13.33333
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "side": "BUY",
+      "sector": "Technology",
+      "n": 2,
+      "pct_of_side": 13.33333
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "side": "BUY",
+      "sector": "Healthcare",
+      "n": 1,
+      "pct_of_side": 6.66667
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "side": "BUY",
+      "sector": "Industrials",
+      "n": 1,
+      "pct_of_side": 6.66667
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "side": "SELL",
+      "sector": "Consumer Cyclical",
+      "n": 6,
+      "pct_of_side": 40.0
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "side": "SELL",
+      "sector": "Communication Services",
+      "n": 4,
+      "pct_of_side": 26.66667
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "side": "SELL",
+      "sector": "Technology",
+      "n": 2,
+      "pct_of_side": 13.33333
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "side": "SELL",
+      "sector": "Healthcare",
+      "n": 1,
+      "pct_of_side": 6.66667
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "side": "SELL",
+      "sector": "Real Estate",
+      "n": 1,
+      "pct_of_side": 6.66667
+    },
+    {
+      "market": "IT:EURONEXT_MILAN",
+      "side": "SELL",
+      "sector": "UNKNOWN",
+      "n": 1,
+      "pct_of_side": 6.66667
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "BUY",
+      "sector": "Industrials",
+      "n": 6,
+      "pct_of_side": 24.0
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "BUY",
+      "sector": "Healthcare",
+      "n": 5,
+      "pct_of_side": 20.0
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "BUY",
+      "sector": "Technology",
+      "n": 5,
+      "pct_of_side": 20.0
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "BUY",
+      "sector": "Communication Services",
+      "n": 3,
+      "pct_of_side": 12.0
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "BUY",
+      "sector": "Consumer Cyclical",
+      "n": 3,
+      "pct_of_side": 12.0
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "BUY",
+      "sector": "Basic Materials",
+      "n": 2,
+      "pct_of_side": 8.0
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "BUY",
+      "sector": "UNKNOWN",
+      "n": 1,
+      "pct_of_side": 4.0
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "SELL",
+      "sector": "Healthcare",
+      "n": 7,
+      "pct_of_side": 20.0
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "SELL",
+      "sector": "Industrials",
+      "n": 7,
+      "pct_of_side": 20.0
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "SELL",
+      "sector": "Consumer Cyclical",
+      "n": 5,
+      "pct_of_side": 14.28571
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "SELL",
+      "sector": "Technology",
+      "n": 5,
+      "pct_of_side": 14.28571
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "SELL",
+      "sector": "UNKNOWN",
+      "n": 4,
+      "pct_of_side": 11.42857
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "SELL",
+      "sector": "Basic Materials",
+      "n": 2,
+      "pct_of_side": 5.71429
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "SELL",
+      "sector": "Financial Services",
+      "n": 2,
+      "pct_of_side": 5.71429
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "SELL",
+      "sector": "Real Estate",
+      "n": 2,
+      "pct_of_side": 5.71429
+    },
+    {
+      "market": "SE:NASDAQ_STOCKHOLM",
+      "side": "SELL",
+      "sector": "Communication Services",
+      "n": 1,
+      "pct_of_side": 2.85714
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "side": "BUY",
+      "sector": "Industrials",
+      "n": 4,
+      "pct_of_side": 33.33333
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "side": "BUY",
+      "sector": "Consumer Defensive",
+      "n": 2,
+      "pct_of_side": 16.66667
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "side": "BUY",
+      "sector": "Energy",
+      "n": 2,
+      "pct_of_side": 16.66667
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "side": "BUY",
+      "sector": "UNKNOWN",
+      "n": 2,
+      "pct_of_side": 16.66667
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "side": "BUY",
+      "sector": "Healthcare",
+      "n": 1,
+      "pct_of_side": 8.33333
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "side": "BUY",
+      "sector": "Technology",
+      "n": 1,
+      "pct_of_side": 8.33333
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "side": "SELL",
+      "sector": "Technology",
+      "n": 5,
+      "pct_of_side": 41.66667
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "side": "SELL",
+      "sector": "Industrials",
+      "n": 3,
+      "pct_of_side": 25.0
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "side": "SELL",
+      "sector": "Consumer Defensive",
+      "n": 2,
+      "pct_of_side": 16.66667
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "side": "SELL",
+      "sector": "Energy",
+      "n": 1,
+      "pct_of_side": 8.33333
+    },
+    {
+      "market": "NO:EURONEXT_OSLO",
+      "side": "SELL",
+      "sector": "Utilities",
+      "n": 1,
+      "pct_of_side": 8.33333
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "BUY",
+      "sector": "Technology",
+      "n": 6,
+      "pct_of_side": 26.08696
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "BUY",
+      "sector": "Healthcare",
+      "n": 5,
+      "pct_of_side": 21.73913
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "BUY",
+      "sector": "Industrials",
+      "n": 4,
+      "pct_of_side": 17.3913
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "BUY",
+      "sector": "Consumer Cyclical",
+      "n": 2,
+      "pct_of_side": 8.69565
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "BUY",
+      "sector": "Consumer Defensive",
+      "n": 2,
+      "pct_of_side": 8.69565
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "BUY",
+      "sector": "Financial Services",
+      "n": 2,
+      "pct_of_side": 8.69565
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "BUY",
+      "sector": "Basic Materials",
+      "n": 1,
+      "pct_of_side": 4.34783
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "BUY",
+      "sector": "Communication Services",
+      "n": 1,
+      "pct_of_side": 4.34783
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "SELL",
+      "sector": "Industrials",
+      "n": 7,
+      "pct_of_side": 20.0
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "SELL",
+      "sector": "Consumer Cyclical",
+      "n": 6,
+      "pct_of_side": 17.14286
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "SELL",
+      "sector": "Healthcare",
+      "n": 4,
+      "pct_of_side": 11.42857
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "SELL",
+      "sector": "Real Estate",
+      "n": 4,
+      "pct_of_side": 11.42857
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "SELL",
+      "sector": "Technology",
+      "n": 4,
+      "pct_of_side": 11.42857
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "SELL",
+      "sector": "Basic Materials",
+      "n": 3,
+      "pct_of_side": 8.57143
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "SELL",
+      "sector": "Communication Services",
+      "n": 3,
+      "pct_of_side": 8.57143
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "SELL",
+      "sector": "Financial Services",
+      "n": 2,
+      "pct_of_side": 5.71429
+    },
+    {
+      "market": "DE:XETRA",
+      "side": "SELL",
+      "sector": "UNKNOWN",
+      "n": 2,
+      "pct_of_side": 5.71429
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "side": "BUY",
+      "sector": "Industrials",
+      "n": 5,
+      "pct_of_side": 35.71429
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "side": "BUY",
+      "sector": "Basic Materials",
+      "n": 2,
+      "pct_of_side": 14.28571
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "side": "BUY",
+      "sector": "Financial Services",
+      "n": 2,
+      "pct_of_side": 14.28571
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "side": "BUY",
+      "sector": "Consumer Cyclical",
+      "n": 1,
+      "pct_of_side": 7.14286
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "side": "BUY",
+      "sector": "Consumer Defensive",
+      "n": 1,
+      "pct_of_side": 7.14286
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "side": "BUY",
+      "sector": "Healthcare",
+      "n": 1,
+      "pct_of_side": 7.14286
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "side": "BUY",
+      "sector": "UNKNOWN",
+      "n": 1,
+      "pct_of_side": 7.14286
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "side": "BUY",
+      "sector": "Utilities",
+      "n": 1,
+      "pct_of_side": 7.14286
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "side": "SELL",
+      "sector": "Financial Services",
+      "n": 4,
+      "pct_of_side": 23.52941
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "side": "SELL",
+      "sector": "Industrials",
+      "n": 3,
+      "pct_of_side": 17.64706
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "side": "SELL",
+      "sector": "Communication Services",
+      "n": 2,
+      "pct_of_side": 11.76471
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "side": "SELL",
+      "sector": "Consumer Cyclical",
+      "n": 2,
+      "pct_of_side": 11.76471
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "side": "SELL",
+      "sector": "Healthcare",
+      "n": 2,
+      "pct_of_side": 11.76471
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "side": "SELL",
+      "sector": "Technology",
+      "n": 2,
+      "pct_of_side": 11.76471
+    },
+    {
+      "market": "DE:FRANKFURT",
+      "side": "SELL",
+      "sector": "Utilities",
+      "n": 2,
+      "pct_of_side": 11.76471
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "BUY",
+      "sector": "Industrials",
+      "n": 5,
+      "pct_of_side": 21.73913
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "BUY",
+      "sector": "Basic Materials",
+      "n": 3,
+      "pct_of_side": 13.04348
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "BUY",
+      "sector": "Healthcare",
+      "n": 3,
+      "pct_of_side": 13.04348
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "BUY",
+      "sector": "Consumer Cyclical",
+      "n": 2,
+      "pct_of_side": 8.69565
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "BUY",
+      "sector": "Consumer Defensive",
+      "n": 2,
+      "pct_of_side": 8.69565
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "BUY",
+      "sector": "Energy",
+      "n": 2,
+      "pct_of_side": 8.69565
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "BUY",
+      "sector": "Technology",
+      "n": 2,
+      "pct_of_side": 8.69565
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "BUY",
+      "sector": "UNKNOWN",
+      "n": 2,
+      "pct_of_side": 8.69565
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "BUY",
+      "sector": "Communication Services",
+      "n": 1,
+      "pct_of_side": 4.34783
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "BUY",
+      "sector": "Real Estate",
+      "n": 1,
+      "pct_of_side": 4.34783
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "SELL",
+      "sector": "Healthcare",
+      "n": 6,
+      "pct_of_side": 23.07692
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "SELL",
+      "sector": "Consumer Cyclical",
+      "n": 4,
+      "pct_of_side": 15.38462
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "SELL",
+      "sector": "Industrials",
+      "n": 3,
+      "pct_of_side": 11.53846
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "SELL",
+      "sector": "Technology",
+      "n": 3,
+      "pct_of_side": 11.53846
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "SELL",
+      "sector": "Communication Services",
+      "n": 2,
+      "pct_of_side": 7.69231
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "SELL",
+      "sector": "Real Estate",
+      "n": 2,
+      "pct_of_side": 7.69231
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "SELL",
+      "sector": "UNKNOWN",
+      "n": 2,
+      "pct_of_side": 7.69231
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "SELL",
+      "sector": "Basic Materials",
+      "n": 1,
+      "pct_of_side": 3.84615
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "SELL",
+      "sector": "Consumer Defensive",
+      "n": 1,
+      "pct_of_side": 3.84615
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "SELL",
+      "sector": "Energy",
+      "n": 1,
+      "pct_of_side": 3.84615
+    },
+    {
+      "market": "FR:EURONEXT_PARIS",
+      "side": "SELL",
+      "sector": "Utilities",
+      "n": 1,
+      "pct_of_side": 3.84615
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "side": "BUY",
+      "sector": "Industrials",
+      "n": 3,
+      "pct_of_side": 42.85714
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "side": "BUY",
+      "sector": "Basic Materials",
+      "n": 1,
+      "pct_of_side": 14.28571
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "side": "BUY",
+      "sector": "Consumer Defensive",
+      "n": 1,
+      "pct_of_side": 14.28571
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "side": "BUY",
+      "sector": "Technology",
+      "n": 1,
+      "pct_of_side": 14.28571
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "side": "BUY",
+      "sector": "UNKNOWN",
+      "n": 1,
+      "pct_of_side": 14.28571
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "side": "SELL",
+      "sector": "Basic Materials",
+      "n": 2,
+      "pct_of_side": 25.0
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "side": "SELL",
+      "sector": "Communication Services",
+      "n": 1,
+      "pct_of_side": 12.5
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "side": "SELL",
+      "sector": "Consumer Cyclical",
+      "n": 1,
+      "pct_of_side": 12.5
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "side": "SELL",
+      "sector": "Financial Services",
+      "n": 1,
+      "pct_of_side": 12.5
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "side": "SELL",
+      "sector": "Industrials",
+      "n": 1,
+      "pct_of_side": 12.5
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "side": "SELL",
+      "sector": "Real Estate",
+      "n": 1,
+      "pct_of_side": 12.5
+    },
+    {
+      "market": "NL:EURONEXT_AMSTERDAM",
+      "side": "SELL",
+      "sector": "Utilities",
+      "n": 1,
+      "pct_of_side": 12.5
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "side": "BUY",
+      "sector": "Consumer Cyclical",
+      "n": 3,
+      "pct_of_side": 33.33333
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "side": "BUY",
+      "sector": "Healthcare",
+      "n": 2,
+      "pct_of_side": 22.22222
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "side": "BUY",
+      "sector": "Industrials",
+      "n": 2,
+      "pct_of_side": 22.22222
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "side": "BUY",
+      "sector": "Communication Services",
+      "n": 1,
+      "pct_of_side": 11.11111
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "side": "BUY",
+      "sector": "Technology",
+      "n": 1,
+      "pct_of_side": 11.11111
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "side": "SELL",
+      "sector": "Industrials",
+      "n": 5,
+      "pct_of_side": 41.66667
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "side": "SELL",
+      "sector": "Basic Materials",
+      "n": 3,
+      "pct_of_side": 25.0
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "side": "SELL",
+      "sector": "Consumer Defensive",
+      "n": 1,
+      "pct_of_side": 8.33333
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "side": "SELL",
+      "sector": "Financial Services",
+      "n": 1,
+      "pct_of_side": 8.33333
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "side": "SELL",
+      "sector": "Healthcare",
+      "n": 1,
+      "pct_of_side": 8.33333
+    },
+    {
+      "market": "FI:NASDAQ_HELSINKI",
+      "side": "SELL",
+      "sector": "Technology",
+      "n": 1,
+      "pct_of_side": 8.33333
+    },
+    {
+      "market": "ES:BME_MADRID",
+      "side": "BUY",
+      "sector": "Healthcare",
+      "n": 2,
+      "pct_of_side": 50.0
+    },
+    {
+      "market": "ES:BME_MADRID",
+      "side": "BUY",
+      "sector": "Consumer Defensive",
+      "n": 1,
+      "pct_of_side": 25.0
+    },
+    {
+      "market": "ES:BME_MADRID",
+      "side": "BUY",
+      "sector": "Real Estate",
+      "n": 1,
+      "pct_of_side": 25.0
+    },
+    {
+      "market": "ES:BME_MADRID",
+      "side": "SELL",
+      "sector": "Basic Materials",
+      "n": 3,
+      "pct_of_side": 33.33333
+    },
+    {
+      "market": "ES:BME_MADRID",
+      "side": "SELL",
+      "sector": "Consumer Cyclical",
+      "n": 1,
+      "pct_of_side": 11.11111
+    },
+    {
+      "market": "ES:BME_MADRID",
+      "side": "SELL",
+      "sector": "Consumer Defensive",
+      "n": 1,
+      "pct_of_side": 11.11111
+    },
+    {
+      "market": "ES:BME_MADRID",
+      "side": "SELL",
+      "sector": "Healthcare",
+      "n": 1,
+      "pct_of_side": 11.11111
+    },
+    {
+      "market": "ES:BME_MADRID",
+      "side": "SELL",
+      "sector": "Industrials",
+      "n": 1,
+      "pct_of_side": 11.11111
+    },
+    {
+      "market": "ES:BME_MADRID",
+      "side": "SELL",
+      "sector": "UNKNOWN",
+      "n": 1,
+      "pct_of_side": 11.11111
+    },
+    {
+      "market": "ES:BME_MADRID",
+      "side": "SELL",
+      "sector": "Utilities",
+      "n": 1,
+      "pct_of_side": 11.11111
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "BUY",
+      "sector": "Industrials",
+      "n": 78,
+      "pct_of_side": 18.26698
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "BUY",
+      "sector": "Technology",
+      "n": 66,
+      "pct_of_side": 15.45667
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "BUY",
+      "sector": "Healthcare",
+      "n": 55,
+      "pct_of_side": 12.88056
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "BUY",
+      "sector": "UNKNOWN",
+      "n": 39,
+      "pct_of_side": 9.13349
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "BUY",
+      "sector": "Consumer Cyclical",
+      "n": 38,
+      "pct_of_side": 8.8993
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "BUY",
+      "sector": "Financial Services",
+      "n": 35,
+      "pct_of_side": 8.19672
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "BUY",
+      "sector": "Basic Materials",
+      "n": 34,
+      "pct_of_side": 7.96253
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "BUY",
+      "sector": "Consumer Defensive",
+      "n": 30,
+      "pct_of_side": 7.02576
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "BUY",
+      "sector": "Energy",
+      "n": 22,
+      "pct_of_side": 5.15222
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "BUY",
+      "sector": "Communication Services",
+      "n": 20,
+      "pct_of_side": 4.68384
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "BUY",
+      "sector": "Real Estate",
+      "n": 7,
+      "pct_of_side": 1.63934
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "BUY",
+      "sector": "Utilities",
+      "n": 3,
+      "pct_of_side": 0.70258
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "SELL",
+      "sector": "Industrials",
+      "n": 78,
+      "pct_of_side": 15.98361
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "SELL",
+      "sector": "Consumer Cyclical",
+      "n": 77,
+      "pct_of_side": 15.77869
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "SELL",
+      "sector": "Healthcare",
+      "n": 63,
+      "pct_of_side": 12.90984
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "SELL",
+      "sector": "Technology",
+      "n": 55,
+      "pct_of_side": 11.27049
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "SELL",
+      "sector": "Communication Services",
+      "n": 44,
+      "pct_of_side": 9.01639
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "SELL",
+      "sector": "UNKNOWN",
+      "n": 37,
+      "pct_of_side": 7.58197
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "SELL",
+      "sector": "Basic Materials",
+      "n": 33,
+      "pct_of_side": 6.7623
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "SELL",
+      "sector": "Financial Services",
+      "n": 31,
+      "pct_of_side": 6.35246
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "SELL",
+      "sector": "Consumer Defensive",
+      "n": 25,
+      "pct_of_side": 5.12295
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "SELL",
+      "sector": "Real Estate",
+      "n": 21,
+      "pct_of_side": 4.30328
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "SELL",
+      "sector": "Energy",
+      "n": 15,
+      "pct_of_side": 3.07377
+    },
+    {
+      "market": "ALL_HOLDINGS_POOL",
+      "side": "SELL",
+      "sector": "Utilities",
+      "n": 9,
+      "pct_of_side": 1.84426
+    }
+  ]
+}

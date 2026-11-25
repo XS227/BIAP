@@ -1,0 +1,4 @@
+﻿statistic,point_pct,ci_low_pct,ci_high_pct,n_valid_draws,B,seed,basis
+pooled,11.6111,7.63378,15.05366,10000,10000,20261119,RETURNS_ONLY
+equal_market,10.49909,7.53567,13.37391,10000,10000,20261119,RETURNS_ONLY
+sector_neutral,11.82502,7.31412,16.22296,10000,10000,20261119,POST_EVENT_PROXY

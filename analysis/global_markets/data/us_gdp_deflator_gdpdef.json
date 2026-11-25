@@ -1,0 +1,284 @@
+{
+ "dataset": "us_gdp_implicit_price_deflator",
+ "fred_series": "GDPDEF",
+ "fred_series_title": "Gross Domestic Product: Implicit Price Deflator (quarterly, seasonally adjusted, index 2017=100)",
+ "source_url": "https://fred.stlouisfed.org/series/GDPDEF",
+ "download_url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=GDPDEF",
+ "retrieved_at": "2026-11-25",
+ "source_csv_sha256": "f887848c64efee21318470b6e5c637edbde85503ef0d5893128c2a3f8cf74eff",
+ "version": "2026-11-25",
+ "method": "annual value = mean of the quarterly GDPDEF observations of the calendar year; index = annual / annual(1968) * 100, so 1968 = 100 (Ohlson 1980 base year)",
+ "base_year": 1968,
+ "base_value_native_2017_100": 18.27725,
+ "last_complete_year": 2025,
+ "years": {
+  "1960": {
+   "index_1968_100": 84.7789,
+   "quarters": 4
+  },
+  "1961": {
+   "index_1968_100": 85.6762,
+   "quarters": 4
+  },
+  "1962": {
+   "index_1968_100": 86.7212,
+   "quarters": 4
+  },
+  "1963": {
+   "index_1968_100": 87.7101,
+   "quarters": 4
+  },
+  "1964": {
+   "index_1968_100": 89.0492,
+   "quarters": 4
+  },
+  "1965": {
+   "index_1968_100": 90.6728,
+   "quarters": 4
+  },
+  "1966": {
+   "index_1968_100": 93.2156,
+   "quarters": 4
+  },
+  "1967": {
+   "index_1968_100": 95.9198,
+   "quarters": 4
+  },
+  "1968": {
+   "index_1968_100": 100.0,
+   "quarters": 4
+  },
+  "1969": {
+   "index_1968_100": 104.9146,
+   "quarters": 4
+  },
+  "1970": {
+   "index_1968_100": 110.457,
+   "quarters": 4
+  },
+  "1971": {
+   "index_1968_100": 116.0486,
+   "quarters": 4
+  },
+  "1972": {
+   "index_1968_100": 121.0562,
+   "quarters": 4
+  },
+  "1973": {
+   "index_1968_100": 127.7011,
+   "quarters": 4
+  },
+  "1974": {
+   "index_1968_100": 139.2277,
+   "quarters": 4
+  },
+  "1975": {
+   "index_1968_100": 152.0606,
+   "quarters": 4
+  },
+  "1976": {
+   "index_1968_100": 160.4536,
+   "quarters": 4
+  },
+  "1977": {
+   "index_1968_100": 170.4004,
+   "quarters": 4
+  },
+  "1978": {
+   "index_1968_100": 182.3483,
+   "quarters": 4
+  },
+  "1979": {
+   "index_1968_100": 197.5448,
+   "quarters": 4
+  },
+  "1980": {
+   "index_1968_100": 215.4181,
+   "quarters": 4
+  },
+  "1981": {
+   "index_1968_100": 235.7986,
+   "quarters": 4
+  },
+  "1982": {
+   "index_1968_100": 250.3618,
+   "quarters": 4
+  },
+  "1983": {
+   "index_1968_100": 260.1102,
+   "quarters": 4
+  },
+  "1984": {
+   "index_1968_100": 269.5236,
+   "quarters": 4
+  },
+  "1985": {
+   "index_1968_100": 278.0574,
+   "quarters": 4
+  },
+  "1986": {
+   "index_1968_100": 283.6696,
+   "quarters": 4
+  },
+  "1987": {
+   "index_1968_100": 290.6769,
+   "quarters": 4
+  },
+  "1988": {
+   "index_1968_100": 300.9246,
+   "quarters": 4
+  },
+  "1989": {
+   "index_1968_100": 312.744,
+   "quarters": 4
+  },
+  "1990": {
+   "index_1968_100": 324.4758,
+   "quarters": 4
+  },
+  "1991": {
+   "index_1968_100": 335.4279,
+   "quarters": 4
+  },
+  "1992": {
+   "index_1968_100": 343.0631,
+   "quarters": 4
+  },
+  "1993": {
+   "index_1968_100": 351.2016,
+   "quarters": 4
+  },
+  "1994": {
+   "index_1968_100": 358.6973,
+   "quarters": 4
+  },
+  "1995": {
+   "index_1968_100": 366.2285,
+   "quarters": 4
+  },
+  "1996": {
+   "index_1968_100": 372.924,
+   "quarters": 4
+  },
+  "1997": {
+   "index_1968_100": 379.3596,
+   "quarters": 4
+  },
+  "1998": {
+   "index_1968_100": 383.6203,
+   "quarters": 4
+  },
+  "1999": {
+   "index_1968_100": 389.0438,
+   "quarters": 4
+  },
+  "2000": {
+   "index_1968_100": 397.8607,
+   "quarters": 4
+  },
+  "2001": {
+   "index_1968_100": 406.8418,
+   "quarters": 4
+  },
+  "2002": {
+   "index_1968_100": 413.1571,
+   "quarters": 4
+  },
+  "2003": {
+   "index_1968_100": 421.2874,
+   "quarters": 4
+  },
+  "2004": {
+   "index_1968_100": 432.6143,
+   "quarters": 4
+  },
+  "2005": {
+   "index_1968_100": 446.1899,
+   "quarters": 4
+  },
+  "2006": {
+   "index_1968_100": 459.9653,
+   "quarters": 4
+  },
+  "2007": {
+   "index_1968_100": 472.4206,
+   "quarters": 4
+  },
+  "2008": {
+   "index_1968_100": 481.5618,
+   "quarters": 4
+  },
+  "2009": {
+   "index_1968_100": 484.5108,
+   "quarters": 4
+  },
+  "2010": {
+   "index_1968_100": 490.3829,
+   "quarters": 4
+  },
+  "2011": {
+   "index_1968_100": 500.5034,
+   "quarters": 4
+  },
+  "2012": {
+   "index_1968_100": 509.8333,
+   "quarters": 4
+  },
+  "2013": {
+   "index_1968_100": 518.4984,
+   "quarters": 4
+  },
+  "2014": {
+   "index_1968_100": 527.5219,
+   "quarters": 4
+  },
+  "2015": {
+   "index_1968_100": 532.4351,
+   "quarters": 4
+  },
+  "2016": {
+   "index_1968_100": 537.4865,
+   "quarters": 4
+  },
+  "2017": {
+   "index_1968_100": 547.1009,
+   "quarters": 4
+  },
+  "2018": {
+   "index_1968_100": 559.6452,
+   "quarters": 4
+  },
+  "2019": {
+   "index_1968_100": 568.8739,
+   "quarters": 4
+  },
+  "2020": {
+   "index_1968_100": 576.4653,
+   "quarters": 4
+  },
+  "2021": {
+   "index_1968_100": 602.5524,
+   "quarters": 4
+  },
+  "2022": {
+   "index_1968_100": 645.6948,
+   "quarters": 4
+  },
+  "2023": {
+   "index_1968_100": 669.9175,
+   "quarters": 4
+  },
+  "2024": {
+   "index_1968_100": 687.0891,
+   "quarters": 4
+  },
+  "2025": {
+   "index_1968_100": 705.1676,
+   "quarters": 4
+  },
+  "2026": {
+   "index_1968_100": 727.4453,
+   "quarters": 3
+  }
+ }
+}
