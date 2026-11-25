@@ -138,7 +138,13 @@ def refresh_benchmark(
         return result
     problems = validate_payload(payload, prev_rows)
     if problems:
-        result.update(status="REJECTED", problems=problems)
+        readiness = payload.get("dataReadiness") if isinstance(payload, dict) else None
+        result.update(status="REJECTED", problems=problems,
+                      scannerStatus=payload.get("status") if isinstance(payload, dict) else None,
+                      releaseReasons=(readiness or {}).get("reasons") if isinstance(readiness, dict) else [],
+                      marketSource=(readiness or {}).get("marketSource") if isinstance(readiness, dict) else None,
+                      marketCoveragePct=(readiness or {}).get("marketCoveragePct") if isinstance(readiness, dict) else None,
+                      screenedEquities=(readiness or {}).get("screenedEquities") if isinstance(readiness, dict) else None)
         return result
     stamp = (now or datetime.now(timezone.utc)).isoformat()
     wrapper = {
