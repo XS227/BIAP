@@ -22,6 +22,12 @@ SAFE_PATTERNS=(
   'deploy/install-price-refresh-runner.sh'
   'deploy/deploy-scope.sh'
   '.github/workflows/deploy-backend.yml'
+  # research / Global-only workflows (never touch the Kiasha/Iran VPS backend)
+  '.github/workflows/biap-global-*.yml'
+  '.github/workflows/biap-nov19-*.yml'
+  '.github/workflows/biap-preliminary-*.yml'
+  '.github/workflows/paper-portfolio-*.yml'
+  '.github/workflows/research-*.yml'
 )
 if [[ "$event" == "workflow_dispatch" ]]; then echo "deploy=true"; echo "reason=manual dispatch"; exit 0; fi
 zeros="0000000000000000000000000000000000000000"
