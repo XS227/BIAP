@@ -151,12 +151,33 @@ class CodalFundamentals:
     total_equity_current: Optional[float] = None
     total_equity_prev: Optional[float] = None
     audit_opinion: Optional[str] = None
+    auditor_name: Optional[str] = None
+    audit_basis: Optional[str] = None
     related_party_flags: Optional[int] = None
     guidance_note: Optional[str] = None
     tracing_no: Optional[str] = None
     report_title: Optional[str] = None
     report_url: Optional[str] = None
     source: str = "codal_financial_statement_html"
+    # Additive (parser v2 only): inputs for earnings-quality / Beneish / Altman / Zmijewski checks.
+    operating_cash_flow_current: Optional[float] = None
+    operating_cash_flow_prev: Optional[float] = None
+    current_assets_current: Optional[float] = None
+    current_assets_prev: Optional[float] = None
+    current_liabilities_current: Optional[float] = None
+    current_liabilities_prev: Optional[float] = None
+    receivables_current: Optional[float] = None
+    receivables_prev: Optional[float] = None
+    retained_earnings_current: Optional[float] = None
+    retained_earnings_prev: Optional[float] = None
+    fixed_assets_current: Optional[float] = None
+    fixed_assets_prev: Optional[float] = None
+    operating_profit_current: Optional[float] = None
+    operating_profit_prev: Optional[float] = None
+    sga_expense_current: Optional[float] = None  # as filed: expenses are negative
+    sga_expense_prev: Optional[float] = None
+    depreciation_current: Optional[float] = None
+    depreciation_prev: Optional[float] = None
 
     def to_dict(self) -> dict:
         return asdict(self)

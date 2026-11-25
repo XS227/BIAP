@@ -297,3 +297,86 @@ def test_run_batch_without_restrict_to_codes_behaves_as_before(tmp_path, monkeyp
     result = ingestion.run_batch(store=store, registry=reg, batch_size=10)
     assert result["metadata"]["restrictedToCodesCount"] is None
     assert result["succeeded"] == 1
+
+
+
+def test_reparse_retries_old_parser_revision(monkeypatch):
+    monkeypatch.setattr(ingestion, "_parser_revision", lambda: "parser-new")
+    assert not ingestion._unparseable_unchanged(
+        {"tracingNos": ["100"], "parserRevision": "parser-old"}, ["100"])
+    assert not ingestion._unparseable_unchanged(
+        {"tracingNos": ["100"]}, ["100"])  # old worker state: no revision
+
+
+def test_reparse_skips_only_unchanged_filing_and_parser(monkeypatch):
+    monkeypatch.setattr(ingestion, "_parser_revision", lambda: "parser-new")
+    previous = {"tracingNos": ["100", "200"], "parserRevision": "parser-new"}
+    assert ingestion._unparseable_unchanged(previous, ["100", "200"])
+    assert not ingestion._unparseable_unchanged(previous, ["100", "201"])
+    assert not ingestion._unparseable_unchanged(previous, [])
+    assert not ingestion._unparseable_unchanged(None, ["100"])
+
+
+def test_parser_revision_is_stable_and_source_derived():
+    ingestion._parser_revision.cache_clear()
+    revision = ingestion._parser_revision()
+    assert isinstance(revision, str)
+    assert len(revision) == 16
+    assert all(ch in "0123456789abcdef" for ch in revision)
+    assert ingestion._parser_revision() == revision
+
+
+
+def test_inbox_retries_when_export_arrives_after_failure(monkeypatch):
+    monkeypatch.setattr(ingestion, "_parser_revision", lambda: "new-parser")
+
+    class InboxStub:
+        attempts = {"سیدکو": {"last": "2026-11-04"}}
+        def has_financial_filings(self, sym):
+            return sym == "سیدکو"
+        def usable_tracing_nos(self, sym):
+            return ["1553923"]
+
+    inbox = InboxStub()
+    cutoff = "2026-10-30T00:00:00+00:00"
+    failure = "2026-11-01T12:00:00+00:00"
+    assert ingestion._inbox_retry_eligible(inbox, "سیدکو", failure, cutoff, None)
+    inbox.attempts = {"سیدکو": {"last": "2026-10-30"}}
+    assert not ingestion._inbox_retry_eligible(inbox, "سیدکو", failure, cutoff, None)
+    assert not ingestion._inbox_retry_eligible(inbox, "not-delivered", failure, cutoff, None)
+
+
+def test_inbox_parser_upgrade_bypasses_failure_cooldown_once(monkeypatch):
+    monkeypatch.setattr(ingestion, "_parser_revision", lambda: "new-parser")
+
+    class InboxStub:
+        attempts = {"سیدکو": {"last": "2026-10-30"}}
+        def has_financial_filings(self, sym):
+            return True
+        def usable_tracing_nos(self, sym):
+            return ["1553923"]
+
+    inbox = InboxStub()
+    failure = "2026-11-05T12:00:00+00:00"
+    cutoff = "2026-10-30T00:00:00+00:00"
+    old = {"tracingNos": ["1553923"], "parserRevision": "old-parser"}
+    new = {"tracingNos": ["1553923"], "parserRevision": "new-parser"}
+    assert ingestion._inbox_retry_eligible(inbox, "سیدکو", failure, cutoff, old)
+    assert not ingestion._inbox_retry_eligible(inbox, "سیدکو", failure, cutoff, new)
+
+
+
+def test_parser_revision_changes_when_balance_validator_changes(monkeypatch):
+    from pathlib import Path
+    original_read_bytes = Path.read_bytes
+    ingestion._parser_revision.cache_clear()
+    original_revision = ingestion._parser_revision()
+
+    def changed_balance_checker(path):
+        data = original_read_bytes(path)
+        return data + b"# changed balance policy" if path.name == "codal_quality.py" else data
+
+    monkeypatch.setattr(Path, "read_bytes", changed_balance_checker)
+    ingestion._parser_revision.cache_clear()
+    assert ingestion._parser_revision() != original_revision
+    ingestion._parser_revision.cache_clear()

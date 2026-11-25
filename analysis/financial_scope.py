@@ -29,7 +29,14 @@ def report_scope_from_title(title: Optional[str]) -> Optional[str]:
     return STANDALONE
 
 
+def is_affiliate_statement(title: Optional[str]) -> bool:
+    """Statements of an affiliate are listed under the parent's symbol as «... (شرکت <name>)»."""
+    text = (title or "").replace("\u200c", " ").replace("( شرکت", "(شرکت")
+    return "(شرکت" in text
+
+
 def select_scope_filings(filings: list[CodalFiling]) -> tuple[Optional[str], list[CodalFiling]]:
+    filings = [f for f in filings if not is_affiliate_statement(f.title)]
     consolidated = [f for f in filings if report_scope_from_title(f.title) == CONSOLIDATED]
     if consolidated:
         return CONSOLIDATED, consolidated

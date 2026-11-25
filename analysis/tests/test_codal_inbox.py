@@ -174,7 +174,8 @@ def _job(tmp_path, monkeypatch, symbols):
 
 
 def test_job_only_picks_backlog_companies_the_export_delivered(inbox, tmp_path, monkeypatch):
-    write_export(inbox, "2026-10-25", [company("آ"), company("خراب", status="error", error="HTTP 500")])
+    write_export(inbox, "2026-10-25", [company("آ"), company("خراب", status="error", error="HTTP 500")],
+                 reports=[{"tracing_no": "111", "html": "<table>verified</table>"}])
     store, reg = _job(tmp_path, monkeypatch, ["آ", "خراب", "غایب"])
     built = []
     monkeypatch.setattr(ingestion, "_build_verified_company", lambda code: built.append(code) or ({"ticker": code, "data_available": {"codal": True}, "market": {}}, "t"))
@@ -184,10 +185,11 @@ def test_job_only_picks_backlog_companies_the_export_delivered(inbox, tmp_path, 
 
 
 def test_inbox_miss_leaves_company_unenriched_and_not_failed(inbox, tmp_path, monkeypatch):
-    write_export(inbox, "2026-10-25", [company("آ")])
+    write_export(inbox, "2026-10-25", [company("آ")],
+                 reports=[{"tracing_no": "111", "html": "<table>verified</table>"}])
     store, reg = _job(tmp_path, monkeypatch, ["آ"])
     miss = {"ticker": "1", "data_available": {"codal": False},
-            "data_diagnostics": {"codal": {"fundamentalsError": f"{codal_inbox.MISS_MARKER}: report 111 not in inbox"}}, "market": {}}
+            "data_diagnostics": {"codal": {"fundamentalsError": f"{codal_inbox.MISS_MARKER}: report 999 not in inbox"}}, "market": {}}
     monkeypatch.setattr(ingestion, "_build_verified_company", lambda code: (miss, "t"))
     result = ingestion.run_batch(store=store, registry=reg, batch_size=10, backlog_per_run=10, sleep=lambda s: None)
     assert result["succeeded"] == 0 and result["failed"] == 0 and result["metadata"]["awaitingCodalInbox"] == 1
@@ -203,6 +205,7 @@ def test_runner_uses_zero_interval_and_the_exports_window(inbox, tmp_path, monke
     monkeypatch.setattr(runner, "ListedCompanyStore", lambda: store)
     monkeypatch.setattr(runner, "_new_filing_codes", lambda s: [])
     monkeypatch.setattr(runner, "_run_tindex", lambda: None)
+    monkeypatch.setattr(codal_inbox, "backlog_symbols", lambda limit: ["ب"])
     monkeypatch.setattr(runner.baseline_report, "send", lambda r: "skipped")
     monkeypatch.setattr(runner, "run_batch", lambda **kw: seen.update(kw) or {
         "status": "paused", "cursor": 0, "total": 1, "processed": 0, "succeeded": 0, "failed": 0, "metadata": {}})
@@ -231,3 +234,146 @@ def test_fetcher_output_is_accepted_by_the_importer(inbox):
     assert b"<table>" in codal_data._fetch_filing_html(codal_data.latest_financial_filings("فولاد")[0]).encode()
     assert codal_inbox.current().new_filings_through == "2026-10-25"
     assert codal_data.symbols_with_new_financial_filings(date(2026, 10, 1)) == {"فولاد"}
+
+
+def test_market_only_company_is_requested_and_financials_are_backfilled(inbox, tmp_path, monkeypatch):
+    """Saving a live market quote must not permanently exclude the issuer from CODAL."""
+    import company_registry_store as registry_module
+    import listed_company_store as store_module
+
+    store, registry = _job(tmp_path, monkeypatch, ["آ", "ب"])
+    store.save_enriched(
+        "1", {"market": {"price": 1200}, "codal": None, "data_available": {"codal": False}},
+        provenance={"builder": "market-only"},
+    )
+    # The Liara request producer uses the configured persistent production store.
+    monkeypatch.setattr(store_module, "ListedCompanyStore", lambda: store)
+    monkeypatch.setattr(registry_module, "CompanyRegistryStore", lambda db_path: registry)
+    # The fixture registers instrument rows but not issuer records; model the
+    # production issuer registry's primary (deduplicated) company list.
+    monkeypatch.setattr(registry, "primary_company_codes", lambda: ["1", "2"])
+    assert codal_inbox.backlog_symbols(10) == ["آ", "ب"]
+
+    # A valid export now contains financial statements for the market-only company.
+    write_export(inbox, "2026-10-25", [company("آ")],
+                 reports=[{"tracing_no": "111", "html": "<table>verified</table>"}])
+    assert codal_inbox.backlog_symbols(10) == ["ب"]
+    built = []
+
+    def parse_company(code):
+        built.append(code)
+        return ({"market": {"price": 1200}, "codal": {"revenue": 42},
+                 "data_available": {"codal": True}}, "verified-codal")
+
+    monkeypatch.setattr(ingestion, "_build_verified_company", parse_company)
+    result = ingestion.run_batch(store=store, registry=registry, batch_size=10, backlog_per_run=10, sleep=lambda _: None)
+    assert result["succeeded"] == 1
+    assert built == ["1"]
+    assert store.get("1")["company"]["codal"]["revenue"] == 42
+    assert store.missing_codal_financial_codes(["1", "2"]) == ["2"]
+
+
+def test_non_financial_codal_export_does_not_take_a_worker_slot(inbox, tmp_path, monkeypatch):
+    """Metadata-only CODAL results cannot produce an accounting audit."""
+    write_export(inbox, "2026-10-25", [company("آ", financial_filings=[]), company("ب")],
+                 reports=[{"tracing_no": "111", "html": "<table>verified</table>"}])
+    store, registry = _job(tmp_path, monkeypatch, ["آ", "ب"])
+    built = []
+    monkeypatch.setattr(ingestion, "_build_verified_company",
+                        lambda code: built.append(code) or
+                        ({"market": {}, "codal": {"revenue": 42},
+                          "data_available": {"codal": True}}, "verified-codal"))
+    result = ingestion.run_batch(store=store, registry=registry, batch_size=10, backlog_per_run=10, sleep=lambda _: None)
+    assert result["succeeded"] == 1
+    assert built == ["2"]
+
+
+def test_affiliate_only_and_missing_html_remain_in_backlog(inbox, tmp_path, monkeypatch):
+    import company_registry_store as registry_module
+    import listed_company_store as store_module
+
+    store, registry = _job(tmp_path, monkeypatch, ["شپنا"])
+    monkeypatch.setattr(store_module, "ListedCompanyStore", lambda: store)
+    monkeypatch.setattr(registry_module, "CompanyRegistryStore", lambda db_path: registry)
+    monkeypatch.setattr(registry, "primary_company_codes", lambda: ["1"])
+    affiliate = dict(FILING, tracing_no="777",
+                     title="صورت های مالی حسابرسی شده (شرکت پالایش دیگر)")
+    write_export(inbox, "2026-10-25",
+                 [company("شپنا", financial_filings=[affiliate])],
+                 reports=[{"tracing_no": "777", "html": "<table>affiliate</table>"}])
+    assert not codal_inbox.current().has_financial_filings("شپنا")
+    assert codal_inbox.backlog_symbols(10) == ["شپنا"]
+
+    own = dict(FILING, tracing_no="888", title="صورت های مالی تلفیقی حسابرسی شده")
+    write_export(inbox, "2026-10-26",
+                 [company("شپنا", financial_filings=[own])],
+                 reports=[{"tracing_no": "888", "html": "<table>own</table>"}])
+    assert codal_inbox.current().has_financial_filings("شپنا")
+    assert codal_inbox.backlog_symbols(10) == []
+
+
+def test_financial_reference_without_html_remains_requested(inbox, tmp_path, monkeypatch):
+    import company_registry_store as registry_module
+    import listed_company_store as store_module
+
+    store, registry = _job(tmp_path, monkeypatch, ["شپنا"])
+    monkeypatch.setattr(store_module, "ListedCompanyStore", lambda: store)
+    monkeypatch.setattr(registry_module, "CompanyRegistryStore", lambda db_path: registry)
+    monkeypatch.setattr(registry, "primary_company_codes", lambda: ["1"])
+    write_export(inbox, "2026-10-25", [company("شپنا")], reports=[])
+    assert codal_inbox.current().has_record("شپنا")
+    assert not codal_inbox.current().has_financial_filings("شپنا")
+    assert codal_inbox.backlog_symbols(10) == ["شپنا"]
+
+
+# --- nightly pipeline hardening ---------------------------------------------------------------
+
+def test_later_partial_export_keeps_earlier_statement_references(inbox):
+    other = dict(FILING, tracing_no="222", title="صورت‌های مالی تلفیقی (حسابرسی شده)")
+    write_export(inbox, "2026-10-25", [company("آ", financial_filings=[FILING, other])],
+                 reports=[{"tracing_no": "222", "html": "<table>x</table>"}])
+    write_export(inbox, "2026-10-26", [company("آ", financial_filings=[FILING])])  # fetch budget ran out
+    rows = codal_inbox.current().companies[codal_inbox.symbol_key("آ")]["financial_filings"]
+    assert {f["tracing_no"] for f in rows} == {"111", "222"}
+    assert codal_inbox.current().has_financial_filings("آ")
+
+
+def test_usable_means_html_for_the_scope_the_parser_selects(inbox):
+    consolidated = dict(FILING, tracing_no="222", title="صورت‌های مالی تلفیقی (حسابرسی شده)")
+    standalone_html = [{"tracing_no": "111", "html": "<table>standalone</table>"}]
+    write_export(inbox, "2026-10-25", [company("آ", financial_filings=[FILING, consolidated])], reports=standalone_html)
+    assert not codal_inbox.current().has_financial_filings("آ")  # parser wants the consolidated one
+    write_export(inbox, "2026-10-26", [company("آ", financial_filings=[FILING, consolidated])],
+                 reports=[{"tracing_no": "222", "html": "<table>c</table>"}])
+    assert codal_inbox.current().usable_tracing_nos("آ") == ["222"]
+
+
+def test_retry_cooldown_and_never_attempted_first(inbox, tmp_path, monkeypatch):
+    import company_registry_store as registry_module
+    import listed_company_store as store_module
+    from datetime import date as _date, timedelta
+    store, registry = _job(tmp_path, monkeypatch, ["آ", "ب"])
+    monkeypatch.setattr(store_module, "ListedCompanyStore", lambda: store)
+    monkeypatch.setattr(registry_module, "CompanyRegistryStore", lambda db_path: registry)
+    monkeypatch.setattr(registry, "primary_company_codes", lambda: ["1", "2"])
+    recent = (_date.today() - timedelta(days=1)).isoformat()
+    write_export(inbox, recent, [company("آ", financial_filings=[])])  # ok but no own statements: 14 day wait
+    assert codal_inbox.backlog_symbols(10) == ["ب"]
+    codal_inbox.reset()
+    old = (_date.today() - timedelta(days=30)).isoformat()
+    for child in inbox.iterdir():
+        if child.is_dir():
+            for f in child.iterdir():
+                f.unlink()
+            child.rmdir()
+    write_export(inbox, old, [company("آ", financial_filings=[])])
+    assert codal_inbox.backlog_symbols(10) == ["ب", "آ"]  # due retries go after never-attempted symbols
+
+
+def test_seal_makes_verified_exports_read_only(inbox):
+    import os
+    folder = write_export(inbox, "2026-10-25", [company("آ")])
+    assert codal_inbox.seal_exports(str(inbox)) == ["2026-10-25"]
+    assert not os.stat(folder / "reports.jsonl").st_mode & 0o222
+    assert not os.stat(folder).st_mode & 0o222
+    os.chmod(folder, 0o755)  # let pytest clean up

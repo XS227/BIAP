@@ -93,6 +93,11 @@ export default function KiashaScreen(){
         <Pressable onPress={()=>router.push('/portfolio')} style={[styles.primaryAction,{backgroundColor:Brand.primary}]}><Text style={styles.primaryActionText}>مشاهده پرتفوی</Text></Pressable>
       </View>
 
+      <Pressable onPress={()=>router.push('/research-five' as never)} style={[styles.focusCard,{backgroundColor:colors.backgroundElement,marginBottom:Spacing.four,borderWidth:1,borderColor:Brand.primary}]}>
+        <Text style={[styles.sectionTitle,{color:colors.text,textAlign:'right'}]}>۵ شرکت آزمایشی • داده کدال</Text>
+        <Text style={[styles.focusText,{color:colors.textSecondary}]}>سپیدار، مبین، فخوز، دلقما و چکاپا؛ مشاهده منبع، ارقام و کنترل کیفیت. تصمیم‌های قدیمی از تحلیل امروز جدا هستند.</Text>
+        <Text style={[styles.secondaryActionText,{color:Brand.primary,textAlign:'right',marginTop:8}]}>مشاهده پنج شرکت ←</Text>
+      </Pressable>
       <View style={styles.sectionRow}><Text style={[styles.sectionHint,{color:colors.textSecondary}]}>برای دیدن بقیه ← بکشید</Text><Text style={[styles.sectionTitle,{color:colors.text}]}>خلاصه</Text></View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalContent} snapToInterval={swipeCardWidth+Spacing.two} decelerationRate="fast">
         <SwipeMetric label="بازده فعلی" value={pct(pnl)} sub="کل حساب" tone={pnl==null?undefined:pnl>=0?'positive':'negative'} colors={colors}/>

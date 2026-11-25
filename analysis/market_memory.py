@@ -23,10 +23,25 @@ def db_path() -> Path:
     return Path(raw).expanduser() if raw else DEFAULT_DB
 
 
+class _ClosingConnection(sqlite3.Connection):
+    """``with _connect() as con`` must release the file handle.
+
+    The stock sqlite3 context manager only commits/rolls back and leaves the connection (and its
+    -wal/-shm descriptors) open until GC. Under request load that exhausted the process fd limit
+    ("Too many open files"), which surfaced as HTTP 500 on unrelated endpoints.
+    """
+
+    def __exit__(self, exc_type, exc, tb):
+        try:
+            return super().__exit__(exc_type, exc, tb)
+        finally:
+            self.close()
+
+
 def _connect() -> sqlite3.Connection:
     path = db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(path, timeout=30)
+    con = sqlite3.connect(path, timeout=30, factory=_ClosingConnection)
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA journal_mode=WAL")
     con.execute("PRAGMA foreign_keys=ON")
@@ -208,6 +223,22 @@ def recent_symbol_history(symbol: str, *, days: int = 30) -> list[dict]:
             (symbol, since),
         ).fetchall()
     return [dict(row) for row in rows]
+
+
+def history_for_symbols(symbols: list[str], *, days: int = 400) -> dict[str, list[dict]]:
+    """Daily snapshots for many symbols over ONE connection (the per-symbol call opened thousands)."""
+    since = (datetime.now(timezone.utc) - timedelta(days=max(1, days))).date().isoformat()
+    out: dict[str, list[dict]] = {}
+    wanted = list(dict.fromkeys(str(x) for x in symbols if x))
+    with _connect() as con:
+        for i in range(0, len(wanted), 400):
+            chunk = wanted[i:i + 400]
+            rows = con.execute(
+                f"SELECT observed_at,observed_date,symbol,market,source,price,change_percent,pe,market_cap FROM symbol_snapshots "
+                f"WHERE observed_date>=? AND symbol IN ({','.join('?' * len(chunk))}) ORDER BY observed_at", [since, *chunk]).fetchall()
+            for row in rows:
+                out.setdefault(row["symbol"], []).append(dict(row))
+    return out
 
 
 def latest_weekly_market_report(*, days: int = 7) -> dict:

@@ -33,6 +33,7 @@ from local_auth import router as auth_router
 from market_data import MarketDataUnavailable, base_url as market_base_url, find_quote
 from paper_execution_store import PaperExecutionStore
 from paper_sell_store import PaperSellStore
+from module_routes import router as iran_modules_router
 from performance_routes import router as performance_router
 from release_routes import router as release_router
 from risk import evaluate_order_risk, policy_snapshot
@@ -94,6 +95,7 @@ app.include_router(performance_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(release_router)
+app.include_router(iran_modules_router)
 
 
 @app.exception_handler(AdminAuthRequired)
@@ -151,6 +153,20 @@ def health():
     }
 
 
+def _stored_ticker(code: str) -> Optional[str]:
+    """The ticker of a stored company when the app sends its InsCode (some rows keep the code in the symbol column; the name is then the ticker)."""
+    try:
+        from listed_company_store import ListedCompanyStore
+        item = ListedCompanyStore().get(code)
+    except Exception:
+        return None
+    for cand in ((item or {}).get("symbol"), (item or {}).get("name")):
+        text = str(cand or "").strip()
+        if text and not text.isdigit() and text != code:
+            return text
+    return None
+
+
 def _company_or_404(code: str) -> tuple[dict, str]:
     mock = MOCK_COMPANIES.get(code.upper())
     if mock is not None:
@@ -164,6 +180,11 @@ def _company_or_404(code: str) -> tuple[dict, str]:
     company = build_company_from_symbol(code)
     if company is not None:
         return company, "codal"
+    ticker = _stored_ticker(code)  # InsCode from the app: retry under the stored ticker
+    if ticker and ticker != code:
+        company = build_company_from_symbol(ticker)
+        if company is not None:
+            return company, "codal"
     raise HTTPException(status_code=404, detail=f"no data for {code}")
 
 
@@ -210,7 +231,7 @@ def recommendation(code: str):
         "codalFundamentals": company.get("codal") if source in {"live", "codal"} else None,
         "livePrice": {"lastPrice": market.get("last_price"), "closingPrice": market.get("closing_price"), "yesterdayPrice": market.get("yesterday_price"), "changePercent": market.get("change_percent")} if source == "live" else None,
         "extendedMarket": {"dayLow": market.get("day_low"), "dayHigh": market.get("day_high"), "volumeToday": market.get("volume_today"), "tradeValueToday": market.get("trade_value_today"), "tradeCountToday": market.get("trade_count_today"), "avgVolume30d": market.get("avg_volume_30d"), "price52wHigh": market.get("price_52w_high"), "price52wLow": market.get("price_52w_low"), "pe": market.get("pe"), "sectorAvgPe": market.get("sector_avg_pe"), "epsValue": market.get("eps_value"), "estimatedEps": market.get("estimated_eps"), "marketCap": market.get("market_cap"), "marketCapBn": market.get("market_cap_bn"), "sharesOutstanding": market.get("shares_outstanding"), "sectorName": market.get("sector_name")} if source == "live" else None,
-        "breakdown": decision.breakdown,
+        "breakdown": decision.breakdown, "evidenceReview": decision.evidence_review,
     }
 
 

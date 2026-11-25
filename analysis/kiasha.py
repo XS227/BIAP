@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from agents import run_team
+from codal_quality import review_iran_codal
 from market_memory import save_analysis, save_symbol_snapshot
 from performance_store import MIN_OBSERVED_SAMPLES, PerformanceStore
 from scenario_engine import build_scenarios
@@ -99,6 +100,7 @@ class Decision:
     scenario: dict | None = None
     analysis_mode: str = "standard"
     ipo_review: dict | None = None
+    evidence_review: dict | None = None
 
 
 def _memory_symbol(company: dict) -> str:
@@ -242,6 +244,7 @@ def _record_observation(company: dict, decision: Decision) -> None:
                 "breakdown": decision.breakdown, "referencePrice": price,
                 "dataAvailability": availability, "scenario": decision.scenario,
                 "analysisMode": decision.analysis_mode, "ipoReview": decision.ipo_review,
+                "evidenceReview": decision.evidence_review,
             },
         )
     except Exception:
@@ -274,6 +277,7 @@ def decide(company: dict) -> Decision:
     is_ipo = bool(ipo_evidence)
     ipo_review = _ipo_fundamental_review(company, ipo_evidence, history_observations) if is_ipo else None
     suppress_history_agents = bool(is_ipo and history_observations == 0)
+    evidence_review = review_iran_codal(company)
 
     votes = run_team(company)
     raw_weights = []
@@ -341,7 +345,11 @@ def decide(company: dict) -> Decision:
             "ipo": ipo_review,
         })
 
-    if ipo_review is not None and ipo_review["status"] != "ready":
+    if not evidence_review["actionable"]:
+        # The score remains descriptive. No actionable BUY/SELL may be inferred
+        # from price-only agents when CODAL evidence is missing or inconsistent.
+        call = "HOLD"
+    elif ipo_review is not None and ipo_review["status"] != "ready":
         call = "HOLD"
         # Score stays descriptive of available non-history voices but cannot be
         # interpreted as an actionable recommendation while the gate is closed.
@@ -367,12 +375,13 @@ def decide(company: dict) -> Decision:
         voice_note = "No eligible agent voice had verified weight."
     else:
         voice_note = f"Heaviest voice: {top['agent']} (weight {top['weight_normalized']:.0%}, maturity={top['maturity']}, trust={top['trust_source']}) - {top['reasoning']}."
-    explanation = f"Kiasha blend = {weighted_score:+.2f} -> {call}. {voice_note}" + scenario_note + ipo_note
+    quality_note = f" CODAL evidence={evidence_review['status']}: {'; '.join(evidence_review['reasons'])}."
+    explanation = f"Kiasha blend = {weighted_score:+.2f} -> {call}. {voice_note}" + scenario_note + ipo_note + quality_note
 
     decision = Decision(
         call, round(weighted_score, 3), breakdown, explanation, scenario,
         analysis_mode="ipo" if is_ipo else "standard",
-        ipo_review=ipo_review,
+        ipo_review=ipo_review, evidence_review=evidence_review,
     )
     _record_observation(company, decision)
     return decision

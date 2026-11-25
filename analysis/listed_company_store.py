@@ -244,6 +244,36 @@ class ListedCompanyStore:
         never_enriched, _ = self._split_by_enrichment(codes)
         return len(never_enriched)
 
+    def missing_codal_financial_codes(self, codes: Iterable[str]) -> list[str]:
+        """Eligible codes without stored CODAL financial fundamentals, even if a market quote exists.
+
+        A company_json row alone only means a baseline attempt was stored; it does not
+        mean the financial statements required for accounting audits are present.
+        Preserve caller priority and use bounded SQL chunks for the full universe.
+        """
+        wanted = list(dict.fromkeys(str(code) for code in codes if str(code)))
+        if not wanted:
+            return []
+        has_financials: set[str] = set()
+        with self._connect() as conn:
+            for start in range(0, len(wanted), 400):
+                chunk = wanted[start:start + 400]
+                placeholders = ",".join("?" for _ in chunk)
+                rows = conn.execute(
+                    f"SELECT code, company_json FROM listed_companies WHERE code IN ({placeholders})",
+                    chunk,
+                ).fetchall()
+                for row in rows:
+                    if not row["company_json"]:
+                        continue
+                    try:
+                        payload = json.loads(row["company_json"])
+                    except (TypeError, ValueError):
+                        continue
+                    if isinstance(payload, dict) and isinstance(payload.get("codal"), dict) and payload["codal"]:
+                        has_financials.add(str(row["code"]))
+        return [code for code in wanted if code not in has_financials]
+
     def verified_enrichment_codes(self) -> set[str]:
         """Codes whose already-fetched enrichment payload independently proves a genuine issuer.
 

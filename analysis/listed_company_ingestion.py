@@ -12,12 +12,16 @@ company_registry_store.py) even when it is not a company.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from functools import lru_cache
+import hashlib
+from pathlib import Path
 import time
 from typing import Any, Iterable
 import uuid
 
 import codal_data
 import codal_inbox
+import fund_classifier
 from codal_data import CodalDataUnavailable, list_companies
 from company_builder import build_company_from_quote, build_company_from_symbol
 from company_registry_store import CompanyRegistryStore, company_id_for
@@ -343,6 +347,56 @@ def refresh_universe(
     }
 
 
+
+@lru_cache(maxsize=1)
+def _parser_revision() -> str:
+    """Fingerprint the actual code that decides whether a CODAL filing is parseable.
+
+    A filing rejected by an old parser must be tried again after a parser or
+    scope/metadata fix, even when its tracing numbers have not changed.
+    A stable revision prevents repeatedly burning scarce nightly slots on the
+    same HTML when the parsing code is unchanged.
+    """
+    digest = hashlib.sha256()
+    for filename in ("codal_parser_v2.py", "codal_quality.py", "financial_scope.py", "codal_data.py", "company_builder.py"):
+        digest.update(filename.encode("utf-8"))
+        digest.update(Path(__file__).with_name(filename).read_bytes())
+    return digest.hexdigest()[:16]
+
+
+def _unparseable_unchanged(entry: dict | None, tracing_nos: list[str]) -> bool:
+    """Skip only an unchanged filing rejected by THIS parser revision.
+
+    Legacy entries have no parserRevision and are replayed once after upgrade.
+    """
+    return bool(entry and tracing_nos
+                and list(entry.get("tracingNos") or []) == list(tracing_nos)
+                and entry.get("parserRevision") == _parser_revision())
+
+
+def _inbox_retry_eligible(
+    inbox: codal_inbox.Inbox, symbol: str, failed_at: str, cutoff: str, entry: dict | None,
+) -> bool:
+    """Retry if the HTML arrived after failure OR the parser code changed.
+
+    In inbox mode, the upstream fetch has already happened. The old seven-day
+    failure cooldown must not block newly delivered verified HTML. Conversely,
+    an unchanged report rejected by the current parser must not occupy nightly
+    slots repeatedly.
+    """
+    if not inbox.has_financial_filings(symbol):
+        return False
+    traces = inbox.usable_tracing_nos(symbol)
+    if _unparseable_unchanged(entry, traces):
+        return False
+    if not failed_at or failed_at < cutoff:
+        return True
+    if entry and entry.get("parserRevision") != _parser_revision():
+        return True
+    last_export = (inbox.attempts.get(codal_inbox.symbol_key(symbol)) or {}).get("last")
+    return bool(last_export and last_export > failed_at[:10])
+
+
 def _build_verified_company(code: str) -> tuple[dict[str, Any] | None, str]:
     try:
         quote = find_quote(code)
@@ -358,7 +412,14 @@ def _build_verified_company(code: str) -> tuple[dict[str, Any] | None, str]:
             if instrument and instrument.get("symbol"):
                 codal_symbol = str(instrument["symbol"])
         return build_company_from_quote(quote, codal_symbol=codal_symbol), "tsetmc+tindex+codal+company_builder"
-    return build_company_from_symbol(code), "tindex+codal+company_builder-fallback"
+    # TSETMC unreachable: a numeric code is not a CODAL symbol, so resolve the registry symbol
+    # (otherwise the inbox lookup misses and a verified export is never ingested).
+    symbol = code
+    if str(code).isascii() and str(code).isdigit():
+        instrument = CompanyRegistryStore().get_instrument(code)
+        if instrument and instrument.get("symbol"):
+            symbol = str(instrument["symbol"])
+    return build_company_from_symbol(symbol), "tindex+codal+company_builder-fallback"
 
 
 def run_batch(
@@ -413,8 +474,9 @@ def run_batch(
 
     ``backlog_per_run`` switches to the financials-only policy used by the daily timer:
     (1) companies with new CODAL filings since the last run (``new_filing_codes``) first,
-    (2) then up to ``backlog_per_run`` never-enriched companies, most-traded first,
-    (3) nothing else -- already-enriched companies with no new filing are not refetched.
+    (2) then up to ``backlog_per_run`` companies lacking CODAL financials,
+        including market-only baselines already stored, most-traded first,
+    (3) companies with genuine CODAL fundamentals are not refetched without a new filing.
     A 429 is retried after ``codal_data.backoff_delay`` (Retry-After honoured); after
     ``max_consecutive_rate_limits`` in a row the run saves progress and stops cleanly
     with status ``rate_limited`` (the caller maps that to a non-failing exit code).
@@ -445,6 +507,11 @@ def run_batch(
     safe_batch_size = max(1, min(int(batch_size), DAILY_BATCH_SIZE))
     previous_state = target.get_state(WORKER_NAME) or {}
     failed_at: dict[str, str] = dict((previous_state.get("metadata") or {}).get("failedCodes") or {})
+    not_applicable: dict[str, dict] = dict((previous_state.get("metadata") or {}).get("notApplicable") or {})
+    needs_review: dict[str, str] = dict((previous_state.get("metadata") or {}).get("needsReview") or {})
+    # Companies whose usable inbox statements could not be parsed (funds, stub HTML, unsupported layouts).
+    # They are not re-enriched until a different set of statements arrives, so they cannot eat the nightly slots.
+    unparseable: dict[str, dict] = dict((previous_state.get("metadata") or {}).get("unparseable") or {})
     filing_codes: list[str] = []
     if backlog_per_run is None:
         codes = target.order_by_enrichment_priority(eligible_codes)[:safe_batch_size]
@@ -452,15 +519,33 @@ def run_batch(
         eligible_set = set(eligible_codes)
         filing_codes = [c for c in dict.fromkeys(str(c) for c in (new_filing_codes or ())) if c in eligible_set][:safe_batch_size]
         cutoff = (datetime.now(timezone.utc) - timedelta(days=FAILED_RETRY_DAYS)).isoformat()
-        never_enriched, _ = target._split_by_enrichment(eligible_codes)
-        backlog = [c for c in never_enriched if c not in set(filing_codes) and failed_at.get(c, "") < cutoff]
+        # The Liara inbox can cheaply revisit market-only baselines when a verified
+        # financial export arrives. In direct-live mode, keep the old never-enriched
+        # policy to avoid retrying the same CODAL no-data response every day.
         if codal_inbox.enabled():
-            # Do not spend the daily slots on companies the Liara export has not delivered.
+            backlog_candidates = target.missing_codal_financial_codes(eligible_codes)
+        else:
+            backlog_candidates, _ = target._split_by_enrichment(eligible_codes)
+        scheduled_filing_codes = set(filing_codes)
+        if codal_inbox.enabled():
+            # Do not wait seven more days when Liara has delivered an original
+            # filing after the previous failure. Likewise retry a formerly
+            # unparseable filing once when parser code changed.
             inbox = codal_inbox.current()
-            has = lambda c: inbox.has_record(str((reg.get_instrument(c) or {}).get("symbol") or ""))  # noqa: E731
-            filing_codes = [c for c in filing_codes if has(c)]
-            backlog = [c for c in backlog if has(c)]
+            symbol_for = lambda c: str((reg.get_instrument(c) or {}).get("symbol") or "")  # noqa: E731
+            backlog = [
+                c for c in backlog_candidates
+                if c not in scheduled_filing_codes and c not in not_applicable
+                and _inbox_retry_eligible(inbox, symbol_for(c), failed_at.get(c, ""), cutoff, unparseable.get(c))
+            ]
+            filing_codes = [c for c in filing_codes if inbox.has_financial_filings(symbol_for(c))]
+        else:
+            backlog = [
+                c for c in backlog_candidates
+                if c not in scheduled_filing_codes and c not in not_applicable and failed_at.get(c, "") < cutoff
+            ]
         backlog.sort(key=lambda c: (-traded_value.get(c, 0.0), c))  # most-traded first; unknown volume last
+        filing_codes = [c for c in filing_codes if c not in not_applicable]
         codes = filing_codes + backlog[:max(0, int(backlog_per_run))]
 
     already_enriched_in_slice: set[str] = set()
@@ -480,6 +565,8 @@ def run_batch(
         "markets": ["TSE", "IFB", "IFB_BASE"],
         "maxBatchSize": DAILY_BATCH_SIZE,
         "requestedBatchSize": safe_batch_size,
+        "actualCompaniesScheduled": len(codes),  # 300 configured is NOT 300 usable CODAL statements
+        "parserRevision": _parser_revision(),
         "intervalSeconds": safe_interval,
         "moduleTargets": ["kpi", "sql", "financial-model"],
         "tindexConfigured": tindex_configured(),
@@ -488,11 +575,12 @@ def run_batch(
         "companyUniversePolicy": "TSETMC discovery -> instrument classification -> issuer resolution -> dedup -> company enrichment; CODAL is enrichment/verification only",
         "schedulerPriority": (
             "never-enriched genuine companies first, then oldest-enriched for refresh" if backlog_per_run is None
-            else "new CODAL filings first, then never-enriched most-traded first; no refresh of unchanged financials"
+            else "new CODAL filings first, then missing-CODAL-financials most-traded first; no refresh of verified financials"
         ),
         "newFilingCompanies": len(filing_codes),
         "backlogPerRun": backlog_per_run,
         "neverEnrichedBeforeRun": never_enriched_before,
+        "missingCodalFinancialsBeforeRun": len(target.missing_codal_financial_codes(eligible_codes)),
         "runId": run_id,
         "restrictedToCodesCount": len(eligible_codes) if restrict_to_codes is not None else None,
     }
@@ -566,6 +654,13 @@ def run_batch(
         codal_error = " ".join(str(codal_diag.get(key) or "") for key in ("metadataError", "fundamentalsError", "error"))
         if codal_inbox.MISS_MARKER in codal_error and not availability.get("codal"):
             raise InboxPending(codal_error[:240])
+        if codal_inbox.enabled():
+            _tracing = codal_inbox.current().usable_tracing_nos(str((instrument or {}).get("symbol") or ""))
+            if _tracing and not availability.get("codal"):
+                unparseable[code] = {"tracingNos": _tracing, "parserRevision": _parser_revision(), "at": _now_iso(),
+                                     "reason": str(codal_diag.get("fundamentalsReason") or codal_diag.get("status") or "")[:120]}
+            elif code in unparseable:
+                unparseable.pop(code, None)
         if code in already_enriched_in_slice:
             re_enriched_companies += 1
         if _is_rate_limit_error(RuntimeError(codal_error)) and not availability.get("codal"):
@@ -588,6 +683,17 @@ def run_batch(
         succeeded += 1
         processed += 1
 
+    def _mark_if_fund(code: str, error: str) -> None:
+        """Funds have no standard statements: stop retrying them (existing data is untouched)."""
+        if "no verified company data" not in error:
+            return
+        inst = reg.get_instrument(code) or {}
+        verdict = fund_classifier.classify(inst.get("symbol"), inst.get("name"))
+        if verdict == fund_classifier.FUND:
+            not_applicable[code] = {"reason": "fund/market-maker: no standard statements", "symbol": inst.get("symbol"), "at": _now_iso()}
+        elif verdict == fund_classifier.REVIEW:
+            needs_review[code] = str(inst.get("symbol") or "")
+
     for index, code in enumerate(codes):
         last_code = code
         while True:  # retried only after a rate-limit backoff
@@ -607,6 +713,7 @@ def run_batch(
                     failed += 1
                     processed += 1
                     failed_at[code] = _now_iso()
+                    _mark_if_fund(code, last_error)
                     break
                 rate_limited = True
                 consecutive_rate_limits += 1
@@ -629,6 +736,9 @@ def run_batch(
             sleep(safe_interval)
 
     metadata["failedCodes"] = dict(sorted(failed_at.items(), key=lambda kv: kv[1])[-2000:])
+    metadata["notApplicable"] = not_applicable
+    metadata["unparseable"] = unparseable
+    metadata["needsReview"] = needs_review
     metadata["rateLimitedCount"] = total_rate_limits
     if codal_inbox.enabled():
         metadata["awaitingCodalInbox"] = awaiting_inbox

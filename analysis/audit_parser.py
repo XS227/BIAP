@@ -54,6 +54,19 @@ def _normalize_pdf_text(text: str) -> str:
 # picked out of running prose. This also naturally excludes "مبنای
 # اظهارنظر" ("Basis for Opinion"), a different, later section: that line
 # starts with "مبنای", which this pattern doesn't allow.
+# The canonical fairness sentence names the auditor: "این سازمان" (the state
+# Audit Organization) *or* "این موسسه" / "این مؤسسه" (a private audit firm,
+# by far the common case). pdftotext also routinely drops the spaces and
+# ZWNJs inside it ("بهنظر", "بهنحو منصفانه نشان میدهد"), so every gap is optional.
+_AUDITOR = r"(?:سازمان|م[ؤو]?سسه|شرکت\s*حسابرسی)"
+_CANONICAL_RE = re.compile(r"به\s*نظر\s*این\s*" + _AUDITOR)
+_FAIR_RE = re.compile(r"به\s*نحو\s*منصفانه\s*نشان\s*می\s*ده[دن]")
+_EXCEPT_RE = re.compile(r"به\s*استثنای")
+# Looser spellings ("به استثنا آثار", "به استثناء") only count when they sit
+# inside the opinion sentence itself, i.e. before the "fairly presents" clause;
+# afterwards they occur in emphasis-of-matter paragraphs that do not qualify.
+_EXCEPT_LOOSE_RE = re.compile(r"به\s*استثنا")
+
 _HEADING_LINE_RE = re.compile(r"^(?:عدم\s+)?(?:اظهارنظر|اظهار نظر)(?:\s+(?:مشروط|مردود))?\s*[:：]?$")
 
 
@@ -115,10 +128,20 @@ def _extract_audit_opinion_section(text: str) -> Optional[str]:
     if not normalized:
         return None
 
-    canonical_index = normalized.find("به نظر این سازمان")
+    canonical_match = _CANONICAL_RE.search(normalized)
+    canonical_index = canonical_match.start() if canonical_match else -1
+
+    # A standalone "عدم اظهار نظر" heading line is a genuine disclaimer. It must
+    # win over a later "به نظر این موسسه" that belongs to another section
+    # (e.g. other legal requirements), which would otherwise hide the heading.
+    disclaimer_offsets = [
+        o for o in heading_offsets if normalized[o:o + 3] == "عدم"
+    ]
 
     start: Optional[int] = None
-    if canonical_index >= 0:
+    if disclaimer_offsets:
+        start = disclaimer_offsets[-1]
+    elif canonical_index >= 0:
         start = canonical_index
     elif heading_offsets:
         # No canonical fairness sentence at all -- true for some disclaimer
@@ -171,19 +194,52 @@ def _classify_audit_opinion_section(section: str) -> Optional[str]:
 
     # Qualified wording must be evaluated before the clean opinion because some
     # qualified reports can still contain otherwise standard opinion language.
-    if "نظر مشروط" in text or "به استثنای" in text:
+    if "نظر مشروط" in text or _EXCEPT_RE.search(text):
         return "qualified"
 
-    if (
-        "به نظر این سازمان" in text
-        and (
-            "به نحو منصفانه نشان می دهد" in text
-            or "به نحو منصفانه نشان میدهد" in text
-        )
-    ):
+    fair = _FAIR_RE.search(text)
+    if fair and _EXCEPT_LOOSE_RE.search(text[: fair.start()]):
+        return "qualified"
+
+    if _CANONICAL_RE.search(text) and _FAIR_RE.search(text):
         return "unqualified"
 
     return None
+
+
+_BASIS_HEAD = re.compile(r"مبنای\s*اظهار\s*نظر(?:\s*(?:مشروط|مردود))?")
+_BASIS_STOPS = ("مسئولیت هیئت مدیره", "مسئولیت هیات مدیره", "مسئولیت حسابرس", "سایر اطلاعات", "تاکید بر مطلب خاص", "تأکید بر مطلب خاص",
+                "گزارش در مورد سایر الزامات", "سایر موارد", "نظر حسابرس")
+_FIRM_RE = re.compile(r"((?:م[ؤو]?سسه|سازمان)\s+حسابرسی\s+[آ-ی]+(?:\s+[آ-ی]+){0,3})")
+_FIRM_STOP = re.compile(r"\s+(?:و|بر|در|به|که|این|را|است|می|گزارش|صورت|شماره|تاریخ|حسابرس|عضو|شریک|مدیر)(?:\s|$)")
+
+
+def extract_audit_basis(text: str) -> Optional[str]:
+    """The «مبنای اظهارنظر [مشروط]» paragraphs, verbatim, bounded; None when the heading is absent (never guessed)."""
+    normalized = _normalize_pdf_text(text)
+    heads = list(_BASIS_HEAD.finditer(normalized))
+    for m in reversed(heads):  # the real section follows a table-of-contents mention
+        body = normalized[m.end(): m.end() + 2600]
+        stops = [body.find(x, 40) for x in _BASIS_STOPS]
+        stops = [i for i in stops if i >= 0]
+        body = (body[: min(stops)] if stops else body).strip(" :.")
+        if len(body) >= 60:
+            return body
+    return None
+
+
+def extract_auditor_name(text: str) -> Optional[str]:
+    """Auditor firm named in the report (last mention = the signature block), or None."""
+    normalized = _normalize_pdf_text(text)
+    names = [m.group(1) for m in _FIRM_RE.finditer(normalized)]
+    if not names:
+        return None
+    name = re.sub(r"\s+", " ", names[-1]).strip()
+    head, _, tail = name.partition(" حسابرسی ")
+    cut = _FIRM_STOP.search(" " + tail)
+    if cut:
+        tail = (" " + tail)[: cut.start()].strip()
+    return f"{head} حسابرسی {tail}".strip() if tail else None
 
 
 def classify_audit_opinion_from_text(text: str) -> Optional[str]:
@@ -198,3 +254,11 @@ def audit_opinion_from_pdf(filing: CodalFiling) -> Optional[str]:
     if raw_text is None:
         return None
     return classify_audit_opinion_from_text(raw_text)
+
+
+def audit_details_from_pdf(filing: CodalFiling) -> dict:
+    """Auditor firm and basis-for-opinion paragraphs from the same cached PDF text as the opinion."""
+    raw_text = extracted_text_for_filing(filing, www_base=_codal_www_base())
+    if raw_text is None:
+        return {"auditor_name": None, "audit_basis": None}
+    return {"auditor_name": extract_auditor_name(raw_text), "audit_basis": extract_audit_basis(raw_text)}

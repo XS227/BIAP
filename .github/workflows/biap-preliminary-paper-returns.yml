@@ -1,0 +1,100 @@
+name: BIAP frozen portfolio – preliminary 1-month returns
+
+# Research-only, no server access, deployment, restart, or source-snapshot edits.
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/biap-preliminary-paper-returns.yml'
+  workflow_dispatch:
+    inputs:
+      as_of:
+        description: 'Latest allowed exit date (historical closes only)'
+        required: true
+        default: '2026-11-18'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  preliminary-returns:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check frozen public Cohort P dataset
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd research && sha256sum -c paper_portfolio_2026-10-20.json.sha256)
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("research/paper_portfolio_2026-10-20.json").read_text())
+          assert d.get("snapshotDate")=="2026-10-20", d.get("snapshotDate")
+          print("Snapshot:",d["snapshotDate"],"markets:",len(d.get("markets",[])))
+          PY
+      - name: Compute priced subset and list unresolved prices
+        shell: bash
+        env:
+          AS_OF: ${{ inputs.as_of || '2026-11-18' }}
+          PYTHONUNBUFFERED: '1'
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/biap-returns
+          python3 research/paper_portfolio_returns.py research/paper_portfolio_2026-10-20.json --end "$AS_OF" --json /tmp/biap-returns/returns_full.json | tee /tmp/biap-returns/returns_console.txt
+      - name: Generate Excel-compatible CSV and coverage audit
+        shell: bash
+        env:
+          AS_OF: ${{ inputs.as_of }}
+        run: |
+          python3 - <<'PY'
+          import csv, json, os
+          from pathlib import Path
+          p=Path('/tmp/biap-returns')
+          r=json.loads((p/'returns_full.json').read_text())
+          section=r.get('B_returns_priced_subset',{})
+          markets=section.get('markets',{})
+          headers=['Market','BUY n priced','BUY n total','BUY return %','SELL n priced','SELL n total','SELL return %','Benchmark ticker','Benchmark return %','BUY minus SELL %','BUY excess %','SELL excess %','Status']
+          def pct(v): return None if v is None else round(100*v,4)
+          data=[]
+          for market,m in sorted(markets.items()):
+              buy=m.get('BUY',{});sell=m.get('SELL',{})
+              br=buy.get('equalWeightReturn');sr=sell.get('equalWeightReturn')
+              bret=m.get('benchmarkReturn')
+              status='complete' if br is not None and sr is not None and bret is not None else 'unresolved - do not interpret'
+              data.append([market,buy.get('withData'),buy.get('holdings'),pct(br),sell.get('withData'),sell.get('holdings'),pct(sr),m.get('benchmark'),pct(bret),pct(br-sr) if br is not None and sr is not None else None,pct(buy.get('excessVsBenchmark')),pct(sell.get('excessVsBenchmark')),status])
+          summary=section.get('ALL_exchange_equal_weighted',{})
+          pooled=[ 'ALL: equal venue weight','','',pct(summary.get('BUY')),'','',pct(summary.get('SELL')),'',pct(summary.get('benchmark')),
+            pct(summary['BUY']-summary['SELL']) if summary.get('BUY') is not None and summary.get('SELL') is not None else None,
+            pct(summary.get('BUY_excess')),pct(summary.get('SELL_excess')),'PRELIMINARY: public Oct20 BUY/SELL, NOT private Oct19 A-E' ]
+          with (p/'preliminary_returns.csv').open('w',newline='',encoding='utf-8-sig') as f:
+              w=csv.writer(f);w.writerow(headers);w.writerows(data);w.writerow(pooled)
+          bad=r.get('C_unpriced',[])
+          with (p/'unpriced_symbols.csv').open('w',newline='',encoding='utf-8-sig') as f:
+              w=csv.writer(f);w.writerow(['Market','Side','Ticker','Category','Reason'])
+              w.writerows([[x.get(k,'') for k in ['market','side','ticker','category','reason']] for x in bad])
+          with (p/'README.txt').open('w',encoding='utf-8') as f:
+              f.write('RESEARCH PRELIMINARY – NOT THE FIVE-BASKET A-E TEST\n')
+              f.write('Source: frozen public paper_portfolio_2026-10-20.json\n')
+              f.write('Requested latest end date: '+os.environ['AS_OF']+'; vendor may supply earlier final closes.\n')
+              f.write('Returns: BUY vs SELL only; equal-weighted within priced subset; pooled equal trading venue weighting.\n')
+              f.write('Do not infer a 2026-10-19 basket A-E result from these numbers.\n')
+              f.write('Missing entries/exits listed in unpriced_symbols.csv; no fabricated prices.\n')
+          print('MARKET | BUY % | SELL % | BENCH % | SPREAD % | STATUS')
+          for row in data+[pooled]:
+              print(f'{row[0]} | {row[3]} | {row[6]} | {row[8]} | {row[9]} | {row[-1]}')
+          print(f'Excluded unpriced rows: {len(bad)}')
+          PY
+      - name: Upload research result (artifact, not a repository commit)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: biap-preliminary-oct20-returns-${{ inputs.as_of || '2026-11-18' }}
+          path: /tmp/biap-returns/
+          if-no-files-found: warn
+          retention-days: 14
