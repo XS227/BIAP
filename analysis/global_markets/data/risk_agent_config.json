@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "note": "Risk Agent thresholds (owner-approved 2026-11-25). Override the whole file with env RISK_AGENT_CONFIG=/path/to/file.json; unknown or invalid values fail loudly instead of falling back silently.",
   "thresholds": {
     "altman_safe": 2.6,
@@ -7,7 +7,7 @@
     "zmijewski_severe": 0.5,
     "zmijewski_elevated": 0.35,
     "ohlson_severe": 0.5,
-    "ohlson_elevated": 0.35,
+    "ohlson_elevated": 0.038,
     "beneish": -1.78,
     "volatility_elevated_pct": 50.0,
     "drawdown_elevated_pct": 50.0,
@@ -23,9 +23,8 @@
     "plausibility_assets_to_market_cap_max": 300.0
   },
   "ohlson": {
-    "asset_unit_usd": 1000.0,
-    "provisional": true,
-    "note": "Total assets are divided by this many USD before the deflator (1000 = USD thousands). Set provisional=false only after the unit is confirmed from Ohlson (1980)."
+    "asset_unit_usd": 1.0,
+    "note": "Total assets in US dollars (units), divided by this value before the deflator (Ohlson 1980, JAR 18(1), confirmed by the owner 2026-11-25). Cut-offs: ohlson_elevated = 0.038 is the cut-off minimising total classification errors, ohlson_severe = 0.50 (Ohlson 1980 p.126: 0.5 has no basis of its own). Estimated on 1970-76 US industrial firms; for non-US firms and today's data indicative only."
   },
   "leases": {
     "ifrs16_non_us": true,

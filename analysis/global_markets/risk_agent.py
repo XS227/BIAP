@@ -28,11 +28,22 @@ def cfg() -> dict:
 
 
 # Severity of one signal: 0 = no flag, 1 = elevated, 2 = severe.
-# Ohlson (1980): SIZE = ln(total assets / GNP price-level index, 1968 = 100). Total assets are taken in USD THOUSANDS (the scale of the
-# magnitudes that make Ohlson's sample plausible; the primary text could not be re-read in this environment, see docs). The index is the
-# US GDP implicit price deflator (FRED GDPDEF) of the statement year rebased to 1968 = 100 (data/us_gdp_deflator_gdpdef.json).
-# The asset unit is a CONFIG value (ohlson.asset_unit_usd, default 1000 = USD thousands) and the O-score is labelled PROVISIONAL until the
-# owner confirms the unit from Ohlson (1980).
+# Ohlson (1980), "Financial Ratios and the Probabilistic Prediction of Bankruptcy", Journal of Accounting Research 18(1), Table 4, Model 1
+# (confirmed by the owner from the paper): SIZE = ln(total assets in US DOLLARS (units, not thousands) / GNP price-level index), index =
+# US GDP implicit price deflator rebased 1968 = 100, taken for the year PRIOR to the balance-sheet year (data/us_gdp_deflator_gdpdef.json,
+# FRED GDPDEF). Non-USD statements are converted at the statement-date FX rate. P = 1 / (1 + exp(-y)).
+# Cut-offs (p.126): Ohlson notes that 0.5 has no basis; the cut-off that minimises total classification errors is 0.038. Both are CONFIG
+# values (thresholds.ohlson_elevated = 0.038, thresholds.ohlson_severe = 0.50). Caveat: the model was estimated on 1970-76 US industrial
+# firms, so for non-US firms and today's data it is indicative only (OHLSON_CAVEAT is shown with every O-score).
+OHLSON_MODEL_1 = {"const": -1.32, "size": -0.407, "tlta": 6.03, "wcta": -1.43, "clca": 0.0757, "nita": -2.37, "futl": -1.83,
+                  "intwo": 0.285, "oeneg": -1.72, "chin": -0.521}
+OHLSON_CAVEAT = ("estimated by Ohlson (1980) on 1970-76 US industrial firms; for non-US firms and today's data it is indicative only")
+
+
+def ohlson_y(size: float, tlta: float, wcta: float, clca: float, nita: float, futl: float, intwo: float, oeneg: float, chin: float) -> float:
+    m = OHLSON_MODEL_1
+    return (m["const"] + m["size"] * size + m["tlta"] * tlta + m["wcta"] * wcta + m["clca"] * clca + m["nita"] * nita + m["futl"] * futl
+            + m["intwo"] * intwo + m["oeneg"] * oeneg + m["chin"] * chin)
 
 
 def enabled() -> bool:
@@ -116,8 +127,8 @@ def ohlson_signal(company: GlobalCompany, prior: Optional[Mapping] = None, fx: O
                   scale: Optional[Mapping] = None, c: Optional[dict] = None) -> dict:
     """O = -1.32 -0.407 SIZE +6.03 TLTA -1.43 WCTA +0.0757 CLCA -1.72 OENEG -2.37 NITA -1.83 FUTL +0.285 INTWO -0.521 CHIN; P = logistic(O).
 
-    SIZE = ln( total assets in USD thousands, converted at the FX rate of the statement date, / US GDP deflator of the statement year
-    (1968 = 100) ). FUTL uses operating cash flow as the funds-from-operations proxy. ``fx`` is risk_inputs.statement_fx(); ``scale`` is
+    SIZE = ln( total assets in USD, converted at the FX rate of the statement date, / US GDP deflator (1968 = 100) of the year PRIOR to the
+    balance-sheet year ). FUTL uses operating cash flow as the funds-from-operations proxy. ``fx`` is risk_inputs.statement_fx(); ``scale`` is
     risk_inputs.statement_scale(): SIZE is only computed when the statement is in verified/inferred full currency units."""
     c = c or cfg()["thresholds"]
     name = "Ohlson O-score"
@@ -144,42 +155,38 @@ def ohlson_signal(company: GlobalCompany, prior: Optional[Mapping] = None, fx: O
         year = int(str(company.filing_period_end)[:4])
     except (TypeError, ValueError):
         pass
-    defl = risk_inputs.deflator_index(year) if year else None
+    defl = risk_inputs.deflator_index(year - 1) if year else None          # Ohlson: index of the year PRIOR to the balance-sheet year
     if defl is None:
-        miss.append("us_gdp_deflator_for_statement_year")
-        flags.append(f"no GDP deflator for statement year {year}")
+        miss.append("us_gdp_deflator_for_prior_year")
+        flags.append(f"no GDP deflator for the year before the statement year {year}")
     if miss:
         sig = _signal("ohlson", name, available=False, missing=miss)
         sig["flags"], sig["unitScale"] = flags, scale.get("status")
         return sig
     tl, ni, ocf = float(company.total_liabilities), float(company.net_income), float(company.operating_cash_flow)
     ohl_cfg = cfg().get("ohlson", {})
-    unit = float(ohl_cfg.get("asset_unit_usd", 1000.0))
-    provisional = bool(ohl_cfg.get("provisional", True))
-    ta_usd_thousands = ta * float(fx["rate"]) / unit
-    size = math.log(ta_usd_thousands / defl["index"])
+    unit = float(ohl_cfg.get("asset_unit_usd", 1.0))                      # 1 = total assets in US dollars (Ohlson 1980)
+    ta_usd = ta * float(fx["rate"]) / unit
+    size = math.log(ta_usd / defl["index"])
     tlta, wcta, clca = tl / ta, (ca - cl) / ta, cl / ca
     oeneg = 1.0 if tl > ta else 0.0
     nita, futl = ni / ta, (ocf / tl if tl else 0.0)
     intwo = 1.0 if (ni < 0 and ni_prev < 0) else 0.0
     denom = abs(ni) + abs(ni_prev)
     chin = (ni - ni_prev) / denom if denom else 0.0
-    o = (-1.32 - 0.407 * size + 6.03 * tlta - 1.43 * wcta + 0.0757 * clca - 1.72 * oeneg - 2.37 * nita - 1.83 * futl
-         + 0.285 * intwo - 0.521 * chin)
+    o = ohlson_y(size, tlta, wcta, clca, nita, futl, intwo, oeneg, chin)
     p = _logistic(o)
     severity = 2 if p >= c["ohlson_severe"] else 1 if p >= c["ohlson_elevated"] else 0
     band = "high" if severity == 2 else "elevated" if severity == 1 else "low"
     if defl["partial"]:
-        flags.append(f"GDP deflator for {year} is a partial-year average")
+        flags.append(f"GDP deflator for {year - 1} is a partial-year average")
     sig = _signal("ohlson", name, available=True, severity=severity, value=p, band=band,
-                  inputs={"o_score": o, "size": size, "total_assets_usd_thousands": ta_usd_thousands, "fx_rate_to_usd": fx["rate"],
-                          "fx_rate_date": fx["rateDate"], "gdp_deflator_1968_100": defl["index"], "deflator_year": year,
+                  inputs={"o_score": o, "size": size, "total_assets_usd": ta_usd, "fx_rate_to_usd": fx["rate"],
+                          "fx_rate_date": fx["rateDate"], "gdp_deflator_1968_100": defl["index"], "deflator_year": year - 1,
                           "tlta": tlta, "wcta": wcta, "clca": clca, "oeneg": oeneg, "nita": nita, "futl_ocf_proxy": futl, "intwo": intwo,
                           "chin": chin},
-                  reason=f"Ohlson P(bankruptcy)={p:.3f} (O={o:.2f})" + (" [provisional: asset unit not yet confirmed from Ohlson 1980]" if provisional else ""))
-    sig["provisional"], sig["assetUnitUsd"] = provisional, unit
-    if provisional:
-        flags.append("Ohlson O-score is provisional (asset unit unconfirmed)")
+                  reason=f"Ohlson P(bankruptcy)={p:.3f} (O={o:.2f})")
+    sig["assetUnitUsd"], sig["caveat"] = unit, OHLSON_CAVEAT
     sig["flags"], sig["unitScale"] = flags, scale.get("status")
     return sig
 
