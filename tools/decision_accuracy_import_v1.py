@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the first Decision Accuracy track record from the FROZEN v1 paper cohort (read-only on every input).
 
-Usage: python tools/decision_accuracy_import_v1.py <frozen_snapshot.json> <outputs_dir> <out.json>
+Usage: python tools/decision_accuracy_import_v1.py <frozen_snapshot.json> <outputs_dir> <out.json> [--source-run <actions run id>] [--total-return]
   frozen_snapshot.json  research/paper_portfolio_2026-10-20.json (sha256 is verified; it is opened read-only and never written)
   outputs_dir           research/outputs/20261119_extra  (priced_holdings.csv, excluded_and_duplicates.csv, markets_and_pooled.csv, diagnostics.json)
   out.json              a NEW file; refuses to overwrite an existing one
@@ -27,10 +27,19 @@ def read_csv(path: Path):
 
 
 def main(argv):
-    if len(argv) != 4:
+    args = list(argv[1:])
+    run_id, total_return = None, False
+    if "--total-return" in args:
+        args.remove("--total-return")
+        total_return = True
+    if "--source-run" in args:
+        i = args.index("--source-run")
+        run_id = args[i + 1]
+        del args[i:i + 2]
+    if len(args) != 3:
         print(__doc__)
         return 2
-    frozen_path, outputs, out = Path(argv[1]), Path(argv[2]), Path(argv[3])
+    frozen_path, outputs, out = Path(args[0]), Path(args[1]), Path(args[2])
     if out.exists():
         print(f"refusing to overwrite {out}")
         return 1
@@ -67,8 +76,10 @@ def main(argv):
                           "entryClose": h.get("entryClose"), "entryCloseDate": h.get("entryCloseDate"), "outcomes": {"1": out1}})
     body = {"schema": 1, "cohortId": COHORT_ID, "decisionDate": snap["snapshotDate"], "decisionLogicVersion": "v1",
             "source": {"frozenSnapshot": "research/paper_portfolio_2026-10-20.json", "frozenSnapshotSha256": FROZEN_SHA256_FULL,
-                       "diagnosticsOutputs": "research/outputs/20261119_extra", "diagnosticsEnd": diag.get("end")},
-            "returnBasis": "vendor price return (split-adjusted close, no dividends), entry = close on the decision date",
+                       "diagnosticsOutputs": (f"GitHub Actions run {run_id} (artifact biap-nov19-frozen-cohort-{run_id}), diagnostics/" if run_id
+                                   else "research/outputs/20261119_extra"), "diagnosticsEnd": diag.get("end")},
+            "returnBasis": ("vendor TOTAL return (split-adjusted close plus cash dividends with ex-date after entry, no reinvestment), entry = close on the decision date"
+                            if total_return else "vendor price return (split-adjusted close, no dividends), entry = close on the decision date"),
             "horizonNotes": {"1": "exit 2026-11-19 = 30 days after the decision date (one calendar month is 2026-11-20)"},
             "benchmarks": {"1": bench}, "decisions": decisions}
     body["contentSha256"] = canonical_sha({k: v for k, v in body.items()})

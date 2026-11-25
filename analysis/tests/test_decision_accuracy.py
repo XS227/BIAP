@@ -118,14 +118,38 @@ def test_tampered_cohort_is_rejected(tmp_path, monkeypatch):
 def test_v1_numbers_equal_the_published_diagnostics():
     s = da.summarize(da.load_cohort("v1-20261020"), 1)
     us = s["markets"]["US:NASDAQ"]
-    assert (us["buy"]["n"], us["sell"]["n"]) == (151, 211)
-    assert us["buy"]["meanReturnPct"] == pytest.approx(-7.00539, abs=1e-4) and us["sell"]["meanReturnPct"] == pytest.approx(-21.01031, abs=1e-4)
+    assert (us["buy"]["n"], us["sell"]["n"]) == (151, 212)
+    assert us["buy"]["meanReturnPct"] == pytest.approx(-7.00539, abs=1e-4) and us["sell"]["meanReturnPct"] == pytest.approx(-21.23196, abs=1e-4)
     assert us["benchmark"]["returnPct"] == pytest.approx(-9.63345, abs=1e-5)
     nyse = s["markets"]["US:NYSE"]
-    assert (nyse["buy"]["n"], nyse["sell"]["n"]) == (117, 66)
-    assert nyse["buy"]["meanReturnPct"] == pytest.approx(-3.08551, abs=1e-4) and nyse["sell"]["meanReturnPct"] == pytest.approx(-14.17552, abs=1e-4)
+    assert (nyse["buy"]["n"], nyse["sell"]["n"]) == (118, 66)
+    assert nyse["buy"]["meanReturnPct"] == pytest.approx(-3.0527, abs=1e-4) and nyse["sell"]["meanReturnPct"] == pytest.approx(-14.10481, abs=1e-4)
     assert len(s["markets"]) == 12
     assert any(m["tooSmallToInterpret"] for m in s["markets"].values())
+
+
+def test_primary_pooled_figure_is_venue_equal_and_matches_the_paper():
+    s = da.summarize(da.load_cohort("v1-20261020"), 1)
+    p, q = s["pooled"], s["pooledStockWeighted"]
+    assert "venue-equal" in p["weighting"] and "stock-weighted" in q["weighting"]
+    assert p["buy"]["meanReturnPct"] == pytest.approx(-0.35438, abs=1e-4)             # paper / Actions run 44705776623
+    assert p["sell"]["meanReturnPct"] == pytest.approx(-10.92912, abs=1e-4)
+    assert p["spreadMeanPp"] == pytest.approx(10.575, abs=1e-3)
+    assert (q["buy"]["n"], q["sell"]["n"]) == (429, 489)
+    assert q["buy"]["meanReturnPct"] == pytest.approx(-3.19366, abs=1e-4) and q["sell"]["meanReturnPct"] == pytest.approx(-14.93223, abs=1e-4)
+    assert q["spreadMeanPp"] == pytest.approx(11.739, abs=1e-3)
+    assert p["spreadCi95Pp"][0] < p["spreadMeanPp"] < p["spreadCi95Pp"][1]
+    assert not any("not evidence of skill" in c for c in s["caveats"])
+    assert da.POSITIVE_RANKING_WORDING in s["caveats"]
+
+
+def test_venue_equal_differs_from_stock_weighted_when_venues_differ_in_size():
+    ds = [dec("A:X", "BUY", "a", 0.10), dec("B:Y", "BUY", "b", 0.00), dec("B:Y", "BUY", "c", 0.00), dec("B:Y", "BUY", "d", 0.00),
+          dec("A:X", "SELL", "e", -0.10), dec("B:Y", "SELL", "f", 0.00)]
+    c = mini(ds, {"A:X": {"symbol": "i", "returnPct": 0.0, "exitDate": "2026-11-19"}, "B:Y": {"symbol": "j", "returnPct": 0.0, "exitDate": "2026-11-19"}})
+    s = da.summarize(c, 1, config={"min_priced_per_side": 1, "bootstrap_resamples": 50, "bootstrap_seed": 1, "confidence_level": 0.95})
+    assert s["pooled"]["buy"]["meanReturnPct"] == pytest.approx(5.0)                  # (10 + 0) / 2 venues
+    assert s["pooledStockWeighted"]["buy"]["meanReturnPct"] == pytest.approx(2.5)     # (10+0+0+0)/4 holdings
 
 
 def test_v1_later_horizons_are_pending_with_dates():

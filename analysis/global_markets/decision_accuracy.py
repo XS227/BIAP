@@ -94,8 +94,9 @@ def _median(xs):
     return statistics.median(xs) if xs else None
 
 
-def bootstrap_spread(rows: list, *, resamples: int, seed: int, level: float) -> Optional[tuple]:
-    """CI of mean(BUY) - mean(SELL) resampling holdings with replacement within market x side. rows: (market, side, return)."""
+def bootstrap_spread(rows: list, *, resamples: int, seed: int, level: float, venue_equal: bool = False) -> Optional[tuple]:
+    """CI of mean(BUY) - mean(SELL) resampling holdings with replacement within market x side. rows: (market, side, return).
+    venue_equal=True: each side's figure is the mean of the per-market means (every venue weighs the same), as in the paper."""
     strata: dict = {}
     for m, side, r in rows:
         strata.setdefault((m, side), []).append(r)
@@ -106,7 +107,11 @@ def bootstrap_spread(rows: list, *, resamples: int, seed: int, level: float) -> 
     for _ in range(resamples):
         buy, sell = [], []
         for (m, side), xs in strata.items():
-            (buy if side == "BUY" else sell).extend(rng.choices(xs, k=len(xs)))
+            draw = rng.choices(xs, k=len(xs))
+            if venue_equal:
+                (buy if side == "BUY" else sell).append(sum(draw) / len(draw))
+            else:
+                (buy if side == "BUY" else sell).extend(draw)
         out.append(sum(buy) / len(buy) - sum(sell) / len(sell))
     out.sort()
     lo, hi = (1 - level) / 2, 1 - (1 - level) / 2
@@ -150,6 +155,44 @@ def _pct(x: Optional[float]) -> Optional[float]:
     return None if x is None else x * 100.0
 
 
+POSITIVE_RANKING_WORDING = ("positive BUY-SELL ranking spread over one month; absolute returns were negative in a falling market; "
+                            "longer horizons pending")
+
+
+def _venue_equal(recs: list, rows: list, cfg: Mapping) -> dict:
+    """PRIMARY pooled figure: every market (venue) counts once per side, as in the paper (BUY -0.35%, SELL -10.93%, spread 10.57 pp)."""
+    per = {}
+    for m in sorted({r["market"] for r in recs}):
+        mr = [r for r in recs if r["market"] == m]
+        per[m] = {side: [x for x in mr if x["side"] == side] for side in ("BUY", "SELL")}
+    out = {"weighting": "venue-equal (mean of the per-venue means; primary, matches the paper)"}
+    for side in ("BUY", "SELL"):
+        ms = [(_mean([x["ret"] for x in v[side]]), _mean([x["excess"] for x in v[side]]),
+               sum(1 for x in v[side] if x["hit"]) / len(v[side])) for v in per.values() if v[side]]
+        out[side.lower()] = {"venues": len(ms), "n": sum(len(v[side]) for v in per.values()),
+                             "meanReturnPct": _pct(_mean([a for a, _, _ in ms])) if ms else None,
+                             "meanExcessPct": _pct(_mean([b for _, b, _ in ms])) if ms else None,
+                             "hitRate": _mean([c for _, _, c in ms]) if ms else None}
+    b, s_ = out["buy"], out["sell"]
+    out["spreadMeanPp"] = None if b["meanReturnPct"] is None or s_["meanReturnPct"] is None else b["meanReturnPct"] - s_["meanReturnPct"]
+    out["excessSpreadMeanPp"] = None if b["meanExcessPct"] is None or s_["meanExcessPct"] is None else b["meanExcessPct"] - s_["meanExcessPct"]
+    ci = bootstrap_spread(rows, resamples=int(cfg["bootstrap_resamples"]), seed=int(cfg["bootstrap_seed"]),
+                          level=float(cfg["confidence_level"]), venue_equal=True)
+    out["spreadCi95Pp"] = None if ci is None else [ci[0] * 100.0, ci[1] * 100.0]
+    out["note"] = "venues are not independent (two US venues, two German venues); the interval resamples holdings within venue and side"
+    return out
+
+
+def _stock_weighted(recs: list, rows: list, cfg: Mapping) -> dict:
+    """SECONDARY pooled figure: every priced holding counts once, so large venues (US) dominate."""
+    buy, sell = _side_stats(recs, "BUY"), _side_stats(recs, "SELL")
+    ci = bootstrap_spread(rows, resamples=int(cfg["bootstrap_resamples"]), seed=int(cfg["bootstrap_seed"]), level=float(cfg["confidence_level"]))
+    return {"weighting": "stock-weighted (all priced holdings pooled; secondary, dominated by the largest venues)", "buy": buy, "sell": sell,
+            "spreadMeanPp": None if buy["meanReturnPct"] is None or sell["meanReturnPct"] is None else buy["meanReturnPct"] - sell["meanReturnPct"],
+            "spreadCi95Pp": None if ci is None else [ci[0] * 100.0, ci[1] * 100.0],
+            "excessSpreadMeanPp": None if buy["meanExcessPct"] is None or sell["meanExcessPct"] is None else buy["meanExcessPct"] - sell["meanExcessPct"]}
+
+
 def summarize(cohort: Mapping, horizon: int, *, market: Optional[str] = None, config: Optional[Mapping] = None, today: Optional[date] = None) -> dict:
     cfg = config or load_config()
     state = _horizon_state(cohort, horizon, today)
@@ -168,18 +211,13 @@ def summarize(cohort: Mapping, horizon: int, *, market: Optional[str] = None, co
         mspread = None if buy["medianReturnPct"] is None or sell["medianReturnPct"] is None else buy["medianReturnPct"] - sell["medianReturnPct"]
         markets[m] = {"benchmark": cohort["benchmarks"][str(horizon)][m], "buy": buy, "sell": sell, "spreadMeanPp": spread, "spreadMedianPp": mspread,
                       "tooSmallToInterpret": small}
-    pooled = None
+    pooled = pooled_sw = None
     if recs:
-        buy, sell = _side_stats(recs, "BUY"), _side_stats(recs, "SELL")
-        ci = bootstrap_spread([(r["market"], r["side"], r["ret"]) for r in recs], resamples=int(cfg["bootstrap_resamples"]),
-                              seed=int(cfg["bootstrap_seed"]), level=float(cfg["confidence_level"]))
-        pooled = {"buy": buy, "sell": sell,
-                  "spreadMeanPp": None if buy["meanReturnPct"] is None or sell["meanReturnPct"] is None else buy["meanReturnPct"] - sell["meanReturnPct"],
-                  "spreadCi95Pp": None if ci is None else [ci[0] * 100.0, ci[1] * 100.0],
-                  "excessSpreadMeanPp": None if buy["meanExcessPct"] is None or sell["meanExcessPct"] is None else buy["meanExcessPct"] - sell["meanExcessPct"],
-                  "note": "pooled over holdings (not market-weighted); markets are not independent"}
-    return {**base, "markets": markets, "pooled": pooled,
-            "caveats": ["past decisions, not a forecast", "one cohort over one short horizon is not evidence of skill",
+        rows = [(r["market"], r["side"], r["ret"]) for r in recs]
+        pooled = _venue_equal(recs, rows, cfg)
+        pooled_sw = _stock_weighted(recs, rows, cfg)
+    return {**base, "markets": markets, "pooled": pooled, "pooledStockWeighted": pooled_sw,
+            "caveats": ["past decisions, not a forecast", POSITIVE_RANKING_WORDING,
                         "markets and venues are not independent observations", "price returns only (no dividends)"]}
 
 

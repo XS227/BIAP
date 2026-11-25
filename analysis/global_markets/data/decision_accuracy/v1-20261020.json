@@ -6,10 +6,10 @@
  "source": {
   "frozenSnapshot": "research/paper_portfolio_2026-10-20.json",
   "frozenSnapshotSha256": "0bd9066eb980d9293566c2cb682dce579f6d6fbf15e102eeb341e2e7e52621a1",
-  "diagnosticsOutputs": "research/outputs/20261119_extra",
+  "diagnosticsOutputs": "GitHub Actions run 44705776623 (artifact biap-nov19-frozen-cohort-44705776623), diagnostics/",
   "diagnosticsEnd": "2026-11-19"
  },
- "returnBasis": "vendor price return (split-adjusted close, no dividends), entry = close on the decision date",
+ "returnBasis": "vendor TOTAL return (split-adjusted close plus cash dividends with ex-date after entry, no reinvestment), entry = close on the decision date",
  "horizonNotes": {
   "1": "exit 2026-11-19 = 30 days after the decision date (one calendar month is 2026-11-20)"
  },
@@ -4054,7 +4054,7 @@
    "outcomes": {
     "1": {
      "status": "PRICED",
-     "return": -0.6671428415726635,
+     "return": -0.6671428581159942,
      "exitDate": "2026-11-19",
      "exitFlag": null
     }
@@ -6166,7 +6166,7 @@
    "outcomes": {
     "1": {
      "status": "PRICED",
-     "return": -0.4500000248352677,
+     "return": -0.4499999906867741,
      "exitDate": "2026-11-19",
      "exitFlag": null
     }
@@ -6275,8 +6275,10 @@
    "entryCloseDate": "2026-10-20",
    "outcomes": {
     "1": {
-     "status": "EXCLUDED",
-     "reason": "no_exit_price: no close after entry"
+     "status": "PRICED",
+     "return": -0.6799999849541669,
+     "exitDate": "2026-10-29",
+     "exitFlag": "last_close_before_delisting"
     }
    }
   },
@@ -6934,7 +6936,7 @@
    "outcomes": {
     "1": {
      "status": "PRICED",
-     "return": -0.8756653963386333,
+     "return": -0.8756654076413605,
      "exitDate": "2026-11-19",
      "exitFlag": null
     }
@@ -7330,7 +7332,7 @@
    "outcomes": {
     "1": {
      "status": "PRICED",
-     "return": -0.20643431018474312,
+     "return": -0.20643429750372388,
      "exitDate": "2026-11-19",
      "exitFlag": null
     }
@@ -8231,8 +8233,10 @@
    "entryCloseDate": "2026-10-20",
    "outcomes": {
     "1": {
-     "status": "EXCLUDED",
-     "reason": "no_exit_price: no close after entry"
+     "status": "PRICED",
+     "return": 0.007853383012274673,
+     "exitDate": "2026-10-30",
+     "exitFlag": "last_close_before_delisting"
     }
    }
   },
@@ -11398,8 +11402,8 @@
    "outcomes": {
     "1": {
      "status": "PRICED",
-     "return": -0.014423063697193705,
-     "exitDate": "2026-11-19",
+     "return": 0.03224249761696174,
+     "exitDate": "2026-11-18",
      "exitFlag": null
     }
    }
@@ -12476,7 +12480,7 @@
    "outcomes": {
     "1": {
      "status": "PRICED",
-     "return": -0.07580137153846156,
+     "return": -0.07581829794871797,
      "exitDate": "2026-11-19",
      "exitFlag": null
     }
@@ -13378,7 +13382,7 @@
    "outcomes": {
     "1": {
      "status": "PRICED",
-     "return": -0.15265163043478258,
+     "return": -0.1526751363043478,
      "exitDate": "2026-11-19",
      "exitFlag": null
     }
@@ -14126,7 +14130,7 @@
    "outcomes": {
     "1": {
      "status": "PRICED",
-     "return": -0.311213396393093,
+     "return": -0.2887029014789324,
      "exitDate": "2026-11-19",
      "exitFlag": null
     }
@@ -14434,7 +14438,7 @@
    "outcomes": {
     "1": {
      "status": "PRICED",
-     "return": 0.041605236288243974,
+     "return": 0.04137972847624516,
      "exitDate": "2026-11-19",
      "exitFlag": null
     }
@@ -17069,8 +17073,10 @@
    "entryCloseDate": "2026-10-20",
    "outcomes": {
     "1": {
-     "status": "EXCLUDED",
-     "reason": "no_exit_price: no close after entry"
+     "status": "PRICED",
+     "return": -0.01986753084718018,
+     "exitDate": "2026-11-19",
+     "exitFlag": null
     }
    }
   },
@@ -17715,8 +17721,10 @@
    "entryCloseDate": "2026-10-20",
    "outcomes": {
     "1": {
-     "status": "EXCLUDED",
-     "reason": "no_exit_price: no close after entry"
+     "status": "PRICED",
+     "return": 0.05161849290426268,
+     "exitDate": "2026-11-19",
+     "exitFlag": null
     }
    }
   },
@@ -21005,10 +21013,8 @@
    "entryCloseDate": null,
    "outcomes": {
     "1": {
-     "status": "PRICED",
-     "return": 0.0,
-     "exitDate": "2026-11-06",
-     "exitFlag": "last_close_before_delisting"
+     "status": "EXCLUDED",
+     "reason": "no_entry_price"
     }
    }
   },
@@ -21189,5 +21195,5 @@
    }
   }
  ],
- "contentSha256": "4bd43f310d694bad9b11c5d697405711008bfb24716bc720878873c229adcecb"
+ "contentSha256": "5b2991ace6ce163bff2f46bec5962f2d39fac5be5e5896cdcf1fcc3fed0ce0c3"
 }
