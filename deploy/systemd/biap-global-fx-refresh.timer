@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily ECB rate refresh for BIAP Global (ECB publishes ~16:00 CET)
+
+[Timer]
+OnCalendar=*-*-* 16:30:00 UTC
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

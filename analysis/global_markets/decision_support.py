@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Iterable, Optional
 
+from . import decision_logic
 from .models import AgentSignal, DistressAssessment, EvidenceAssessment, GlobalCompany, InvestorProfile
 
 
@@ -165,6 +166,13 @@ def build_decision_table(
         "AVOID_OR_REVIEW": "REDUCE_OR_SELL_REVIEW",
         "NO_RECOMMENDATION": "NO_ACTION_DATA_INSUFFICIENT",
     }.get(call, "REVIEW")
+    holder_note = None
+    if decision_logic.is_v2() and call == "NO_RECOMMENDATION":
+        # v2 (P1.6): "no recommendation" is not "no action". For someone who already owns the stock the neutral answer is to keep
+        # the position and monitor it; it is neither a sell nor an add signal.
+        holder_action = "HOLD_AND_MONITOR"
+        holder_note = ("No recommendation could be issued (data or confidence). If you already own it: keep the position and monitor; "
+                       "this is neither a sell nor an add signal.")
 
     return {
         "shortTermOutlook": short_term,
@@ -207,6 +215,7 @@ def build_decision_table(
             "call": call,
             "newPositionAction": call,
             "existingHolderAction": holder_action,
+            **({"existingHolderNote": holder_note} if holder_note else {}),
             "score": round(float(score), 6),
             "confidence": round(float(confidence), 6),
             "decisionConfidence": round(float(decision_confidence if decision_confidence is not None else confidence), 6),

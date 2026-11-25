@@ -7,7 +7,7 @@ positive investment call; Agent 9 still never creates BUY/SELL by itself.
 """
 from __future__ import annotations
 
-from math import exp
+from math import erf, exp, sqrt
 from typing import Optional
 
 from .models import DistressAssessment, GlobalCompany, taxonomy_financial_institution
@@ -65,8 +65,50 @@ def synthetic_credit_rating(icr: float) -> tuple[str, float]:
     return "D", 0.350
 
 
-def distress_agent(company: GlobalCompany) -> DistressAssessment:
-    """Run the canonical Agent-9 diagnostics without guessing missing inputs."""
+_CAPITAL_INTENSIVE_SECTORS = frozenset({"energy", "utilities", "real estate"})
+_CAPITAL_INTENSIVE_TOKENS = (
+    "oil", "gas", "coal", "pipeline", "utilit", "electric", "power", "water", "shipping", "marine",
+    "tanker", "offshore",
+    "real estate", "reit", "property", "properties",
+)
+
+
+def zmijewski_probability(index: float) -> float:
+    """Zmijewski (1984) is a PROBIT model: P = Phi(index). v2 uses the correct link; v1 (frozen, paper-measured) keeps the logistic link."""
+    from . import decision_logic
+    if decision_logic.is_v2():
+        return 0.5 * (1.0 + erf(index / sqrt(2.0)))
+    return _logistic(index)
+
+
+def zmijewski_band(p: float) -> str:
+    """One band wording for Agent 9 and the Audit screen: <20% unlikely, 20-50% watch band, >=50% likely."""
+    if p >= 0.5:
+        return "distress-likely"
+    if p >= 0.2:
+        return "watch band (20-50%)"
+    return "distress-unlikely"
+
+
+def is_capital_intensive(company: GlobalCompany) -> bool:
+    """Oil & gas, utilities and shipping carry structurally high liabilities and low working capital."""
+    sector = (company.sector or "").strip().lower()
+    if sector in _CAPITAL_INTENSIVE_SECTORS:
+        return True
+    industry = (company.industry or "").lower()
+    return any(token in industry for token in _CAPITAL_INTENSIVE_TOKENS)
+
+
+def distress_agent(company: GlobalCompany, capital_intensive_guard: Optional[bool] = None) -> DistressAssessment:
+    """Run the canonical Agent-9 diagnostics without guessing missing inputs.
+
+    ``capital_intensive_guard`` (default: on under ``DECISION_LOGIC_VERSION=v2``, off in v1): for capital-intensive
+    sectors an Altman Z'' DISTRESS zone alone no longer triggers the safety gate (P1.8); it becomes ELEVATED_RISK and
+    the reasoning names the model that governs. Hard reasons, Zmijewski >= 0.5 and ICR < 1 still block.
+    """
+    if capital_intensive_guard is None:
+        from .decision_logic import is_v2
+        capital_intensive_guard = is_v2()
 
     hard_reasons: list[str] = []
     if company.total_equity is not None and company.total_equity < 0:
@@ -109,11 +151,11 @@ def distress_agent(company: GlobalCompany) -> DistressAssessment:
         tl_ta = float(company.total_liabilities) / float(company.total_assets)
         ca_cl = float(company.current_assets) / float(company.current_liabilities)
         zmijewski_index = -4.3 - 4.5 * ni_ta + 5.7 * tl_ta - 0.004 * ca_cl
-        distress_probability = _logistic(zmijewski_index)
+        distress_probability = zmijewski_probability(zmijewski_index)
         available_models.append("zmijewski")
         reasons.append(
             f"Zmijewski P(distress)={distress_probability:.3f} "
-            f"({'distress-likely' if distress_probability >= 0.5 else 'distress-unlikely'})"
+            f"({zmijewski_band(distress_probability)})"
         )
     else:
         for field_name, value in (
@@ -196,6 +238,7 @@ def distress_agent(company: GlobalCompany) -> DistressAssessment:
             severe = True
         elif distress_probability >= 0.35:
             elevated = True
+    altman_demoted = False
     if altman_zone == "DISTRESS":
         severe = True
     elif altman_zone == "GREY":
@@ -205,6 +248,20 @@ def distress_agent(company: GlobalCompany) -> DistressAssessment:
             severe = True
         elif interest_coverage < 1.5:
             elevated = True
+
+    if capital_intensive_guard and altman_zone == "DISTRESS" and is_capital_intensive(company):
+        other_severe = bool(hard_reasons) or (distress_probability is not None and distress_probability >= 0.5) or (
+            interest_coverage is not None and interest_coverage < 1.0
+        )
+        if not other_severe:
+            severe, elevated, altman_demoted = False, True, True
+            others = [m for m in ("zmijewski", "interest_coverage") if m in available_models]
+            reasons.append(
+                "Altman Z'' (distress zone) does not govern in a capital-intensive sector (oil & gas, utilities, "
+                "shipping: structurally low working capital and high liabilities); "
+                + (" and ".join(others) if others else "no other model available")
+                + " govern(s); status capped at ELEVATED_RISK"
+            )
 
     if severe:
         status = "HIGH_RISK"

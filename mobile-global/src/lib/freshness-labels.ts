@@ -20,7 +20,9 @@ export function fundamentalFreshnessLines(fe?: GlobalFundamentalEvidence | null)
     lines.push(`Fundamentals: ${TIER_LABEL[tier] ?? tier}${period ? `, period ended ${String(period).slice(0, 10)}` : ''}${age == null ? '' : ` (${age} days ago)`}`);
   }
   if (d.priceObservedAt) {
-    lines.push(`Price observed: ${String(d.priceObservedAt).slice(0, 10)}${d.priceAgeDays == null ? '' : ` (${d.priceAgeDays} days ago)`}`);
+    // The source file carries no trade date; the date is the last completed session on the venue calendar.
+    const derived = d.priceDateBasis === 'last_completed_session' ? ' - date derived from the trading calendar' : '';
+    lines.push(`Price observed: ${String(d.priceObservedAt).slice(0, 10)}${d.priceAgeDays == null ? '' : ` (${d.priceAgeDays} days ago)`}${derived}`);
   } else {
     lines.push('Price observed: date unavailable');
   }

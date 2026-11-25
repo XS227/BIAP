@@ -11,8 +11,11 @@ import re
 import time
 from datetime import datetime, timezone
 from threading import Lock
+
+from .session_calendar import flag_enabled
 from typing import Any, Dict, Optional
 
+from . import decision_logic
 from . import investment_mode as im
 from .analysis_ledger import AnalysisLedger, ledger_path
 
@@ -26,7 +29,7 @@ TIER_LABEL = {
 }
 AGENT_LABEL = {
     "fundamental": "Fundamentals",
-    "risk": "Risk",
+    "risk": "Market risk",
     "forecast": "Price trend",
     "comparison": "Peer comparison",
     "quality": "Earnings quality",
@@ -72,8 +75,13 @@ def payload(decision: im.InvestmentDecision) -> dict:
         "flags": list(decision.flags),
         "peerScope": decision.peer_scope,
         "blockedBy": decision.blocked_by,
+        "blockingGate": decision_logic.investment_blocking_gate(              # P1.9: which gate held the call back (None = none)
+            decision.call, decision.blocked_by, decision.flags, decision.tier_before_flags, decision.score,
+            im.DEFAULT_CONFIG.soft_downgrade_flags),
         "disclaimer": DISCLAIMER,
     }
+    if "negative_multifactor_unconfirmed" in decision.flags:
+        out["qualifier"] = dict(decision_logic.SELL_UNVERIFIED_QUALIFIER)      # v2: REDUCE instead of SELL, labelled
     if "insufficient_evidence" in decision.flags or decision.blocked_by:
         out["insufficientEvidence"] = True
         out["notice"] = INSUFFICIENT_NOTICE
@@ -97,7 +105,9 @@ def cap_for_evidence(item: Optional[dict], evidence_status: Optional[str], confi
     flags = list(item.get("flags") or [])
     if "insufficient_evidence" not in flags:
         flags.append("insufficient_evidence")
-    return {**item, "tier": "HOLD", "label": TIER_LABEL["HOLD"], "tierBeforeEvidenceCap": item["tier"],
+    code = "EVIDENCE_BLOCK" if str(evidence_status or "").upper() == "BLOCK" else "CONFIDENCE_FLOOR"
+    gate = decision_logic.make_gate(code, f"capped at HOLD (confidence {confidence}, floor {floor})", **{"from": item["tier"], "to": "HOLD"})
+    return {**item, "tier": "HOLD", "label": TIER_LABEL["HOLD"], "tierBeforeEvidenceCap": item["tier"], "blockingGate": gate,
             "positionSizeHint": None, "flags": flags, "insufficientEvidence": True, "notice": INSUFFICIENT_NOTICE}
 
 
@@ -144,6 +154,27 @@ def effective_evidence_status(status: Optional[str], reasoning: Optional[str], a
     return str(status or "PASS").upper()
 
 
+def analysis_staleness(analyzed_at: Optional[str], quote_observed: Optional[str]) -> Optional[dict]:
+    """P2.4 "analysis stale": the price was observed on a later calendar day than the analysis that produced the stored call.
+
+    Label only: tier, score and confidence are untouched. Compared by UTC calendar date, because many quotes carry a date
+    without a time; a same-day refresh is therefore never flagged. ``None`` when either side cannot be dated.
+    """
+    def day(value):
+        try:
+            then = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            return None
+        return (then.astimezone(timezone.utc) if then.tzinfo else then).date()
+
+    analysed, priced = day(analyzed_at), day(quote_observed)
+    if analysed is None or priced is None or priced <= analysed:
+        return None
+    return {"analysisStale": True, "analysisAsOf": str(analyzed_at), "priceAsOf": str(quote_observed),
+            "analysisStaleDays": (priced - analysed).days,
+            "analysisStaleNotice": "Price is newer than this analysis; the call below was made on the older price."}
+
+
 def market_view(country: str, exchange: str) -> Dict[str, dict]:
     """{ticker: display payload} for one exchange ledger; ``{}`` when investment mode is off / out of scope / no ledger."""
     code = f"{country.upper()}:{exchange.upper()}"
@@ -170,8 +201,12 @@ def market_view(country: str, exchange: str) -> Dict[str, dict]:
     view = {k[len(prefix):] if k.startswith(prefix) else k: payload(d) for k, d in decisions.items()}
     for ticker, item in view.items():
         analyzed_at, status, why, quote_date = evidence.get(ticker, (None, None, None, None))
-        view[ticker] = cap_for_evidence(
+        capped = cap_for_evidence(
             item, effective_evidence_status(status, why, analyzed_at, quote_observed=quote_date or stage1), item.get("confidence"))
+        stale = analysis_staleness(analyzed_at, quote_date) if flag_enabled("BIAP_ANALYSIS_STALE_LABEL") else None       # only a dated stage-1 quote; the sync time is not a trade date
+        view[ticker] = {**capped, **stale} if stale else capped
+        if analyzed_at and decision_logic.is_v2():
+            view[ticker] = {**view[ticker], "analyzedAt": str(analyzed_at)}      # P3 (v2): scan snapshot time of the tier/score
     with _LOCK:
         for old in [k for k in _CACHE if k[0] == stamp[0]]:
             _CACHE.pop(old, None)

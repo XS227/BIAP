@@ -16,6 +16,7 @@ import re
 from statistics import median
 from typing import Iterable, Optional
 
+from . import decision_logic
 from .advanced_agents import run_advanced_agents
 from .agents import PortfolioCandidate, evidence_agent, portfolio_agent
 from .evidence_contract import fundamental_evidence_contract
@@ -74,6 +75,8 @@ def instrument_seed(
 
 
 def _weighted_score(signals) -> tuple[float, float]:
+    if decision_logic.is_v2():
+        return decision_logic.weighted_score_v2(signals)
     weighted = 0.0
     confidence_total = 0.0
     for signal in signals:
@@ -170,6 +173,12 @@ def _scan_peer_state(company: GlobalCompany) -> tuple[Optional[list], str]:
             rows = [r for r in rows if str(((r or {}).get("company") or {}).get("ticker") or "").upper() not in excluded]
         return rows, "ok"
     return None, "scan_cache_invalid"
+
+
+def _peer_freshness_factor(info: Optional[dict]) -> Optional[float]:
+    """v2: 1 - 0.30 x (share of peers kept with a possibly-newer or undated report); None when not known."""
+    factor = (((info or {}).get("dimensions") or {}).get("filing") or {}).get("freshnessFactor")
+    return float(factor) if isinstance(factor, (int, float)) and not isinstance(factor, bool) else None
 
 
 def _peer_benchmark_meta(company: GlobalCompany) -> Optional[dict]:
@@ -585,6 +594,8 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
             } if peer_scope else {}),
             "peer_scan_cache_state": peer_scan_state,
             **({"peer_benchmark_freshness": peer_bench} if peer_bench else {}),
+            **({"peer_benchmark_freshness_factor": _peer_freshness_factor(peer_bench)}
+               if decision_logic.is_v2() and _peer_freshness_factor(peer_bench) is not None else {}),
             "price_state": price_state,
             **({"peer_pb_benchmark": peer_pb} if peer_pb is not None else {}),
             **({"fx_conversion": fx_info} if fx_info else {}),
@@ -640,8 +651,11 @@ def _call(
 ) -> str:
     # New BUY candidates are held to the strictest evidence state. WARN can
     # still show analysis, but cannot be promoted into a fresh buy idea.
-    if evidence_status == "BLOCK" or confidence < 0.35:
+    if evidence_status == "BLOCK":
         return "NO_RECOMMENDATION"
+    if confidence < 0.35:
+        # v2 (P1.2): low confidence blocks only active calls. A score inside (-0.25, 0.25) is a neutral HOLD whatever the confidence.
+        return "HOLD_OR_WATCH" if decision_logic.is_v2() and abs(score) < 0.25 else "NO_RECOMMENDATION"
     if score >= 0.25 and confidence >= 0.45 and evidence_status == "PASS":
         if distress is not None and distress.positive_block:
             return "NO_RECOMMENDATION"
@@ -709,6 +723,13 @@ def _critical_data_gaps(enriched, signals) -> tuple[str, ...]:
     if comparison is not None and comparison.confidence >= 0.5:
         return ()
     state = (enriched.raw_provider_fields or {}).get("peer_scan_cache_state") or "unknown"
+    if decision_logic.is_v2() and state == "ok" and enriched.sector_pe:
+        # v2: the benchmark exists; what is missing is confidence in it (peer reports possibly superseded or undated, P1.4 discount).
+        return (
+            f"peer benchmark available, but the comparison confidence is {comparison.confidence:.3f} (below 0.5) because the peers' "
+            "latest reports may be superseded (open quarterly report window) or are undated; a BUY is suspended until the peers' new "
+            "reports are read",
+        )
     return (
         "valuation benchmark unavailable (peer scan state: "
         f"{state}); a BUY requires verified comparison evidence",
@@ -751,6 +772,19 @@ def _analysis_payload(
     confidence: float,
 ) -> dict:
     preliminary_call = _call(score, confidence, evidence.status)
+    v2_extras: dict = {}
+    if decision_logic.is_v2():
+        v2_extras["analyzedAt"] = datetime.now(timezone.utc).isoformat()      # P3: when THIS number was computed (live analysis)
+    if decision_logic.is_v2():
+        # v2: cross-dimension disagreement is informational; a severely negative, confident risk agent caps a BUY_CANDIDATE
+        # (the conservative vocabulary has no ACCUMULATE) instead of the v1 REVIEW.
+        notes = decision_logic.cross_dimension_notes(signals)
+        if notes:
+            v2_extras["agentNotes"] = notes
+        if preliminary_call == "BUY_CANDIDATE" and decision_logic.severe_risk(signals):
+            preliminary_call = "HOLD_OR_WATCH"
+            v2_extras["riskCap"] = {"capped": "BUY_CANDIDATE", "to": "HOLD_OR_WATCH",
+                                    "reason": "risk agent vote <= -0.70 at confidence >= 0.65"}
     fundamental_evidence = fundamental_evidence_contract(enriched)
     critical_gaps = _critical_data_gaps(enriched, signals)
     governance = decision_governance_agent(
@@ -765,6 +799,24 @@ def _analysis_payload(
         peer_group_size=_peer_group_size(enriched),
         positive_signal_agents=_positive_signal_agents(signals),
     )
+    if (decision_logic.is_v2() and preliminary_call == "BUY_CANDIDATE" and governance.action == "REVIEW"
+            and decision_logic.comparison_only_review(governance.review_reasons)
+            and evidence.status == "PASS" and distress.status in {"LOW_RISK", "NOT_APPLICABLE"} and not distress.positive_block):
+        # v2 (P1.5): the only thing between a positive score and a BUY is the comparison evidence (no usable peer benchmark / peer group
+        # too small). Issue a capped HOLD_OR_WATCH with an explicit qualifier instead of NO_RECOMMENDATION. No new call category.
+        v2_extras["abstentionCap"] = {"capped": "BUY_CANDIDATE", "to": "HOLD_OR_WATCH", "reasons": list(governance.review_reasons),
+                                      **decision_logic.ABSTENTION_QUALIFIER}
+        governance = decision_governance_agent(
+            proposed_call="HOLD_OR_WATCH", score=score, overall_confidence=confidence, decision_confidence=decision_confidence,
+            evidence=evidence, distress=distress, critical_data_gaps=critical_gaps, buy_review_rules=True,
+            peer_group_size=_peer_group_size(enriched), positive_signal_agents=_positive_signal_agents(signals))
+    if decision_logic.is_v2() and governance.action == "REVIEW":
+        # v2 (P1.3, owner 2026-11-02): no human review queue. A REVIEW becomes a neutral HOLD_OR_WATCH labelled "needs review";
+        # the reasons stay on the record and the stock appears in the simple management list (GET /global/review-list).
+        v2_extras["needsReview"] = {"capped": preliminary_call, "to": "HOLD_OR_WATCH", "reasons": list(governance.review_reasons),
+                                    **decision_logic.NEEDS_REVIEW_LABEL}
+        governance = replace(governance, final_call="HOLD_OR_WATCH", abstained=False,
+                             reasoning="Needs review (shown as Hold Or Watch): " + "; ".join(governance.review_reasons))
     call = governance.final_call
     distress_gate_applied = (
         preliminary_call == "BUY_CANDIDATE"
@@ -825,6 +877,7 @@ def _analysis_payload(
             "governanceAbstained": governance.abstained,
             "notes": "Agent 8 governs whether the analysis may be accepted/reviewed/abstained. Agent 9 is an independent distress/credit sidecar. Agent 10 is report-only credit scoring for the selected legal entity and never creates or changes BUY/SELL decisions.",
         },
+        **v2_extras,
         "signals": [asdict(signal) for signal in signals],
         "decisionTable": build_decision_table(
             enriched,
@@ -879,6 +932,27 @@ def resolve_fx_rates(currencies, base: str) -> tuple[dict[str, float], dict[str,
     return rates, errors, sources
 
 
+def _portfolio_investment_input(enriched, payload: dict, evidence) -> dict:
+    """v2 portfolio: the investment ranking supplies tier, score and confidence; the conservative engine is a risk filter.
+
+    A stock is vetoed when its evidence is not PASS or the conservative preliminary call is AVOID_OR_REVIEW (SELL-like).
+    Distress positive_block is rejected by ``portfolio_agent`` itself. No ranking row (``tier`` None) means not eligible.
+    """
+    from . import decision_overlay
+
+    view = decision_overlay.market_view(enriched.country, enriched.exchange) or {}
+    decision = view.get(enriched.ticker)
+    if decision is not None:
+        decision = decision_overlay.cap_for_evidence(decision, evidence.status, payload.get("confidence"))
+    veto = None
+    if evidence.status != "PASS":
+        veto = f"evidence is {evidence.status}, not PASS"
+    elif (payload.get("decisionIntegrity") or {}).get("preliminaryCall") == "AVOID_OR_REVIEW":
+        veto = "the conservative engine calls AVOID_OR_REVIEW"
+    return {"tier": (decision or {}).get("tier"), "score": (decision or {}).get("score"),
+            "confidence": (decision or {}).get("confidence"), "veto": veto}
+
+
 def portfolio_from_instruments(
     profile: InvestorProfile,
     instruments: Iterable[GlobalCompany],
@@ -909,6 +983,8 @@ def portfolio_from_instruments(
 
     candidates: list[PortfolioCandidate] = []
     analyses: list[dict] = []
+    v2 = decision_logic.is_v2()
+    investment_inputs: dict[str, dict] = {}
     for (
         enriched,
         diagnostics,
@@ -960,8 +1036,10 @@ def portfolio_from_instruments(
             payload["fxError"] = fx_errors[currency]
         analyses.append(payload)
         candidates.append(PortfolioCandidate(enriched, signals, portfolio_evidence, distress))
+        if v2:
+            investment_inputs[enriched.identity()] = _portfolio_investment_input(enriched, payload, evidence)
 
-    proposal = portfolio_agent(profile, candidates, fx_to_base=rates)
+    proposal = portfolio_agent(profile, candidates, fx_to_base=rates, investment=investment_inputs if v2 else None)
     return {
         "proposal": asdict(proposal),
         "profileAssessment": profile_assessment(profile),

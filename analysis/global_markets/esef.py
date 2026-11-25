@@ -77,6 +77,16 @@ _CONCEPTS = {
     "retained_earnings": ("ifrs-full:RetainedEarnings",),
     "current_assets": ("ifrs-full:CurrentAssets",),
     "current_liabilities": ("ifrs-full:CurrentLiabilities",),
+    # P2.2: subtotals that exclude a held-for-sale group (Equinor); used only when the plain total is absent AND no
+    # held-for-sale group is tagged for the period (otherwise the subtotal would not be the current total).
+    "current_assets_ex_hfs": ("ifrs-full:CurrentAssetsOtherThanAssetsOrDisposalGroupsClassifiedAsHeldForSaleOrAsHeldForDistributionToOwners",),
+    "current_liabilities_ex_hfs": ("ifrs-full:CurrentLiabilitiesOtherThanLiabilitiesIncludedInDisposalGroupsClassifiedAsHeldForSale",),
+    "hfs_assets": ("ifrs-full:NoncurrentAssetsOrDisposalGroupsClassifiedAsHeldForSaleOrAsHeldForDistributionToOwners",),
+    "hfs_liabilities": ("ifrs-full:LiabilitiesIncludedInDisposalGroupsClassifiedAsHeldForSale",),
+    "dividend_per_share_recognised": ("ifrs-full:DividendsRecognisedAsDistributionsToOwnersPerShare",),
+    "dividend_per_share_declared": (
+        "ifrs-full:DividendsProposedOrDeclaredBeforeFinancialStatementsAuthorisedForIssueButNotRecognisedAsDistributionToOwnersPerShare",
+    ),
     "cash": ("ifrs-full:CashAndCashEquivalents",),
     "ocf": ("ifrs-full:CashFlowsFromUsedInOperatingActivities",),
     # Pure D&A add-backs from the cash-flow statement (impairment-inclusive
@@ -120,6 +130,11 @@ _CONCEPTS = {
     "current_other_loans": ("ifrs-full:CurrentLoansReceivedAndCurrentPortionOfNoncurrentLoansReceived",),
     "noncurrent_other_loans": ("ifrs-full:NoncurrentPortionOfNoncurrentLoansReceived",),
     "interest_expense": ("ifrs-full:FinanceCosts", "ifrs-full:InterestExpense"),
+    # IFRS 16 lease items (Risk Agent: debt incl. leases, lease interest). Extra keys only; no existing key changes.
+    "lease_liabilities_total": ("ifrs-full:LeaseLiabilities",),
+    "current_lease_liabilities": ("ifrs-full:CurrentLeaseLiabilities",),
+    "noncurrent_lease_liabilities": ("ifrs-full:NoncurrentLeaseLiabilities",),
+    "lease_interest": ("ifrs-full:InterestExpenseOnLeaseLiabilities",),
     # Used only to detect gross-up: issuers such as Eni tag derivative/FX
     # gross flows in FinanceCosts that are offset by a similar FinanceIncome.
     "interest_expense_only": ("ifrs-full:InterestExpense",),
@@ -336,6 +351,11 @@ def _unit_currency(raw: Any) -> Optional[str]:
     return match.group(1).upper() if match else None
 
 
+def _risk_agent_on() -> bool:
+    import os
+    return os.environ.get("RISK_AGENT_ENABLED", "0").strip().lower() in ("1", "true", "yes", "on")
+
+
 class ESEFFundamentalsProvider(FundamentalsProvider):
     provider_id = "esef-xbrl"
 
@@ -432,6 +452,30 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             if (exact or extension) and cls._plain_fact(fact) and _num(fact.get("value")) is not None:
                 result.append(fact)
         return result
+
+    @classmethod
+    def _lease_liabilities(cls, concept_facts: dict, period_end: date) -> Optional[float]:
+        """IFRS 16 lease liabilities: the tagged total, else current + non-current (both parts required)."""
+        total = cls._instant_value(concept_facts["lease_liabilities_total"], period_end)
+        if total is not None:
+            return total
+        cur = cls._instant_value(concept_facts["current_lease_liabilities"], period_end)
+        non = cls._instant_value(concept_facts["noncurrent_lease_liabilities"], period_end)
+        return cur + non if cur is not None and non is not None else None
+
+    @classmethod
+    def _lease_fields(cls, concept_facts: dict, period_end: date) -> dict:
+        return {"lease_liabilities": cls._lease_liabilities(concept_facts, period_end),
+                "lease_interest_expense": cls._duration_value(concept_facts["lease_interest"], period_end),
+                "interest_expense_basis": cls._interest_expense_basis(concept_facts, period_end)}
+
+    @classmethod
+    def _interest_expense_basis(cls, concept_facts: dict, period_end: date) -> Optional[str]:
+        if cls._duration_value(concept_facts.get("interest_expense_only", []), period_end) is not None:
+            return "InterestExpense"
+        if cls._duration_value(concept_facts.get("finance_costs_only", []), period_end) is not None:
+            return "FinanceCosts"
+        return "other" if cls._duration_value(concept_facts["interest_expense"], period_end) is not None else None
 
     @classmethod
     def _interest_expense(cls, concept_facts: dict, period_end: date) -> Optional[float]:
@@ -1104,6 +1148,24 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         if eps is None and not self._duration_value(concept_facts["discontinued_profit"], period_end):
             eps = self._duration_value(concept_facts["eps_continuing"], period_end)
 
+        current_assets = self._instant_value(concept_facts["current_assets"], period_end)
+        current_assets_method = "direct_current_assets_tag" if current_assets is not None else None
+        if current_assets is None and not self._instant_value(concept_facts["hfs_assets"], period_end):
+            current_assets = self._instant_value(concept_facts["current_assets_ex_hfs"], period_end)
+            if current_assets is not None:
+                current_assets_method = "subtotal_other_than_held_for_sale_no_group_tagged"
+        current_liabilities = self._instant_value(concept_facts["current_liabilities"], period_end)
+        current_liabilities_method = "direct_current_liabilities_tag" if current_liabilities is not None else None
+        if current_liabilities is None and not self._instant_value(concept_facts["hfs_liabilities"], period_end):
+            current_liabilities = self._instant_value(concept_facts["current_liabilities_ex_hfs"], period_end)
+            if current_liabilities is not None:
+                current_liabilities_method = "subtotal_other_than_held_for_sale_no_group_tagged"
+        dps = self._duration_value(concept_facts["dividend_per_share_recognised"], period_end)
+        dps_basis = "recognised_in_year" if dps is not None else None
+        if dps is None:
+            dps = self._duration_value(concept_facts["dividend_per_share_declared"], period_end)
+            dps_basis = "declared_not_recognised" if dps is not None else None
+
         shares_outstanding = self._instant_value(concept_facts["shares_outstanding"], period_end)
         if shares_outstanding is not None and shares_outstanding <= 0:
             shares_outstanding = None
@@ -1136,18 +1198,24 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             "total_liabilities": total_liabilities,
             "total_equity": total_equity,
             "retained_earnings": retained_earnings,
-            "current_assets": self._instant_value(concept_facts["current_assets"], period_end),
-            "current_liabilities": self._instant_value(concept_facts["current_liabilities"], period_end),
+            "current_assets": current_assets,
+            "current_liabilities": current_liabilities,
             "cash_and_equivalents": self._instant_value(concept_facts["cash"], period_end),
             "operating_cash_flow": ocf,
             "free_cash_flow": fcf,
             "total_debt": debt,
             "interest_expense": self._interest_expense(concept_facts, period_end),
+            # IFRS 16 keys only while the Risk Agent flag is on: with it off the output is byte-identical to before this change.
+            **(self._lease_fields(concept_facts, period_end) if _risk_agent_on() else {}),
             "eps": eps,
             # absent key (not None) when the filing carries no plain share count,
             # so an existing provider value is never overwritten with a gap
             **({"shares_outstanding": shares_outstanding} if shares_outstanding is not None else {}),
+            **({"dividend_per_share": dps} if dps is not None else {}),
             "__normalization_meta__": {
+                "current_assets_method": current_assets_method,
+                "current_liabilities_method": current_liabilities_method,
+                **({"dividend_per_share_basis": dps_basis} if dps_basis else {}),
                 **({"shares_outstanding_basis": shares_basis} if shares_basis else {}),
                 "field_status": self._field_status(
                     facts, period_end,

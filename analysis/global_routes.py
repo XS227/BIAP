@@ -13,7 +13,8 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from global_markets import decision_overlay
+from global_markets import decision_accuracy, decision_logic, decision_overlay, performance_agent, risk_agent
+from global_markets.broker_catalog import broker_readiness
 from global_markets.country_packs import country_catalog, get_exchange
 from global_markets.credit_scoring import score_individual_credit
 from global_markets.models import InvestorProfile
@@ -377,6 +378,12 @@ def global_requirements():
     return {"requirements": requirements_payload(), "sources": SOURCE_PLANS}
 
 
+@router.get("/brokers")
+def global_brokers():
+    """Public metadata only; never returns broker secrets or account data."""
+    return broker_readiness()
+
+
 @router.get("/status")
 def global_status():
     live_switch_requested = os.environ.get("BIAP_GLOBAL_LIVE_TRADING_ENABLED", "false").strip().lower() == "true"
@@ -386,6 +393,8 @@ def global_status():
     return {
         "mode": "research-paper-first",
         "liveTrading": False,
+        "decisionAccuracyEnabled": decision_accuracy.enabled(),
+        "performanceAgentEnabled": performance_agent.enabled(),
         "liveBrokerConnected": False,
         "liveTradingSwitchRequested": live_switch_requested,
         "marketProviderConfigured": market_configured,
@@ -407,6 +416,7 @@ def global_status():
         "universeCacheHours": float(os.environ.get("BIAP_GLOBAL_UNIVERSE_CACHE_HOURS", "12")),
         "universeMaxRows": int(os.environ.get("BIAP_GLOBAL_UNIVERSE_MAX_ROWS", "20000")),
         "countries": len(country_catalog()),
+        "riskAgentEnabled": risk_agent.enabled(),
         "notes": "No live global broker is connected. Public EOD market fallback is lower trust than a licensed feed; missing/stale evidence is never fabricated and can force NO_RECOMMENDATION.",
     }
 
@@ -481,8 +491,37 @@ def global_analysis_ledger(
             decision = view.get(str(row.get("ticker") or ""))
             if decision is not None:
                 row["investment"] = decision      # additive: the stored conservative ``call`` is unchanged
+                row["blockingGate"] = decision.get("blockingGate")
     return {"country": country, "exchange": exchange, "counts": counts, "rows": rows,
             "decisionMode": "investment" if view else "conservative"}
+
+
+@router.get("/review-list")
+def global_review_list(country: str, exchange: str, limit: int = 200):
+    """Simple management list (P1.3, v2): stocks whose governance result was REVIEW and is shown as a labelled HOLD_OR_WATCH."""
+    from global_markets.analysis_ledger import AnalysisLedger, ledger_path
+
+    country, exchange = country.strip().upper(), exchange.strip().upper()
+    try:
+        get_exchange(country, exchange)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not ledger_path(country, exchange).exists():
+        return {"country": country, "exchange": exchange, "count": 0, "rows": []}
+    ledger = AnalysisLedger(country, exchange)
+    rows = []
+    try:
+        for result in ledger.full_results():
+            nr = result.get("needsReview")
+            if not nr:
+                continue
+            rows.append({"ticker": result.get("ticker"), "name": result.get("name"), "call": result.get("call"),
+                         "score": result.get("score"), "confidence": result.get("confidence"),
+                         "wouldHaveBeen": nr.get("capped"), "reasons": nr.get("reasons") or [], "labelFa": nr.get("labelFa")})
+    finally:
+        ledger.close()
+    rows.sort(key=lambda r: -(abs(r.get("score") or 0) * (r.get("confidence") or 0)))
+    return {"country": country, "exchange": exchange, "count": len(rows), "rows": rows[:max(1, min(int(limit), 1000))]}
 
 
 @router.get("/recommendations")
@@ -548,18 +587,107 @@ def global_scan_top10(req: GlobalTop10Request):
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
 
 
+def _official_snapshot_view(result: dict) -> dict:
+    """v2: score / confidence / call come from the stored scan snapshot (same as the list and Kiasha), with its scan time.
+
+    The live analysis is kept under ``live`` with its own time; the agent tables below still come from that live run
+    (``detailsFromLive``). v1, or a ticker without a stored snapshot, is returned unchanged.
+    """
+    if not decision_logic.is_v2():
+        return result
+    from global_markets.analysis_ledger import AnalysisLedger, ledger_path
+    country, exchange = str(result.get("country") or "").upper(), str(result.get("exchange") or "").upper()
+    if not (country and exchange and ledger_path(country, exchange).exists()):
+        return result
+    ledger = AnalysisLedger(country, exchange)
+    try:
+        snap = ledger.snapshot(str(result.get("ticker") or ""))
+    finally:
+        ledger.close()
+    if not snap:
+        return result
+    live = {"analyzedAt": result.get("analyzedAt"), "score": result.get("score"), "confidence": result.get("confidence"),
+            "call": result.get("call"), "note": "May differ from the official tier: computed now on current inputs."}
+    return {**result, "score": snap["score"], "confidence": snap["confidence"], "call": snap["call"] or result.get("call"),
+            "analyzedAt": snap["analyzed_at"], "officialSnapshot": True, "detailsFromLive": True, "live": live}
+
+
 @router.post("/analyze")
 def global_analyze(req: InstrumentRequest):
     try:
         result = analyze_company(_seed(req))
         if isinstance(result, dict):
+            result = _official_snapshot_view(result)          # v2: headline numbers = the stored scan snapshot, live kept apart
             view = decision_overlay.market_view(str(result.get("country") or ""), str(result.get("exchange") or ""))
             decision = view.get(str(result.get("ticker") or ""))
             if decision is not None:
                 evidence = result.get("evidence") if isinstance(result.get("evidence"), dict) else {}
                 decision = decision_overlay.cap_for_evidence(decision, evidence.get("status"), result.get("confidence"))
                 result = {**result, "investment": decision}     # additive; ``call`` stays the conservative value
+            result = {**result, "engines": decision_logic.engines_block(result, decision)}   # additive, P1.11 labels
+            # P1.9: the gate of the engine whose label is displayed (investment tier when present, else the conservative call)
+            result["blockingGate"] = (decision.get("blockingGate") if decision is not None
+                                      else decision_logic.conservative_blocking_gate(result))
         return result
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+
+
+@router.get("/accuracy/summary")
+def global_accuracy_summary(horizon: int = 1, cohort: str = "v1-20261020", market: Optional[str] = None):
+    """Decision Accuracy Agent (flag ``DECISION_ACCURACY_AGENT_ENABLED``, default off -> 404): realised BUY/SELL results vs benchmark."""
+    if not decision_accuracy.enabled():
+        raise HTTPException(status_code=404, detail="decision accuracy agent disabled")
+    cfg = decision_accuracy.load_config()
+    if horizon not in cfg["horizons_months"] or cohort not in cfg["cohorts"]:
+        raise HTTPException(status_code=422, detail=f"horizon must be one of {cfg['horizons_months']} and cohort one of {cfg['cohorts']}")
+    try:
+        return {"agent": "decision_accuracy", "version": decision_accuracy.VERSION, "advisoryOnly": True,
+                **decision_accuracy.summarize(decision_accuracy.load_cohort(cohort), horizon, market=market, config=cfg)}
+    except (OSError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail=str(exc)[:300]) from exc
+
+
+@router.get("/accuracy/stock")
+def global_accuracy_stock(country: str, exchange: str, ticker: str):
+    if not decision_accuracy.enabled():
+        raise HTTPException(status_code=404, detail="decision accuracy agent disabled")
+    try:
+        return decision_accuracy.stock_record(decision_accuracy.load_all(), country, exchange, ticker)
+    except (OSError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail=str(exc)[:300]) from exc
+
+
+@router.post("/performance")
+def global_performance(req: InstrumentRequest):
+    """Performance Agent (advisory sidecar, flag ``PERFORMANCE_AGENT_ENABLED``, default off -> 404). Read-only."""
+    if not performance_agent.enabled():
+        raise HTTPException(status_code=404, detail="performance agent disabled")
+    try:
+        from global_markets.service import _evaluate
+        enriched = _evaluate(_seed(req), build_registry())[0]
+        result = performance_agent.assess(enriched)
+        return {"country": enriched.country, "exchange": enriched.exchange, "ticker": enriched.ticker, "name": enriched.name, **result}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+
+
+@router.post("/risk")
+def global_risk(req: InstrumentRequest):
+    """Risk Agent (advisory sidecar, flag ``RISK_AGENT_ENABLED``, default off -> 404). Read-only: no ledger or decision is changed."""
+    if not risk_agent.enabled():
+        raise HTTPException(status_code=404, detail="risk agent disabled")
+    try:
+        from global_markets.service import _evaluate
+        from global_markets import risk_inputs
+        enriched = _evaluate(_seed(req), build_registry())[0]
+        conf = risk_inputs.load_config()
+        result = risk_agent.assess(enriched, fx=risk_inputs.statement_fx(enriched), scale=risk_inputs.statement_scale(enriched, conf), config=conf)
+        return {"country": enriched.country, "exchange": enriched.exchange, "ticker": enriched.ticker, "name": enriched.name, **result}
     except HTTPException:
         raise
     except Exception as exc:
@@ -613,6 +741,18 @@ def global_portfolio(req: PortfolioRequest):
     instruments = [_seed(item) for item in req.instruments]
     fx = {currency.upper(): float(rate) for currency, rate in req.fxToBase.items() if float(rate) > 0}
     try:
-        return portfolio_from_instruments(profile, instruments, fx_to_base=fx)
+        proposal = portfolio_from_instruments(profile, instruments, fx_to_base=fx)
+        if isinstance(proposal, dict):
+            if decision_logic.is_v2():
+                engine = {"engine": decision_logic.ENGINE_INVESTMENT, "label": decision_logic.ENGINE_LABEL[decision_logic.ENGINE_INVESTMENT],
+                          "description": "Built from the investment ranking (BUY and ACCUMULATE); the conservative check only excludes stocks "
+                                         "without PASS evidence, with a distress block or with an AVOID call.",
+                          "riskFilter": decision_logic.ENGINE_CONSERVATIVE, "logicVersion": decision_logic.logic_version()}
+            else:
+                engine = {"engine": decision_logic.ENGINE_CONSERVATIVE, "label": decision_logic.ENGINE_LABEL[decision_logic.ENGINE_CONSERVATIVE],
+                          "description": "Built from the conservative engine's absolute score and confidence floors, not from the investment tiers.",
+                          "logicVersion": decision_logic.logic_version()}
+            proposal = {**proposal, "engine": engine}
+        return proposal
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
