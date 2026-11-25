@@ -1,0 +1,49 @@
+{
+  "sector_basis": "POST_EVENT_PROXY",
+  "sector_neutral": {
+    "n_cells": 107,
+    "n_cells_used": 69,
+    "n_rows_unknown_sector": 76,
+    "n_buy_used": 365,
+    "n_sell_used": 408,
+    "weighted_spread_pct": 11.82502,
+    "equal_cell_spread_pct": 8.83867
+  },
+  "venue_tests": {
+    "n_venues": 12,
+    "n_positive": 12,
+    "n_negative": 0,
+    "n_zero": 0,
+    "sign_test_p_two_sided": 0.00048828125,
+    "mean_spread_pp": 10.49909,
+    "t_stat": 8.885477357611185,
+    "df": 11,
+    "t_test_p_two_sided": 2.3755553343591307e-06
+  },
+  "bootstrap_95": {
+    "pooled": {
+      "point_pct": 11.6111,
+      "ci_low_pct": 7.63378,
+      "ci_high_pct": 15.05366,
+      "n_valid_draws": 10000,
+      "B": 10000,
+      "seed": 20261119
+    },
+    "equal_market": {
+      "point_pct": 10.49909,
+      "ci_low_pct": 7.53567,
+      "ci_high_pct": 13.37391,
+      "n_valid_draws": 10000,
+      "B": 10000,
+      "seed": 20261119
+    },
+    "sector_neutral": {
+      "point_pct": 11.82502,
+      "ci_low_pct": 7.31412,
+      "ci_high_pct": 16.22296,
+      "n_valid_draws": 10000,
+      "B": 10000,
+      "seed": 20261119
+    }
+  }
+}

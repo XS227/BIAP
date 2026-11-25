@@ -14,6 +14,7 @@ import csv
 import hashlib
 import json
 import math
+import random
 import statistics
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -181,6 +182,217 @@ def describe(values):
             "trim_each_tail_n": k}
 
 
+# ---------------------------------------------------------------------------
+# Extra inference (added 2026-11-25). Pure functions, no network.
+# ---------------------------------------------------------------------------
+EXTRA_BOOTSTRAP_SEED = 20261119
+EXTRA_BOOTSTRAP_B = 10000
+
+
+def _betacf(a, b, x):
+    tiny, qab, qap, qam = 1e-300, a + b, a + 1.0, a - 1.0
+    c, dd = 1.0, 1.0 - qab * x / qap
+    dd = 1.0 / (dd if abs(dd) > tiny else tiny)
+    h = dd
+    for m in range(1, 300):
+        m2 = 2 * m
+        aa = m * (b - m) * x / ((qam + m2) * (a + m2))
+        dd = 1.0 + aa * dd
+        dd = 1.0 / (dd if abs(dd) > tiny else tiny)
+        c = 1.0 + aa / c
+        c = c if abs(c) > tiny else tiny
+        h *= dd * c
+        aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2))
+        dd = 1.0 + aa * dd
+        dd = 1.0 / (dd if abs(dd) > tiny else tiny)
+        c = 1.0 + aa / c
+        c = c if abs(c) > tiny else tiny
+        delta = dd * c
+        h *= delta
+        if abs(delta - 1.0) < 3e-16:
+            break
+    return h
+
+
+def _betainc(a, b, x):
+    """Regularized incomplete beta I_x(a, b)."""
+    if x <= 0:
+        return 0.0
+    if x >= 1:
+        return 1.0
+    ln_front = (math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b)
+                + a * math.log(x) + b * math.log(1.0 - x))
+    front = math.exp(ln_front)
+    if x < (a + 1.0) / (a + b + 2.0):
+        return front * _betacf(a, b, x) / a
+    return 1.0 - front * _betacf(b, a, 1.0 - x) / b
+
+
+def t_two_sided_p(t, df):
+    """Two-sided p-value of Student's t with df degrees of freedom."""
+    if df <= 0 or t is None or not math.isfinite(t):
+        return None
+    return _betainc(df / 2.0, 0.5, df / (df + t * t))
+
+
+def exact_sign_test_p(n_pos, n_neg):
+    """Exact two-sided binomial sign test (p=0.5); ties/zeros must already be dropped."""
+    n = n_pos + n_neg
+    if n == 0:
+        return None
+    k = min(n_pos, n_neg)
+    tail = sum(math.comb(n, i) for i in range(k + 1)) / 2 ** n
+    return min(1.0, 2 * tail)
+
+
+def venue_tests(market_spreads):
+    """market_spreads: {venue: BUY mean - SELL mean (fraction)}. Venues with no spread are skipped."""
+    vals = {k: v for k, v in market_spreads.items() if v is not None and math.isfinite(v)}
+    n = len(vals)
+    pos = sum(v > 0 for v in vals.values())
+    neg = sum(v < 0 for v in vals.values())
+    out = {"n_venues": n, "n_positive": pos, "n_negative": neg, "n_zero": n - pos - neg,
+           "sign_test_p_two_sided": exact_sign_test_p(pos, neg),
+           "mean_spread_pp": None, "t_stat": None, "df": n - 1 if n else None,
+           "t_test_p_two_sided": None}
+    if n >= 2:
+        mean = statistics.fmean(vals.values())
+        sd = statistics.stdev(vals.values())
+        out["mean_spread_pp"] = percentage(mean)
+        if sd > 0:
+            out["t_stat"] = mean / (sd / math.sqrt(n))
+            out["t_test_p_two_sided"] = t_two_sided_p(out["t_stat"], n - 1)
+    return out
+
+
+def market_spreads(rows):
+    by = collections.defaultdict(lambda: {"BUY": [], "SELL": []})
+    for r in rows:
+        by[r["market"]][r["side"]].append(r["return"])
+    return {m: (avg(v["BUY"]) - avg(v["SELL"]) if v["BUY"] and v["SELL"] else None)
+            for m, v in by.items()}
+
+
+def sector_neutral_spread(rows):
+    """BUY-SELL spread within (market x sector) cells containing both sides.
+
+    Cell spread = mean(BUY) - mean(SELL). Aggregates: weight nB*nS/(nB+nS) (primary) and
+    equal weight per cell. UNKNOWN sector rows and one-sided cells are excluded and counted.
+    """
+    cells = collections.defaultdict(lambda: {"BUY": [], "SELL": []})
+    unknown = 0
+    for r in rows:
+        if not r.get("sector") or r["sector"] == "UNKNOWN":
+            unknown += 1
+            continue
+        cells[(r["market"], r["sector"])][r["side"]].append(r["return"])
+    used, cell_rows = [], []
+    for (market, sector), v in sorted(cells.items()):
+        nb, ns = len(v["BUY"]), len(v["SELL"])
+        row = {"market": market, "sector": sector, "n_buy": nb, "n_sell": ns,
+               "buy_mean_pct": percentage(avg(v["BUY"])), "sell_mean_pct": percentage(avg(v["SELL"])),
+               "spread_pct": None, "weight": None, "used": bool(nb and ns)}
+        if nb and ns:
+            sp = avg(v["BUY"]) - avg(v["SELL"])
+            w = nb * ns / (nb + ns)
+            row["spread_pct"], row["weight"] = percentage(sp), round(w, 4)
+            used.append((sp, w, nb, ns))
+        cell_rows.append(row)
+    total_w = sum(w for _, w, _, _ in used)
+    return {"cells": cell_rows, "n_cells": len(cells), "n_cells_used": len(used),
+            "n_rows_unknown_sector": unknown,
+            "n_buy_used": sum(nb for *_, nb, _ in used), "n_sell_used": sum(ns for *_, ns in used),
+            "weighted_spread": (sum(sp * w for sp, w, _, _ in used) / total_w) if used else None,
+            "equal_cell_spread": avg([sp for sp, _, _, _ in used])}
+
+
+def _stat_triplet(sample):
+    """sample: list of (market, side, sector, return). Returns the three bootstrap statistics."""
+    pooled_b = [x[3] for x in sample if x[1] == "BUY"]
+    pooled_s = [x[3] for x in sample if x[1] == "SELL"]
+    pooled = avg(pooled_b) - avg(pooled_s) if pooled_b and pooled_s else None
+    by = collections.defaultdict(lambda: ([], []))
+    cells = collections.defaultdict(lambda: ([], []))
+    for market, side, sector, ret in sample:
+        i = 0 if side == "BUY" else 1
+        by[market][i].append(ret)
+        if sector != "UNKNOWN":
+            cells[(market, sector)][i].append(ret)
+    ms = [avg(b) - avg(s) for b, s in by.values() if b and s]
+    num = den = 0.0
+    for b, s in cells.values():
+        if b and s:
+            w = len(b) * len(s) / (len(b) + len(s))
+            num += w * (avg(b) - avg(s))
+            den += w
+    return pooled, (avg(ms) if ms else None), (num / den if den else None)
+
+
+def stratified_bootstrap(rows, B=EXTRA_BOOTSTRAP_B, seed=EXTRA_BOOTSTRAP_SEED, level=0.95):
+    """Resample holdings with replacement WITHIN each (market, side) stratum (sizes preserved).
+
+    Statistics: pooled holdings spread, equal-market-weight spread, sector-neutral weighted spread.
+    Percentile CI. Deterministic for a given seed.
+    """
+    strata = collections.defaultdict(list)
+    for r in rows:
+        strata[(r["market"], r["side"])].append((r["market"], r["side"], r.get("sector") or "UNKNOWN", r["return"]))
+    keys = sorted(strata)
+    rng = random.Random(seed)
+    draws = {"pooled": [], "equal_market": [], "sector_neutral": []}
+    for _ in range(B):
+        sample = []
+        for k in keys:
+            pool = strata[k]
+            sample.extend(rng.choices(pool, k=len(pool)))
+        p, e, sn = _stat_triplet(sample)
+        for name, val in (("pooled", p), ("equal_market", e), ("sector_neutral", sn)):
+            if val is not None:
+                draws[name].append(val)
+    point = dict(zip(("pooled", "equal_market", "sector_neutral"),
+                     _stat_triplet([x for k in keys for x in strata[k]])))
+    lo_q, hi_q = (1 - level) / 2, 1 - (1 - level) / 2
+    out = {}
+    for name, vals in draws.items():
+        vals.sort()
+        if len(vals) < 100:
+            out[name] = {"point_pct": percentage(point[name]), "ci_low_pct": None, "ci_high_pct": None,
+                         "n_valid_draws": len(vals), "B": B, "seed": seed}
+            continue
+        out[name] = {"point_pct": percentage(point[name]),
+                     "ci_low_pct": percentage(vals[int(lo_q * (len(vals) - 1))]),
+                     "ci_high_pct": percentage(vals[int(math.ceil(hi_q * (len(vals) - 1)))]),
+                     "n_valid_draws": len(vals), "B": B, "seed": seed}
+    return out
+
+
+def extra_analyses(priced, output):
+    """Write sector-neutral, venue-test and bootstrap outputs; return the report dict."""
+    sector_proxy = not all(r.get("metadata_source") == "provided_metadata_csv"
+                           and r.get("metadata_asof", "9999") <= "2026-10-20" for r in priced if r["sector"] != "UNKNOWN")
+    basis = "POST_EVENT_PROXY" if sector_proxy else "POINT_IN_TIME"
+    sn = sector_neutral_spread(priced)
+    venues = market_spreads(priced)
+    vt = venue_tests(venues)
+    boot = stratified_bootstrap(priced)
+    csv_write(output / "sector_neutral_cells.csv", sn["cells"],
+              ["market", "sector", "n_buy", "n_sell", "buy_mean_pct", "sell_mean_pct", "spread_pct", "weight", "used"])
+    venue_rows = [{"venue": m, "buy_minus_sell_pct": percentage(v)} for m, v in sorted(venues.items())]
+    csv_write(output / "venue_spreads.csv", venue_rows, ["venue", "buy_minus_sell_pct"])
+    csv_write(output / "bootstrap_ci.csv",
+              [{"statistic": k, **v, "basis": basis if k == "sector_neutral" else "RETURNS_ONLY"} for k, v in boot.items()],
+              ["statistic", "point_pct", "ci_low_pct", "ci_high_pct", "n_valid_draws", "B", "seed", "basis"])
+    report = {"sector_basis": basis,
+              "sector_neutral": {k: v for k, v in sn.items() if k != "cells"} | {
+                  "weighted_spread_pct": percentage(sn["weighted_spread"]),
+                  "equal_cell_spread_pct": percentage(sn["equal_cell_spread"])},
+              "venue_tests": vt, "bootstrap_95": boot}
+    for k in ("weighted_spread", "equal_cell_spread"):
+        report["sector_neutral"].pop(k, None)
+    (output / "extra_stats.json").write_text(json.dumps(report, indent=2, default=str))
+    return report
+
+
 def get_split(rows, attribute, market):
     usable = [r for r in rows if r["market"] == market
               and r.get(attribute) is not None and math.isfinite(r[attribute])]
@@ -202,7 +414,7 @@ def get_split(rows, attribute, market):
         point_in_time = all(r["cap_point_in_time"] for r in subset) if attribute == "market_cap" and subset else True
         status = ("OK" if b and s else "EMPTY_SIDE")
         if attribute == "market_cap" and not point_in_time:
-            status += ";POST_EVENT_CAP_PROXY"
+            status += ";POST_EVENT_PROXY"
         if min(len(b), len(s)) < 5:
             status += ";SMALL_GROUP"
         results.append({
@@ -392,6 +604,7 @@ def main():
 
     output = Path(args.out_dir)
     output.mkdir(parents=True, exist_ok=True)
+    extra = extra_analyses(priced, output)
     csv_write(output / "markets_and_pooled.csv", summary, list(summary[0]))
     csv_write(output / "size_and_prior_volatility_splits.csv", controls, list(controls[0]))
     csv_write(output / "top10_winners_losers.csv", movers, list(movers[0]))
@@ -424,6 +637,7 @@ def main():
         "Sector mix: share of priced holdings per side; UNKNOWN is explicit, not silently dropped. Yahoo profile sector may be current, not as-of entry.",
         "Post-freeze vendor metadata may be missing / rate-limited. Every market and side has coverage counts; do not treat missing group estimates as zero.",
         "Each control group reports both BUY and SELL sample sizes; sparse/one-sided groups must not support causal interpretation.",
+        "Extra (added 2026-11-25): sector_neutral_cells.csv / extra_stats.json = BUY-SELL spread within market x sector cells holding both sides (weight nB*nS/(nB+nS); equal-cell also reported); venue_spreads.csv + venue_tests = sign test (exact binomial) and one-sample t-test across venue-level BUY-SELL spreads; bootstrap_ci.csv = 95% percentile CI, 10,000 draws, resampling within (market, side) strata, seed 20261119. Sector and market cap come from current Yahoo metadata and are labelled POST_EVENT_PROXY, not point-in-time.",
         "Not an experimental randomized design and not proof of predictive skill. Flag stale exits, extreme dividends, and benchmark gaps.",
     ]
     (output / "README.md").write_text("\n\n".join(notes) + "\n", encoding="utf-8")
@@ -438,6 +652,8 @@ def main():
     for r in controls:
         print(f"{r['market']:<22}{r['metric']:<20}{r['group']:<5} BUY {r['n_buy']:<3} SELL {r['n_sell']:<3}"
               f" spread={r['spread_pct']}pp {r['status']}")
+    print("\nEXTRA (sector basis %s):" % extra["sector_basis"])
+    print(json.dumps({k: v for k, v in extra.items() if k != "sector_basis"}, indent=2, default=str))
     print("\nTOP 10 WINNERS/LOSERS PER BASKET (pooled):")
     for r in movers:
         if r["scope"] == "ALL_HOLDINGS_POOL":
