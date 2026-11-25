@@ -89,3 +89,6 @@ If the statement-date FX, the deflator year or a verified unit scale is missing,
 - Ohlson asset unit is config (`ohlson.asset_unit_usd`, default 1000) and the O-score is **provisional** until the unit is confirmed from Ohlson (1980). Distribution and proposed thresholds (elevated 0.35 / severe 0.50): see `risk_agent_flagged_cases_20261125.md`.
 - IFRS 16 for non-US filers: lease liabilities in debt, lease interest in the interest bill (when the interest tag does not already contain it), debt incl. leases and its ratio to EBITDA shown in the interest-coverage inputs. Config switch `leases.ifrs16_non_us`. TLTA already contains IFRS 16 liabilities through the filing's `Liabilities` total.
 - New optional `GlobalCompany` fields: `lease_liabilities`, `lease_interest_expense`, `interest_expense_basis` (extracted in `esef.py`, persisted by `cached_fundamentals`).
+
+## 11. Revision 4 (owner decision 2026-11-25)
+- Ohlson thresholds changed to **elevated 0.35 / severe 0.50** as *provisional* config values (calibrated to our sample: they flag about 10% and 6% of stocks; Ohlson's own 0.038 would flag 67%). The "provisional" label stays until the owner confirms the asset unit from Ohlson (1980). Config key `thresholds.ohlson_elevated` / `ohlson_severe`.
