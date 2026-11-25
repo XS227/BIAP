@@ -351,3 +351,11 @@ def test_esef_extracts_lease_items():
     assert E._lease_liabilities(cf, p) == 40.0
     assert E._duration_value(cf["lease_interest"], p) == 2.0
     assert E._interest_expense_basis(cf, p) == "InterestExpense"
+
+
+def test_lease_extraction_is_inert_when_flag_off(monkeypatch):
+    from global_markets import esef
+    monkeypatch.delenv("RISK_AGENT_ENABLED", raising=False)
+    assert esef._risk_agent_on() is False
+    monkeypatch.setenv("RISK_AGENT_ENABLED", "1")
+    assert esef._risk_agent_on() is True

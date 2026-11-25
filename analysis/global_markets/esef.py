@@ -351,6 +351,11 @@ def _unit_currency(raw: Any) -> Optional[str]:
     return match.group(1).upper() if match else None
 
 
+def _risk_agent_on() -> bool:
+    import os
+    return os.environ.get("RISK_AGENT_ENABLED", "0").strip().lower() in ("1", "true", "yes", "on")
+
+
 class ESEFFundamentalsProvider(FundamentalsProvider):
     provider_id = "esef-xbrl"
 
@@ -457,6 +462,12 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
         cur = cls._instant_value(concept_facts["current_lease_liabilities"], period_end)
         non = cls._instant_value(concept_facts["noncurrent_lease_liabilities"], period_end)
         return cur + non if cur is not None and non is not None else None
+
+    @classmethod
+    def _lease_fields(cls, concept_facts: dict, period_end: date) -> dict:
+        return {"lease_liabilities": cls._lease_liabilities(concept_facts, period_end),
+                "lease_interest_expense": cls._duration_value(concept_facts["lease_interest"], period_end),
+                "interest_expense_basis": cls._interest_expense_basis(concept_facts, period_end)}
 
     @classmethod
     def _interest_expense_basis(cls, concept_facts: dict, period_end: date) -> Optional[str]:
@@ -1194,9 +1205,8 @@ class ESEFFundamentalsProvider(FundamentalsProvider):
             "free_cash_flow": fcf,
             "total_debt": debt,
             "interest_expense": self._interest_expense(concept_facts, period_end),
-            "lease_liabilities": self._lease_liabilities(concept_facts, period_end),
-            "lease_interest_expense": self._duration_value(concept_facts["lease_interest"], period_end),
-            "interest_expense_basis": self._interest_expense_basis(concept_facts, period_end),
+            # IFRS 16 keys only while the Risk Agent flag is on: with it off the output is byte-identical to before this change.
+            **(self._lease_fields(concept_facts, period_end) if _risk_agent_on() else {}),
             "eps": eps,
             # absent key (not None) when the filing carries no plain share count,
             # so an existing provider value is never overwritten with a gap

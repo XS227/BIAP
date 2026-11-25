@@ -92,3 +92,4 @@ If the statement-date FX, the deflator year or a verified unit scale is missing,
 
 ## 11. Revision 4 (owner decision 2026-11-25)
 - Ohlson thresholds changed to **elevated 0.35 / severe 0.50** as *provisional* config values (calibrated to our sample: they flag about 10% and 6% of stocks; Ohlson's own 0.038 would flag 67%). The "provisional" label stays until the owner confirms the asset unit from Ohlson (1980). Config key `thresholds.ohlson_elevated` / `ohlson_severe`.
+- The ESEF lease-field extraction is itself behind `RISK_AGENT_ENABLED` (`esef._risk_agent_on`): with the flag off the normalized output and the stored fundamentals cache are byte-identical to before this change, so merging has no production effect.
