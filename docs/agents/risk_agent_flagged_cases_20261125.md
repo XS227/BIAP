@@ -262,3 +262,43 @@ Source: official-oam-nl-afm-register id=AFM:A2510-03652 https://www.afm.nl/en/se
 - OCI: HIGH comes only from interest coverage (EBIT negative, -0.83x); Altman GREY, Ohlson and Zmijewski are low.
 - Prosegur Cash: Altman not available (retained earnings missing); CRITICAL rests on Ohlson+Zmijewski with liabilities/assets 0.92.
 - Endur, Sentia: HIGH from one severe Altman (Endur) / several elevated models (Sentia); neither is severe on a second model.
+
+
+---
+# Revision 2 (2026-11-25, scope change): IFRS 16 leases and provisional Ohlson
+
+## What changed and why
+1. **Lease items are now extracted** from ESEF filings (new optional fields `lease_liabilities` = `ifrs-full:LeaseLiabilities`, or current + non-current; `lease_interest_expense` = `InterestExpenseOnLeaseLiabilities`; `interest_expense_basis` = which tag the interest figure came from). Additive only: no existing field, ledger or decision changed.
+2. **Debt incl. leases** = borrowings + lease liabilities for non-US filers (US GAAP operating leases are not comparable and are left alone). It is shown as an input of the interest-coverage signal together with debt incl. leases / EBITDA. When borrowings are not tagged the figure is only the lease part, so it is a floor and is flagged.
+3. **Interest coverage**: lease interest is added to the interest bill only when the interest figure came from the narrow `InterestExpense` tag (possible double count, flagged). When it came from `FinanceCosts` (all seven cases below) lease interest is already inside and nothing is added.
+4. **TLTA / Altman / Zmijewski**: an IFRS filer's reported `Liabilities` total already includes lease liabilities, so TLTA does not change. It is only raised if the stored total is smaller than borrowings + leases (a data defect); no case below triggered it.
+5. **Ohlson is labelled provisional**; its asset unit is a config value (`ohlson.asset_unit_usd`, default 1000 = USD thousands).
+
+## Effect on the seven flagged cases (staging, data re-extracted from the filings caches)
+No level changed. Reason: lease liabilities were already inside total liabilities, no case tags lease interest separately, and all seven take interest from `FinanceCosts`.
+
+| ticker | level | lease liabilities | lease interest | debt incl. leases | interest used | coverage | debt incl. leases / EBITDA |
+|---|---|---|---|---|---|---|---|
+| WETTERI | CRITICAL | 36,271,000 | - | 38,011,000 | 9,486,000 | -0.48x | - |
+| TES | CRITICAL | 27,643,000 | - | 35,400,000 | 23,247,000 | 0.84x | 0.87 |
+| GAM | CRITICAL | 101,554,000 | - | 101,554,000 | 20,372,000 | 1.40x | 1.18 |
+| CASH | CRITICAL | 98,974,000 | - | 98,974,000 | 61,292,000 | 3.53x | 0.28 |
+| ENDUR | HIGH | 488,900,000 | - | 1,403,500,000 | 175,000,000 | 1.84x | 2.14 |
+| SNTIA | HIGH | 197,000,000 | - | 197,000,000 | 11,000,000 | 52.36x | - |
+| OCI | HIGH | 93,300,000 | - | 93,300,000 | 135,900,000 | -0.83x | - |
+
+Notes: Wetteri's debt (1.74M) looked tiny next to 9.5M of finance costs; with leases (36.3M) debt incl. leases is 38.0M, which explains part of the gap (the rest is other finance costs). GAM, Prosegur, Sentia and OCI do not tag borrowings, so their debt incl. leases is a floor, not total debt. Only Tesmec and Endur have both items (leverage 0.87x and 2.14x EBITDA).
+
+## Ohlson O-score distribution in the staging sample (63 stocks with an O-score; unit = USD thousands, provisional)
+| statistic | P(bankruptcy) |
+|---|---|
+| min / p10 / p25 | 0.000 / 0.003 / 0.022 |
+| median | 0.075 |
+| p75 / p90 / p95 | 0.191 / 0.348 / 0.518 |
+| max | 0.667 |
+
+Share of the sample at or above a cut-off: 0.038 (Ohlson's own) 67% (42 of 63); 0.10 44%; 0.25 16% (10); 0.35 10% (6); 0.50 6% (4). Ohlson's 0.038 flags two thirds of listed European/US stocks, so it cannot be used as an alert here.
+
+**Sensitivity to the unconfirmed asset unit** (same 63 stocks): unit = USD gives median 0.005 and nobody above 0.25; USD thousands (default) gives median 0.075 and 10 above 0.25; USD millions gives median 0.575 and 48 above 0.25. Only the thousands reading gives a sensible spread, which is the evidence for the default, but it is not a confirmation.
+
+**Proposed thresholds (calibrated to the data distribution, not to defaults): elevated 0.35, severe 0.50.** That flags about the top 10% as elevated and 6% as severe, matches the Zmijewski limits (0.35 / 0.50) so the two models speak the same language, and keeps the current severe value. The current elevated value 0.25 flags 16%. Caveats: this is a percentile calibration, not an outcome calibration (the sample has no default labels); the coefficients are from 1970s US industrial firms; and every number moves with the asset unit. Nothing was changed: the config still holds 0.50 / 0.25 until you decide.

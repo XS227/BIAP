@@ -84,3 +84,8 @@ If the statement-date FX, the deflator year or a verified unit scale is missing,
 **Config.** All thresholds and rules live in `data/risk_agent_config.json` (override file: env `RISK_AGENT_CONFIG`; invalid or missing values raise instead of falling back). Accepted values: Ohlson 0.50 severe / 0.25 elevated, volatility and drawdown 50%, Beneish -1.78, interest coverage <1.5 elevated / <1.0 severe, Altman 2.6/1.1, Zmijewski 0.5/0.35.
 
 **Interest coverage** = EBIT / interest expense. Supporting signal: counts toward the "elevated" tally, a severe value (<1.0) alone gives HIGH, never CRITICAL; it does not count for data sufficiency (still 2 of Altman/Ohlson/Zmijewski needed).
+
+## 10. Revision 3 (scope change 2026-11-25)
+- Ohlson asset unit is config (`ohlson.asset_unit_usd`, default 1000) and the O-score is **provisional** until the unit is confirmed from Ohlson (1980). Distribution and proposed thresholds (elevated 0.35 / severe 0.50): see `risk_agent_flagged_cases_20261125.md`.
+- IFRS 16 for non-US filers: lease liabilities in debt, lease interest in the interest bill (when the interest tag does not already contain it), debt incl. leases and its ratio to EBITDA shown in the interest-coverage inputs. Config switch `leases.ifrs16_non_us`. TLTA already contains IFRS 16 liabilities through the filing's `Liabilities` total.
+- New optional `GlobalCompany` fields: `lease_liabilities`, `lease_interest_expense`, `interest_expense_basis` (extracted in `esef.py`, persisted by `cached_fundamentals`).

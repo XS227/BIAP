@@ -38,6 +38,11 @@ def load_config(path: Optional[Path] = None) -> dict:
     cfg.setdefault("unit_scale", {})
     cfg["unit_scale"].setdefault("plausibility_assets_to_market_cap_min", 0.003)
     cfg["unit_scale"].setdefault("plausibility_assets_to_market_cap_max", 300.0)
+    cfg.setdefault("ohlson", {})
+    cfg["ohlson"].setdefault("asset_unit_usd", 1000.0)
+    cfg["ohlson"].setdefault("provisional", True)
+    cfg.setdefault("leases", {})
+    cfg["leases"].setdefault("ifrs16_non_us", True)
     cfg["_path"] = str(p)
     return cfg
 

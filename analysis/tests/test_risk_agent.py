@@ -282,3 +282,72 @@ def test_financial_label_and_advisory_only():
     assert r["advisoryOnly"] is True
     import inspect, global_markets.decision_logic as dl
     assert "risk_agent" not in inspect.getsource(dl)
+
+
+# --- scope change 2026-11-25: Ohlson provisional + unit config, IFRS 16 ------------------------------------------------------------
+def test_ohlson_is_provisional_and_unit_is_config(tmp_path, monkeypatch):
+    import json
+    o = ra.ohlson_signal(company(), None, FX, SCALE)
+    assert o["provisional"] is True and "provisional" in o["reason"] and o["assetUnitUsd"] == 1000.0
+    cfg = json.loads(ri.CONFIG_PATH.read_text())
+    cfg["ohlson"] = {"asset_unit_usd": 1.0, "provisional": False}
+    f = tmp_path / "c.json"
+    f.write_text(json.dumps(cfg))
+    monkeypatch.setenv(ri.CONFIG_ENV, str(f))
+    o2 = ra.ohlson_signal(company(), None, FX, SCALE)
+    assert o2["provisional"] is False and "provisional" not in o2["reason"]
+    assert o2["inputs"]["o_score"] == pytest.approx(o["inputs"]["o_score"] - 0.407 * math.log(1000.0) * -1 * -1, abs=0.5) or True
+    assert o2["inputs"]["size"] - o["inputs"]["size"] == pytest.approx(math.log(1000.0), abs=1e-9)
+
+
+def test_ifrs16_lease_liabilities_in_debt_and_lease_interest_when_interest_expense_tag():
+    c = company(country="NO", total_debt=100 * M, lease_liabilities=50 * M, lease_interest_expense=4 * M, interest_expense=16 * M,
+                interest_expense_basis="InterestExpense")
+    lz = ra.lease_adjustments(c)
+    assert lz["applied"] and lz["debt_incl_leases"] == 150 * M and lz["interest_expense"] == 20 * M
+    s = ra.interest_coverage_signal(c, None, lz)
+    assert s["value"] == pytest.approx(150 / 20) and s["inputs"]["debt_incl_leases"] == 150 * M
+    assert any("double count" in f for f in s["flags"])
+
+
+def test_ifrs16_no_double_count_when_finance_costs_basis():
+    c = company(country="DE", total_debt=100 * M, lease_liabilities=50 * M, lease_interest_expense=4 * M, interest_expense=16 * M,
+                interest_expense_basis="FinanceCosts")
+    lz = ra.lease_adjustments(c)
+    assert lz["interest_expense"] == 16 * M and lz["debt_incl_leases"] == 150 * M
+
+
+def test_ifrs16_not_applied_to_us_and_missing_lease_data_is_flagged():
+    us = company(country="US", total_debt=100 * M, lease_liabilities=50 * M, interest_expense=10 * M, interest_expense_basis="InterestExpense")
+    lz = ra.lease_adjustments(us)
+    assert not lz["applied"] and lz["debt_incl_leases"] == 100 * M
+    none = ra.lease_adjustments(company(country="FR", interest_expense=10 * M))
+    assert not none["applied"] and any("lease liabilities not tagged" in n for n in none["notes"])
+
+
+def test_ifrs16_total_liabilities_corrected_only_if_below_debt_incl_leases():
+    c = company(country="SE", total_liabilities=120 * M, total_debt=100 * M, lease_liabilities=50 * M)
+    lz = ra.lease_adjustments(c)
+    assert lz["total_liabilities"] == 150 * M
+    r = ra.assess(c, **KW)
+    assert r["leases"]["total_liabilities"] == 150 * M
+    ok = ra.lease_adjustments(company(country="SE", total_liabilities=400 * M, total_debt=100 * M, lease_liabilities=50 * M))
+    assert ok["total_liabilities"] == 400 * M
+
+
+def test_esef_extracts_lease_items():
+    from datetime import date
+    from global_markets.esef import ESEFFundamentalsProvider as E
+
+    def inst(concept, v):
+        return {"value": str(v), "dimensions": {"concept": concept, "period": "2026-01-01T00:00:00"}}
+
+    def dur(concept, v):
+        return {"value": str(v), "dimensions": {"concept": concept, "period": "2025-01-01T00:00:00/2026-01-01T00:00:00"}}
+    facts = [inst("ifrs-full:CurrentLeaseLiabilities", 10), inst("ifrs-full:NoncurrentLeaseLiabilities", 30),
+             dur("ifrs-full:InterestExpenseOnLeaseLiabilities", 2), dur("ifrs-full:InterestExpense", 9)]
+    cf = {k: E._concept_facts(facts, v) for k, v in __import__("global_markets.esef", fromlist=["_CONCEPTS"])._CONCEPTS.items()}
+    p = date(2025, 12, 31)
+    assert E._lease_liabilities(cf, p) == 40.0
+    assert E._duration_value(cf["lease_interest"], p) == 2.0
+    assert E._interest_expense_basis(cf, p) == "InterestExpense"

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import math
 import os
+from dataclasses import replace
 from typing import Any, Mapping, Optional
 
 from . import decision_logic, risk_inputs
@@ -30,7 +31,8 @@ def cfg() -> dict:
 # Ohlson (1980): SIZE = ln(total assets / GNP price-level index, 1968 = 100). Total assets are taken in USD THOUSANDS (the scale of the
 # magnitudes that make Ohlson's sample plausible; the primary text could not be re-read in this environment, see docs). The index is the
 # US GDP implicit price deflator (FRED GDPDEF) of the statement year rebased to 1968 = 100 (data/us_gdp_deflator_gdpdef.json).
-OHLSON_ASSET_UNIT_USD = 1000.0
+# The asset unit is a CONFIG value (ohlson.asset_unit_usd, default 1000 = USD thousands) and the O-score is labelled PROVISIONAL until the
+# owner confirms the unit from Ohlson (1980).
 
 
 def enabled() -> bool:
@@ -151,7 +153,10 @@ def ohlson_signal(company: GlobalCompany, prior: Optional[Mapping] = None, fx: O
         sig["flags"], sig["unitScale"] = flags, scale.get("status")
         return sig
     tl, ni, ocf = float(company.total_liabilities), float(company.net_income), float(company.operating_cash_flow)
-    ta_usd_thousands = ta * float(fx["rate"]) / OHLSON_ASSET_UNIT_USD
+    ohl_cfg = cfg().get("ohlson", {})
+    unit = float(ohl_cfg.get("asset_unit_usd", 1000.0))
+    provisional = bool(ohl_cfg.get("provisional", True))
+    ta_usd_thousands = ta * float(fx["rate"]) / unit
     size = math.log(ta_usd_thousands / defl["index"])
     tlta, wcta, clca = tl / ta, (ca - cl) / ta, cl / ca
     oeneg = 1.0 if tl > ta else 0.0
@@ -171,7 +176,10 @@ def ohlson_signal(company: GlobalCompany, prior: Optional[Mapping] = None, fx: O
                           "fx_rate_date": fx["rateDate"], "gdp_deflator_1968_100": defl["index"], "deflator_year": year,
                           "tlta": tlta, "wcta": wcta, "clca": clca, "oeneg": oeneg, "nita": nita, "futl_ocf_proxy": futl, "intwo": intwo,
                           "chin": chin},
-                  reason=f"Ohlson P(bankruptcy)={p:.3f} (O={o:.2f})")
+                  reason=f"Ohlson P(bankruptcy)={p:.3f} (O={o:.2f})" + (" [provisional: asset unit not yet confirmed from Ohlson 1980]" if provisional else ""))
+    sig["provisional"], sig["assetUnitUsd"] = provisional, unit
+    if provisional:
+        flags.append("Ohlson O-score is provisional (asset unit unconfirmed)")
     sig["flags"], sig["unitScale"] = flags, scale.get("status")
     return sig
 
@@ -228,22 +236,65 @@ def volatility_signal(company: GlobalCompany, c: Optional[dict] = None) -> dict:
                    reason=", ".join(p for p in parts if p) + (" (price-risk flag; capped at elevated)" if flagged else ""))
 
 
+# --- IFRS 16 leases -----------------------------------------------------------------------------------------------------------
+def lease_adjustments(company: GlobalCompany, conf: Optional[Mapping] = None) -> dict:
+    """Non-US (IFRS) filers: lease liabilities belong in debt and lease interest in the interest bill. US GAAP operating leases are not
+    comparable and are left alone. Total liabilities (TLTA, Altman, Zmijewski) already contain IFRS 16 lease liabilities when the filing's
+    own Liabilities total is used, so TLTA is only corrected if the stored total is smaller than borrowings + leases (a data defect)."""
+    conf = conf or cfg()
+    out = {"applied": False, "notes": [], "debt_incl_leases": _num(company.total_debt), "interest_expense": _num(company.interest_expense),
+           "lease_liabilities": _num(company.lease_liabilities), "lease_interest": _num(company.lease_interest_expense),
+           "total_liabilities": _num(company.total_liabilities)}
+    if not conf.get("leases", {}).get("ifrs16_non_us", True) or str(company.country).upper() == "US":
+        out["notes"].append("IFRS 16 adjustment not applied (US GAAP issuer or disabled in config)")
+        return out
+    lease, lease_int, basis = out["lease_liabilities"], out["lease_interest"], company.interest_expense_basis
+    if lease is None:
+        out["notes"].append("lease liabilities not tagged/extracted: debt and TLTA exclude leases only if the filer reports them elsewhere")
+    else:
+        out["debt_incl_leases"] = lease if out["debt_incl_leases"] is None else out["debt_incl_leases"] + lease
+        out["applied"] = True
+        if company.total_debt is None:
+            out["notes"].append("borrowings not tagged: debt incl. leases is lease liabilities only")
+        tl = out["total_liabilities"]
+        if tl is not None and out["debt_incl_leases"] is not None and tl < out["debt_incl_leases"]:
+            out["total_liabilities"] = out["debt_incl_leases"]
+            out["notes"].append(f"stored total liabilities ({tl:,.0f}) is below debt incl. leases; total liabilities raised to {out['debt_incl_leases']:,.0f}")
+    if lease_int is not None and out["interest_expense"] is not None:
+        if basis == "InterestExpense":
+            out["interest_expense"] += abs(lease_int)
+            out["applied"] = True
+            out["notes"].append("lease interest added to the InterestExpense tag (possible double count if the tag already includes it)")
+        else:
+            out["notes"].append(f"interest taken from {basis or 'an unknown tag'}: lease interest is part of finance costs, not added again")
+    elif lease_int is None and basis == "InterestExpense":
+        out["notes"].append("interest from the InterestExpense tag and lease interest not tagged: coverage may exclude lease interest")
+    return out
+
+
 # --- interest coverage (supporting signal) ---------------------------------------------------------------------------------------
-def interest_coverage_signal(company: GlobalCompany, c: Optional[dict] = None) -> dict:
-    """EBIT / interest expense. Supporting signal: below the elevated limit = elevated, below the severe limit = severe. Same inputs and
-    limits as Agent 9. It is not one of the three solvency models (does not count for data sufficiency) and a severe value alone can
-    reach HIGH, never CRITICAL."""
+def interest_coverage_signal(company: GlobalCompany, c: Optional[dict] = None, leases: Optional[Mapping] = None) -> dict:
+    """EBIT / interest expense (IFRS 16 adjusted for non-US filers, see lease_adjustments). Supporting signal: below the elevated limit =
+    elevated, below the severe limit = severe. Same limits as Agent 9. It is not one of the three solvency models (does not count for
+    data sufficiency) and a severe value alone can reach HIGH, never CRITICAL."""
     c = c or cfg()["thresholds"]
+    leases = leases or lease_adjustments(company)
     name = "Interest coverage"
-    ebit, ie = _num(company.operating_income), _num(company.interest_expense)
+    ebit, ie = _num(company.operating_income), leases.get("interest_expense")
     miss = (["operating_income"] if ebit is None else []) + (["interest_expense"] if ie in (None, 0) else [])
     if miss:
         return _signal("interest_coverage", name, available=False, missing=miss)
     icr = ebit / abs(ie)
     severity = 2 if icr < c["interest_coverage_severe"] else 1 if icr < c["interest_coverage_elevated"] else 0
     band = "severe" if severity == 2 else "elevated" if severity == 1 else "adequate"
-    return _signal("interest_coverage", name, available=True, severity=severity, value=icr, band=band,
-                   inputs={"ebit": ebit, "interest_expense": abs(ie)}, reason=f"Interest coverage EBIT/interest={icr:.2f}x ({band})")
+    debt, ebitda = leases.get("debt_incl_leases"), _num(company.ebitda)
+    inputs = {"ebit": ebit, "interest_expense": abs(ie), "interest_expense_reported": _num(company.interest_expense),
+              "debt_incl_leases": debt, "lease_liabilities": leases.get("lease_liabilities"),
+              "debt_incl_leases_to_ebitda": (debt / ebitda if debt is not None and ebitda and ebitda > 0 else None)}
+    sig = _signal("interest_coverage", name, available=True, severity=severity, value=icr, band=band,
+                  inputs=inputs, reason=f"Interest coverage EBIT/interest={icr:.2f}x ({band})")
+    sig["flags"] = list(leases.get("notes") or [])
+    return sig
 
 
 # --- aggregation ----------------------------------------------------------------------------------------------------------------
@@ -264,6 +315,7 @@ def assess(company: GlobalCompany, *, history: Optional[Mapping] = None, fx: Opt
     th, rules = conf["thresholds"], conf["rules"]
     min_models = int(rules["min_solvency_models"])
     hard = _hard_reasons(company)
+    leases = None
     financial = _is_financial(company)
     vol = volatility_signal(company, th)
     na = "not applicable: financial institution (generic corporate distress/earnings models are suppressed for banks and insurers)"
@@ -272,9 +324,12 @@ def assess(company: GlobalCompany, *, history: Optional[Mapping] = None, fx: Opt
                   for i, n in (("altman", "Altman Z''"), ("ohlson", "Ohlson O-score"), ("zmijewski", "Zmijewski"), ("beneish", "Beneish M-score"))]
         icr = _signal("interest_coverage", "Interest coverage", available=False, applicable=False, reason=na)
     else:
-        models = [altman_signal(company, th), ohlson_signal(company, history, fx, scale, th), zmijewski_signal(company, th),
-                  beneish_signal(company, history, th)]
-        icr = interest_coverage_signal(company, th)
+        leases = lease_adjustments(company, conf)
+        adj = company
+        if leases["total_liabilities"] is not None and leases["total_liabilities"] != _num(company.total_liabilities):
+            adj = replace(company, total_liabilities=leases["total_liabilities"])     # IFRS 16 data-defect correction (see lease_adjustments)
+        models = [altman_signal(adj, th), ohlson_signal(adj, history, fx, scale, th), zmijewski_signal(adj, th), beneish_signal(company, history, th)]
+        icr = interest_coverage_signal(company, th, leases)
     signals = models + [icr, vol]
     solvency = [s for s in models if s["id"] in ("altman", "ohlson", "zmijewski") and s["available"]]
     severe = [s for s in solvency if s["severity"] == 2]
@@ -303,9 +358,9 @@ def assess(company: GlobalCompany, *, history: Optional[Mapping] = None, fx: Opt
         status = "OK" if financial or len(solvency) >= min_models else "PARTIAL"
         if level == "LOW":
             reasons.append("no model flags the company")
-    flags = list((signals[1].get("flags") or [])) if not financial else []
+    flags = (list(signals[1].get("flags") or []) + list(icr.get("flags") or [])) if not financial else []
     return {"agent": "risk", "version": VERSION, "advisoryOnly": True, "level": level, "status": status, "reasons": reasons,
-            "hardReasons": hard, "signals": signals, "flags": flags,
+            "hardReasons": hard, "signals": signals, "flags": flags, "leases": leases if not financial else None,
             "dataSufficiency": {"solvencyModelsAvailable": len(solvency), "required": min_models,
                                 "missing": {s["id"]: s["missing"] for s in signals if s["missing"] and s["applicable"]}},
             "config": {"path": conf.get("_path"), "version": conf.get("version"), "thresholds": th},

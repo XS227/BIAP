@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "note": "Risk Agent thresholds (owner-approved 2026-11-25). Override the whole file with env RISK_AGENT_CONFIG=/path/to/file.json; unknown or invalid values fail loudly instead of falling back silently.",
   "thresholds": {
     "altman_safe": 2.6,
@@ -21,5 +21,14 @@
   "unit_scale": {
     "plausibility_assets_to_market_cap_min": 0.003,
     "plausibility_assets_to_market_cap_max": 300.0
+  },
+  "ohlson": {
+    "asset_unit_usd": 1000.0,
+    "provisional": true,
+    "note": "Total assets are divided by this many USD before the deflator (1000 = USD thousands). Set provisional=false only after the unit is confirmed from Ohlson (1980)."
+  },
+  "leases": {
+    "ifrs16_non_us": true,
+    "note": "Non-US filers: lease liabilities are added to total debt (leverage) and lease interest to interest expense when interest was taken from the InterestExpense tag (FinanceCosts already contains it)."
   }
 }
