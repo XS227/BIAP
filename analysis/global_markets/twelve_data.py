@@ -263,6 +263,8 @@ class TwelveDataMarketProvider(MarketDataProvider):
             price_observed_at=self._observed_at(latest.get("datetime")),
             volume_today=self._float(latest.get("volume")),
             avg_volume_30d=(sum(volumes) / len(volumes) if volumes else None),
+            daily_volume_30d=[[str(row.get("datetime"))[:10], v] for row in rows[:30]
+                              if (v := self._float(row.get("volume"))) is not None and row.get("datetime")] or None,
             price_52w_high=max(highs) if highs else None,
             price_52w_low=min(lows) if lows else None,
             volatility_annualized_pct=self._annualized_volatility(closes),

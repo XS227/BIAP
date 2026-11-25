@@ -10,6 +10,7 @@ threshold.
 from __future__ import annotations
 
 from typing import Optional
+from . import decision_logic
 
 _EVIDENCE_GATE_BLOCK = "task/evidence gate is out of scope or blocked"
 
@@ -58,7 +59,7 @@ def split_decision_reasons(
     ):
         gov.append(_item(
             "BELOW_ACCEPT_THRESHOLD",
-            f"Calibrated confidence {confidence:.2f} is below the {accept_threshold:.2f} accept threshold",
+            f"Calibrated confidence {decision_logic.fmt_conf(confidence, accept_threshold)} is below the {decision_logic.fmt_threshold(accept_threshold)} accept threshold",
             blocks=True,
         ))
 

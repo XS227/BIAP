@@ -174,6 +174,7 @@ def freshness_detail(
         "periodAgeDays": age,
         "filingDate": filing_date,
         "priceObservedAt": company.price_observed_at,
+        "priceDateBasis": (company.raw_provider_fields or {}).get("stage_one_quote_date_basis"),
         "priceAgeDays": price_age,
         "thresholds": {
             "lastAnnualAfterDays": LAST_ANNUAL_AFTER_DAYS,

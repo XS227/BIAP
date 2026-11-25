@@ -1,0 +1,181 @@
+{
+ "_note": "Stored conservative-engine results read from the live ledgers on 2026-11-02 (docs/reference_SAP_before.md, docs/reference_NO_before.md). Signals only; no company data.",
+ "stocks": {
+  "SAP": {
+   "stored": {
+    "call": "NO_RECOMMENDATION",
+    "score": 0.192688,
+    "rawScore": 0.196307,
+    "confidence": 0.606933,
+    "decisionConfidence": 0.618333,
+    "evidenceConfidence": 0.981563
+   },
+   "signals": [
+    {
+     "agent": "fundamental",
+     "vote": 0.15000000000000002,
+     "confidence": 0.71,
+     "reasoning": "revenue +7.7% YoY; positive operating cash flow; positive free cash flow"
+    },
+    {
+     "agent": "risk",
+     "vote": -0.5,
+     "confidence": 0.78,
+     "reasoning": "max drawdown -43.0%; annualized volatility 41.3%; liabilities/equity 0.56x; debt/operating cash flow 0.88x; current ratio 1.16x"
+    },
+    {
+     "agent": "forecast",
+     "vote": 0.3,
+     "confidence": 0.69,
+     "reasoning": "volume 1.0x 30d average; returns 1m=+13.1%, 3m=+26.2%, 6m=+39.5%; 52w range position 81%"
+    },
+    {
+     "agent": "comparison",
+     "vote": 0.0,
+     "confidence": 0.25,
+     "reasoning": "P/E 34.41; sector peer P/E unavailable: fewer than 3 same-sector peers with a valid P/E; abstaining"
+    },
+    {
+     "agent": "quality",
+     "vote": 1.0,
+     "confidence": 0.74,
+     "reasoning": "net margin 19.9%; operating cash/net income 1.25x; free cash/net income 1.12x; ROA 10.4%; cash covers total debt"
+    },
+    {
+     "agent": "liquidity",
+     "vote": 0.12,
+     "confidence": 0.54,
+     "reasoning": "30d average turnover 0.158% of market cap/day; today volume 1.04x 30d average"
+    }
+   ],
+   "evidence": {
+    "status": "PASS",
+    "confidence_multiplier": 0.9815625,
+    "contradictions": [
+     "high-confidence disagreement: positive=quality negative=risk"
+    ],
+    "coverage": 1.0,
+    "freshness_score": 1.0,
+    "source_quality_score": 0.92625
+   },
+   "governance_action": "REVIEW",
+   "preliminaryCall": "HOLD_OR_WATCH"
+  },
+  "EQNR": {
+   "stored": {
+    "call": "HOLD_OR_WATCH",
+    "score": 0.043304,
+    "rawScore": 0.045389,
+    "confidence": 0.551766,
+    "decisionConfidence": 0.578333,
+    "evidenceConfidence": 0.954063
+   },
+   "signals": [
+    {
+     "agent": "fundamental",
+     "vote": -0.05,
+     "confidence": 0.71,
+     "reasoning": "revenue +2.6% YoY; margin declining (-3.8pp); positive operating cash flow; positive free cash flow"
+    },
+    {
+     "agent": "risk",
+     "vote": -0.3,
+     "confidence": 0.68,
+     "reasoning": "max drawdown -25.8%; annualized volatility 39.0%; liabilities/equity 2.25x; debt/operating cash flow 1.19x"
+    },
+    {
+     "agent": "forecast",
+     "vote": 0.19999999999999998,
+     "confidence": 0.69,
+     "reasoning": "volume 1.1x 30d average; returns 1m=+11.4%, 3m=+21.2%, 6m=+19.1%; 52w range position 97%"
+    },
+    {
+     "agent": "comparison",
+     "vote": 0.0,
+     "confidence": 0.25,
+     "reasoning": "P/E 22.20; sector peer P/E unavailable: fewer than 3 same-sector peers with a valid P/E; abstaining"
+    },
+    {
+     "agent": "quality",
+     "vote": 0.35,
+     "confidence": 0.74,
+     "reasoning": "net margin 4.8%; operating cash/net income 3.95x; free cash/net income 1.18x; ROA 3.8%; debt exceeds cash by >4x"
+    },
+    {
+     "agent": "liquidity",
+     "vote": 0.0,
+     "confidence": 0.4,
+     "reasoning": "today volume 1.13x 30d average"
+    }
+   ],
+   "evidence": {
+    "status": "PASS",
+    "confidence_multiplier": 0.9540625,
+    "contradictions": [],
+    "coverage": 0.9375,
+    "freshness_score": 1.0,
+    "source_quality_score": 0.92875
+   },
+   "governance_action": "ACCEPT",
+   "preliminaryCall": "HOLD_OR_WATCH"
+  },
+  "AKRBP": {
+   "stored": {
+    "call": "HOLD_OR_WATCH",
+    "score": -0.000401,
+    "rawScore": -0.00042,
+    "confidence": 0.567667,
+    "decisionConfidence": 0.595,
+    "evidenceConfidence": 0.954063
+   },
+   "signals": [
+    {
+     "agent": "fundamental",
+     "vote": -0.35000000000000003,
+     "confidence": 0.71,
+     "reasoning": "revenue -12.6% YoY; margin declining (-13.7pp); positive operating cash flow; positive free cash flow"
+    },
+    {
+     "agent": "risk",
+     "vote": -0.04999999999999999,
+     "confidence": 0.78,
+     "reasoning": "max drawdown -17.7%; annualized volatility 34.2%; liabilities/equity 2.99x; debt/operating cash flow 1.25x; current ratio 1.31x"
+    },
+    {
+     "agent": "forecast",
+     "vote": 0.19999999999999998,
+     "confidence": 0.69,
+     "reasoning": "volume 0.9x 30d average; returns 1m=+15.0%, 3m=+18.7%, 6m=+11.1%; 52w range position 98%"
+    },
+    {
+     "agent": "comparison",
+     "vote": 0.0,
+     "confidence": 0.25,
+     "reasoning": "P/E 179.83; sector peer P/E unavailable: fewer than 3 same-sector peers with a valid P/E; abstaining"
+    },
+    {
+     "agent": "quality",
+     "vote": 0.19999999999999998,
+     "confidence": 0.74,
+     "reasoning": "net margin 1.2%; operating cash/net income 52.59x; free cash/net income 0.78x; ROA 0.3%; cash/debt balance moderate"
+    },
+    {
+     "agent": "liquidity",
+     "vote": 0.0,
+     "confidence": 0.4,
+     "reasoning": "today volume 0.92x 30d average"
+    }
+   ],
+   "evidence": {
+    "status": "PASS",
+    "confidence_multiplier": 0.9540625,
+    "contradictions": [],
+    "coverage": 0.9375,
+    "freshness_score": 1.0,
+    "source_quality_score": 0.92875
+   },
+   "governance_action": "ACCEPT",
+   "preliminaryCall": "HOLD_OR_WATCH"
+  }
+ }
+}

@@ -58,6 +58,8 @@ class GlobalCompany:
     price_observed_at: Optional[str] = None
     volume_today: Optional[float] = None
     avg_volume_30d: Optional[float] = None
+    # P2.8: last <=30 completed sessions as [[YYYY-MM-DD, volume], ...]. Additive: avg_volume_30d is unchanged; only v2 reads this (median).
+    daily_volume_30d: Optional[list] = None
     market_cap: Optional[float] = None
     shares_outstanding: Optional[float] = None
     price_52w_high: Optional[float] = None

@@ -39,6 +39,8 @@ import os
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
+from . import decision_logic
+
 METHOD_VERSION = 2           # bump when benchmark maths / required inputs change => all benchmarks recompute
 BLOCK_SCHEMA = 2
 VALID, STALE, UNDETERMINED = "VALID", "STALE", "UNDETERMINED"
@@ -148,7 +150,9 @@ def filing_dimension(rows: list, country: str, today: date, base: Optional[date]
     """
     base = base or today
     superseded = {k.upper(): v for k, v in (superseded or {}).items()}
+    v2 = decision_logic.is_v2()
     reasons: dict[str, str] = {}
+    discounted: dict[str, str] = {}
     newest = None
     members = 0
     for r in rows:
@@ -162,7 +166,7 @@ def filing_dimension(rows: list, country: str, today: date, base: Optional[date]
             continue
         pe = _date(co.get("filing_period_end"))
         if pe is None:
-            reasons[t] = "filing_undated"
+            (discounted if v2 else reasons)[t] = "filing_undated"
             continue
         newest = max(newest, pe) if newest else pe
         newer = _date(superseded.get(t))
@@ -172,15 +176,23 @@ def filing_dimension(rows: list, country: str, today: date, base: Optional[date]
         if own_base is not None and (today - own_base).days * 24 > base_ceiling_hours():
             reasons[t] = "inputs_older_than_ceiling"
         elif (newer and newer > pe) or filing_may_have_changed(country, pe, row_base, today):
-            reasons[t] = "filing_may_have_changed"
+            (discounted if v2 else reasons)[t] = "filing_may_have_changed"
     n = max(1, members)
     pct = 100.0 * len(reasons) / n
     undated = sum(1 for v in reasons.values() if v == "filing_undated")
     state = VALID if pct <= MAX_EXCLUDED_PCT else (UNDETERMINED if undated > len(reasons) / 2 else STALE)
-    return {"state": state, "excludedPct": round(pct, 1), "excludedCount": len(reasons), "reasons": reasons,
-            "undatedPct": round(100.0 * undated / n, 1), "newestPeriodEnd": newest.isoformat() if newest else None,
-            "excluded": sorted(reasons),
-            "reason": None if state == VALID else f"{pct:.0f}% of peers excluded (possibly superseded/undated/unvalidated) > {MAX_EXCLUDED_PCT:.0f}%"}
+    out = {"state": state, "excludedPct": round(pct, 1), "excludedCount": len(reasons), "reasons": reasons,
+           "undatedPct": round(100.0 * undated / n, 1), "newestPeriodEnd": newest.isoformat() if newest else None,
+           "excluded": sorted(reasons),
+           "reason": None if state == VALID else f"{pct:.0f}% of peers excluded (possibly superseded/undated/unvalidated) > {MAX_EXCLUDED_PCT:.0f}%"}
+    if v2:
+        # v2 (owner decision 2026-11-02): a peer whose newest report may have been superseded, or that has no filing date, stays
+        # in the benchmark with its latest available report; the comparison agent's confidence is discounted instead.
+        share = len(discounted) / n
+        out.update({"discounted": sorted(discounted), "discountedCount": len(discounted), "discountedPct": round(100.0 * share, 1),
+                    "discountReasons": discounted, "freshnessFactor": round(1.0 - decision_logic.PEER_DISCOUNT_MAX * share, 4),
+                    "undatedPct": round(100.0 * sum(1 for v in discounted.values() if v == "filing_undated") / n, 1)})
+    return out
 
 
 def stamp_block(rows: list, country: str, *, method: str, validated_at: datetime, base_cached_at: str,

@@ -361,7 +361,7 @@ def score_legal_entity_company(company: GlobalCompany, distress: Optional[Distre
         "factors": scored,
         "factors_missing": missing,
         "source": (
-            "Canonical DMA Agent 10 corporate factor grid after Moody's/S&P-style methodology; "
+            "Canonical DMA Agent 10 corporate factor grid, an internal risk band (illustrative); "
             "illustrative thresholds, not an agency rating."
         ),
     }
@@ -387,7 +387,7 @@ def score_legal_entity_company(company: GlobalCompany, distress: Optional[Distre
             "coverage": round(coverage, 2),
             "leverage_scored": "debt_ebitda" in scored,
             "aggregate_score": round(partial_aggregate, 3),
-            "status": "partial factors only — not a credit rating",
+            "status": "partial factors only — internal risk band (illustrative), not a rating",
         }
         if coverage >= 0.20:
             partial["factor_band_moodys"] = _MOODYS_NOTCHES[partial_notch - 1]

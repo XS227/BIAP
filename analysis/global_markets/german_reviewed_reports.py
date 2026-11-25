@@ -35,6 +35,9 @@ _ALLOWED_FIELDS = {
     "current_liabilities", "cash_and_equivalents", "operating_cash_flow",
     "free_cash_flow", "total_debt", "interest_expense", "eps",
     "audit_opinion",
+    # P2.2: dividend per share (reporting currency) and the filing-derived FFO with its method label; ffo/ffo_method are
+    # exposed to Agent 10 as raw provider fields (agent10_ffo / agent10_ffo_method), exactly like the ESEF path.
+    "dividend_per_share", "ffo", "ffo_method",
 }
 
 
@@ -104,8 +107,17 @@ class GermanReviewedAnnualReportProvider(FundamentalsProvider):
 
         values = row["fundamentals"]
         kwargs: dict[str, Any] = {}
+        agent10: dict[str, Any] = {}
         for key, value in values.items():
-            kwargs[key] = value if key == "audit_opinion" else _number(value)
+            if key == "ffo":
+                if _number(value) is not None:
+                    agent10["agent10_ffo"] = _number(value)
+            elif key == "ffo_method":
+                agent10["agent10_ffo_method"] = str(value)
+            else:
+                kwargs[key] = value if key == "audit_opinion" else _number(value)
+        if "agent10_ffo" not in agent10:
+            agent10.pop("agent10_ffo_method", None)
 
         revenue = kwargs.get("revenue")
         revenue_prev = kwargs.get("revenue_prev")
@@ -136,6 +148,7 @@ class GermanReviewedAnnualReportProvider(FundamentalsProvider):
             "raw_provider_fields": {
                 **company.raw_provider_fields,
                 **row_raw,
+                **agent10,
                 "de_reviewed_annual_report": source_id,
                 "de_reviewed_verification_mode": "reviewed_official_issuer_annual_report",
                 "de_reviewed_source_host": urlparse(source_url).netloc.lower(),
