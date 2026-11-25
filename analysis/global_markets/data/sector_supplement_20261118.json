@@ -1,0 +1,4290 @@
+{
+"schema":1,
+"label":"current sector, not point-in-time",
+"source":"yahoo_current_not_point_in_time (live diagnostics metadata)",
+"actionsRun":"44519920223",
+"artifact":"paper-portfolio-diagnostics-2026-11-18-44519920223",
+"inputSha256":"cf3227ddf26f9f5f874c6ea9cfdbe3841e0f458a23887a3610ac34faa8438b7d",
+"skippedUnknown":64,
+"labelMap":{
+"Industrials":"Industrials",
+"Technology":"Technology",
+"Healthcare":"Health Care",
+"Consumer Cyclical":"Consumer Discretionary",
+"Basic Materials":"Basic Materials",
+"Financial Services":"Financials",
+"Communication Services":"Telecommunications",
+"Consumer Defensive":"Consumer Staples",
+"Energy":"Energy",
+"Real Estate":"Real Estate",
+"Utilities":"Utilities"
+},
+"entries":{
+"US:NASDAQ:MU":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MNST":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:KROS":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:INVA":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:INCY":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:URBN":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:NRDS":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:LMB":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:GASS":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MCRI":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ADUS":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:AUPH":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:RDCM":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:DLO":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:HRMY":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:IBEX":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ESEA":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:IESC":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:EXE":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FCFS":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FSLR":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ADBE":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CRUS":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:OPXS":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CARG":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:EXLS":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:TMDX":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CRMD":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SENEA":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:IPAR":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CAAS":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SMID":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:TASK":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PCYO":{
+"sector":"Utilities",
+"rawSector":"Utilities",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:TWIN":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:DAKT":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PEGA":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:KMDA":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:GCT":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:EDUC":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:TILE":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:LAUR":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:AFYA":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:RCMT":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:DJCO":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PRDO":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ELE":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:GNTX":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SENEB":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:INTU":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:LOPE":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CTSH":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CHKP":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:OLLI":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ACAD":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SLDE":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CPRT":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:IMPP":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:INTR":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:TRS":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MYRG":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:OSPN":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PLAB":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:NUTX":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MGRC":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:TATT":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SBC":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:BLBD":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:HCSG":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PLPC":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MRX":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:LOGI":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:OLED":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:REGN":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:APEI":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:STRA":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:AVO":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PAGP":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:POWL":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:UFPI":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:BELFB":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:GIW":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:KARO":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ACIC":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CENTA":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MDLN":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SPOK":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:EVER":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:REFI":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SNDK":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:IOSP":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SMPL":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:BCAL":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:UFCS":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MDXG":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FIZZ":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FRPT":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ASO":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:EZPW":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:JKHY":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:HCKT":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:STRT":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ULTA":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:BHRB":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FLXS":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ESCA":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PCVX":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:BELFA":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:DMAC":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PPTA":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ORMP":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:IKT":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PTRN":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:KRNT":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:DSWL":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ETOR":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PDEX":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:KEQU":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ACIW":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SYRE":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MNPR":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:DTST":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ACT":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CBNK":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CENT":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FRD":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SKWD":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:UROY":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ITRI":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:NFLX":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:RAVE":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CLFD":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PSIX":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SCSC":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FWONA":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:AVIR":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:STRL":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:IHRT":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:BMGL":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MEDS":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ONMD":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PRHI":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:NDLS":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SCWO":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ULH":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SMSI":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:BRLS":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:NRSN":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PRLD":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MENS":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CREX":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:GUTS":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:BLIN":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:OFAL":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FAC":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:LNKS":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ONFO":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:DRIO":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ASBP":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FUFU":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:LEXX":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CAST":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:IMCC":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ESLA":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:KTCC":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:NWL":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:LFWD":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:RDNW":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SKIN":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:GNLN":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SHAZ":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FBYD":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:LIMN":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CJMB":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CWD":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:HCTI":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ALMS":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:HUCK":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:GRAN":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:RMCF":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CDLX":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:APLM":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CCHH":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:UK":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:DFLI":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:TJGC":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:DTSS":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:METCB":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:GSUN":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:BIAF":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MGIH":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MAMO":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MLCI":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:LHSW":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:NPT":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FNKO":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ONEG":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:AIFU":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:JACK":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PAMT":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SQFT":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:INDI":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:BGL":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:NHTC":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FLWS":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:HDRN":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:HUDI":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CDTG":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FGL":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ASPS":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:NAII":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MRLN":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:JUNS":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SIDU":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FGI":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:QVCG":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MTEX":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ELPW":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:TCX":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FNGR":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:TOMZ":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:OPAD":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:RAIN":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:METC":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MATW":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CTSO":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ONCO":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:GP":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ACDC":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ATER":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:OPI":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:KUST":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:UCAR":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CAR":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ATGL":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:LSE":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:TDIC":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:IPDN":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:LOBO":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:NCEW":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SSP":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:KSCP":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ECX":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SCLX":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MB":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ALP":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:AIIO":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:TNMG":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CSTE":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:DLXY":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SGML":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MNDR":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SYPR":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ISPC":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:OIO":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:TMCI":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:DXLG":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:BIRD":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:LNAI":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:KXIN":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:GENK":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:LUNR":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FXHO":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:RMSG":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MOVE":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:HYFM":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SEAT":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:GPRO":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:LZMH":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:EDBL":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:OLOX":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SEGG":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:RDI":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:LGO":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FUSE":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SCKT":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SDOT":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:DOGZ":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ECHO":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FLUX":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:LEE":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CYCU":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PLBL":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:OWLS":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:DBGI":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:IBG":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PAVM":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:JAGX":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ARAY":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FOXX":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ELAB":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:QH":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FLNT":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:NUWE":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MOBX":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:BRNX":{
+"sector":"Utilities",
+"rawSector":"Utilities",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CNSY":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CAPS":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PLUR":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FLNC":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CXAI":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:RDIB":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:HUBC":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CCTG":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:CUPR":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:GOSS":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:HCWB":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PBK":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:BDMD":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SURG":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:FFAI":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:BZFD":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:TGHL":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:DSY":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:KLXE":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MLEC":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:MNTS":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:LGVN":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PIII":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:ISPR":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:UONEK":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:UONE":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:RAYA":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:TRUG":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:THCH":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:BOXL":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:COCH":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:EPOW":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:KIDZ":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:AZI":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:TDTH":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:AKAN":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:PRPL":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:SNAL":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NASDAQ:BBGI":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:CF":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:GMED":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NYSE:APH":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:SD":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NYSE:MLI":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:BMI":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:KFY":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:RAMP":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:GRMN":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:INGR":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NYSE:CALX":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:RRC":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NYSE:GRDN":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NYSE:LNN":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:G":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:HG":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:SN":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:NEM":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:MSA":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:EVTC":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:AZZ":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:EHC":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NYSE:BR":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:HEI.A":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:LRN":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NYSE:SUI":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"US:NYSE:AOS":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:DAC":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:EQT":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NYSE:PGR":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:FNV":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:AYI":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:BOOT":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:TRAK":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:EPAM":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:ESE":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:RNR":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:SSD":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:DIS":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:GGG":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:BKE":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:GSL":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:SIG":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:GPOR":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NYSE:IDT":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:AME":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:RDDT":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:REX":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:INSP":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NYSE:CTS":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:KEYS":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:HUBB":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:HIG":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:AII":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:IIIN":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:KGC":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:GME":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:B":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:NPKI":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:NRP":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NYSE:GD":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:RMD":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NYSE:DOCS":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NYSE:GIC":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:QGEN":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NYSE:UI":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:PATH":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:OR":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:TOST":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:SNA":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:GRBK":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:LCII":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:ALL":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:AER":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:TDW":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NYSE:DGX":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NYSE:HVT":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:PAAS":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:FDS":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:CHE":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NYSE:HCI":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:AU":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:TSM":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:RDN":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:SPNT":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:CHT":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:EPAC":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:GNE":{
+"sector":"Utilities",
+"rawSector":"Utilities",
+"asOf":"2026-11-19"
+},
+"US:NYSE:CNX":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NYSE:ESNT":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:SGU":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NYSE:A":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NYSE:CDE":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:EG":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:EMR":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:MTG":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:TRV":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:UHS":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NYSE:DVN":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NYSE:STAG":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"US:NYSE:FHI":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:KIM":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"US:NYSE:LPG":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NYSE:EBF":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:SITC":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"US:NYSE:ALLE":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:MRK":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NYSE:MLM":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:CMC":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:AGM":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:GPRK":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NYSE:MBI":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:AGBK":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:ACR":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"US:NYSE:RKT":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:CHWY":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:CLPR":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"US:NYSE:MANU":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:NMG":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:SRG":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"US:NYSE:LZM":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:PL":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:CVLG":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:KWY":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:H":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:TLYS":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:TSQ":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:TEO":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:FIRY":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:LDI":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:SMHI":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:BARK":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:TISI":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:SKYD":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:ENHA":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NYSE:F":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:SMR":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:CATO":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:BNT":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:SOS":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:GTN":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:CRCL":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:NRDY":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:DBI":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:SG":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:KLAR":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:LOCL":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NYSE:STUB":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"US:NYSE:LVWR":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:TAC":{
+"sector":"Utilities",
+"rawSector":"Utilities",
+"asOf":"2026-11-19"
+},
+"US:NYSE:COOK":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:AP":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:PBF":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"US:NYSE:AGL":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"US:NYSE:AHT":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"US:NYSE:GROV":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NYSE:AKA":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:ALIT":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"US:NYSE:SKIL":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NYSE:AGRO":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NYSE:HY":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:SST":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:STLA":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:LUCK":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:UP":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"US:NYSE:UA":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:CWH":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:BRCC":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"US:NYSE:UAA":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"US:NYSE:LANV":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"GB:LSE:ALFA":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"GB:LSE:ATYM":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:FRES":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:MONY":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"GB:LSE:HWDN":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"GB:LSE:SMIN":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:JD.":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"GB:LSE:GAMA":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"GB:LSE:PFD":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"GB:LSE:LUCE":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:HOC":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:AUTO":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"GB:LSE:AT.":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"GB:LSE:HTG":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"GB:LSE:SHEL":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"GB:LSE:S32":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:JSG":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:ECEL":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:BWY":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"GB:LSE:COST":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:BAG":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"GB:LSE:BHP":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:ALTN":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:PRV":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:RSW":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"GB:LSE:QDE":{
+"sector":"Utilities",
+"rawSector":"Utilities",
+"asOf":"2026-11-19"
+},
+"GB:LSE:COR":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"GB:LSE:NEO":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"GB:LSE:KEN":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:SYNT":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:ICFG":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"GB:LSE:ATN":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:SCGL":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"GB:LSE:RCH":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"GB:LSE:ASBE":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"GB:LSE:RWA":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:AFRK":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:FXPO":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:CWR":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:AIQ":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"GB:LSE:SHI":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:FAR":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:TGR":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:HWG":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"GB:LSE:EVOK":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"GB:LSE:STVG":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"GB:LSE:ENT":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"GB:LSE:CBG":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"GB:LSE:CLI":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"GB:LSE:AML":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"GB:LSE:KOS":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"GB:LSE:BMV":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:PRD":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"GB:LSE:EGY":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"GB:LSE:PLAZ":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"GB:LSE:GVMH":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"GB:LSE:CPI":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:CFYN":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"GB:LSE:SDY":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:NOG":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"GB:LSE:PPP":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"GB:LSE:PDL":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"GB:LSE:IFRX":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"GB:LSE:DCH":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:PHIL":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:SES":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:SOL":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:PIRC":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:ANIM":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:CLF":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:ENI":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:TPRO":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:BC":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:MET":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:BPE":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:NDT":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:INDB":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:GSP":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:EM":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:ELC":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:GAB":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:ITW":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:TB":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:BAN":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:EGLA":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:MTV":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:SSL":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:LNDR":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:STLAM":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:TISG":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:JUVE":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:EUK":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"IT:EURONEXT_MILAN:BWZ":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:CAMX":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:TEL2.B":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:CEVI":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:HACK":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:SANION":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:SOF.B":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:BETS.B":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:RVRC":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:MSAB.B":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:TEL2.A":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:ARPL":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:KARNEL.B":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:LAGR.B":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:GETI.B":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:NTEK.B":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:ERIC.B":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:SYSR":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:SVED.B":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:LUMI":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:BIOA.B":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:TREL.B":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:BORG":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:HMS":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:DEDI":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:INTRUM":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:STWK":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:ONCO":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:CCC":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:BONG":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:CORE.B":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:QLIRO":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:FG":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:TOBII":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:PRFO":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:FNM":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:EPIS.B":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:SIVE":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:BALCO":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:KFAST.B":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:BOUL":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:ELAN.B":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:IMMNOV":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:PREC":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:DUST":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:IRLAB.A":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:INQ":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:TRANS":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:BEGR":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:RROS":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:BACTI.B":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:IS":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:NETEL":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:NOBI":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:FASTAT":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"SE:NASDAQ_STOCKHOLM:ATORX":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:SOFF":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:DOFG":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:MEDI":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:APR":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:STECH":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:SOMA":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:IWS":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:HAUTO":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:EPR":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:AUSS":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:ENSU":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:IDEX":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:OTOVO":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:ELMRA":{
+"sector":"Utilities",
+"rawSector":"Utilities",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:SALME":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:HBC":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:HPUR":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:HYPRO":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:CAPSL":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:NEXT":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:TECH":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"NO:EURONEXT_OSLO:IOX":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:1GBS":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:EVAC":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:SVE":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:KA8":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:AAG":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:SHF":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:IXX":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:EUZ":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:BOSS":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:M12":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:DRW8":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:BOG":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:IVU":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:KRN":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:DRW3":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:BEI":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:MA10":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:DLX":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:B7E":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:SWA":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:LIK":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:TIMA":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:SIE":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:H9W":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:BKHT":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:PSM":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:MXHN":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:KSC":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:MAK":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:SZG":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:ISHA":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:LXS":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:SYZ":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:AMI":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:PTP":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:EVT":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:RCMN":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:SUR":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:H2O":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:SNG":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:AAD":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:AMM":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:CEA":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:KTA":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:BNN":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:N4G0":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:HGEA":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:TGTA":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:NC5A":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:BIG":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:DMRE":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:EXJ0":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:IUR":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:TUF":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:TIW":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"DE:XETRA:IS7":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:RKB":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:EUK3":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:FPE":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:PIT":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:PZS":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:HBH":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:FHW":{
+"sector":"Utilities",
+"rawSector":"Utilities",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:NLM":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:MTX":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:RHK":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:D77":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:S188":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:FPE3":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:RGB":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:S92":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:KGX":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:ITN":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:PLEK":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:M3B0":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:EOAN":{
+"sector":"Utilities",
+"rawSector":"Utilities",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:GGS":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:CNW":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:CY1K":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:TLIK":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:EFF0":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:BDT":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:PNE3":{
+"sector":"Utilities",
+"rawSector":"Utilities",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:SGU":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:S6P":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"DE:FRANKFURT:PBB":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:GTT":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:BOI":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:GPE":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:LOUP":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:SAN":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:NRG":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:RBT":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:EQS":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:SDG":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:NRO":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:IPS":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:FCMC":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:EXPL":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:AI":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:LPE":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:AUB":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:CBOT":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:PARP":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:CEN":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:ODET":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:FII":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:PARRO":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:ABNX":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:CRI":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:IPH":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:ATO":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:FRVIA":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:NACON":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:S30":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:JBOG":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:ENGI":{
+"sector":"Utilities",
+"rawSector":"Utilities",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:AAA":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:MDM":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:OSE":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:ARTE":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:AB":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:BLEE":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:BUI":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:OREGE":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:ERA":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:EFG":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:SIGHT":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:NAE":{
+"sector":"Energy",
+"rawSector":"Energy",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:NANO":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"FR:EURONEXT_PARIS:MHM":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"NL:EURONEXT_AMSTERDAM:ASML":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"NL:EURONEXT_AMSTERDAM:FERGR":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"NL:EURONEXT_AMSTERDAM:FFARM":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"NL:EURONEXT_AMSTERDAM:BAMNB":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"NL:EURONEXT_AMSTERDAM:HYDRA":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"NL:EURONEXT_AMSTERDAM:AXS":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"NL:EURONEXT_AMSTERDAM:NSE":{
+"sector":"Utilities",
+"rawSector":"Utilities",
+"asOf":"2026-11-19"
+},
+"NL:EURONEXT_AMSTERDAM:ERC":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"NL:EURONEXT_AMSTERDAM:SIFG":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"NL:EURONEXT_AMSTERDAM:LVIDE":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"NL:EURONEXT_AMSTERDAM:AZRN":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"NL:EURONEXT_AMSTERDAM:EBUS":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"NL:EURONEXT_AMSTERDAM:EARTH":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"NL:EURONEXT_AMSTERDAM:AVTX":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:ORNAV":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:ORNBV":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:PUUILO":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:ILKKA":{
+"sector":"Telecommunications",
+"rawSector":"Communication Services",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:TEM1V":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:TRH1V":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:ORTHEX":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:SCANFL":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:NOHO":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:SOLTEQ":{
+"sector":"Technology",
+"rawSector":"Technology",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:OPTOMED":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:TULAV":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:SITOWS":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:EXEL":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:GLA1V":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:OUT1V":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:SOSI1":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:EEZY":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:ALISA":{
+"sector":"Financials",
+"rawSector":"Financial Services",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:KELAS":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+},
+"FI:NASDAQ_HELSINKI:SUY1V":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"ES:BME_MADRID:CBAV":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"ES:BME_MADRID:ISUR":{
+"sector":"Real Estate",
+"rawSector":"Real Estate",
+"asOf":"2026-11-19"
+},
+"ES:BME_MADRID:ROVI":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"ES:BME_MADRID:EBRO":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"ES:BME_MADRID:TRG":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"ES:BME_MADRID:NXT":{
+"sector":"Consumer Discretionary",
+"rawSector":"Consumer Cyclical",
+"asOf":"2026-11-19"
+},
+"ES:BME_MADRID:TUB":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"ES:BME_MADRID:ENER":{
+"sector":"Utilities",
+"rawSector":"Utilities",
+"asOf":"2026-11-19"
+},
+"ES:BME_MADRID:ENC":{
+"sector":"Basic Materials",
+"rawSector":"Basic Materials",
+"asOf":"2026-11-19"
+},
+"ES:BME_MADRID:ATRY":{
+"sector":"Health Care",
+"rawSector":"Healthcare",
+"asOf":"2026-11-19"
+},
+"ES:BME_MADRID:RIO":{
+"sector":"Consumer Staples",
+"rawSector":"Consumer Defensive",
+"asOf":"2026-11-19"
+},
+"ES:BME_MADRID:MDF":{
+"sector":"Industrials",
+"rawSector":"Industrials",
+"asOf":"2026-11-19"
+}
+},
+"contentSha256":"22493a6d3ea14ad2bc44f0f372a33ad81224c46f27797b5ab25db753c482b71e"
+}

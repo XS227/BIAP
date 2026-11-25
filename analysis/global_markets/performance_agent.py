@@ -81,57 +81,104 @@ def percentile(sorted_values: list, x: float) -> Optional[float]:
 
 _REL_METRICS = (("roa", "ROA", False), ("roe", "ROE", False), ("operating_margin", "Operating margin", False),
                 ("cfo_to_net_income", "Cash conversion", False), ("accrual_ratio", "Accrual ratio (lower is better)", True))
+SECTOR_SUPPLEMENT_LABEL = "current sector, not point-in-time"
+_SUPP_CACHE: dict = {}
 
 
-def relative_assessment(company: GlobalCompany, m: dict, trend: list, cfg: dict) -> dict:
-    """Percentile of each metric within the company's sector (and within sector x market when enough peers), composite and relative level."""
-    R, L = cfg["relative"], cfg["levels"]
-    peers = load_peers(cfg)
-    sector = _norm_sector(company.sector, cfg)
-    market = f"{company.country}:{company.exchange}"
-    base = {"sector": company.sector, "market": market, "peerFile": R["peer_file"], "level": None, "composite": None, "metrics": [], "scope": None}
-    if peers is None:
-        return {**base, "status": "NO_PEER_REFERENCE", "reasons": ["peer reference file not available"]}
-    if sector is None:
-        return {**base, "status": "NO_SECTOR", "reasons": ["sector unknown for this issuer; no sector-relative level"]}
-    sec_key = next((k for k in peers["sector"] if k.casefold() == sector), None)
-    cell_key = next((k for k in peers["sectorMarket"] if k.casefold() == f"{sector}|{market}".casefold()), None)
-    values = {"roa": m["roa"], "roe": m["roe"], "operating_margin": m["margins"]["operating"],
-              "cfo_to_net_income": m["cash_quality"]["cfo_to_net_income"], "accrual_ratio": m["cash_quality"]["accrual_ratio"]}
-    rows, pcts = [], []
+def load_sector_supplement(cfg: dict) -> dict:
+    name = cfg["relative"].get("sector_supplement_file")
+    if not name:
+        return {}
+    path = Path(name) if os.path.isabs(name) else CONFIG_PATH.parent / name
+    if str(path) not in _SUPP_CACHE:
+        try:
+            _SUPP_CACHE[str(path)] = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            _SUPP_CACHE[str(path)] = {}
+    return _SUPP_CACHE[str(path)]
+
+
+def metric_values(m: dict) -> dict:
+    return {"roa": m["roa"], "roe": m["roe"], "operating_margin": m["margins"]["operating"],
+            "cfo_to_net_income": m["cash_quality"]["cfo_to_net_income"], "accrual_ratio": m["cash_quality"]["accrual_ratio"]}
+
+
+def scope_composite(values: dict, arrays: dict, min_n: int, min_metrics: int) -> tuple:
+    """(composite, per-metric rows) of one issuer against ONE peer scope. Metrics whose peer list is shorter than min_n are skipped."""
+    rows, scores = [], []
     for mid, label, lower_better in _REL_METRICS:
-        x = values[mid]
-        if x is None:
-            continue
-        cell, sec = (peers["sectorMarket"].get(cell_key) if cell_key else None), (peers["sector"].get(sec_key) if sec_key else None)
-        if cell and len(cell.get(mid, [])) >= int(R["min_peers_market"]):
-            arr, scope = cell[mid], "sector+market"
-        elif sec and len(sec.get(mid, [])) >= int(R["min_peers_sector"]):
-            arr, scope = sec[mid], "sector"
-        else:
+        x, arr = values.get(mid), arrays.get(mid) or []
+        if x is None or len(arr) < min_n:
             continue
         pc = percentile(arr, x)
         score = 1.0 - pc if lower_better else pc
-        pcts.append(score)
-        rows.append({"id": mid, "name": label, "value": x, "percentile": round(pc, 3), "score": round(score, 3), "scope": scope, "peers": len(arr)})
-    need = int(R["min_metrics"])
-    if len(pcts) < need:
-        return {**base, "metrics": rows, "status": "INSUFFICIENT_PEERS",
-                "reasons": [f"fewer than {need} metrics have enough sector peers (market >= {R['min_peers_market']}, sector >= {R['min_peers_sector']})"]}
-    comp = sum(pcts) / len(pcts)
+        scores.append(score)
+        rows.append({"id": mid, "name": label, "value": x, "percentile": round(pc, 3), "score": round(score, 3), "peers": len(arr)})
+    return (sum(scores) / len(scores) if len(scores) >= min_metrics else None), rows
+
+
+def relative_assessment(company: GlobalCompany, m: dict, trend: list, cfg: dict) -> dict:
+    """Relative level = where the issuer's composite (mean metric percentile) ranks among its peers' composites in ONE consistent scope.
+    Scope order: sector+market, sector, market-wide fallback (sector unknown or too few sector peers; labelled). Bottom quartile WEAK, top STRONG."""
+    R, L = cfg["relative"], cfg["levels"]
+    peers = load_peers(cfg)
+    market = f"{company.country}:{company.exchange}"
+    sector_raw, sector_source = company.sector, "official classification"
+    if not (sector_raw or "").strip():
+        sup = (load_sector_supplement(cfg).get("entries") or {}).get(f"{market}:{company.ticker}")
+        if sup:
+            sector_raw, sector_source = sup["sector"], SECTOR_SUPPLEMENT_LABEL
+        else:
+            sector_raw, sector_source = None, None
+    base = {"sector": sector_raw, "sectorSource": sector_source, "market": market, "peerFile": R["peer_file"], "level": None,
+            "composite": None, "compositePercentile": None, "metrics": [], "scope": None}
+    if peers is None:
+        return {**base, "status": "NO_PEER_REFERENCE", "reasons": ["peer reference file not available"]}
+    sector = _norm_sector(sector_raw, cfg)
+    values = metric_values(m)
+    mn_m, mn_s, need = int(R["min_peers_market"]), int(R["min_peers_sector"]), int(R["min_metrics"])
+    sec_key = next((k for k in peers["sector"] if k.casefold() == sector), None) if sector else None
+    cell_key = next((k for k in peers["sectorMarket"] if k.casefold() == f"{sector}|{market}".casefold()), None) if sector else None
+    mkt = peers.get("market", {}).get(market)
+    candidates = []
+    if cell_key:
+        candidates.append(("sector+market", peers["sectorMarket"][cell_key], mn_m, None))
+    if sec_key:
+        candidates.append(("sector", peers["sector"][sec_key], mn_s, None))
+    if mkt:
+        why = "sector unknown" if not sector else "too few sector peers"
+        candidates.append(("market-wide fallback", mkt, mn_m, why))
+    chosen, why_fb = None, None
+    for name, arrays, min_n, why in candidates:
+        comp, rows = scope_composite(values, arrays, min_n, need)
+        comp_arr = arrays.get("composite") or []
+        if comp is not None and len(comp_arr) >= min_n:
+            chosen = (name, comp, rows, comp_arr)
+            why_fb = why
+            break
+    if chosen is None:
+        return {**base, "status": "INSUFFICIENT_PEERS",
+                "reasons": [f"no peer scope (sector+market >= {mn_m}, sector >= {mn_s}, market-wide >= {mn_m}) has {need} usable metrics"]}
+    name, comp, rows, comp_arr = chosen
+    pc = percentile(comp_arr, comp)
     if len(trend) >= int(L["deteriorating_min_trend_signals"]):
         level = "DETERIORATING"
-    elif comp >= R["strong_pct"]:
+    elif pc >= R["strong_pct"]:
         level = "STRONG"
-    elif comp <= R["weak_pct"]:
+    elif pc <= R["weak_pct"]:
         level = "WEAK"
     else:
         level = "STABLE"
-    scopes = {r["scope"] for r in rows}
-    scope = scopes.pop() if len(scopes) == 1 else "mixed (sector+market where enough peers, else sector)"
-    return {**base, "metrics": rows, "level": level, "composite": round(comp, 3), "status": "OK", "scope": scope,
-            "reasons": [f"average percentile {comp:.0%} among {company.sector} peers (>= {R['strong_pct']:.0%} STRONG, <= {R['weak_pct']:.0%} WEAK)"]
-                       + [f"trend: {t}" for t in trend]}
+    label = name if why_fb is None else f"{name} ({why_fb}; all-sector peers in this market)"
+    where = (f"{sector_raw} peers" if name.startswith("sector") else f"all non-financial issuers in {market}")
+    reasons = [f"composite ranks at the {pc:.0%} percentile among {where} (bottom quartile = WEAK, top quartile = STRONG)"]
+    if sector_source == SECTOR_SUPPLEMENT_LABEL:
+        reasons.append(f"sector '{sector_raw}' is a {SECTOR_SUPPLEMENT_LABEL}")
+    if why_fb:
+        reasons.append(f"market-wide fallback used: {why_fb}")
+    reasons += [f"trend: {t}" for t in trend]
+    return {**base, "metrics": rows, "level": level, "composite": round(comp, 3), "compositePercentile": round(pc, 3), "status": "OK",
+            "scope": label, "peerCount": len(comp_arr), "reasons": reasons}
 
 
 def _num(v: Any) -> Optional[float]:
