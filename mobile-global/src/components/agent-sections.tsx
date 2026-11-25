@@ -51,7 +51,7 @@ export function RiskAgentSection({ instrument, colors, start, onDone }: { instru
           const needs = (sg.missing || []).length && !isBeneish ? `${tr(lang, 'needs')}: ${sg.missing.join(', ')}` : '';
           return <View key={sg.id}>
             <Row label={`${sg.name}${sg.id === 'ohlson' && sg.provisional ? ` (${tr(lang, 'provisional')})` : ''}`} value={sg.band ? `${value} · ${sg.band}` : value} colors={colors} lang={lang}
-              dot={unavailable ? TONE_COLOR.muted : sevColor(sg.severity)} sub={[sg.reason, inputs, needs].filter(Boolean).join('\n')} />
+              dot={unavailable ? TONE_COLOR.muted : sevColor(sg.severity)} sub={[sg.reason, inputs, needs, sg.caveat || ''].filter(Boolean).join('\n')} />
           </View>;
         })}
         {a.unitScale?.status ? <Text style={[styleSub(colors), rtl(lang)]}>{tr(lang, 'unitScale')}: {a.unitScale.status}</Text> : null}

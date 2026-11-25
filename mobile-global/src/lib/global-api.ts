@@ -763,7 +763,7 @@ export async function fetchGlobalBrokerReadiness(): Promise<{
 // ---------------------------------------------------------------------------------------------------------------------------------
 export type GlobalRiskSignal = {
   id: string; name: string; available: boolean; applicable: boolean; severity: number; value: number | null; band: string | null;
-  inputs: Record<string, number | string | null>; missing: string[]; reason: string; flags?: string[]; provisional?: boolean; unitScale?: string;
+  inputs: Record<string, number | string | null>; missing: string[]; reason: string; flags?: string[]; provisional?: boolean; caveat?: string; unitScale?: string;
 };
 export type GlobalRiskAssessment = {
   agent: 'risk'; level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | null; status: 'OK' | 'PARTIAL' | 'INSUFFICIENT_DATA' | 'NOT_APPLICABLE' | string;
