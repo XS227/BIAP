@@ -132,19 +132,27 @@ def test_pure_and_never_referenced_by_decision_logic():
 
 
 # --- sector-relative scoring ------------------------------------------------------------------------------------------------------
-def _peers(tmp_path, monkeypatch, *, roa, n_market=30, n_sector=60, sector="industrials"):
-    """Peer file with evenly spread values; returns config pointing at it."""
-    def arr(n, lo, hi):
-        return [lo + (hi - lo) * i / (n - 1) for i in range(n)]
-    cell = {"n": n_market, "roa": arr(n_market, *roa), "roe": arr(n_market, 0.0, 0.2), "operating_margin": arr(n_market, 0.0, 0.2),
-            "cfo_to_net_income": arr(n_market, 0.2, 1.4), "accrual_ratio": arr(n_market, -0.05, 0.1)}
-    sec = {k: (v if k == "n" else arr(n_sector, v[0], v[-1])) for k, v in cell.items()}
-    sec["n"] = n_sector
+def _arr(n, lo, hi):
+    return [lo + (hi - lo) * i / (n - 1) for i in range(n)]
+
+
+def _scope(n, roa, comp):
+    return {"n": n, "roa": _arr(n, *roa), "roe": _arr(n, 0.0, 0.2), "operating_margin": _arr(n, 0.0, 0.2), "cfo_to_net_income": _arr(n, 0.2, 1.4),
+            "accrual_ratio": _arr(n, -0.05, 0.1), "composite": _arr(n, *comp)}
+
+
+def _peers(tmp_path, *, roa=(0.0, 0.1), comp=(0.0, 1.0), n_market=30, n_sector=60, n_mkt_wide=100, sector="Industrials", supp=None):
+    """Peer + supplement files; returns a config pointing at them."""
     f = tmp_path / "peers.json"
-    f.write_text(json.dumps({"schema": 1, "sector": {sector.title(): sec}, "sectorMarket": {f"{sector.title()}|DE:XETRA": cell}}))
+    f.write_text(json.dumps({"schema": 1, "sector": {sector: _scope(n_sector, roa, comp)} if n_sector else {},
+                             "sectorMarket": {f"{sector}|DE:XETRA": _scope(n_market, roa, comp)} if n_market else {},
+                             "market": {"DE:XETRA": _scope(n_mkt_wide, roa, comp)} if n_mkt_wide else {}}))
+    g = tmp_path / "supp.json"
+    g.write_text(json.dumps({"entries": supp or {}}))
     cfg = pa.load_config()
-    cfg["relative"]["peer_file"] = str(f)
+    cfg["relative"]["peer_file"], cfg["relative"]["sector_supplement_file"] = str(f), str(g)
     pa._PEER_CACHE.clear()
+    pa._SUPP_CACHE.clear()
     return cfg
 
 
@@ -154,49 +162,70 @@ def test_percentile_midrank():
     assert pa.percentile([], 1) is None
 
 
-def test_strong_min_points_is_four_in_config():
-    assert pa.load_config()["levels"]["strong_min_points"] == 4
+def test_strong_min_points_is_four_and_quartile_cutoffs_in_config():
+    cfg = pa.load_config()
+    assert cfg["levels"]["strong_min_points"] == 4
+    assert cfg["relative"]["weak_pct"] == 0.25 and cfg["relative"]["strong_pct"] == 0.75
 
 
-def test_relative_level_high_vs_low_peers_same_company(tmp_path, monkeypatch):
-    c = company()                                                                       # ROA 8%
-    low_peer_cfg = _peers(tmp_path, monkeypatch, roa=(-0.02, 0.06))
-    r = pa.assess(c, config=low_peer_cfg)
-    assert r["absoluteLevel"] == "STRONG" and r["relative"]["status"] == "OK" and r["relative"]["scope"] == "sector+market"
-    roa_row = [x for x in r["relative"]["metrics"] if x["id"] == "roa"][0]
-    assert roa_row["percentile"] == 1.0 and roa_row["scope"] == "sector+market"
-    high_peer_cfg = _peers(tmp_path, monkeypatch, roa=(0.06, 0.30))
-    r2 = pa.assess(c, config=high_peer_cfg)
+def test_relative_weak_is_bottom_quartile_and_strong_top_quartile(tmp_path):
+    c = company()                                                                       # absolute STRONG
+    r = pa.assess(c, config=_peers(tmp_path, roa=(-0.02, 0.06), comp=(0.0, 0.3)))       # peers' composites all below ours
+    assert r["absoluteLevel"] == "STRONG" and r["relative"]["level"] == "STRONG" and r["relative"]["scope"] == "sector+market"
+    r2 = pa.assess(c, config=_peers(tmp_path, roa=(0.06, 0.30), comp=(0.9, 1.0)))       # peers' composites all above ours
     assert r2["absoluteLevel"] == "STRONG"                                              # absolute level does not move with peers
-    assert [x for x in r2["relative"]["metrics"] if x["id"] == "roa"][0]["percentile"] <= 0.1
+    assert r2["relative"]["level"] == "WEAK" and r2["relative"]["compositePercentile"] <= 0.25
 
 
-def test_relative_falls_back_to_sector_then_none(tmp_path, monkeypatch):
-    cfg = _peers(tmp_path, monkeypatch, roa=(0.0, 0.1), n_market=5)                     # market cell too small, sector big enough
-    r = pa.assess(company(), config=cfg)["relative"]
+def test_relative_weak_exists_by_construction(tmp_path):
+    """Whatever the peer distribution, a composite in the bottom quartile of the peers' composites is WEAK, middle STABLE, top STRONG."""
+    cfg = _peers(tmp_path, roa=(0.0, 0.1))
+    comp, _ = pa.scope_composite(pa.metric_values(pa.metrics(company())), cfg and pa.load_peers(cfg)["sectorMarket"]["Industrials|DE:XETRA"], 20, 3)
+    arr = pa.load_peers(cfg)["sectorMarket"]["Industrials|DE:XETRA"]
+    for pos, level in ((0.1, "WEAK"), (0.5, "STABLE"), (0.9, "STRONG")):
+        arr["composite"] = sorted([comp + (i / 29 - pos) * 0.4 for i in range(30)])           # company sits at about percentile `pos`
+        assert pa.assess(company(), config=cfg)["relative"]["level"] == level
+
+
+def test_relative_falls_back_to_sector_then_market_wide_labelled(tmp_path):
+    r = pa.assess(company(), config=_peers(tmp_path, n_market=5))["relative"]           # market cell too small, sector big enough
     assert r["status"] == "OK" and r["scope"] == "sector"
-    cfg = _peers(tmp_path, monkeypatch, roa=(0.0, 0.1), n_market=5, n_sector=10)
-    r = pa.assess(company(), config=cfg)["relative"]
+    r = pa.assess(company(), config=_peers(tmp_path, n_market=5, n_sector=10))["relative"]
+    assert r["status"] == "OK" and r["scope"].startswith("market-wide fallback") and "too few sector peers" in r["scope"]
+    assert any("market-wide fallback used" in x for x in r["reasons"])
+    r = pa.assess(company(), config=_peers(tmp_path, n_market=0, n_sector=0, n_mkt_wide=10))["relative"]
     assert r["status"] == "INSUFFICIENT_PEERS" and r["level"] is None
 
 
-def test_relative_unknown_sector_and_missing_file(tmp_path, monkeypatch):
-    cfg = _peers(tmp_path, monkeypatch, roa=(0.0, 0.1))
-    assert pa.assess(company(sector=None), config=cfg)["relative"]["status"] == "NO_SECTOR"
+def test_unknown_sector_uses_supplement_label_or_market_wide(tmp_path):
+    c = company(sector=None)
+    r = pa.assess(c, config=_peers(tmp_path))["relative"]                                # no sector anywhere -> market-wide, labelled
+    assert r["status"] == "OK" and r["scope"].startswith("market-wide fallback") and "sector unknown" in r["scope"] and r["sector"] is None
+    cfg = _peers(tmp_path, supp={"DE:XETRA:TST": {"sector": "Industrials"}})
+    r = pa.assess(c, config=cfg)["relative"]
+    assert r["sector"] == "Industrials" and r["sectorSource"] == "current sector, not point-in-time" and r["scope"] == "sector+market"
+    assert any("current sector, not point-in-time" in x for x in r["reasons"])
+    assert pa.assess(company(), config=cfg)["relative"]["sectorSource"] == "official classification"
+
+
+def test_missing_peer_file(tmp_path):
+    cfg = _peers(tmp_path)
     cfg["relative"]["peer_file"] = str(tmp_path / "missing.json")
     pa._PEER_CACHE.clear()
     assert pa.assess(company(), config=cfg)["relative"]["status"] == "NO_PEER_REFERENCE"
 
 
-def test_relative_deteriorating_uses_same_trend_rule(tmp_path, monkeypatch):
-    cfg = _peers(tmp_path, monkeypatch, roa=(0.0, 0.1))
-    r = pa.assess(company(revenue_yoy_pct=-8.0, net_margin_prev_pct=12.0), config=cfg)
+def test_relative_deteriorating_uses_same_trend_rule(tmp_path):
+    r = pa.assess(company(revenue_yoy_pct=-8.0, net_margin_prev_pct=12.0), config=_peers(tmp_path))
     assert r["absoluteLevel"] == "DETERIORATING" and r["relative"]["level"] == "DETERIORATING"
 
 
-def test_packaged_peer_file_loads_and_is_consistent():
+def test_packaged_peer_and_supplement_files_load_and_are_consistent():
     cfg = pa.load_config()
     peers = pa.load_peers(cfg)
-    assert peers and peers["schema"] == 1 and peers["sector"]
-    for cell in list(peers["sector"].values())[:3]:
-        assert cell["roa"] == sorted(cell["roa"])
+    assert peers and peers["schema"] == 1 and peers["sector"] and peers["market"]
+    for scope in ("sector", "market"):
+        for cell in list(peers[scope].values())[:3]:
+            assert cell["roa"] == sorted(cell["roa"]) and cell["composite"] == sorted(cell["composite"])
+    supp = pa.load_sector_supplement(cfg)
+    assert supp["label"] == "current sector, not point-in-time" and any(k.startswith("US:") for k in supp["entries"])
