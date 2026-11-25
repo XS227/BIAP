@@ -28,8 +28,27 @@ permissions:
   actions: read
 
 jobs:
-  validate-backend:
+  # Global-only / docs / research / CI-only changes never deploy the VPS backend (see deploy/deploy-scope.sh).
+  scope:
     if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      deploy: ${{ steps.scope.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Decide whether this change needs a backend deploy
+        id: scope
+        run: |
+          bash deploy/deploy-scope.sh "${{ github.event_name }}" "${{ github.event.workflow_run.head_sha || github.sha }}" "${{ github.event.before }}" | tee scope.out
+          grep -E '^deploy=' scope.out >> "$GITHUB_OUTPUT"
+
+  validate-backend:
+    needs: scope
+    if: needs.scope.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -50,8 +69,8 @@ jobs:
         run: timeout --signal=TERM 12m pytest -vv --durations=25
 
   deploy:
-    needs: validate-backend
-    if: needs.validate-backend.result == 'success'
+    needs: [scope, validate-backend]
+    if: needs.scope.outputs.deploy == 'true' && needs.validate-backend.result == 'success'
     runs-on: ubuntu-latest
     environment: production
     env:
