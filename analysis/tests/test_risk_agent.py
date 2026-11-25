@@ -6,15 +6,20 @@ from dataclasses import replace
 import pytest
 from fastapi import HTTPException
 
-from global_markets import risk_agent as ra
+from global_markets import risk_agent as ra, risk_inputs as ri
+from global_markets.models import SourceEvidence
 from global_markets.models import GlobalCompany
 
 M = 1_000_000.0
+FX = {"ok": True, "currency": "EUR", "rate": 1.1, "rateDate": "2025-12-31", "requestedDate": "2025-12-31", "provider": "test"}
+FX1 = {**FX, "rate": 1.0}
+SCALE = {"status": "VERIFIED", "factor": 1.0, "providers": ["test"], "basis": "test", "flags": []}
+KW = dict(fx=FX1, scale=SCALE)
 
 
 def company(**kw) -> GlobalCompany:
     base = dict(country="DE", exchange="XETRA", currency="EUR", ticker="TST", name="Test AG", sector="Industrials", industry="Machinery",
-                reporting_currency="EUR",
+                reporting_currency="EUR", filing_period_end="2025-12-31",
                 total_assets=1000 * M, total_liabilities=400 * M, total_equity=600 * M, current_assets=500 * M, current_liabilities=200 * M,
                 retained_earnings=300 * M, operating_income=150 * M, net_income=100 * M, operating_cash_flow=120 * M,
                 revenue=1000 * M, revenue_prev=900 * M, net_margin_prev_pct=8.0, gross_profit=400 * M, total_debt=100 * M,
@@ -84,15 +89,15 @@ def test_missing_inputs_are_named_never_guessed():
     a, z = ra.altman_signal(c), ra.zmijewski_signal(c)
     assert not a["available"] and {"retained_earnings", "current_liabilities"} <= set(a["missing"])
     assert not z["available"] and "current_liabilities" in z["missing"]
-    o = ra.ohlson_signal(company(), None, None)
-    assert not o["available"] and "fx_to_usd" in o["missing"]
+    o = ra.ohlson_signal(company(), None, None, SCALE)
+    assert not o["available"] and "fx_at_statement_date" in o["missing"]
 
 
 def test_ohlson_matches_independent_formula():
     c = company()
-    o = ra.ohlson_signal(c, None, 1.1)
+    o = ra.ohlson_signal(c, None, FX, SCALE)
     ta = 1000 * M
-    size = math.log(ta * 1.1 / 1000 / 680.0)
+    size = math.log(ta * 1.1 / 1000 / ri.deflator_index(2025)["index"])
     ni_prev = 8.0 * 900 * M / 100
     chin = (100 * M - ni_prev) / (100 * M + ni_prev)
     score = (-1.32 - 0.407 * size + 6.03 * 0.4 - 1.43 * 0.3 + 0.0757 * 0.4 - 1.72 * 0 - 2.37 * 0.1 - 1.83 * (120 / 400) + 0.285 * 0 - 0.521 * chin)
@@ -103,7 +108,7 @@ def test_ohlson_matches_independent_formula():
 
 def test_ohlson_intwo_and_oeneg_flags():
     c = company(net_income=-10 * M, total_liabilities=1200 * M, total_equity=-200 * M, net_margin_prev_pct=-2.0)
-    o = ra.ohlson_signal(c, None, 1.0)
+    o = ra.ohlson_signal(c, None, FX1, SCALE)
     assert o["inputs"]["intwo"] == 1.0 and o["inputs"]["oeneg"] == 1.0 and o["severity"] == 2
 
 
@@ -127,32 +132,32 @@ def test_volatility_flags():
 
 
 def test_level_low_for_healthy_company():
-    r = ra.assess(company(), fx_to_usd=1.0)
+    r = ra.assess(company(), **KW)
     assert r["level"] == "LOW" and r["status"] == "OK" and r["advisoryOnly"] is True
     assert r["dataSufficiency"]["solvencyModelsAvailable"] == 3
     assert "beneish" in r["dataSufficiency"]["missing"]            # honest: two-year inputs are not stored
 
 
 def test_level_critical_on_hard_reason_even_with_missing_models():
-    r = ra.assess(company(total_equity=-5 * M, retained_earnings=None), fx_to_usd=None)
+    r = ra.assess(company(total_equity=-5 * M, retained_earnings=None))
     assert r["level"] == "CRITICAL" and "negative total equity (hard reason)" in r["reasons"]
-    r = ra.assess(company(audit_opinion="Material uncertainty related to going concern"), fx_to_usd=1.0)
+    r = ra.assess(company(audit_opinion="Material uncertainty related to going concern"), **KW)
     assert r["level"] == "CRITICAL"
 
 
 def test_level_high_with_one_severe_and_critical_with_two():
-    one = ra.assess(company(**ALTMAN_ONLY), fx_to_usd=1.0)
+    one = ra.assess(company(**ALTMAN_ONLY), **KW)
     sev = [s["id"] for s in one["signals"] if s["severity"] == 2]
     assert sev == ["altman"] and one["level"] == "HIGH"
-    two = ra.assess(company(**{**ALTMAN_ONLY, "net_income": -100 * M, "total_liabilities": 900 * M, "total_equity": 100 * M}), fx_to_usd=1.0)
+    two = ra.assess(company(**{**ALTMAN_ONLY, "net_income": -100 * M, "total_liabilities": 900 * M, "total_equity": 100 * M}), **KW)
     assert len([s for s in two["signals"] if s["severity"] == 2]) >= 2 and two["level"] == "CRITICAL"
 
 
 def test_medium_from_volatility_alone_and_beneish_cannot_exceed_medium(monkeypatch):
-    assert ra.assess(company(volatility_annualized_pct=90.0), fx_to_usd=1.0)["level"] == "MEDIUM"
+    assert ra.assess(company(volatility_annualized_pct=90.0), **KW)["level"] == "MEDIUM"
     flagged = ra._signal("beneish", "Beneish M-score", available=True, severity=1, value=-1.0, band="manipulation-risk", reason="stub")
-    monkeypatch.setattr(ra, "beneish_signal", lambda c, h=None: flagged)
-    r = ra.assess(company(), fx_to_usd=1.0)
+    monkeypatch.setattr(ra, "beneish_signal", lambda c, h=None, *_: flagged)
+    r = ra.assess(company(), **KW)
     assert r["level"] == "MEDIUM" and "stub" in r["reasons"]
 
 
@@ -161,27 +166,119 @@ def test_three_elevated_flags_make_high_two_do_not(monkeypatch):
         return lambda *a, **k: ra._signal(i, i, available=True, severity=1, value=1.0, reason=i)
     monkeypatch.setattr(ra, "altman_signal", elev("altman"))
     monkeypatch.setattr(ra, "zmijewski_signal", elev("zmijewski"))
-    assert ra.assess(company(), fx_to_usd=1.0)["level"] == "MEDIUM"           # two elevated: still MEDIUM
+    assert ra.assess(company(), **KW)["level"] == "MEDIUM"           # two elevated: still MEDIUM
     monkeypatch.setattr(ra, "ohlson_signal", elev("ohlson"))
-    assert ra.assess(company(), fx_to_usd=1.0)["level"] == "HIGH"             # three elevated: HIGH
+    assert ra.assess(company(), **KW)["level"] == "HIGH"             # three elevated: HIGH
 
 
 def test_insufficient_data_gives_no_level_not_low():
-    r = ra.assess(company(retained_earnings=None, operating_income=None, net_income=None, current_assets=None), fx_to_usd=None)
+    r = ra.assess(company(retained_earnings=None, operating_income=None, net_income=None, current_assets=None))
     assert r["level"] is None and r["status"] == "INSUFFICIENT_DATA"
     assert any("fewer than 2 solvency models" in x for x in r["reasons"])
 
 
 def test_financial_issuer_models_not_applicable():
     bank = company(sector="Financials", industry="Banks", total_assets=1000 * M, total_equity=40 * M, total_liabilities=960 * M)
-    r = ra.assess(bank, fx_to_usd=1.0)
+    r = ra.assess(bank, **KW)
     assert r["level"] is None and r["status"] == "NOT_APPLICABLE"
     assert all(not s["applicable"] for s in r["signals"] if s["id"] in ("altman", "ohlson", "zmijewski", "beneish"))
-    assert ra.assess(replace(bank, audit_opinion="going concern doubt"), fx_to_usd=1.0)["level"] == "CRITICAL"
+    assert ra.assess(replace(bank, audit_opinion="going concern doubt"), **KW)["level"] == "CRITICAL"
 
 
 def test_assess_is_pure():
     c = company(**ALTMAN_ONLY)
     before = copy.deepcopy(c)
-    ra.assess(c, fx_to_usd=1.0)
+    ra.assess(c, **KW)
     assert c == before
+
+
+# --- owner decisions 2026-11-25 -----------------------------------------------------------------------------------------------
+def test_deflator_is_versioned_file_rebased_to_1968():
+    d = ri.deflator_data()
+    assert d["fred_series"] == "GDPDEF" and d["base_year"] == 1968 and len(d["source_csv_sha256"]) == 64
+    assert ri.deflator_index(1968)["index"] == pytest.approx(100.0, abs=1e-3)
+    assert ri.deflator_index(2025)["index"] > ri.deflator_index(2015)["index"] > 100
+    assert ri.deflator_index(1800) is None
+
+
+def test_ohlson_needs_statement_date_fx_and_known_scale_and_deflator():
+    c = company()
+    assert not ra.ohlson_signal(c, None, {"ok": False, "reason": "no fixing"}, SCALE)["available"]
+    o = ra.ohlson_signal(c, None, FX, {"status": "UNKNOWN", "flags": ["statement unit scale unknown"]})
+    assert not o["available"] and "statement_unit_scale" in o["missing"] and "statement unit scale unknown" in o["flags"]
+    assert not ra.ohlson_signal(company(filing_period_end="1900-12-31"), None, FX, SCALE)["available"]
+    ok = ra.ohlson_signal(c, None, FX, SCALE)
+    assert ok["inputs"]["fx_rate_date"] == "2025-12-31" and ok["inputs"]["gdp_deflator_1968_100"] == ri.deflator_index(2025)["index"]
+
+
+def test_statement_fx_uses_statement_date_never_live():
+    class P:
+        def rate(self, base, quote, on):
+            from global_markets.fx_history import FXQuote
+            return FXQuote(base, quote, 1.2345, "spot", on.isoformat(), "2025-12-30", 1)
+    r = ri.statement_fx(company(), P())
+    assert r["ok"] and r["rate"] == 1.2345 and r["requestedDate"] == "2025-12-31" and r["rateDate"] == "2025-12-30"
+    assert not ri.statement_fx(company(filing_period_end=None), P())["ok"]
+    assert ri.statement_fx(company(reporting_currency="USD"), P())["rate"] == 1.0
+
+    class Broken:
+        def rate(self, *a):
+            raise RuntimeError("cache missing")
+    assert not ri.statement_fx(company(), Broken())["ok"]
+
+
+def test_statement_scale_registry_inference_and_flags():
+    src = lambda prov: [SourceEvidence(provider=prov, source_type="official_regulatory_xbrl")]
+    assert ri.statement_scale(company(sources=src("sec-edgar-xbrl-cached")))["status"] == "VERIFIED"
+    assert ri.statement_scale(company(sources=src("official-oam-no-oslo-newsweb")))["status"] == "VERIFIED"
+    other = src("some-new-vendor")
+    inferred = ri.statement_scale(company(sources=other, market_cap=1500 * M))
+    assert inferred["status"] == "INFERRED" and inferred["flags"]
+    assert ri.statement_scale(company(sources=other, market_cap=1.0))["status"] == "SUSPECT"       # assets 1e9 x market cap: scale error
+    assert ri.statement_scale(company(sources=other))["status"] == "UNKNOWN"
+    assert ri.statement_scale(company(sources=other, market_cap=1500 * M, currency="USD"))["status"] == "UNKNOWN"   # currencies differ
+
+
+def test_thresholds_come_from_config(tmp_path, monkeypatch):
+    import json
+    cfg = json.loads(ri.CONFIG_PATH.read_text())
+    cfg["thresholds"]["volatility_elevated_pct"] = 95.0
+    f = tmp_path / "c.json"
+    f.write_text(json.dumps(cfg))
+    monkeypatch.setenv(ri.CONFIG_ENV, str(f))
+    assert ra.volatility_signal(company(volatility_annualized_pct=80.0, max_drawdown_pct=-10.0))["severity"] == 0
+    assert ra.assess(company(volatility_annualized_pct=80.0, max_drawdown_pct=-10.0), **KW)["config"]["thresholds"]["volatility_elevated_pct"] == 95.0
+    cfg["thresholds"]["ohlson_severe"] = 0.1
+    f.write_text(json.dumps(cfg))
+    with pytest.raises(ValueError):
+        ri.load_config()
+    del cfg["thresholds"]["beneish"]
+    cfg["thresholds"]["ohlson_severe"] = 0.5
+    f.write_text(json.dumps(cfg))
+    with pytest.raises(ValueError):
+        ri.load_config()
+    monkeypatch.delenv(ri.CONFIG_ENV)
+    assert ri.load_config()["thresholds"]["ohlson_severe"] == 0.5
+
+
+def test_interest_coverage_signal_and_level_effect():
+    ok = ra.interest_coverage_signal(company(interest_expense=10 * M))
+    assert ok["severity"] == 0 and ok["value"] == pytest.approx(15.0)
+    assert ra.interest_coverage_signal(company(operating_income=14 * M, interest_expense=10 * M))["severity"] == 1
+    assert ra.interest_coverage_signal(company(operating_income=9 * M, interest_expense=10 * M))["severity"] == 2
+    assert not ra.interest_coverage_signal(company(interest_expense=None))["available"]
+    # severe coverage alone: HIGH (never CRITICAL); mild coverage alone: MEDIUM
+    assert ra.assess(company(operating_income=9 * M, interest_expense=10 * M), **KW)["level"] == "HIGH"
+    assert ra.assess(company(operating_income=14 * M, interest_expense=10 * M), **KW)["level"] == "MEDIUM"
+    # does not count as a solvency model for data sufficiency
+    r = ra.assess(company(retained_earnings=None, operating_income=9 * M, interest_expense=10 * M), **KW)
+    assert r["dataSufficiency"]["solvencyModelsAvailable"] == 2
+
+
+def test_financial_label_and_advisory_only():
+    bank = company(sector="Financials", industry="Banks", total_equity=40 * M, total_liabilities=960 * M)
+    r = ra.assess(bank, **KW)
+    assert r["status"] == "NOT_APPLICABLE" and any("not applicable: financial institution" in x for x in r["reasons"])
+    assert r["advisoryOnly"] is True
+    import inspect, global_markets.decision_logic as dl
+    assert "risk_agent" not in inspect.getsource(dl)

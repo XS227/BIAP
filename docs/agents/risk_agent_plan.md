@@ -1,7 +1,7 @@
 # Risk Agent: plan (2026-11-25)
 
 Status: **built behind `RISK_AGENT_ENABLED` (default OFF), branch `feat/risk-agent-20261125`, tested on staging only, NOT deployed.**
-Code: `analysis/global_markets/risk_agent.py`, route `POST /global/risk` in `analysis/global_routes.py`, tests `analysis/tests/test_risk_agent.py` (18).
+Code: `analysis/global_markets/risk_agent.py` (+ `risk_inputs.py`, `data/risk_agent_config.json`, `data/us_gdp_deflator_gdpdef.json`), route `POST /global/risk` in `analysis/global_routes.py`, tests `analysis/tests/test_risk_agent.py` (25). **Revision 2 (owner decisions of 2026-11-25) is in section 9 and overrides conflicting statements above.**
 
 ## 1. Purpose and boundaries
 One explainable risk level per listed company from five published measures, with the reason and the data behind each. It is an **advisory
@@ -67,10 +67,20 @@ purity (input company unchanged). Full suite on the branch: 2002 passed (1984 + 
 4. Production: merge, deploy with the flag still OFF, switch `RISK_AGENT_ENABLED=1` in `.env.global` and restart; rollback = remove the line and restart.
 5. App card in the next Global build.
 
-## 8. Open decisions (owner)
-- D1 Ohlson size term: price-level index fixed at 680 (approximation of the 1968=100 GNP deflator today); changing it shifts every O-score by a constant. Also: statement values are assumed to be in full currency units (not thousands/millions).
-- D2 Thresholds: Ohlson 0.50/0.25 (not Ohlson's own 0.038 classification cut-off), volatility/drawdown 50%, Beneish -1.78 (some use -2.22).
-- D3 Beneish needs two years of statement items: add a statement-history extraction (all markets) or leave Beneish "not available".
-- D4 `null` level when data is insufficient (instead of LOW), and no level for financial issuers.
-- D5 Whether interest coverage (already in Agent 9) should also be a Risk signal; not included to keep to the five requested measures.
-- D6 Whether CRITICAL/HIGH may later feed the decision (today strictly advisory).
+## 8. Decisions (owner answers 2026-11-25)
+D1 Ohlson SIZE: no fixed 680, no local currency (section 9). D2 thresholds accepted, now config (section 9). D3 Beneish stays "not available" until EODHD statement history is on. D4 yes: no level when data is insufficient; "not applicable: financial institution" for banks and insurers.
+D5 interest coverage added as a supporting signal. D6 Risk stays advisory only; it must not change BUY/SELL decisions (a test asserts `decision_logic` never references it).
+
+## 9. Revision 2
+**Ohlson SIZE.** `SIZE = ln( TA_USD_thousands / DEFL )` with
+1. `TA_USD_thousands` = total assets in full reporting-currency units x ECB reference rate **on/before the statement (balance-sheet) date** (`fx_history`, never the live rate) / 1000;
+2. `DEFL` = US GDP implicit price deflator (FRED `GDPDEF`), annual mean of the statement year, **rebased so 1968 = 100**, stored as the versioned file `data/us_gdp_deflator_gdpdef.json` (source URL, download date, sha256 of the downloaded CSV, method; 2025 = 705.17; a partial year is flagged).
+If the statement-date FX, the deflator year or a verified unit scale is missing, Ohlson is `available=false` with the reason; it is never filled with a default.
+
+**Unit convention vs Ohlson (1980).** Ohlson defines SIZE as log(total assets / GNP price-level index), index base 100 in 1968. The currency unit of total assets is **not stated in the sources reachable from this environment** (the primary article could not be read); the working convention here is *USD thousands*, because that is the only scale that gives magnitudes plausible for his 1970s industrial sample (millions or units would imply firms of $10^10 or $10^4). Changing it shifts every O-score by 0.407 x ln(1000) = 2.81, so it is isolated in one constant (`OHLSON_ASSET_UNIT_USD`) and listed as an open verification item: please confirm against the paper.
+
+**Statement unit scale** (`risk_inputs.statement_scale`): `VERIFIED` when the provider's adapter or format guarantees full currency units (SEC companyfacts, ESEF xBRL-JSON and all `official-oam-*` filings, the curated German reviewed reports file, CVM/DFM/ADX/HKEX adapters that multiply by the statement scale, EDINET); `INFERRED` when the provider is not verified but total assets / market cap (same currency) lies in [0.003, 300]; `SUSPECT` outside it; `UNKNOWN` without a market cap. Only VERIFIED/INFERRED allow Ohlson; flags are returned. Altman, Zmijewski and interest coverage are ratios and do not depend on scale (assuming one statement is in one scale). Not yet verified: Boerse Frankfurt "historical key data" (inferred only), other vendors not in the sample.
+
+**Config.** All thresholds and rules live in `data/risk_agent_config.json` (override file: env `RISK_AGENT_CONFIG`; invalid or missing values raise instead of falling back). Accepted values: Ohlson 0.50 severe / 0.25 elevated, volatility and drawdown 50%, Beneish -1.78, interest coverage <1.5 elevated / <1.0 severe, Altman 2.6/1.1, Zmijewski 0.5/0.35.
+
+**Interest coverage** = EBIT / interest expense. Supporting signal: counts toward the "elevated" tally, a severe value (<1.0) alone gives HIGH, never CRITICAL; it does not count for data sufficiency (still 2 of Altman/Ohlson/Zmijewski needed).

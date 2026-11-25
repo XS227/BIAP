@@ -639,15 +639,11 @@ def global_risk(req: InstrumentRequest):
     if not risk_agent.enabled():
         raise HTTPException(status_code=404, detail="risk agent disabled")
     try:
-        from global_markets.service import _evaluate, resolve_fx_rates
+        from global_markets.service import _evaluate
+        from global_markets import risk_inputs
         enriched = _evaluate(_seed(req), build_registry())[0]
-        currency = str(enriched.reporting_currency or enriched.currency or "").upper()
-        fx_to_usd, fx_note = (1.0, None) if currency == "USD" else (None, "reporting currency unknown")
-        if currency and currency != "USD":
-            rates, errors, _ = resolve_fx_rates([currency], "USD")
-            fx_to_usd, fx_note = rates.get(currency), errors.get(currency)
-        result = risk_agent.assess(enriched, fx_to_usd=fx_to_usd)
-        result["fx"] = {"reportingCurrency": currency or None, "toUsd": fx_to_usd, "note": fx_note}
+        conf = risk_inputs.load_config()
+        result = risk_agent.assess(enriched, fx=risk_inputs.statement_fx(enriched), scale=risk_inputs.statement_scale(enriched, conf), config=conf)
         return {"country": enriched.country, "exchange": enriched.exchange, "ticker": enriched.ticker, "name": enriched.name, **result}
     except HTTPException:
         raise
