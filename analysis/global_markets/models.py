@@ -103,6 +103,10 @@ class GlobalCompany:
     free_cash_flow: Optional[float] = None
     total_debt: Optional[float] = None
     interest_expense: Optional[float] = None
+    # IFRS 16 lease items (additive; ESEF filers only, None when not tagged)
+    lease_liabilities: Optional[float] = None
+    lease_interest_expense: Optional[float] = None
+    interest_expense_basis: Optional[str] = None  # which tag interest_expense came from: InterestExpense | FinanceCosts | net_finance_cost
 
     # Filing/evidence controls.
     audit_opinion: Optional[str] = None

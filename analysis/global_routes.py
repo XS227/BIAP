@@ -13,7 +13,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from global_markets import decision_logic, decision_overlay
+from global_markets import decision_logic, decision_overlay, risk_agent
 from global_markets.broker_catalog import broker_readiness
 from global_markets.country_packs import country_catalog, get_exchange
 from global_markets.credit_scoring import score_individual_credit
@@ -414,6 +414,7 @@ def global_status():
         "universeCacheHours": float(os.environ.get("BIAP_GLOBAL_UNIVERSE_CACHE_HOURS", "12")),
         "universeMaxRows": int(os.environ.get("BIAP_GLOBAL_UNIVERSE_MAX_ROWS", "20000")),
         "countries": len(country_catalog()),
+        "riskAgentEnabled": risk_agent.enabled(),
         "notes": "No live global broker is connected. Public EOD market fallback is lower trust than a licensed feed; missing/stale evidence is never fabricated and can force NO_RECOMMENDATION.",
     }
 
@@ -626,6 +627,24 @@ def global_analyze(req: InstrumentRequest):
             result["blockingGate"] = (decision.get("blockingGate") if decision is not None
                                       else decision_logic.conservative_blocking_gate(result))
         return result
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
+
+
+@router.post("/risk")
+def global_risk(req: InstrumentRequest):
+    """Risk Agent (advisory sidecar, flag ``RISK_AGENT_ENABLED``, default off -> 404). Read-only: no ledger or decision is changed."""
+    if not risk_agent.enabled():
+        raise HTTPException(status_code=404, detail="risk agent disabled")
+    try:
+        from global_markets.service import _evaluate
+        from global_markets import risk_inputs
+        enriched = _evaluate(_seed(req), build_registry())[0]
+        conf = risk_inputs.load_config()
+        result = risk_agent.assess(enriched, fx=risk_inputs.statement_fx(enriched), scale=risk_inputs.statement_scale(enriched, conf), config=conf)
+        return {"country": enriched.country, "exchange": enriched.exchange, "ticker": enriched.ticker, "name": enriched.name, **result}
     except HTTPException:
         raise
     except Exception as exc:

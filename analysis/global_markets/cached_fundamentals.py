@@ -38,7 +38,7 @@ _FUNDAMENTAL_FIELDS = (
     "net_margin_prev_pct", "total_assets", "total_liabilities",
     "total_equity", "retained_earnings", "current_assets", "current_liabilities",
     "cash_and_equivalents", "operating_cash_flow", "free_cash_flow",
-    "total_debt", "interest_expense", "audit_opinion",
+    "total_debt", "interest_expense", "lease_liabilities", "lease_interest_expense", "interest_expense_basis", "audit_opinion",
     "filing_period_end", "filing_observed_at", "report_scope",
     "restatement_flag", "material_event_flags",
 )
