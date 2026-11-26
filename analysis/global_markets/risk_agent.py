@@ -315,6 +315,26 @@ def _hard_reasons(company: GlobalCompany) -> list:
     return out
 
 
+def statement_defects(company: GlobalCompany) -> list:
+    """Impossible balance-sheet values (extraction/unit errors). Such a statement must not produce a level.
+
+    total assets <= 0; negative liabilities; equity above total assets (that would need negative liabilities); liabilities above 50x assets.
+    Negative equity with positive assets is legitimate (buy-backs, accumulated losses) and is not a defect.
+    """
+    ta, tl, te = _num(company.total_assets), _num(company.total_liabilities), _num(company.total_equity)
+    out = []
+    if ta is not None and ta <= 0:
+        out.append("total assets <= 0")
+    elif ta is not None:
+        if tl is not None and tl < 0:
+            out.append("negative liabilities")
+        if te is not None and te > ta * 1.01:
+            out.append("equity above total assets")
+        if tl is not None and tl > ta * 50:
+            out.append("liabilities above 50x assets")
+    return out
+
+
 def assess(company: GlobalCompany, *, history: Optional[Mapping] = None, fx: Optional[Mapping] = None,
            scale: Optional[Mapping] = None, config: Optional[Mapping] = None) -> dict:
     """Risk level for one enriched company. Pure function: no network, no writes (``fx``/``scale`` are resolved by the caller)."""
@@ -343,10 +363,13 @@ def assess(company: GlobalCompany, *, history: Optional[Mapping] = None, fx: Opt
     elevated = [s for s in signals if s["available"] and s["severity"] >= 1]
     icr_severe = icr["available"] and icr["severity"] == 2
 
+    defects = [] if financial else statement_defects(company)
     reasons = [f"{h} (hard reason)" for h in hard]
     reasons += [s["reason"] for s in signals if s["available"] and s["severity"] >= 1]
     level: Optional[str]
-    if hard or len(severe) >= 2:
+    if defects:
+        level = None                                  # impossible statement values (data defect): no level rather than a wrong one
+    elif hard or len(severe) >= 2:
         level = "CRITICAL"
     elif severe or icr_severe:
         level = "HIGH"
@@ -360,7 +383,10 @@ def assess(company: GlobalCompany, *, history: Optional[Mapping] = None, fx: Opt
         level = "LOW"
     if level is None:
         status = "NOT_APPLICABLE" if financial else "INSUFFICIENT_DATA"
-        reasons.append(na if financial else f"fewer than {min_models} solvency models (Altman, Ohlson, Zmijewski) have their inputs; no level is given")
+        if defects:
+            reasons = [f"statement values are impossible ({'; '.join(defects)}), so the stored statements are not used and no level is given"]
+        else:
+            reasons.append(na if financial else f"fewer than {min_models} solvency models (Altman, Ohlson, Zmijewski) have their inputs; no level is given")
     else:
         status = "OK" if financial or len(solvency) >= min_models else "PARTIAL"
         if level == "LOW":
