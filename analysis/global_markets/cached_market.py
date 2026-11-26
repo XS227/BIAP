@@ -21,6 +21,7 @@ import os
 from pathlib import Path
 from typing import Optional
 
+from .request_mode import NOT_YET_AVAILABLE, is_cache_only
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, MarketDataProvider
 from .source_cache import write_bulk_text
@@ -57,6 +58,7 @@ class PersistentMarketProvider(MarketDataProvider):
     ``upstream=None`` creates a read-only cache provider. That mode is useful
     during a provider outage or while credentials are being rotated.
     """
+    cache_only_safe = True      # serves the stored copy without calling upstream when request_mode.cache_only() is active
 
     provider_id = "persistent-market-cache"
 
@@ -269,6 +271,10 @@ class PersistentMarketProvider(MarketDataProvider):
         cached = self._read(company)
         if cached is not None and self._is_fresh(cached):
             return self._decode(company, cached, fallback=False)
+        if is_cache_only():
+            if cached is not None:
+                return self._decode(company, cached, fallback=True)
+            raise GlobalProviderError(NOT_YET_AVAILABLE)
         if self.upstream is None:
             if cached is not None:
                 return self._decode(company, cached, fallback=True)

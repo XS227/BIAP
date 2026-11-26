@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 from typing import Iterable, Optional
 
+from .request_mode import is_cache_only
 from .models import GlobalCompany, SourceEvidence
 from .providers import GlobalProviderError, InstrumentUniverseProvider
 from .country_packs import get_exchange
@@ -336,7 +337,7 @@ class PersistentUniverseProvider(InstrumentUniverseProvider):
         """
         search = getattr(self.upstream, "search_instruments", None)
         rows = []
-        if callable(search):
+        if callable(search) and not is_cache_only():      # agent routes never wait on a live lookup
             try:
                 rows = list(search(country=country, exchange=exchange, query=query, limit=limit))
             except GlobalProviderError:
