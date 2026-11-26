@@ -93,3 +93,7 @@ If the statement-date FX, the deflator year or a verified unit scale is missing,
 ## 11. Revision 4 (owner decision 2026-11-25)
 - Ohlson thresholds changed to **elevated 0.35 / severe 0.50** as *provisional* config values (calibrated to our sample: they flag about 10% and 6% of stocks; Ohlson's own 0.038 would flag 67%). The "provisional" label stays until the owner confirms the asset unit from Ohlson (1980). Config key `thresholds.ohlson_elevated` / `ohlson_severe`.
 - The ESEF lease-field extraction is itself behind `RISK_AGENT_ENABLED` (`esef._risk_agent_on`): with the flag off the normalized output and the stored fundamentals cache are byte-identical to before this change, so merging has no production effect.
+
+
+## Update 2026-11-25 (late): Ohlson (1980) confirmed
+Asset unit = US dollars (not thousands) at the statement-date FX rate; index = US GDP deflator (1968 = 100) of the year PRIOR to the balance-sheet year; coefficients are Model 1 of Table 4 (pinned in a unit test); cut-offs elevated 0.038 and severe 0.50 (p.126, config values). The provisional label is removed. The model was estimated on 1970-76 US industrial firms: for non-US firms and today's data it is indicative only. Old vs new distribution and changed cases: `risk_agent_flagged_cases_20261125.md`, Revision 4.
