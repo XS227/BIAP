@@ -13,14 +13,34 @@ import argparse
 import json
 import sys
 import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone
+
+
+EXCLUDED_COUNTRIES = frozenset({"IR"})   # Iranian listings stay in the catalogue but the Global agents skip them (owner decision 2026-11-26)
 
 
 def call(base: str, path: str, body: dict | None = None, timeout: int = 180):
     req = urllib.request.Request(base + path, data=None if body is None else json.dumps(body).encode(), headers={"content-type": "application/json"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.load(r)
+
+
+def call_with_retry(base: str, path: str, body: dict | None = None, *, timeout: int = 180, attempts: int = 5, backoff: float = 2.0,
+                    sleep=time.sleep, _call=None):
+    """``call`` with exponential backoff (backoff, 2x, 4x ... seconds) on timeouts and 5xx; 4xx errors are not retried."""
+    fn = _call or call
+    for attempt in range(1, attempts + 1):
+        try:
+            return fn(base, path, body, timeout=timeout)
+        except urllib.error.HTTPError as exc:
+            if exc.code < 500 or attempt == attempts:
+                raise
+        except (TimeoutError, urllib.error.URLError, ConnectionError, OSError):
+            if attempt == attempts:
+                raise
+        sleep(backoff * 2 ** (attempt - 1))
 
 
 def in_quiet_window(now: datetime) -> bool:
@@ -47,11 +67,16 @@ def main() -> int:
         pass
     out = open(a.out, "a")
     n = 0
-    for c in call(a.base, "/global/countries")["countries"]:
+    skipped = {}
+    for c in call_with_retry(a.base, "/global/countries")["countries"]:
         for ex in c["exchanges"]:
+            if c["country"] in EXCLUDED_COUNTRIES:
+                total = call_with_retry(a.base, f"/global/instruments/{c['country']}/{ex['code']}?limit=1").get("totalMatched", 0)
+                skipped[f"{c['country']}:{ex['code']}"] = total
+                continue
             offset = 0
             while True:
-                page = call(a.base, f"/global/instruments/{c['country']}/{ex['code']}?limit=500&offset={offset}")
+                page = call_with_retry(a.base, f"/global/instruments/{c['country']}/{ex['code']}?limit=500&offset={offset}")
                 for ins in page["instruments"]:
                     key = (c["country"], ex["code"], ins["ticker"])
                     if key in done:
@@ -72,7 +97,7 @@ def main() -> int:
                 if not page.get("hasMore"):
                     break
                 offset = page.get("nextOffset") or offset + 500
-    print(f"done: {n} new rows")
+    print(f"done: {n} new rows; skipped (excluded countries, kept in the catalogue): {sum(skipped.values())} {json.dumps(skipped)}")
     return 0
 
 

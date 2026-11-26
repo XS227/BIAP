@@ -13,7 +13,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from global_markets import decision_accuracy, decision_logic, decision_overlay, performance_agent, risk_agent
+from global_markets import agent_scope, decision_accuracy, decision_logic, decision_overlay, performance_agent, risk_agent
 from global_markets.broker_catalog import broker_readiness
 from global_markets.country_packs import country_catalog, get_exchange
 from global_markets.credit_scoring import score_individual_credit
@@ -684,6 +684,8 @@ def global_performance(req: InstrumentRequest):
     """Performance Agent (advisory sidecar, flag ``PERFORMANCE_AGENT_ENABLED``, default off -> 404). Read-only."""
     if not performance_agent.enabled():
         raise HTTPException(status_code=404, detail="performance agent disabled")
+    if agent_scope.is_excluded(req.country):
+        raise HTTPException(status_code=404, detail="country excluded from the Global agents")
     try:
         from global_markets.service import _evaluate
         enriched = _evaluate(_seed(req), build_registry())[0]
@@ -700,6 +702,8 @@ def global_risk(req: InstrumentRequest):
     """Risk Agent (advisory sidecar, flag ``RISK_AGENT_ENABLED``, default off -> 404). Read-only: no ledger or decision is changed."""
     if not risk_agent.enabled():
         raise HTTPException(status_code=404, detail="risk agent disabled")
+    if agent_scope.is_excluded(req.country):
+        raise HTTPException(status_code=404, detail="country excluded from the Global agents")
     try:
         from global_markets.service import _evaluate
         from global_markets import risk_inputs
