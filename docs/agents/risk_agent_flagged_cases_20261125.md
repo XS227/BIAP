@@ -305,3 +305,45 @@ Share of the sample at or above a cut-off: 0.038 (Ohlson's own) 67% (42 of 63); 
 
 ## Revision 3 (2026-11-25, owner decision): Ohlson thresholds 0.35 / 0.50 (provisional)
 Config now holds Ohlson elevated 0.35 and severe 0.50 (the "provisional" label stays until the asset unit is confirmed from Ohlson 1980). Staging re-run on the same 96 stocks: LOW 39 (+1), MEDIUM 23 (-1), HIGH 3, CRITICAL 4, no level 27. The only stock whose level changed is GB:LSE ECEL (MEDIUM to LOW; O-score probability 0.32, now below 0.35). None of the 7 flagged CRITICAL/HIGH cases changed.
+
+
+# Revision 4 (2026-11-25, owner decision): Ohlson (1980) confirmed, unit, deflator year and cut-offs
+
+## What changed (confirmed from Ohlson 1980, JAR 18(1), p.118 and Table 4)
+1. **Asset unit: total assets in US dollars** (units, not thousands), converted at the statement-date FX rate; `SIZE = ln(total assets in USD / index)`. Config `ohlson.asset_unit_usd = 1.0`.
+2. **Index: US GDP deflator rebased 1968 = 100, for the year PRIOR to the balance-sheet year** (was: the statement year). The "provisional" label, field and flag are removed.
+3. **Coefficients verified against Table 4, Model 1** and pinned in a unit test: CONST -1.32, SIZE -0.407, TLTA 6.03, WCTA -1.43, CLCA 0.0757, NITA -2.37, FUTL -1.83, INTWO 0.285, OENEG -1.72, CHIN -0.521; `P = 1/(1+exp(-y))`. (Code: `OHLSON_MODEL_1`, `ohlson_y`; tests `test_ohlson_1980_model_1_coefficients_exactly` and friends. FUTL still uses operating cash flow as the funds-from-operations proxy.)
+4. **Cut-offs (Ohlson 1980 p.126; config values):** `ohlson_elevated = 0.038` (the cut-off that minimises total classification errors), `ohlson_severe = 0.50` (Ohlson notes 0.5 has no basis of its own). Both cited in the code comment.
+5. **Caveat shown with every O-score** (`caveat` field): estimated on 1970-76 US industrial firms; for non-US firms and today's data it is indicative only. The same applies to the other models' thresholds being US-derived.
+
+## Old vs new on the 96-stock staging sample (same stocks, same data copy, flag on, 127.0.0.1)
+Old = Revision 3 (unit USD thousands, statement-year deflator, thresholds 0.35 / 0.50, provisional). New = this revision.
+
+| Risk level | Old | New |
+|---|---|---|
+| LOW | 39 | 39 |
+| MEDIUM (incl. 1 PARTIAL) | 23 | 23 |
+| HIGH | 3 | 5 |
+| CRITICAL | 4 | 2 |
+| No level (insufficient data 19, not applicable 8) | 27 | 27 |
+
+Ohlson signal alone (63 stocks with an O-score): old low 57 / elevated 2 / high 4; new low 57 / elevated 6 / high 0. Median P(bankruptcy) fell from 0.075 to 0.005, because SIZE is about ln(1000) = 6.9 larger in dollars (a -2.8 shift in y). A cut-off of 0.038 therefore flags a similar number of stocks to the old 0.35 did, and no stock reaches the 0.50 severe line on its own.
+
+## Which flagged cases changed
+| Case | Old | New | Ohlson P old -> new | Why |
+|---|---|---|---|---|
+| TESMEC (TES, IT) | CRITICAL | **HIGH** | 0.518 -> 0.060 (elevated) | Ohlson no longer "severe"; Zmijewski 0.63 and Altman grey zone still flag it |
+| PROSEGUR CASH (CASH, ES) | CRITICAL | **HIGH** | 0.667 -> 0.107 (elevated) | Ohlson no longer "severe"; Zmijewski 0.78 still severe |
+| Wetteri (WETTERI, FI) | CRITICAL | CRITICAL | 0.635 -> 0.094 (elevated) | Altman distress zone + Zmijewski severe carry it |
+| GAM (ES) | CRITICAL | CRITICAL | 0.591 -> 0.079 (elevated) | same: Altman distress + Zmijewski |
+| ENDUR (NO) | HIGH | HIGH | 0.264 -> 0.021 (low) | Altman distress zone, other flags |
+| SENTIA (NO) | HIGH | HIGH | 0.459 -> 0.048 (elevated) | unchanged level |
+| OCI (NL) | HIGH | HIGH | 0.156 -> 0.011 (low) | interest coverage severe + Altman |
+
+No other stock in the sample changed level (94 of 96 unchanged).
+
+## Whole universe
+**Not run yet.** The owner's rule is that nothing heavy runs between 22:45 and 02:00 UTC, so the whole-universe re-run is held until after 02:00 UTC. The runner is ready: `tools/risk_universe_run.py` (staging, 127.0.0.1 only, resumable, refuses to run inside the quiet window). Results will be added here as Revision 5.
+
+## Reading note
+The Ohlson model was estimated on 1970-76 US industrial firms. For non-US firms and today's data the O-score is indicative only, and 0.038 is a classification-error cut-off from that sample, not a calibrated probability for today's market.

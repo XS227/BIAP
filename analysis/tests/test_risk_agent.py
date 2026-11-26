@@ -97,7 +97,7 @@ def test_ohlson_matches_independent_formula():
     c = company()
     o = ra.ohlson_signal(c, None, FX, SCALE)
     ta = 1000 * M
-    size = math.log(ta * 1.1 / 1000 / ri.deflator_index(2025)["index"])
+    size = math.log(ta * 1.1 / ri.deflator_index(2024)["index"])      # dollars, deflator of the year PRIOR to 2025
     ni_prev = 8.0 * 900 * M / 100
     chin = (100 * M - ni_prev) / (100 * M + ni_prev)
     score = (-1.32 - 0.407 * size + 6.03 * 0.4 - 1.43 * 0.3 + 0.0757 * 0.4 - 1.72 * 0 - 2.37 * 0.1 - 1.83 * (120 / 400) + 0.285 * 0 - 0.521 * chin)
@@ -109,7 +109,7 @@ def test_ohlson_matches_independent_formula():
 def test_ohlson_intwo_and_oeneg_flags():
     c = company(net_income=-10 * M, total_liabilities=1200 * M, total_equity=-200 * M, net_margin_prev_pct=-2.0)
     o = ra.ohlson_signal(c, None, FX1, SCALE)
-    assert o["inputs"]["intwo"] == 1.0 and o["inputs"]["oeneg"] == 1.0 and o["severity"] == 2
+    assert o["inputs"]["intwo"] == 1.0 and o["inputs"]["oeneg"] == 1.0 and o["severity"] >= 1     # elevated at 0.038 (SIZE is in dollars now)
 
 
 def test_beneish_neutral_and_flagged_and_missing_history():
@@ -208,7 +208,7 @@ def test_ohlson_needs_statement_date_fx_and_known_scale_and_deflator():
     assert not o["available"] and "statement_unit_scale" in o["missing"] and "statement unit scale unknown" in o["flags"]
     assert not ra.ohlson_signal(company(filing_period_end="1900-12-31"), None, FX, SCALE)["available"]
     ok = ra.ohlson_signal(c, None, FX, SCALE)
-    assert ok["inputs"]["fx_rate_date"] == "2025-12-31" and ok["inputs"]["gdp_deflator_1968_100"] == ri.deflator_index(2025)["index"]
+    assert ok["inputs"]["fx_rate_date"] == "2025-12-31" and ok["inputs"]["gdp_deflator_1968_100"] == ri.deflator_index(2024)["index"] and ok["inputs"]["deflator_year"] == 2024
 
 
 def test_statement_fx_uses_statement_date_never_live():
@@ -248,7 +248,7 @@ def test_thresholds_come_from_config(tmp_path, monkeypatch):
     monkeypatch.setenv(ri.CONFIG_ENV, str(f))
     assert ra.volatility_signal(company(volatility_annualized_pct=80.0, max_drawdown_pct=-10.0))["severity"] == 0
     assert ra.assess(company(volatility_annualized_pct=80.0, max_drawdown_pct=-10.0), **KW)["config"]["thresholds"]["volatility_elevated_pct"] == 95.0
-    cfg["thresholds"]["ohlson_severe"] = 0.1
+    cfg["thresholds"]["ohlson_severe"] = 0.01      # below ohlson_elevated (0.038): rejected
     f.write_text(json.dumps(cfg))
     with pytest.raises(ValueError):
         ri.load_config()
@@ -285,19 +285,45 @@ def test_financial_label_and_advisory_only():
 
 
 # --- scope change 2026-11-25: Ohlson provisional + unit config, IFRS 16 ------------------------------------------------------------
-def test_ohlson_is_provisional_and_unit_is_config(tmp_path, monkeypatch):
-    import json
+def test_ohlson_1980_model_1_coefficients_exactly():
+    """Ohlson (1980) JAR 18(1), Table 4, Model 1."""
+    assert ra.OHLSON_MODEL_1 == {"const": -1.32, "size": -0.407, "tlta": 6.03, "wcta": -1.43, "clca": 0.0757, "nita": -2.37, "futl": -1.83,
+                                 "intwo": 0.285, "oeneg": -1.72, "chin": -0.521}
+    # every variable = 1: y is the sum of the coefficients; P = 1 / (1 + exp(-y))
+    y = ra.ohlson_y(1, 1, 1, 1, 1, 1, 1, 1, 1)
+    assert y == pytest.approx(-1.32 - 0.407 + 6.03 - 1.43 + 0.0757 - 2.37 - 1.83 + 0.285 - 1.72 - 0.521, abs=1e-12) == pytest.approx(-3.2073)
+    assert 1 / (1 + math.exp(-y)) == pytest.approx(0.03893, abs=1e-4)
+    # all variables zero: only the constant
+    assert ra.ohlson_y(0, 0, 0, 0, 0, 0, 0, 0, 0) == -1.32
+    # a hand-computed case with distinct values
+    y2 = ra.ohlson_y(size=5.0, tlta=0.5, wcta=0.2, clca=0.6, nita=0.05, futl=0.1, intwo=1, oeneg=0, chin=-0.3)
+    assert y2 == pytest.approx(-1.32 - 0.407 * 5 + 6.03 * 0.5 - 1.43 * 0.2 + 0.0757 * 0.6 - 2.37 * 0.05 - 1.83 * 0.1 + 0.285 - 0 + 0.521 * 0.3, abs=1e-12)
+
+
+def test_ohlson_unit_is_dollars_prior_year_deflator_and_no_provisional_label():
     o = ra.ohlson_signal(company(), None, FX, SCALE)
-    assert o["provisional"] is True and "provisional" in o["reason"] and o["assetUnitUsd"] == 1000.0
-    cfg = json.loads(ri.CONFIG_PATH.read_text())
-    cfg["ohlson"] = {"asset_unit_usd": 1.0, "provisional": False}
-    f = tmp_path / "c.json"
-    f.write_text(json.dumps(cfg))
-    monkeypatch.setenv(ri.CONFIG_ENV, str(f))
-    o2 = ra.ohlson_signal(company(), None, FX, SCALE)
-    assert o2["provisional"] is False and "provisional" not in o2["reason"]
-    assert o2["inputs"]["o_score"] == pytest.approx(o["inputs"]["o_score"] - 0.407 * math.log(1000.0) * -1 * -1, abs=0.5) or True
-    assert o2["inputs"]["size"] - o["inputs"]["size"] == pytest.approx(math.log(1000.0), abs=1e-9)
+    ta_usd = 1000 * M * 1.1
+    assert o["inputs"]["total_assets_usd"] == pytest.approx(ta_usd) and o["assetUnitUsd"] == 1.0
+    assert o["inputs"]["size"] == pytest.approx(math.log(ta_usd / ri.deflator_index(2024)["index"]), abs=1e-12)
+    assert "provisional" not in o and "provisional" not in o["reason"].lower() and not any("provisional" in f for f in o["flags"])
+    assert "1970-76 US industrial firms" in o["caveat"] and "indicative only" in o["caveat"]
+    # the statement year's own deflator is NOT used; a statement whose prior year has no deflator is not scored
+    assert not ra.ohlson_signal(company(filing_period_end="1960-12-31"), None, FX, SCALE)["available"]
+
+
+def test_ohlson_thresholds_are_config_values_0_038_and_0_50():
+    th = ri.load_config()["thresholds"]
+    assert th["ohlson_elevated"] == 0.038 and th["ohlson_severe"] == 0.50
+    assert "provisional" not in ri.load_config()["ohlson"]
+
+
+def test_ohlson_severity_follows_config_thresholds():
+    c = company()
+    p = ra.ohlson_signal(c, None, FX, SCALE)["value"]
+    lo = ra.ohlson_signal(c, None, FX, SCALE, {"ohlson_elevated": p / 2, "ohlson_severe": 0.5})
+    assert lo["severity"] == 1 and lo["band"] == "elevated"
+    hi = ra.ohlson_signal(c, None, FX, SCALE, {"ohlson_elevated": p / 4, "ohlson_severe": p / 2})
+    assert hi["severity"] == 2
 
 
 def test_ifrs16_lease_liabilities_in_debt_and_lease_interest_when_interest_expense_tag():
