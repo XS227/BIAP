@@ -9,6 +9,7 @@ import { getGlobalMarketSelection } from '@/lib/global-market-selection';
 import { conservativeLine, DISCLAIMER, gateText, engineScoreLines, ENGINE_LABEL, investmentBadge, reasonLine, tierLabel, tierTone } from '@/lib/decision-tier';
 import { isSupportedGlobalEquityInstrument, unsupportedGlobalInstrumentMessage } from '@/lib/global-equity-filter';
 import { reportingCurrencyNote, reportingSuffix } from '@/lib/reporting-currency';
+import { AgentSections } from '@/components/agent-sections';
 import { dataLimitationLines, fundamentalFreshnessLines, governanceReasonLines } from '@/lib/freshness-labels';
 
 function n(value: number | null | undefined, digits = 2) {
@@ -101,10 +102,12 @@ function signalDisplay(signal: GlobalAgentSignal) {
 function AgentCard({ signal, colors }: { signal: GlobalAgentSignal; colors: typeof Colors.light | typeof Colors.dark }) {
   const tone = signalColor(signal, colors.textSecondary);
   const name = signal.agent.charAt(0).toUpperCase() + signal.agent.slice(1);
+  // The advisory Risk Agent section below has its own card; this one is the scoring engine's risk vote.
+  const title = signal.agent === 'risk' ? 'Risk signal (engine score)' : `${name} Agent`;
   const label = signalDisplay(signal);
   const hasData = Number(signal.confidence || 0) > 0.001;
   return <View style={[styles.agentCard, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
-    <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>{name} Agent</Text><Text style={[styles.agentVote, { color: tone }]}>{label}</Text></View>
+    <View style={styles.rowBetween}><Text style={[styles.agentName, { color: colors.text }]}>{title}</Text><Text style={[styles.agentVote, { color: tone }]}>{label}</Text></View>
     <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>{hasData ? `Confidence ${Math.round((signal.confidence || 0) * 100)}% • verified inputs available` : 'No verified inputs available'}</Text>
     <Text style={[styles.agentReason, { color: colors.textSecondary }]}>{signal.reasoning || (hasData ? 'Verified inputs produced a neutral signal.' : 'No verified signal data.')}</Text>
   </View>;
@@ -150,6 +153,7 @@ export default function GlobalStockDetailScreen() {
 
   useEffect(() => { setLoading(true); void load(); }, [load]);
   const company = analysis?.company;
+  const agentInstrument = useMemo<GlobalInstrument | null>(() => analysis ? { country: analysis.country || String(params.country || ''), exchange: analysis.exchange || String(params.exchange || ''), currency: analysis.currency || String(params.currency || ''), ticker: analysis.ticker || String(params.code || ''), name: analysis.name || analysis.ticker || String(params.code || ''), isin: params.isin ? String(params.isin) : null, lei: params.lei ? String(params.lei) : null } : null, [analysis?.country, analysis?.exchange, analysis?.currency, analysis?.ticker, analysis?.name, params.country, params.exchange, params.currency, params.isin, params.lei]);
   const sourcePlan = analysis?.sourcePlan;
   const decision = analysis?.decisionTable;
   const governance = analysis?.governance;
@@ -341,6 +345,8 @@ export default function GlobalStockDetailScreen() {
           {credit?.agent9_crosscheck ? <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Agent 9 cross-check: {credit.agent9_crosscheck.damodaran_icr_rating || 'rating —'}{credit.agent9_crosscheck.zmijewski_p_distress == null ? '' : ` • Zmijewski ${(credit.agent9_crosscheck.zmijewski_p_distress * 100).toFixed(1)}%`}</Text> : null}
           <Text style={[styles.agentConfidence, { color: colors.textSecondary }]}>Report only • never changes the investment call</Text>
         </View>
+
+        {agentInstrument ? <AgentSections instrument={agentInstrument} colors={colors} /> : null}
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Market & risk</Text>
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>{marketRows.map(([label, value]) => <View key={label} style={[styles.dataRow, { borderBottomColor: colors.backgroundSelected }]}><Text style={[styles.dataLabel, { color: colors.textSecondary }]}>{label}</Text><Text style={[styles.dataValue, { color: colors.text }]}>{value}</Text></View>)}</View>

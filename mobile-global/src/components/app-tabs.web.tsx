@@ -34,11 +34,21 @@ export default function AppTabs() {
           <TabTrigger name="more" href="/more" asChild>
             <TabButton>More</TabButton>
           </TabTrigger>
+          {/* Routes reachable by navigation only (no tab button): expo-router/ui renders only routes that have a trigger. */}
+          <TabTrigger name="track-record" href="/track-record" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="stock/[code]" href={'/stock/[code]' as never} asChild>
+            <HiddenTab />
+          </TabTrigger>
         </CustomTabList>
       </TabList>
     </Tabs>
   );
 }
+
+/** A route with no visible tab button. */
+function HiddenTab(_props: Partial<TabTriggerSlotProps>) { return null; }
 
 type TabButtonProps = TabTriggerSlotProps & { accent?: string; children?: React.ReactNode };
 

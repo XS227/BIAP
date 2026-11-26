@@ -650,6 +650,25 @@ def global_accuracy_summary(horizon: int = 1, cohort: str = "v1-20261020", marke
         raise HTTPException(status_code=503, detail=str(exc)[:300]) from exc
 
 
+@router.get("/accuracy/decisions")
+def global_accuracy_decisions(horizon: int = 1, cohort: str = "v1-20261020", market: Optional[str] = None, side: Optional[str] = None,
+                              q: Optional[str] = None, sort: str = "edge_desc", limit: int = 20, offset: int = 0):
+    """Per-stock rows behind ``/accuracy/summary`` (flag ``DECISION_ACCURACY_AGENT_ENABLED``, default off -> 404)."""
+    if not decision_accuracy.enabled():
+        raise HTTPException(status_code=404, detail="decision accuracy agent disabled")
+    cfg = decision_accuracy.load_config()
+    if horizon not in cfg["horizons_months"] or cohort not in cfg["cohorts"] or (side and side.upper() not in ("BUY", "SELL")):
+        raise HTTPException(status_code=422, detail=f"horizon must be one of {cfg['horizons_months']}, cohort one of {cfg['cohorts']}, side BUY or SELL")
+    try:
+        return {"agent": "decision_accuracy", "version": decision_accuracy.VERSION, "advisoryOnly": True,
+                **decision_accuracy.list_decisions(decision_accuracy.load_cohort(cohort), horizon, market=market, side=side, q=q, sort=sort,
+                                                   limit=limit, offset=offset, config=cfg)}
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)[:300]) from exc
+    except OSError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)[:300]) from exc
+
+
 @router.get("/accuracy/stock")
 def global_accuracy_stock(country: str, exchange: str, ticker: str):
     if not decision_accuracy.enabled():
