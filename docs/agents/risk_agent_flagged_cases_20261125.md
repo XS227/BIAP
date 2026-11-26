@@ -343,7 +343,102 @@ Ohlson signal alone (63 stocks with an O-score): old low 57 / elevated 2 / high 
 No other stock in the sample changed level (94 of 96 unchanged).
 
 ## Whole universe
-**Not run yet.** The owner's rule is that nothing heavy runs between 22:45 and 02:00 UTC, so the whole-universe re-run is held until after 02:00 UTC. The runner is ready: `tools/risk_universe_run.py` (staging, 127.0.0.1 only, resumable, refuses to run inside the quiet window). Results will be added here as Revision 5.
+**Run on 2026-11-26: see Revision 5 at the end of this file.** (Earlier note: the owner rule is that nothing heavy runs between 22:45 and 02:00 UTC, so the whole-universe re-run is held until after 02:00 UTC. The runner is ready: `tools/risk_universe_run.py` (staging, 127.0.0.1 only, resumable, refuses to run inside the quiet window). Results will be added here as Revision 5.
 
 ## Reading note
 The Ohlson model was estimated on 1970-76 US industrial firms. For non-US firms and today's data the O-score is indicative only, and 0.038 is a classification-error cut-off from that sample, not a calibrated probability for today's market.
+
+
+## Revision 5 (2026-11-26): whole-universe re-run, old vs new Ohlson (IR excluded)
+
+**What ran.** The Risk Agent on every stored stock of the staging data copy (127.0.0.1 only, offline mode, production untouched), twice: *old* = code before PR #116 (74d870e: Ohlson assets in thousands, elevated 0.35, "provisional") and *new* = main with #116 (assets in USD, prior-year GDP deflator, elevated 0.038, severe 0.50). Both on the same data copy.
+**Iranian listings (IR) are excluded** from all Global agent runs and outputs (owner decision 2026-11-26): 1,961 IR stocks were skipped (TSE 827, IFB 991, IFB_BASE 143). They stay in the catalogue; 52 IR rows the new run had already written were dropped from the results. Agents now return 404 for IR (PR #117).
+**Offline mode (PR #118).** The first attempt let the risk route download filings (ESEF, KAP, ...) and ran at about 10 stocks a minute against external servers; the run was stopped and redone with outbound network blocked, so it reads the stored data only. Stocks with no stored filing get "insufficient data".
+**Consistency check.** The old run's first 11,911 rows were scored while downloads were still allowed. A sample showed the stored data had grown since (8 of 120 differed), so those 11,911 stocks were re-scored with the old code on the final data copy before comparing (613 changed vs the first pass). A 120-stock sample of the new rows re-scored identically (0 differences).
+**Coverage.** 30,693 stocks compared. One stock (JP TSE_JP 5243) returns 503 in both runs because the engine rejects it as "not a supported ordinary operating-company equity" (a non-operating security in the catalogue; the route should answer with a client error, not 503: logged for the QA report). It is counted as Error.
+**Definitions.** "With a level" = LOW/MEDIUM/HIGH/CRITICAL. "No level: insufficient data" = fewer than 2 of the 3 solvency models (Altman, Ohlson, Zmijewski) have their statement inputs, which in practice means no stored filing or an unusable one. "Not applicable" = banks and insurers. Regions: US; Europe = AT BE CH CZ DE DK ES FI FR GB GR HU IE IS IT LU NL NO PL PT SE; Other = everything else (Asia-Pacific, Americas ex-US, Middle East, Africa, Turkey).
+
+Stocks compared (in both runs, IR excluded): 30693; new-run rows: 30693 (IR rows dropped: 52); old-run rows: 30693 (IR rows dropped: 0).
+
+#### All: 30693 stocks, new run: 9142 with a level, 20208 no level (fewer than 2 solvency models have stored statement inputs), 1342 not applicable
+| Level | Old | New | Change |
+|---|---:|---:|---:|
+| LOW | 1389 | 1411 | +22 |
+| MEDIUM | 4035 | 4122 | +87 |
+| HIGH | 1849 | 2079 | +230 |
+| CRITICAL | 1863 | 1530 | -333 |
+| No level: insufficient data | 20214 | 20208 | -6 |
+| Not applicable (financial) | 1342 | 1342 | +0 |
+| Error | 1 | 1 | +0 |
+Stocks whose level changed: 468
+| Old -> New | Stocks |
+|---|---:|
+| CRITICAL -> HIGH | 336 |
+| HIGH -> MEDIUM | 106 |
+| MEDIUM -> LOW | 18 |
+| No level: insufficient data -> LOW | 4 |
+| No level: insufficient data -> CRITICAL | 1 |
+| No level: insufficient data -> HIGH | 1 |
+| HIGH -> CRITICAL | 1 |
+| MEDIUM -> CRITICAL | 1 |
+
+#### US: 4787 stocks, new run: 3832 with a level, 345 no level (fewer than 2 solvency models have stored statement inputs), 610 not applicable
+| Level | Old | New | Change |
+|---|---:|---:|---:|
+| LOW | 612 | 614 | +2 |
+| MEDIUM | 1218 | 1256 | +38 |
+| HIGH | 833 | 976 | +143 |
+| CRITICAL | 1169 | 986 | -183 |
+| No level: insufficient data | 345 | 345 | +0 |
+| Not applicable (financial) | 610 | 610 | +0 |
+Stocks whose level changed: 225
+| Old -> New | Stocks |
+|---|---:|
+| CRITICAL -> HIGH | 183 |
+| HIGH -> MEDIUM | 40 |
+| MEDIUM -> LOW | 2 |
+
+#### Europe: 3423 stocks, new run: 2273 with a level, 785 no level (fewer than 2 solvency models have stored statement inputs), 365 not applicable
+| Level | Old | New | Change |
+|---|---:|---:|---:|
+| LOW | 613 | 630 | +17 |
+| MEDIUM | 757 | 790 | +33 |
+| HIGH | 505 | 576 | +71 |
+| CRITICAL | 392 | 277 | -115 |
+| No level: insufficient data | 791 | 785 | -6 |
+| Not applicable (financial) | 365 | 365 | +0 |
+Stocks whose level changed: 186
+| Old -> New | Stocks |
+|---|---:|
+| CRITICAL -> HIGH | 118 |
+| HIGH -> MEDIUM | 47 |
+| MEDIUM -> LOW | 13 |
+| No level: insufficient data -> LOW | 4 |
+| No level: insufficient data -> CRITICAL | 1 |
+| No level: insufficient data -> HIGH | 1 |
+| HIGH -> CRITICAL | 1 |
+| MEDIUM -> CRITICAL | 1 |
+
+#### Other: 22483 stocks, new run: 3037 with a level, 19078 no level (fewer than 2 solvency models have stored statement inputs), 367 not applicable
+| Level | Old | New | Change |
+|---|---:|---:|---:|
+| LOW | 164 | 167 | +3 |
+| MEDIUM | 2060 | 2076 | +16 |
+| HIGH | 511 | 527 | +16 |
+| CRITICAL | 302 | 267 | -35 |
+| No level: insufficient data | 19078 | 19078 | +0 |
+| Not applicable (financial) | 367 | 367 | +0 |
+| Error | 1 | 1 | +0 |
+Stocks whose level changed: 57
+| Old -> New | Stocks |
+|---|---:|
+| CRITICAL -> HIGH | 35 |
+| HIGH -> MEDIUM | 19 |
+| MEDIUM -> LOW | 3 |
+
+
+**Reading.**
+- The Ohlson change moves levels in one direction almost only: CRITICAL falls from 1,863 to 1,530 (336 CRITICAL -> HIGH, 106 HIGH -> MEDIUM, 18 MEDIUM -> LOW); only 2 stocks go up. 468 of 30,693 change (1.5%).
+- Coverage is the bigger limit: only 9,142 stocks (30%) have a level; 20,208 have no level. Outside the US and Europe, 19,078 of 22,483 (85%) have no usable statements, so a Risk level there is the exception.
+- With the corrected unit the elevated cut-off (0.038) still flags many stocks: in the US 1,962 of 3,832 with a level are HIGH or CRITICAL (51%). That is how a 1970-76 classification cut-off behaves on today's data; it is indicative only. Review the cut-off, or keep the Ohlson signal advisory-weighted, before any flag is switched on.
+- The 446 changed flagged cases (old or new HIGH/CRITICAL, level changed) are listed in `docs/agents/risk_universe_changes_20261126.csv` (all 468 changes, with reasons).
