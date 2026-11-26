@@ -18,6 +18,8 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
+from global_markets.agent_scope import drop_excluded_decisions, is_excluded
+
 FLAG = "DECISION_ACCURACY_AGENT_ENABLED"
 VERSION = 1
 DATA_DIR = Path(__file__).resolve().parent / "data" / "decision_accuracy"
@@ -195,6 +197,7 @@ def _stock_weighted(recs: list, rows: list, cfg: Mapping) -> dict:
 
 def summarize(cohort: Mapping, horizon: int, *, market: Optional[str] = None, config: Optional[Mapping] = None, today: Optional[date] = None) -> dict:
     cfg = config or load_config()
+    cohort = drop_excluded_decisions(cohort)      # Iranian listings are never part of the Global agents' results
     state = _horizon_state(cohort, horizon, today)
     base = {"cohortId": cohort["cohortId"], "decisionDate": cohort["decisionDate"], "decisionLogicVersion": cohort.get("decisionLogicVersion"),
             "horizonMonths": horizon, "horizon": state, "returnBasis": cohort.get("returnBasis")}
@@ -223,6 +226,8 @@ def summarize(cohort: Mapping, horizon: int, *, market: Optional[str] = None, co
 
 def stock_record(cohorts: list, country: str, exchange: str, ticker: str, *, config: Optional[Mapping] = None, today: Optional[date] = None) -> dict:
     cfg = config or load_config()
+    if is_excluded(country):
+        return {"country": country, "exchange": exchange, "ticker": ticker, "n": 0, "decisions": [], "excluded": True}
     items = []
     for c in cohorts:
         for d in c["decisions"]:
@@ -251,6 +256,7 @@ def list_decisions(cohort: Mapping, horizon: int, *, market: Optional[str] = Non
                    sort: str = "edge_desc", limit: int = 20, offset: int = 0, config: Optional[Mapping] = None, today: Optional[date] = None) -> dict:
     """Per-stock rows for the Track record screen (priced holdings only). Same flag and same numbers as ``summarize``; read-only."""
     cfg = config or load_config()
+    cohort = drop_excluded_decisions(cohort)
     state = _horizon_state(cohort, horizon, today)
     base = {"cohortId": cohort["cohortId"], "horizonMonths": horizon, "horizon": state}
     if state["status"] != "MATURED":
