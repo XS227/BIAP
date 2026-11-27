@@ -38,6 +38,33 @@ export default function AppTabs() {
           <TabTrigger name="track-record" href="/track-record" asChild>
             <HiddenTab />
           </TabTrigger>
+          <TabTrigger name="global" href="/global" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="favorites" href="/favorites" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="data-connect" href="/data-connect" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="how-to" href="/how-to" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="register" href="/register" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="modules" href="/modules" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="module" href="/module" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="profile" href="/profile" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="credit-lab" href="/credit-lab" asChild>
+            <HiddenTab />
+          </TabTrigger>
           <TabTrigger name="stock/[code]" href={'/stock/[code]' as never} asChild>
             <HiddenTab />
           </TabTrigger>
