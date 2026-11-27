@@ -798,7 +798,7 @@ export type GlobalAccuracyPooled = { weighting: string; buy: GlobalAccuracySide;
 export type GlobalAccuracySummary = {
   cohortId: string; decisionDate: string; horizonMonths: number; horizon: { status: 'MATURED' | 'PENDING' | string; matures: string | null; note?: string | null };
   returnBasis?: string; markets: Record<string, GlobalAccuracyMarket> | null; pooled: GlobalAccuracyPooled | null; pooledStockWeighted: GlobalAccuracyPooled | null;
-  caveats?: string[]; message?: string;
+  caveats?: string[]; message?: string; sourceLabel?: string | null; dataWarnings?: string[];
 };
 export type GlobalAccuracyHorizon = { status: string; returnPct?: number; benchmarkPct?: number; excessPct?: number; hit?: boolean; exitDate?: string; matures?: string; reason?: string | null };
 export type GlobalAccuracyStock = {

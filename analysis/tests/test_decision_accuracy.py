@@ -160,7 +160,7 @@ def test_v1_later_horizons_are_pending_with_dates():
 
 
 def test_stock_record_for_a_v1_holding():
-    st = da.stock_record(da.load_all(), "US", "NASDAQ", "MU", today=date(2026, 11, 25))
+    st = da.stock_record([da.load_cohort("v1-20261020")], "US", "NASDAQ", "MU", today=date(2026, 11, 25))
     assert st["n"] == 1
     d = st["decisions"][0]
     assert d["side"] == "BUY" and d["decisionLogicVersion"] == "v1" and d["horizons"]["1"]["status"] == "MATURED"
@@ -226,3 +226,38 @@ def test_list_decisions_pending_and_bad_sort_and_route_flag(monkeypatch):
 def test_caveat_states_total_return_basis():
     s = da.summarize(da.load_cohort("v1-20261020"), 1, today=date(2026, 11, 25))
     assert not any("no dividends" in c for c in s["caveats"]) and any("total return" in c for c in s["caveats"])
+
+
+# --- the registered cohort (exit 2026-11-20) ----------------------------------------------------------------------------------
+REG = "v1-20261020-reg20261120"
+
+
+def test_registered_cohort_is_the_configured_one_and_shows_the_registered_figures(monkeypatch):
+    import global_routes
+    assert da.load_config()["cohorts"] == [REG]
+    monkeypatch.setenv(da.FLAG, "1")
+    s = global_routes.global_accuracy_summary(horizon=1)
+    p = s["pooled"]
+    assert s["cohortId"] == REG and "5f60385" in s["sourceLabel"]
+    assert p["buy"]["meanReturnPct"] == pytest.approx(-2.281257, abs=1e-5)
+    assert p["sell"]["meanReturnPct"] == pytest.approx(6.610564, abs=1e-5)
+    assert p["spreadMeanPp"] == pytest.approx(-8.891821, abs=1e-5)
+    assert p["spreadCi95Pp"] == pytest.approx([-49.694089, 12.854544], abs=1e-5)
+    assert (s["pooledStockWeighted"]["buy"]["n"], s["pooledStockWeighted"]["sell"]["n"]) == (427, 487) and len(s["markets"]) == 12
+    assert "GVMH" in s["caveats"][0] and s["dataWarnings"] == s["caveats"][:1]
+    assert da.NEGATIVE_RANKING_WORDING in s["caveats"] and da.POSITIVE_RANKING_WORDING not in s["caveats"]
+    assert global_routes.global_accuracy_decisions(horizon=1, limit=3)["cohortId"] == REG
+    with pytest.raises(HTTPException) as e:
+        global_routes.global_accuracy_summary(horizon=1, cohort="v1-20261020")
+    assert e.value.status_code == 422
+
+
+def test_registered_market_view_does_not_borrow_the_pooled_interval():
+    s = da.summarize(da.load_cohort(REG), 1, market="US:NYSE")
+    assert "ciSource" not in s["pooled"]
+
+
+def test_registered_cohort_matches_the_frozen_decisions():
+    old, new = da.load_cohort("v1-20261020"), da.load_cohort(REG)
+    key = lambda d: (d["market"], d["ticker"], d["side"], d["tier"], d.get("score"), d.get("entryClose"))
+    assert [key(d) for d in old["decisions"]] == [key(d) for d in new["decisions"]]

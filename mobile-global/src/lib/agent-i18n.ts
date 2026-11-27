@@ -69,6 +69,7 @@ export const STR = {
   ci95: { en: '95% interval', fa: 'بازهٔ ۹۵٪' },
   hitRate: { en: 'Hit rate', fa: 'نرخ موفقیت' },
   readingLine: { en: 'Positive BUY-SELL ranking spread over one month; absolute returns were negative in a falling market; longer horizons pending.', fa: 'اختلاف رتبه‌بندی خرید و فروش در یک ماه مثبت بود؛ بازده مطلق در بازار نزولی منفی بود؛ افق‌های بلندتر هنوز نرسیده‌اند.' },
+  readingLineNegative: { en: 'Negative BUY-SELL ranking spread over one month; read the data warning; longer horizons pending.', fa: 'اختلاف رتبه‌بندی خرید و فروش در این یک ماه منفی بود؛ هشدار داده را بخوانید؛ افق‌های بلندتر هنوز نرسیده‌اند.' },
   perMarket: { en: 'Per market', fa: 'به تفکیک بازار' },
   tooSmall: { en: 'too small to interpret', fa: 'برای تفسیر بسیار کوچک است' },
   perStock: { en: 'Per stock', fa: 'به تفکیک سهم' },
