@@ -18,6 +18,8 @@ from global_markets.broker_catalog import broker_readiness
 from global_markets.country_packs import country_catalog, get_exchange
 from global_markets.credit_scoring import score_individual_credit
 from global_markets.models import InvestorProfile
+from global_markets.request_mode import NOT_YET_AVAILABLE, cache_only
+from global_markets.service import UnsupportedInstrument
 from global_markets.runtime import build_registry
 from global_markets.scan_gate import GATE as SCAN_GATE, ScanFailure
 from global_markets.scan_service import scan_global_market, scan_global_top10
@@ -631,6 +633,8 @@ def global_analyze(req: InstrumentRequest):
         return result
     except HTTPException:
         raise
+    except UnsupportedInstrument as exc:      # ETF/ETN/unit/warrant/SPAC: a client error, not a server failure
+        raise HTTPException(status_code=422, detail=str(exc)[:300]) from exc
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
 
@@ -679,6 +683,15 @@ def global_accuracy_stock(country: str, exchange: str, ticker: str):
         raise HTTPException(status_code=503, detail=str(exc)[:300]) from exc
 
 
+def _not_yet_available(diagnostics, result: dict) -> dict:
+    """Flag an agent answer that lacks data only because the stored copy is missing (cache-only request), not because the data cannot exist."""
+    err = " ".join(str(getattr(diagnostics, a, "") or "") for a in ("fundamentals_error", "market_error"))
+    if NOT_YET_AVAILABLE[:30] in err:
+        return {**result, "dataNotYetAvailable": True, "dataNote": NOT_YET_AVAILABLE,
+                "reasons": [*(result.get("reasons") or []), "data not yet available: the filing is fetched by a background job"]}
+    return result
+
+
 @router.post("/performance")
 def global_performance(req: InstrumentRequest):
     """Performance Agent (advisory sidecar, flag ``PERFORMANCE_AGENT_ENABLED``, default off -> 404). Read-only."""
@@ -688,11 +701,16 @@ def global_performance(req: InstrumentRequest):
         raise HTTPException(status_code=404, detail="country excluded from the Global agents")
     try:
         from global_markets.service import _evaluate
-        enriched = _evaluate(_seed(req), build_registry())[0]
+        with cache_only():          # never wait on a live download: stored data, or "data not yet available"
+            evaluated = _evaluate(_seed(req), build_registry())
+        enriched = evaluated[0]
         result = performance_agent.assess(enriched)
-        return {"country": enriched.country, "exchange": enriched.exchange, "ticker": enriched.ticker, "name": enriched.name, **result}
+        return {"country": enriched.country, "exchange": enriched.exchange, "ticker": enriched.ticker, "name": enriched.name,
+                **_not_yet_available(evaluated[1], result)}
     except HTTPException:
         raise
+    except UnsupportedInstrument as exc:      # ETF/ETN/unit/warrant/SPAC: a client error, not a server failure
+        raise HTTPException(status_code=422, detail=str(exc)[:300]) from exc
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
 
@@ -707,12 +725,17 @@ def global_risk(req: InstrumentRequest):
     try:
         from global_markets.service import _evaluate
         from global_markets import risk_inputs
-        enriched = _evaluate(_seed(req), build_registry())[0]
+        with cache_only():          # never wait on a live download: stored data, or "data not yet available"
+            evaluated = _evaluate(_seed(req), build_registry())
+        enriched = evaluated[0]
         conf = risk_inputs.load_config()
         result = risk_agent.assess(enriched, fx=risk_inputs.statement_fx(enriched), scale=risk_inputs.statement_scale(enriched, conf), config=conf)
-        return {"country": enriched.country, "exchange": enriched.exchange, "ticker": enriched.ticker, "name": enriched.name, **result}
+        return {"country": enriched.country, "exchange": enriched.exchange, "ticker": enriched.ticker, "name": enriched.name,
+                **_not_yet_available(evaluated[1], result)}
     except HTTPException:
         raise
+    except UnsupportedInstrument as exc:      # ETF/ETN/unit/warrant/SPAC: a client error, not a server failure
+        raise HTTPException(status_code=422, detail=str(exc)[:300]) from exc
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)[:500]) from exc
 

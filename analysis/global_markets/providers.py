@@ -13,6 +13,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, replace
 from typing import Iterable, Optional
 
+from .request_mode import NOT_YET_AVAILABLE, is_cache_only
 from .models import GlobalCompany, SourceEvidence
 
 
@@ -140,6 +141,8 @@ class ProviderRegistry:
         try:
             market_provider = self.market(company.country, company.exchange)
             market_provider_id = market_provider.provider_id
+            if is_cache_only() and not getattr(market_provider, "cache_only_safe", False):
+                raise GlobalProviderError(NOT_YET_AVAILABLE)      # no stored-copy layer: it would download live
             enriched = market_provider.enrich_market(enriched)
             market_status = "ok"
         except Exception as exc:
@@ -149,6 +152,8 @@ class ProviderRegistry:
         try:
             fundamentals_provider = self.fundamentals(company.country, company.exchange)
             fundamentals_provider_id = fundamentals_provider.provider_id
+            if is_cache_only() and not getattr(fundamentals_provider, "cache_only_safe", False):
+                raise GlobalProviderError(NOT_YET_AVAILABLE)
             enriched = fundamentals_provider.enrich_fundamentals(enriched)
             fundamentals_status = "ok"
         except Exception as exc:

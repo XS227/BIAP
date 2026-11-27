@@ -612,9 +612,13 @@ def _derive_metrics(company: GlobalCompany) -> GlobalCompany:
     )
 
 
+class UnsupportedInstrument(ValueError):
+    """The instrument is not an ordinary operating-company equity (ETF/ETN, unit, warrant, SPAC shell, structured product)."""
+
+
 def _evaluate(company: GlobalCompany, registry: ProviderRegistry):
     if not _supported_operating_equity(company):
-        raise ValueError(
+        raise UnsupportedInstrument(
             f"{company.ticker} is not a supported ordinary operating-company equity; "
             "leveraged/inverse products, units, warrants, SPAC shells and structured securities are excluded"
         )

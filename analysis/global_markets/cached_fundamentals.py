@@ -23,6 +23,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
+from .request_mode import NOT_YET_AVAILABLE, is_cache_only
 from .evidence_contract import fundamental_evidence_contract, is_official_fundamental_source, official_fundamental_sources
 from .models import GlobalCompany, SourceEvidence
 from .providers import FundamentalsProvider, GlobalProviderError, append_source
@@ -174,6 +175,7 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
     regulator. Non-official vendor fallback snapshots are retained for display
     resilience but never suppress a retry of the official upstream.
     """
+    cache_only_safe = True      # serves the stored copy without calling upstream when request_mode.cache_only() is active
 
     provider_id = "persistent-fundamentals-cache"
 
@@ -430,6 +432,10 @@ class PersistentFundamentalsProvider(FundamentalsProvider):
         cached = self._read(company)
         if cached is not None and bool(cached.get("officialEvidence")) and self._is_fresh(cached):
             return self._decode(company, cached, fallback=False)
+        if is_cache_only():      # agent routes never wait on a live download: serve the stored copy (if not obsolete) or say it is not there yet
+            if cached is not None and not self._stale_official_filing(cached):
+                return self._decode(company, cached, fallback=True)
+            raise GlobalProviderError(NOT_YET_AVAILABLE)
         try:
             enriched = self.upstream.enrich_fundamentals(company)
         except Exception as exc:
