@@ -14,6 +14,8 @@ import { LevelChip, Loading, Row, Tag, Unavailable, rtl } from '@/components/age
 
 const HKEY: Record<number, StrKey> = { 1: 'horizon1m', 3: 'horizon3m', 6: 'horizon6m', 12: 'horizon12m' };
 
+const spreadColor = (x: number | null | undefined) => (x != null && x < 0 ? Brand.negative : Brand.positive);
+
 function PooledBlock({ p, title, big, lang, colors }: { p: GlobalAccuracyPooled; title: string; big: boolean; lang: Lang; colors: ThemeColors }) {
   const ci = p.spreadCi95Pp ? `${tr(lang, 'ci95')}: ${num(lang, p.spreadCi95Pp[0], 1)} … ${num(lang, p.spreadCi95Pp[1], 1)}` : '';
   return <View style={[st.card, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
@@ -21,7 +23,7 @@ function PooledBlock({ p, title, big, lang, colors }: { p: GlobalAccuracyPooled;
     <View style={[st.kpis, lang === 'fa' && { flexDirection: 'row-reverse' }]}>
       <View style={st.kpi}><Text style={[big ? st.kpiBig : st.kpiMid, { color: colors.text }]}>{signedPct(lang, p.buy.meanReturnPct)}</Text><Text style={[st.small, { color: colors.textSecondary }]}>{tr(lang, 'buyMean')} · n={num(lang, p.buy.n, 0)}</Text></View>
       <View style={st.kpi}><Text style={[big ? st.kpiBig : st.kpiMid, { color: colors.text }]}>{signedPct(lang, p.sell.meanReturnPct)}</Text><Text style={[st.small, { color: colors.textSecondary }]}>{tr(lang, 'sellMean')} · n={num(lang, p.sell.n, 0)}</Text></View>
-      <View style={st.kpi}><Text style={[big ? st.kpiBig : st.kpiMid, { color: Brand.positive }]}>{pp(lang, p.spreadMeanPp)}</Text><Text style={[st.small, { color: colors.textSecondary }]}>{tr(lang, 'spread')}{ci ? `\n${ci}` : ''}</Text></View>
+      <View style={st.kpi}><Text style={[big ? st.kpiBig : st.kpiMid, { color: spreadColor(p.spreadMeanPp) }]}>{pp(lang, p.spreadMeanPp)}</Text><Text style={[st.small, { color: colors.textSecondary }]}>{tr(lang, 'spread')}{ci ? `\n${ci}` : ''}</Text></View>
     </View>
     <Text style={[st.small, { color: colors.textSecondary }, rtl(lang)]}>{tr(lang, 'hitRate')}: BUY {pct(lang, p.buy.hitRate == null ? null : p.buy.hitRate * 100, 0)} · SELL {pct(lang, p.sell.hitRate == null ? null : p.sell.hitRate * 100, 0)}</Text>
   </View>;
@@ -85,13 +87,14 @@ export default function TrackRecordScreen() {
     {sum === null ? <Loading lang={lang} colors={colors} /> : null}
     {sum?.state === 'unavailable' ? <Unavailable lang={lang} colors={colors} onRetry={() => { setSum(null); void fetchAccuracySummary(horizon).then(setSum); }} /> : null}
     {s && s.horizon.status !== 'MATURED' ? <View testID="pending-card" style={[st.card, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}><LevelChip text={`${tr(lang, 'pending')} · ${tr(lang, 'due')} ${s.horizon.matures}`} tone="muted" /><Text style={[st.body, { color: colors.textSecondary }, rtl(lang)]}>{pendingLine(lang, s.horizon.matures)}</Text></View> : null}
+    {s?.dataWarnings?.map((w) => <View key={w} testID="data-warning" style={[st.card, { backgroundColor: colors.backgroundElement, borderColor: Brand.negative }]}><Text style={[st.body, { color: colors.text, fontWeight: '800' }]}>{w}</Text></View>)}
     {s?.pooled ? <PooledBlock p={s.pooled} title={tr(lang, 'venueEqual')} big lang={lang} colors={colors} /> : null}
     {s?.pooledStockWeighted ? <PooledBlock p={s.pooledStockWeighted} title={tr(lang, 'stockWeighted')} big={false} lang={lang} colors={colors} /> : null}
-    {s?.pooled ? <Text testID="reading-line" style={[st.body, { color: colors.text, marginTop: 10 }, rtl(lang)]}>{tr(lang, 'readingLine')}</Text> : null}
+    {s?.pooled ? <Text testID="reading-line" style={[st.body, { color: colors.text, marginTop: 10 }, rtl(lang)]}>{tr(lang, (s.pooled.spreadMeanPp ?? 0) < 0 ? 'readingLineNegative' : 'readingLine')}</Text> : null}
     {s?.markets ? <View style={{ marginTop: 14 }}>
       <Text style={[st.section, { color: colors.text }, rtl(lang)]}>{tr(lang, 'perMarket')}</Text>
       {sortMarkets(s.markets).map(([m, v]) => <Pressable key={m} onPress={() => setMarket(market === m ? null : m)} style={[st.card, { backgroundColor: market === m ? `${Brand.primary}14` : colors.backgroundElement, borderColor: market === m ? Brand.primary : colors.backgroundSelected, marginTop: 6 }]}>
-        <View style={{ flexDirection: lang === 'fa' ? 'row-reverse' : 'row', gap: 8, alignItems: 'center' }}><Text style={[st.body, { color: colors.text, flex: 1, fontWeight: '800' }, rtl(lang)]}>{m}</Text>{v.tooSmallToInterpret ? <Tag text={tr(lang, 'tooSmall')} /> : null}<Text style={[st.mono, { color: Brand.positive }]}>{pp(lang, v.spreadMeanPp, 1)}</Text></View>
+        <View style={{ flexDirection: lang === 'fa' ? 'row-reverse' : 'row', gap: 8, alignItems: 'center' }}><Text style={[st.body, { color: colors.text, flex: 1, fontWeight: '800' }, rtl(lang)]}>{m}</Text>{v.tooSmallToInterpret ? <Tag text={tr(lang, 'tooSmall')} /> : null}<Text style={[st.mono, { color: spreadColor(v.spreadMeanPp) }]}>{pp(lang, v.spreadMeanPp, 1)}</Text></View>
         <Text style={[st.small, { color: colors.textSecondary }, rtl(lang)]}>BUY n={num(lang, v.buy.n, 0)} {signedPct(lang, v.buy.meanReturnPct, 1)} · SELL n={num(lang, v.sell.n, 0)} {signedPct(lang, v.sell.meanReturnPct, 1)} · {tr(lang, 'hitRate')} {pct(lang, v.buy.hitRate == null ? null : v.buy.hitRate * 100, 0)}/{pct(lang, v.sell.hitRate == null ? null : v.sell.hitRate * 100, 0)} · {tr(lang, 'benchmark')} {v.benchmark.symbol} {signedPct(lang, v.benchmark.returnPct, 1)}</Text>
       </Pressable>)}
     </View> : null}
@@ -112,7 +115,7 @@ export default function TrackRecordScreen() {
     {s?.caveats?.length ? <View style={{ marginTop: 14 }}>
       <Text style={[st.section, { color: colors.text }, rtl(lang)]}>{tr(lang, 'caveats')}</Text>
       {s.caveats.map((c) => <Text key={c} style={[st.small, { color: colors.textSecondary }, rtl(lang)]}>• {c}</Text>)}
-      <Text style={[st.small, { color: colors.textSecondary }, rtl(lang)]}>{tr(lang, 'source')}: GitHub Actions run 44705776623</Text>
+      <Text style={[st.small, { color: colors.textSecondary }, rtl(lang)]}>{tr(lang, 'source')}: {s.sourceLabel || s.cohortId}</Text>
     </View> : null}
   </View>;
 

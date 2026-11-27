@@ -159,6 +159,7 @@ def _pct(x: Optional[float]) -> Optional[float]:
 
 POSITIVE_RANKING_WORDING = ("positive BUY-SELL ranking spread over one month; absolute returns were negative in a falling market; "
                             "longer horizons pending")
+NEGATIVE_RANKING_WORDING = "negative BUY-SELL ranking spread over one month; longer horizons pending"
 
 
 def _venue_equal(recs: list, rows: list, cfg: Mapping) -> dict:
@@ -219,8 +220,16 @@ def summarize(cohort: Mapping, horizon: int, *, market: Optional[str] = None, co
         rows = [(r["market"], r["side"], r["ret"]) for r in recs]
         pooled = _venue_equal(recs, rows, cfg)
         pooled_sw = _stock_weighted(recs, rows, cfg)
+    warnings = list((cohort.get("dataWarnings") or {}).get(str(horizon), []))
+    registered = (cohort.get("registeredPooled") or {}).get(str(horizon))
+    if pooled and registered and not market:                  # all venues: show the interval of the registered run, not a new bootstrap
+        pooled["spreadCi95Pp"] = list(registered["spreadCi95Pp"])
+        pooled["ciSource"] = f"registered run, seed {registered['bootstrapSeed']}, {registered['resamples']} resamples"
+    negative = bool(pooled and pooled["spreadMeanPp"] is not None and pooled["spreadMeanPp"] <= 0)
     return {**base, "markets": markets, "pooled": pooled, "pooledStockWeighted": pooled_sw,
-            "caveats": ["past decisions, not a forecast", POSITIVE_RANKING_WORDING,
+            "sourceLabel": (cohort.get("source") or {}).get("label") or (cohort.get("source") or {}).get("diagnosticsOutputs"),
+            "dataWarnings": warnings,
+            "caveats": [*warnings, "past decisions, not a forecast", NEGATIVE_RANKING_WORDING if negative else POSITIVE_RANKING_WORDING,
                         "markets and venues are not independent observations", "stock returns include cash dividends (total return); benchmarks are price indices, so excess returns slightly understate BUY and SELL alike"]}
 
 
