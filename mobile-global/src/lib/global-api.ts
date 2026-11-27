@@ -768,6 +768,7 @@ export type GlobalRiskSignal = {
 export type GlobalRiskAssessment = {
   agent: 'risk'; level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | null; status: 'OK' | 'PARTIAL' | 'INSUFFICIENT_DATA' | 'NOT_APPLICABLE' | string;
   reasons: string[]; hardReasons?: string[]; signals: GlobalRiskSignal[]; flags?: string[];
+  calibration?: 'preliminary' | 'not_calibrated' | 'unavailable' | string; watch?: string[]; dataNotYetAvailable?: boolean;
   leases?: { applied?: boolean; notes?: string[]; lease_liabilities?: number | null; debt_incl_leases?: number | null };
   unitScale?: { status?: string; basis?: string };
   asOf?: { filingPeriodEnd?: string | null; priceObservedAt?: string | null }; disclaimer?: string;

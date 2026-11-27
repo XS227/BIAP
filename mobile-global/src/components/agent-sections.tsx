@@ -6,7 +6,7 @@ import {
   type AgentResult, type GlobalAccuracyStock, type GlobalInstrument, type GlobalPerformanceAssessment, type GlobalRiskAssessment,
 } from '@/lib/global-api';
 import { tr, statusLabel, type Lang } from '@/lib/agent-i18n';
-import { agentFlags, frac, isMarketWide, num, ohlsonProvisional, percentileText, performanceChip, riskChip, scopeLine, signedPct, toFa, type AgentFlags } from '@/lib/agent-format';
+import { agentFlags, calibrationLabel, frac, isMarketWide, num, ohlsonProvisional, percentileText, performanceChip, riskChip, scopeLine, signedPct, toFa, type AgentFlags } from '@/lib/agent-format';
 import { useAgentLang } from '@/lib/agent-lang';
 import { AgentCard, Bullets, Expandable, LevelChip, Loading, Row, Tag, TONE_COLOR, Unavailable, rtl } from './agent-ui';
 
@@ -40,6 +40,7 @@ export function RiskAgentSection({ instrument, colors, start, onDone }: { instru
     {res.state === 'unavailable' ? <Unavailable lang={lang} colors={colors} onRetry={retry} /> : null}
     {a ? <>
       <Text style={[styleSub(colors), rtl(lang)]}>{statusLabel(lang, a.status)}{ohlsonProvisional(a.signals) ? ` · ${tr(lang, 'provisional')}: Ohlson` : ''}</Text>
+      {calibrationLabel(lang, a.calibration) ? <Text testID="risk-calibration" style={[styleSub(colors), rtl(lang)]}>{calibrationLabel(lang, a.calibration)}</Text> : null}
       <Bullets lines={a.reasons || []} colors={colors} lang={lang} />
       {lang === 'fa' ? <Text style={[styleSub(colors), rtl(lang)]}>{tr(lang, 'reasonsEnglish')}</Text> : null}
       <Expandable lang={lang} colors={colors} testID="risk-data">

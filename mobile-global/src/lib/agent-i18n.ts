@@ -19,6 +19,9 @@ export const STR = {
   vsSector: { en: 'vs sector', fa: 'نسبت به صنعت' },
   vsMarket: { en: 'vs market', fa: 'نسبت به بازار' },
   notEnoughData: { en: 'Not enough data', fa: 'داده کافی نیست' },
+  dataNotYet: { en: 'Data not yet available', fa: 'داده هنوز در دسترس نیست' },
+  calibrationPreliminary: { en: 'Preliminary calibration (US)', fa: 'کالیبراسیون مقدماتی (آمریکا)' },
+  calibrationNone: { en: 'Not calibrated for this market', fa: 'برای این بازار کالیبره نشده است' },
   notApplicable: { en: 'Not applicable: financial institution', fa: 'قابل اعمال نیست: نهاد مالی' },
   provisional: { en: 'Provisional', fa: 'موقت' },
   provisionalOhlson: { en: 'Provisional (asset unit awaiting confirmation)', fa: 'موقت (واحد دارایی هنوز تأیید نشده است)' },
@@ -97,7 +100,7 @@ const PERF_LEVELS: Record<string, { en: string; fa: string }> = {
   STRONG: { en: 'STRONG', fa: 'قوی' }, STABLE: { en: 'STABLE', fa: 'پایدار' }, WEAK: { en: 'WEAK', fa: 'ضعیف' }, DETERIORATING: { en: 'DETERIORATING', fa: 'رو به وخامت' },
 };
 const STATUSES: Record<string, { en: string; fa: string }> = {
-  OK: { en: 'OK', fa: 'کامل' }, PARTIAL: { en: 'PARTIAL', fa: 'ناقص' }, INSUFFICIENT_DATA: { en: 'INSUFFICIENT DATA', fa: 'داده ناکافی' },
+  OK: { en: 'FULL', fa: 'کامل' }, PARTIAL: { en: 'PARTIAL', fa: 'ناقص' }, INSUFFICIENT_DATA: { en: 'INSUFFICIENT DATA', fa: 'داده ناکافی' },
   NOT_APPLICABLE: { en: 'NOT APPLICABLE', fa: 'قابل اعمال نیست' },
 };
 const SCOPES: Record<string, { en: string; fa: string }> = {

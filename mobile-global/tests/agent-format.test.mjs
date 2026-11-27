@@ -79,3 +79,14 @@ test('performance chip: financial institutions are "not applicable", other gaps 
   assert.equal(f.performanceChip('en', null, 'NOT_APPLICABLE').text, 'Not applicable: financial institution');
   assert.equal(f.performanceChip('en', null, 'INSUFFICIENT_DATA').text, 'Not enough data');
 });
+
+test('risk status reads FULL or PARTIAL, missing statements and calibration are stated', () => {
+  assert.equal(i.statusLabel('en', 'OK'), 'FULL');
+  assert.equal(i.statusLabel('en', 'PARTIAL'), 'PARTIAL');
+  assert.equal(f.riskChip('en', { level: null, status: 'INSUFFICIENT_DATA', dataNotYetAvailable: true }).text, 'Data not yet available');
+  assert.equal(f.riskChip('en', { level: null, status: 'NOT_APPLICABLE', dataNotYetAvailable: true }).tone, 'muted');
+  assert.equal(f.calibrationLabel('en', 'preliminary'), 'Preliminary calibration (US)');
+  assert.equal(f.calibrationLabel('en', 'not_calibrated'), 'Not calibrated for this market');
+  assert.equal(f.calibrationLabel('fa', 'unavailable'), '');
+});
+

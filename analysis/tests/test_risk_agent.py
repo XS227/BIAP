@@ -138,37 +138,106 @@ def test_level_low_for_healthy_company():
     assert "beneish" in r["dataSufficiency"]["missing"]            # honest: two-year inputs are not stored
 
 
-def test_level_critical_on_hard_reason_even_with_missing_models():
-    r = ra.assess(company(total_equity=-5 * M, retained_earnings=None))
-    assert r["level"] == "CRITICAL" and "negative total equity (hard reason)" in r["reasons"]
-    r = ra.assess(company(audit_opinion="Material uncertainty related to going concern"), **KW)
-    assert r["level"] == "CRITICAL"
+def _stub(sid, severity, value=1.0):
+    return lambda *a, **k: ra._signal(sid, sid, available=True, severity=severity, value=value, reason=f"{sid} stub")
 
 
-def test_level_high_with_one_severe_and_critical_with_two():
-    one = ra.assess(company(**ALTMAN_ONLY), **KW)
-    sev = [s["id"] for s in one["signals"] if s["severity"] == 2]
-    assert sev == ["altman"] and one["level"] == "HIGH"
-    two = ra.assess(company(**{**ALTMAN_ONLY, "net_income": -100 * M, "total_liabilities": 900 * M, "total_equity": 100 * M}), **KW)
-    assert len([s for s in two["signals"] if s["severity"] == 2]) >= 2 and two["level"] == "CRITICAL"
+def _force(monkeypatch, altman=0, ohlson=0, zmijewski=0, icr=0):
+    monkeypatch.setattr(ra, "altman_signal", _stub("altman", altman))
+    monkeypatch.setattr(ra, "ohlson_signal", _stub("ohlson", ohlson))
+    monkeypatch.setattr(ra, "zmijewski_signal", _stub("zmijewski", zmijewski))
+    monkeypatch.setattr(ra, "interest_coverage_signal", _stub("interest_coverage", icr))
 
 
-def test_medium_from_volatility_alone_and_beneish_cannot_exceed_medium(monkeypatch):
-    assert ra.assess(company(volatility_annualized_pct=90.0), **KW)["level"] == "MEDIUM"
+# --- D2 (owner-approved 2026-11-27) ---------------------------------------------------------------------------------------------
+def test_d2_going_concern_is_critical_even_with_missing_models():
+    r = ra.assess(company(audit_opinion="Material uncertainty related to going concern", retained_earnings=None), **KW)
+    assert r["level"] == "CRITICAL" and "going-concern warning (hard reason)" in r["reasons"]
+
+
+def test_d2_negative_equity_alone_is_one_elevated_sign_not_critical(monkeypatch):
+    _force(monkeypatch)
+    r = ra.assess(company(total_equity=-5 * M), **KW)
+    assert r["level"] == "LOW" and r["watch"] == ["negative total equity"]
+    assert "negative total equity (hard reason)" in r["reasons"]
+
+
+def test_d2_critical_needs_all_four_severe_and_negative_equity(monkeypatch):
+    _force(monkeypatch, 2, 2, 2, 2)
+    assert ra.assess(company(total_equity=-5 * M), **KW)["level"] == "CRITICAL"
+    assert ra.assess(company(), **KW)["level"] == "HIGH"                 # four severe, equity positive: HIGH, not CRITICAL
+
+
+def test_d2_one_or_two_severe_is_medium_three_is_high(monkeypatch):
+    _force(monkeypatch, altman=2)
+    assert ra.assess(company(), **KW)["level"] == "MEDIUM"
+    _force(monkeypatch, altman=2, zmijewski=2)
+    assert ra.assess(company(), **KW)["level"] == "MEDIUM"
+    _force(monkeypatch, altman=2, zmijewski=2, ohlson=2)
+    assert ra.assess(company(), **KW)["level"] == "HIGH"
+    _force(monkeypatch, altman=2, zmijewski=2, icr=2)                    # interest coverage counts as the fourth signal
+    assert ra.assess(company(), **KW)["level"] == "HIGH"
+
+
+def test_d2_single_elevated_sign_stays_low_with_watch_note(monkeypatch):
+    assert ra.assess(company(volatility_annualized_pct=90.0), **KW)["level"] == "LOW"
+    r = ra.assess(company(volatility_annualized_pct=90.0), **KW)
+    assert r["watch"] and "watch" in " ".join(r["reasons"])
+    _force(monkeypatch, ohlson=1)                                        # Ohlson >= 0.038 alone
+    r = ra.assess(company(), **KW)
+    assert r["level"] == "LOW" and r["watch"] == ["ohlson stub"]
+
+
+def test_d2_two_elevated_signs_make_medium_three_do_not_make_high(monkeypatch):
+    _force(monkeypatch, altman=1, zmijewski=1)
+    assert ra.assess(company(), **KW)["level"] == "MEDIUM"
+    _force(monkeypatch, altman=1, zmijewski=1, ohlson=1)
+    assert ra.assess(company(), **KW)["level"] == "MEDIUM"
+    assert ra.assess(company(volatility_annualized_pct=90.0), **KW)["level"] == "MEDIUM"      # plus volatility
+
+
+def test_d2_beneish_is_a_reason_only_never_a_level(monkeypatch):
     flagged = ra._signal("beneish", "Beneish M-score", available=True, severity=1, value=-1.0, band="manipulation-risk", reason="stub")
     monkeypatch.setattr(ra, "beneish_signal", lambda c, h=None, *_: flagged)
     r = ra.assess(company(), **KW)
-    assert r["level"] == "MEDIUM" and "stub" in r["reasons"]
+    assert r["level"] == "LOW" and "stub" in r["reasons"]
 
 
-def test_three_elevated_flags_make_high_two_do_not(monkeypatch):
-    def elev(i):
-        return lambda *a, **k: ra._signal(i, i, available=True, severity=1, value=1.0, reason=i)
-    monkeypatch.setattr(ra, "altman_signal", elev("altman"))
-    monkeypatch.setattr(ra, "zmijewski_signal", elev("zmijewski"))
-    assert ra.assess(company(), **KW)["level"] == "MEDIUM"           # two elevated: still MEDIUM
-    monkeypatch.setattr(ra, "ohlson_signal", elev("ohlson"))
-    assert ra.assess(company(), **KW)["level"] == "HIGH"             # three elevated: HIGH
+def test_d2_low_on_partial_statements_shows_partial(monkeypatch):
+    # one solvency model, one elevated sign (volatility): LOW with PARTIAL, never a clean result
+    one = company(volatility_annualized_pct=90.0)
+    monkeypatch.setattr(ra, "altman_signal", lambda *a, **k: ra._signal("altman", "Altman Z''", available=False, missing=["x"]))
+    monkeypatch.setattr(ra, "ohlson_signal", lambda *a, **k: ra._signal("ohlson", "Ohlson O-score", available=False, missing=["x"]))
+    r = ra.assess(one, **KW)
+    assert r["level"] == "LOW" and r["status"] == "PARTIAL"
+    assert any("statements are partial" in x and "LOW is not a clean result" in x for x in r["reasons"])
+
+
+def test_d2_partial_without_any_flag_gives_no_level(monkeypatch):
+    monkeypatch.setattr(ra, "altman_signal", lambda *a, **k: ra._signal("altman", "Altman Z''", available=False, missing=["x"]))
+    monkeypatch.setattr(ra, "ohlson_signal", lambda *a, **k: ra._signal("ohlson", "Ohlson O-score", available=False, missing=["x"]))
+    r = ra.assess(company(), **KW)
+    assert r["level"] is None and r["status"] == "INSUFFICIENT_DATA" and r["calibration"] == "unavailable"
+
+
+def test_d2_calibration_label_us_preliminary_everything_else_not_calibrated():
+    assert ra.assess(company(country="US"), **KW)["calibration"] == "preliminary"
+    for cc in ("SE", "DE", "GB", "JP"):
+        assert ra.assess(company(country=cc), **KW)["calibration"] == "not_calibrated"
+
+
+def test_d2_config_rules_are_validated(tmp_path):
+    import json
+    good = json.loads(open(ri.CONFIG_PATH).read())
+    assert good["version"] == 5 and good["rules"]["high_min_severe"] == 3 and good["rules"]["critical_min_severe"] == 4
+    bad = {**good, "rules": {**good["rules"], "critical_min_severe": 2, "high_min_severe": 3}}
+    p = tmp_path / "bad.json"; p.write_text(json.dumps(bad))
+    with pytest.raises(ValueError):
+        ri.load_config(p)
+    bad = {**good, "rules": {**good["rules"], "high_min_severe": "3"}}
+    p.write_text(json.dumps(bad))
+    with pytest.raises(ValueError):
+        ri.load_config(p)
 
 
 def test_insufficient_data_gives_no_level_not_low():
@@ -267,9 +336,9 @@ def test_interest_coverage_signal_and_level_effect():
     assert ra.interest_coverage_signal(company(operating_income=14 * M, interest_expense=10 * M))["severity"] == 1
     assert ra.interest_coverage_signal(company(operating_income=9 * M, interest_expense=10 * M))["severity"] == 2
     assert not ra.interest_coverage_signal(company(interest_expense=None))["available"]
-    # severe coverage alone: HIGH (never CRITICAL); mild coverage alone: MEDIUM
-    assert ra.assess(company(operating_income=9 * M, interest_expense=10 * M), **KW)["level"] == "HIGH"
-    assert ra.assess(company(operating_income=14 * M, interest_expense=10 * M), **KW)["level"] == "MEDIUM"
+    # D2: severe coverage alone is one severe signal (MEDIUM); mild coverage alone is one elevated sign (LOW with a watch note)
+    assert ra.assess(company(operating_income=9 * M, interest_expense=10 * M), **KW)["level"] == "MEDIUM"
+    assert ra.assess(company(operating_income=14 * M, interest_expense=10 * M), **KW)["level"] == "LOW"
     # does not count as a solvency model for data sufficiency
     r = ra.assess(company(retained_earnings=None, operating_income=9 * M, interest_expense=10 * M), **KW)
     assert r["dataSufficiency"]["solvencyModelsAvailable"] == 2
@@ -404,8 +473,23 @@ def test_impossible_statements_give_no_level(kw, expect):
 def test_negative_equity_with_positive_assets_is_not_a_defect():
     c = company(total_equity=-50 * M, total_liabilities=1050 * M)
     assert ra.statement_defects(c) == []
-    assert ra.assess(c, **KW)["level"] == "CRITICAL"          # still the negative-equity hard reason
+    r = ra.assess(c, **KW)
+    assert "negative total equity" in r["hardReasons"] and r["level"] in ("MEDIUM", "HIGH", "CRITICAL")   # D2: counted as an elevated sign
 
 
 def test_clean_statements_unchanged():
     assert ra.statement_defects(company()) == [] and ra.assess(company(), **KW)["level"] == "LOW"
+
+
+@pytest.mark.parametrize("sector", ["Industrials", "Banks"])
+def test_no_stored_statements_gives_no_level_even_with_a_price_flag(sector):
+    empty = {f: None for f in ra.STATEMENT_FIELDS}
+    r = ra.assess(company(sector=sector, industry=sector, filing_period_end=None, revenue_prev=None, net_margin_prev_pct=None,
+                          volatility_annualized_pct=80.0, **empty), **KW)
+    assert r["level"] is None and r["dataNotYetAvailable"] is True and r["calibration"] == "unavailable" and r["watch"] == []
+    assert r["status"] in ("INSUFFICIENT_DATA", "NOT_APPLICABLE") and r["reasons"][0] == ra.NO_STATEMENTS
+
+
+def test_stored_statements_are_not_marked_as_missing():
+    assert ra.assess(company(), **KW)["dataNotYetAvailable"] is False
+

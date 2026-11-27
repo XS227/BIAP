@@ -34,7 +34,14 @@ def load_config(path: Optional[Path] = None) -> dict:
         raise ValueError(f"risk agent config {p}: severe/elevated thresholds are in the wrong order")
     cfg.setdefault("rules", {})
     cfg["rules"].setdefault("min_solvency_models", 2)
-    cfg["rules"].setdefault("elevated_signals_for_high", 3)
+    for key, default in (("high_min_severe", 3), ("critical_min_severe", 4), ("medium_min_severe", 1), ("medium_min_elevated", 2)):
+        cfg["rules"].setdefault(key, default)
+        if not isinstance(cfg["rules"][key], int) or isinstance(cfg["rules"][key], bool) or cfg["rules"][key] < 1:
+            raise ValueError(f"risk agent config {p}: rules.{key} must be a positive integer")
+    if not cfg["rules"]["critical_min_severe"] >= cfg["rules"]["high_min_severe"] >= cfg["rules"]["medium_min_severe"]:
+        raise ValueError(f"risk agent config {p}: severe-count rules are in the wrong order")
+    cfg["rules"].setdefault("negative_equity_is_elevated_sign", True)
+    cfg["rules"].setdefault("calibration", {}).setdefault("preliminary", ["US"])
     cfg.setdefault("unit_scale", {})
     cfg["unit_scale"].setdefault("plausibility_assets_to_market_cap_min", 0.003)
     cfg["unit_scale"].setdefault("plausibility_assets_to_market_cap_max", 300.0)
