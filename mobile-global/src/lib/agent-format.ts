@@ -17,10 +17,17 @@ const PERF_TONE: Record<string, Tone> = { STRONG: 'positive', STABLE: 'neutral',
 export type Chip = { text: string; tone: Tone; arrowDown?: boolean };
 
 /** A null level is never shown as LOW / STABLE / blank: it is a grey chip with the stated reason. */
-export function riskChip(lang: Lang, a: { level?: string | null; status?: string | null }): Chip {
+export function riskChip(lang: Lang, a: { level?: string | null; status?: string | null; dataNotYetAvailable?: boolean }): Chip {
   if (a.level) return { text: levelLabel(lang, 'risk', a.level) || a.level, tone: RISK_TONE[a.level] || 'muted' };
+  if (a.dataNotYetAvailable) return { text: tr(lang, 'dataNotYet'), tone: 'muted' };
   if (a.status === 'NOT_APPLICABLE') return { text: tr(lang, 'notApplicable'), tone: 'muted' };
   return { text: tr(lang, 'notEnoughData'), tone: 'muted' };
+}
+
+/** How far the level was checked in this market; empty when there is no level or the server does not say. */
+export function calibrationLabel(lang: Lang, calibration: string | null | undefined): string {
+  if (calibration === 'preliminary') return tr(lang, 'calibrationPreliminary');
+  return calibration === 'not_calibrated' ? tr(lang, 'calibrationNone') : '';
 }
 
 export function performanceChip(lang: Lang, level: string | null | undefined, status?: string | null): Chip {

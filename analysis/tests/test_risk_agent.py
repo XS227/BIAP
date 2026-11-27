@@ -479,3 +479,17 @@ def test_negative_equity_with_positive_assets_is_not_a_defect():
 
 def test_clean_statements_unchanged():
     assert ra.statement_defects(company()) == [] and ra.assess(company(), **KW)["level"] == "LOW"
+
+
+@pytest.mark.parametrize("sector", ["Industrials", "Banks"])
+def test_no_stored_statements_gives_no_level_even_with_a_price_flag(sector):
+    empty = {f: None for f in ra.STATEMENT_FIELDS}
+    r = ra.assess(company(sector=sector, industry=sector, filing_period_end=None, revenue_prev=None, net_margin_prev_pct=None,
+                          volatility_annualized_pct=80.0, **empty), **KW)
+    assert r["level"] is None and r["dataNotYetAvailable"] is True and r["calibration"] == "unavailable" and r["watch"] == []
+    assert r["status"] in ("INSUFFICIENT_DATA", "NOT_APPLICABLE") and r["reasons"][0] == ra.NO_STATEMENTS
+
+
+def test_stored_statements_are_not_marked_as_missing():
+    assert ra.assess(company(), **KW)["dataNotYetAvailable"] is False
+

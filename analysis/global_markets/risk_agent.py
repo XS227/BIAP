@@ -21,6 +21,10 @@ from .models import GlobalCompany
 FLAG = "RISK_AGENT_ENABLED"
 VERSION = 2
 LEVELS = ("LOW", "MEDIUM", "HIGH", "CRITICAL")
+# A company with none of these has no stored statements: price volatility alone never gives a level.
+STATEMENT_FIELDS = ("total_assets", "total_liabilities", "total_equity", "current_assets", "current_liabilities", "retained_earnings",
+                    "operating_income", "net_income", "operating_cash_flow", "revenue", "gross_profit", "total_debt", "interest_expense", "ebitda")
+NO_STATEMENTS = "data not yet available: no stored financial statements for this company, so no level is given"
 
 # Thresholds and rules live in data/risk_agent_config.json (override: env RISK_AGENT_CONFIG); nothing numeric is hard-coded below.
 def cfg() -> dict:
@@ -370,6 +374,7 @@ def assess(company: GlobalCompany, *, history: Optional[Mapping] = None, fx: Opt
     any_flag = bool(hard) or any(s["available"] and s["severity"] >= 1 for s in signals)
 
     defects = [] if financial else statement_defects(company)
+    no_statements = all(_num(getattr(company, f)) is None for f in STATEMENT_FIELDS)
     reasons = [f"{h} (hard reason)" for h in hard]
     reasons += [s["reason"] for s in signals if s["available"] and s["severity"] >= 1]
     watch: list = []
@@ -378,6 +383,8 @@ def assess(company: GlobalCompany, *, history: Optional[Mapping] = None, fx: Opt
         level = None                                  # impossible statement values (data defect): no level rather than a wrong one
     elif going_concern or (len(severe) >= int(rules["critical_min_severe"]) and neg_equity):
         level = "CRITICAL"
+    elif no_statements:
+        level = None
     elif len(severe) >= int(rules["high_min_severe"]):
         level = "HIGH"
     elif len(severe) >= int(rules["medium_min_severe"]) or n_elevated >= int(rules["medium_min_elevated"]):
@@ -393,6 +400,8 @@ def assess(company: GlobalCompany, *, history: Optional[Mapping] = None, fx: Opt
         status = "NOT_APPLICABLE" if financial else "INSUFFICIENT_DATA"
         if defects:
             reasons = [f"statement values are impossible ({'; '.join(defects)}), so the stored statements are not used and no level is given"]
+        elif no_statements:
+            reasons.insert(0, NO_STATEMENTS)
         else:
             reasons.append(na if financial else f"fewer than {min_models} solvency models (Altman, Ohlson, Zmijewski) have their inputs; no level is given")
     else:
@@ -406,7 +415,7 @@ def assess(company: GlobalCompany, *, history: Optional[Mapping] = None, fx: Opt
     calibration = "unavailable" if level is None else "preliminary" if str(company.country).upper() in prelim else "not_calibrated"
     flags = (list(signals[1].get("flags") or []) + list(icr.get("flags") or [])) if not financial else []
     return {"agent": "risk", "version": VERSION, "advisoryOnly": True, "level": level, "status": status, "reasons": reasons,
-            "hardReasons": hard, "watch": watch, "calibration": calibration, "signals": signals, "flags": flags, "leases": leases if not financial else None,
+            "hardReasons": hard, "dataNotYetAvailable": level is None and no_statements, "watch": watch, "calibration": calibration, "signals": signals, "flags": flags, "leases": leases if not financial else None,
             "dataSufficiency": {"solvencyModelsAvailable": len(solvency), "required": min_models,
                                 "missing": {s["id"]: s["missing"] for s in signals if s["missing"] and s["applicable"]}},
             "config": {"path": conf.get("_path"), "version": conf.get("version"), "thresholds": th},
