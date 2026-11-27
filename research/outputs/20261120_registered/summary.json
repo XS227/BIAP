@@ -1,0 +1,30 @@
+{
+ "end": "2026-11-20",
+ "seed": 20261020,
+ "resamples": 10000,
+ "venues": 12,
+ "buyPct": -2.2812568809910503,
+ "sellPct": 6.6105639570244445,
+ "benchmarkPct": -3.719085290460309,
+ "spreadPp": -8.891820838015494,
+ "spreadCi95Pp": [
+  -49.69408919243127,
+  12.854543980979201
+ ],
+ "nBuy": 427,
+ "nSell": 487,
+ "reconciliation": {
+  "decisions": 964,
+  "priced": 957,
+  "unpriced": 7
+ },
+ "venuesPositive": 11,
+ "symbolsRequested": 973,
+ "symbolsEmpty": [
+  "ERW.DE",
+  "FNGR",
+  "LNAI",
+  "PFS0.F",
+  "RAMP"
+ ]
+}

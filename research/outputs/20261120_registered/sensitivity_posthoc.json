@@ -1,0 +1,94 @@
+{
+ "label": "POST HOC sensitivity, not part of the registered analysis",
+ "suspectRows": {
+  "GB:LSE GVMH": "price alternates 0.006 / 0.6 GBp (x100) on at most 254 shares of volume a day",
+  "GB:LSE PDL": "price steps from 2.3 to 0.023 GBp (x100) on 2026-11-02, zero volume after",
+  "US:NASDAQ NUWE": "vendor reports a 1:9 reverse split on 2026-10-27 but the entry close is not adjusted"
+ },
+ "runs": [
+  {
+   "end": "2026-11-20",
+   "rows": "as registered",
+   "nBuy": 427,
+   "nSell": 487,
+   "buyPct": -2.2812568809910503,
+   "sellPct": 6.6105639570244445,
+   "spreadPp": -8.891820838015494,
+   "ci95Pp": [
+    -49.69408919243127,
+    12.854543980979201
+   ],
+   "venuesPositive": 11
+  },
+  {
+   "end": "2026-11-20",
+   "rows": "without GVMH",
+   "nBuy": 427,
+   "nSell": 486,
+   "buyPct": -2.2812568809910503,
+   "sellPct": -13.05930119596381,
+   "spreadPp": 10.778044314972758,
+   "ci95Pp": [
+    7.950056096831585,
+    13.51103166450567
+   ],
+   "venuesPositive": 12
+  },
+  {
+   "end": "2026-11-20",
+   "rows": "without GVMH, PDL, NUWE",
+   "nBuy": 427,
+   "nSell": 484,
+   "buyPct": -2.2812568809910503,
+   "sellPct": -13.098038828129141,
+   "spreadPp": 10.81678194713809,
+   "ci95Pp": [
+    8.061572278755852,
+    13.52006530515414
+   ],
+   "venuesPositive": 12
+  },
+  {
+   "end": "2026-11-19",
+   "rows": "as registered",
+   "nBuy": 427,
+   "nSell": 487,
+   "buyPct": -0.4051803818125992,
+   "sellPct": 8.759237918379952,
+   "spreadPp": -9.164418300192551,
+   "ci95Pp": [
+    -49.99516279671546,
+    12.68223882011344
+   ],
+   "venuesPositive": 11
+  },
+  {
+   "end": "2026-11-19",
+   "rows": "without GVMH",
+   "nBuy": 427,
+   "nSell": 486,
+   "buyPct": -0.4051803818125992,
+   "sellPct": -10.90719462577604,
+   "spreadPp": 10.50201424396344,
+   "ci95Pp": [
+    7.491709677781901,
+    13.403793310566456
+   ],
+   "venuesPositive": 12
+  },
+  {
+   "end": "2026-11-19",
+   "rows": "without GVMH, PDL, NUWE",
+   "nBuy": 427,
+   "nSell": 484,
+   "buyPct": -0.4051803818125992,
+   "sellPct": -10.969821542146573,
+   "spreadPp": 10.564641160333972,
+   "ci95Pp": [
+    7.646234206478085,
+    13.45794963666307
+   ],
+   "venuesPositive": 12
+  }
+ ]
+}
