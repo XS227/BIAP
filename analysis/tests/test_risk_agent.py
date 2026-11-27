@@ -385,3 +385,27 @@ def test_lease_extraction_is_inert_when_flag_off(monkeypatch):
     assert esef._risk_agent_on() is False
     monkeypatch.setenv("RISK_AGENT_ENABLED", "1")
     assert esef._risk_agent_on() is True
+
+
+# --- impossible statement values (QA 2026-11-26): no level instead of a wrong one --------------------------------------------------
+@pytest.mark.parametrize("kw,expect", [
+    (dict(total_assets=0.0), "total assets <= 0"),
+    (dict(total_assets=-5 * M), "total assets <= 0"),
+    (dict(total_liabilities=-10 * M), "negative liabilities"),
+    (dict(total_equity=1500 * M), "equity above total assets"),
+    (dict(total_liabilities=60000 * M), "liabilities above 50x assets"),
+])
+def test_impossible_statements_give_no_level(kw, expect):
+    out = ra.assess(company(**kw), **KW)
+    assert out["level"] is None and out["status"] == "INSUFFICIENT_DATA"
+    assert expect in out["reasons"][0] and "impossible" in out["reasons"][0]
+
+
+def test_negative_equity_with_positive_assets_is_not_a_defect():
+    c = company(total_equity=-50 * M, total_liabilities=1050 * M)
+    assert ra.statement_defects(c) == []
+    assert ra.assess(c, **KW)["level"] == "CRITICAL"          # still the negative-equity hard reason
+
+
+def test_clean_statements_unchanged():
+    assert ra.statement_defects(company()) == [] and ra.assess(company(), **KW)["level"] == "LOW"
