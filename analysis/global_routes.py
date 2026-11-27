@@ -105,7 +105,9 @@ def _clean_lei(value: Optional[str]) -> Optional[str]:
 
 
 def _search_text(value: object) -> str:
-    return " ".join(part for part in re.split(r"[^a-z0-9]+", str(value or "").casefold()) if part)
+    # Unicode letters/digits are kept (accented Latin, Persian, Arabic, CJK, Cyrillic...). The old a-z0-9 split turned a non-Latin query into ""
+    # and "" matched every instrument, so a Persian/Arabic search returned the whole market.
+    return " ".join(part for part in re.split(r"[\W_]+", str(value or "").casefold()) if part)
 
 
 def _instrument_search_score(item, query: str) -> Optional[int]:
@@ -117,7 +119,7 @@ def _instrument_search_score(item, query: str) -> Optional[int]:
     """
     q = _search_text(query)
     if not q:
-        return 0
+        return None if str(query or "").strip() else 0
     q_compact = q.replace(" ", "")
     ticker = _search_text(item.ticker).replace(" ", "")
     isin = _search_text(item.isin).replace(" ", "") if item.isin else ""
@@ -283,6 +285,7 @@ def global_instruments(
         except Exception:
             snapshot_info = None
 
+    q = q.strip() if q else q          # a whitespace-only query is a plain browse, not a search
     if q:
         candidates = []
         targeted_error = None
