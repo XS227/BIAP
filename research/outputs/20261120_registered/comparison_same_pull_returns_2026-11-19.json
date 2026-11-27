@@ -1,0 +1,2391 @@
+{
+ "snapshot": "2026-10-20",
+ "snapshotSha256": "0bd9066eb980d9293566c2cb682dce579f6d6fbf15e102eeb341e2e7e52621a1",
+ "section": "all",
+ "end": "2026-11-19",
+ "notes": [
+  "Holding returns are TOTAL returns: (exit close + cash dividends with ex-date after entry) / entry - 1, no reinvestment (Yahoo events=div, vendor units). Benchmarks are PRICE indices (^GDAXI is itself a total-return index).",
+  "Delisting rule: exit bar more than 5 weekdays before min(end, today) => last close + dividends up to end, flagged exit=last_close_before_delisting; kept in the primary result, excluded in the sensitivity run.",
+  "Weights are renormalised over priced holdings: each basket is equal-weighted among the holdings that have data, not over all decisions.",
+  "'Priced' = has an entry price and a close after entry (entry and exit).",
+  "Bootstrap: 10000 resamples, seed 20261020, percentile 95% CI; markets with <10 priced holdings on either side are marked 'too small to interpret'."
+ ],
+ "reconciliation": {
+  "decisions": 964,
+  "priced": 957,
+  "unpriced": 7
+ },
+ "A_decisions_all": {
+  "US:NASDAQ|BUY": {
+   "decisions": 151,
+   "priced": 151,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": 0.3813077152317881,
+   "meanConfidence": 0.6261657549668874,
+   "evidenceStatus": {
+    "PASS": 151
+   }
+  },
+  "US:NASDAQ|SELL": {
+   "decisions": 212,
+   "priced": 210,
+   "noEntryPrice": 0,
+   "noExitPrice": 2,
+   "meanScore": -0.3805306037735849,
+   "meanConfidence": 0.5766743632075472,
+   "evidenceStatus": {
+    "PASS": 212
+   }
+  },
+  "US:NYSE|BUY": {
+   "decisions": 118,
+   "priced": 117,
+   "noEntryPrice": 0,
+   "noExitPrice": 1,
+   "meanScore": 0.4133504491525424,
+   "meanConfidence": 0.6304502033898305,
+   "evidenceStatus": {
+    "PASS": 118
+   }
+  },
+  "US:NYSE|SELL": {
+   "decisions": 66,
+   "priced": 66,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": -0.34036004545454546,
+   "meanConfidence": 0.5650902878787878,
+   "evidenceStatus": {
+    "PASS": 66
+   }
+  },
+  "GB:LSE|BUY": {
+   "decisions": 27,
+   "priced": 27,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": 0.40274088888888887,
+   "meanConfidence": 0.6169676666666667,
+   "evidenceStatus": {
+    "PASS": 27
+   }
+  },
+  "GB:LSE|SELL": {
+   "decisions": 42,
+   "priced": 42,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": -0.34550190476190473,
+   "meanConfidence": 0.5059638095238095,
+   "evidenceStatus": {
+    "PASS": 42
+   }
+  },
+  "IT:EURONEXT_MILAN|BUY": {
+   "decisions": 15,
+   "priced": 15,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": 0.3638294,
+   "meanConfidence": 0.5207878666666667,
+   "evidenceStatus": {
+    "PASS": 15
+   }
+  },
+  "IT:EURONEXT_MILAN|SELL": {
+   "decisions": 15,
+   "priced": 15,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": -0.3418676,
+   "meanConfidence": 0.49074866666666667,
+   "evidenceStatus": {
+    "PASS": 15
+   }
+  },
+  "SE:NASDAQ_STOCKHOLM|BUY": {
+   "decisions": 25,
+   "priced": 25,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": 0.36667788,
+   "meanConfidence": 0.61556992,
+   "evidenceStatus": {
+    "PASS": 25
+   }
+  },
+  "SE:NASDAQ_STOCKHOLM|SELL": {
+   "decisions": 37,
+   "priced": 35,
+   "noEntryPrice": 2,
+   "noExitPrice": 0,
+   "meanScore": -0.3979032432432432,
+   "meanConfidence": 0.5533923243243243,
+   "evidenceStatus": {
+    "PASS": 37
+   }
+  },
+  "NO:EURONEXT_OSLO|BUY": {
+   "decisions": 12,
+   "priced": 12,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": 0.4276185833333333,
+   "meanConfidence": 0.5947384166666666,
+   "evidenceStatus": {
+    "PASS": 12
+   }
+  },
+  "NO:EURONEXT_OSLO|SELL": {
+   "decisions": 12,
+   "priced": 12,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": -0.48153549999999995,
+   "meanConfidence": 0.5537993333333333,
+   "evidenceStatus": {
+    "PASS": 12
+   }
+  },
+  "DE:XETRA|BUY": {
+   "decisions": 23,
+   "priced": 23,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": 0.288012347826087,
+   "meanConfidence": 0.4697894782608696,
+   "evidenceStatus": {
+    "PASS": 23
+   }
+  },
+  "DE:XETRA|SELL": {
+   "decisions": 36,
+   "priced": 35,
+   "noEntryPrice": 0,
+   "noExitPrice": 1,
+   "meanScore": -0.37109869444444443,
+   "meanConfidence": 0.43864730555555553,
+   "evidenceStatus": {
+    "PASS": 35,
+    "WARN": 1
+   }
+  },
+  "DE:FRANKFURT|BUY": {
+   "decisions": 31,
+   "priced": 30,
+   "noEntryPrice": 0,
+   "noExitPrice": 1,
+   "meanScore": 0.22557493548387095,
+   "meanConfidence": 0.4575786774193548,
+   "evidenceStatus": {
+    "PASS": 31
+   }
+  },
+  "DE:FRANKFURT|SELL": {
+   "decisions": 44,
+   "priced": 44,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": -0.43389459090909094,
+   "meanConfidence": 0.4318445,
+   "evidenceStatus": {
+    "PASS": 42,
+    "BLOCK": 1,
+    "WARN": 1
+   }
+  },
+  "FR:EURONEXT_PARIS|BUY": {
+   "decisions": 23,
+   "priced": 23,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": 0.30654478260869567,
+   "meanConfidence": 0.5105168695652175,
+   "evidenceStatus": {
+    "PASS": 23
+   }
+  },
+  "FR:EURONEXT_PARIS|SELL": {
+   "decisions": 26,
+   "priced": 26,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": -0.44069638461538463,
+   "meanConfidence": 0.47950669230769233,
+   "evidenceStatus": {
+    "PASS": 26
+   }
+  },
+  "NL:EURONEXT_AMSTERDAM|BUY": {
+   "decisions": 7,
+   "priced": 7,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": 0.42194742857142853,
+   "meanConfidence": 0.5555584285714286,
+   "evidenceStatus": {
+    "PASS": 7
+   }
+  },
+  "NL:EURONEXT_AMSTERDAM|SELL": {
+   "decisions": 8,
+   "priced": 8,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": -0.36490662500000004,
+   "meanConfidence": 0.460260375,
+   "evidenceStatus": {
+    "PASS": 8
+   }
+  },
+  "FI:NASDAQ_HELSINKI|BUY": {
+   "decisions": 9,
+   "priced": 9,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": 0.3876808888888889,
+   "meanConfidence": 0.5569023333333334,
+   "evidenceStatus": {
+    "PASS": 9
+   }
+  },
+  "FI:NASDAQ_HELSINKI|SELL": {
+   "decisions": 12,
+   "priced": 12,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": -0.43032374999999995,
+   "meanConfidence": 0.5074955,
+   "evidenceStatus": {
+    "PASS": 12
+   }
+  },
+  "ES:BME_MADRID|BUY": {
+   "decisions": 4,
+   "priced": 4,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": 0.33587049999999996,
+   "meanConfidence": 0.51625275,
+   "evidenceStatus": {
+    "PASS": 4
+   }
+  },
+  "ES:BME_MADRID|SELL": {
+   "decisions": 9,
+   "priced": 9,
+   "noEntryPrice": 0,
+   "noExitPrice": 0,
+   "meanScore": -0.4289941111111111,
+   "meanConfidence": 0.4731867777777778,
+   "evidenceStatus": {
+    "PASS": 9
+   }
+  },
+  "ALL|BUY": {
+   "decisions": 445,
+   "priced": 443,
+   "noEntryPrice": 0,
+   "noExitPrice": 2,
+   "meanScore": 0.3717674426966292,
+   "meanConfidence": 0.5924454674157303,
+   "evidenceStatus": {
+    "PASS": 445
+   }
+  },
+  "ALL|SELL": {
+   "decisions": 519,
+   "priced": 514,
+   "noEntryPrice": 2,
+   "noExitPrice": 3,
+   "meanScore": -0.3836787996146436,
+   "meanConfidence": 0.5328980481695569,
+   "evidenceStatus": {
+    "PASS": 516,
+    "WARN": 2,
+    "BLOCK": 1
+   }
+  }
+ },
+ "A_coverage": {
+  "US:NASDAQ|BUY": {
+   "priced": 151,
+   "total": 151,
+   "pct": 1.0
+  },
+  "US:NASDAQ|SELL": {
+   "priced": 210,
+   "total": 212,
+   "pct": 0.9905660377358491
+  },
+  "US:NYSE|BUY": {
+   "priced": 117,
+   "total": 118,
+   "pct": 0.9915254237288136
+  },
+  "US:NYSE|SELL": {
+   "priced": 66,
+   "total": 66,
+   "pct": 1.0
+  },
+  "GB:LSE|BUY": {
+   "priced": 27,
+   "total": 27,
+   "pct": 1.0
+  },
+  "GB:LSE|SELL": {
+   "priced": 42,
+   "total": 42,
+   "pct": 1.0
+  },
+  "IT:EURONEXT_MILAN|BUY": {
+   "priced": 15,
+   "total": 15,
+   "pct": 1.0
+  },
+  "IT:EURONEXT_MILAN|SELL": {
+   "priced": 15,
+   "total": 15,
+   "pct": 1.0
+  },
+  "SE:NASDAQ_STOCKHOLM|BUY": {
+   "priced": 25,
+   "total": 25,
+   "pct": 1.0
+  },
+  "SE:NASDAQ_STOCKHOLM|SELL": {
+   "priced": 35,
+   "total": 37,
+   "pct": 0.9459459459459459
+  },
+  "NO:EURONEXT_OSLO|BUY": {
+   "priced": 12,
+   "total": 12,
+   "pct": 1.0
+  },
+  "NO:EURONEXT_OSLO|SELL": {
+   "priced": 12,
+   "total": 12,
+   "pct": 1.0
+  },
+  "DE:XETRA|BUY": {
+   "priced": 23,
+   "total": 23,
+   "pct": 1.0
+  },
+  "DE:XETRA|SELL": {
+   "priced": 35,
+   "total": 36,
+   "pct": 0.9722222222222222
+  },
+  "DE:FRANKFURT|BUY": {
+   "priced": 30,
+   "total": 31,
+   "pct": 0.967741935483871
+  },
+  "DE:FRANKFURT|SELL": {
+   "priced": 44,
+   "total": 44,
+   "pct": 1.0
+  },
+  "FR:EURONEXT_PARIS|BUY": {
+   "priced": 23,
+   "total": 23,
+   "pct": 1.0
+  },
+  "FR:EURONEXT_PARIS|SELL": {
+   "priced": 26,
+   "total": 26,
+   "pct": 1.0
+  },
+  "NL:EURONEXT_AMSTERDAM|BUY": {
+   "priced": 7,
+   "total": 7,
+   "pct": 1.0
+  },
+  "NL:EURONEXT_AMSTERDAM|SELL": {
+   "priced": 8,
+   "total": 8,
+   "pct": 1.0
+  },
+  "FI:NASDAQ_HELSINKI|BUY": {
+   "priced": 9,
+   "total": 9,
+   "pct": 1.0
+  },
+  "FI:NASDAQ_HELSINKI|SELL": {
+   "priced": 12,
+   "total": 12,
+   "pct": 1.0
+  },
+  "ES:BME_MADRID|BUY": {
+   "priced": 4,
+   "total": 4,
+   "pct": 1.0
+  },
+  "ES:BME_MADRID|SELL": {
+   "priced": 9,
+   "total": 9,
+   "pct": 1.0
+  },
+  "ALL|BUY": {
+   "priced": 443,
+   "total": 445,
+   "pct": 0.9955056179775281
+  },
+  "ALL|SELL": {
+   "priced": 514,
+   "total": 519,
+   "pct": 0.9903660886319846
+  }
+ },
+ "A_selection_bias": {
+  "US:NASDAQ|BUY": {
+   "nPriced": 151,
+   "nUnpriced": 0,
+   "meanScorePriced": 0.3813077152317881,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.6261657549668874,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "US:NASDAQ|SELL": {
+   "nPriced": 210,
+   "nUnpriced": 2,
+   "meanScorePriced": -0.3806124,
+   "meanScoreUnpriced": -0.371942,
+   "scoreDiff_priced_minus_unpriced": -0.008670400000000023,
+   "meanConfPriced": 0.5767016666666667,
+   "meanConfUnpriced": 0.5738075,
+   "confDiff_priced_minus_unpriced": 0.002894166666666642
+  },
+  "US:NYSE|BUY": {
+   "nPriced": 117,
+   "nUnpriced": 1,
+   "meanScorePriced": 0.41253679487179484,
+   "meanScoreUnpriced": 0.508548,
+   "scoreDiff_priced_minus_unpriced": -0.09601120512820516,
+   "meanConfPriced": 0.6312136752136752,
+   "meanConfUnpriced": 0.541124,
+   "confDiff_priced_minus_unpriced": 0.09008967521367517
+  },
+  "US:NYSE|SELL": {
+   "nPriced": 66,
+   "nUnpriced": 0,
+   "meanScorePriced": -0.34036004545454546,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.5650902878787878,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "GB:LSE|BUY": {
+   "nPriced": 27,
+   "nUnpriced": 0,
+   "meanScorePriced": 0.40274088888888887,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.6169676666666667,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "GB:LSE|SELL": {
+   "nPriced": 42,
+   "nUnpriced": 0,
+   "meanScorePriced": -0.34550190476190473,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.5059638095238095,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "IT:EURONEXT_MILAN|BUY": {
+   "nPriced": 15,
+   "nUnpriced": 0,
+   "meanScorePriced": 0.3638294,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.5207878666666667,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "IT:EURONEXT_MILAN|SELL": {
+   "nPriced": 15,
+   "nUnpriced": 0,
+   "meanScorePriced": -0.3418676,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.49074866666666667,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "SE:NASDAQ_STOCKHOLM|BUY": {
+   "nPriced": 25,
+   "nUnpriced": 0,
+   "meanScorePriced": 0.36667788,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.61556992,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "SE:NASDAQ_STOCKHOLM|SELL": {
+   "nPriced": 35,
+   "nUnpriced": 2,
+   "meanScorePriced": -0.39507165714285714,
+   "meanScoreUnpriced": -0.447456,
+   "scoreDiff_priced_minus_unpriced": 0.052384342857142885,
+   "meanConfPriced": 0.5551721428571428,
+   "meanConfUnpriced": 0.5222455,
+   "confDiff_priced_minus_unpriced": 0.03292664285714275
+  },
+  "NO:EURONEXT_OSLO|BUY": {
+   "nPriced": 12,
+   "nUnpriced": 0,
+   "meanScorePriced": 0.4276185833333333,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.5947384166666666,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "NO:EURONEXT_OSLO|SELL": {
+   "nPriced": 12,
+   "nUnpriced": 0,
+   "meanScorePriced": -0.48153549999999995,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.5537993333333333,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "DE:XETRA|BUY": {
+   "nPriced": 23,
+   "nUnpriced": 0,
+   "meanScorePriced": 0.288012347826087,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.4697894782608696,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "DE:XETRA|SELL": {
+   "nPriced": 35,
+   "nUnpriced": 1,
+   "meanScorePriced": -0.37134917142857143,
+   "meanScoreUnpriced": -0.362332,
+   "scoreDiff_priced_minus_unpriced": -0.009017171428571447,
+   "meanConfPriced": 0.4425229428571429,
+   "meanConfUnpriced": 0.303,
+   "confDiff_priced_minus_unpriced": 0.1395229428571429
+  },
+  "DE:FRANKFURT|BUY": {
+   "nPriced": 30,
+   "nUnpriced": 1,
+   "meanScorePriced": 0.22583353333333334,
+   "meanScoreUnpriced": 0.217817,
+   "scoreDiff_priced_minus_unpriced": 0.008016533333333326,
+   "meanConfPriced": 0.4578524666666667,
+   "meanConfUnpriced": 0.449365,
+   "confDiff_priced_minus_unpriced": 0.008487466666666665
+  },
+  "DE:FRANKFURT|SELL": {
+   "nPriced": 44,
+   "nUnpriced": 0,
+   "meanScorePriced": -0.43389459090909094,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.4318445,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "FR:EURONEXT_PARIS|BUY": {
+   "nPriced": 23,
+   "nUnpriced": 0,
+   "meanScorePriced": 0.30654478260869567,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.5105168695652175,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "FR:EURONEXT_PARIS|SELL": {
+   "nPriced": 26,
+   "nUnpriced": 0,
+   "meanScorePriced": -0.44069638461538463,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.47950669230769233,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "NL:EURONEXT_AMSTERDAM|BUY": {
+   "nPriced": 7,
+   "nUnpriced": 0,
+   "meanScorePriced": 0.42194742857142853,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.5555584285714286,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "NL:EURONEXT_AMSTERDAM|SELL": {
+   "nPriced": 8,
+   "nUnpriced": 0,
+   "meanScorePriced": -0.36490662500000004,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.460260375,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "FI:NASDAQ_HELSINKI|BUY": {
+   "nPriced": 9,
+   "nUnpriced": 0,
+   "meanScorePriced": 0.3876808888888889,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.5569023333333334,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "FI:NASDAQ_HELSINKI|SELL": {
+   "nPriced": 12,
+   "nUnpriced": 0,
+   "meanScorePriced": -0.43032374999999995,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.5074955,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "ES:BME_MADRID|BUY": {
+   "nPriced": 4,
+   "nUnpriced": 0,
+   "meanScorePriced": 0.33587049999999996,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.51625275,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "ES:BME_MADRID|SELL": {
+   "nPriced": 9,
+   "nUnpriced": 0,
+   "meanScorePriced": -0.4289941111111111,
+   "meanScoreUnpriced": null,
+   "scoreDiff_priced_minus_unpriced": null,
+   "meanConfPriced": 0.4731867777777778,
+   "meanConfUnpriced": null,
+   "confDiff_priced_minus_unpriced": null
+  },
+  "ALL|BUY": {
+   "nPriced": 443,
+   "nUnpriced": 2,
+   "meanScorePriced": 0.37180620090293454,
+   "meanScoreUnpriced": 0.3631825,
+   "scoreDiff_priced_minus_unpriced": 0.008623700902934517,
+   "meanConfPriced": 0.5928842979683973,
+   "meanConfUnpriced": 0.49524450000000003,
+   "confDiff_priced_minus_unpriced": 0.09763979796839722
+  },
+  "ALL|SELL": {
+   "nPriced": 514,
+   "nUnpriced": 5,
+   "meanScorePriced": -0.3835178385214008,
+   "meanScoreUnpriced": -0.4002256,
+   "scoreDiff_priced_minus_unpriced": 0.016707761478599203,
+   "meanConfPriced": 0.5332275894941634,
+   "meanConfUnpriced": 0.49902120000000005,
+   "confDiff_priced_minus_unpriced": 0.034206389494163325
+  }
+ },
+ "C_unpriced": [
+  {
+   "market": "US:NASDAQ",
+   "side": "SELL",
+   "ticker": "FNGR",
+   "name": "FingerMotion, Inc.",
+   "category": "no_exit_price",
+   "reason": "entry close recorded but no close after entry up to 2026-11-19"
+  },
+  {
+   "market": "US:NASDAQ",
+   "side": "SELL",
+   "ticker": "LNAI",
+   "name": "LUNAI BIOWORKS INC.",
+   "category": "no_exit_price",
+   "reason": "entry close recorded but no close after entry up to 2026-11-19"
+  },
+  {
+   "market": "US:NYSE",
+   "side": "BUY",
+   "ticker": "RAMP",
+   "name": "LiveRamp Holdings, Inc.",
+   "category": "no_exit_price",
+   "reason": "entry close recorded but no close after entry up to 2026-11-19"
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "side": "SELL",
+   "ticker": "BONAV.A",
+   "name": "Bonava AB (publ)",
+   "category": "no_entry_price",
+   "reason": "snapshot: no vendor symbol; supplement (BONAV-A.ST): no vendor trade on the snapshot date; last prior close 8.25 on 2026-10-19 not used"
+  },
+  {
+   "market": "SE:NASDAQ_STOCKHOLM",
+   "side": "SELL",
+   "ticker": "VPLAY.A",
+   "name": "Viaplay Group AB (publ)",
+   "category": "no_entry_price",
+   "reason": "snapshot: no vendor symbol; supplement (VPLAY-A.ST): no vendor trade on the snapshot date; last prior close 2.140000104904175 on 2026-10-19 not used"
+  },
+  {
+   "market": "DE:XETRA",
+   "side": "SELL",
+   "ticker": "ERW",
+   "name": "ERWE IMMOB. AG INH KONV.",
+   "category": "no_exit_price",
+   "reason": "entry close recorded but no close after entry up to 2026-11-19"
+  },
+  {
+   "market": "DE:FRANKFURT",
+   "side": "BUY",
+   "ticker": "PFS0",
+   "name": "PFISTERER HLDG SE NA ON",
+   "category": "no_exit_price",
+   "reason": "entry close recorded but no close after entry up to 2026-11-19"
+  }
+ ],
+ "entriesFromSupplement": 25,
+ "supplement": "paper_portfolio_2026-10-20_entry_supplement.json",
+ "B_returns_priced_subset": {
+  "markets": {
+   "US:NASDAQ": {
+    "benchmark": "^IXIC",
+    "snapshotBenchmark": "^IXIC",
+    "benchmarkEntryClose": 26424.8203125,
+    "benchmarkReturn": -0.09633447129045636,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 151,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 151,
+     "equalWeightReturn": -0.07005387753823812,
+     "medianReturn": -0.06590140791844856,
+     "excessVsBenchmark": 0.026280593752218237,
+     "hitRateVsBenchmark": 0.5827814569536424
+    },
+    "SELL": {
+     "holdings": 212,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 1,
+     "withData": 210,
+     "equalWeightReturn": -0.20753385880154673,
+     "medianReturn": -0.2407141124917182,
+     "excessVsBenchmark": -0.11119938751109038,
+     "hitRateVsBenchmark": 0.2904761904761905
+    },
+    "BUY_minus_SELL": 0.13747998126330863
+   },
+   "US:NYSE": {
+    "benchmark": "^NYA",
+    "snapshotBenchmark": "^NYA",
+    "benchmarkEntryClose": 24190.619140625,
+    "benchmarkReturn": -0.04343868123595496,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 118,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 117,
+     "equalWeightReturn": -0.03085507295334789,
+     "medianReturn": -0.025107832186807344,
+     "excessVsBenchmark": 0.012583608282607066,
+     "hitRateVsBenchmark": 0.5726495726495726
+    },
+    "SELL": {
+     "holdings": 66,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 66,
+     "equalWeightReturn": -0.14175516970251312,
+     "medianReturn": -0.14657728150230426,
+     "excessVsBenchmark": -0.09831648846655816,
+     "hitRateVsBenchmark": 0.3333333333333333
+    },
+    "BUY_minus_SELL": 0.11090009674916523
+   },
+   "GB:LSE": {
+    "benchmark": "^FTAS",
+    "snapshotBenchmark": "^FTSE",
+    "benchmarkEntryClose": 5784.22021484375,
+    "benchmarkReturn": -0.02404128014298057,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 27,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 27,
+     "equalWeightReturn": -0.038994842222035815,
+     "medianReturn": -0.029816513761467878,
+     "excessVsBenchmark": -0.014953562079055245,
+     "hitRateVsBenchmark": 0.48148148148148145
+    },
+    "SELL": {
+     "holdings": 42,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 42,
+     "equalWeightReturn": 2.2411549871610603,
+     "medianReturn": -0.0598966573589505,
+     "excessVsBenchmark": 2.2651962673040407,
+     "hitRateVsBenchmark": 0.40476190476190477
+    },
+    "BUY_minus_SELL": -2.280149829383096
+   },
+   "IT:EURONEXT_MILAN": {
+    "benchmark": "FTSEMIB.MI",
+    "snapshotBenchmark": "FTSEMIB.MI",
+    "benchmarkEntryClose": 49071.0,
+    "benchmarkReturn": 0.017729412483951767,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 15,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 15,
+     "equalWeightReturn": -0.026418146019572368,
+     "medianReturn": -0.03995677115779028,
+     "excessVsBenchmark": -0.044147558503524136,
+     "hitRateVsBenchmark": 0.2
+    },
+    "SELL": {
+     "holdings": 15,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 15,
+     "equalWeightReturn": -0.12341905401689131,
+     "medianReturn": -0.10937504183675428,
+     "excessVsBenchmark": -0.14114846650084306,
+     "hitRateVsBenchmark": 0.26666666666666666
+    },
+    "BUY_minus_SELL": 0.09700090799731895
+   },
+   "SE:NASDAQ_STOCKHOLM": {
+    "benchmark": "^OMXSPI",
+    "snapshotBenchmark": "^OMX",
+    "benchmarkEntryClose": 1122.550048828125,
+    "benchmarkReturn": 0.0076878575630741075,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 25,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 25,
+     "equalWeightReturn": 0.016788674195094618,
+     "medianReturn": 0.006153846153846176,
+     "excessVsBenchmark": 0.00910081663202051,
+     "hitRateVsBenchmark": 0.48
+    },
+    "SELL": {
+     "holdings": 37,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 35,
+     "equalWeightReturn": -0.1104796750284178,
+     "medianReturn": -0.10256406464042422,
+     "excessVsBenchmark": -0.1181675325914919,
+     "hitRateVsBenchmark": 0.2571428571428571
+    },
+    "BUY_minus_SELL": 0.1272683492235124
+   },
+   "NO:EURONEXT_OSLO": {
+    "benchmark": "OSEBX.OL",
+    "snapshotBenchmark": "OSEBX.OL",
+    "benchmarkEntryClose": 2089.889892578125,
+    "benchmarkReturn": -0.010115314042715595,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 12,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 12,
+     "equalWeightReturn": 0.017734501227674816,
+     "medianReturn": 0.013025886333961734,
+     "excessVsBenchmark": 0.02784981527039041,
+     "hitRateVsBenchmark": 0.5833333333333334
+    },
+    "SELL": {
+     "holdings": 12,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 2,
+     "withData": 12,
+     "equalWeightReturn": -0.10465879089331927,
+     "medianReturn": -0.12619572039411786,
+     "excessVsBenchmark": -0.09454347685060367,
+     "hitRateVsBenchmark": 0.3333333333333333
+    },
+    "BUY_minus_SELL": 0.12239329212099409
+   },
+   "DE:XETRA": {
+    "benchmark": "^GDAXI",
+    "snapshotBenchmark": "^GDAXI",
+    "benchmarkEntryClose": 25304.419921875,
+    "benchmarkReturn": 0.006298924278529405,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 23,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 23,
+     "equalWeightReturn": 0.02443596325948725,
+     "medianReturn": 0.005434777327093299,
+     "excessVsBenchmark": 0.018137038980957844,
+     "hitRateVsBenchmark": 0.4782608695652174
+    },
+    "SELL": {
+     "holdings": 36,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 35,
+     "equalWeightReturn": -0.04546431643505058,
+     "medianReturn": -0.0773809104819938,
+     "excessVsBenchmark": -0.05176324071357998,
+     "hitRateVsBenchmark": 0.2
+    },
+    "BUY_minus_SELL": 0.06990027969453783
+   },
+   "DE:FRANKFURT": {
+    "benchmark": "^GDAXI",
+    "snapshotBenchmark": "^GDAXI",
+    "benchmarkEntryClose": 25304.419921875,
+    "benchmarkReturn": 0.006298924278529405,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 31,
+     "duplicatesExcluded": 16,
+     "delistedFlagged": 0,
+     "withData": 14,
+     "equalWeightReturn": -0.03498076855107926,
+     "medianReturn": 0.007073384100455438,
+     "excessVsBenchmark": -0.041279692829608666,
+     "hitRateVsBenchmark": 0.5
+    },
+    "SELL": {
+     "holdings": 44,
+     "duplicatesExcluded": 27,
+     "delistedFlagged": 0,
+     "withData": 17,
+     "equalWeightReturn": -0.14009952126308908,
+     "medianReturn": -0.07875189912965952,
+     "excessVsBenchmark": -0.1463984455416185,
+     "hitRateVsBenchmark": 0.23529411764705882
+    },
+    "BUY_minus_SELL": 0.10511875271200982
+   },
+   "FR:EURONEXT_PARIS": {
+    "benchmark": "^FCHI",
+    "snapshotBenchmark": "^FCHI",
+    "benchmarkEntryClose": 7838.490234375,
+    "benchmarkReturn": 0.03090518617190252,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 23,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 23,
+     "equalWeightReturn": 0.036164623047311134,
+     "medianReturn": 0.05555550036607193,
+     "excessVsBenchmark": 0.005259436875408613,
+     "hitRateVsBenchmark": 0.5652173913043478
+    },
+    "SELL": {
+     "holdings": 26,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 26,
+     "equalWeightReturn": 0.01001331816771662,
+     "medianReturn": -0.030979354071523524,
+     "excessVsBenchmark": -0.020891868004185903,
+     "hitRateVsBenchmark": 0.2692307692307692
+    },
+    "BUY_minus_SELL": 0.026151304879594515
+   },
+   "NL:EURONEXT_AMSTERDAM": {
+    "benchmark": "^AEX",
+    "snapshotBenchmark": "^AEX",
+    "benchmarkEntryClose": 1133.5899658203125,
+    "benchmarkReturn": -0.0367417017350915,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 7,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 7,
+     "equalWeightReturn": 0.0017357324247268767,
+     "medianReturn": 0.015094325227557492,
+     "excessVsBenchmark": 0.03847743415981838,
+     "hitRateVsBenchmark": 0.5714285714285714
+    },
+    "SELL": {
+     "holdings": 8,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 8,
+     "equalWeightReturn": -0.17163355244219175,
+     "medianReturn": -0.07838664755064956,
+     "excessVsBenchmark": -0.13489185070710025,
+     "hitRateVsBenchmark": 0.375
+    },
+    "BUY_minus_SELL": 0.17336928486691863
+   },
+   "FI:NASDAQ_HELSINKI": {
+    "benchmark": "^OMXH25",
+    "snapshotBenchmark": "^OMXH25",
+    "benchmarkEntryClose": 6251.4599609375,
+    "benchmarkReturn": -0.02581795346243343,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 9,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 9,
+     "equalWeightReturn": 0.021025651034649567,
+     "medianReturn": 0.0,
+     "excessVsBenchmark": 0.046843604497083,
+     "hitRateVsBenchmark": 0.7777777777777778
+    },
+    "SELL": {
+     "holdings": 12,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 12,
+     "equalWeightReturn": -0.12550506219129257,
+     "medianReturn": -0.13603377871480582,
+     "excessVsBenchmark": -0.09968710872885914,
+     "hitRateVsBenchmark": 0.16666666666666666
+    },
+    "BUY_minus_SELL": 0.14653071322594213
+   },
+   "ES:BME_MADRID": {
+    "benchmark": "^IBEX",
+    "snapshotBenchmark": "^IBEX",
+    "benchmarkEntryClose": 19092.400390625,
+    "benchmarkReturn": 0.004912888175708785,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 4,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 4,
+     "equalWeightReturn": 0.03479591627781728,
+     "medianReturn": 0.019196874253481377,
+     "excessVsBenchmark": 0.029883028102108494,
+     "hitRateVsBenchmark": 0.75
+    },
+    "SELL": {
+     "holdings": 9,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 1,
+     "withData": 9,
+     "equalWeightReturn": -0.029510754348870294,
+     "medianReturn": -0.03541919674123761,
+     "excessVsBenchmark": -0.03442364252457908,
+     "hitRateVsBenchmark": 0.2222222222222222
+    },
+    "BUY_minus_SELL": 0.06430667062668757
+   }
+  },
+  "ALL_exchange_equal_weighted": {
+   "BUY": -0.004051803818125993,
+   "SELL": 0.08759237918379953,
+   "benchmark": -0.013554684079828036,
+   "BUY_excess": 0.009502880261702042,
+   "SELL_excess": 0.10114706326362755
+  },
+  "spreadBootstrap": {
+   "US:NASDAQ": {
+    "spread": 0.13747998126330863,
+    "ci95": [
+     0.051913424817794124,
+     0.20954598783074954
+    ],
+    "nBuy": 151,
+    "nSell": 210,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "US:NYSE": {
+    "spread": 0.11090009674916519,
+    "ci95": [
+     0.05649117450857108,
+     0.16771421854174626
+    ],
+    "nBuy": 117,
+    "nSell": 66,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "GB:LSE": {
+    "spread": -2.280149829383096,
+    "ci95": [
+     -7.039136857769527,
+     0.13789478328907706
+    ],
+    "nBuy": 27,
+    "nSell": 42,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "IT:EURONEXT_MILAN": {
+    "spread": 0.09700090799731895,
+    "ci95": [
+     0.014467322805271736,
+     0.18475067174635035
+    ],
+    "nBuy": 15,
+    "nSell": 15,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "SE:NASDAQ_STOCKHOLM": {
+    "spread": 0.1272683492235124,
+    "ci95": [
+     0.043785101430488214,
+     0.2115007948709864
+    ],
+    "nBuy": 25,
+    "nSell": 35,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "NO:EURONEXT_OSLO": {
+    "spread": 0.12239329212099409,
+    "ci95": [
+     0.009347410958212399,
+     0.2277805627613192
+    ],
+    "nBuy": 12,
+    "nSell": 12,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "DE:XETRA": {
+    "spread": 0.06990027969453783,
+    "ci95": [
+     -0.01609336661034831,
+     0.14080647185446588
+    ],
+    "nBuy": 23,
+    "nSell": 35,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "DE:FRANKFURT": {
+    "spread": 0.10511875271200985,
+    "ci95": [
+     -0.031625731094345966,
+     0.25787062250417775
+    ],
+    "nBuy": 14,
+    "nSell": 17,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "FR:EURONEXT_PARIS": {
+    "spread": 0.026151304879594515,
+    "ci95": [
+     -0.13869750881977946,
+     0.1475742552929835
+    ],
+    "nBuy": 23,
+    "nSell": 26,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "NL:EURONEXT_AMSTERDAM": {
+    "spread": 0.17336928486691863,
+    "ci95": [
+     0.030922426396897608,
+     0.3282140366567194
+    ],
+    "nBuy": 7,
+    "nSell": 8,
+    "tooSmallToInterpret": true,
+    "note": null
+   },
+   "FI:NASDAQ_HELSINKI": {
+    "spread": 0.14653071322594213,
+    "ci95": [
+     0.05320656516849931,
+     0.23861549571035737
+    ],
+    "nBuy": 9,
+    "nSell": 12,
+    "tooSmallToInterpret": true,
+    "note": null
+   },
+   "ES:BME_MADRID": {
+    "spread": 0.06430667062668757,
+    "ci95": [
+     0.007831395439459833,
+     0.13051411493307077
+    ],
+    "nBuy": 4,
+    "nSell": 9,
+    "tooSmallToInterpret": true,
+    "note": null
+   },
+   "ALL": {
+    "spread": -0.09164418300192552,
+    "ci95": [
+     -0.4999516279671546,
+     0.1268223882011344
+    ],
+    "nBuy": 427,
+    "nSell": 487,
+    "tooSmallToInterpret": false,
+    "note": "includes markets with <10 priced holdings per side"
+   }
+  }
+ },
+ "B_sensitivity_excluding_delisted": {
+  "markets": {
+   "US:NASDAQ": {
+    "benchmark": "^IXIC",
+    "snapshotBenchmark": "^IXIC",
+    "benchmarkEntryClose": 26424.8203125,
+    "benchmarkReturn": -0.09633447129045636,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 151,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 151,
+     "equalWeightReturn": -0.07005387753823812,
+     "medianReturn": -0.06590140791844856,
+     "excessVsBenchmark": 0.026280593752218237,
+     "hitRateVsBenchmark": 0.5827814569536424
+    },
+    "SELL": {
+     "holdings": 212,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 1,
+     "withData": 209,
+     "equalWeightReturn": -0.20628402083880257,
+     "medianReturn": -0.2384129982029055,
+     "excessVsBenchmark": -0.10994954954834621,
+     "hitRateVsBenchmark": 0.291866028708134
+    },
+    "BUY_minus_SELL": 0.13623014330056443
+   },
+   "US:NYSE": {
+    "benchmark": "^NYA",
+    "snapshotBenchmark": "^NYA",
+    "benchmarkEntryClose": 24190.619140625,
+    "benchmarkReturn": -0.04343868123595496,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 118,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 117,
+     "equalWeightReturn": -0.03085507295334789,
+     "medianReturn": -0.025107832186807344,
+     "excessVsBenchmark": 0.012583608282607066,
+     "hitRateVsBenchmark": 0.5726495726495726
+    },
+    "SELL": {
+     "holdings": 66,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 66,
+     "equalWeightReturn": -0.14175516970251312,
+     "medianReturn": -0.14657728150230426,
+     "excessVsBenchmark": -0.09831648846655816,
+     "hitRateVsBenchmark": 0.3333333333333333
+    },
+    "BUY_minus_SELL": 0.11090009674916523
+   },
+   "GB:LSE": {
+    "benchmark": "^FTAS",
+    "snapshotBenchmark": "^FTSE",
+    "benchmarkEntryClose": 5784.22021484375,
+    "benchmarkReturn": -0.02404128014298057,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 27,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 27,
+     "equalWeightReturn": -0.038994842222035815,
+     "medianReturn": -0.029816513761467878,
+     "excessVsBenchmark": -0.014953562079055245,
+     "hitRateVsBenchmark": 0.48148148148148145
+    },
+    "SELL": {
+     "holdings": 42,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 42,
+     "equalWeightReturn": 2.2411549871610603,
+     "medianReturn": -0.0598966573589505,
+     "excessVsBenchmark": 2.2651962673040407,
+     "hitRateVsBenchmark": 0.40476190476190477
+    },
+    "BUY_minus_SELL": -2.280149829383096
+   },
+   "IT:EURONEXT_MILAN": {
+    "benchmark": "FTSEMIB.MI",
+    "snapshotBenchmark": "FTSEMIB.MI",
+    "benchmarkEntryClose": 49071.0,
+    "benchmarkReturn": 0.017729412483951767,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 15,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 15,
+     "equalWeightReturn": -0.026418146019572368,
+     "medianReturn": -0.03995677115779028,
+     "excessVsBenchmark": -0.044147558503524136,
+     "hitRateVsBenchmark": 0.2
+    },
+    "SELL": {
+     "holdings": 15,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 15,
+     "equalWeightReturn": -0.12341905401689131,
+     "medianReturn": -0.10937504183675428,
+     "excessVsBenchmark": -0.14114846650084306,
+     "hitRateVsBenchmark": 0.26666666666666666
+    },
+    "BUY_minus_SELL": 0.09700090799731895
+   },
+   "SE:NASDAQ_STOCKHOLM": {
+    "benchmark": "^OMXSPI",
+    "snapshotBenchmark": "^OMX",
+    "benchmarkEntryClose": 1122.550048828125,
+    "benchmarkReturn": 0.0076878575630741075,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 25,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 25,
+     "equalWeightReturn": 0.016788674195094618,
+     "medianReturn": 0.006153846153846176,
+     "excessVsBenchmark": 0.00910081663202051,
+     "hitRateVsBenchmark": 0.48
+    },
+    "SELL": {
+     "holdings": 37,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 35,
+     "equalWeightReturn": -0.1104796750284178,
+     "medianReturn": -0.10256406464042422,
+     "excessVsBenchmark": -0.1181675325914919,
+     "hitRateVsBenchmark": 0.2571428571428571
+    },
+    "BUY_minus_SELL": 0.1272683492235124
+   },
+   "NO:EURONEXT_OSLO": {
+    "benchmark": "OSEBX.OL",
+    "snapshotBenchmark": "OSEBX.OL",
+    "benchmarkEntryClose": 2089.889892578125,
+    "benchmarkReturn": -0.010115314042715595,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 12,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 12,
+     "equalWeightReturn": 0.017734501227674816,
+     "medianReturn": 0.013025886333961734,
+     "excessVsBenchmark": 0.02784981527039041,
+     "hitRateVsBenchmark": 0.5833333333333334
+    },
+    "SELL": {
+     "holdings": 12,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 2,
+     "withData": 10,
+     "equalWeightReturn": -0.12559054907198314,
+     "medianReturn": -0.20258649819931168,
+     "excessVsBenchmark": -0.11547523502926754,
+     "hitRateVsBenchmark": 0.2
+    },
+    "BUY_minus_SELL": 0.14332505029965795
+   },
+   "DE:XETRA": {
+    "benchmark": "^GDAXI",
+    "snapshotBenchmark": "^GDAXI",
+    "benchmarkEntryClose": 25304.419921875,
+    "benchmarkReturn": 0.006298924278529405,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 23,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 23,
+     "equalWeightReturn": 0.02443596325948725,
+     "medianReturn": 0.005434777327093299,
+     "excessVsBenchmark": 0.018137038980957844,
+     "hitRateVsBenchmark": 0.4782608695652174
+    },
+    "SELL": {
+     "holdings": 36,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 35,
+     "equalWeightReturn": -0.04546431643505058,
+     "medianReturn": -0.0773809104819938,
+     "excessVsBenchmark": -0.05176324071357998,
+     "hitRateVsBenchmark": 0.2
+    },
+    "BUY_minus_SELL": 0.06990027969453783
+   },
+   "DE:FRANKFURT": {
+    "benchmark": "^GDAXI",
+    "snapshotBenchmark": "^GDAXI",
+    "benchmarkEntryClose": 25304.419921875,
+    "benchmarkReturn": 0.006298924278529405,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 31,
+     "duplicatesExcluded": 16,
+     "delistedFlagged": 0,
+     "withData": 14,
+     "equalWeightReturn": -0.03498076855107926,
+     "medianReturn": 0.007073384100455438,
+     "excessVsBenchmark": -0.041279692829608666,
+     "hitRateVsBenchmark": 0.5
+    },
+    "SELL": {
+     "holdings": 44,
+     "duplicatesExcluded": 27,
+     "delistedFlagged": 0,
+     "withData": 17,
+     "equalWeightReturn": -0.14009952126308908,
+     "medianReturn": -0.07875189912965952,
+     "excessVsBenchmark": -0.1463984455416185,
+     "hitRateVsBenchmark": 0.23529411764705882
+    },
+    "BUY_minus_SELL": 0.10511875271200982
+   },
+   "FR:EURONEXT_PARIS": {
+    "benchmark": "^FCHI",
+    "snapshotBenchmark": "^FCHI",
+    "benchmarkEntryClose": 7838.490234375,
+    "benchmarkReturn": 0.03090518617190252,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 23,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 23,
+     "equalWeightReturn": 0.036164623047311134,
+     "medianReturn": 0.05555550036607193,
+     "excessVsBenchmark": 0.005259436875408613,
+     "hitRateVsBenchmark": 0.5652173913043478
+    },
+    "SELL": {
+     "holdings": 26,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 26,
+     "equalWeightReturn": 0.01001331816771662,
+     "medianReturn": -0.030979354071523524,
+     "excessVsBenchmark": -0.020891868004185903,
+     "hitRateVsBenchmark": 0.2692307692307692
+    },
+    "BUY_minus_SELL": 0.026151304879594515
+   },
+   "NL:EURONEXT_AMSTERDAM": {
+    "benchmark": "^AEX",
+    "snapshotBenchmark": "^AEX",
+    "benchmarkEntryClose": 1133.5899658203125,
+    "benchmarkReturn": -0.0367417017350915,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 7,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 7,
+     "equalWeightReturn": 0.0017357324247268767,
+     "medianReturn": 0.015094325227557492,
+     "excessVsBenchmark": 0.03847743415981838,
+     "hitRateVsBenchmark": 0.5714285714285714
+    },
+    "SELL": {
+     "holdings": 8,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 8,
+     "equalWeightReturn": -0.17163355244219175,
+     "medianReturn": -0.07838664755064956,
+     "excessVsBenchmark": -0.13489185070710025,
+     "hitRateVsBenchmark": 0.375
+    },
+    "BUY_minus_SELL": 0.17336928486691863
+   },
+   "FI:NASDAQ_HELSINKI": {
+    "benchmark": "^OMXH25",
+    "snapshotBenchmark": "^OMXH25",
+    "benchmarkEntryClose": 6251.4599609375,
+    "benchmarkReturn": -0.02581795346243343,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 9,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 9,
+     "equalWeightReturn": 0.021025651034649567,
+     "medianReturn": 0.0,
+     "excessVsBenchmark": 0.046843604497083,
+     "hitRateVsBenchmark": 0.7777777777777778
+    },
+    "SELL": {
+     "holdings": 12,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 12,
+     "equalWeightReturn": -0.12550506219129257,
+     "medianReturn": -0.13603377871480582,
+     "excessVsBenchmark": -0.09968710872885914,
+     "hitRateVsBenchmark": 0.16666666666666666
+    },
+    "BUY_minus_SELL": 0.14653071322594213
+   },
+   "ES:BME_MADRID": {
+    "benchmark": "^IBEX",
+    "snapshotBenchmark": "^IBEX",
+    "benchmarkEntryClose": 19092.400390625,
+    "benchmarkReturn": 0.004912888175708785,
+    "benchmarkExitDate": "2026-11-19",
+    "benchmarkNote": null,
+    "BUY": {
+     "holdings": 4,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 0,
+     "withData": 4,
+     "equalWeightReturn": 0.03479591627781728,
+     "medianReturn": 0.019196874253481377,
+     "excessVsBenchmark": 0.029883028102108494,
+     "hitRateVsBenchmark": 0.75
+    },
+    "SELL": {
+     "holdings": 9,
+     "duplicatesExcluded": 0,
+     "delistedFlagged": 1,
+     "withData": 8,
+     "equalWeightReturn": -0.03319959864247908,
+     "medianReturn": -0.037229099722087045,
+     "excessVsBenchmark": -0.038112486818187866,
+     "hitRateVsBenchmark": 0.25
+    },
+    "BUY_minus_SELL": 0.06799551492029636
+   }
+  },
+  "ALL_exchange_equal_weighted": {
+   "BUY": -0.004051803818125993,
+   "SELL": 0.08564481547467216,
+   "benchmark": -0.013554684079828036,
+   "BUY_excess": 0.009502880261702042,
+   "SELL_excess": 0.09919949955450018
+  },
+  "spreadBootstrap": {
+   "US:NASDAQ": {
+    "spread": 0.13623014330056443,
+    "ci95": [
+     0.049236407566175755,
+     0.20863584193880622
+    ],
+    "nBuy": 151,
+    "nSell": 209,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "US:NYSE": {
+    "spread": 0.11090009674916519,
+    "ci95": [
+     0.056370347456037355,
+     0.1681591155659265
+    ],
+    "nBuy": 117,
+    "nSell": 66,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "GB:LSE": {
+    "spread": -2.280149829383096,
+    "ci95": [
+     -7.039804650119731,
+     0.13767995125391908
+    ],
+    "nBuy": 27,
+    "nSell": 42,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "IT:EURONEXT_MILAN": {
+    "spread": 0.09700090799731895,
+    "ci95": [
+     0.012249333276023996,
+     0.18315777300231806
+    ],
+    "nBuy": 15,
+    "nSell": 15,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "SE:NASDAQ_STOCKHOLM": {
+    "spread": 0.1272683492235124,
+    "ci95": [
+     0.043583036533406706,
+     0.21170444590356882
+    ],
+    "nBuy": 25,
+    "nSell": 35,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "NO:EURONEXT_OSLO": {
+    "spread": 0.14332505029965795,
+    "ci95": [
+     0.010654449491802782,
+     0.2631436773088844
+    ],
+    "nBuy": 12,
+    "nSell": 10,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "DE:XETRA": {
+    "spread": 0.06990027969453783,
+    "ci95": [
+     -0.016522217535558756,
+     0.1406946608727298
+    ],
+    "nBuy": 23,
+    "nSell": 35,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "DE:FRANKFURT": {
+    "spread": 0.10511875271200985,
+    "ci95": [
+     -0.03176127549999992,
+     0.25783833306028603
+    ],
+    "nBuy": 14,
+    "nSell": 17,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "FR:EURONEXT_PARIS": {
+    "spread": 0.026151304879594515,
+    "ci95": [
+     -0.13823026571600197,
+     0.14826656157419463
+    ],
+    "nBuy": 23,
+    "nSell": 26,
+    "tooSmallToInterpret": false,
+    "note": null
+   },
+   "NL:EURONEXT_AMSTERDAM": {
+    "spread": 0.17336928486691863,
+    "ci95": [
+     0.030977959326744804,
+     0.3280099904950151
+    ],
+    "nBuy": 7,
+    "nSell": 8,
+    "tooSmallToInterpret": true,
+    "note": null
+   },
+   "FI:NASDAQ_HELSINKI": {
+    "spread": 0.14653071322594213,
+    "ci95": [
+     0.05330571382585641,
+     0.23861549571035737
+    ],
+    "nBuy": 9,
+    "nSell": 12,
+    "tooSmallToInterpret": true,
+    "note": null
+   },
+   "ES:BME_MADRID": {
+    "spread": 0.06799551492029636,
+    "ci95": [
+     0.010092193023067034,
+     0.1333899992984714
+    ],
+    "nBuy": 4,
+    "nSell": 8,
+    "tooSmallToInterpret": true,
+    "note": null
+   },
+   "ALL": {
+    "spread": -0.08969661929279817,
+    "ci95": [
+     -0.4992217692928595,
+     0.12936704362752702
+    ],
+    "nBuy": 427,
+    "nSell": 483,
+    "tooSmallToInterpret": false,
+    "note": "includes markets with <10 priced holdings per side"
+   }
+  }
+ },
+ "B_issuer_counts_after_dedup": {
+  "US:NASDAQ|BUY": {
+   "issuers": 151,
+   "priced": 151,
+   "delistedFlagged": 0
+  },
+  "US:NASDAQ|SELL": {
+   "issuers": 212,
+   "priced": 210,
+   "delistedFlagged": 1
+  },
+  "US:NYSE|BUY": {
+   "issuers": 118,
+   "priced": 117,
+   "delistedFlagged": 0
+  },
+  "US:NYSE|SELL": {
+   "issuers": 66,
+   "priced": 66,
+   "delistedFlagged": 0
+  },
+  "GB:LSE|BUY": {
+   "issuers": 27,
+   "priced": 27,
+   "delistedFlagged": 0
+  },
+  "GB:LSE|SELL": {
+   "issuers": 42,
+   "priced": 42,
+   "delistedFlagged": 0
+  },
+  "IT:EURONEXT_MILAN|BUY": {
+   "issuers": 15,
+   "priced": 15,
+   "delistedFlagged": 0
+  },
+  "IT:EURONEXT_MILAN|SELL": {
+   "issuers": 15,
+   "priced": 15,
+   "delistedFlagged": 0
+  },
+  "SE:NASDAQ_STOCKHOLM|BUY": {
+   "issuers": 25,
+   "priced": 25,
+   "delistedFlagged": 0
+  },
+  "SE:NASDAQ_STOCKHOLM|SELL": {
+   "issuers": 37,
+   "priced": 35,
+   "delistedFlagged": 0
+  },
+  "NO:EURONEXT_OSLO|BUY": {
+   "issuers": 12,
+   "priced": 12,
+   "delistedFlagged": 0
+  },
+  "NO:EURONEXT_OSLO|SELL": {
+   "issuers": 12,
+   "priced": 12,
+   "delistedFlagged": 2
+  },
+  "DE:XETRA|BUY": {
+   "issuers": 23,
+   "priced": 23,
+   "delistedFlagged": 0
+  },
+  "DE:XETRA|SELL": {
+   "issuers": 36,
+   "priced": 35,
+   "delistedFlagged": 0
+  },
+  "DE:FRANKFURT|BUY": {
+   "issuers": 15,
+   "priced": 14,
+   "delistedFlagged": 0
+  },
+  "DE:FRANKFURT|SELL": {
+   "issuers": 17,
+   "priced": 17,
+   "delistedFlagged": 0
+  },
+  "FR:EURONEXT_PARIS|BUY": {
+   "issuers": 23,
+   "priced": 23,
+   "delistedFlagged": 0
+  },
+  "FR:EURONEXT_PARIS|SELL": {
+   "issuers": 26,
+   "priced": 26,
+   "delistedFlagged": 0
+  },
+  "NL:EURONEXT_AMSTERDAM|BUY": {
+   "issuers": 7,
+   "priced": 7,
+   "delistedFlagged": 0
+  },
+  "NL:EURONEXT_AMSTERDAM|SELL": {
+   "issuers": 8,
+   "priced": 8,
+   "delistedFlagged": 0
+  },
+  "FI:NASDAQ_HELSINKI|BUY": {
+   "issuers": 9,
+   "priced": 9,
+   "delistedFlagged": 0
+  },
+  "FI:NASDAQ_HELSINKI|SELL": {
+   "issuers": 12,
+   "priced": 12,
+   "delistedFlagged": 0
+  },
+  "ES:BME_MADRID|BUY": {
+   "issuers": 4,
+   "priced": 4,
+   "delistedFlagged": 0
+  },
+  "ES:BME_MADRID|SELL": {
+   "issuers": 9,
+   "priced": 9,
+   "delistedFlagged": 1
+  },
+  "DE (Xetra+Frankfurt)|BUY": {
+   "issuers": 38,
+   "priced": 37,
+   "delistedFlagged": 0
+  },
+  "DE (Xetra+Frankfurt)|SELL": {
+   "issuers": 53,
+   "priced": 52,
+   "delistedFlagged": 0
+  }
+ },
+ "B_delisted_flagged": [
+  {
+   "market": "US:NASDAQ",
+   "ticker": "MLEC",
+   "side": "SELL",
+   "exitDate": "2026-11-10",
+   "dividends": 0,
+   "totalReturn": -0.4687499930150808,
+   "duplicate": false
+  },
+  {
+   "market": "NO:EURONEXT_OSLO",
+   "ticker": "ELMRA",
+   "side": "SELL",
+   "exitDate": "2026-11-06",
+   "dividends": 0,
+   "totalReturn": 0.0,
+   "duplicate": false
+  },
+  {
+   "market": "NO:EURONEXT_OSLO",
+   "ticker": "NEXT",
+   "side": "SELL",
+   "exitDate": "2026-10-22",
+   "dividends": 0,
+   "totalReturn": 0.0,
+   "duplicate": false
+  },
+  {
+   "market": "ES:BME_MADRID",
+   "ticker": "TRG",
+   "side": "SELL",
+   "exitDate": "2026-11-06",
+   "dividends": 0,
+   "totalReturn": 0.0,
+   "duplicate": false
+  }
+ ],
+ "dividendUnitCheck": [
+  {
+   "market": "US:NYSE",
+   "ticker": "SITC",
+   "dividends": 3.0,
+   "entry": 3.640000104904175
+  }
+ ],
+ "benchmarks": {
+  "US:NASDAQ": {
+   "symbol": "^IXIC",
+   "snapshotBenchmark": "^IXIC",
+   "entryClose": 26424.8203125
+  },
+  "US:NYSE": {
+   "symbol": "^NYA",
+   "snapshotBenchmark": "^NYA",
+   "entryClose": 24190.619140625
+  },
+  "GB:LSE": {
+   "symbol": "^FTAS",
+   "snapshotBenchmark": "^FTSE",
+   "entryClose": 5784.22021484375
+  },
+  "IT:EURONEXT_MILAN": {
+   "symbol": "FTSEMIB.MI",
+   "snapshotBenchmark": "FTSEMIB.MI",
+   "entryClose": 49071.0
+  },
+  "SE:NASDAQ_STOCKHOLM": {
+   "symbol": "^OMXSPI",
+   "snapshotBenchmark": "^OMX",
+   "entryClose": 1122.550048828125
+  },
+  "NO:EURONEXT_OSLO": {
+   "symbol": "OSEBX.OL",
+   "snapshotBenchmark": "OSEBX.OL",
+   "entryClose": 2089.889892578125
+  },
+  "DE:XETRA": {
+   "symbol": "^GDAXI",
+   "snapshotBenchmark": "^GDAXI",
+   "entryClose": 25304.419921875
+  },
+  "DE:FRANKFURT": {
+   "symbol": "^GDAXI",
+   "snapshotBenchmark": "^GDAXI",
+   "entryClose": 25304.419921875
+  },
+  "FR:EURONEXT_PARIS": {
+   "symbol": "^FCHI",
+   "snapshotBenchmark": "^FCHI",
+   "entryClose": 7838.490234375
+  },
+  "NL:EURONEXT_AMSTERDAM": {
+   "symbol": "^AEX",
+   "snapshotBenchmark": "^AEX",
+   "entryClose": 1133.5899658203125
+  },
+  "FI:NASDAQ_HELSINKI": {
+   "symbol": "^OMXH25",
+   "snapshotBenchmark": "^OMXH25",
+   "entryClose": 6251.4599609375
+  },
+  "ES:BME_MADRID": {
+   "symbol": "^IBEX",
+   "snapshotBenchmark": "^IBEX",
+   "entryClose": 19092.400390625
+  }
+ },
+ "entryDriftOver2pct": [
+  "SENEA",
+  "SNDK",
+  "OFAL",
+  "XXII",
+  "IMCC",
+  "HCTI",
+  "LHSW",
+  "HUDI",
+  "ONCO",
+  "LOBO",
+  "AIIO",
+  "ISPC",
+  "EDBL",
+  "JAGX",
+  "ARAY",
+  "MOBX",
+  "BRNX",
+  "HUBC",
+  "CCTG",
+  "VSME",
+  "COCH",
+  "ENHA",
+  "SOS",
+  "AMI",
+  "AMI",
+  "AVTX"
+ ],
+ "B_duplicates_excluded": {
+  "isinMap": "paper_portfolio_2026-10-20_isin_map.json",
+  "rule": "same ISIN + side on several venues: keep the first venue in snapshot market order that has an entry price",
+  "rows": [
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "1GBS",
+    "side": "BUY",
+    "isin": "DE000A3MQR99",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "1GBS"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "KA8",
+    "side": "BUY",
+    "isin": "DE0007857476",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "KA8"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "SVE",
+    "side": "BUY",
+    "isin": "DE000A168205",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "SVE"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "SHF",
+    "side": "BUY",
+    "isin": "DE0007203705",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "SHF"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "IXX",
+    "side": "BUY",
+    "isin": "DE0005759807",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "IXX"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "AAG",
+    "side": "BUY",
+    "isin": "DE000A2DAM03",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "AAG"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "EUZ",
+    "side": "BUY",
+    "isin": "DE0005659700",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "EUZ"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "EVAC",
+    "side": "BUY",
+    "isin": "DE000A420ZL4",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "EVAC"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "M12",
+    "side": "BUY",
+    "isin": "DE000A0STSQ8",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "M12"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "TIMA",
+    "side": "BUY",
+    "isin": "DE000ZEAL241",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "TIMA"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "IVU",
+    "side": "BUY",
+    "isin": "DE0007448508",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "IVU"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "DLX",
+    "side": "BUY",
+    "isin": "DE000A0MZ4B0",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "DLX"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "BOG",
+    "side": "BUY",
+    "isin": "DE000A0S9QZ8",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "BOG"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "DRW8",
+    "side": "BUY",
+    "isin": "DE0005550602",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "DRW8"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "DRW3",
+    "side": "BUY",
+    "isin": "DE0005550636",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "DRW3"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "KRN",
+    "side": "BUY",
+    "isin": "DE0006335003",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "KRN"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "SYZ",
+    "side": "SELL",
+    "isin": "DE0005104806",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "SYZ"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "KTA",
+    "side": "SELL",
+    "isin": "DE000A2YN504",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "KTA"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "MAK",
+    "side": "SELL",
+    "isin": "DE0006044001",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "MAK"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "BIG",
+    "side": "SELL",
+    "isin": "DE000BGAG0J3",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "BIG"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "AMM",
+    "side": "SELL",
+    "isin": "DE000A40KXL9",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "AMM"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "YOC",
+    "side": "SELL",
+    "isin": "DE0005932735",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "YOC"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "HGEA",
+    "side": "SELL",
+    "isin": "DE000A3CMGN3",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "HGEA"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "TGTA",
+    "side": "SELL",
+    "isin": "DE000A41YFQ4",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "TGTA"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "V3V",
+    "side": "SELL",
+    "isin": "DE000A0BL849",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "V3V"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "SNG",
+    "side": "SELL",
+    "isin": "DE000A1681X5",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "SNG"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "EVT",
+    "side": "SELL",
+    "isin": "DE0005664809",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "EVT"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "AMI",
+    "side": "SELL",
+    "isin": "DE0008131350",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "AMI"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "KSC",
+    "side": "SELL",
+    "isin": "DE000A1A6V48",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "KSC"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "BKHT",
+    "side": "SELL",
+    "isin": "DE000A2GSU42",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "BKHT"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "H2O",
+    "side": "SELL",
+    "isin": "DE000A255G02",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "H2O"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "LXS",
+    "side": "SELL",
+    "isin": "DE0005470405",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "LXS"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "TUF",
+    "side": "SELL",
+    "isin": "DE000A161N22",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "TUF"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "NC5A",
+    "side": "SELL",
+    "isin": "DE000A12UP37",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "NC5A"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "AAD",
+    "side": "SELL",
+    "isin": "DE0005093108",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "AAD"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "CEA",
+    "side": "SELL",
+    "isin": "DE0006201106",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "CEA"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "BNN",
+    "side": "SELL",
+    "isin": "DE0005203947",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "BNN"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "IS7",
+    "side": "SELL",
+    "isin": "DE0005874846",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "IS7"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "TIW",
+    "side": "SELL",
+    "isin": "DE000A40ZTT8",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "TIW"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "SZG",
+    "side": "SELL",
+    "isin": "DE0006202005",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "SZG"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "N4G0",
+    "side": "SELL",
+    "isin": "DE000A41YCM0",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "N4G0"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "DMRE",
+    "side": "SELL",
+    "isin": "DE000A0XFSF0",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "DMRE"
+   },
+   {
+    "market": "DE:FRANKFURT",
+    "ticker": "IUR",
+    "side": "SELL",
+    "isin": "DE0006208408",
+    "keptMarket": "DE:XETRA",
+    "keptTicker": "IUR"
+   }
+  ]
+ }
+}

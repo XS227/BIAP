@@ -1,0 +1,158 @@
+Paper portfolio 2026-10-20 (sha256 0bd9066eb980...)  section all -> 2026-11-20   decisions 964 = priced 957 + unpriced 7
+  * Holding returns are TOTAL returns: (exit close + cash dividends with ex-date after entry) / entry - 1, no reinvestment (Yahoo events=div, vendor units). Benchmarks are PRICE indices (^GDAXI is itself a total-return index).
+  * Delisting rule: exit bar more than 5 weekdays before min(end, today) => last close + dividends up to end, flagged exit=last_close_before_delisting; kept in the primary result, excluded in the sensitivity run.
+  * Weights are renormalised over priced holdings: each basket is equal-weighted among the holdings that have data, not over all decisions.
+  * 'Priced' = has an entry price and a close after entry (entry and exit).
+  * Bootstrap: 10000 resamples, seed 20261020, percentile 95% CI; markets with <10 priced holdings on either side are marked 'too small to interpret'.
+
+(A1) ALL DECISIONS - decision behaviour (priced or not)
+market                side      n  priced  no entry  no exit  mean score  mean conf  evidence
+US:NASDAQ             BUY     151     151         0        0      +0.381     +0.626  {'PASS': 151}
+US:NASDAQ             SELL    212     210         0        2      -0.381     +0.577  {'PASS': 212}
+US:NYSE               BUY     118     117         0        1      +0.413     +0.630  {'PASS': 118}
+US:NYSE               SELL     66      66         0        0      -0.340     +0.565  {'PASS': 66}
+GB:LSE                BUY      27      27         0        0      +0.403     +0.617  {'PASS': 27}
+GB:LSE                SELL     42      42         0        0      -0.346     +0.506  {'PASS': 42}
+IT:EURONEXT_MILAN     BUY      15      15         0        0      +0.364     +0.521  {'PASS': 15}
+IT:EURONEXT_MILAN     SELL     15      15         0        0      -0.342     +0.491  {'PASS': 15}
+SE:NASDAQ_STOCKHOLM   BUY      25      25         0        0      +0.367     +0.616  {'PASS': 25}
+SE:NASDAQ_STOCKHOLM   SELL     37      35         2        0      -0.398     +0.553  {'PASS': 37}
+NO:EURONEXT_OSLO      BUY      12      12         0        0      +0.428     +0.595  {'PASS': 12}
+NO:EURONEXT_OSLO      SELL     12      12         0        0      -0.482     +0.554  {'PASS': 12}
+DE:XETRA              BUY      23      23         0        0      +0.288     +0.470  {'PASS': 23}
+DE:XETRA              SELL     36      35         0        1      -0.371     +0.439  {'PASS': 35, 'WARN': 1}
+DE:FRANKFURT          BUY      31      30         0        1      +0.226     +0.458  {'PASS': 31}
+DE:FRANKFURT          SELL     44      44         0        0      -0.434     +0.432  {'PASS': 42, 'BLOCK': 1, 'WARN': 1}
+FR:EURONEXT_PARIS     BUY      23      23         0        0      +0.307     +0.511  {'PASS': 23}
+FR:EURONEXT_PARIS     SELL     26      26         0        0      -0.441     +0.480  {'PASS': 26}
+NL:EURONEXT_AMSTERDAM BUY       7       7         0        0      +0.422     +0.556  {'PASS': 7}
+NL:EURONEXT_AMSTERDAM SELL      8       8         0        0      -0.365     +0.460  {'PASS': 8}
+FI:NASDAQ_HELSINKI    BUY       9       9         0        0      +0.388     +0.557  {'PASS': 9}
+FI:NASDAQ_HELSINKI    SELL     12      12         0        0      -0.430     +0.507  {'PASS': 12}
+ES:BME_MADRID         BUY       4       4         0        0      +0.336     +0.516  {'PASS': 4}
+ES:BME_MADRID         SELL      9       9         0        0      -0.429     +0.473  {'PASS': 9}
+ALL                   BUY     445     443         0        2      +0.372     +0.592  {'PASS': 445}
+ALL                   SELL    519     514         2        3      -0.384     +0.533  {'PASS': 516, 'WARN': 2, 'BLOCK': 1}
+
+(A2) COVERAGE - priced / total decisions
+market                           BUY          SELL
+US:NASDAQ               151/151  100%  210/212   99%
+US:NYSE                 117/118   99%   66/66   100%
+GB:LSE                   27/27   100%   42/42   100%
+IT:EURONEXT_MILAN        15/15   100%   15/15   100%
+SE:NASDAQ_STOCKHOLM      25/25   100%   35/37    95%
+NO:EURONEXT_OSLO         12/12   100%   12/12   100%
+DE:XETRA                 23/23   100%   35/36    97%
+DE:FRANKFURT             30/31    97%   44/44   100%
+FR:EURONEXT_PARIS        23/23   100%   26/26   100%
+NL:EURONEXT_AMSTERDAM     7/7    100%    8/8    100%
+FI:NASDAQ_HELSINKI        9/9    100%   12/12   100%
+ES:BME_MADRID             4/4    100%    9/9    100%
+ALL                     443/445  100%  514/519   99%
+
+(A3) SELECTION-BIAS CHECK - priced vs unpriced (difference = priced minus unpriced; n/a when a group is empty)
+market                side   n pr/unpr  score pr  score un     diff  conf pr  conf un     diff
+US:NASDAQ             BUY     151/0       +0.381       n/a      n/a   +0.626      n/a      n/a
+US:NASDAQ             SELL    210/2       -0.381    -0.372   -0.009   +0.577   +0.574   +0.003
+US:NYSE               BUY     117/1       +0.413    +0.509   -0.096   +0.631   +0.541   +0.090
+US:NYSE               SELL     66/0       -0.340       n/a      n/a   +0.565      n/a      n/a
+GB:LSE                BUY      27/0       +0.403       n/a      n/a   +0.617      n/a      n/a
+GB:LSE                SELL     42/0       -0.346       n/a      n/a   +0.506      n/a      n/a
+IT:EURONEXT_MILAN     BUY      15/0       +0.364       n/a      n/a   +0.521      n/a      n/a
+IT:EURONEXT_MILAN     SELL     15/0       -0.342       n/a      n/a   +0.491      n/a      n/a
+SE:NASDAQ_STOCKHOLM   BUY      25/0       +0.367       n/a      n/a   +0.616      n/a      n/a
+SE:NASDAQ_STOCKHOLM   SELL     35/2       -0.395    -0.447   +0.052   +0.555   +0.522   +0.033
+NO:EURONEXT_OSLO      BUY      12/0       +0.428       n/a      n/a   +0.595      n/a      n/a
+NO:EURONEXT_OSLO      SELL     12/0       -0.482       n/a      n/a   +0.554      n/a      n/a
+DE:XETRA              BUY      23/0       +0.288       n/a      n/a   +0.470      n/a      n/a
+DE:XETRA              SELL     35/1       -0.371    -0.362   -0.009   +0.443   +0.303   +0.140
+DE:FRANKFURT          BUY      30/1       +0.226    +0.218   +0.008   +0.458   +0.449   +0.008
+DE:FRANKFURT          SELL     44/0       -0.434       n/a      n/a   +0.432      n/a      n/a
+FR:EURONEXT_PARIS     BUY      23/0       +0.307       n/a      n/a   +0.511      n/a      n/a
+FR:EURONEXT_PARIS     SELL     26/0       -0.441       n/a      n/a   +0.480      n/a      n/a
+NL:EURONEXT_AMSTERDAM BUY       7/0       +0.422       n/a      n/a   +0.556      n/a      n/a
+NL:EURONEXT_AMSTERDAM SELL      8/0       -0.365       n/a      n/a   +0.460      n/a      n/a
+FI:NASDAQ_HELSINKI    BUY       9/0       +0.388       n/a      n/a   +0.557      n/a      n/a
+FI:NASDAQ_HELSINKI    SELL     12/0       -0.430       n/a      n/a   +0.507      n/a      n/a
+ES:BME_MADRID         BUY       4/0       +0.336       n/a      n/a   +0.516      n/a      n/a
+ES:BME_MADRID         SELL      9/0       -0.429       n/a      n/a   +0.473      n/a      n/a
+ALL                   BUY     443/2       +0.372    +0.363   +0.009   +0.593   +0.495   +0.098
+ALL                   SELL    514/5       -0.384    -0.400   +0.017   +0.533   +0.499   +0.034
+
+(B) PRICED SUBSET - price returns, weights renormalised over priced holdings (ALL = markets equally weighted)
+market                     BUY n      BUY  SELL n     SELL    bench   BUY-bm  SELL-bm
+US:NASDAQ                151/151  -9.61% 210/212 -24.53% -14.41%  +4.80% -10.12%
+US:NYSE                  117/118  -4.71%  66/66  -17.19%  -6.34%  +1.63% -10.86%
+GB:LSE                    27/27   -6.17%  42/42 +222.43%  -3.53%  -2.63%+225.96%
+IT:EURONEXT_MILAN         15/15   -5.14%  15/15  -13.94%  -0.75%  -4.39% -13.19%
+SE:NASDAQ_STOCKHOLM       25/25   -0.01%  35/37  -13.93%  -1.64%  +1.63% -12.29%
+NO:EURONEXT_OSLO          12/12   +0.45%  12/12  -12.39%  -2.50%  +2.94%  -9.90%
+DE:XETRA                  23/23   +1.01%  35/36   -6.75%  -1.98%  +2.99%  -4.77%
+DE:FRANKFURT              14/31   -4.85%  17/44  -12.09%  -1.98%  -2.87% -10.10%
+FR:EURONEXT_PARIS         23/23   +3.20%  26/26   -3.65%  +1.14%  +2.06%  -4.79%
+NL:EURONEXT_AMSTERDAM      7/7    -2.46%   8/8   -18.91%  -5.95%  +3.49% -12.96%
+FI:NASDAQ_HELSINKI         9/9    +0.46%  12/12  -15.06%  -5.54%  +6.00%  -9.52%
+ES:BME_MADRID              4/4    +0.46%   9/9    -4.66%  -1.15%  +1.61%  -3.51%
+ALL                               -2.28%          +6.61%  -3.72%  +1.44% +10.33%
+
+(B1b) benchmarks: symbol and close on the snapshot date
+  US:NASDAQ               ^IXIC       entry close 26424.8203125   (snapshot field: ^IXIC)
+  US:NYSE                 ^NYA        entry close 24190.619140625   (snapshot field: ^NYA)
+  GB:LSE                  ^FTAS       entry close 5784.22021484375   (snapshot field: ^FTSE)
+  IT:EURONEXT_MILAN       FTSEMIB.MI  entry close 49071.0   (snapshot field: FTSEMIB.MI)
+  SE:NASDAQ_STOCKHOLM     ^OMXSPI     entry close 1122.550048828125   (snapshot field: ^OMX)
+  NO:EURONEXT_OSLO        OSEBX.OL    entry close 2089.889892578125   (snapshot field: OSEBX.OL)
+  DE:XETRA                ^GDAXI      entry close 25304.419921875   (snapshot field: ^GDAXI)
+  DE:FRANKFURT            ^GDAXI      entry close 25304.419921875   (snapshot field: ^GDAXI)
+  FR:EURONEXT_PARIS       ^FCHI       entry close 7838.490234375   (snapshot field: ^FCHI)
+  NL:EURONEXT_AMSTERDAM   ^AEX        entry close 1133.5899658203125   (snapshot field: ^AEX)
+  FI:NASDAQ_HELSINKI      ^OMXH25     entry close 6251.4599609375   (snapshot field: ^OMXH25)
+  ES:BME_MADRID           ^IBEX       entry close 19092.400390625   (snapshot field: ^IBEX)
+
+(B1c) SENSITIVITY - same, excluding rows flagged exit=last_close_before_delisting
+ALL                               -2.28%          +6.81%  -3.72%  +1.44% +10.53%   flagged rows: 5
+
+(B1d) ISSUER COUNTS after ISIN dedup (BUY / SELL; priced; flagged)
+  US:NASDAQ               BUY  151 (priced 151, flagged 0)   SELL  212 (priced 210, flagged 1)
+  US:NYSE                 BUY  118 (priced 117, flagged 0)   SELL   66 (priced  66, flagged 0)
+  GB:LSE                  BUY   27 (priced  27, flagged 0)   SELL   42 (priced  42, flagged 1)
+  IT:EURONEXT_MILAN       BUY   15 (priced  15, flagged 0)   SELL   15 (priced  15, flagged 0)
+  SE:NASDAQ_STOCKHOLM     BUY   25 (priced  25, flagged 0)   SELL   37 (priced  35, flagged 0)
+  NO:EURONEXT_OSLO        BUY   12 (priced  12, flagged 0)   SELL   12 (priced  12, flagged 2)
+  DE:XETRA                BUY   23 (priced  23, flagged 0)   SELL   36 (priced  35, flagged 0)
+  DE:FRANKFURT            BUY   15 (priced  14, flagged 0)   SELL   17 (priced  17, flagged 0)
+  FR:EURONEXT_PARIS       BUY   23 (priced  23, flagged 0)   SELL   26 (priced  26, flagged 0)
+  NL:EURONEXT_AMSTERDAM   BUY    7 (priced   7, flagged 0)   SELL    8 (priced   8, flagged 0)
+  FI:NASDAQ_HELSINKI      BUY    9 (priced   9, flagged 0)   SELL   12 (priced  12, flagged 0)
+  ES:BME_MADRID           BUY    4 (priced   4, flagged 0)   SELL    9 (priced   9, flagged 1)
+  DE (Xetra+Frankfurt)    BUY   38 (priced  37, flagged 0)   SELL   53 (priced  52, flagged 0)
+  dividend unit check (window dividends > 50% of entry): 1 rows
+
+(B2) BUY minus SELL spread, bootstrap 95% CI
+market                    nBUY  nSELL    spread                95% CI  flag
+US:NASDAQ                  151    210   +14.92%     [+6.67%, +21.98%]  
+US:NYSE                    117     66   +12.48%     [+7.19%, +17.96%]  
+GB:LSE                      27     42  -228.59%   [-704.81%, +13.51%]  
+IT:EURONEXT_MILAN           15     15    +8.81%     [+0.17%, +17.71%]  
+SE:NASDAQ_STOCKHOLM         25     35   +13.92%     [+5.13%, +22.82%]  
+NO:EURONEXT_OSLO            12     12   +12.84%     [+0.83%, +23.94%]  
+DE:XETRA                    23     35    +7.76%     [+0.24%, +14.47%]  
+DE:FRANKFURT                14     17    +7.23%     [-4.32%, +18.41%]  
+FR:EURONEXT_PARIS           23     26    +6.84%     [-5.99%, +17.47%]  
+NL:EURONEXT_AMSTERDAM        7      8   +16.45%     [+1.07%, +32.70%]  too small to interpret
+FI:NASDAQ_HELSINKI           9     12   +15.52%     [+6.43%, +24.76%]  too small to interpret
+ES:BME_MADRID                4      9    +5.12%     [+0.62%, +10.34%]  too small to interpret
+ALL                        427    487    -8.89%    [-49.69%, +12.85%]  includes markets with <10 priced holdings per side
+
+(B3) duplicates removed from returns (same ISIN + side on another venue): 43 rows
+
+(C) NOT PRICED - 7 holdings; excluded from returns, still counted in (A)
+  DE:FRANKFURT          BUY  PFS0      no_exit_price  entry close recorded but no close after entry up to 2026-11-20
+  DE:XETRA              SELL ERW       no_exit_price  entry close recorded but no close after entry up to 2026-11-20
+  SE:NASDAQ_STOCKHOLM   SELL BONAV.A   no_entry_price snapshot: no vendor symbol; supplement (BONAV-A.ST): no vendor trade on the snapshot date; last prior close 8.25 on 2026-10-19 not used
+  SE:NASDAQ_STOCKHOLM   SELL VPLAY.A   no_entry_price snapshot: no vendor symbol; supplement (VPLAY-A.ST): no vendor trade on the snapshot date; last prior close 2.140000104904175 on 2026-10-19 not used
+  US:NASDAQ             SELL FNGR      no_exit_price  entry close recorded but no close after entry up to 2026-11-20
+  US:NASDAQ             SELL LNAI      no_exit_price  entry close recorded but no close after entry up to 2026-11-20
+  US:NYSE               BUY  RAMP      no_exit_price  entry close recorded but no close after entry up to 2026-11-20
+
+entries from supplement: 25; entry close re-read differs >2% from stored: 26
