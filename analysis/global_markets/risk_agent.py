@@ -19,7 +19,7 @@ from .distress import _is_financial, _logistic, is_capital_intensive, zmijewski_
 from .models import GlobalCompany
 
 FLAG = "RISK_AGENT_ENABLED"
-VERSION = 1
+VERSION = 2
 LEVELS = ("LOW", "MEDIUM", "HIGH", "CRITICAL")
 
 # Thresholds and rules live in data/risk_agent_config.json (override: env RISK_AGENT_CONFIG); nothing numeric is hard-coded below.
@@ -359,28 +359,36 @@ def assess(company: GlobalCompany, *, history: Optional[Mapping] = None, fx: Opt
         icr = interest_coverage_signal(company, th, leases)
     signals = models + [icr, vol]
     solvency = [s for s in models if s["id"] in ("altman", "ohlson", "zmijewski") and s["available"]]
-    severe = [s for s in solvency if s["severity"] == 2]
-    elevated = [s for s in signals if s["available"] and s["severity"] >= 1]
-    icr_severe = icr["available"] and icr["severity"] == 2
+    # D2 (owner-approved 2026-11-27). Severe signals counted: Altman, Ohlson, Zmijewski, interest coverage (Beneish and price volatility are
+    # not severe-capable). Elevated signs: the same four plus price volatility, plus negative equity when configured.
+    counted = [s for s in (models[0], models[1], models[2], icr) if s["available"]]
+    severe = [s for s in counted if s["severity"] == 2]
+    elevated_signs = [s for s in counted + ([vol] if vol["available"] else []) if s["severity"] >= 1]
+    neg_equity = "negative total equity" in hard
+    going_concern = "going-concern warning" in hard
+    n_elevated = len(elevated_signs) + (1 if neg_equity and rules.get("negative_equity_is_elevated_sign", True) else 0)
+    any_flag = bool(hard) or any(s["available"] and s["severity"] >= 1 for s in signals)
 
     defects = [] if financial else statement_defects(company)
     reasons = [f"{h} (hard reason)" for h in hard]
     reasons += [s["reason"] for s in signals if s["available"] and s["severity"] >= 1]
+    watch: list = []
     level: Optional[str]
     if defects:
         level = None                                  # impossible statement values (data defect): no level rather than a wrong one
-    elif hard or len(severe) >= 2:
+    elif going_concern or (len(severe) >= int(rules["critical_min_severe"]) and neg_equity):
         level = "CRITICAL"
-    elif severe or icr_severe:
+    elif len(severe) >= int(rules["high_min_severe"]):
         level = "HIGH"
-    elif len(elevated) >= int(rules["elevated_signals_for_high"]):
-        level = "HIGH"
-    elif elevated:
+    elif len(severe) >= int(rules["medium_min_severe"]) or n_elevated >= int(rules["medium_min_elevated"]):
         level = "MEDIUM"
-    elif financial or len(solvency) < min_models:
-        level = None
+    elif (financial and any_flag) or (not financial and (len(solvency) >= min_models or any_flag)):
+        level = "LOW"                                 # a single elevated sign stays LOW, with a watch note
+        if n_elevated == 1:
+            watch = [s["reason"] for s in elevated_signs] + (["negative total equity"] if neg_equity else [])
     else:
-        level = "LOW"
+        level = None
+    partial = not financial and len(solvency) < min_models
     if level is None:
         status = "NOT_APPLICABLE" if financial else "INSUFFICIENT_DATA"
         if defects:
@@ -388,12 +396,17 @@ def assess(company: GlobalCompany, *, history: Optional[Mapping] = None, fx: Opt
         else:
             reasons.append(na if financial else f"fewer than {min_models} solvency models (Altman, Ohlson, Zmijewski) have their inputs; no level is given")
     else:
-        status = "OK" if financial or len(solvency) >= min_models else "PARTIAL"
+        status = "PARTIAL" if partial else "OK"
         if level == "LOW":
-            reasons.append("no model flags the company")
+            reasons.append("no model flags the company" if not watch else "watch: a single elevated sign does not raise the level")
+        if partial:
+            reasons.append(f"statements are partial ({len(solvency)} of 3 solvency models have their inputs): this level rests on incomplete data"
+                           + ("; LOW is not a clean result" if level == "LOW" else ""))
+    prelim = {str(x).upper() for x in (rules.get("calibration") or {}).get("preliminary", ["US"])}
+    calibration = "unavailable" if level is None else "preliminary" if str(company.country).upper() in prelim else "not_calibrated"
     flags = (list(signals[1].get("flags") or []) + list(icr.get("flags") or [])) if not financial else []
     return {"agent": "risk", "version": VERSION, "advisoryOnly": True, "level": level, "status": status, "reasons": reasons,
-            "hardReasons": hard, "signals": signals, "flags": flags, "leases": leases if not financial else None,
+            "hardReasons": hard, "watch": watch, "calibration": calibration, "signals": signals, "flags": flags, "leases": leases if not financial else None,
             "dataSufficiency": {"solvencyModelsAvailable": len(solvency), "required": min_models,
                                 "missing": {s["id"]: s["missing"] for s in signals if s["missing"] and s["applicable"]}},
             "config": {"path": conf.get("_path"), "version": conf.get("version"), "thresholds": th},

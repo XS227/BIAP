@@ -1,6 +1,6 @@
 {
-  "version": 4,
-  "note": "Risk Agent thresholds (owner-approved 2026-11-25). Override the whole file with env RISK_AGENT_CONFIG=/path/to/file.json; unknown or invalid values fail loudly instead of falling back silently.",
+  "version": 5,
+  "note": "Risk Agent thresholds. Version 5 (D2, owner-approved 2026-11-27): preliminary calibration, US only against the Nasdaq deficient/delinquent proxy; Europe and other markets are not calibrated. Override the whole file with env RISK_AGENT_CONFIG=/path/to/file.json; unknown or invalid values fail loudly instead of falling back silently.",
   "thresholds": {
     "altman_safe": 2.6,
     "altman_distress": 1.1,
@@ -16,7 +16,17 @@
   },
   "rules": {
     "min_solvency_models": 2,
-    "elevated_signals_for_high": 3
+    "high_min_severe": 3,
+    "critical_min_severe": 4,
+    "medium_min_severe": 1,
+    "medium_min_elevated": 2,
+    "negative_equity_is_elevated_sign": true,
+    "calibration": {
+      "preliminary": [
+        "US"
+      ],
+      "note": "Levels are a preliminary calibration. Only US issuers were compared with a distress proxy (Nasdaq deficient/delinquent, 280 names, no real bankruptcies); every other market is not calibrated."
+    }
   },
   "unit_scale": {
     "plausibility_assets_to_market_cap_min": 0.003,
