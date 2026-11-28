@@ -229,3 +229,36 @@ def test_packaged_peer_and_supplement_files_load_and_are_consistent():
             assert cell["roa"] == sorted(cell["roa"]) and cell["composite"] == sorted(cell["composite"])
     supp = pa.load_sector_supplement(cfg)
     assert supp["label"] == "current sector, not point-in-time" and any(k.startswith("US:") for k in supp["entries"])
+
+
+# --- R7: impossible statement values give no level -------------------------------------------------------------------------
+@pytest.mark.parametrize("kw,defect", [
+    (dict(revenue=-5 * M), "negative revenue"),
+    (dict(total_assets=0.0), "total assets <= 0"),
+    (dict(total_assets=-10 * M), "total assets <= 0"),
+    (dict(net_income=5_001 * M), "net income above 5x total assets"),
+    (dict(net_income=-6_000 * M), "net income above 5x total assets"),
+])
+def test_impossible_statements_give_no_level(kw, defect):
+    r = pa.assess(company(**kw))
+    assert r["level"] is None and r["absoluteLevel"] is None and r["status"] == "INSUFFICIENT_DATA"
+    assert defect in r["statementDefects"] and "impossible" in r["reasons"][0]
+    assert r["relative"]["level"] is None and r["metrics"] is None
+
+
+@pytest.mark.parametrize("kw", [
+    dict(net_income=-400 * M),                       # a large loss is legitimate
+    dict(net_income=5_000 * M),                      # exactly 5x assets is still accepted
+    dict(total_equity=-50 * M),                      # negative equity is legitimate
+    dict(revenue=0.0),                               # zero revenue is not negative
+    dict(total_assets=None),                         # missing is named as missing, not a defect
+])
+def test_legitimate_values_are_not_defects(kw):
+    r = pa.assess(company(**kw))
+    assert r["statementDefects"] == []
+    assert not any("impossible" in x for x in r["reasons"])
+
+
+def test_clean_company_keeps_its_level():
+    r = pa.assess(company())
+    assert r["level"] is not None and r["statementDefects"] == []
