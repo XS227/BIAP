@@ -226,6 +226,27 @@ def metrics(c: GlobalCompany) -> dict:
     }
 
 
+# |net income| above this multiple of total assets cannot come from one year's operations: unit or extraction error (R7).
+NI_TO_ASSETS_MAX = 5.0
+
+
+def statement_defects(c: GlobalCompany) -> list:
+    """Impossible statement values (extraction/unit errors). Such a statement must not produce a level (QA report R7).
+
+    total assets <= 0; revenue < 0; |net income| above 5x total assets. A loss, negative equity or a revenue fall is legitimate and
+    is not a defect. Same idea as ``risk_agent.statement_defects``: no level rather than a wrong one.
+    """
+    ta, rev, ni = _num(c.total_assets), _num(c.revenue), _num(c.net_income)
+    out = []
+    if ta is not None and ta <= 0:
+        out.append("total assets <= 0")
+    if rev is not None and rev < 0:
+        out.append("negative revenue")
+    if ta is not None and ta > 0 and ni is not None and abs(ni) > NI_TO_ASSETS_MAX * ta:
+        out.append(f"net income above {NI_TO_ASSETS_MAX:g}x total assets")
+    return out
+
+
 def assess(company: GlobalCompany, *, config: Optional[dict] = None) -> dict:
     """Level, reasons and numbers for one enriched company. Pure function: no network, no writes."""
     cfg = config or load_config()
@@ -238,6 +259,12 @@ def assess(company: GlobalCompany, *, config: Optional[dict] = None) -> dict:
     if _is_financial(company):
         return {**base, "level": None, "absoluteLevel": None, "relative": {"level": None, "status": "NOT_APPLICABLE", "reasons": []}, "status": "NOT_APPLICABLE", "metrics": None, "signals": [], "points": None,
                 "reasons": ["not applicable: financial institution (ROA, margins and cash-flow quality are not comparable for banks and insurers)"],
+                "dataSufficiency": {"scoringMetricsAvailable": 0, "required": int(L["min_scoring_metrics"]), "missing": {}}}
+    defects = statement_defects(company)
+    if defects:
+        return {**base, "level": None, "absoluteLevel": None, "relative": {"level": None, "status": "NO_ABSOLUTE_LEVEL", "reasons": []},
+                "status": "INSUFFICIENT_DATA", "metrics": None, "signals": [], "points": None, "trendSignals": [], "statementDefects": defects,
+                "reasons": [f"statement values are impossible ({'; '.join(defects)}), so the stored statements are not used and no level is given"],
                 "dataSufficiency": {"scoringMetricsAvailable": 0, "required": int(L["min_scoring_metrics"]), "missing": {}}}
     m = metrics(company)
     signals, reasons, missing = [], [], {}
@@ -305,7 +332,7 @@ def assess(company: GlobalCompany, *, config: Optional[dict] = None) -> dict:
     if level and not reasons:
         reasons.append("no metric stands out")
     rel = relative_assessment(company, m, trend, cfg) if status == "OK" else {"level": None, "status": "NO_ABSOLUTE_LEVEL", "reasons": []}
-    return {**base, "level": level, "absoluteLevel": level, "relative": rel, "status": status, "reasons": reasons, "points": pts, "trendSignals": trend, "metrics": m, "signals": signals,
+    return {**base, "level": level, "absoluteLevel": level, "relative": rel, "status": status, "reasons": reasons, "points": pts, "trendSignals": trend, "metrics": m, "signals": signals, "statementDefects": [],
             "dataSufficiency": {"scoringMetricsAvailable": len(scoring), "required": need, "missing": missing},
             "notes": ["ROA/ROE use year-end balance sheet values (one balance sheet is stored, no averages)",
                       "prior-year DuPont legs other than net margin are not available"]}
